@@ -1,0 +1,7 @@
+.directory
+.build
+.idea
+.vscode
+.vs
+Inc/Common.hpp.gch
+Bin

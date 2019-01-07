@@ -1,0 +1,15 @@
+[submodule "Deps/utfcpp"]
+	path = Deps/utfcpp
+	url = https://github.com/ledger/utfcpp.git
+[submodule "Deps/glm"]
+	path = Deps/glm
+	url = https://github.com/g-truc/glm.git
+[submodule "Deps/yaml-cpp"]
+	path = Deps/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp.git
+[submodule "Deps/json"]
+	path = Deps/json
+	url = https://github.com/nlohmann/json.git
+[submodule "Deps/imgui"]
+	path = Deps/imgui
+	url = https://github.com/ocornut/imgui.git
