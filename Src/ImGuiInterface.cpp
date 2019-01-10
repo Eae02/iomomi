@@ -1,82 +1,44 @@
 #include "ImGuiInterface.hpp"
-#include "Graphics/GL/GL.hpp"
-#include "Graphics/Graphics.hpp"
 
-#include <SDL2/SDL.h>
+//#include <SDL2/SDL.h>
 #include <filesystem>
 #include <imgui.h>
 
-static const char* vertexShader = R"(#version 330 core
-layout(location=0) in vec2 position_in;
-layout(location=1) in vec2 texCoord_in;
-layout(location=2) in vec4 color_in;
-
-out vec4 vColor;
-out vec2 vTexCoord;
-
-uniform vec2 uScale;
-
-void main()
-{
-	vColor = vec4(color_in.rgb, color_in.a);
-	vTexCoord = vec2(texCoord_in.x, texCoord_in.y);
-	
-	vec2 scaledPos = position_in * uScale;
-	gl_Position = vec4(scaledPos.x - 1.0, 1.0 - scaledPos.y, 0, 1);
-}
-)";
-
-static const char* fragmentShader = R"(#version 330 core
-layout(location=0) out vec4 color_out;
-
-in vec4 vColor;
-in vec2 vTexCoord;
-
-uniform sampler2D uTexture;
-
-void main()
-{
-	color_out = vColor;
-	color_out.a *= texture(uTexture, vTexCoord).r;
-}
-)";
-
-static char clipboardTextMem[256];
+//static char clipboardTextMem[256];
 
 ImGuiInterface::ImGuiInterface()
-	: m_vertexBuffer(0, gl::BufferUsage::Update, nullptr), m_indexBuffer(0, gl::BufferUsage::Update, nullptr)
 {
 	ImGui::CreateContext();
 	
 	// ** Initializes ImGui IO **
 	ImGuiIO& io = ImGui::GetIO();
-	io.KeyMap[ImGuiKey_Tab]        = (int)SDL_SCANCODE_TAB;
-	io.KeyMap[ImGuiKey_LeftArrow]  = (int)SDL_SCANCODE_LEFT;
-	io.KeyMap[ImGuiKey_RightArrow] = (int)SDL_SCANCODE_RIGHT;
-	io.KeyMap[ImGuiKey_UpArrow]    = (int)SDL_SCANCODE_UP;
-	io.KeyMap[ImGuiKey_DownArrow]  = (int)SDL_SCANCODE_DOWN;
-	io.KeyMap[ImGuiKey_PageUp]     = (int)SDL_SCANCODE_PAGEUP;
-	io.KeyMap[ImGuiKey_PageDown]   = (int)SDL_SCANCODE_PAGEDOWN;
-	io.KeyMap[ImGuiKey_Home]       = (int)SDL_SCANCODE_HOME;
-	io.KeyMap[ImGuiKey_End]        = (int)SDL_SCANCODE_END;
-	io.KeyMap[ImGuiKey_Delete]     = (int)SDL_SCANCODE_DELETE;
-	io.KeyMap[ImGuiKey_Backspace]  = (int)SDL_SCANCODE_BACKSPACE;
-	io.KeyMap[ImGuiKey_Enter]      = (int)SDL_SCANCODE_RETURN;
-	io.KeyMap[ImGuiKey_Escape]     = (int)SDL_SCANCODE_ESCAPE;
-	io.KeyMap[ImGuiKey_Space]      = (int)SDL_SCANCODE_SPACE;
-	io.KeyMap[ImGuiKey_A]          = (int)SDL_SCANCODE_A;
-	io.KeyMap[ImGuiKey_C]          = (int)SDL_SCANCODE_C;
-	io.KeyMap[ImGuiKey_V]          = (int)SDL_SCANCODE_V;
-	io.KeyMap[ImGuiKey_X]          = (int)SDL_SCANCODE_X;
-	io.KeyMap[ImGuiKey_Y]          = (int)SDL_SCANCODE_Y;
-	io.KeyMap[ImGuiKey_Z]          = (int)SDL_SCANCODE_Z;
+	io.KeyMap[ImGuiKey_Tab]        = (int)eg::Button::Tab;
+	io.KeyMap[ImGuiKey_LeftArrow]  = (int)eg::Button::LeftArrow;
+	io.KeyMap[ImGuiKey_RightArrow] = (int)eg::Button::RightArrow;
+	io.KeyMap[ImGuiKey_UpArrow]    = (int)eg::Button::UpArrow;
+	io.KeyMap[ImGuiKey_DownArrow]  = (int)eg::Button::DownArrow;
+	io.KeyMap[ImGuiKey_PageUp]     = (int)eg::Button::PageUp;
+	io.KeyMap[ImGuiKey_PageDown]   = (int)eg::Button::PageDown;
+	io.KeyMap[ImGuiKey_Home]       = (int)eg::Button::Home;
+	io.KeyMap[ImGuiKey_End]        = (int)eg::Button::End;
+	io.KeyMap[ImGuiKey_Delete]     = (int)eg::Button::Delete;
+	io.KeyMap[ImGuiKey_Backspace]  = (int)eg::Button::Backspace;
+	io.KeyMap[ImGuiKey_Enter]      = (int)eg::Button::Enter;
+	io.KeyMap[ImGuiKey_Escape]     = (int)eg::Button::Escape;
+	io.KeyMap[ImGuiKey_Space]      = (int)eg::Button::Space;
+	io.KeyMap[ImGuiKey_A]          = (int)eg::Button::A;
+	io.KeyMap[ImGuiKey_C]          = (int)eg::Button::C;
+	io.KeyMap[ImGuiKey_V]          = (int)eg::Button::V;
+	io.KeyMap[ImGuiKey_X]          = (int)eg::Button::X;
+	io.KeyMap[ImGuiKey_Y]          = (int)eg::Button::Y;
+	io.KeyMap[ImGuiKey_Z]          = (int)eg::Button::Z;
 	
 	//m_iniFileName = fs::ExeDirPath() + "/ImGui.ini";
 	//io.IniFilename = m_iniFileName.c_str();
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	
 	ImGui::StyleColorsDark(&ImGui::GetStyle());
-	
+	/*
 	io.SetClipboardTextFn = [] (void* data, const char* text) { SDL_SetClipboardText(text); };
 	io.GetClipboardTextFn = [] (void* data) -> const char* {
 		char* sdlClipboardText = SDL_GetClipboardText();
@@ -94,11 +56,21 @@ ImGuiInterface::ImGuiInterface()
 	m_cursors[ImGuiMouseCursor_ResizeNESW].reset(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW));
 	m_cursors[ImGuiMouseCursor_ResizeNWSE].reset(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE));
 	m_cursors[ImGuiMouseCursor_Hand].reset(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND));
+	*/
 	
-	m_shader.AttachStage(GL_VERTEX_SHADER, vertexShader);
-	m_shader.AttachStage(GL_FRAGMENT_SHADER, fragmentShader);
-	m_shader.Link();
-	m_shader.SetUniform("uTexture", 0);
+	eg::ShaderProgram shaderProgram;
+	shaderProgram.AddStageFromFile("./Data/Shaders/ImGui.fs.spv");
+	shaderProgram.AddStageFromFile("./Data/Shaders/ImGui.vs.spv");
+	
+	eg::FixedFuncState fixedFuncState;
+	fixedFuncState.enableStencilTest = true;
+	fixedFuncState.attachments[0].blend = eg::AlphaBlend;
+	fixedFuncState.vertexBindings[0] = { sizeof(ImDrawVert), eg::InputRate::Vertex };
+	fixedFuncState.vertexAttributes[0] = { 0, eg::DataType::Float32, 2, (uint32_t)offsetof(ImDrawVert, pos) };
+	fixedFuncState.vertexAttributes[1] = { 0, eg::DataType::Float32, 2, (uint32_t)offsetof(ImDrawVert, uv) };
+	fixedFuncState.vertexAttributes[2] = { 0, eg::DataType::UInt8Norm, 4, (uint32_t)offsetof(ImDrawVert, col) };
+	
+	m_pipeline = shaderProgram.CreatePipeline(fixedFuncState);
 	
 	// ** Creates the font texture **
 	const char* fontPaths[] = 
@@ -126,24 +98,21 @@ ImGuiInterface::ImGuiInterface()
 	int fontTexWidth, fontTexHeight;
 	io.Fonts->GetTexDataAsAlpha8(&fontTexPixels, &fontTexWidth, &fontTexHeight);
 	
-	glGenTextures(1, m_fontTexture.GenPtr());
-	glBindTexture(GL_TEXTURE_2D, *m_fontTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, fontTexWidth, fontTexHeight, 0, GL_RED, GL_UNSIGNED_BYTE, fontTexPixels);
+	eg::Texture2DCreateInfo fontTexCreateInfo;
+	fontTexCreateInfo.width = fontTexWidth;
+	fontTexCreateInfo.height = fontTexHeight;
+	fontTexCreateInfo.format = eg::Format::R8_UNorm;
+	fontTexCreateInfo.mipLevels = 1;
 	
+	m_fontTexture = eg::Texture::Create2D(fontTexCreateInfo, fontTexPixels);
+	io.Fonts->TexID = &m_fontTexture;
+	/*
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-	
-	io.Fonts->TexID = (void*)(uintptr_t)*m_fontTexture;
-	
-	glGenVertexArrays(1, m_vertexArray.GenPtr());
-	glBindVertexArray(*m_vertexArray);
-	for (GLuint i = 0; i < 3; i++)
-		glEnableVertexAttribArray(i);
+	*/
 }
 
-void ImGuiInterface::NewFrame(const InputState& inputState, int drawableWidth, int drawableHeight)
+void ImGuiInterface::NewFrame()
 {
 	ImGuiIO& io = ImGui::GetIO();
 	
@@ -153,15 +122,47 @@ void ImGuiInterface::NewFrame(const InputState& inputState, int drawableWidth, i
 	using namespace std::chrono;
 	high_resolution_clock::time_point time = high_resolution_clock::now();
 	
-	io.DisplaySize.x = drawableWidth;
-	io.DisplaySize.y = drawableHeight;
+	io.DisplaySize.x = eg::CurrentResolutionX();
+	io.DisplaySize.y = eg::CurrentResolutionY();
 	io.DeltaTime = duration_cast<nanoseconds>(time - m_lastFrameBegin).count() * 1E-9f;
-	io.MousePos = inputState.CursorPos();
-	//io.MouseWheel = inputState.ScrollDelta().y;
-	//io.MouseWheelH = inputState.ScrollDelta().x;
+	io.MousePos = ImVec2(eg::CursorPos().x, eg::CursorPos().y);
+	io.MouseWheel = eg::InputState::Current().scrollY;
+	io.MouseWheelH = eg::InputState::Current().scrollX;
+	
+	m_buttonEventListener.ProcessAll([&] (const eg::ButtonEvent& event)
+	{
+		io.KeysDown[(int)(event.button)] = event.newState;
+		
+		switch (event.button)
+		{
+		case eg::Button::MouseLeft:
+			io.MouseDown[0] = event.newState;
+			break;
+		case eg::Button::MouseRight:
+			io.MouseDown[1] = event.newState;
+			break;
+		case eg::Button::MouseMiddle:
+			io.MouseDown[2] = event.newState;
+			break;
+		case eg::Button::LeftShift:
+		case eg::Button::RightShift:
+			io.KeyShift = event.newState;
+			break;
+		case eg::Button::LeftControl:
+		case eg::Button::RightControl:
+			io.KeyCtrl = event.newState;
+			break;
+		case eg::Button::LeftAlt:
+		case eg::Button::RightAlt:
+			io.KeyAlt = event.newState;
+			break;
+		default:
+			break;
+		}
+	});
 	
 	m_lastFrameBegin = time;
-	
+	/*
 	ImGuiMouseCursor cursor = ImGui::GetMouseCursor();
 	if (io.MouseDrawCursor || cursor == ImGuiMouseCursor_None)
 	{
@@ -171,52 +172,9 @@ void ImGuiInterface::NewFrame(const InputState& inputState, int drawableWidth, i
 	{
 		SDL_SetCursor(m_cursors[m_cursors[cursor] ? cursor : ImGuiMouseCursor_Arrow].get());
 		SDL_ShowCursor(SDL_TRUE);
-	}
+	}*/
 	
 	ImGui::NewFrame();
-}
-
-void ImGuiInterface::OnMouseButtonStateChanged(MouseButtons button, bool pressed)
-{
-	ImGuiIO& io = ImGui::GetIO();
-	switch (button)
-	{
-	case MouseButtons::Left:
-		io.MouseDown[0] = pressed;
-		break;
-	case MouseButtons::Right:
-		io.MouseDown[1] = pressed;
-		break;
-	case MouseButtons::Middle:
-		io.MouseDown[2] = pressed;
-		break;
-	default: break;
-	}
-}
-
-void ImGuiInterface::OnKeyStateChanged(SDL_Scancode key, bool pressed)
-{
-	ImGuiIO& io = ImGui::GetIO();
-	
-	io.KeysDown[(int)(key)] = pressed;
-	
-	switch (key)
-	{
-	case SDL_SCANCODE_LSHIFT:
-	case SDL_SCANCODE_RSHIFT:
-		io.KeyShift = pressed;
-		break;
-	case SDL_SCANCODE_LCTRL:
-	case SDL_SCANCODE_RCTRL:
-		io.KeyCtrl = pressed;
-		break;
-	case SDL_SCANCODE_LALT:
-	case SDL_SCANCODE_RALT:
-		io.KeyAlt = pressed;
-		break;
-	default:
-		break;
-	}
 }
 
 bool ImGuiInterface::IsMouseCaptured()
@@ -242,73 +200,63 @@ void ImGuiInterface::EndFrame(uint32_t vFrameIndex)
 	//Create the vertex buffer if it's too small or hasn't been created yet
 	if (m_vertexCapacity < drawData->TotalVtxCount)
 	{
-		m_vertexCapacity = RoundToNextMultiple(drawData->TotalVtxCount, 1024);
-		m_vertexBuffer.Realloc(m_vertexCapacity * sizeof(ImDrawVert) * NUM_VIRTUAL_FRAMES, nullptr);
+		m_vertexCapacity = eg::RoundToNextMultiple(drawData->TotalVtxCount, 1024);
+		m_vertexBuffer = eg::Buffer(eg::BufferUsage::VertexBuffer | eg::BufferUsage::MapWrite,
+			m_vertexCapacity * sizeof(ImDrawVert) * eg::MAX_CONCURRENT_FRAMES, nullptr);
 	}
 	
 	//Create the index buffer if it's too small or hasn't been created yet
 	if (m_indexCapacity < drawData->TotalIdxCount)
 	{
-		m_indexCapacity = RoundToNextMultiple(drawData->TotalIdxCount, 1024);
-		m_indexBuffer.Realloc(m_indexCapacity * sizeof(ImDrawIdx) * NUM_VIRTUAL_FRAMES, nullptr);
+		m_indexCapacity = eg::RoundToNextMultiple(drawData->TotalIdxCount, 1024);
+		m_indexBuffer = eg::Buffer(eg::BufferUsage::IndexBuffer | eg::BufferUsage::MapWrite,
+			m_indexCapacity * sizeof(ImDrawIdx) * eg::MAX_CONCURRENT_FRAMES, nullptr);
 	}
 	
 	//Writes vertices
-	uint64_t vertexBufferOffset = vFrameIndex * m_vertexCapacity * sizeof(ImDrawVert);
+	uint32_t vertexBufferOffset = vFrameIndex * m_vertexCapacity * sizeof(ImDrawVert);
 	uint64_t vertexCount = 0;
+	ImDrawVert* verticesMem = reinterpret_cast<ImDrawVert*>(m_vertexBuffer.Map(vertexBufferOffset, m_vertexCapacity * sizeof(ImDrawVert)));
 	for (int n = 0; n < drawData->CmdListsCount; n++)
 	{
 		const ImDrawList* cmdList = drawData->CmdLists[n];
-		m_vertexBuffer.Update(vertexBufferOffset + vertexCount * sizeof(ImDrawVert),
-		                      cmdList->VtxBuffer.Size * sizeof(ImDrawVert), cmdList->VtxBuffer.Data);
+		std::copy_n(cmdList->VtxBuffer.Data, cmdList->VtxBuffer.Size, verticesMem + vertexCount);
 		vertexCount += cmdList->VtxBuffer.Size;
 	}
+	m_vertexBuffer.Unmap(0, vertexCount * sizeof(ImDrawVert));
 	
 	//Writes indices
-	uint64_t indexBufferOffset = vFrameIndex * m_indexCapacity * sizeof(ImDrawIdx);
+	uint32_t indexBufferOffset = vFrameIndex * m_indexCapacity * sizeof(ImDrawIdx);
 	uint32_t indexCount = 0;
+	ImDrawIdx* indicesMem = reinterpret_cast<ImDrawIdx*>(m_indexBuffer.Map(indexBufferOffset, m_indexCapacity * sizeof(ImDrawIdx)));
 	for (int n = 0; n < drawData->CmdListsCount; n++)
 	{
 		const ImDrawList* cmdList = drawData->CmdLists[n];
-		m_indexBuffer.Update(indexBufferOffset + indexCount * sizeof(uint16_t),
-		                     cmdList->IdxBuffer.Size * sizeof(uint16_t), cmdList->IdxBuffer.Data);
+		std::copy_n(cmdList->IdxBuffer.Data, cmdList->IdxBuffer.Size, indicesMem + indexCount);
 		indexCount += cmdList->IdxBuffer.Size;
 	}
+	m_indexBuffer.Unmap(0, indexCount * sizeof(ImDrawIdx));
 	
-	m_shader.Bind();
+	eg::DC.BindPipeline(m_pipeline);
 	
-	glBindVertexArray(*m_vertexArray);
+	float scale[] = { 2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y };
+	eg::DC.SetUniform("uScale", eg::UniformType::Vec2, scale);
 	
-	m_shader.SetUniform("uScale", glm::vec2(2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y));
+	eg::DC.SetViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
 	
-	glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-	
-	gl::SetEnabled<GL_BLEND>(true);
-	gl::SetEnabled<GL_SCISSOR_TEST>(true);
-	
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glActiveTexture(GL_TEXTURE0);
-	
-	glBindVertexArray(*m_vertexArray);
-	glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer.Handle());
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer.Handle());
+	eg::DC.BindVertexBuffer(0, m_vertexBuffer, vertexBufferOffset);
+	eg::DC.BindIndexBuffer(eg::IndexType::UInt16, m_indexBuffer, indexBufferOffset);
 	
 	//Renders the command lists
+	uint32_t firstIndex = 0;
+	uint32_t firstVertex = 0;
 	for (int n = 0; n < drawData->CmdListsCount; n++)
 	{
 		const ImDrawList* commandList = drawData->CmdLists[n];
 		
-		void* posOffsetP = reinterpret_cast<void*>((uintptr_t)(vertexBufferOffset + offsetof(ImDrawVert, pos)));
-		void* uvOffsetP = reinterpret_cast<void*>((uintptr_t)(vertexBufferOffset + offsetof(ImDrawVert, uv)));
-		void* colOffsetP = reinterpret_cast<void*>((uintptr_t)(vertexBufferOffset + offsetof(ImDrawVert, col)));
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), posOffsetP);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), uvOffsetP);
-		glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ImDrawVert), colOffsetP);
-		
 		for (const ImDrawCmd& drawCommand : commandList->CmdBuffer)
 		{
-			GLuint tex = (GLuint)reinterpret_cast<uintptr_t>(drawCommand.TextureId);
-			glBindTexture(GL_TEXTURE_2D, tex);
+			eg::DC.BindTexture(*reinterpret_cast<eg::Texture*>(drawCommand.TextureId), 0);
 			
 			if (drawCommand.UserCallback != nullptr)
 			{
@@ -323,17 +271,14 @@ void ImGuiInterface::EndFrame(uint32_t vFrameIndex)
 				if (scissorW <= 0 || scissorH <= 0)
 					continue;
 				
-				glScissor(scissorX, scissorY, scissorW, scissorH);
+				eg::DC.SetScissor(scissorX, scissorY, scissorW, scissorH);
 				
-				glDrawElements(GL_TRIANGLES, drawCommand.ElemCount, GL_UNSIGNED_SHORT, (void*)indexBufferOffset);
+				eg::DC.DrawIndexed(firstIndex, drawCommand.ElemCount, firstVertex, 1);
 			}
-			indexBufferOffset += drawCommand.ElemCount * sizeof(uint16_t);
+			firstIndex += drawCommand.ElemCount;
 		}
-		vertexBufferOffset += commandList->VtxBuffer.Size * sizeof(ImDrawVert);
+		firstVertex += commandList->VtxBuffer.Size;
 	}
-	
-	gl::SetEnabled<GL_SCISSOR_TEST>(false);
-	gl::SetEnabled<GL_BLEND>(false);
 }
 
 void ImGuiInterface::OnTextInput(const char* text)

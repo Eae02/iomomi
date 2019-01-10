@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Model.hpp"
-#include "../../Utils.hpp"
 
+#include <EGame/EG.hpp>
 #include <filesystem>
 
 namespace gltf

@@ -1,5 +1,6 @@
 #include "GLTFData.hpp"
-#include "../../Utils.hpp"
+
+#include <EGame/EG.hpp>
 
 namespace gltf
 {
@@ -13,6 +14,6 @@ namespace gltf
 			return ElementType::VEC3;
 		if (name == "VEC4")
 			return ElementType::VEC4;
-		PANIC("Invalid element type");
+		EG_PANIC("Invalid element type");
 	}
 }

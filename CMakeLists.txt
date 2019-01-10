@@ -1,14 +1,15 @@
 cmake_minimum_required(VERSION 3.13)
 project(Gravity)
 
-find_package(OpenGL REQUIRED)
-find_package(SDL2 REQUIRED)
+find_package(Threads REQUIRED)
 
 if(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
 	set(ARCH_SUFFIX "64")
 else()
 	set(ARCH_SUFFIX "32")
 endif()
+
+include("${EGAME_CMAKE_DIR}/EGameTargets.cmake")
 
 option(YAML_CPP_BUILD_TESTS OFF)
 add_subdirectory(Deps/yaml-cpp)
@@ -19,7 +20,7 @@ set(IMGUI_FILES Deps/imgui/imconfig.h Deps/imgui/imgui.h Deps/imgui/imgui.cpp De
 	Deps/imgui/imgui_internal.h Deps/imgui/imgui_widgets.cpp Deps/imgui/imstb_rectpack.h Deps/imgui/imstb_textedit.h
 	Deps/imgui/imstb_truetype.h Deps/imgui/misc/cpp/imgui_stdlib.cpp Deps/imgui/misc/cpp/imgui_stdlib.h)
 
-add_executable(Gravity ${SOURCE_FILES} ${IMGUI_FILES} Deps/gl3w.c)
+add_executable(Gravity ${SOURCE_FILES} ${IMGUI_FILES})
 
 #Adds compiler specific options
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -42,18 +43,16 @@ set_target_properties(Gravity PROPERTIES
 
 target_compile_options(Gravity PRIVATE
 	-DGLM_FORCE_RADIANS -DGLM_FORCE_CTOR_INIT -DGLM_ENABLE_EXPERIMENTAL
-	-DIMGUI_USER_CONFIG="../../Inc/ImGuiConfig.hpp")
+	-DIMGUI_USER_CONFIG="../../Inc/ImGuiConfig.hpp" -DGRAPHICS_API="GL")
 
 target_include_directories(Gravity SYSTEM PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/Inc
 	${CMAKE_CURRENT_SOURCE_DIR}/Deps/utfcpp/source
 	${CMAKE_CURRENT_SOURCE_DIR}/Deps/json/include
 	${CMAKE_CURRENT_SOURCE_DIR}/Deps/imgui
-	${CMAKE_CURRENT_SOURCE_DIR}/Deps/glm/glm
 )
 
 target_link_libraries(Gravity
-	OpenGL::GL
-	SDL2::SDL2
+	EGame
 	yaml-cpp
 )

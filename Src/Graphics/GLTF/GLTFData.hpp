@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../Utils.hpp"
+#include <EGame/EG.hpp>
 
 namespace gltf
 {
@@ -58,14 +58,14 @@ namespace gltf
 		inline const BufferView& GetBufferView(long index) const
 		{
 			if (index < 0 || static_cast<size_t>(index) >= m_bufferViews.size())
-				PANIC("Buffer view index out of range.");
+				EG_PANIC("Buffer view index out of range.");
 			return m_bufferViews[index];
 		}
 		
 		inline const Accessor& GetAccessor(long index) const
 		{
 			if (index < 0 || static_cast<size_t>(index) >= m_accessors.size())
-				PANIC("Accessor index out of range.");
+				EG_PANIC("Accessor index out of range.");
 			return m_accessors[index];
 		}
 		

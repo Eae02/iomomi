@@ -4,4 +4,5 @@
 .vscode
 .vs
 Inc/Common.hpp.gch
+Data/Shaders/*
 Bin

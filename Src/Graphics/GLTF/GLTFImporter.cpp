@@ -134,7 +134,7 @@ namespace gltf
 		for (size_t i = 0; i < buffersArray.size(); i++)
 		{
 			std::ifstream dataStream(dirPath / buffersArray[i].at("uri").get<std::string>(), std::ios::binary);
-			data.AddBuffer(ReadStreamContents(dataStream));
+			data.AddBuffer(eg::ReadStreamContents(dataStream));
 		}
 		
 		//Parses buffer views
