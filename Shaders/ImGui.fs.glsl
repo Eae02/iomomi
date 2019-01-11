@@ -9,6 +9,5 @@ layout(binding=0) uniform sampler2D uTexture;
 
 void main()
 {
-	color_out = vColor;
-	color_out.a *= texture(uTexture, vTexCoord).r;
+	color_out = vColor * texture(uTexture, vTexCoord);
 }

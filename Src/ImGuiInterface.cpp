@@ -1,10 +1,9 @@
 #include "ImGuiInterface.hpp"
 
-//#include <SDL2/SDL.h>
 #include <filesystem>
 #include <imgui.h>
 
-//static char clipboardTextMem[256];
+static std::string clipboardText;
 
 ImGuiInterface::ImGuiInterface()
 {
@@ -33,34 +32,21 @@ ImGuiInterface::ImGuiInterface()
 	io.KeyMap[ImGuiKey_Y]          = (int)eg::Button::Y;
 	io.KeyMap[ImGuiKey_Z]          = (int)eg::Button::Z;
 	
-	//m_iniFileName = fs::ExeDirPath() + "/ImGui.ini";
-	//io.IniFilename = m_iniFileName.c_str();
+	m_iniFileName = eg::ExeRelPath("ImGui.ini");
+	io.IniFilename = m_iniFileName.c_str();
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	
 	ImGui::StyleColorsDark(&ImGui::GetStyle());
-	/*
-	io.SetClipboardTextFn = [] (void* data, const char* text) { SDL_SetClipboardText(text); };
+	
+	io.SetClipboardTextFn = [] (void* data, const char* text) { eg::SetClipboardText(text); };
 	io.GetClipboardTextFn = [] (void* data) -> const char* {
-		char* sdlClipboardText = SDL_GetClipboardText();
-		size_t len = std::min(std::strlen(sdlClipboardText), sizeof(clipboardTextMem) - 1);
-		std::memcpy(clipboardTextMem, sdlClipboardText, len + 1);
-		SDL_free(sdlClipboardText);
-		return clipboardTextMem;
+		clipboardText = eg::GetClipboardText();
+		return clipboardText.c_str();
 	};
 	
-	m_cursors[ImGuiMouseCursor_Arrow].reset(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW));
-	m_cursors[ImGuiMouseCursor_TextInput].reset(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM));
-	m_cursors[ImGuiMouseCursor_ResizeAll].reset(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL));
-	m_cursors[ImGuiMouseCursor_ResizeNS].reset(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS));
-	m_cursors[ImGuiMouseCursor_ResizeEW].reset(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE));
-	m_cursors[ImGuiMouseCursor_ResizeNESW].reset(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW));
-	m_cursors[ImGuiMouseCursor_ResizeNWSE].reset(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE));
-	m_cursors[ImGuiMouseCursor_Hand].reset(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND));
-	*/
-	
 	eg::ShaderProgram shaderProgram;
-	shaderProgram.AddStageFromFile("./Data/Shaders/ImGui.fs.spv");
-	shaderProgram.AddStageFromFile("./Data/Shaders/ImGui.vs.spv");
+	shaderProgram.AddStageFromFile(eg::ExeRelPath("Data/Shaders/ImGui.fs.spv"));
+	shaderProgram.AddStageFromFile(eg::ExeRelPath("Data/Shaders/ImGui.vs.spv"));
 	
 	eg::FixedFuncState fixedFuncState;
 	fixedFuncState.enableStencilTest = true;
@@ -98,18 +84,24 @@ ImGuiInterface::ImGuiInterface()
 	int fontTexWidth, fontTexHeight;
 	io.Fonts->GetTexDataAsAlpha8(&fontTexPixels, &fontTexWidth, &fontTexHeight);
 	
+	eg::SamplerDescription fontTexSampler;
+	fontTexSampler.wrapU = eg::WrapMode::ClampToEdge;
+	fontTexSampler.wrapV = eg::WrapMode::ClampToEdge;
+	
 	eg::Texture2DCreateInfo fontTexCreateInfo;
 	fontTexCreateInfo.width = fontTexWidth;
 	fontTexCreateInfo.height = fontTexHeight;
 	fontTexCreateInfo.format = eg::Format::R8_UNorm;
+	fontTexCreateInfo.defaultSamplerDescription = &fontTexSampler;
 	fontTexCreateInfo.mipLevels = 1;
+	fontTexCreateInfo.swizzleR = eg::SwizzleMode::One;
+	fontTexCreateInfo.swizzleG = eg::SwizzleMode::One;
+	fontTexCreateInfo.swizzleB = eg::SwizzleMode::One;
+	fontTexCreateInfo.swizzleA = eg::SwizzleMode::R;
 	
-	m_fontTexture = eg::Texture::Create2D(fontTexCreateInfo, fontTexPixels);
+	m_fontTexture = eg::Texture::Create2D(fontTexCreateInfo);
+	eg::DC.SetTextureData(m_fontTexture, { 0, 0, 0, (uint32_t)fontTexWidth, (uint32_t)fontTexHeight, 1, 0 }, fontTexPixels);
 	io.Fonts->TexID = &m_fontTexture;
-	/*
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	*/
 }
 
 void ImGuiInterface::NewFrame()

@@ -22,7 +22,7 @@ private:
 	
 	eg::EventListener<eg::ButtonEvent> m_buttonEventListener;
 	
-	//std::string m_iniFileName;
+	std::string m_iniFileName;
 	
 	eg::Texture m_fontTexture;
 	
@@ -36,14 +36,4 @@ private:
 	
 	bool m_isMouseCaptured = false;
 	bool m_isKeyboardCaptured = false;
-	/*
-	struct CursorFree
-	{
-		void operator()(SDL_Cursor* c)
-		{
-			SDL_FreeCursor(c);
-		}
-	};
-	
-	std::unique_ptr<SDL_Cursor, CursorFree> m_cursors[ImGuiMouseCursor_COUNT];*/
 };

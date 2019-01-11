@@ -1,5 +1,5 @@
 SC=glslangValidator
-FLAGS=-G --auto-map-locations
+FLAGS=-G
 
 OUT_PATH=../Data/Shaders
 
