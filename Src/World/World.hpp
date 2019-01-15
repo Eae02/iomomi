@@ -4,7 +4,16 @@
 
 #include <EGame/EG.hpp>
 
-struct Vertex;
+struct WallVertex;
+
+struct ClippingArgs
+{
+	glm::vec3 aabbMin;
+	glm::vec3 aabbMax;
+	glm::vec3 move;
+	glm::vec3 colPlaneNormal;
+	float clipDist;
+};
 
 class World
 {
@@ -15,7 +24,9 @@ public:
 	
 	bool IsAir(const glm::ivec3& pos) const;
 	
-	void Draw(uint32_t vFrameIndex);
+	void Draw(uint32_t vFrameIndex, const class WallShader& shader);
+	
+	void CalcClipping(ClippingArgs& args) const;
 	
 private:
 	struct Voxel
@@ -23,7 +34,7 @@ private:
 		bool isAir;
 	};
 	
-	void BuildVoxelMesh(std::vector<Vertex>& verticesOut, std::vector<uint16_t>& indicesOut) const;
+	void BuildVoxelMesh(std::vector<WallVertex>& verticesOut, std::vector<uint16_t>& indicesOut) const;
 	
 	std::unique_ptr<Voxel[]> m_voxelBuffer;
 	glm::ivec3 m_voxelBufferMin;
@@ -35,6 +46,5 @@ private:
 	eg::Buffer m_voxelIndexBuffer;
 	size_t m_voxelVertexBufferCapacity = 0;
 	size_t m_voxelIndexBufferCapacity = 0;
-	size_t m_voxelIndexBufferOffset = 0;
-	int m_numVoxelIndices = 0;
+	uint32_t m_numVoxelIndices = 0;
 };

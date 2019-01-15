@@ -45,11 +45,11 @@ ImGuiInterface::ImGuiInterface()
 	};
 	
 	eg::ShaderProgram shaderProgram;
-	shaderProgram.AddStageFromFile(eg::ExeRelPath("Data/Shaders/ImGui.fs.spv"));
-	shaderProgram.AddStageFromFile(eg::ExeRelPath("Data/Shaders/ImGui.vs.spv"));
+	shaderProgram.AddStageFromAsset("Shaders/ImGui.fs.glsl");
+	shaderProgram.AddStageFromAsset("Shaders/ImGui.vs.glsl");
 	
 	eg::FixedFuncState fixedFuncState;
-	fixedFuncState.enableStencilTest = true;
+	fixedFuncState.enableScissorTest = true;
 	fixedFuncState.attachments[0].blend = eg::AlphaBlend;
 	fixedFuncState.vertexBindings[0] = { sizeof(ImDrawVert), eg::InputRate::Vertex };
 	fixedFuncState.vertexAttributes[0] = { 0, eg::DataType::Float32, 2, (uint32_t)offsetof(ImDrawVert, pos) };
@@ -118,8 +118,8 @@ void ImGuiInterface::NewFrame()
 	io.DisplaySize.y = eg::CurrentResolutionY();
 	io.DeltaTime = duration_cast<nanoseconds>(time - m_lastFrameBegin).count() * 1E-9f;
 	io.MousePos = ImVec2(eg::CursorPos().x, eg::CursorPos().y);
-	io.MouseWheel = eg::InputState::Current().scrollY;
-	io.MouseWheelH = eg::InputState::Current().scrollX;
+	io.MouseWheel = eg::InputState::Current().scrollY - eg::InputState::Previous().scrollY;
+	io.MouseWheelH = eg::InputState::Current().scrollX - eg::InputState::Previous().scrollX;
 	
 	m_buttonEventListener.ProcessAll([&] (const eg::ButtonEvent& event)
 	{
@@ -260,12 +260,11 @@ void ImGuiInterface::EndFrame(uint32_t vFrameIndex)
 				int scissorY = (int)(std::max(io.DisplaySize.y - drawCommand.ClipRect.w, 0.0f));
 				int scissorW = (int)(std::min(drawCommand.ClipRect.z, io.DisplaySize.x) - scissorX);
 				int scissorH = (int)(std::min(drawCommand.ClipRect.w, io.DisplaySize.y) - drawCommand.ClipRect.y + 1);
-				if (scissorW <= 0 || scissorH <= 0)
-					continue;
-				
-				eg::DC.SetScissor(scissorX, scissorY, scissorW, scissorH);
-				
-				eg::DC.DrawIndexed(firstIndex, drawCommand.ElemCount, firstVertex, 1);
+				if (scissorW > 0 && scissorH > 0)
+				{
+					eg::DC.SetScissor(scissorX, scissorY, scissorW, scissorH);
+					eg::DC.DrawIndexed(firstIndex, drawCommand.ElemCount, firstVertex, 1);
+				}
 			}
 			firstIndex += drawCommand.ElemCount;
 		}

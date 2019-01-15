@@ -1,0 +1,11 @@
+#ifndef RENDER_SETTINGS_H
+#define RENDER_SETTINGS_H
+
+struct RenderSettings
+{
+	mat4 viewProjection;
+	mat4 invViewProjection;
+	vec3 cameraPosition;
+};
+
+#endif

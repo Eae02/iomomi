@@ -1,0 +1,10 @@
+assets:
+  - name: Shaders/ImGui.vs.glsl
+  - name: Shaders/ImGui.fs.glsl
+  - name: Shaders/Wall.vs.glsl
+  - name: Shaders/Wall.fs.glsl
+  - name: Textures/Voxel/Diffuse
+    generator: Texture2DArray
+    loader: Texture2DArray
+    layers:
+      - Textures/Voxel/TestD.png

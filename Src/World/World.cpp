@@ -1,5 +1,6 @@
 #include "World.hpp"
 #include "Voxel.hpp"
+#include "../Graphics/WallShader.hpp"
 #include "../Graphics/Mesh.hpp"
 #include "../Graphics/Graphics.hpp"
 
@@ -23,7 +24,7 @@ void World::SetIsAir(const glm::ivec3& pos, bool isAir)
 		return;
 	
 	int idx = VoxelBufferIdx(pos, m_voxelBufferMin, m_voxelBufferMax);
-	if (idx != -1)
+	if (idx != -1 && m_voxelBuffer != nullptr)
 	{
 		m_voxelBuffer.get()[idx].isAir = isAir;
 		m_voxelBufferOutOfDate = true;
@@ -56,7 +57,7 @@ void World::SetIsAir(const glm::ivec3& pos, bool isAir)
 			{
 				for (int x = m_voxelBufferMin.x; x <= m_voxelBufferMax.x; x++)
 				{
-					const int srcIdx = VoxelBufferIdx({x, y, z}, oldMin, oldMax);
+					const int srcIdx = VoxelBufferIdx(glm::ivec3(x, y, z), oldMin, oldMax);
 					if (srcIdx != -1)
 					{
 						const int dstIdx = VoxelBufferIdx({x, y, z}, m_voxelBufferMin, m_voxelBufferMax);
@@ -79,50 +80,71 @@ bool World::IsAir(const glm::ivec3& pos) const
 	return idx == -1 ? false : m_voxelBuffer[idx].isAir;
 }
 
-void World::Draw(uint32_t vFrameIndex)
+void World::Draw(uint32_t vFrameIndex, const WallShader& shader)
 {
 	if (m_voxelBufferOutOfDate)
 	{
-		std::vector<Vertex> vertices;
+		std::vector<WallVertex> vertices;
 		std::vector<uint16_t> indices;
 		BuildVoxelMesh(vertices, indices);
 		
+		if (indices.empty())
+		{
+			m_voxelBufferOutOfDate = false;
+			return;
+		}
+		
+		const size_t verticesBytes = vertices.size() * sizeof(WallVertex);
+		const size_t indicesBytes = indices.size() * sizeof(uint16_t);
+		const size_t uploadBytes = verticesBytes + indicesBytes;
+		
+		//Creates an upload buffer and copies data to it
+		eg::BufferRef uploadBuffer = eg::GetTemporaryUploadBuffer(uploadBytes);
+		char* uploadBufferMem = reinterpret_cast<char*>(uploadBuffer.Map(0, uploadBytes));
+		std::memcpy(uploadBufferMem,                 vertices.data(), verticesBytes);
+		std::memcpy(uploadBufferMem + verticesBytes, indices.data(), indicesBytes);
+		uploadBuffer.Unmap(0, uploadBytes);
+		
+		//Reallocates the vertex buffer if it is too small
 		if (m_voxelVertexBufferCapacity < vertices.size())
 		{
-			m_voxelVertexBufferCapacity = eg::RoundToNextMultiple(vertices.size(), 1024);
-			//m_voxelVertexBuffer.Realloc(m_voxelVertexBufferCapacity * NUM_VIRTUAL_FRAMES * sizeof(Vertex), nullptr);
+			m_voxelVertexBufferCapacity = eg::RoundToNextMultiple(vertices.size(), 16 * 1024);
+			m_voxelVertexBuffer = eg::Buffer(eg::BufferUsage::VertexBuffer | eg::BufferUsage::CopyDst,
+				m_voxelVertexBufferCapacity * sizeof(WallVertex), nullptr);
 		}
 		
+		//Reallocates the index buffer if it is too small
 		if (m_voxelIndexBufferCapacity < indices.size())
 		{
-			m_voxelIndexBufferCapacity = eg::RoundToNextMultiple(indices.size(), 1024);
-			//m_voxelIndexBuffer.Realloc(m_voxelIndexBufferCapacity * NUM_VIRTUAL_FRAMES * sizeof(uint16_t), nullptr);
+			m_voxelIndexBufferCapacity = eg::RoundToNextMultiple(indices.size(), 16 * 1024);
+			m_voxelIndexBuffer = eg::Buffer(eg::BufferUsage::IndexBuffer | eg::BufferUsage::CopyDst,
+				m_voxelIndexBufferCapacity * sizeof(uint16_t), nullptr);
 		}
 		
-		m_voxelIndexBufferOffset = m_voxelIndexBufferCapacity * sizeof(uint16_t) * vFrameIndex;
-		//size_t vertexBufferOffset = m_voxelVertexBufferCapacity * sizeof(Vertex) * vFrameIndex;
+		//Uploads data to the vertex and index buffers
+		eg::DC.CopyBuffer(uploadBuffer, m_voxelVertexBuffer, 0, 0, verticesBytes);
+		eg::DC.CopyBuffer(uploadBuffer, m_voxelIndexBuffer, verticesBytes, 0, indicesBytes);
 		
-		//m_voxelVertexBuffer.Update(vertexBufferOffset, vertices.size() * sizeof(Vertex), vertices.data());
-		//m_voxelIndexBuffer.Update(m_voxelIndexBufferOffset, indices.size() * sizeof(uint16_t), indices.data());
-		
-		m_numVoxelIndices = (int)indices.size();
+		m_numVoxelIndices = (uint32_t)indices.size();
 		m_voxelBufferOutOfDate = false;
 	}
 	
-	//glDrawElements(GL_TRIANGLES, m_numVoxelIndices, GL_UNSIGNED_SHORT, (void*)m_voxelIndexBufferOffset);
+	if (m_numVoxelIndices > 0)
+	{
+		shader.Draw(m_voxelVertexBuffer, m_voxelIndexBuffer, m_numVoxelIndices);
+	}
 }
 
-void World::BuildVoxelMesh(std::vector<Vertex>& verticesOut, std::vector<uint16_t>& indicesOut) const
+void World::BuildVoxelMesh(std::vector<WallVertex>& verticesOut, std::vector<uint16_t>& indicesOut) const
 {
-	for (int z = m_voxelBufferMin.z; z <= m_voxelBufferMax.z; z++)
+	for (int z = m_voxelBufferMin.z - 1; z <= m_voxelBufferMax.z + 1; z++)
 	{
-		for (int y = m_voxelBufferMin.y; y <= m_voxelBufferMax.y; y++)
+		for (int y = m_voxelBufferMin.y - 1; y <= m_voxelBufferMax.y + 1; y++)
 		{
-			for (int x = m_voxelBufferMin.x; x <= m_voxelBufferMax.x; x++)
+			for (int x = m_voxelBufferMin.x - 1; x <= m_voxelBufferMax.x + 1; x++)
 			{
 				//Only emit triangles for solid voxels
-				int idx = VoxelBufferIdx({ x, y, z }, m_voxelBufferMin, m_voxelBufferMax);
-				if (m_voxelBuffer[idx].isAir)
+				if (IsAir({ x, y, z }))
 					continue;
 				
 				for (int s = 0; s < 6; s++)
@@ -150,12 +172,77 @@ void World::BuildVoxelMesh(std::vector<Vertex>& verticesOut, std::vector<uint16_
 					{
 						for (int fy = 0; fy < 2; fy++)
 						{
-							Vertex& vertex = verticesOut.emplace_back();
+							WallVertex& vertex = verticesOut.emplace_back();
 							vertex.position = faceCenter + tangent * (fy - 0.5f) + biTangent * (fx - 0.5f);
-							vertex.texCoord = glm::vec2(fx, 1 - fy);
+							vertex.texCoord[0] = (uint8_t)(fx * 255);
+							vertex.texCoord[1] = (uint8_t)((1 - fy) * 255);
+							vertex.texCoord[2] = 0;
 							vertex.SetNormal(voxel::normals[s]);
 							vertex.SetTangent(tangent);
 						}
+					}
+				}
+			}
+		}
+	}
+}
+
+void World::CalcClipping(ClippingArgs& args) const
+{
+	glm::vec3 endMin = args.aabbMin + args.move;
+	glm::vec3 endMax = args.aabbMax + args.move;
+	
+	constexpr float EP = 0.0001f;
+	
+	//Clipping against voxels
+	for (int axis = 0; axis < 3; axis++)
+	{
+		int vOffset;
+		float beginA, endA;
+		if (args.move[axis] < 0)
+		{
+			beginA = args.aabbMin[axis];
+			endA = endMin[axis];
+			vOffset = -1;
+		}
+		else
+		{
+			beginA = args.aabbMax[axis];
+			endA = endMax[axis];
+			vOffset = 1;
+		}
+		
+		int minI = (int)std::floor(std::min(beginA, endA) - EP);
+		int maxI = (int)std::ceil(std::max(beginA, endA) + EP);
+		
+		int axisB = (axis + 1) % 3;
+		int axisC = (axis + 2) % 3;
+		
+		for (int v = minI; v <= maxI; v++)
+		{
+			float t = (v - beginA) / args.move[axis];
+			if (t > args.clipDist || t < 0)
+				continue;
+			
+			int minB = (int)std::floor(glm::mix(args.aabbMin[axisB], endMin[axisB], t));
+			int maxB = (int)std::ceil(glm::mix(args.aabbMax[axisB], endMax[axisB], t));
+			int minC = (int)std::floor(glm::mix(args.aabbMin[axisC], endMin[axisC], t));
+			int maxC = (int)std::ceil(glm::mix(args.aabbMax[axisC], endMax[axisC], t));
+			for (int vb = minB; vb < maxB; vb++)
+			{
+				for (int vc = minC; vc < maxC; vc++)
+				{
+					glm::ivec3 coord;
+					coord[axis] = v + vOffset;
+					coord[axisB] = vb;
+					coord[axisC] = vc;
+					if (!IsAir(coord))
+					{
+						args.colPlaneNormal = glm::vec3(0);
+						args.colPlaneNormal[axis] = args.move[axis] < 0 ? 1.0f : -1.0f;
+						
+						args.clipDist = t;
+						break;
 					}
 				}
 			}

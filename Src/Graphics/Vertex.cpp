@@ -1,6 +1,6 @@
 #include "Vertex.hpp"
 
-void Vertex::VecEncode(const glm::vec3& v, int8_t* out)
+void VecEncode(const glm::vec3& v, int8_t* out)
 {
 	float scale = 127.0f / glm::length(v);
 	for (int i = 0; i < 3; i++)

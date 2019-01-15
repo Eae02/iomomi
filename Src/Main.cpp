@@ -2,5 +2,12 @@
 
 int main()
 {
-	eg::Run<Game>();
+	eg::RunConfig runConfig;
+	runConfig.gameName = "Gravity";
+	runConfig.initialize = []
+	{
+		eg::LoadAssets("assets", "/");
+	};
+	
+	eg::Run<Game>(runConfig);
 }

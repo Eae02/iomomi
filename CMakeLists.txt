@@ -9,10 +9,10 @@ else()
 	set(ARCH_SUFFIX "32")
 endif()
 
-include("${EGAME_CMAKE_DIR}/EGameTargets.cmake")
-
 option(YAML_CPP_BUILD_TESTS OFF)
 add_subdirectory(Deps/yaml-cpp)
+
+include("${EGAME_CMAKE_DIR}/EGameTargets.cmake")
 
 file(GLOB_RECURSE SOURCE_FILES Src/*.cpp Src/*.hpp)
 
