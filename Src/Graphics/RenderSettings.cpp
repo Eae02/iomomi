@@ -1,7 +1,7 @@
 #include "RenderSettings.hpp"
 
 RenderSettings::RenderSettings()
-	: m_buffer(eg::BufferUsage::UniformBuffer | eg::BufferUsage::CopyDst, BUFFER_SIZE, nullptr)
+	: m_buffer(eg::BufferUsage::UniformBuffer | eg::BufferUsage::CopyDst, eg::MemoryType::DeviceLocal, BUFFER_SIZE, nullptr)
 {
 	
 }

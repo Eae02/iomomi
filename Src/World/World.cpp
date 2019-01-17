@@ -110,7 +110,7 @@ void World::Draw(uint32_t vFrameIndex, const WallShader& shader)
 		{
 			m_voxelVertexBufferCapacity = eg::RoundToNextMultiple(vertices.size(), 16 * 1024);
 			m_voxelVertexBuffer = eg::Buffer(eg::BufferUsage::VertexBuffer | eg::BufferUsage::CopyDst,
-				m_voxelVertexBufferCapacity * sizeof(WallVertex), nullptr);
+				eg::MemoryType::DeviceLocal, m_voxelVertexBufferCapacity * sizeof(WallVertex), nullptr);
 		}
 		
 		//Reallocates the index buffer if it is too small
@@ -118,7 +118,7 @@ void World::Draw(uint32_t vFrameIndex, const WallShader& shader)
 		{
 			m_voxelIndexBufferCapacity = eg::RoundToNextMultiple(indices.size(), 16 * 1024);
 			m_voxelIndexBuffer = eg::Buffer(eg::BufferUsage::IndexBuffer | eg::BufferUsage::CopyDst,
-				m_voxelIndexBufferCapacity * sizeof(uint16_t), nullptr);
+				eg::MemoryType::DeviceLocal, m_voxelIndexBufferCapacity * sizeof(uint16_t), nullptr);
 		}
 		
 		//Uploads data to the vertex and index buffers

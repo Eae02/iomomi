@@ -194,7 +194,7 @@ void ImGuiInterface::EndFrame(uint32_t vFrameIndex)
 	{
 		m_vertexCapacity = eg::RoundToNextMultiple(drawData->TotalVtxCount, 1024);
 		m_vertexBuffer = eg::Buffer(eg::BufferUsage::VertexBuffer | eg::BufferUsage::MapWrite,
-			m_vertexCapacity * sizeof(ImDrawVert) * eg::MAX_CONCURRENT_FRAMES, nullptr);
+			eg::MemoryType::DeviceLocal, m_vertexCapacity * sizeof(ImDrawVert) * eg::MAX_CONCURRENT_FRAMES, nullptr);
 	}
 	
 	//Create the index buffer if it's too small or hasn't been created yet
@@ -202,7 +202,7 @@ void ImGuiInterface::EndFrame(uint32_t vFrameIndex)
 	{
 		m_indexCapacity = eg::RoundToNextMultiple(drawData->TotalIdxCount, 1024);
 		m_indexBuffer = eg::Buffer(eg::BufferUsage::IndexBuffer | eg::BufferUsage::MapWrite,
-			m_indexCapacity * sizeof(ImDrawIdx) * eg::MAX_CONCURRENT_FRAMES, nullptr);
+			eg::MemoryType::DeviceLocal, m_indexCapacity * sizeof(ImDrawIdx) * eg::MAX_CONCURRENT_FRAMES, nullptr);
 	}
 	
 	//Writes vertices
