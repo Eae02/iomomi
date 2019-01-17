@@ -1,7 +1,7 @@
 #include "RenderSettings.hpp"
 
 RenderSettings::RenderSettings()
-	: m_buffer(eg::BufferUsage::UniformBuffer | eg::BufferUsage::CopyDst, eg::MemoryType::DeviceLocal, BUFFER_SIZE, nullptr)
+	: m_buffer(eg::BufferFlags::UniformBuffer | eg::BufferFlags::CopyDst, BUFFER_SIZE, nullptr)
 {
 	
 }
@@ -16,4 +16,6 @@ void RenderSettings::UpdateBuffer()
 	uploadBuffer.Unmap(0, BUFFER_SIZE);
 	
 	eg::DC.CopyBuffer(uploadBuffer, m_buffer, 0, 0, BUFFER_SIZE);
+	
+	m_buffer.UsageHint(eg::BufferUsage::UniformBuffer, eg::ShaderAccessFlags::Vertex | eg::ShaderAccessFlags::Fragment);
 }

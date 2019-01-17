@@ -10,7 +10,7 @@ public:
 	
 	void NewFrame();
 	
-	void EndFrame(uint32_t vFrameIndex);
+	void EndFrame();
 	
 	bool IsMouseCaptured();
 	bool IsKeyboardCaptured();

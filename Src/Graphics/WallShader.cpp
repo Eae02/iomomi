@@ -1,4 +1,5 @@
 #include "WallShader.hpp"
+#include "RenderSettings.hpp"
 
 WallShader::WallShader()
 {
@@ -10,6 +11,8 @@ WallShader::WallShader()
 	fixedFuncState.enableDepthWrite = true;
 	fixedFuncState.enableDepthTest = true;
 	fixedFuncState.cullMode = eg::CullMode::Back;
+	fixedFuncState.depthFormat = eg::Format::DefaultDepthStencil;
+	fixedFuncState.attachments[0].format = eg::Format::DefaultColor;
 	fixedFuncState.vertexBindings[0] = { sizeof(WallVertex), eg::InputRate::Vertex };
 	fixedFuncState.vertexAttributes[0] = { 0, eg::DataType::Float32,   3, (uint32_t)offsetof(WallVertex, position) };
 	fixedFuncState.vertexAttributes[1] = { 0, eg::DataType::UInt8,     3, (uint32_t)offsetof(WallVertex, texCoord) };
@@ -20,11 +23,13 @@ WallShader::WallShader()
 	m_diffuseTexture = &eg::GetAsset<eg::Texture>("Textures/Voxel/Diffuse");
 }
 
-void WallShader::Draw(eg::BufferRef vertexBuffer, eg::BufferRef indexBuffer, uint32_t numIndices) const
+void WallShader::Draw(const RenderSettings& renderSettings, eg::BufferRef vertexBuffer, eg::BufferRef indexBuffer, uint32_t numIndices) const
 {
 	eg::DC.BindPipeline(m_pipeline);
 	
-	eg::DC.BindTexture(*m_diffuseTexture, 0);
+	eg::DC.BindUniformBuffer(renderSettings.Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+	
+	eg::DC.BindTexture(*m_diffuseTexture, 1);
 	
 	eg::DC.BindVertexBuffer(0, vertexBuffer, 0);
 	eg::DC.BindIndexBuffer(eg::IndexType::UInt16, indexBuffer, 0);

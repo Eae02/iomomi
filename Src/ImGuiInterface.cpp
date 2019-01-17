@@ -50,6 +50,8 @@ ImGuiInterface::ImGuiInterface()
 	
 	eg::FixedFuncState fixedFuncState;
 	fixedFuncState.enableScissorTest = true;
+	fixedFuncState.depthFormat = eg::Format::DefaultDepthStencil;
+	fixedFuncState.attachments[0].format = eg::Format::DefaultColor;
 	fixedFuncState.attachments[0].blend = eg::AlphaBlend;
 	fixedFuncState.vertexBindings[0] = { sizeof(ImDrawVert), eg::InputRate::Vertex };
 	fixedFuncState.vertexAttributes[0] = { 0, eg::DataType::Float32, 2, (uint32_t)offsetof(ImDrawVert, pos) };
@@ -84,11 +86,18 @@ ImGuiInterface::ImGuiInterface()
 	int fontTexWidth, fontTexHeight;
 	io.Fonts->GetTexDataAsAlpha8(&fontTexPixels, &fontTexWidth, &fontTexHeight);
 	
+	uint64_t fontTexBytes = fontTexWidth * fontTexHeight;
+	eg::Buffer fontUploadBuffer(eg::BufferFlags::CopySrc | eg::BufferFlags::HostAllocate | eg::BufferFlags::MapWrite, fontTexBytes, nullptr);
+	void* fontUploadMem = fontUploadBuffer.Map(0, fontTexBytes);
+	std::memcpy(fontUploadMem, fontTexPixels, fontTexBytes);
+	fontUploadBuffer.Unmap(0, fontTexBytes);
+	
 	eg::SamplerDescription fontTexSampler;
 	fontTexSampler.wrapU = eg::WrapMode::ClampToEdge;
 	fontTexSampler.wrapV = eg::WrapMode::ClampToEdge;
 	
 	eg::Texture2DCreateInfo fontTexCreateInfo;
+	fontTexCreateInfo.flags = eg::TextureFlags::CopyDst | eg::TextureFlags::ShaderSample;
 	fontTexCreateInfo.width = fontTexWidth;
 	fontTexCreateInfo.height = fontTexHeight;
 	fontTexCreateInfo.format = eg::Format::R8_UNorm;
@@ -100,8 +109,10 @@ ImGuiInterface::ImGuiInterface()
 	fontTexCreateInfo.swizzleA = eg::SwizzleMode::R;
 	
 	m_fontTexture = eg::Texture::Create2D(fontTexCreateInfo);
-	eg::DC.SetTextureData(m_fontTexture, { 0, 0, 0, (uint32_t)fontTexWidth, (uint32_t)fontTexHeight, 1, 0 }, fontTexPixels);
+	eg::DC.SetTextureData(m_fontTexture, { 0, 0, 0, (uint32_t)fontTexWidth, (uint32_t)fontTexHeight, 1, 0 }, fontUploadBuffer, 0);
 	io.Fonts->TexID = &m_fontTexture;
+	
+	m_fontTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 }
 
 void ImGuiInterface::NewFrame()
@@ -179,7 +190,7 @@ bool ImGuiInterface::IsKeyboardCaptured()
 	return m_isKeyboardCaptured;
 }
 
-void ImGuiInterface::EndFrame(uint32_t vFrameIndex)
+void ImGuiInterface::EndFrame()
 {
 	ImGui::Render();
 	
@@ -189,55 +200,70 @@ void ImGuiInterface::EndFrame(uint32_t vFrameIndex)
 	
 	ImGuiIO& io = ImGui::GetIO();
 	
+	static_assert(sizeof(ImDrawIdx) == sizeof(uint16_t));
+	uint64_t verticesBytes = drawData->TotalVtxCount * sizeof(ImDrawVert);
+	uint64_t indicesBytes = drawData->TotalIdxCount * sizeof(ImDrawIdx);
+	
 	//Create the vertex buffer if it's too small or hasn't been created yet
 	if (m_vertexCapacity < drawData->TotalVtxCount)
 	{
 		m_vertexCapacity = eg::RoundToNextMultiple(drawData->TotalVtxCount, 1024);
-		m_vertexBuffer = eg::Buffer(eg::BufferUsage::VertexBuffer | eg::BufferUsage::MapWrite,
-			eg::MemoryType::DeviceLocal, m_vertexCapacity * sizeof(ImDrawVert) * eg::MAX_CONCURRENT_FRAMES, nullptr);
+		m_vertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer | eg::BufferFlags::CopyDst,
+			m_vertexCapacity * sizeof(ImDrawVert), nullptr);
 	}
 	
 	//Create the index buffer if it's too small or hasn't been created yet
 	if (m_indexCapacity < drawData->TotalIdxCount)
 	{
 		m_indexCapacity = eg::RoundToNextMultiple(drawData->TotalIdxCount, 1024);
-		m_indexBuffer = eg::Buffer(eg::BufferUsage::IndexBuffer | eg::BufferUsage::MapWrite,
-			eg::MemoryType::DeviceLocal, m_indexCapacity * sizeof(ImDrawIdx) * eg::MAX_CONCURRENT_FRAMES, nullptr);
+		m_indexBuffer = eg::Buffer(eg::BufferFlags::IndexBuffer | eg::BufferFlags::CopyDst,
+			m_indexCapacity * sizeof(ImDrawIdx), nullptr);
 	}
 	
+	size_t uploadBufferSize = verticesBytes + indicesBytes;
+	eg::BufferRef uploadBuffer = eg::GetTemporaryUploadBuffer(uploadBufferSize);
+	char* uploadMem = reinterpret_cast<char*>(uploadBuffer.Map(0, uploadBufferSize));
+	
 	//Writes vertices
-	uint32_t vertexBufferOffset = vFrameIndex * m_vertexCapacity * sizeof(ImDrawVert);
 	uint64_t vertexCount = 0;
-	ImDrawVert* verticesMem = reinterpret_cast<ImDrawVert*>(m_vertexBuffer.Map(vertexBufferOffset, m_vertexCapacity * sizeof(ImDrawVert)));
+	ImDrawVert* verticesMem = reinterpret_cast<ImDrawVert*>(uploadMem);
 	for (int n = 0; n < drawData->CmdListsCount; n++)
 	{
 		const ImDrawList* cmdList = drawData->CmdLists[n];
 		std::copy_n(cmdList->VtxBuffer.Data, cmdList->VtxBuffer.Size, verticesMem + vertexCount);
 		vertexCount += cmdList->VtxBuffer.Size;
 	}
-	m_vertexBuffer.Unmap(0, vertexCount * sizeof(ImDrawVert));
 	
 	//Writes indices
-	uint32_t indexBufferOffset = vFrameIndex * m_indexCapacity * sizeof(ImDrawIdx);
 	uint32_t indexCount = 0;
-	ImDrawIdx* indicesMem = reinterpret_cast<ImDrawIdx*>(m_indexBuffer.Map(indexBufferOffset, m_indexCapacity * sizeof(ImDrawIdx)));
+	ImDrawIdx* indicesMem = reinterpret_cast<ImDrawIdx*>(uploadMem + verticesBytes);
 	for (int n = 0; n < drawData->CmdListsCount; n++)
 	{
 		const ImDrawList* cmdList = drawData->CmdLists[n];
 		std::copy_n(cmdList->IdxBuffer.Data, cmdList->IdxBuffer.Size, indicesMem + indexCount);
 		indexCount += cmdList->IdxBuffer.Size;
 	}
-	m_indexBuffer.Unmap(0, indexCount * sizeof(ImDrawIdx));
+	
+	uploadBuffer.Unmap(0, uploadBufferSize);
+	
+	eg::DC.CopyBuffer(uploadBuffer, m_vertexBuffer, 0, 0, verticesBytes);
+	eg::DC.CopyBuffer(uploadBuffer, m_indexBuffer, verticesBytes, 0, indicesBytes);
+	
+	m_vertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
+	m_indexBuffer.UsageHint(eg::BufferUsage::IndexBuffer);
+	
+	eg::RenderPassBeginInfo rpBeginInfo;
+	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Load;
+	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Load;
+	eg::DC.BeginRenderPass(rpBeginInfo);
 	
 	eg::DC.BindPipeline(m_pipeline);
 	
 	float scale[] = { 2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y };
-	eg::DC.SetUniform("uScale", eg::UniformType::Vec2, scale);
+	eg::DC.PushConstants(0, scale);
 	
-	eg::DC.SetViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-	
-	eg::DC.BindVertexBuffer(0, m_vertexBuffer, vertexBufferOffset);
-	eg::DC.BindIndexBuffer(eg::IndexType::UInt16, m_indexBuffer, indexBufferOffset);
+	eg::DC.BindVertexBuffer(0, m_vertexBuffer, 0);
+	eg::DC.BindIndexBuffer(eg::IndexType::UInt16, m_indexBuffer, 0);
 	
 	//Renders the command lists
 	uint32_t firstIndex = 0;
@@ -270,6 +296,8 @@ void ImGuiInterface::EndFrame(uint32_t vFrameIndex)
 		}
 		firstVertex += commandList->VtxBuffer.Size;
 	}
+	
+	eg::DC.EndRenderPass();
 }
 
 void ImGuiInterface::OnTextInput(const char* text)

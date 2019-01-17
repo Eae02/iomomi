@@ -7,7 +7,7 @@ layout(location=3) in vec3 tangent_in;
 
 layout(location=0) out vec4 color_out;
 
-layout(binding=0) uniform sampler2DArray diffuseSampler;
+layout(binding=1) uniform sampler2DArray diffuseSampler;
 
 void main()
 {

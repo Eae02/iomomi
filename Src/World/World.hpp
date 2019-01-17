@@ -24,7 +24,9 @@ public:
 	
 	bool IsAir(const glm::ivec3& pos) const;
 	
-	void Draw(uint32_t vFrameIndex, const class WallShader& shader);
+	void PrepareForDraw();
+	
+	void Draw(const class RenderSettings& renderSettings, const class WallShader& shader);
 	
 	void CalcClipping(ClippingArgs& args) const;
 	

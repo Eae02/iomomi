@@ -1,5 +1,6 @@
 #include "World.hpp"
 #include "Voxel.hpp"
+#include "../Graphics/RenderSettings.hpp"
 #include "../Graphics/WallShader.hpp"
 #include "../Graphics/Mesh.hpp"
 #include "../Graphics/Graphics.hpp"
@@ -80,7 +81,7 @@ bool World::IsAir(const glm::ivec3& pos) const
 	return idx == -1 ? false : m_voxelBuffer[idx].isAir;
 }
 
-void World::Draw(uint32_t vFrameIndex, const WallShader& shader)
+void World::PrepareForDraw()
 {
 	if (m_voxelBufferOutOfDate)
 	{
@@ -109,29 +110,35 @@ void World::Draw(uint32_t vFrameIndex, const WallShader& shader)
 		if (m_voxelVertexBufferCapacity < vertices.size())
 		{
 			m_voxelVertexBufferCapacity = eg::RoundToNextMultiple(vertices.size(), 16 * 1024);
-			m_voxelVertexBuffer = eg::Buffer(eg::BufferUsage::VertexBuffer | eg::BufferUsage::CopyDst,
-				eg::MemoryType::DeviceLocal, m_voxelVertexBufferCapacity * sizeof(WallVertex), nullptr);
+			m_voxelVertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer | eg::BufferFlags::CopyDst,
+				m_voxelVertexBufferCapacity * sizeof(WallVertex), nullptr);
 		}
 		
 		//Reallocates the index buffer if it is too small
 		if (m_voxelIndexBufferCapacity < indices.size())
 		{
 			m_voxelIndexBufferCapacity = eg::RoundToNextMultiple(indices.size(), 16 * 1024);
-			m_voxelIndexBuffer = eg::Buffer(eg::BufferUsage::IndexBuffer | eg::BufferUsage::CopyDst,
-				eg::MemoryType::DeviceLocal, m_voxelIndexBufferCapacity * sizeof(uint16_t), nullptr);
+			m_voxelIndexBuffer = eg::Buffer(eg::BufferFlags::IndexBuffer | eg::BufferFlags::CopyDst,
+				m_voxelIndexBufferCapacity * sizeof(uint16_t), nullptr);
 		}
 		
 		//Uploads data to the vertex and index buffers
 		eg::DC.CopyBuffer(uploadBuffer, m_voxelVertexBuffer, 0, 0, verticesBytes);
 		eg::DC.CopyBuffer(uploadBuffer, m_voxelIndexBuffer, verticesBytes, 0, indicesBytes);
 		
+		m_voxelVertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
+		m_voxelIndexBuffer.UsageHint(eg::BufferUsage::IndexBuffer);
+		
 		m_numVoxelIndices = (uint32_t)indices.size();
 		m_voxelBufferOutOfDate = false;
 	}
-	
+}
+
+void World::Draw(const RenderSettings& renderSettings, const WallShader& shader)
+{
 	if (m_numVoxelIndices > 0)
 	{
-		shader.Draw(m_voxelVertexBuffer, m_voxelIndexBuffer, m_numVoxelIndices);
+		shader.Draw(renderSettings, m_voxelVertexBuffer, m_voxelIndexBuffer, m_numVoxelIndices);
 	}
 }
 

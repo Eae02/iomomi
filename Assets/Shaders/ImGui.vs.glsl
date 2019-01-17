@@ -7,7 +7,10 @@ layout(location=2) in vec4 color_in;
 layout(location=0) out vec4 vColor;
 layout(location=1) out vec2 vTexCoord;
 
-layout(location=0) uniform vec2 uScale;
+layout(push_constant) uniform PC
+{
+	vec2 uScale;
+};
 
 void main()
 {

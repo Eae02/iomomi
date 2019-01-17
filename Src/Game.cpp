@@ -26,16 +26,23 @@ void Game::RunFrame(float dt)
 	glm::mat4 viewMatrix, inverseViewMatrix;
 	m_player.GetViewMatrix(viewMatrix, inverseViewMatrix);
 	
-	eg::DC.ClearColor(0, eg::Color(0, 0, 0));
-	eg::DC.ClearDepth(1.0f);
-	
-	eg::DC.SetViewport(0, 0, eg::CurrentResolutionX(), eg::CurrentResolutionY());
-	
 	m_renderSettings.viewProjection = m_projMatrix * viewMatrix;
 	m_renderSettings.UpdateBuffer();
-	eg::DC.BindUniformBuffer(m_renderSettings.Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
 	
-	m_world.Draw(eg::CFrameIdx(), m_wallShader);
+	m_world.PrepareForDraw();
 	
-	m_imGuiInterface.EndFrame(eg::CFrameIdx());
+	eg::RenderPassBeginInfo rpBeginInfo;
+	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Clear;
+	rpBeginInfo.depthClearValue = 1.0f;
+	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
+	rpBeginInfo.colorAttachments[0].clearValue = eg::Color(0.2f, 1.0f, 1.0f);
+	eg::DC.BeginRenderPass(rpBeginInfo);
+	
+	m_world.Draw(m_renderSettings, m_wallShader);
+	
+	eg::DC.EndRenderPass();
+	
+	ImGui::ShowDemoWindow();
+	
+	m_imGuiInterface.EndFrame();
 }

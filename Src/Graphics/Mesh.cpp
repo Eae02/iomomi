@@ -1,8 +1,8 @@
 #include "Mesh.hpp"
 
 Mesh::Mesh(eg::Span<const Vertex> vertices, eg::Span<const uint32_t> indices)
-	: m_vertexBuffer(eg::BufferUsage::VertexBuffer, eg::MemoryType::DeviceLocal, vertices.SizeBytes(), vertices.data()),
-	  m_indexBuffer(eg::BufferUsage::IndexBuffer, eg::MemoryType::DeviceLocal, indices.SizeBytes(), indices.data()),
+	: m_vertexBuffer(eg::BufferFlags::VertexBuffer, vertices.SizeBytes(), vertices.data()),
+	  m_indexBuffer(eg::BufferFlags::IndexBuffer, indices.SizeBytes(), indices.data()),
 	  m_numIndices(indices.size())
 {
 	
