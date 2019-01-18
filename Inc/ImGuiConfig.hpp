@@ -1,7 +1,5 @@
 #pragma once
 
-#include <glm/glm.hpp>
-
 #define IMGUI_DISABLE_OBSOLETE_FUNCTIONS
 
 #define IM_VEC2_CLASS_EXTRA \

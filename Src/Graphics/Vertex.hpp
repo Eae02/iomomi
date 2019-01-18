@@ -1,7 +1,5 @@
 #pragma once
 
-#include <glm/glm.hpp>
-
 void VecEncode(const glm::vec3& v, int8_t* out);
 
 struct Vertex

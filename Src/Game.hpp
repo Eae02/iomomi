@@ -1,7 +1,5 @@
 #pragma once
 
-#include <EGame/EG.hpp>
-
 #include "ImGuiInterface.hpp"
 #include "Graphics/RenderSettings.hpp"
 #include "Graphics/WallShader.hpp"

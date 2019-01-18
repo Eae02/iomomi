@@ -2,8 +2,6 @@
 
 #include <cstddef>
 
-#include <EGame/EG.hpp>
-
 struct WallVertex;
 
 struct ClippingArgs

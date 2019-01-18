@@ -1,7 +1,5 @@
 #include "GLTFData.hpp"
 
-#include <EGame/EG.hpp>
-
 namespace gltf
 {
 	ElementType GLTFData::ParseElementType(std::string_view name)

@@ -43,7 +43,7 @@ set_target_properties(Gravity PROPERTIES
 
 target_compile_options(Gravity PRIVATE
 	-DGLM_FORCE_RADIANS -DGLM_FORCE_CTOR_INIT -DGLM_ENABLE_EXPERIMENTAL
-	-DIMGUI_USER_CONFIG="../../Inc/ImGuiConfig.hpp" -DGRAPHICS_API="GL")
+	-DIMGUI_USER_CONFIG="../../Inc/ImGuiConfig.hpp")
 
 target_include_directories(Gravity SYSTEM PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/Inc

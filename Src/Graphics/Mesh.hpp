@@ -2,8 +2,6 @@
 
 #include "Vertex.hpp"
 
-#include <EGame/EG.hpp>
-
 class Mesh
 {
 public:

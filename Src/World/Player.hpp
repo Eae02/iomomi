@@ -1,7 +1,5 @@
 #pragma once
 
-#include <EGame/EG.hpp>
-
 #include "World.hpp"
 
 class Player

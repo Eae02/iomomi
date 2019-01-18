@@ -1,7 +1,5 @@
 #pragma once
 
-#include <EGame/EG.hpp>
-
 namespace gltf
 {
 	enum class ElementType

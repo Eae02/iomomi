@@ -1,7 +1,6 @@
 #include "GLTFImporter.hpp"
 #include "GLTFData.hpp"
 #include "../Mesh.hpp"
-//#include "../../IOUtils.hpp"
 
 #include <fstream>
 #include <nlohmann/json.hpp>

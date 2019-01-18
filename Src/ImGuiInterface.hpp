@@ -1,6 +1,5 @@
 #pragma once
 
-#include <EGame/EG.hpp>
 #include <imgui.h>
 
 class ImGuiInterface
