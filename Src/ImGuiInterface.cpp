@@ -221,8 +221,8 @@ void ImGuiInterface::EndFrame()
 	}
 	
 	size_t uploadBufferSize = verticesBytes + indicesBytes;
-	eg::BufferRef uploadBuffer = eg::GetTemporaryUploadBuffer(uploadBufferSize);
-	char* uploadMem = reinterpret_cast<char*>(uploadBuffer.Map(0, uploadBufferSize));
+	eg::UploadBuffer uploadBuffer = eg::GetTemporaryUploadBuffer(uploadBufferSize);
+	char* uploadMem = reinterpret_cast<char*>(uploadBuffer.Map());
 	
 	//Writes vertices
 	uint64_t vertexCount = 0;
@@ -244,10 +244,10 @@ void ImGuiInterface::EndFrame()
 		indexCount += cmdList->IdxBuffer.Size;
 	}
 	
-	uploadBuffer.Unmap(0, uploadBufferSize);
+	uploadBuffer.Unmap();
 	
-	eg::DC.CopyBuffer(uploadBuffer, m_vertexBuffer, 0, 0, verticesBytes);
-	eg::DC.CopyBuffer(uploadBuffer, m_indexBuffer, verticesBytes, 0, indicesBytes);
+	eg::DC.CopyBuffer(uploadBuffer.buffer, m_vertexBuffer, uploadBuffer.offset, 0, verticesBytes);
+	eg::DC.CopyBuffer(uploadBuffer.buffer, m_indexBuffer, uploadBuffer.offset + verticesBytes, 0, indicesBytes);
 	
 	m_vertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
 	m_indexBuffer.UsageHint(eg::BufferUsage::IndexBuffer);
@@ -289,7 +289,7 @@ void ImGuiInterface::EndFrame()
 				if (scissorW > 0 && scissorH > 0)
 				{
 					eg::DC.SetScissor(scissorX, scissorY, scissorW, scissorH);
-					eg::DC.DrawIndexed(firstIndex, drawCommand.ElemCount, firstVertex, 1);
+					eg::DC.DrawIndexed(firstIndex, drawCommand.ElemCount, firstVertex, 0, 1);
 				}
 			}
 			firstIndex += drawCommand.ElemCount;

@@ -2,8 +2,6 @@
 #include "Voxel.hpp"
 #include "../Graphics/RenderSettings.hpp"
 #include "../Graphics/WallShader.hpp"
-#include "../Graphics/Mesh.hpp"
-#include "../Graphics/Graphics.hpp"
 
 World::World()
 {
@@ -100,11 +98,11 @@ void World::PrepareForDraw()
 		const size_t uploadBytes = verticesBytes + indicesBytes;
 		
 		//Creates an upload buffer and copies data to it
-		eg::BufferRef uploadBuffer = eg::GetTemporaryUploadBuffer(uploadBytes);
-		char* uploadBufferMem = reinterpret_cast<char*>(uploadBuffer.Map(0, uploadBytes));
+		eg::UploadBuffer uploadBuffer = eg::GetTemporaryUploadBuffer(uploadBytes);
+		char* uploadBufferMem = reinterpret_cast<char*>(uploadBuffer.Map());
 		std::memcpy(uploadBufferMem,                 vertices.data(), verticesBytes);
 		std::memcpy(uploadBufferMem + verticesBytes, indices.data(), indicesBytes);
-		uploadBuffer.Unmap(0, uploadBytes);
+		uploadBuffer.Unmap();
 		
 		//Reallocates the vertex buffer if it is too small
 		if (m_voxelVertexBufferCapacity < vertices.size())
@@ -123,8 +121,8 @@ void World::PrepareForDraw()
 		}
 		
 		//Uploads data to the vertex and index buffers
-		eg::DC.CopyBuffer(uploadBuffer, m_voxelVertexBuffer, 0, 0, verticesBytes);
-		eg::DC.CopyBuffer(uploadBuffer, m_voxelIndexBuffer, verticesBytes, 0, indicesBytes);
+		eg::DC.CopyBuffer(uploadBuffer.buffer, m_voxelVertexBuffer, uploadBuffer.offset, 0, verticesBytes);
+		eg::DC.CopyBuffer(uploadBuffer.buffer, m_voxelIndexBuffer, uploadBuffer.offset + verticesBytes, 0, indicesBytes);
 		
 		m_voxelVertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
 		m_voxelIndexBuffer.UsageHint(eg::BufferUsage::IndexBuffer);

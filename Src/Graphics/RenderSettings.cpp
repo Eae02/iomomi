@@ -8,14 +8,14 @@ RenderSettings::RenderSettings()
 
 void RenderSettings::UpdateBuffer()
 {
-	eg::BufferRef uploadBuffer = eg::GetTemporaryUploadBuffer(BUFFER_SIZE);
-	char* uploadMem = reinterpret_cast<char*>(uploadBuffer.Map(0, BUFFER_SIZE));
+	eg::UploadBuffer uploadBuffer = eg::GetTemporaryUploadBuffer(BUFFER_SIZE);
+	char* uploadMem = reinterpret_cast<char*>(uploadBuffer.Map());
 	reinterpret_cast<glm::mat4*>(uploadMem)[0] = viewProjection;
 	reinterpret_cast<glm::mat4*>(uploadMem)[1] = invViewProjection;
 	*reinterpret_cast<glm::vec3*>(uploadMem + 128) = cameraPosition;
-	uploadBuffer.Unmap(0, BUFFER_SIZE);
+	uploadBuffer.Unmap();
 	
-	eg::DC.CopyBuffer(uploadBuffer, m_buffer, 0, 0, BUFFER_SIZE);
+	eg::DC.CopyBuffer(uploadBuffer.buffer, m_buffer, uploadBuffer.offset, 0, BUFFER_SIZE);
 	
 	m_buffer.UsageHint(eg::BufferUsage::UniformBuffer, eg::ShaderAccessFlags::Vertex | eg::ShaderAccessFlags::Fragment);
 }

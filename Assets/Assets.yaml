@@ -3,6 +3,9 @@ assets:
   - name: Shaders/ImGui.fs.glsl
   - name: Shaders/Wall.vs.glsl
   - name: Shaders/Wall.fs.glsl
+  - name: Shaders/Common3D.vs.glsl
+  - name: Shaders/GravityCorner.fs.glsl
+  - name: Models/GravityCornerConvex.obj
   - name: Textures/Voxel/Diffuse
     generator: Texture2DArray
     loader: Texture2DArray

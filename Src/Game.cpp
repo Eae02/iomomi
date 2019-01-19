@@ -1,6 +1,6 @@
 #include "Game.hpp"
 
-#include "Graphics/Graphics.hpp"
+#include "Graphics/Materials/GravityCornerMaterial.hpp"
 
 Game::Game()
 {
@@ -29,6 +29,12 @@ void Game::RunFrame(float dt)
 	m_renderSettings.viewProjection = m_projMatrix * viewMatrix;
 	m_renderSettings.UpdateBuffer();
 	
+	m_objectRenderer.Begin();
+	
+	m_objectRenderer.Add(eg::GetAsset<eg::Model>("Models/GravityCornerConvex.obj"), GravityCornerMaterial::instance, glm::mat4(1.0f));
+	
+	m_objectRenderer.End();
+	
 	m_world.PrepareForDraw();
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
@@ -39,6 +45,8 @@ void Game::RunFrame(float dt)
 	eg::DC.BeginRenderPass(rpBeginInfo);
 	
 	m_world.Draw(m_renderSettings, m_wallShader);
+	
+	m_objectRenderer.Draw(m_renderSettings);
 	
 	eg::DC.EndRenderPass();
 	

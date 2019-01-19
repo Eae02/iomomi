@@ -34,5 +34,6 @@ void WallShader::Draw(const RenderSettings& renderSettings, eg::BufferRef vertex
 	eg::DC.BindVertexBuffer(0, vertexBuffer, 0);
 	eg::DC.BindIndexBuffer(eg::IndexType::UInt16, indexBuffer, 0);
 	
-	eg::DC.DrawIndexed(0, numIndices, 0, 1);
+	eg::DC.DrawIndexed(0, numIndices, 0, 0, 1);
 }
+

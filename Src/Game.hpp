@@ -3,6 +3,7 @@
 #include "ImGuiInterface.hpp"
 #include "Graphics/RenderSettings.hpp"
 #include "Graphics/WallShader.hpp"
+#include "Graphics/ObjectRenderer.hpp"
 #include "World/World.hpp"
 #include "World/Player.hpp"
 
@@ -21,4 +22,6 @@ private:
 	World m_world;
 	Player m_player;
 	WallShader m_wallShader;
+	
+	ObjectRenderer m_objectRenderer;
 };
