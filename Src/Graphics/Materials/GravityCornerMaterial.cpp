@@ -14,7 +14,7 @@ static void OnInit()
 	fixedFuncState.enableDepthWrite = true;
 	fixedFuncState.enableDepthTest = true;
 	fixedFuncState.cullMode = eg::CullMode::Back;
-	fixedFuncState.frontFaceCCW = true;
+	//fixedFuncState.frontFaceCCW = true;
 	fixedFuncState.depthFormat = eg::Format::DefaultDepthStencil;
 	fixedFuncState.attachments[0].format = eg::Format::DefaultColor;
 	fixedFuncState.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };

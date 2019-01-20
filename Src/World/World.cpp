@@ -1,5 +1,7 @@
 #include "World.hpp"
 #include "Voxel.hpp"
+#include "../Graphics/ObjectRenderer.hpp"
+#include "../Graphics/Materials/GravityCornerMaterial.hpp"
 #include "../Graphics/RenderSettings.hpp"
 #include "../Graphics/WallShader.hpp"
 
@@ -79,8 +81,28 @@ bool World::IsAir(const glm::ivec3& pos) const
 	return idx == -1 ? false : m_voxelBuffer[idx].isAir;
 }
 
-void World::PrepareForDraw()
+glm::mat3 GravityCorner::MakeRotationMatrix() const
 {
+	glm::vec3 r1 = -DirectionVector(down1);
+	glm::vec3 r2 = -DirectionVector(down2);
+	return glm::mat3(r1, r2, glm::cross(r1, r2));
+}
+
+void World::PrepareForDraw(ObjectRenderer& objectRenderer)
+{
+	eg::Model& gravityCornerModel = eg::GetAsset<eg::Model>("Models/GravityCornerConvex.obj");
+	for (const GravityCorner& corner : m_gravityCorners)
+	{
+		const float S = 0.25f;
+		
+		glm::mat4 transform = glm::translate(glm::mat4(1.0f), corner.position) *
+			glm::mat4(corner.MakeRotationMatrix()) *
+			glm::scale(glm::mat4(1.0f), glm::vec3(S, -S, corner.length)) *
+			glm::translate(glm::mat4(1.0f), glm::vec3(1.01f, -1.01f, 0));
+		
+		objectRenderer.Add(gravityCornerModel, GravityCornerMaterial::instance, transform);
+	}
+	
 	if (m_voxelBufferOutOfDate)
 	{
 		std::vector<WallVertex> vertices;
@@ -162,7 +184,7 @@ void World::BuildVoxelMesh(std::vector<WallVertex>& verticesOut, std::vector<uin
 						continue;
 					
 					//The center of the face to be emitted
-					const glm::vec3 faceCenter = glm::vec3(x, y, z) + glm::vec3(voxel::normals[s]) * 0.5f;
+					const glm::vec3 faceCenter = glm::vec3(x, y, z) + 0.5f + glm::vec3(voxel::normals[s]) * 0.5f;
 					
 					//Emits indices
 					const uint16_t baseIndex = (uint16_t)verticesOut.size();
@@ -214,7 +236,7 @@ void World::CalcClipping(ClippingArgs& args) const
 		{
 			beginA = args.aabbMax[axis];
 			endA = endMax[axis];
-			vOffset = 1;
+			vOffset = 0;
 		}
 		
 		int minI = (int)std::floor(std::min(beginA, endA) - EP);
@@ -253,4 +275,62 @@ void World::CalcClipping(ClippingArgs& args) const
 			}
 		}
 	}
+}
+
+const GravityCorner* World::FindGravityCorner(const ClippingArgs& args, Dir currentDown) const
+{
+	glm::vec3 pos = (args.aabbMin + args.aabbMax) / 2.0f;
+	
+	float minDist = INFINITY;
+	const GravityCorner* ret = nullptr;
+	
+	constexpr float ACTIVATE_DIST = 0.5f;
+	constexpr float ACTIVATE_MARGIN = 0.2f;
+	constexpr float MAX_HEIGHT_DIFF = 0.1f;
+	
+	glm::vec3 currentDownDir = DirectionVector(currentDown);
+	
+	for (const GravityCorner& corner : m_gravityCorners)
+	{
+		glm::vec3 otherDown;
+		if (corner.down1 == currentDown)
+			otherDown = DirectionVector(corner.down2);
+		else if (corner.down2 == currentDown)
+			otherDown = DirectionVector(corner.down1);
+		else
+			continue;
+		
+		//Checks that the player is moving towards the corner
+		if (glm::dot(args.move, otherDown) < 0.0001f)
+			continue;
+		
+		//Checks that the player is positioned correctly along the side of the corner
+		glm::vec3 cornerVec = glm::cross(DirectionVector(corner.down1), DirectionVector(corner.down2));
+		float t1 = glm::dot(cornerVec, args.aabbMin - corner.position);
+		float t2 = glm::dot(cornerVec, args.aabbMax - corner.position);
+		if (t1 > t2)
+			std::swap(t1, t2);
+		
+		if (t1 < -ACTIVATE_MARGIN || t2 > corner.length + ACTIVATE_MARGIN)
+			continue;
+		
+		//Checks that the player is positioned at the same height as the corner
+		float h1 = glm::dot(currentDownDir, corner.position - args.aabbMin);
+		float h2 = glm::dot(currentDownDir, corner.position - args.aabbMax);
+		if (std::abs(h1) > MAX_HEIGHT_DIFF && std::abs(h2) > MAX_HEIGHT_DIFF)
+			continue;
+		
+		//Checks that the player is within range of the corner
+		float dist = glm::dot(otherDown, corner.position - pos);
+		if (dist > -0.1f && dist < ACTIVATE_DIST)
+		{
+			float absDist = abs(dist);
+			if (absDist < minDist)
+			{
+				ret = &corner;
+				minDist = absDist;
+			}
+		}
+	}
+	return ret;
 }

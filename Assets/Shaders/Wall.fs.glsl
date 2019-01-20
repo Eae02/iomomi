@@ -11,5 +11,7 @@ layout(binding=1) uniform sampler2DArray diffuseSampler;
 
 void main()
 {
-	color_out = texture(diffuseSampler, texCoord_in);
+	vec3 shade = abs(normal_in.y) > 0.1 ? vec3(1.0, 0.8, 0.8) : vec3(0.8, 0.8, 1.0);
+	
+	color_out = vec4(shade, 1.0) * texture(diffuseSampler, texCoord_in);
 }

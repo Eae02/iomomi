@@ -14,8 +14,11 @@ public:
 	
 	void RunFrame(float dt) override;
 	
+	void ResolutionChanged(int newWidth, int newHeight) override;
+	
 private:
-	glm::mat4 m_projMatrix;
+	eg::PerspectiveProjection m_projection;
+	float m_gameTime = 0;
 	
 	ImGuiInterface m_imGuiInterface;
 	RenderSettings m_renderSettings;

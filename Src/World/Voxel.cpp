@@ -2,16 +2,6 @@
 
 namespace voxel
 {
-	const uint8_t opposingSides[6] = 
-	{
-		/* POSX -> */ NEGX,
-		/* NEGX -> */ POSX,
-		/* POSY -> */ NEGY,
-		/* NEGY -> */ POSY,
-		/* POSZ -> */ NEGZ,
-		/* NEGZ -> */ POSZ
-	};
-	
 	const glm::ivec3 normals[6] =
 	{
 		{  1, 0, 0 },

@@ -6,6 +6,7 @@ struct RenderSettings
 	mat4 viewProjection;
 	mat4 invViewProjection;
 	vec3 cameraPosition;
+	float gameTime;
 };
 
 #endif

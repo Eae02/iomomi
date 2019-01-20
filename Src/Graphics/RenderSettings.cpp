@@ -13,6 +13,7 @@ void RenderSettings::UpdateBuffer()
 	reinterpret_cast<glm::mat4*>(uploadMem)[0] = viewProjection;
 	reinterpret_cast<glm::mat4*>(uploadMem)[1] = invViewProjection;
 	*reinterpret_cast<glm::vec3*>(uploadMem + 128) = cameraPosition;
+	*reinterpret_cast<float*>(uploadMem + 140) = gameTime;
 	uploadBuffer.Unmap();
 	
 	eg::DC.CopyBuffer(uploadBuffer.buffer, m_buffer, uploadBuffer.offset, 0, BUFFER_SIZE);
