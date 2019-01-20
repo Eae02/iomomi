@@ -1,5 +1,8 @@
 #include "Game.hpp"
 
+static_assert(sizeof(int) == 4);
+static_assert(sizeof(float) == 4);
+
 int main(int argc, char** argv)
 {
 	eg::RunConfig runConfig;

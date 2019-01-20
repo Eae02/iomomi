@@ -39,6 +39,10 @@ class World
 public:
 	World();
 	
+	bool Load(std::istream& stream);
+	
+	void Save(std::ostream& outStream) const;
+	
 	void AddGravityCorner(const GravityCorner& corner)
 	{
 		m_gravityCorners.push_back(corner);
@@ -47,6 +51,10 @@ public:
 	void SetIsAir(const glm::ivec3& pos, bool isAir);
 	
 	bool IsAir(const glm::ivec3& pos) const;
+	
+	void SetTexture(const glm::ivec3& pos, Dir side, uint8_t textureLayer);
+	
+	uint8_t GetTexture(const glm::ivec3& pos, Dir side) const;
 	
 	void PrepareForDraw(class ObjectRenderer& objectRenderer);
 	
@@ -57,14 +65,13 @@ public:
 	const GravityCorner* FindGravityCorner(const ClippingArgs& args, Dir currentDown) const;
 	
 private:
-	struct Voxel
-	{
-		bool isAir;
-	};
-	
 	void BuildVoxelMesh(std::vector<WallVertex>& verticesOut, std::vector<uint16_t>& indicesOut) const;
 	
-	std::unique_ptr<Voxel[]> m_voxelBuffer;
+	/**
+	 * Each voxel is represented by one 64-bit integer where the low 8 * 6 bits store which texture is used
+	 * for each side (with 8 bits per side) and the 48th bit is set if the voxel is air.
+	 */
+	std::unique_ptr<uint64_t[]> m_voxelBuffer;
 	glm::ivec3 m_voxelBufferMin;
 	glm::ivec3 m_voxelBufferMax;
 	

@@ -5,10 +5,82 @@
 #include "../Graphics/RenderSettings.hpp"
 #include "../Graphics/WallShader.hpp"
 
+#include <yaml-cpp/yaml.h>
+
+static const char MAGIC[] = { (char)250, 'E', 'G', 'W' };
+static const uint32_t CURRENT_VERSION = 0;
+
 World::World()
 {
 	
 }
+
+inline size_t VoxelBufferSize(const glm::ivec3& min, const glm::ivec3& max)
+{
+	glm::ivec3 delta = max - min + glm::ivec3(1);
+	return (size_t)delta.x * (size_t)delta.y * (size_t)delta.z;
+}
+
+bool World::Load(std::istream& stream)
+{
+	char magicBuffer[sizeof(MAGIC)];
+	stream.read(magicBuffer, sizeof(MAGIC));
+	if (std::memcmp(magicBuffer, MAGIC, sizeof(MAGIC)))
+	{
+		eg::Log(eg::LogLevel::Error, "wd", "Invalid world file.");
+		return false;
+	}
+	
+	const uint32_t version = eg::BinRead<uint32_t>(stream);
+	if (version > CURRENT_VERSION)
+	{
+		eg::Log(eg::LogLevel::Error, "wd", "Unsupported world file version.");
+		return false;
+	}
+	
+	stream.read(reinterpret_cast<char*>(&m_voxelBufferMin), sizeof(int32_t) * 3);
+	stream.read(reinterpret_cast<char*>(&m_voxelBufferMax), sizeof(int32_t) * 3);
+	
+	size_t voxelBufferSize = VoxelBufferSize(m_voxelBufferMin, m_voxelBufferMax);
+	m_voxelBuffer = std::make_unique<uint64_t[]>(voxelBufferSize);
+	
+	eg::ReadCompressedSection(stream, m_voxelBuffer.get(), voxelBufferSize * sizeof(uint64_t));
+	
+	const uint32_t numGravityCorners = eg::BinRead<uint32_t>(stream);
+	m_gravityCorners.resize(numGravityCorners);
+	for (uint32_t i = 0; i < numGravityCorners; i++)
+	{
+		m_gravityCorners[i].down1 = (Dir)eg::BinRead<uint8_t>(stream);
+		m_gravityCorners[i].down2 = (Dir)eg::BinRead<uint8_t>(stream);
+		m_gravityCorners[i].length = eg::BinRead<float>(stream);
+		stream.read(reinterpret_cast<char*>(&m_gravityCorners[i].position), sizeof(int32_t) * 3);
+	}
+	
+	return true;
+}
+
+void World::Save(std::ostream& outStream) const
+{
+	outStream.write(MAGIC, sizeof(MAGIC));
+	eg::BinWrite<uint32_t>(outStream, CURRENT_VERSION);
+	
+	outStream.write(reinterpret_cast<const char*>(&m_voxelBufferMin), sizeof(int32_t) * 3);
+	outStream.write(reinterpret_cast<const char*>(&m_voxelBufferMax), sizeof(int32_t) * 3);
+	
+	eg::WriteCompressedSection(outStream, m_voxelBuffer.get(),
+		sizeof(uint64_t) * VoxelBufferSize(m_voxelBufferMin, m_voxelBufferMax));
+	
+	eg::BinWrite(outStream, (uint32_t)m_gravityCorners.size());
+	for (const GravityCorner& corner : m_gravityCorners)
+	{
+		eg::BinWrite(outStream, (uint8_t)corner.down1);
+		eg::BinWrite(outStream, (uint8_t)corner.down2);
+		eg::BinWrite(outStream, corner.length);
+		outStream.write(reinterpret_cast<const char*>(&corner.position), sizeof(int32_t) * 3);
+	}
+}
+
+static constexpr uint64_t IS_AIR_MASK = (uint64_t)1 << (uint64_t)(8 * 6);
 
 inline int VoxelBufferIdx(const glm::ivec3& pos, const glm::ivec3& min, const glm::ivec3& max)
 {
@@ -27,7 +99,10 @@ void World::SetIsAir(const glm::ivec3& pos, bool isAir)
 	int idx = VoxelBufferIdx(pos, m_voxelBufferMin, m_voxelBufferMax);
 	if (idx != -1 && m_voxelBuffer != nullptr)
 	{
-		m_voxelBuffer.get()[idx].isAir = isAir;
+		if (isAir)
+			m_voxelBuffer.get()[idx] |= IS_AIR_MASK;
+		else
+			m_voxelBuffer.get()[idx] &= ~IS_AIR_MASK;
 		m_voxelBufferOutOfDate = true;
 		return;
 	}
@@ -43,11 +118,7 @@ void World::SetIsAir(const glm::ivec3& pos, bool isAir)
 	m_voxelBufferMin = glm::floor(glm::vec3(m_voxelBufferMin) / EXPAND_STEP) * EXPAND_STEP;
 	m_voxelBufferMax = glm::ceil(glm::vec3(m_voxelBufferMax) / EXPAND_STEP) * EXPAND_STEP;
 	
-	//Allocates a new voxel buffer
-	size_t bufferSize = (size_t)(m_voxelBufferMax.x - m_voxelBufferMin.x + 1) *
-		(size_t)(m_voxelBufferMax.y - m_voxelBufferMin.y + 1) *
-		(size_t)(m_voxelBufferMax.z - m_voxelBufferMin.z + 1);
-	std::unique_ptr<Voxel[]> newBuffer = std::make_unique<Voxel[]>(bufferSize);
+	std::unique_ptr<uint64_t[]> newBuffer = std::make_unique<uint64_t[]>(VoxelBufferSize(m_voxelBufferMin, m_voxelBufferMax));
 	
 	//Copies voxel buffer data to the new buffer
 	if (m_voxelBuffer != nullptr)
@@ -58,12 +129,9 @@ void World::SetIsAir(const glm::ivec3& pos, bool isAir)
 			{
 				for (int x = m_voxelBufferMin.x; x <= m_voxelBufferMax.x; x++)
 				{
-					const int srcIdx = VoxelBufferIdx(glm::ivec3(x, y, z), oldMin, oldMax);
-					if (srcIdx != -1)
-					{
-						const int dstIdx = VoxelBufferIdx({x, y, z}, m_voxelBufferMin, m_voxelBufferMax);
-						newBuffer[dstIdx] = m_voxelBuffer[srcIdx];
-					}
+					const int dstIdx = VoxelBufferIdx({x, y, z}, m_voxelBufferMin, m_voxelBufferMax);
+					const int srcIdx = VoxelBufferIdx({x, y, z}, oldMin, oldMax);
+					newBuffer[dstIdx] = (srcIdx != -1) ? m_voxelBuffer[srcIdx] : 0;
 				}
 			}
 		}
@@ -78,7 +146,30 @@ bool World::IsAir(const glm::ivec3& pos) const
 	if (m_voxelBuffer == nullptr)
 		return false;
 	int idx = VoxelBufferIdx(pos, m_voxelBufferMin, m_voxelBufferMax);
-	return idx == -1 ? false : m_voxelBuffer[idx].isAir;
+	return idx == -1 ? false : (m_voxelBuffer[idx] & IS_AIR_MASK) != 0;
+}
+
+void World::SetTexture(const glm::ivec3& pos, Dir side, uint8_t textureLayer)
+{
+#ifndef NDEBUG
+	if (!IsAir(pos))
+		EG_PANIC("Attempted to set texture of a voxel which is not air.");
+#endif
+	
+	const int idx = VoxelBufferIdx(pos, m_voxelBufferMin, m_voxelBufferMax);
+	
+	const uint64_t shift = (uint64_t)side * 8;
+	m_voxelBuffer[idx] = (m_voxelBuffer[idx] & ~(0xFFULL << shift)) | (textureLayer << shift);
+}
+
+uint8_t World::GetTexture(const glm::ivec3& pos, Dir side) const
+{
+	if (m_voxelBuffer == nullptr)
+		return 0;
+	const int idx = VoxelBufferIdx(pos, m_voxelBufferMin, m_voxelBufferMax);
+	if (idx == -1)
+		return 0;
+	return (m_voxelBuffer[idx] >> ((uint64_t)side * 8)) & 0xFFULL;
 }
 
 glm::mat3 GravityCorner::MakeRotationMatrix() const
@@ -180,7 +271,7 @@ void World::BuildVoxelMesh(std::vector<WallVertex>& verticesOut, std::vector<uin
 					const int nIdx = VoxelBufferIdx(nPos, m_voxelBufferMin, m_voxelBufferMax);
 					
 					//Only emit triangles for voxels that face into an air voxel
-					if (nIdx == -1 || !m_voxelBuffer[nIdx].isAir)
+					if (nIdx == -1 || !(m_voxelBuffer[nIdx] & IS_AIR_MASK))
 						continue;
 					
 					//The center of the face to be emitted
@@ -191,6 +282,9 @@ void World::BuildVoxelMesh(std::vector<WallVertex>& verticesOut, std::vector<uin
 					static const uint16_t indicesRelative[] = { 0, 1, 2, 2, 1, 3 };
 					for (uint16_t i : indicesRelative)
 						indicesOut.push_back(baseIndex + i);
+					
+					const int oppositeS = (int)OppositeDir((Dir)s);
+					const uint8_t textureLayer = (m_voxelBuffer[nIdx] >> (uint64_t)(oppositeS * 8)) & 0xFFULL;
 					
 					//Emits vertices
 					glm::vec3 tangent = voxel::tangents[s];
@@ -203,7 +297,7 @@ void World::BuildVoxelMesh(std::vector<WallVertex>& verticesOut, std::vector<uin
 							vertex.position = faceCenter + tangent * (fy - 0.5f) + biTangent * (fx - 0.5f);
 							vertex.texCoord[0] = (uint8_t)(fx * 255);
 							vertex.texCoord[1] = (uint8_t)((1 - fy) * 255);
-							vertex.texCoord[2] = 0;
+							vertex.texCoord[2] = textureLayer;
 							vertex.SetNormal(voxel::normals[s]);
 							vertex.SetTangent(tangent);
 						}

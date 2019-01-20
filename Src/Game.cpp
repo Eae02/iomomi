@@ -2,8 +2,11 @@
 
 #include "Graphics/Materials/GravityCornerMaterial.hpp"
 
+#include <fstream>
+
 Game::Game()
 {
+	/*
 	for (int x = 0; x < 3; x++)
 	{
 		for (int y = -1; y < 3; y++)
@@ -41,6 +44,15 @@ Game::Game()
 	m_world.AddGravityCorner({ Dir::NegZ, Dir::PosX, glm::vec3(5, 3, 0), 3 });
 	m_world.AddGravityCorner({ Dir::PosX, Dir::PosZ, glm::vec3(5, 3, 3), 3 });
 	m_world.AddGravityCorner({ Dir::PosZ, Dir::PosY, glm::vec3(0, 2, 2), 2 });
+	
+	std::ofstream stream(eg::ExeRelPath("world"), std::ios::binary);
+	m_world.Save(stream);
+	stream.close();
+	*/
+	
+	std::ifstream stream(eg::ExeRelPath("world"), std::ios::binary);
+	m_world.Load(stream);
+	stream.close();
 	
 	m_projection.SetFieldOfViewDeg(80.0f);
 	
