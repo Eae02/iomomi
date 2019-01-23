@@ -1,6 +1,3 @@
-[submodule "Deps/utfcpp"]
-	path = Deps/utfcpp
-	url = https://github.com/ledger/utfcpp.git
 [submodule "Deps/yaml-cpp"]
 	path = Deps/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git

@@ -6,7 +6,7 @@
 
 Game::Game()
 {
-	/*
+	
 	for (int x = 0; x < 3; x++)
 	{
 		for (int y = -1; y < 3; y++)
@@ -48,11 +48,11 @@ Game::Game()
 	std::ofstream stream(eg::ExeRelPath("world"), std::ios::binary);
 	m_world.Save(stream);
 	stream.close();
-	*/
 	
+	/*
 	std::ifstream stream(eg::ExeRelPath("world"), std::ios::binary);
 	m_world.Load(stream);
-	stream.close();
+	stream.close();*/
 	
 	m_projection.SetFieldOfViewDeg(80.0f);
 	
@@ -68,7 +68,10 @@ void Game::RunFrame(float dt)
 {
 	m_imGuiInterface.NewFrame();
 	
-	m_player.Update(m_world, dt);
+	if (!eg::console::IsShown())
+	{
+		m_player.Update(m_world, dt);
+	}
 	
 	glm::mat4 viewMatrix, inverseViewMatrix;
 	m_player.GetViewMatrix(viewMatrix, inverseViewMatrix);

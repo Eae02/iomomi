@@ -7,12 +7,13 @@ int main(int argc, char** argv)
 {
 	eg::RunConfig runConfig;
 	runConfig.gameName = "Gravity";
-	runConfig.flags = eg::RunFlags::DevMode | eg::RunFlags::VSync;
+	runConfig.flags = eg::RunFlags::DevMode;
 	runConfig.initialize = []
 	{
 		eg::LoadAssets("assets", "/");
 	};
 	
+	bool vSync = true;
 	for (int i = 1; i < argc; i++)
 	{
 		std::string_view arg = argv[i];
@@ -20,7 +21,12 @@ int main(int argc, char** argv)
 			runConfig.graphicsAPI = eg::GraphicsAPI::OpenGL;
 		else if (arg == "--vk")
 			runConfig.graphicsAPI = eg::GraphicsAPI::Vulkan;
+		else if (arg == "--no-vsync")
+			vSync = false;
 	}
+	
+	if (vSync)
+		runConfig.flags |= eg::RunFlags::VSync;
 	
 	eg::Run<Game>(runConfig);
 }
