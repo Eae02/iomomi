@@ -34,7 +34,6 @@ ImGuiInterface::ImGuiInterface()
 	
 	m_iniFileName = eg::ExeRelPath("ImGui.ini");
 	io.IniFilename = m_iniFileName.c_str();
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	
 	ImGui::StyleColorsDark(&ImGui::GetStyle());
 	
@@ -163,6 +162,11 @@ void ImGuiInterface::NewFrame()
 			break;
 		}
 	});
+	
+	if (!eg::InputtedText().empty())
+	{
+		ImGui::GetIO().AddInputCharactersUTF8(eg::InputtedText().c_str());
+	}
 	
 	m_lastFrameBegin = time;
 	/*
@@ -298,9 +302,4 @@ void ImGuiInterface::EndFrame()
 	}
 	
 	eg::DC.EndRenderPass();
-}
-
-void ImGuiInterface::OnTextInput(const char* text)
-{
-	ImGui::GetIO().AddInputCharactersUTF8(text);
 }

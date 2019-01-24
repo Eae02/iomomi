@@ -1,11 +1,14 @@
 #include "Game.hpp"
-
+#include "GameState.hpp"
+#include "Editor/Editor.hpp"
 #include "Graphics/Materials/GravityCornerMaterial.hpp"
 
 #include <fstream>
 
 Game::Game()
 {
+	editor = std::make_unique<Editor>();
+	currentGS = editor.get();
 	
 	for (int x = 0; x < 3; x++)
 	{
@@ -55,8 +58,6 @@ Game::Game()
 	stream.close();*/
 	
 	m_projection.SetFieldOfViewDeg(80.0f);
-	
-	eg::SetRelativeMouseMode(true);
 }
 
 void Game::ResolutionChanged(int newWidth, int newHeight)
@@ -68,6 +69,8 @@ void Game::RunFrame(float dt)
 {
 	m_imGuiInterface.NewFrame();
 	
+	currentGS->RunFrame(dt);
+	/*
 	if (!eg::console::IsShown())
 	{
 		m_player.Update(m_world, dt);
@@ -98,7 +101,7 @@ void Game::RunFrame(float dt)
 	m_objectRenderer.Draw(m_renderSettings);
 	
 	eg::DC.EndRenderPass();
-	
+	*/
 	ImGui::SetNextWindowPos(ImVec2(5, 5), ImGuiCond_Always);
 	ImGui::SetNextWindowSize(ImVec2(150, 0), ImGuiCond_Always);
 	ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.6f);

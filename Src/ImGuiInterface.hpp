@@ -14,8 +14,6 @@ public:
 	bool IsMouseCaptured();
 	bool IsKeyboardCaptured();
 	
-	void OnTextInput(const char* text);
-	
 private:
 	std::chrono::high_resolution_clock::time_point m_lastFrameBegin;
 	
