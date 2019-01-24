@@ -199,6 +199,7 @@ void Player::Update(World& world, float dt)
 		if (const GravityCorner* corner = world.FindGravityCorner(clippingArgs, m_down))
 		{
 			const Dir newDown = corner->down1 == m_down ? corner->down2 : corner->down1;
+			const glm::vec3 newUpVec = -DirectionVector(newDown);
 			
 			const glm::mat3 cornerRotation = corner->MakeRotationMatrix();
 			glm::vec3 cornerL = glm::transpose(cornerRotation) * (m_position - corner->position);
@@ -207,9 +208,8 @@ void Player::Update(World& world, float dt)
 			else
 				cornerL.y = std::max(cornerL.y, 1.5f);
 			std::swap(cornerL.x, cornerL.y);
-			m_newPosition = (cornerRotation * cornerL) + corner->position;
+			m_newPosition = (cornerRotation * cornerL) + corner->position + newUpVec * 0.001f;
 			
-			const glm::vec3 newUpVec = -DirectionVector(newDown);
 			const glm::quat rotationDiff = glm::angleAxis(eg::HALF_PI, glm::cross(up, newUpVec));
 			
 			glm::vec3 f = glm::inverse(GetDownCorrection(newDown)) * (rotationDiff * (m_rotation * glm::vec3(0, 0, -1)));
