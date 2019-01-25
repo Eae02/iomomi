@@ -4,6 +4,8 @@
 
 static eg::LinearAllocator levelsMemAllocator;
 
+Level* firstLevel = nullptr;
+
 void InitLevels()
 {
 	std::string levelsPath = eg::ExeRelPath("levels");

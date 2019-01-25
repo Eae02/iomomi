@@ -245,11 +245,11 @@ void World::PrepareForDraw(ObjectRenderer& objectRenderer)
 	}
 }
 
-void World::Draw(const RenderSettings& renderSettings, const WallShader& shader)
+void World::Draw(const RenderSettings& renderSettings)
 {
 	if (m_numVoxelIndices > 0)
 	{
-		shader.Draw(renderSettings, m_voxelVertexBuffer, m_voxelIndexBuffer, m_numVoxelIndices);
+		DrawWalls(renderSettings, m_voxelVertexBuffer, m_voxelIndexBuffer, m_numVoxelIndices);
 	}
 }
 
@@ -427,4 +427,41 @@ const GravityCorner* World::FindGravityCorner(const ClippingArgs& args, Dir curr
 		}
 	}
 	return ret;
+}
+
+PickWallResult World::PickWall(const eg::Ray& ray) const
+{
+	float minDist = INFINITY;
+	PickWallResult result;
+	result.intersected = false;
+	
+	for (int dim = 0; dim < 3; dim++)
+	{
+		glm::vec3 dn = DirectionVector((Dir)(dim * 2));
+		for (int s = m_voxelBufferMin[dim]; s <= m_voxelBufferMax[dim]; s++)
+		{
+			if (std::signbit(s - ray.GetStart()[dim]) != std::signbit(ray.GetDirection()[dim]))
+				continue;
+			
+			eg::Plane plane(dn, s);
+			float intersectDist;
+			if (ray.Intersects(plane, intersectDist) && intersectDist < minDist)
+			{
+				glm::vec3 iPos = ray.GetPoint(intersectDist);
+				glm::vec3 posDel = ray.GetDirection() * dn * 0.1f;
+				glm::ivec3 voxelPosN = glm::floor(iPos + posDel);
+				glm::ivec3 voxelPosP = glm::floor(iPos - posDel);
+				if (IsAir(voxelPosP) && !IsAir(voxelPosN))
+				{
+					result.intersectPosition = iPos;
+					result.voxelPosition = voxelPosN;
+					result.normalDir = (Dir)(dim * 2 + (voxelPosP[dim] > voxelPosN[dim] ? 0 : 1));
+					result.intersected = true;
+					minDist = intersectDist;
+				}
+			}
+		}
+	}
+	
+	return result;
 }

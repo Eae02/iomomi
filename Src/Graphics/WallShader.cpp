@@ -1,7 +1,13 @@
 #include "WallShader.hpp"
 #include "RenderSettings.hpp"
 
-WallShader::WallShader()
+struct
+{
+	eg::Pipeline pipeline;
+	eg::Texture* diffuseTexture;
+} wr;
+
+static void OnInit()
 {
 	eg::ShaderProgram program;
 	program.AddStageFromAsset("Shaders/Wall.vs.glsl");
@@ -18,18 +24,27 @@ WallShader::WallShader()
 	fixedFuncState.vertexAttributes[1] = { 0, eg::DataType::UInt8,     3, (uint32_t)offsetof(WallVertex, texCoord) };
 	fixedFuncState.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallVertex, normal) };
 	fixedFuncState.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallVertex, tangent) };
-	m_pipeline = program.CreatePipeline(fixedFuncState);
+	wr.pipeline = program.CreatePipeline(fixedFuncState);
 	
-	m_diffuseTexture = &eg::GetAsset<eg::Texture>("Textures/Voxel/Diffuse");
+	wr.diffuseTexture = &eg::GetAsset<eg::Texture>("Textures/Voxel/Diffuse");
 }
 
-void WallShader::Draw(const RenderSettings& renderSettings, eg::BufferRef vertexBuffer, eg::BufferRef indexBuffer, uint32_t numIndices) const
+static void OnShutdown()
 {
-	eg::DC.BindPipeline(m_pipeline);
+	wr.pipeline.Destroy();
+}
+
+EG_ON_INIT(OnInit)
+EG_ON_SHUTDOWN(OnShutdown)
+
+void DrawWalls(const class RenderSettings& renderSettings, eg::BufferRef vertexBuffer, eg::BufferRef indexBuffer,
+	uint32_t numIndices)
+{
+	eg::DC.BindPipeline(wr.pipeline);
 	
 	eg::DC.BindUniformBuffer(renderSettings.Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
 	
-	eg::DC.BindTexture(*m_diffuseTexture, 1);
+	eg::DC.BindTexture(*wr.diffuseTexture, 1);
 	
 	eg::DC.BindVertexBuffer(0, vertexBuffer, 0);
 	eg::DC.BindIndexBuffer(eg::IndexType::UInt16, indexBuffer, 0);

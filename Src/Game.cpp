@@ -7,7 +7,7 @@
 
 Game::Game()
 {
-	editor = std::make_unique<Editor>();
+	editor = std::make_unique<Editor>(m_renderCtx);
 	currentGS = editor.get();
 	
 	for (int x = 0; x < 3; x++)
@@ -57,12 +57,12 @@ Game::Game()
 	m_world.Load(stream);
 	stream.close();*/
 	
-	m_projection.SetFieldOfViewDeg(80.0f);
+	m_renderCtx.projection.SetFieldOfViewDeg(80.0f);
 }
 
 void Game::ResolutionChanged(int newWidth, int newHeight)
 {
-	m_projection.SetResolution(newWidth, newHeight);
+	m_renderCtx.projection.SetResolution(newWidth, newHeight);
 }
 
 void Game::RunFrame(float dt)

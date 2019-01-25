@@ -5,6 +5,8 @@ assets:
   - name: Shaders/Wall.fs.glsl
   - name: Shaders/Common3D.vs.glsl
   - name: Shaders/GravityCorner.fs.glsl
+  - name: Shaders/Primitive.vs.glsl
+  - name: Shaders/Primitive.fs.glsl
   - name: Models/GravityCornerConvex.obj
   - name: Textures/Voxel/Diffuse
     generator: Texture2DArray

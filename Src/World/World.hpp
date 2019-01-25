@@ -15,6 +15,14 @@ struct ClippingArgs
 	float clipDist;
 };
 
+struct PickWallResult
+{
+	bool intersected;
+	glm::ivec3 voxelPosition;
+	glm::vec3 intersectPosition;
+	Dir normalDir;
+};
+
 struct GravityCorner
 {
 	Dir down1;
@@ -58,11 +66,13 @@ public:
 	
 	void PrepareForDraw(class ObjectRenderer& objectRenderer);
 	
-	void Draw(const class RenderSettings& renderSettings, const class WallShader& shader);
+	void Draw(const class RenderSettings& renderSettings);
 	
 	void CalcClipping(ClippingArgs& args) const;
 	
 	const GravityCorner* FindGravityCorner(const ClippingArgs& args, Dir currentDown) const;
+	
+	PickWallResult PickWall(const eg::Ray& ray) const;
 	
 private:
 	void BuildVoxelMesh(std::vector<WallVertex>& verticesOut, std::vector<uint16_t>& indicesOut) const;
