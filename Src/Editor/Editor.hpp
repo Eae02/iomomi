@@ -16,8 +16,12 @@ public:
 private:
 	void DrawWorld();
 	
+	void DrawMenuBar();
+	
 	RenderContext* m_renderCtx;
 	std::string m_newLevelName;
+	
+	std::string m_levelName;
 	std::unique_ptr<World> m_world;
 	
 	EditorCamera m_camera;

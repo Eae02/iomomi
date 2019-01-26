@@ -1,6 +1,9 @@
 #include "Editor.hpp"
+#include "../Levels.hpp"
 
 #include <filesystem>
+#include <fstream>
+
 #include <imgui.h>
 #include <misc/cpp/imgui_stdlib.h>
 
@@ -21,8 +24,10 @@ void Editor::RunFrame(float dt)
 		{
 			ImGui::Text("New Level");
 			ImGui::InputText("Name", &m_newLevelName);
-			if (ImGui::Button("Create"))
+			if (ImGui::Button("Create") && !m_newLevelName.empty())
 			{
+				m_levelName = std::move(m_newLevelName);
+				m_newLevelName = { };
 				m_world = std::make_unique<World>();
 				
 				for (int x = 0; x < 3; x++)
@@ -38,13 +43,34 @@ void Editor::RunFrame(float dt)
 			}
 			
 			ImGui::Separator();
+			ImGui::Text("Open Level");
 			
-			
+			for (Level* level = firstLevel; level != nullptr; level = level->next)
+			{
+				ImGui::PushID(level);
+				std::string label = eg::Concat({ level->name, "###L" });
+				if (ImGui::MenuItem(label.c_str()))
+				{
+					m_world = std::make_unique<World>();
+					
+					std::string path = eg::Concat({ eg::ExeDirPath(), "/levels/", level->name, ".gwd" });
+					std::ifstream stream(path, std::ios::binary);
+					m_world->Load(stream);
+					
+					m_levelName = level->name;
+				}
+				ImGui::PopID();
+			}
 		}
 		
 		ImGui::End();
 		return;
 	}
+	
+	DrawMenuBar();
+	
+	if (m_world == nullptr)
+		return;
 	
 	glm::mat4 viewMatrix, inverseViewMatrix;
 	m_camera.GetViewMatrix(viewMatrix, inverseViewMatrix);
@@ -219,4 +245,30 @@ void Editor::DrawWorld()
 	m_primRenderer.Draw();
 	
 	eg::DC.EndRenderPass();
+}
+
+void Editor::DrawMenuBar()
+{
+	if (ImGui::BeginMainMenuBar())
+	{
+		if (ImGui::BeginMenu("File"))
+		{
+			if (ImGui::MenuItem("Save"))
+			{
+				std::string savePath = eg::Concat({ eg::ExeDirPath(), "/levels/", m_levelName, ".gwd" });
+				std::ofstream stream(savePath, std::ios::binary);
+				m_world->Save(stream);
+			}
+			
+			if (ImGui::MenuItem("Close"))
+			{
+				m_levelName.clear();
+				m_world = nullptr;
+			}
+			
+			ImGui::EndMenu();
+		}
+		
+		ImGui::EndMainMenuBar();
+	}
 }

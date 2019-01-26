@@ -1,4 +1,5 @@
 #include "Game.hpp"
+#include "Levels.hpp"
 
 static_assert(sizeof(int) == 4);
 static_assert(sizeof(float) == 4);
@@ -11,6 +12,7 @@ int main(int argc, char** argv)
 	runConfig.initialize = []
 	{
 		eg::LoadAssets("assets", "/");
+		InitLevels();
 	};
 	
 	bool vSync = true;
