@@ -9,6 +9,7 @@ class Game : public eg::IGame
 {
 public:
 	Game();
+	~Game();
 	
 	void RunFrame(float dt) override;
 	
@@ -18,8 +19,6 @@ private:
 	float m_gameTime = 0;
 	
 	ImGuiInterface m_imGuiInterface;
-	World m_world;
-	Player m_player;
 	
 	RenderContext m_renderCtx;
 };

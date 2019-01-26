@@ -7,7 +7,7 @@
 #include <imgui.h>
 #include <misc/cpp/imgui_stdlib.h>
 
-std::unique_ptr<Editor> editor;
+Editor* editor;
 
 Editor::Editor(RenderContext& renderCtx)
 	: m_renderCtx(&renderCtx)

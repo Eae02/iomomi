@@ -46,4 +46,4 @@ private:
 	int m_dragDistance;
 };
 
-extern std::unique_ptr<Editor> editor;
+extern Editor* editor;
