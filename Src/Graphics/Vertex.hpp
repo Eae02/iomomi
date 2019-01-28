@@ -22,7 +22,7 @@ struct WallVertex
 
 struct WallBorderVertex
 {
-	glm::vec3 position;
+	glm::vec4 position;
 	int8_t normal1[4];
 	int8_t normal2[4];
 };

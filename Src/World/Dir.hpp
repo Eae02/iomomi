@@ -10,6 +10,13 @@ enum class Dir
 	NegZ
 };
 
+extern const char* DirectionNames[6];
+
+inline const char* DirectionName(Dir d)
+{
+	return DirectionNames[(int)d];
+}
+
 inline glm::ivec3 DirectionVector(Dir d)
 {
 	glm::vec3 v(0.0f);

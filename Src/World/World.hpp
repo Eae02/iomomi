@@ -77,24 +77,58 @@ public:
 	PickWallResult PickWall(const eg::Ray& ray) const;
 	
 private:
-	void BuildVoxelMesh(std::vector<WallVertex>& verticesOut, std::vector<uint16_t>& indicesOut) const;
-	void BuildVoxelBorderMesh(std::vector<WallBorderVertex>& verticesOut) const;
+	static constexpr uint32_t REGION_SIZE = 16;
+	
+	inline static std::tuple<glm::ivec3, glm::ivec3> DecomposeGlobalCoordinate(const glm::ivec3& globalC);
 	
 	/**
 	 * Each voxel is represented by one 64-bit integer where the low 8 * 6 bits store which texture is used
 	 * for each side (with 8 bits per side) and the 48th bit is set if the voxel is air.
 	 */
-	std::unique_ptr<uint64_t[]> m_voxelBuffer;
-	glm::ivec3 m_voxelBufferMin;
-	glm::ivec3 m_voxelBufferMax;
+	struct RegionData
+	{
+		uint32_t numAirVoxels = 0;
+		uint32_t firstVertex;
+		uint32_t firstIndex;
+		uint64_t voxels[REGION_SIZE][REGION_SIZE][REGION_SIZE] = { };
+		std::vector<WallVertex> vertices;
+		std::vector<uint16_t> indices;
+		std::vector<WallBorderVertex> borderVertices;
+	};
 	
-	bool m_voxelBufferOutOfDate = true;
+	struct Region
+	{
+		glm::ivec3 coordinate;
+		bool outOfDate;
+		bool canDraw;
+		std::unique_ptr<RegionData> data;
+		
+		bool operator<(const glm::ivec3& c) const
+		{
+			return std::tie(coordinate.x, coordinate.y, coordinate.z) < std::tie(c.x, c.y, c.z);
+		}
+		
+		bool operator<(const Region& other) const
+		{
+			return operator<(other.coordinate);
+		}
+	};
+	
+	const Region* GetRegion(const glm::ivec3& coordinate) const;
+	Region* GetRegion(const glm::ivec3& coordinate, bool maybeCreate);
+	
+	void BuildRegionMesh(glm::ivec3 coordinate, RegionData& region);
+	void BuildRegionBorderMesh(glm::ivec3 coordinate, RegionData& region);
+	
+	std::vector<Region> m_regions;
+	
+	bool m_voxelsOutOfDate = true;
+	bool m_canDraw = false;
 	
 	eg::Buffer m_voxelVertexBuffer;
 	eg::Buffer m_voxelIndexBuffer;
 	size_t m_voxelVertexBufferCapacity = 0;
 	size_t m_voxelIndexBufferCapacity = 0;
-	uint32_t m_numVoxelIndices = 0;
 	
 	eg::Buffer m_borderVertexBuffer;
 	size_t m_borderVertexBufferCapacity = 0;

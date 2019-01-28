@@ -15,138 +15,179 @@ World::World()
 	
 }
 
-inline size_t VoxelBufferSize(const glm::ivec3& min, const glm::ivec3& max)
+std::tuple<glm::ivec3, glm::ivec3> World::DecomposeGlobalCoordinate(const glm::ivec3& globalC)
 {
-	glm::ivec3 delta = max - min + glm::ivec3(1);
-	return (size_t)delta.x * (size_t)delta.y * (size_t)delta.z;
+	glm::ivec3 localCoord(globalC.x & (REGION_SIZE - 1), globalC.y & (REGION_SIZE - 1), globalC.z & (REGION_SIZE - 1));
+	glm::ivec3 regionCoord = (globalC - localCoord) / (int)REGION_SIZE;
+	return std::make_tuple(localCoord, regionCoord);
 }
 
 bool World::Load(std::istream& stream)
 {
-	char magicBuffer[sizeof(MAGIC)];
-	stream.read(magicBuffer, sizeof(MAGIC));
-	if (std::memcmp(magicBuffer, MAGIC, sizeof(MAGIC)))
+	YAML::Node rootYaml = YAML::Load(stream);
+	int version = rootYaml["version"].as<int>(10000);
+	if (version != 0)
 	{
-		eg::Log(eg::LogLevel::Error, "wd", "Invalid world file.");
+		eg::Log(eg::LogLevel::Warning, "wd", "Unsupported world version");
 		return false;
 	}
 	
-	const uint32_t version = eg::BinRead<uint32_t>(stream);
-	if (version > CURRENT_VERSION)
+	std::vector<std::string_view> regParts;
+	
+	m_regions.clear();
+	for (const YAML::Node& regionNode : rootYaml["voxels"])
 	{
-		eg::Log(eg::LogLevel::Error, "wd", "Unsupported world file version.");
+		const YAML::Node& regNode = regionNode["reg"];
+		const YAML::Node& dataNode = regionNode["data"];
+		if (!regNode || !dataNode)
+			continue;
+		
+		regParts.clear();
+		eg::SplitString(regNode.as<std::string>(), ' ', regParts);
+		if (regParts.size() != 3)
+			continue;
+		
+		Region& region = m_regions.emplace_back();
+		for (int i = 0; i < 3; i++)
+			region.coordinate[i] = atoi(regParts[i].data());
+		region.outOfDate = true;
+		region.canDraw = false;
+		region.data = std::make_unique<RegionData>();
+		
+		YAML::Binary dataBin = dataNode.as<YAML::Binary>();
+		if (!eg::Decompress(dataBin.data(), dataBin.size(), region.data->voxels, sizeof(RegionData::voxels)))
+		{
+			eg::Log(eg::LogLevel::Error, "wd", "Could not decompress voxels");
+			return false;
+		}
+	}
+	
+	if (!std::is_sorted(m_regions.begin(), m_regions.end()))
+	{
+		eg::Log(eg::LogLevel::Error, "wd", "Regions are not sorted");
 		return false;
 	}
 	
-	stream.read(reinterpret_cast<char*>(&m_voxelBufferMin), sizeof(int32_t) * 3);
-	stream.read(reinterpret_cast<char*>(&m_voxelBufferMax), sizeof(int32_t) * 3);
-	
-	size_t voxelBufferSize = VoxelBufferSize(m_voxelBufferMin, m_voxelBufferMax);
-	m_voxelBuffer = std::make_unique<uint64_t[]>(voxelBufferSize);
-	
-	eg::ReadCompressedSection(stream, m_voxelBuffer.get(), voxelBufferSize * sizeof(uint64_t));
-	
-	const uint32_t numGravityCorners = eg::BinRead<uint32_t>(stream);
-	m_gravityCorners.resize(numGravityCorners);
-	for (uint32_t i = 0; i < numGravityCorners; i++)
-	{
-		m_gravityCorners[i].down1 = (Dir)eg::BinRead<uint8_t>(stream);
-		m_gravityCorners[i].down2 = (Dir)eg::BinRead<uint8_t>(stream);
-		m_gravityCorners[i].length = eg::BinRead<float>(stream);
-		stream.read(reinterpret_cast<char*>(&m_gravityCorners[i].position), sizeof(int32_t) * 3);
-	}
+	m_voxelsOutOfDate = true;
 	
 	return true;
 }
 
 void World::Save(std::ostream& outStream) const
 {
-	outStream.write(MAGIC, sizeof(MAGIC));
-	eg::BinWrite<uint32_t>(outStream, CURRENT_VERSION);
+	YAML::Emitter emitter;
+	emitter << YAML::BeginMap;
+	emitter << YAML::Key << "version" << YAML::Value << 0;
+	emitter << YAML::Key << "voxels" << YAML::Value << YAML::BeginSeq;
 	
-	outStream.write(reinterpret_cast<const char*>(&m_voxelBufferMin), sizeof(int32_t) * 3);
-	outStream.write(reinterpret_cast<const char*>(&m_voxelBufferMax), sizeof(int32_t) * 3);
+	std::vector<std::vector<char>> regionDataVectors;
 	
-	eg::WriteCompressedSection(outStream, m_voxelBuffer.get(),
-		sizeof(uint64_t) * VoxelBufferSize(m_voxelBufferMin, m_voxelBufferMax));
-	
-	eg::BinWrite(outStream, (uint32_t)m_gravityCorners.size());
-	for (const GravityCorner& corner : m_gravityCorners)
+	for (const Region& region : m_regions)
 	{
-		eg::BinWrite(outStream, (uint8_t)corner.down1);
-		eg::BinWrite(outStream, (uint8_t)corner.down2);
-		eg::BinWrite(outStream, corner.length);
-		outStream.write(reinterpret_cast<const char*>(&corner.position), sizeof(int32_t) * 3);
+		std::ostringstream coordStream;
+		coordStream << region.coordinate.x << " " << region.coordinate.y << " " << region.coordinate.z;
+		
+		emitter << YAML::BeginMap;
+		emitter << YAML::Key << "reg" << YAML::Value << coordStream.str();
+		
+		std::vector<char> regionData = eg::Compress(region.data->voxels, sizeof(RegionData::voxels));
+		
+		emitter << YAML::Key << "data" << YAML::Value <<
+			YAML::Binary(reinterpret_cast<const uint8_t*>(regionData.data()), regionData.size());
+		regionDataVectors.push_back(std::move(regionData));
+		
+		emitter << YAML::EndMap;
 	}
+	emitter << YAML::EndSeq;
+	
+	if (!m_gravityCorners.empty())
+	{
+		emitter << YAML::Key << "gravityCorners" << YAML::Value << YAML::BeginSeq;
+		for (const GravityCorner& corner : m_gravityCorners)
+		{
+			emitter << YAML::BeginMap;
+			emitter << YAML::Key << "down1" << YAML::Value << DirectionName(corner.down1);
+			emitter << YAML::Key << "down2" << YAML::Value << DirectionName(corner.down2);
+			emitter << YAML::Key << "len" << YAML::Value << corner.length;
+			emitter << YAML::Key << "x" << YAML::Value << corner.position.x;
+			emitter << YAML::Key << "y" << YAML::Value << corner.position.y;
+			emitter << YAML::Key << "z" << YAML::Value << corner.position.z;
+			emitter << YAML::EndMap;
+		}
+		emitter << YAML::EndSeq;
+	}
+	
+	outStream << emitter.c_str();
 }
 
 static constexpr uint64_t IS_AIR_MASK = (uint64_t)1 << (uint64_t)(8 * 6);
 
-inline int VoxelBufferIdx(const glm::ivec3& pos, const glm::ivec3& min, const glm::ivec3& max)
+const World::Region* World::GetRegion(const glm::ivec3& coordinate) const
 {
-	glm::ivec3 rel = pos - min;
-	glm::ivec3 size = (max - min) + glm::ivec3(1);
-	if (rel.x < 0 || rel.y < 0 || rel.z < 0 || rel.x >= size.x || rel.y >= size.y || rel.z >= size.z)
-		return -1;
-	return rel.x + rel.y * size.x + rel.z * size.x * size.y;
+	auto it = std::lower_bound(m_regions.begin(), m_regions.end(), coordinate);
+	if (it != m_regions.end() && it->coordinate == coordinate)
+		return &*it;
+	return nullptr;
+}
+
+World::Region* World::GetRegion(const glm::ivec3& coordinate, bool maybeCreate)
+{
+	auto it = std::lower_bound(m_regions.begin(), m_regions.end(), coordinate);
+	if (it != m_regions.end() && it->coordinate == coordinate)
+		return &*it;
+	
+	if (!maybeCreate)
+		return nullptr;
+	
+	Region* region = &*m_regions.emplace(it);
+	region->coordinate = coordinate;
+	region->canDraw = false;
+	region->outOfDate = true;
+	region->data = std::make_unique<RegionData>();
+	
+	m_voxelsOutOfDate = true;
+	
+	return region;
 }
 
 void World::SetIsAir(const glm::ivec3& pos, bool isAir)
 {
-	if (IsAir(pos) == isAir)
+	auto [localC, regionC] = DecomposeGlobalCoordinate(pos);
+	Region* region = GetRegion(regionC, isAir);
+	if (region == nullptr)
 		return;
 	
-	int idx = VoxelBufferIdx(pos, m_voxelBufferMin, m_voxelBufferMax);
-	if (idx != -1 && m_voxelBuffer != nullptr)
+	uint64_t& voxelRef = region->data->voxels[localC.x][localC.y][localC.z];
+	if (isAir != ((voxelRef & IS_AIR_MASK) != 0))
 	{
 		if (isAir)
-			m_voxelBuffer.get()[idx] |= IS_AIR_MASK;
+			voxelRef |= IS_AIR_MASK;
 		else
-			m_voxelBuffer.get()[idx] &= ~IS_AIR_MASK;
-		m_voxelBufferOutOfDate = true;
-		return;
-	}
-	
-	// ** Expands the voxel buffer **
-	
-	constexpr float EXPAND_STEP = 32;
-	
-	glm::ivec3 oldMin = m_voxelBufferMin;
-	glm::ivec3 oldMax = m_voxelBufferMax;
-	m_voxelBufferMin = m_voxelBuffer ? glm::min(m_voxelBufferMin, pos) : pos;
-	m_voxelBufferMax = m_voxelBuffer ? glm::max(m_voxelBufferMax, pos) : pos;
-	m_voxelBufferMin = glm::floor(glm::vec3(m_voxelBufferMin) / EXPAND_STEP) * EXPAND_STEP;
-	m_voxelBufferMax = glm::ceil(glm::vec3(m_voxelBufferMax) / EXPAND_STEP) * EXPAND_STEP;
-	
-	std::unique_ptr<uint64_t[]> newBuffer = std::make_unique<uint64_t[]>(VoxelBufferSize(m_voxelBufferMin, m_voxelBufferMax));
-	
-	//Copies voxel buffer data to the new buffer
-	if (m_voxelBuffer != nullptr)
-	{
-		for (int z = m_voxelBufferMin.z; z <= m_voxelBufferMax.z; z++)
+			voxelRef &= ~IS_AIR_MASK;
+		
+		for (int s = 0; s < 6; s++)
 		{
-			for (int y = m_voxelBufferMin.y; y <= m_voxelBufferMax.y; y++)
+			int sd = s / 2;
+			glm::ivec3 d = DirectionVector((Dir)s);
+			if (localC[sd] + d[sd] < 0 || localC[sd] + d[sd] >= (int)REGION_SIZE)
 			{
-				for (int x = m_voxelBufferMin.x; x <= m_voxelBufferMax.x; x++)
-				{
-					const int dstIdx = VoxelBufferIdx({x, y, z}, m_voxelBufferMin, m_voxelBufferMax);
-					const int srcIdx = VoxelBufferIdx({x, y, z}, oldMin, oldMax);
-					newBuffer[dstIdx] = (srcIdx != -1) ? m_voxelBuffer[srcIdx] : 0;
-				}
+				Region* nRegion = GetRegion(regionC + d, true);
+				nRegion->outOfDate = true;
 			}
 		}
+		
+		region->outOfDate = true;
+		m_voxelsOutOfDate = true;
 	}
-	
-	m_voxelBuffer = std::move(newBuffer);
-	SetIsAir(pos, isAir);
 }
 
 bool World::IsAir(const glm::ivec3& pos) const
 {
-	if (m_voxelBuffer == nullptr)
+	auto [localC, regionC] = DecomposeGlobalCoordinate(pos);
+	const Region* region = GetRegion(regionC);
+	if (region == nullptr)
 		return false;
-	int idx = VoxelBufferIdx(pos, m_voxelBufferMin, m_voxelBufferMax);
-	return idx == -1 ? false : (m_voxelBuffer[idx] & IS_AIR_MASK) != 0;
+	return (region->data->voxels[localC.x][localC.y][localC.z] & IS_AIR_MASK) != 0;
 }
 
 void World::SetTexture(const glm::ivec3& pos, Dir side, uint8_t textureLayer)
@@ -156,20 +197,21 @@ void World::SetTexture(const glm::ivec3& pos, Dir side, uint8_t textureLayer)
 		EG_PANIC("Attempted to set texture of a voxel which is not air.");
 #endif
 	
-	const int idx = VoxelBufferIdx(pos, m_voxelBufferMin, m_voxelBufferMax);
+	auto [localC, regionC] = DecomposeGlobalCoordinate(pos);
+	const Region* region = GetRegion(regionC);
 	
 	const uint64_t shift = (uint64_t)side * 8;
-	m_voxelBuffer[idx] = (m_voxelBuffer[idx] & ~(0xFFULL << shift)) | (textureLayer << shift);
+	uint64_t& voxelRef = region->data->voxels[localC.x][localC.y][localC.z];
+	voxelRef = (voxelRef & ~(0xFFULL << shift)) | (textureLayer << shift);
 }
 
 uint8_t World::GetTexture(const glm::ivec3& pos, Dir side) const
 {
-	if (m_voxelBuffer == nullptr)
+	auto [localC, regionC] = DecomposeGlobalCoordinate(pos);
+	const Region* region = GetRegion(regionC);
+	if (region == nullptr)
 		return 0;
-	const int idx = VoxelBufferIdx(pos, m_voxelBufferMin, m_voxelBufferMax);
-	if (idx == -1)
-		return 0;
-	return (m_voxelBuffer[idx] >> ((uint64_t)side * 8)) & 0xFFULL;
+	return (region->data->voxels[localC.x][localC.y][localC.z] >> ((uint64_t)side * 8)) & 0xFFULL;
 }
 
 glm::mat3 GravityCorner::MakeRotationMatrix() const
@@ -194,139 +236,196 @@ void World::PrepareForDraw(ObjectRenderer& objectRenderer, bool isEditor)
 		objectRenderer.Add(gravityCornerModel, GravityCornerMaterial::instance, transform);
 	}
 	
-	if (m_voxelBufferOutOfDate)
+	if (m_voxelsOutOfDate)
 	{
-		std::vector<WallVertex> vertices;
-		std::vector<uint16_t> indices;
-		BuildVoxelMesh(vertices, indices);
+		uint32_t totalVertices = 0;
+		uint32_t totalIndices = 0;
+		uint32_t totalBorderVertices = 0;
 		
-		if (indices.empty())
+		for (Region& region : m_regions)
 		{
-			m_voxelBufferOutOfDate = false;
+			if (region.outOfDate)
+			{
+				BuildRegionMesh(region.coordinate, *region.data);
+				if (isEditor)
+				{
+					BuildRegionBorderMesh(region.coordinate, *region.data);
+				}
+				region.canDraw = !region.data->indices.empty();
+				region.outOfDate = false;
+			}
+			
+			totalVertices += region.data->vertices.size();
+			totalIndices += region.data->indices.size();
+			totalBorderVertices += region.data->borderVertices.size();
+		}
+		
+		if (totalIndices == 0)
+		{
+			m_canDraw = false;
 			return;
 		}
+		m_canDraw = true;
 		
-		const size_t verticesBytes = vertices.size() * sizeof(WallVertex);
-		const size_t indicesBytes = indices.size() * sizeof(uint16_t);
-		size_t uploadBytes = verticesBytes + indicesBytes;
-		
-		std::vector<WallBorderVertex> borderVertices;
-		if (isEditor)
-		{
-			BuildVoxelBorderMesh(borderVertices);
-			uploadBytes += borderVertices.size() * sizeof(WallBorderVertex);
-		}
+		uint64_t indicesOffset = totalVertices * sizeof(WallVertex);
+		uint64_t borderVerticesOffset = indicesOffset + totalIndices * sizeof(uint16_t);
+		uint64_t uploadBytes = borderVerticesOffset + totalBorderVertices * sizeof(WallBorderVertex);
 		
 		//Creates an upload buffer and copies data to it
 		eg::UploadBuffer uploadBuffer = eg::GetTemporaryUploadBuffer(uploadBytes);
 		char* uploadBufferMem = reinterpret_cast<char*>(uploadBuffer.Map());
-		std::memcpy(uploadBufferMem,                 vertices.data(), verticesBytes);
-		std::memcpy(uploadBufferMem + verticesBytes, indices.data(), indicesBytes);
-		if (isEditor)
+		auto* verticesOut = reinterpret_cast<WallVertex*>(uploadBufferMem);
+		auto* indicesOut = reinterpret_cast<uint16_t*>(uploadBufferMem + indicesOffset);
+		auto* borderVerticesOut = reinterpret_cast<WallBorderVertex*>(uploadBufferMem + borderVerticesOffset);
+		
+		uint32_t firstVertex = 0;
+		uint32_t firstIndex = 0;
+		for (Region& region : m_regions)
 		{
-			std::memcpy(uploadBufferMem + verticesBytes + indicesBytes, borderVertices.data(),
-			            borderVertices.size() * sizeof(WallBorderVertex));
+			std::copy_n(region.data->vertices.data(), region.data->vertices.size(), verticesOut + firstVertex);
+			std::copy_n(region.data->indices.data(), region.data->indices.size(), indicesOut + firstIndex);
+			
+			region.data->firstVertex = firstVertex;
+			region.data->firstIndex = firstIndex;
+			
+			firstVertex += region.data->vertices.size();
+			firstIndex += region.data->indices.size();
+			
+			if (isEditor)
+			{
+				std::copy_n(region.data->borderVertices.begin(), region.data->borderVertices.size(), borderVerticesOut);
+				borderVerticesOut += region.data->borderVertices.size();
+			}
 		}
+		
 		uploadBuffer.Unmap();
 		
 		//Reallocates the vertex buffer if it is too small
-		if (m_voxelVertexBufferCapacity < vertices.size())
+		if (m_voxelVertexBufferCapacity < totalVertices)
 		{
-			m_voxelVertexBufferCapacity = eg::RoundToNextMultiple(vertices.size(), 16 * 1024);
+			m_voxelVertexBufferCapacity = eg::RoundToNextMultiple(totalVertices, 16 * 1024);
 			m_voxelVertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer | eg::BufferFlags::CopyDst,
 				m_voxelVertexBufferCapacity * sizeof(WallVertex), nullptr);
 		}
 		
 		//Reallocates the index buffer if it is too small
-		if (m_voxelIndexBufferCapacity < indices.size())
+		if (m_voxelIndexBufferCapacity < totalIndices)
 		{
-			m_voxelIndexBufferCapacity = eg::RoundToNextMultiple(indices.size(), 16 * 1024);
+			m_voxelIndexBufferCapacity = eg::RoundToNextMultiple(totalIndices, 16 * 1024);
 			m_voxelIndexBuffer = eg::Buffer(eg::BufferFlags::IndexBuffer | eg::BufferFlags::CopyDst,
 				m_voxelIndexBufferCapacity * sizeof(uint16_t), nullptr);
 		}
 		
 		//Reallocates the border vertex buffer if it is too small
-		if (m_borderVertexBufferCapacity < borderVertices.size())
+		if (m_borderVertexBufferCapacity < totalBorderVertices)
 		{
-			m_borderVertexBufferCapacity = eg::RoundToNextMultiple(borderVertices.size(), 16 * 1024);
+			m_borderVertexBufferCapacity = eg::RoundToNextMultiple(totalBorderVertices, 16 * 1024);
 			m_borderVertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer | eg::BufferFlags::CopyDst,
 				m_borderVertexBufferCapacity * sizeof(WallBorderVertex), nullptr);
 		}
 		
 		//Uploads data to the vertex and index buffers
-		eg::DC.CopyBuffer(uploadBuffer.buffer, m_voxelVertexBuffer, uploadBuffer.offset, 0, verticesBytes);
-		eg::DC.CopyBuffer(uploadBuffer.buffer, m_voxelIndexBuffer, uploadBuffer.offset + verticesBytes, 0, indicesBytes);
+		eg::DC.CopyBuffer(uploadBuffer.buffer, m_voxelVertexBuffer, uploadBuffer.offset, 0, totalVertices * sizeof(WallVertex));
+		eg::DC.CopyBuffer(uploadBuffer.buffer, m_voxelIndexBuffer, uploadBuffer.offset + indicesOffset, 0, totalIndices * sizeof(uint16_t));
 		
 		m_voxelVertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
 		m_voxelIndexBuffer.UsageHint(eg::BufferUsage::IndexBuffer);
 		
-		if (isEditor && borderVertices.size() > 0)
+		if (isEditor && totalBorderVertices > 0)
 		{
 			eg::DC.CopyBuffer(uploadBuffer.buffer, m_borderVertexBuffer,
-				uploadBuffer.offset + verticesBytes + indicesBytes, 0,
-				borderVertices.size() * sizeof(WallBorderVertex));
+				uploadBuffer.offset + borderVerticesOffset, 0,
+				totalBorderVertices * sizeof(WallBorderVertex));
 			m_borderVertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
 		}
-		m_numBorderVertices = borderVertices.size();
+		m_numBorderVertices = totalBorderVertices;
 		
-		m_numVoxelIndices = (uint32_t)indices.size();
-		m_voxelBufferOutOfDate = false;
+		m_voxelsOutOfDate = false;
 	}
 }
 
 void World::Draw()
 {
-	if (m_numVoxelIndices > 0)
+	if (m_canDraw)
 	{
-		DrawWalls(m_voxelVertexBuffer, m_voxelIndexBuffer, m_numVoxelIndices);
+		eg::DC.BindVertexBuffer(0, m_voxelVertexBuffer, 0);
+		eg::DC.BindIndexBuffer(eg::IndexType::UInt16, m_voxelIndexBuffer, 0);
+		
+		DrawWalls([&]
+		{
+			for (const Region& region : m_regions)
+			{
+				if (region.canDraw)
+				{
+					eg::DC.DrawIndexed(region.data->firstIndex, (uint32_t)region.data->indices.size(),
+						region.data->firstVertex, 0, 1);
+				}
+			}
+		});
 	}
 }
 
 void World::DrawEditor()
 {
-	if (m_numVoxelIndices > 0)
+	if (m_canDraw)
 	{
-		DrawWallsEditor(m_voxelVertexBuffer, m_voxelIndexBuffer, m_numVoxelIndices);
-	}
-	
-	if (m_numBorderVertices > 0)
-	{
-		DrawWallBordersEditor(m_borderVertexBuffer, m_numBorderVertices);
+		eg::DC.BindVertexBuffer(0, m_voxelVertexBuffer, 0);
+		eg::DC.BindIndexBuffer(eg::IndexType::UInt16, m_voxelIndexBuffer, 0);
+		
+		DrawWallsEditor([&]
+		{
+			for (const Region& region : m_regions)
+			{
+				if (region.canDraw)
+				{
+					eg::DC.DrawIndexed(region.data->firstIndex, (uint32_t)region.data->indices.size(),
+						region.data->firstVertex, 0, 1);
+				}
+			}
+		});
+		
+		if (m_numBorderVertices > 0)
+		{
+			DrawWallBordersEditor(m_borderVertexBuffer, m_numBorderVertices);
+		}
 	}
 }
 
-void World::BuildVoxelMesh(std::vector<WallVertex>& verticesOut, std::vector<uint16_t>& indicesOut) const
+void World::BuildRegionMesh(glm::ivec3 coordinate, World::RegionData& region)
 {
-	for (int z = m_voxelBufferMin.z - 1; z <= m_voxelBufferMax.z + 1; z++)
+	glm::ivec3 globalBase = coordinate * (int)REGION_SIZE;
+	region.vertices.clear();
+	region.indices.clear();
+	
+	for (uint32_t x = 0; x < REGION_SIZE; x++)
 	{
-		for (int y = m_voxelBufferMin.y - 1; y <= m_voxelBufferMax.y + 1; y++)
+		for (uint32_t y = 0; y < REGION_SIZE; y++)
 		{
-			for (int x = m_voxelBufferMin.x - 1; x <= m_voxelBufferMax.x + 1; x++)
+			for (uint32_t z = 0; z < REGION_SIZE; z++)
 			{
-				//Only emit triangles for solid voxels
-				if (IsAir({ x, y, z }))
+				//Only emit triangles for air voxels
+				if ((region.voxels[x][y][z] & IS_AIR_MASK) == 0)
 					continue;
+				
+				glm::ivec3 globalPos = globalBase + glm::ivec3(x, y, z);
 				
 				for (int s = 0; s < 6; s++)
 				{
-					const glm::ivec3 nPos = glm::ivec3(x, y, z) + voxel::normals[s];
-					const int nIdx = VoxelBufferIdx(nPos, m_voxelBufferMin, m_voxelBufferMax);
+					const glm::ivec3 nPos = globalPos - voxel::normals[s];
 					
-					//Only emit triangles for voxels that face into an air voxel
-					if (nIdx == -1 || !(m_voxelBuffer[nIdx] & IS_AIR_MASK))
+					//Only emit triangles for voxels that face into a solid voxel
+					if (IsAir(nPos))
 						continue;
+					const uint8_t textureLayer = (region.voxels[x][y][z] >> (8 * s)) & 0xFFULL;
 					
 					//The center of the face to be emitted
-					const glm::vec3 faceCenter = glm::vec3(x, y, z) + 0.5f + glm::vec3(voxel::normals[s]) * 0.5f;
+					const glm::vec3 faceCenter = glm::vec3(globalPos) + 0.5f - glm::vec3(voxel::normals[s]) * 0.5f;
 					
 					//Emits indices
-					const uint16_t baseIndex = (uint16_t)verticesOut.size();
+					const uint16_t baseIndex = (uint16_t)region.vertices.size();
 					static const uint16_t indicesRelative[] = { 0, 1, 2, 2, 1, 3 };
 					for (uint16_t i : indicesRelative)
-						indicesOut.push_back(baseIndex + i);
-					
-					const int oppositeS = (int)OppositeDir((Dir)s);
-					const uint8_t textureLayer = (m_voxelBuffer[nIdx] >> (uint64_t)(oppositeS * 8)) & 0xFFULL;
+						region.indices.push_back(baseIndex + i);
 					
 					//Emits vertices
 					glm::vec3 tangent = voxel::tangents[s];
@@ -335,7 +434,7 @@ void World::BuildVoxelMesh(std::vector<WallVertex>& verticesOut, std::vector<uin
 					{
 						for (int fy = 0; fy < 2; fy++)
 						{
-							WallVertex& vertex = verticesOut.emplace_back();
+							WallVertex& vertex = region.vertices.emplace_back();
 							vertex.position = faceCenter + tangent * (fy - 0.5f) + biTangent * (fx - 0.5f);
 							vertex.texCoord[0] = (uint8_t)(fx * 255);
 							vertex.texCoord[1] = (uint8_t)((1 - fy) * 255);
@@ -350,48 +449,49 @@ void World::BuildVoxelMesh(std::vector<WallVertex>& verticesOut, std::vector<uin
 	}
 }
 
-void World::BuildVoxelBorderMesh(std::vector<WallBorderVertex>& verticesOut) const
+void World::BuildRegionBorderMesh(glm::ivec3 coordinate, World::RegionData& region)
 {
-	struct Line
-	{
-		glm::ivec3 d1;
-		glm::ivec3 d2;
-		glm::ivec3 dl;
-	};
+	glm::ivec3 globalBase = coordinate * (int)REGION_SIZE;
+	region.borderVertices.clear();
 	
-	Line lines[] = 
+	for (uint32_t x = 0; x < REGION_SIZE; x++)
 	{
-		{ { 1, 0, 0 }, { 0, 0, 1 }, { 0, 1, 0 } },
-		{ { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } },
-		{ { 0, 0, 1 }, { 0, 1, 0 }, { 1, 0, 0 } },
-	};
-	
-	for (int z = m_voxelBufferMin.z - 1; z <= m_voxelBufferMax.z + 1; z++)
-	{
-		for (int y = m_voxelBufferMin.y - 1; y <= m_voxelBufferMax.y + 1; y++)
+		for (uint32_t y = 0; y < REGION_SIZE; y++)
 		{
-			for (int x = m_voxelBufferMin.x - 1; x <= m_voxelBufferMax.x + 1; x++)
+			for (uint32_t z = 0; z < REGION_SIZE; z++)
 			{
-				glm::ivec3 pos(x, y, z);
-				bool cAir = IsAir(pos);
+				if ((region.voxels[x][y][z] & IS_AIR_MASK) == 0)
+					continue;
+				glm::ivec3 gPos = globalBase + glm::ivec3(x, y, z);
+				glm::vec3 cPos = glm::vec3(gPos) + 0.5f;
 				
-				for (Line& line : lines)
+				for (int dl = 0; dl < 3; dl++)
 				{
-					bool d1Air = IsAir(pos + line.d1);
-					bool d2Air = IsAir(pos + line.d2);
-					bool diagAir = IsAir(pos + line.d1 + line.d2);
-					if ((diagAir == cAir) != (d1Air == d2Air))
+					glm::ivec3 dlV, uV, vV;
+					dlV[dl] = 1;
+					uV[(dl + 1) % 3] = 1;
+					vV[(dl + 2) % 3] = 1;
+					
+					for (int u = 0; u < 2; u++)
 					{
-						WallBorderVertex& v1 = verticesOut.emplace_back();
-						v1.position = glm::vec3(pos) + 0.5f * glm::vec3(glm::abs(line.d1) + line.d1 + glm::abs(line.d2) + line.d2);
-						
-						bool fn1 = (cAir && !d1Air) || (d2Air && !diagAir);
-						bool fn2 = (cAir && !d2Air) || (d1Air && !diagAir);
-						VecEncode(fn1 ? -line.d1 : line.d1, v1.normal1);
-						VecEncode(fn2 ? -line.d2 : line.d2, v1.normal2);
-						
-						WallBorderVertex& v2 = verticesOut.emplace_back(v1);
-						v2.position += line.dl;
+						glm::ivec3 uSV = uV * (u * 2 - 1);
+						for (int v = 0; v < 2; v++)
+						{
+							glm::ivec3 vSV = vV * (v * 2 - 1);
+							bool uAir = IsAir(gPos + uSV);
+							bool vAir = IsAir(gPos + vSV);
+							bool diagAir = IsAir(gPos + uSV + vSV);
+							if (diagAir || uAir != vAir)
+								continue;
+							
+							WallBorderVertex& v1 = region.borderVertices.emplace_back();
+							v1.position = glm::vec4(cPos + 0.5f * glm::vec3(uSV + vSV + dlV), 0.0f);
+							VecEncode(-uSV, v1.normal1);
+							VecEncode(-vSV, v1.normal2);
+							
+							WallBorderVertex& v2 = region.borderVertices.emplace_back(v1);
+							v2.position -= glm::vec4(dlV, -1);
+						}
 					}
 				}
 			}
@@ -529,7 +629,7 @@ PickWallResult World::PickWall(const eg::Ray& ray) const
 	for (int dim = 0; dim < 3; dim++)
 	{
 		glm::vec3 dn = DirectionVector((Dir)(dim * 2));
-		for (int s = m_voxelBufferMin[dim]; s <= m_voxelBufferMax[dim]; s++)
+		for (int s = -100; s <= 100; s++)
 		{
 			if (std::signbit(s - ray.GetStart()[dim]) != std::signbit(ray.GetDirection()[dim]))
 				continue;

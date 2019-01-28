@@ -68,7 +68,7 @@ void InitializeWallShader()
 	edBorderFFS.depthFormat = eg::Format::DefaultDepthStencil;
 	edBorderFFS.attachments[0].format = eg::Format::DefaultColor;
 	edBorderFFS.vertexBindings[0] = { sizeof(WallBorderVertex), eg::InputRate::Vertex };
-	edBorderFFS.vertexAttributes[0] = { 0, eg::DataType::Float32,   3, (uint32_t)offsetof(WallBorderVertex, position) };
+	edBorderFFS.vertexAttributes[0] = { 0, eg::DataType::Float32,   4, (uint32_t)offsetof(WallBorderVertex, position) };
 	edBorderFFS.vertexAttributes[1] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallBorderVertex, normal1) };
 	edBorderFFS.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallBorderVertex, normal2) };
 	wr.pipelineBorderEditor = editorBorderProgram.CreatePipeline(edBorderFFS);
@@ -87,6 +87,8 @@ static void OnShutdown()
 {
 	wr.pipelineAmbient.Destroy();
 	wr.pipelinePoint.Destroy();
+	wr.pipelineEditor.Destroy();
+	wr.pipelineBorderEditor.Destroy();
 }
 
 EG_ON_SHUTDOWN(OnShutdown)
@@ -102,7 +104,7 @@ struct LightData
 };
 #pragma pack(pop)
 
-void DrawWalls(eg::BufferRef vertexBuffer, eg::BufferRef indexBuffer, uint32_t numIndices)
+void DrawWalls(const std::function<void()>& drawCallback)
 {
 	eg::DC.BindPipeline(wr.pipelineAmbient);
 	
@@ -114,12 +116,7 @@ void DrawWalls(eg::BufferRef vertexBuffer, eg::BufferRef indexBuffer, uint32_t n
 	
 	eg::DC.PushConstants(0, sizeof(ambientColor), ambientColor);
 	
-	eg::DC.BindVertexBuffer(0, vertexBuffer, 0);
-	eg::DC.BindIndexBuffer(eg::IndexType::UInt16, indexBuffer, 0);
-	
-	eg::DC.DrawIndexed(0, numIndices, 0, 0, 1);
-	
-	
+	drawCallback();
 	
 	eg::DC.BindPipeline(wr.pipelinePoint);
 	
@@ -128,9 +125,6 @@ void DrawWalls(eg::BufferRef vertexBuffer, eg::BufferRef indexBuffer, uint32_t n
 	eg::DC.BindTexture(*wr.diffuseTexture, 1, &wr.sampler);
 	eg::DC.BindTexture(*wr.normalMapTexture, 2, &wr.sampler);
 	eg::DC.BindTexture(*wr.miscMapTexture, 3, &wr.sampler);
-	
-	eg::DC.BindVertexBuffer(0, vertexBuffer, 0);
-	eg::DC.BindIndexBuffer(eg::IndexType::UInt16, indexBuffer, 0);
 	
 	LightData lights[2];
 	lights[0].pos = glm::vec3(0, 1, 1.5f);
@@ -141,11 +135,11 @@ void DrawWalls(eg::BufferRef vertexBuffer, eg::BufferRef indexBuffer, uint32_t n
 	for (const LightData& light : lights)
 	{
 		eg::DC.PushConstants(0, light);
-		eg::DC.DrawIndexed(0, numIndices, 0, 0, 1);
+		drawCallback();
 	}
 }
 
-void DrawWallsEditor(eg::BufferRef vertexBuffer, eg::BufferRef indexBuffer, uint32_t numIndices)
+void DrawWallsEditor(const std::function<void()>& drawCallback)
 {
 	eg::DC.BindPipeline(wr.pipelineEditor);
 	
@@ -155,10 +149,7 @@ void DrawWallsEditor(eg::BufferRef vertexBuffer, eg::BufferRef indexBuffer, uint
 	eg::DC.BindTexture(*wr.normalMapTexture, 2, &wr.sampler);
 	eg::DC.BindTexture(*wr.gridTexture, 3);
 	
-	eg::DC.BindVertexBuffer(0, vertexBuffer, 0);
-	eg::DC.BindIndexBuffer(eg::IndexType::UInt16, indexBuffer, 0);
-	
-	eg::DC.DrawIndexed(0, numIndices, 0, 0, 1);
+	drawCallback();
 }
 
 void DrawWallBordersEditor(eg::BufferRef vertexBuffer, uint32_t numVertices)

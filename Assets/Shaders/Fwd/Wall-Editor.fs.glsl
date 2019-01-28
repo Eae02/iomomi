@@ -23,7 +23,7 @@ void main()
 	
 	float light = max(dot(normal, vec3(1, 1, 1)), 0.0) * 0.75 + 0.75;
 	
-	float gridIntensity = texture(gridSampler, texCoord_in.xy).r * 0.5;
+	float gridIntensity = texture(gridSampler, texCoord_in.xy).r;
 	vec3 color = texture(albedoSampler, texCoord_in).rgb;
 	color = mix(color, vec3(1.0), gridIntensity);
 	
