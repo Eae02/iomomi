@@ -1,15 +1,38 @@
 assets:
   - name: Shaders/ImGui.vs.glsl
   - name: Shaders/ImGui.fs.glsl
-  - name: Shaders/Wall.vs.glsl
-  - name: Shaders/Wall.fs.glsl
   - name: Shaders/Common3D.vs.glsl
   - name: Shaders/GravityCorner.fs.glsl
   - name: Shaders/Primitive.vs.glsl
   - name: Shaders/Primitive.fs.glsl
+  - name: Shaders/Post.vs.glsl
+  - name: Shaders/Post.fs.glsl
+  - name: Shaders/Fwd/Wall.vs.glsl
+  - name: Shaders/Fwd/Wall-Ambient.fs.glsl
+  - name: Shaders/Fwd/Wall-Point.fs.glsl
+  - name: Shaders/Fwd/Wall-Editor.fs.glsl
   - name: Models/GravityCornerConvex.obj
+  - name: Textures/Grid.png
+    format: r8
+    filtering: nearest
   - name: Textures/Voxel/Diffuse
     generator: Texture2DArray
-    loader: Texture2DArray
+    loader: Texture2D
+    format: rgba8
+    srgb: true
     layers:
-      - Textures/Voxel/TestD.png
+      - Textures/Voxel/TactileGrayA.png
+  - name: Textures/Voxel/NormalMap
+    generator: Texture2DArray
+    loader: Texture2D
+    format: rgba8
+    srgb: false
+    layers:
+      - Textures/Voxel/TactileGrayN.png
+  - name: Textures/Voxel/MiscMap
+    generator: Texture2DArray
+    loader: Texture2D
+    format: rgba8
+    srgb: false
+    layers:
+      - Textures/Voxel/TactileGrayM.png

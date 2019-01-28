@@ -1,5 +1,7 @@
 #include "RenderSettings.hpp"
 
+RenderSettings* RenderSettings::instance;
+
 RenderSettings::RenderSettings()
 	: m_buffer(eg::BufferFlags::UniformBuffer | eg::BufferFlags::CopyDst, BUFFER_SIZE, nullptr)
 {

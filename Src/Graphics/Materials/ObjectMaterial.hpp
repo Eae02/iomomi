@@ -3,6 +3,12 @@
 class ObjectMaterial
 {
 public:
-	virtual eg::PipelineRef GetPipeline() const = 0;
+	enum class PipelineType
+	{
+		Game,
+		Editor
+	};
+	
+	virtual eg::PipelineRef GetPipeline(PipelineType pipelineType) const = 0;
 	virtual void Bind() const = 0;
 };

@@ -1,8 +1,10 @@
 #include "GravityCornerMaterial.hpp"
+#include "../Renderer.hpp"
 
 GravityCornerMaterial GravityCornerMaterial::instance;
 
-static eg::Pipeline gravityCornerPipeline;
+static eg::Pipeline gravityCornerPipelineEditor;
+static eg::Pipeline gravityCornerPipelineGame;
 
 static void OnInit()
 {
@@ -15,8 +17,6 @@ static void OnInit()
 	fixedFuncState.enableDepthTest = true;
 	fixedFuncState.cullMode = eg::CullMode::Back;
 	//fixedFuncState.frontFaceCCW = true;
-	fixedFuncState.depthFormat = eg::Format::DefaultDepthStencil;
-	fixedFuncState.attachments[0].format = eg::Format::DefaultColor;
 	fixedFuncState.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
 	fixedFuncState.vertexBindings[1] = { sizeof(float) * 16, eg::InputRate::Instance };
 	fixedFuncState.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(eg::StdVertex, position) };
@@ -28,20 +28,31 @@ static void OnInit()
 	fixedFuncState.vertexAttributes[6] = { 1, eg::DataType::Float32, 4, 2 * sizeof(float) * 4 };
 	fixedFuncState.vertexAttributes[7] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
 	
-	gravityCornerPipeline = gravityCornerShaderProgram.CreatePipeline(fixedFuncState);
+	fixedFuncState.depthFormat = Renderer::DEPTH_FORMAT;
+	fixedFuncState.attachments[0].format = Renderer::COLOR_FORMAT;
+	gravityCornerPipelineGame = gravityCornerShaderProgram.CreatePipeline(fixedFuncState);
+	
+	fixedFuncState.depthFormat = eg::Format::DefaultDepthStencil;
+	fixedFuncState.attachments[0].format = eg::Format::DefaultColor;
+	gravityCornerPipelineEditor = gravityCornerShaderProgram.CreatePipeline(fixedFuncState);
 }
 
 static void OnShutdown()
 {
-	gravityCornerPipeline.Destroy();
+	gravityCornerPipelineEditor.Destroy();
 }
 
 EG_ON_INIT(OnInit)
 EG_ON_SHUTDOWN(OnShutdown)
 
-eg::PipelineRef GravityCornerMaterial::GetPipeline() const
+eg::PipelineRef GravityCornerMaterial::GetPipeline(PipelineType pipelineType) const
 {
-	return gravityCornerPipeline;
+	switch (pipelineType)
+	{
+	case PipelineType::Game: return gravityCornerPipelineGame;
+	case PipelineType::Editor: return gravityCornerPipelineEditor;
+	}
+	EG_UNREACHABLE
 }
 
 void GravityCornerMaterial::Bind() const

@@ -12,6 +12,6 @@ layout(push_constant) uniform PC
 
 void main()
 {
-	color_out = color_in;
+	color_out = vec4(pow(color_in.rgb, vec3(2.2)), color_in.a);
 	gl_Position = viewProj * vec4(position_in, 1.0);
 }

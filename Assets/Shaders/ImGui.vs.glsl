@@ -14,7 +14,7 @@ layout(push_constant) uniform PC
 
 void main()
 {
-	vColor = vec4(color_in.rgb, color_in.a);
+	vColor = vec4(pow(color_in.rgb, vec3(2.2)), color_in.a);
 	vTexCoord = vec2(texCoord_in.x, texCoord_in.y);
 	
 	vec2 scaledPos = position_in * uScale;

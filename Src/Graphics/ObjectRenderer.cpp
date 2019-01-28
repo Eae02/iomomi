@@ -1,16 +1,17 @@
 #include "ObjectRenderer.hpp"
 #include "RenderSettings.hpp"
 
-void ObjectRenderer::Begin()
+void ObjectRenderer::Begin(ObjectMaterial::PipelineType pipelineType)
 {
 	m_allocator.Reset();
+	m_pipelineType = pipelineType;
 	m_drawList = nullptr;
 	m_totalInstances = 0;
 }
 
 void ObjectRenderer::Add(const eg::Model& model, const ObjectMaterial& material, const glm::mat4& transform)
 {
-	eg::PipelineRef pipeline = material.GetPipeline();
+	eg::PipelineRef pipeline = material.GetPipeline(m_pipelineType);
 	
 	//Selects a pipeline bucket
 	PipelineBucket* pipelineBucket = m_drawList;
@@ -117,7 +118,7 @@ void ObjectRenderer::End()
 	m_matricesBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
 }
 
-void ObjectRenderer::Draw(const RenderSettings& renderSettings)
+void ObjectRenderer::Draw()
 {
 	if (m_totalInstances == 0)
 		return;
@@ -127,7 +128,7 @@ void ObjectRenderer::Draw(const RenderSettings& renderSettings)
 	for (PipelineBucket* pipeline = m_drawList; pipeline; pipeline =  pipeline->next)
 	{
 		eg::DC.BindPipeline(pipeline->pipeline);
-		eg::DC.BindUniformBuffer(renderSettings.Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+		eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
 		
 		for (MaterialBucket* material = pipeline->materials; material; material = material->next)
 		{

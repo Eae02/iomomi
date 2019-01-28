@@ -7,13 +7,13 @@ class ObjectRenderer
 public:
 	ObjectRenderer() = default;
 	
-	void Begin();
+	void Begin(ObjectMaterial::PipelineType pipeline);
 	
 	void Add(const eg::Model& model, const ObjectMaterial& material, const glm::mat4& transform);
 	
 	void End();
 	
-	void Draw(const class RenderSettings& renderSettings);
+	void Draw();
 	
 private:
 	eg::LinearAllocator m_allocator;
@@ -47,6 +47,8 @@ private:
 		MaterialBucket* materials;
 		PipelineBucket* next;
 	};
+	
+	ObjectMaterial::PipelineType m_pipelineType;
 	
 	PipelineBucket* m_drawList = nullptr;
 	uint32_t m_totalInstances = 0;

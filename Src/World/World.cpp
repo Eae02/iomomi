@@ -245,11 +245,19 @@ void World::PrepareForDraw(ObjectRenderer& objectRenderer)
 	}
 }
 
-void World::Draw(const RenderSettings& renderSettings)
+void World::Draw()
 {
 	if (m_numVoxelIndices > 0)
 	{
-		DrawWalls(renderSettings, m_voxelVertexBuffer, m_voxelIndexBuffer, m_numVoxelIndices);
+		DrawWalls(m_voxelVertexBuffer, m_voxelIndexBuffer, m_numVoxelIndices);
+	}
+}
+
+void World::DrawEditor()
+{
+	if (m_numVoxelIndices > 0)
+	{
+		DrawWallsEditor(m_voxelVertexBuffer, m_voxelIndexBuffer, m_numVoxelIndices);
 	}
 }
 

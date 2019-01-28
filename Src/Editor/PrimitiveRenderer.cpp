@@ -1,4 +1,5 @@
 #include "PrimitiveRenderer.hpp"
+#include "../Graphics/Renderer.hpp"
 
 eg::Pipeline primPipeline;
 
@@ -37,7 +38,7 @@ void PrimitiveRenderer::Begin(const glm::mat4& viewProjection)
 	m_vertices.clear();
 }
 
-void PrimitiveRenderer::AddVertex(const glm::vec3& position, const eg::Color& color)
+void PrimitiveRenderer::AddVertex(const glm::vec3& position, const eg::ColorSRGB& color)
 {
 	Vertex& vertex = m_vertices.emplace_back();
 	vertex.position = position;
@@ -58,7 +59,7 @@ void PrimitiveRenderer::AddTriangle(uint32_t v0, uint32_t v1, uint32_t v2)
 	triangle.depth = (m_viewProjection * glm::vec4(midPos, 1.0f)).z;
 }
 
-void PrimitiveRenderer::AddTriangle(const glm::vec3* positions, const eg::Color& color)
+void PrimitiveRenderer::AddTriangle(const glm::vec3* positions, const eg::ColorSRGB& color)
 {
 	uint32_t baseIdx = NextIndex();
 	for (int i = 0; i < 3; i++)
@@ -66,7 +67,7 @@ void PrimitiveRenderer::AddTriangle(const glm::vec3* positions, const eg::Color&
 	AddTriangle(baseIdx + 0, baseIdx + 1, baseIdx + 2);
 }
 
-void PrimitiveRenderer::AddQuad(const glm::vec3* positions, const eg::Color& color)
+void PrimitiveRenderer::AddQuad(const glm::vec3* positions, const eg::ColorSRGB& color)
 {
 	uint32_t baseIdx = NextIndex();
 	for (int i = 0; i < 4; i++)

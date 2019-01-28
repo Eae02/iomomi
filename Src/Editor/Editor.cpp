@@ -75,13 +75,13 @@ void Editor::RunFrame(float dt)
 	glm::mat4 viewMatrix, inverseViewMatrix;
 	m_camera.GetViewMatrix(viewMatrix, inverseViewMatrix);
 	
-	m_renderCtx->renderSettings.viewProjection = m_renderCtx->projection.Matrix() * viewMatrix;
-	m_renderCtx->renderSettings.invViewProjection = inverseViewMatrix * m_renderCtx->projection.InverseMatrix();
-	m_renderCtx->renderSettings.UpdateBuffer();
+	RenderSettings::instance->viewProjection = m_renderCtx->projection.Matrix() * viewMatrix;
+	RenderSettings::instance->invViewProjection = inverseViewMatrix * m_renderCtx->projection.InverseMatrix();
+	RenderSettings::instance->UpdateBuffer();
 	
 	auto viewRay = eg::MakeLazy([&]
 	{
-		return eg::Ray::UnprojectScreen(m_renderCtx->renderSettings.invViewProjection, eg::CursorPos());
+		return eg::Ray::UnprojectScreen(RenderSettings::instance->invViewProjection, eg::CursorPos());
 	});
 	
 	if (!eg::console::IsShown())
@@ -190,8 +190,8 @@ void Editor::RunFrame(float dt)
 
 void Editor::DrawWorld()
 {
-	m_primRenderer.Begin(m_renderCtx->renderSettings.viewProjection);
-	m_renderCtx->objectRenderer.Begin();
+	m_primRenderer.Begin(RenderSettings::instance->viewProjection);
+	m_renderCtx->objectRenderer.Begin(ObjectMaterial::PipelineType::Editor);
 	
 	m_world->PrepareForDraw(m_renderCtx->objectRenderer);
 	
@@ -211,18 +211,18 @@ void Editor::DrawWorld()
 		quadCorners[2][sd2] = quadCorners[0][sd2] = std::min<float>(m_selection1[sd2], m_selection2Anim[sd2]);
 		quadCorners[1][sd2] = quadCorners[3][sd2] = std::max<float>(m_selection1[sd2], m_selection2Anim[sd2]) + 1;
 		
-		eg::Color color;
+		eg::ColorSRGB color;
 		if (m_selState == SelState::Selecting)
 		{
-			color = eg::ColorSRGB::FromHex(0x91CAED).ScaleAlpha(0.5f);
+			color = eg::ColorSRGB(eg::ColorSRGB::FromHex(0x91CAED).ScaleAlpha(0.5f));
 		}
 		else if (m_selState == SelState::Dragging)
 		{
-			color = eg::ColorSRGB::FromHex(0xDB9951).ScaleAlpha(0.4f);
+			color = eg::ColorSRGB(eg::ColorSRGB::FromHex(0xDB9951).ScaleAlpha(0.4f));
 		}
 		else
 		{
-			color = eg::ColorSRGB::FromHex(0x91CAED).ScaleAlpha(0.4f);
+			color = eg::ColorSRGB(eg::ColorSRGB::FromHex(0x91CAED).ScaleAlpha(0.4f));
 		}
 		
 		m_primRenderer.AddQuad(quadCorners, color);
@@ -232,15 +232,17 @@ void Editor::DrawWorld()
 	m_renderCtx->objectRenderer.End();
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
+	rpBeginInfo.framebuffer = nullptr;
 	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Clear;
 	rpBeginInfo.depthClearValue = 1.0f;
-	rpBeginInfo.colorAttachments[0].clearValue = eg::ColorSRGB::FromHex(0x1C1E26);
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
+	rpBeginInfo.colorAttachments[0].clearValue = eg::ColorLin(eg::ColorSRGB::FromHex(0x1C1E26));
+	
 	eg::DC.BeginRenderPass(rpBeginInfo);
 	
-	m_world->Draw(m_renderCtx->renderSettings);
+	m_world->DrawEditor();
 	
-	m_renderCtx->objectRenderer.Draw(m_renderCtx->renderSettings);
+	m_renderCtx->objectRenderer.Draw();
 	
 	m_primRenderer.Draw();
 	

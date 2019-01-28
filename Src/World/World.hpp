@@ -66,7 +66,8 @@ public:
 	
 	void PrepareForDraw(class ObjectRenderer& objectRenderer);
 	
-	void Draw(const class RenderSettings& renderSettings);
+	void Draw();
+	void DrawEditor();
 	
 	void CalcClipping(ClippingArgs& args) const;
 	

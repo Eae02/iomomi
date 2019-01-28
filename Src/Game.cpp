@@ -2,23 +2,29 @@
 #include "GameState.hpp"
 #include "MainGameState.hpp"
 #include "Editor/Editor.hpp"
+#include "Graphics/WallShader.hpp"
 #include "Graphics/Materials/GravityCornerMaterial.hpp"
 
 #include <fstream>
 
 Game::Game()
 {
+	RenderSettings::instance = new RenderSettings;
+	
 	editor = new Editor(m_renderCtx);
 	mainGameState = new MainGameState(m_renderCtx);
-	currentGS = mainGameState;
+	currentGS = editor;
 	
 	m_renderCtx.projection.SetFieldOfViewDeg(80.0f);
+	
+	InitializeWallShader();
 }
 
 Game::~Game()
 {
 	delete editor;
 	delete mainGameState;
+	delete RenderSettings::instance;
 }
 
 void Game::ResolutionChanged(int newWidth, int newHeight)

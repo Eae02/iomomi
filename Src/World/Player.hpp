@@ -14,6 +14,11 @@ public:
 	
 	void DebugDraw();
 	
+	const glm::vec3& EyePosition() const
+	{
+		return m_eyePosition;
+	}
+	
 private:
 	static constexpr float HEIGHT = 1.6f;
 	static constexpr float WIDTH = 0.6f;

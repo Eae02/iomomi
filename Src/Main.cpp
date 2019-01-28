@@ -8,7 +8,7 @@ int main(int argc, char** argv)
 {
 	eg::RunConfig runConfig;
 	runConfig.gameName = "Gravity";
-	runConfig.flags = eg::RunFlags::DevMode;
+	runConfig.flags = eg::RunFlags::DevMode | eg::RunFlags::DefaultFramebufferSRGB;
 	runConfig.initialize = []
 	{
 		eg::LoadAssets("assets", "/");

@@ -2,10 +2,11 @@
 
 #include "RenderSettings.hpp"
 #include "ObjectRenderer.hpp"
+#include "Renderer.hpp"
 
 struct RenderContext
 {
 	eg::PerspectiveProjection projection;
-	RenderSettings renderSettings;
 	ObjectRenderer objectRenderer;
+	Renderer renderer;
 };

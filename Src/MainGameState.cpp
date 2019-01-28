@@ -23,27 +23,24 @@ void MainGameState::RunFrame(float dt)
 	glm::mat4 viewMatrix, inverseViewMatrix;
 	m_player.GetViewMatrix(viewMatrix, inverseViewMatrix);
 	
-	m_renderCtx->renderSettings.viewProjection = m_renderCtx->projection.Matrix() * viewMatrix;
-	m_renderCtx->renderSettings.invViewProjection = inverseViewMatrix * m_renderCtx->projection.InverseMatrix();
-	m_renderCtx->renderSettings.UpdateBuffer();
+	RenderSettings::instance->cameraPosition = m_player.EyePosition();
+	RenderSettings::instance->viewProjection = m_renderCtx->projection.Matrix() * viewMatrix;
+	RenderSettings::instance->invViewProjection = inverseViewMatrix * m_renderCtx->projection.InverseMatrix();
+	RenderSettings::instance->UpdateBuffer();
 	
-	m_renderCtx->objectRenderer.Begin();
+	m_renderCtx->objectRenderer.Begin(ObjectMaterial::PipelineType::Game);
 	
 	m_world.PrepareForDraw(m_renderCtx->objectRenderer);
 	
 	m_renderCtx->objectRenderer.End();
 	
-	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Clear;
-	rpBeginInfo.depthClearValue = 1.0f;
-	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
-	eg::DC.BeginRenderPass(rpBeginInfo);
+	m_renderCtx->renderer.Begin(nullptr);
 	
-	m_world.Draw(m_renderCtx->renderSettings);
+	m_world.Draw();
 	
-	m_renderCtx->objectRenderer.Draw(m_renderCtx->renderSettings);
+	m_renderCtx->objectRenderer.Draw();
 	
-	eg::DC.EndRenderPass();
+	m_renderCtx->renderer.End();
 	
 	DrawOverlay(dt);
 }

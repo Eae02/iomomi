@@ -16,13 +16,13 @@ public:
 		return (uint32_t)m_vertices.size();
 	}
 	
-	void AddVertex(const glm::vec3& position, const eg::Color& color);
+	void AddVertex(const glm::vec3& position, const eg::ColorSRGB& color);
 	
 	void AddTriangle(uint32_t v0, uint32_t v1, uint32_t v2);
 	
-	void AddTriangle(const glm::vec3 positions[3], const eg::Color& color);
+	void AddTriangle(const glm::vec3 positions[3], const eg::ColorSRGB& color);
 	
-	void AddQuad(const glm::vec3 positions[4], const eg::Color& color);
+	void AddQuad(const glm::vec3 positions[4], const eg::ColorSRGB& color);
 	
 	static void OnInit();
 	static void OnShutdown();
