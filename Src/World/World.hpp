@@ -3,6 +3,7 @@
 #include <cstddef>
 
 #include "Dir.hpp"
+#include "../Graphics/Vertex.hpp"
 
 struct WallVertex;
 
@@ -64,7 +65,7 @@ public:
 	
 	uint8_t GetTexture(const glm::ivec3& pos, Dir side) const;
 	
-	void PrepareForDraw(class ObjectRenderer& objectRenderer);
+	void PrepareForDraw(class ObjectRenderer& objectRenderer, bool isEditor);
 	
 	void Draw();
 	void DrawEditor();
@@ -77,6 +78,7 @@ public:
 	
 private:
 	void BuildVoxelMesh(std::vector<WallVertex>& verticesOut, std::vector<uint16_t>& indicesOut) const;
+	void BuildVoxelBorderMesh(std::vector<WallBorderVertex>& verticesOut) const;
 	
 	/**
 	 * Each voxel is represented by one 64-bit integer where the low 8 * 6 bits store which texture is used
@@ -93,6 +95,10 @@ private:
 	size_t m_voxelVertexBufferCapacity = 0;
 	size_t m_voxelIndexBufferCapacity = 0;
 	uint32_t m_numVoxelIndices = 0;
+	
+	eg::Buffer m_borderVertexBuffer;
+	size_t m_borderVertexBufferCapacity = 0;
+	uint32_t m_numBorderVertices;
 	
 	std::vector<GravityCorner> m_gravityCorners;
 };

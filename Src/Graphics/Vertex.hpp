@@ -19,3 +19,10 @@ struct WallVertex
 		VecEncode(_tangent, tangent);
 	}
 };
+
+struct WallBorderVertex
+{
+	glm::vec3 position;
+	int8_t normal1[4];
+	int8_t normal2[4];
+};

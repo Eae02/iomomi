@@ -10,7 +10,7 @@ enum class Dir
 	NegZ
 };
 
-inline glm::vec3 DirectionVector(Dir d)
+inline glm::ivec3 DirectionVector(Dir d)
 {
 	glm::vec3 v(0.0f);
 	v[(int)d / 2] = (int)d % 2 == 0 ? 1 : -1;

@@ -30,7 +30,7 @@ void MainGameState::RunFrame(float dt)
 	
 	m_renderCtx->objectRenderer.Begin(ObjectMaterial::PipelineType::Game);
 	
-	m_world.PrepareForDraw(m_renderCtx->objectRenderer);
+	m_world.PrepareForDraw(m_renderCtx->objectRenderer, false);
 	
 	m_renderCtx->objectRenderer.End();
 	

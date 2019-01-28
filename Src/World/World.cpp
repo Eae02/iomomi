@@ -179,7 +179,7 @@ glm::mat3 GravityCorner::MakeRotationMatrix() const
 	return glm::mat3(r1, r2, glm::cross(r1, r2));
 }
 
-void World::PrepareForDraw(ObjectRenderer& objectRenderer)
+void World::PrepareForDraw(ObjectRenderer& objectRenderer, bool isEditor)
 {
 	eg::Model& gravityCornerModel = eg::GetAsset<eg::Model>("Models/GravityCornerConvex.obj");
 	for (const GravityCorner& corner : m_gravityCorners)
@@ -208,13 +208,25 @@ void World::PrepareForDraw(ObjectRenderer& objectRenderer)
 		
 		const size_t verticesBytes = vertices.size() * sizeof(WallVertex);
 		const size_t indicesBytes = indices.size() * sizeof(uint16_t);
-		const size_t uploadBytes = verticesBytes + indicesBytes;
+		size_t uploadBytes = verticesBytes + indicesBytes;
+		
+		std::vector<WallBorderVertex> borderVertices;
+		if (isEditor)
+		{
+			BuildVoxelBorderMesh(borderVertices);
+			uploadBytes += borderVertices.size() * sizeof(WallBorderVertex);
+		}
 		
 		//Creates an upload buffer and copies data to it
 		eg::UploadBuffer uploadBuffer = eg::GetTemporaryUploadBuffer(uploadBytes);
 		char* uploadBufferMem = reinterpret_cast<char*>(uploadBuffer.Map());
 		std::memcpy(uploadBufferMem,                 vertices.data(), verticesBytes);
 		std::memcpy(uploadBufferMem + verticesBytes, indices.data(), indicesBytes);
+		if (isEditor)
+		{
+			std::memcpy(uploadBufferMem + verticesBytes + indicesBytes, borderVertices.data(),
+			            borderVertices.size() * sizeof(WallBorderVertex));
+		}
 		uploadBuffer.Unmap();
 		
 		//Reallocates the vertex buffer if it is too small
@@ -233,12 +245,29 @@ void World::PrepareForDraw(ObjectRenderer& objectRenderer)
 				m_voxelIndexBufferCapacity * sizeof(uint16_t), nullptr);
 		}
 		
+		//Reallocates the border vertex buffer if it is too small
+		if (m_borderVertexBufferCapacity < borderVertices.size())
+		{
+			m_borderVertexBufferCapacity = eg::RoundToNextMultiple(borderVertices.size(), 16 * 1024);
+			m_borderVertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer | eg::BufferFlags::CopyDst,
+				m_borderVertexBufferCapacity * sizeof(WallBorderVertex), nullptr);
+		}
+		
 		//Uploads data to the vertex and index buffers
 		eg::DC.CopyBuffer(uploadBuffer.buffer, m_voxelVertexBuffer, uploadBuffer.offset, 0, verticesBytes);
 		eg::DC.CopyBuffer(uploadBuffer.buffer, m_voxelIndexBuffer, uploadBuffer.offset + verticesBytes, 0, indicesBytes);
 		
 		m_voxelVertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
 		m_voxelIndexBuffer.UsageHint(eg::BufferUsage::IndexBuffer);
+		
+		if (isEditor && borderVertices.size() > 0)
+		{
+			eg::DC.CopyBuffer(uploadBuffer.buffer, m_borderVertexBuffer,
+				uploadBuffer.offset + verticesBytes + indicesBytes, 0,
+				borderVertices.size() * sizeof(WallBorderVertex));
+			m_borderVertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
+		}
+		m_numBorderVertices = borderVertices.size();
 		
 		m_numVoxelIndices = (uint32_t)indices.size();
 		m_voxelBufferOutOfDate = false;
@@ -258,6 +287,11 @@ void World::DrawEditor()
 	if (m_numVoxelIndices > 0)
 	{
 		DrawWallsEditor(m_voxelVertexBuffer, m_voxelIndexBuffer, m_numVoxelIndices);
+	}
+	
+	if (m_numBorderVertices > 0)
+	{
+		DrawWallBordersEditor(m_borderVertexBuffer, m_numBorderVertices);
 	}
 }
 
@@ -309,6 +343,55 @@ void World::BuildVoxelMesh(std::vector<WallVertex>& verticesOut, std::vector<uin
 							vertex.SetNormal(voxel::normals[s]);
 							vertex.SetTangent(tangent);
 						}
+					}
+				}
+			}
+		}
+	}
+}
+
+void World::BuildVoxelBorderMesh(std::vector<WallBorderVertex>& verticesOut) const
+{
+	struct Line
+	{
+		glm::ivec3 d1;
+		glm::ivec3 d2;
+		glm::ivec3 dl;
+	};
+	
+	Line lines[] = 
+	{
+		{ { 1, 0, 0 }, { 0, 0, 1 }, { 0, 1, 0 } },
+		{ { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } },
+		{ { 0, 0, 1 }, { 0, 1, 0 }, { 1, 0, 0 } },
+	};
+	
+	for (int z = m_voxelBufferMin.z - 1; z <= m_voxelBufferMax.z + 1; z++)
+	{
+		for (int y = m_voxelBufferMin.y - 1; y <= m_voxelBufferMax.y + 1; y++)
+		{
+			for (int x = m_voxelBufferMin.x - 1; x <= m_voxelBufferMax.x + 1; x++)
+			{
+				glm::ivec3 pos(x, y, z);
+				bool cAir = IsAir(pos);
+				
+				for (Line& line : lines)
+				{
+					bool d1Air = IsAir(pos + line.d1);
+					bool d2Air = IsAir(pos + line.d2);
+					bool diagAir = IsAir(pos + line.d1 + line.d2);
+					if ((diagAir == cAir) != (d1Air == d2Air))
+					{
+						WallBorderVertex& v1 = verticesOut.emplace_back();
+						v1.position = glm::vec3(pos) + 0.5f * glm::vec3(glm::abs(line.d1) + line.d1 + glm::abs(line.d2) + line.d2);
+						
+						bool fn1 = (cAir && !d1Air) || (d2Air && !diagAir);
+						bool fn2 = (cAir && !d2Air) || (d1Air && !diagAir);
+						VecEncode(fn1 ? -line.d1 : line.d1, v1.normal1);
+						VecEncode(fn2 ? -line.d2 : line.d2, v1.normal2);
+						
+						WallBorderVertex& v2 = verticesOut.emplace_back(v1);
+						v2.position += line.dl;
 					}
 				}
 			}
@@ -407,7 +490,7 @@ const GravityCorner* World::FindGravityCorner(const ClippingArgs& args, Dir curr
 			continue;
 		
 		//Checks that the player is positioned correctly along the side of the corner
-		glm::vec3 cornerVec = glm::cross(DirectionVector(corner.down1), DirectionVector(corner.down2));
+		glm::vec3 cornerVec = glm::cross(glm::vec3(DirectionVector(corner.down1)), glm::vec3(DirectionVector(corner.down2)));
 		float t1 = glm::dot(cornerVec, args.aabbMin - corner.position);
 		float t2 = glm::dot(cornerVec, args.aabbMax - corner.position);
 		if (t1 > t2)

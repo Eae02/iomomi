@@ -7,6 +7,7 @@ struct
 	eg::Pipeline pipelineAmbient;
 	eg::Pipeline pipelinePoint;
 	eg::Pipeline pipelineEditor;
+	eg::Pipeline pipelineBorderEditor;
 	eg::Texture* diffuseTexture;
 	eg::Texture* normalMapTexture;
 	eg::Texture* miscMapTexture;
@@ -20,6 +21,7 @@ void InitializeWallShader()
 	ambientProgram.AddStageFromAsset("Shaders/Fwd/Wall.vs.glsl");
 	ambientProgram.AddStageFromAsset("Shaders/Fwd/Wall-Ambient.fs.glsl");
 	
+	//Creates the ambient light pipeline
 	eg::FixedFuncState fixedFuncState;
 	fixedFuncState.enableDepthWrite = true;
 	fixedFuncState.enableDepthTest = true;
@@ -33,6 +35,7 @@ void InitializeWallShader()
 	fixedFuncState.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallVertex, tangent) };
 	wr.pipelineAmbient = ambientProgram.CreatePipeline(fixedFuncState);
 	
+	//Creates the point light pipeline
 	eg::ShaderProgram pointLightProgram;
 	pointLightProgram.AddStageFromAsset("Shaders/Fwd/Wall.vs.glsl");
 	pointLightProgram.AddStageFromAsset("Shaders/Fwd/Wall-Point.fs.glsl");
@@ -42,6 +45,7 @@ void InitializeWallShader()
 	fixedFuncState.attachments[0].blend = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
 	wr.pipelinePoint = pointLightProgram.CreatePipeline(fixedFuncState);
 	
+	//Creates the editor pipeline
 	eg::ShaderProgram editorProgram;
 	editorProgram.AddStageFromAsset("Shaders/Fwd/Wall.vs.glsl");
 	editorProgram.AddStageFromAsset("Shaders/Fwd/Wall-Editor.fs.glsl");
@@ -51,6 +55,23 @@ void InitializeWallShader()
 	fixedFuncState.depthFormat = eg::Format::DefaultDepthStencil;
 	fixedFuncState.attachments[0].format = eg::Format::DefaultColor;
 	wr.pipelineEditor = editorProgram.CreatePipeline(fixedFuncState);
+	
+	//Creates the editor border pipeline
+	eg::ShaderProgram editorBorderProgram;
+	editorBorderProgram.AddStageFromAsset("Shaders/Fwd/Wall-Border.vs.glsl");
+	editorBorderProgram.AddStageFromAsset("Shaders/Fwd/Wall-Border.fs.glsl");
+	eg::FixedFuncState edBorderFFS;
+	edBorderFFS.enableDepthWrite = false;
+	edBorderFFS.enableDepthTest = true;
+	edBorderFFS.cullMode = eg::CullMode::None;
+	edBorderFFS.topology = eg::Topology::LineList;
+	edBorderFFS.depthFormat = eg::Format::DefaultDepthStencil;
+	edBorderFFS.attachments[0].format = eg::Format::DefaultColor;
+	edBorderFFS.vertexBindings[0] = { sizeof(WallBorderVertex), eg::InputRate::Vertex };
+	edBorderFFS.vertexAttributes[0] = { 0, eg::DataType::Float32,   3, (uint32_t)offsetof(WallBorderVertex, position) };
+	edBorderFFS.vertexAttributes[1] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallBorderVertex, normal1) };
+	edBorderFFS.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallBorderVertex, normal2) };
+	wr.pipelineBorderEditor = editorBorderProgram.CreatePipeline(edBorderFFS);
 	
 	wr.diffuseTexture = &eg::GetAsset<eg::Texture>("Textures/Voxel/Diffuse");
 	wr.normalMapTexture = &eg::GetAsset<eg::Texture>("Textures/Voxel/NormalMap");
@@ -138,4 +159,15 @@ void DrawWallsEditor(eg::BufferRef vertexBuffer, eg::BufferRef indexBuffer, uint
 	eg::DC.BindIndexBuffer(eg::IndexType::UInt16, indexBuffer, 0);
 	
 	eg::DC.DrawIndexed(0, numIndices, 0, 0, 1);
+}
+
+void DrawWallBordersEditor(eg::BufferRef vertexBuffer, uint32_t numVertices)
+{
+	eg::DC.BindPipeline(wr.pipelineBorderEditor);
+	
+	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+	
+	eg::DC.BindVertexBuffer(0, vertexBuffer, 0);
+	
+	eg::DC.Draw(0, numVertices, 0, 1);
 }

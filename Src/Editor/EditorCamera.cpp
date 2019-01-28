@@ -29,7 +29,7 @@ void EditorCamera::Update(float dt)
 		eg::SetRelativeMouseMode(true);
 		if (eg::InputState::Current().IsShiftDown())
 		{
-			const float OFFSET_SENSITIVITY = 0.001f;
+			const float OFFSET_SENSITIVITY = 0.002f;
 			
 			glm::vec3 offset(m_rotationMatrix * glm::vec4(-eg::CursorDeltaX(), eg::CursorDeltaY(), 0, 1));
 			m_focus += offset * OFFSET_SENSITIVITY * m_distance;

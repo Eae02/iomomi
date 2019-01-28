@@ -77,6 +77,7 @@ void Editor::RunFrame(float dt)
 	
 	RenderSettings::instance->viewProjection = m_renderCtx->projection.Matrix() * viewMatrix;
 	RenderSettings::instance->invViewProjection = inverseViewMatrix * m_renderCtx->projection.InverseMatrix();
+	RenderSettings::instance->cameraPosition = glm::vec3(inverseViewMatrix[3]);
 	RenderSettings::instance->UpdateBuffer();
 	
 	auto viewRay = eg::MakeLazy([&]
@@ -193,7 +194,7 @@ void Editor::DrawWorld()
 	m_primRenderer.Begin(RenderSettings::instance->viewProjection);
 	m_renderCtx->objectRenderer.Begin(ObjectMaterial::PipelineType::Editor);
 	
-	m_world->PrepareForDraw(m_renderCtx->objectRenderer);
+	m_world->PrepareForDraw(m_renderCtx->objectRenderer, true);
 	
 	if (m_selState != SelState::NoSelection)
 	{

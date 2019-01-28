@@ -7,3 +7,5 @@ void InitializeWallShader();
 void DrawWalls(eg::BufferRef vertexBuffer, eg::BufferRef indexBuffer, uint32_t numIndices);
 
 void DrawWallsEditor(eg::BufferRef vertexBuffer, eg::BufferRef indexBuffer, uint32_t numIndices);
+
+void DrawWallBordersEditor(eg::BufferRef vertexBuffer, uint32_t numVertices);
