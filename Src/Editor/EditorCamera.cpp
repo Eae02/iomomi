@@ -9,6 +9,8 @@ void EditorCamera::Reset()
 {
 	m_yaw = eg::PI / 4;
 	m_pitch = -eg::PI / 6;
+	m_kbVel[0] = 0;
+	m_kbVel[1] = 0;
 	m_targetDistance = m_distance = 5;
 	m_focus = glm::vec3(1.5f);
 	UpdateRotationMatrix();
@@ -16,6 +18,12 @@ void EditorCamera::Reset()
 
 void EditorCamera::Update(float dt)
 {
+	auto YawSign = [&]
+	{
+		const double pitch1 = (m_pitch + eg::HALF_PI) / eg::TWO_PI;
+		return (pitch1 - std::floor(pitch1)) > 0.5f ? -1 : 1;
+	};
+	
 	if (eg::IsButtonDown(eg::Button::MouseMiddle))
 	{
 		eg::SetRelativeMouseMode(true);
@@ -29,18 +37,46 @@ void EditorCamera::Update(float dt)
 		else
 		{
 			const float MOUSE_SENSITIVITY = -0.005f;
-			const double pitch1 = (m_pitch + eg::HALF_PI) / eg::TWO_PI;
-			const float yawSign = (pitch1 - std::floor(pitch1)) > 0.5f ? -1 : 1;
-			
-			m_yaw += eg::CursorDeltaX() * MOUSE_SENSITIVITY * yawSign;
+			m_yaw += eg::CursorDeltaX() * MOUSE_SENSITIVITY * YawSign();
 			m_pitch += eg::CursorDeltaY() * MOUSE_SENSITIVITY;
-			UpdateRotationMatrix();
 		}
 	}
 	else
 	{
 		eg::SetRelativeMouseMode(false);
 	}
+	
+	float kbRotateAccel = dt * 15.0f;
+	
+	auto UpdateKBInput = [&] (bool pos, bool neg, float& vel)
+	{
+		const float MAX_KB_VEL = 2.0f;
+		if (neg && !pos)
+			vel = std::max(vel - kbRotateAccel, -MAX_KB_VEL);
+		else if (!neg && pos)
+			vel = std::min(vel + kbRotateAccel, MAX_KB_VEL);
+		else if (vel < 0)
+			vel = std::min(vel + kbRotateAccel, 0.0f);
+		else
+			vel = std::max(vel - kbRotateAccel, 0.0f);
+	};
+	
+	UpdateKBInput(eg::IsButtonDown(eg::Button::RightArrow), eg::IsButtonDown(eg::Button::LeftArrow), m_kbVel[0]);
+	UpdateKBInput(eg::IsButtonDown(eg::Button::DownArrow), eg::IsButtonDown(eg::Button::UpArrow), m_kbVel[1]);
+	
+	if (eg::InputState::Current().IsShiftDown())
+	{
+		const float OFFSET_SENSITIVITY = 0.01f;
+		glm::vec3 offset(m_rotationMatrix * glm::vec4(m_kbVel[0], -m_kbVel[1], 0, 1));
+		m_focus += offset * OFFSET_SENSITIVITY * m_distance;
+	}
+	else
+	{
+		m_yaw += m_kbVel[0] * dt * YawSign();
+		m_pitch += m_kbVel[1] * dt;
+	}
+	
+	UpdateRotationMatrix();
 	
 	m_targetDistance += (eg::InputState::Previous().scrollY - eg::InputState::Current().scrollY) * m_targetDistance * 0.1f;
 	m_targetDistance = std::max(m_targetDistance, 1.0f);

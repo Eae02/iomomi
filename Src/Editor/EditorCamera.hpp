@@ -16,6 +16,9 @@ private:
 	
 	float m_yaw;
 	float m_pitch;
+	
+	float m_kbVel[2];
+	
 	float m_targetDistance;
 	float m_distance;
 	
