@@ -44,6 +44,8 @@ private:
 	
 	glm::vec3 m_dragStartPos;
 	int m_dragDistance;
+	int m_dragDir;
+	int m_dragAirMode;
 };
 
 extern Editor* editor;

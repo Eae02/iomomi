@@ -114,6 +114,10 @@ void Editor::RunFrame(float dt)
 					int newDragDist = (int)glm::round(closestPoint);
 					if (newDragDist != m_dragDistance)
 					{
+						int newDragDir = newDragDist > m_dragDistance ? 1 : -1;
+						if (newDragDir != m_dragDir)
+							m_dragAirMode = 0;
+						
 						int dragDelta = newDragDist - m_dragDistance;
 						glm::ivec3 mn = glm::min(m_selection1, m_selection2);
 						glm::ivec3 mx = glm::max(m_selection1, m_selection2);
@@ -133,20 +137,41 @@ void Editor::RunFrame(float dt)
 							mx[selDim]++;
 						}
 						
+						bool allAir = true;
 						for (int x = mn.x; x <= mx.x; x++)
 						{
 							for (int y = mn.y; y <= mx.y; y++)
 							{
 								for (int z = mn.z; z <= mx.z; z++)
 								{
-									m_world->SetIsAir({x, y, z}, !m_world->IsAir({x, y, z}));
+									if (!m_world->IsAir({x, y, z}))
+										allAir = false;
 								}
 							}
 						}
 						
-						m_selection1[selDim] += newDragDist - m_dragDistance;
-						m_selection2[selDim] += newDragDist - m_dragDistance;
-						m_dragDistance = newDragDist;
+						int airMode = allAir ? 1 : 2;
+						if (m_dragAirMode == 0)
+							m_dragAirMode = airMode;
+						
+						if (m_dragAirMode == airMode)
+						{
+							for (int x = mn.x; x <= mx.x; x++)
+							{
+								for (int y = mn.y; y <= mx.y; y++)
+								{
+									for (int z = mn.z; z <= mx.z; z++)
+									{
+										m_world->SetIsAir({x, y, z}, !allAir);
+									}
+								}
+							}
+							
+							m_selection1[selDim] += newDragDist - m_dragDistance;
+							m_selection2[selDim] += newDragDist - m_dragDistance;
+							m_dragDir = newDragDist > m_dragDistance ? 1 : -1;
+							m_dragDistance = newDragDist;
+						}
 					}
 				}
 			}
@@ -162,6 +187,8 @@ void Editor::RunFrame(float dt)
 				m_selState = SelState::Dragging;
 				m_dragStartPos = pickResult.intersectPosition;
 				m_dragDistance = 0;
+				m_dragAirMode = 0;
+				m_dragDir = 0;
 			}
 			else if (pickResult.intersected)
 			{
