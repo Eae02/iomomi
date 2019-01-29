@@ -66,9 +66,9 @@ void EditorCamera::Update(float dt)
 	
 	if (eg::InputState::Current().IsShiftDown())
 	{
-		const float OFFSET_SENSITIVITY = 0.01f;
+		const float OFFSET_SENSITIVITY = 0.7f;
 		glm::vec3 offset(m_rotationMatrix * glm::vec4(m_kbVel[0], -m_kbVel[1], 0, 1));
-		m_focus += offset * OFFSET_SENSITIVITY * m_distance;
+		m_focus += offset * OFFSET_SENSITIVITY * m_distance * dt;
 	}
 	else
 	{
