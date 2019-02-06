@@ -15,8 +15,6 @@ Game::Game()
 	mainGameState = new MainGameState(m_renderCtx);
 	currentGS = editor;
 	
-	m_renderCtx.projection.SetFieldOfViewDeg(80.0f);
-	
 	InitializeWallShader();
 }
 
@@ -29,7 +27,8 @@ Game::~Game()
 
 void Game::ResolutionChanged(int newWidth, int newHeight)
 {
-	m_renderCtx.projection.SetResolution(newWidth, newHeight);
+	editor->SetResolution(newWidth, newHeight);
+	mainGameState->SetResolution(newWidth, newHeight);
 }
 
 void Game::RunFrame(float dt)

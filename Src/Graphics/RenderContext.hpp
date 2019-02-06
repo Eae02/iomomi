@@ -6,7 +6,6 @@
 
 struct RenderContext
 {
-	eg::PerspectiveProjection projection;
 	ObjectRenderer objectRenderer;
 	Renderer renderer;
 };

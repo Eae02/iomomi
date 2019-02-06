@@ -17,6 +17,8 @@ inline const char* DirectionName(Dir d)
 	return DirectionNames[(int)d];
 }
 
+std::optional<Dir> ParseDirection(std::string_view directionName);
+
 inline glm::ivec3 DirectionVector(Dir d)
 {
 	glm::vec3 v(0.0f);

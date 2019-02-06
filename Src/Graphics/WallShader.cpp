@@ -127,10 +127,10 @@ void DrawWalls(const std::function<void()>& drawCallback)
 	eg::DC.BindTexture(*wr.miscMapTexture, 3, &wr.sampler);
 	
 	LightData lights[2];
-	lights[0].pos = glm::vec3(0, 1, 1.5f);
-	lights[0].radiance = glm::vec3(2.0f);
-	lights[1].pos = glm::vec3(0, 1, -3.5f);
-	lights[1].radiance = glm::vec3(2.0f);
+	lights[0].pos = glm::vec3(2.5f, 2, 1.5f);
+	lights[0].radiance = glm::vec3(7.0f);
+	lights[1].pos = glm::vec3(2.5f, 2, -4.5f);
+	lights[1].radiance = glm::vec3(7.0f);
 	
 	for (const LightData& light : lights)
 	{

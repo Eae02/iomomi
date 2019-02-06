@@ -279,6 +279,8 @@ void Player::GetViewMatrix(glm::mat4& matrixOut, glm::mat4& inverseMatrixOut) co
 
 void Player::DebugDraw()
 {
+	ImGui::Text("Position: %.2f, %.2f, %.2f", m_eyePosition.x, m_eyePosition.y, m_eyePosition.z);
+	
 	glm::vec3 forward = m_rotation * glm::vec3(0, 0, -1);
 	glm::vec3 absForward = glm::abs(forward);
 	int maxDir = 0;
@@ -289,5 +291,5 @@ void Player::DebugDraw()
 	}
 	
 	const char* dirNames = "XYZ";
-	ImGui::Text("Facing %c%c", forward[maxDir] < 0 ? '-' : '+', dirNames[maxDir]);
+	ImGui::Text("Facing: %c%c", forward[maxDir] < 0 ? '-' : '+', dirNames[maxDir]);
 }
