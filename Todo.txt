@@ -1,6 +1,4 @@
 Editor:
- - Place gravity corners
  - Test the level
  - Improve wall dragging
    - Better highlight
-   - Stop when dragging from air and reaching a wall
