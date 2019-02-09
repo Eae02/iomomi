@@ -13,7 +13,7 @@ Game::Game()
 	
 	editor = new Editor(m_renderCtx);
 	mainGameState = new MainGameState(m_renderCtx);
-	currentGS = editor;
+	currentGS = mainGameState;
 	
 	InitializeWallShader();
 }

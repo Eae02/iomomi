@@ -35,11 +35,13 @@ void MainGameState::RunFrame(float dt)
 	
 	m_renderCtx->objectRenderer.End();
 	
-	m_renderCtx->renderer.Begin(nullptr);
+	m_renderCtx->renderer.BeginGeometry();
 	
 	m_world.Draw();
 	
 	m_renderCtx->objectRenderer.Draw();
+	
+	m_renderCtx->renderer.BeginLighting();
 	
 	m_renderCtx->renderer.End();
 	

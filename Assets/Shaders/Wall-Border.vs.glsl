@@ -6,7 +6,7 @@ layout(location=2) in vec3 normal2_in;
 
 layout(location=0) out float dash_out;
 
-#include "../Inc/RenderSettings.glh"
+#include "Inc/RenderSettings.glh"
 
 layout(binding=0, std140) uniform RenderSettingsUB
 {

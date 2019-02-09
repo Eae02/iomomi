@@ -29,12 +29,19 @@ static void OnInit()
 	fixedFuncState.vertexAttributes[7] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
 	
 	fixedFuncState.depthFormat = Renderer::DEPTH_FORMAT;
-	fixedFuncState.attachments[0].format = Renderer::COLOR_FORMAT;
+	fixedFuncState.attachments[0].format = eg::Format::R8G8B8A8_UNorm;
+	fixedFuncState.attachments[1].format = eg::Format::R8G8B8A8_UNorm;
 	gravityCornerPipelineGame = gravityCornerShaderProgram.CreatePipeline(fixedFuncState);
 	
+	eg::ShaderProgram gravityCornerShaderProgramEditor;
+	gravityCornerShaderProgramEditor.AddStageFromAsset("Shaders/Common3D.vs.glsl");
+	gravityCornerShaderProgramEditor.AddStageFromAsset("Shaders/GravityCorner-Editor.fs.glsl");
+	
 	fixedFuncState.depthFormat = eg::Format::DefaultDepthStencil;
+	fixedFuncState.cullMode = eg::CullMode::None;
 	fixedFuncState.attachments[0].format = eg::Format::DefaultColor;
-	gravityCornerPipelineEditor = gravityCornerShaderProgram.CreatePipeline(fixedFuncState);
+	fixedFuncState.attachments[1].format = eg::Format::Undefined;
+	gravityCornerPipelineEditor = gravityCornerShaderProgramEditor.CreatePipeline(fixedFuncState);
 }
 
 static void OnShutdown()

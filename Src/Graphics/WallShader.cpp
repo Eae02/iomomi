@@ -4,7 +4,7 @@
 
 struct
 {
-	eg::Pipeline pipelineAmbient;
+	eg::Pipeline pipelineDeferredGeom;
 	eg::Pipeline pipelinePoint;
 	eg::Pipeline pipelineEditor;
 	eg::Pipeline pipelineBorderEditor;
@@ -17,9 +17,9 @@ struct
 
 void InitializeWallShader()
 {
-	eg::ShaderProgram ambientProgram;
-	ambientProgram.AddStageFromAsset("Shaders/Fwd/Wall.vs.glsl");
-	ambientProgram.AddStageFromAsset("Shaders/Fwd/Wall-Ambient.fs.glsl");
+	eg::ShaderProgram defferdGeomProgram;
+	defferdGeomProgram.AddStageFromAsset("Shaders/Wall.vs.glsl");
+	defferdGeomProgram.AddStageFromAsset("Shaders/Wall.fs.glsl");
 	
 	//Creates the ambient light pipeline
 	eg::FixedFuncState fixedFuncState;
@@ -27,39 +27,31 @@ void InitializeWallShader()
 	fixedFuncState.enableDepthTest = true;
 	fixedFuncState.cullMode = eg::CullMode::Back;
 	fixedFuncState.depthFormat = Renderer::DEPTH_FORMAT;
-	fixedFuncState.attachments[0].format = Renderer::COLOR_FORMAT;
+	fixedFuncState.attachments[0].format = eg::Format::R8G8B8A8_UNorm;
+	fixedFuncState.attachments[1].format = eg::Format::R8G8B8A8_UNorm;
 	fixedFuncState.vertexBindings[0] = { sizeof(WallVertex), eg::InputRate::Vertex };
 	fixedFuncState.vertexAttributes[0] = { 0, eg::DataType::Float32,   3, (uint32_t)offsetof(WallVertex, position) };
 	fixedFuncState.vertexAttributes[1] = { 0, eg::DataType::UInt8,     3, (uint32_t)offsetof(WallVertex, texCoord) };
 	fixedFuncState.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallVertex, normal) };
 	fixedFuncState.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallVertex, tangent) };
-	wr.pipelineAmbient = ambientProgram.CreatePipeline(fixedFuncState);
-	
-	//Creates the point light pipeline
-	eg::ShaderProgram pointLightProgram;
-	pointLightProgram.AddStageFromAsset("Shaders/Fwd/Wall.vs.glsl");
-	pointLightProgram.AddStageFromAsset("Shaders/Fwd/Wall-Point.fs.glsl");
-	
-	fixedFuncState.enableDepthWrite = false;
-	fixedFuncState.depthCompare = eg::CompareOp::Equal;
-	fixedFuncState.attachments[0].blend = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
-	wr.pipelinePoint = pointLightProgram.CreatePipeline(fixedFuncState);
+	wr.pipelineDeferredGeom = defferdGeomProgram.CreatePipeline(fixedFuncState);
 	
 	//Creates the editor pipeline
 	eg::ShaderProgram editorProgram;
-	editorProgram.AddStageFromAsset("Shaders/Fwd/Wall.vs.glsl");
-	editorProgram.AddStageFromAsset("Shaders/Fwd/Wall-Editor.fs.glsl");
+	editorProgram.AddStageFromAsset("Shaders/Wall.vs.glsl");
+	editorProgram.AddStageFromAsset("Shaders/Wall-Editor.fs.glsl");
 	fixedFuncState.enableDepthWrite = true;
 	fixedFuncState.depthCompare = eg::CompareOp::Less;
 	fixedFuncState.attachments[0].blend = { };
 	fixedFuncState.depthFormat = eg::Format::DefaultDepthStencil;
 	fixedFuncState.attachments[0].format = eg::Format::DefaultColor;
+	fixedFuncState.attachments[1].format = eg::Format::Undefined;
 	wr.pipelineEditor = editorProgram.CreatePipeline(fixedFuncState);
 	
 	//Creates the editor border pipeline
 	eg::ShaderProgram editorBorderProgram;
-	editorBorderProgram.AddStageFromAsset("Shaders/Fwd/Wall-Border.vs.glsl");
-	editorBorderProgram.AddStageFromAsset("Shaders/Fwd/Wall-Border.fs.glsl");
+	editorBorderProgram.AddStageFromAsset("Shaders/Wall-Border.vs.glsl");
+	editorBorderProgram.AddStageFromAsset("Shaders/Wall-Border.fs.glsl");
 	eg::FixedFuncState edBorderFFS;
 	edBorderFFS.enableDepthWrite = false;
 	edBorderFFS.enableDepthTest = true;
@@ -85,7 +77,7 @@ void InitializeWallShader()
 
 static void OnShutdown()
 {
-	wr.pipelineAmbient.Destroy();
+	wr.pipelineDeferredGeom.Destroy();
 	wr.pipelinePoint.Destroy();
 	wr.pipelineEditor.Destroy();
 	wr.pipelineBorderEditor.Destroy();
@@ -106,37 +98,15 @@ struct LightData
 
 void DrawWalls(const std::function<void()>& drawCallback)
 {
-	eg::DC.BindPipeline(wr.pipelineAmbient);
+	eg::DC.BindPipeline(wr.pipelineDeferredGeom);
 	
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
 	
 	eg::DC.BindTexture(*wr.diffuseTexture, 1, &wr.sampler);
 	eg::DC.BindTexture(*wr.normalMapTexture, 2, &wr.sampler);
 	eg::DC.BindTexture(*wr.miscMapTexture, 3, &wr.sampler);
-	
-	eg::DC.PushConstants(0, sizeof(ambientColor), ambientColor);
 	
 	drawCallback();
-	
-	eg::DC.BindPipeline(wr.pipelinePoint);
-	
-	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
-	
-	eg::DC.BindTexture(*wr.diffuseTexture, 1, &wr.sampler);
-	eg::DC.BindTexture(*wr.normalMapTexture, 2, &wr.sampler);
-	eg::DC.BindTexture(*wr.miscMapTexture, 3, &wr.sampler);
-	
-	LightData lights[2];
-	lights[0].pos = glm::vec3(2.5f, 2, 1.5f);
-	lights[0].radiance = glm::vec3(7.0f);
-	lights[1].pos = glm::vec3(2.5f, 2, -4.5f);
-	lights[1].radiance = glm::vec3(7.0f);
-	
-	for (const LightData& light : lights)
-	{
-		eg::DC.PushConstants(0, light);
-		drawCallback();
-	}
 }
 
 void DrawWallsEditor(const std::function<void()>& drawCallback)
