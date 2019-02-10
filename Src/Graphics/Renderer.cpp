@@ -94,7 +94,7 @@ void Renderer::BeginLighting()
 	
 	eg::DC.BindTexture(m_gbColor1Texture, 0, &m_attachmentSampler);
 	
-	float ambient[] = { 0.1f, 0.1f, 0.1f };
+	float ambient[] = { 0.6f, 0.5f, 0.5f };
 	eg::DC.PushConstants(0, sizeof(ambient), ambient);
 	
 	eg::DC.Draw(0, 3, 0, 1);

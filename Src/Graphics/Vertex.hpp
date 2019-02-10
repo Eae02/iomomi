@@ -5,7 +5,7 @@ void VecEncode(const glm::vec3& v, int8_t* out);
 struct WallVertex
 {
 	glm::vec3 position;
-	uint8_t texCoord[4];
+	uint8_t texCoordAO[4];
 	int8_t normal[4];
 	int8_t tangent[4];
 	

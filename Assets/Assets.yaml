@@ -19,8 +19,6 @@ assets:
     format: r8
     filtering: nearest
   - name: Textures/Voxel/Diffuse
-    width: 256
-    height: 256
     generator: Texture2DArray
     loader: Texture2D
     format: rgba8
@@ -28,8 +26,6 @@ assets:
     layers:
       - Textures/Voxel/TactileGrayA.png
   - name: Textures/Voxel/NormalMap
-    width: 256
-    height: 256
     generator: Texture2DArray
     loader: Texture2D
     format: rgba8
@@ -37,8 +33,6 @@ assets:
     layers:
       - Textures/Voxel/TactileGrayN.png
   - name: Textures/Voxel/MiscMap
-    width: 256
-    height: 256
     generator: Texture2DArray
     loader: Texture2D
     format: rgba8

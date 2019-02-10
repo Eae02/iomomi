@@ -8,6 +8,7 @@ MainGameState* mainGameState;
 MainGameState::MainGameState(RenderContext& renderCtx)
 	: m_renderCtx(&renderCtx)
 {
+	m_projection.SetFieldOfViewDeg(80.0f);
 	//std::ifstream stream(eg::ExeRelPath("levels/test.gwd"), std::ios::binary);
 }
 
