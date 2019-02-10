@@ -3,6 +3,7 @@
 layout(location=0) in vec3 texCoord_in;
 layout(location=1) in vec3 normal_in;
 layout(location=2) in vec3 tangent_in;
+layout(location=3) in vec2 ao_in;
 
 layout(location=0) out vec4 color_out;
 
@@ -20,11 +21,17 @@ void main()
 	vec3 nmNormal = (texture(normalMapSampler, texCoord_in).grb * (255.0 / 128.0)) - vec3(1.0);
 	vec3 normal = normalize(tbn * nmNormal);
 	
-	float light = max(dot(normal, vec3(1, 1, 1)), 0.0) * 0.75 + 0.75;
+	vec2 ao2 = pow(clamp(ao_in, vec2(0.0), vec2(1.0)), vec2(0.5));
+	float ao = ao2.x * ao2.y;
+	
+	const float LIGHT_INTENSITY = 0.5;
+	const float BRIGHTNESS = 1.2;
+	float light = (max(dot(normal, vec3(1, 1, 1)), 0.0) * LIGHT_INTENSITY + 1.0 - LIGHT_INTENSITY) * ao * BRIGHTNESS;
+	
+	vec3 color = texture(albedoSampler, texCoord_in).rgb * light;
 	
 	float gridIntensity = texture(gridSampler, texCoord_in.xy).r;
-	vec3 color = texture(albedoSampler, texCoord_in).rgb;
 	color = mix(color, vec3(1.0), gridIntensity);
 	
-	color_out = vec4(color * light, 1.0);
+	color_out = vec4(color, 1.0);
 }
