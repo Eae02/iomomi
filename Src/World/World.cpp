@@ -420,7 +420,7 @@ void World::BuildRegionMesh(glm::ivec3 coordinate, World::RegionData& region)
 					const uint8_t textureLayer = (region.voxels[x][y][z] >> (8 * s)) & 0xFFULL;
 					
 					//The center of the face to be emitted
-					const glm::vec3 faceCenter = glm::vec3(globalPos) + 0.5f - glm::vec3(voxel::normals[s]) * 0.5f;
+					const glm::ivec3 faceCenter2 = globalPos * 2 + 1 - voxel::normals[s];
 					
 					//Emits indices
 					const uint16_t baseIndex = (uint16_t)region.vertices.size();
@@ -437,9 +437,10 @@ void World::BuildRegionMesh(glm::ivec3 coordinate, World::RegionData& region)
 						{
 							glm::ivec3 tDir = tangent * (fy * 2 - 1);
 							glm::ivec3 bDir = biTangent * (fx * 2 - 1);
+							glm::ivec3 diagDir = tDir + bDir;
 							
 							WallVertex& vertex = region.vertices.emplace_back();
-							vertex.position = faceCenter + glm::vec3(tDir + bDir) * 0.5f;
+							vertex.position = glm::vec3(faceCenter2 + diagDir) * 0.5f;
 							vertex.texCoordAO[0] = (uint8_t)(fx * 255);
 							vertex.texCoordAO[1] = (uint8_t)((1 - fy) * 255);
 							vertex.texCoordAO[2] = textureLayer;
@@ -447,12 +448,12 @@ void World::BuildRegionMesh(glm::ivec3 coordinate, World::RegionData& region)
 							vertex.SetNormal(voxel::normals[s]);
 							vertex.SetTangent(tangent);
 							
-							if (IsAir(globalPos + tDir))
-								vertex.texCoordAO[3] |= 0xF;
-							if (IsAir(globalPos + bDir))
-								vertex.texCoordAO[3] |= 0xF << 4;
-							if (!IsAir(globalPos + bDir + tDir) && vertex.texCoordAO[3] == 0xFF)
-								vertex.texCoordAO[3] = 0xF;
+							if (!IsAir(globalPos + tDir))
+								vertex.texCoordAO[3] |= fy + 1;
+							if (!IsAir(globalPos + bDir))
+								vertex.texCoordAO[3] |= (fx + 1) << 2;
+							if (!IsAir(globalPos + diagDir) && vertex.texCoordAO[3] == 0)
+								vertex.texCoordAO[3] = 1 << (fx + 2 * fy);
 						}
 					}
 				}

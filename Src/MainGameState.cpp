@@ -15,6 +15,8 @@ MainGameState::MainGameState(RenderContext& renderCtx)
 void MainGameState::LoadWorld(std::istream& stream)
 {
 	m_world.Load(stream);
+	m_player = { };
+	m_gameTime = 0;
 }
 
 void MainGameState::RunFrame(float dt)

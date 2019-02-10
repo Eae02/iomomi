@@ -3,7 +3,7 @@
 layout(location=0) in vec3 texCoord_in;
 layout(location=1) in vec3 normal_in;
 layout(location=2) in vec3 tangent_in;
-layout(location=3) in vec2 ao_in;
+layout(location=3) in vec4 ao_in;
 
 layout(location=0) out vec4 color_out;
 
@@ -21,7 +21,8 @@ void main()
 	vec3 nmNormal = (texture(normalMapSampler, texCoord_in).grb * (255.0 / 128.0)) - vec3(1.0);
 	vec3 normal = normalize(tbn * nmNormal);
 	
-	vec2 ao2 = pow(clamp(ao_in, vec2(0.0), vec2(1.0)), vec2(0.5));
+	vec2 ao2 = vec2(min(ao_in.x, ao_in.y), min(ao_in.w, ao_in.z));
+	ao2 = pow(clamp(ao2, vec2(0.0), vec2(1.0)), vec2(0.5));
 	float ao = ao2.x * ao2.y;
 	
 	const float LIGHT_INTENSITY = 0.5;

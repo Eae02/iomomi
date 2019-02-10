@@ -5,7 +5,7 @@
 layout(location=0) in vec3 texCoord_in;
 layout(location=1) in vec3 normal_in;
 layout(location=2) in vec3 tangent_in;
-layout(location=3) in vec2 ao_in;
+layout(location=3) in vec4 ao_in;
 
 layout(binding=1) uniform sampler2DArray albedoSampler;
 layout(binding=2) uniform sampler2DArray nmSampler;
@@ -25,7 +25,8 @@ void main()
 	
 	vec3 albedo = texture(albedoSampler, texCoord_in).rgb;
 	
-	vec2 ao2 = pow(clamp(ao_in, vec2(0.0), vec2(1.0)), vec2(0.5));
+	vec2 ao2 = vec2(min(ao_in.x, ao_in.y), min(ao_in.w, ao_in.z));
+	ao2 = pow(clamp(ao2, vec2(0.0), vec2(1.0)), vec2(0.5));
 	float ao = miscMaps.b * ao2.x * ao2.y;
 	
 	DeferredOut(albedo, normal, mix(0.5, 1.0, miscMaps.r), miscMaps.g, ao);
