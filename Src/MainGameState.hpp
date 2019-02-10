@@ -14,6 +14,8 @@ public:
 	
 	void SetResolution(int width, int height);
 	
+	void LoadWorld(std::istream& stream);
+	
 private:
 	void DrawOverlay(float dt);
 	

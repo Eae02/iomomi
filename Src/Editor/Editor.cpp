@@ -1,5 +1,6 @@
 #include "Editor.hpp"
 #include "../Levels.hpp"
+#include "../MainGameState.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -76,6 +77,17 @@ void Editor::RunFrame(float dt)
 	ImGui::SetNextWindowSize(ImVec2(200, eg::CurrentResolutionY() * 0.5f), ImGuiCond_Always);
 	ImGui::Begin("Editor", nullptr, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoCollapse |
 	             ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
+	if (ImGui::Button("Test Level (F5)", ImVec2(ImGui::GetContentRegionAvailWidth(), 0)))
+	{
+		std::stringstream stream;
+		m_world->Save(stream);
+		stream.seekg(0, std::ios::beg);
+		mainGameState->LoadWorld(stream);
+		currentGS = mainGameState;
+		ImGui::End();
+		return;
+	}
+	ImGui::Spacing();
 	if (ImGui::CollapsingHeader("Tools", ImGuiTreeNodeFlags_DefaultOpen))
 	{
 		ImGui::RadioButton("Walls", reinterpret_cast<int*>(&m_tool), (int)Tool::Walls);

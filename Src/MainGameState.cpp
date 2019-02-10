@@ -8,9 +8,12 @@ MainGameState* mainGameState;
 MainGameState::MainGameState(RenderContext& renderCtx)
 	: m_renderCtx(&renderCtx)
 {
-	std::ifstream stream(eg::ExeRelPath("levels/test.gwd"), std::ios::binary);
+	//std::ifstream stream(eg::ExeRelPath("levels/test.gwd"), std::ios::binary);
+}
+
+void MainGameState::LoadWorld(std::istream& stream)
+{
 	m_world.Load(stream);
-	stream.close();
 }
 
 void MainGameState::RunFrame(float dt)

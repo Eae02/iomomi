@@ -133,6 +133,4 @@ private:
 	eg::Buffer m_borderVertexBuffer;
 	size_t m_borderVertexBufferCapacity = 0;
 	uint32_t m_numBorderVertices;
-	
-	std::vector<GravityCorner> m_gravityCorners;
 };

@@ -13,7 +13,13 @@ Game::Game()
 	
 	editor = new Editor(m_renderCtx);
 	mainGameState = new MainGameState(m_renderCtx);
-	currentGS = mainGameState;
+	currentGS = editor;
+	
+	eg::console::AddCommand("ed", 0, [&] (eg::Span<const std::string_view> args)
+	{
+		currentGS = editor;
+		eg::console::Hide();
+	});
 	
 	InitializeWallShader();
 }
