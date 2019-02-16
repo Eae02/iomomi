@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../World/World.hpp"
+#include "../World/PrepareDrawArgs.hpp"
 #include "../Graphics/RenderContext.hpp"
 #include "../GameState.hpp"
 #include "EditorCamera.hpp"
@@ -27,6 +28,8 @@ private:
 	void DrawToolCorners();
 	
 	RenderContext* m_renderCtx;
+	PrepareDrawArgs m_prepareDrawArgs;
+	
 	std::string m_newLevelName;
 	
 	std::string m_levelName;

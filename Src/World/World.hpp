@@ -3,6 +3,8 @@
 #include <cstddef>
 
 #include "Dir.hpp"
+#include "Entity.hpp"
+#include "SpotLightEntity.hpp"
 #include "../Graphics/Vertex.hpp"
 
 struct WallVertex;
@@ -55,7 +57,7 @@ public:
 	
 	uint8_t GetTexture(const glm::ivec3& pos, Dir side) const;
 	
-	void PrepareForDraw(class ObjectRenderer& objectRenderer, bool isEditor);
+	void PrepareForDraw(struct PrepareDrawArgs& args);
 	
 	void Draw();
 	void DrawEditor();
@@ -121,6 +123,9 @@ private:
 	glm::ivec4 GetGravityCornerVoxelPos(glm::ivec3 cornerPos, Dir cornerDir) const;
 	
 	std::vector<Region> m_regions;
+	
+	std::vector<std::shared_ptr<Entity>> m_entities;
+	std::vector<std::weak_ptr<SpotLightEntity>> m_spotLights;
 	
 	bool m_anyOutOfDate = true;
 	bool m_canDraw = false;

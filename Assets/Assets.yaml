@@ -14,6 +14,8 @@ assets:
   - name: Shaders/Wall-Border.vs.glsl
   - name: Shaders/Wall-Border.fs.glsl
   - name: Shaders/DeferredBase.fs.glsl
+  - name: Shaders/SpotLight.vs.glsl
+  - name: Shaders/SpotLight.fs.glsl
   - name: Models/GravityCornerConvex.obj
   - name: Textures/Grid.png
     format: r8

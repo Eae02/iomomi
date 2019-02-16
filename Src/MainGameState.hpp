@@ -4,6 +4,7 @@
 #include "Graphics/RenderContext.hpp"
 #include "World/World.hpp"
 #include "World/Player.hpp"
+#include "World/PrepareDrawArgs.hpp"
 
 class MainGameState : public GameState
 {
@@ -22,10 +23,14 @@ private:
 	eg::PerspectiveProjection m_projection;
 	RenderContext* m_renderCtx;
 	
+	PrepareDrawArgs m_prepareDrawArgs;
+	
 	float m_gameTime = 0;
 	
 	World m_world;
 	Player m_player;
+	
+	SpotLightEntity m_spotLights[2];
 };
 
 extern MainGameState* mainGameState;

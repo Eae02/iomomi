@@ -13,6 +13,9 @@ Editor* editor;
 Editor::Editor(RenderContext& renderCtx)
 	: m_renderCtx(&renderCtx)
 {
+	m_prepareDrawArgs.isEditor = true;
+	m_prepareDrawArgs.objectRenderer = &renderCtx.objectRenderer;
+	
 	m_projection.SetFieldOfViewDeg(75.0f);
 }
 
@@ -328,7 +331,7 @@ void Editor::DrawWorld()
 	m_primRenderer.Begin(RenderSettings::instance->viewProjection);
 	m_renderCtx->objectRenderer.Begin(ObjectMaterial::PipelineType::Editor);
 	
-	m_world->PrepareForDraw(m_renderCtx->objectRenderer, true);
+	m_world->PrepareForDraw(m_prepareDrawArgs);
 	
 	if (m_tool == Tool::Walls)
 		DrawToolWalls();

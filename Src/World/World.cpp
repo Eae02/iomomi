@@ -1,5 +1,6 @@
 #include "World.hpp"
 #include "Voxel.hpp"
+#include "PrepareDrawArgs.hpp"
 #include "../Graphics/ObjectRenderer.hpp"
 #include "../Graphics/Materials/GravityCornerMaterial.hpp"
 #include "../Graphics/RenderSettings.hpp"
@@ -206,7 +207,7 @@ glm::mat3 GravityCorner::MakeRotationMatrix() const
 	return glm::mat3(r1, r2, glm::cross(r1, r2));
 }
 
-void World::PrepareForDraw(ObjectRenderer& objectRenderer, bool isEditor)
+void World::PrepareForDraw(PrepareDrawArgs& args)
 {
 	if (m_anyOutOfDate)
 	{
@@ -270,7 +271,7 @@ void World::PrepareForDraw(ObjectRenderer& objectRenderer, bool isEditor)
 				firstVertex += region.data->vertices.size();
 				firstIndex += region.data->indices.size();
 				
-				if (isEditor)
+				if (args.isEditor)
 				{
 					std::copy_n(region.data->borderVertices.begin(), region.data->borderVertices.size(), borderVerticesOut);
 					borderVerticesOut += region.data->borderVertices.size();
@@ -312,7 +313,7 @@ void World::PrepareForDraw(ObjectRenderer& objectRenderer, bool isEditor)
 			m_voxelVertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
 			m_voxelIndexBuffer.UsageHint(eg::BufferUsage::IndexBuffer);
 			
-			if (isEditor && totalBorderVertices > 0)
+			if (args.isEditor && totalBorderVertices > 0)
 			{
 				eg::DC.CopyBuffer(uploadBuffer.buffer, m_borderVertexBuffer,
 					uploadBuffer.offset + borderVerticesOffset, 0,
@@ -340,7 +341,7 @@ void World::PrepareForDraw(ObjectRenderer& objectRenderer, bool isEditor)
 				glm::scale(glm::mat4(1.0f), glm::vec3(S, -S, 1)) *
 				glm::translate(glm::mat4(1.0f), glm::vec3(1.01f, -1.01f, 0));
 			
-			objectRenderer.Add(gravityCornerModel, GravityCornerMaterial::instance, transform);
+			args.objectRenderer->Add(gravityCornerModel, GravityCornerMaterial::instance, transform);
 		}
 	}
 }

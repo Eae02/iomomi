@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Lighting/SpotLight.hpp"
+
 class Renderer
 {
 public:
@@ -8,6 +10,8 @@ public:
 	void BeginGeometry();
 	
 	void BeginLighting();
+	
+	void DrawSpotLights(const std::vector<SpotLightDrawData>& spotLights);
 	
 	void End();
 	
@@ -30,4 +34,5 @@ private:
 	
 	eg::Pipeline m_postPipeline;
 	eg::Pipeline m_ambientPipeline;
+	eg::Pipeline m_spotLightPipeline;
 };

@@ -1,4 +1,6 @@
 #include "Renderer.hpp"
+#include "Lighting/LightMeshes.hpp"
+#include "RenderSettings.hpp"
 
 Renderer::Renderer()
 {
@@ -18,6 +20,18 @@ Renderer::Renderer()
 	eg::FixedFuncState ambientFFState;
 	ambientFFState.attachments[0].format = LIGHT_COLOR_FORMAT;
 	m_ambientPipeline = ambientProgram.CreatePipeline(ambientFFState);
+	
+	eg::ShaderProgram spotLightProgram;
+	spotLightProgram.AddStageFromAsset("Shaders/SpotLight.vs.glsl");
+	spotLightProgram.AddStageFromAsset("Shaders/SpotLight.fs.glsl");
+	
+	eg::FixedFuncState spotLightFFState;
+	spotLightFFState.attachments[0].format = LIGHT_COLOR_FORMAT;
+	spotLightFFState.attachments[0].blend = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
+	spotLightFFState.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
+	spotLightFFState.vertexBindings[0] = { sizeof(float) * 3, eg::InputRate::Vertex };
+	spotLightFFState.cullMode = eg::CullMode::Front;
+	m_spotLightPipeline = spotLightProgram.CreatePipeline(spotLightFFState);
 	
 	eg::SamplerDescription attachmentSamplerDesc;
 	attachmentSamplerDesc.wrapU = eg::WrapMode::ClampToEdge;
@@ -81,8 +95,8 @@ void Renderer::BeginLighting()
 	eg::DC.EndRenderPass();
 	
 	m_gbColor1Texture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
-	//m_gbColor2Texture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
-	//m_gbDepthTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
+	m_gbColor2Texture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
+	m_gbDepthTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
 	rpBeginInfo.framebuffer = m_lightOutFramebuffer.handle;
@@ -94,8 +108,8 @@ void Renderer::BeginLighting()
 	
 	eg::DC.BindTexture(m_gbColor1Texture, 0, &m_attachmentSampler);
 	
-	float ambient[] = { 0.6f, 0.5f, 0.5f };
-	eg::DC.PushConstants(0, sizeof(ambient), ambient);
+	auto ambientColor = eg::ColorLin(eg::ColorSRGB::FromHex(0xf6f9fc)).ScaleRGB(0.5f);
+	eg::DC.PushConstants(0, sizeof(float) * 3, &ambientColor.r);
 	
 	eg::DC.Draw(0, 3, 0, 1);
 }
@@ -119,4 +133,27 @@ void Renderer::End()
 	eg::DC.Draw(0, 3, 0, 1);
 	
 	eg::DC.EndRenderPass();
+}
+
+void Renderer::DrawSpotLights(const std::vector<SpotLightDrawData>& spotLights)
+{
+	if (spotLights.empty())
+		return;
+	
+	eg::DC.BindPipeline(m_spotLightPipeline);
+	
+	BindSpotLightMesh();
+	
+	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+	
+	eg::DC.BindTexture(m_gbColor1Texture, 1, &m_attachmentSampler);
+	eg::DC.BindTexture(m_gbColor2Texture, 2, &m_attachmentSampler);
+	eg::DC.BindTexture(m_gbDepthTexture, 3, &m_attachmentSampler);
+	
+	for (const SpotLightDrawData& spotLight : spotLights)
+	{
+		eg::DC.PushConstants(0, spotLight);
+		
+		eg::DC.DrawIndexed(0, SPOT_LIGHT_MESH_INDICES, 0, 0, 1);
+	}
 }

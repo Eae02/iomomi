@@ -1,6 +1,7 @@
 #ifndef DEFERRED_LIGHT_GLH
 #define DEFERRED_LIGHT_GLH
 
+#include "GBData.glh"
 #include "RenderSettings.glh"
 #include <Deferred.glh>
 
@@ -9,20 +10,9 @@ layout(binding=0, std140) uniform RenderSettingsUB
 	RenderSettings renderSettings;
 };
 
-layout(binding=1) sampler2D gbColor1Sampler;
-layout(binding=2) sampler2D gbColor2Sampler;
-layout(binding=3) sampler2D gbDepthSampler;
-
-struct GBData
-{
-	float hDepth;
-	vec3 worldPos;
-	vec3 normal;
-	vec3 albedo;
-	float roughness;
-	float metallic;
-	float ao;
-};
+layout(binding=1) uniform sampler2D gbColor1Sampler;
+layout(binding=2) uniform sampler2D gbColor2Sampler;
+layout(binding=3) uniform sampler2D gbDepthSampler;
 
 GBData ReadGB(vec2 texCoord)
 {

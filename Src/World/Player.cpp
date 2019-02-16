@@ -274,7 +274,7 @@ void Player::GetViewMatrix(glm::mat4& matrixOut, glm::mat4& inverseMatrixOut) co
 {
 	glm::mat4 rotationMatrix = glm::mat4_cast(m_rotation);
 	matrixOut = glm::transpose(rotationMatrix) * glm::translate(glm::mat4(1.0f), -m_eyePosition);
-	inverseMatrixOut = rotationMatrix * glm::translate(glm::mat4(1.0f), m_eyePosition);
+	inverseMatrixOut = glm::translate(glm::mat4(1.0f), m_eyePosition) * rotationMatrix;
 }
 
 void Player::DebugDraw()
