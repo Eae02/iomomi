@@ -20,8 +20,8 @@ public:
 	}
 	
 private:
-	static constexpr float HEIGHT = 1.6f;
-	static constexpr float WIDTH = 0.6f;
+	static constexpr float HEIGHT = 1.65f;
+	static constexpr float WIDTH = 0.8f;
 	static constexpr float EYE_HEIGHT = HEIGHT * 0.75f;
 	
 	bool m_onGround = false;

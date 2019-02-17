@@ -680,7 +680,7 @@ const GravityCorner* World::FindGravityCorner(const ClippingArgs& args, Dir curr
 	float minDist = INFINITY;
 	const GravityCorner* ret = nullptr;
 	
-	constexpr float ACTIVATE_DIST = 0.5f;
+	constexpr float ACTIVATE_DIST = 0.8f;
 	constexpr float ACTIVATE_MARGIN = 0.2f;
 	constexpr float MAX_HEIGHT_DIFF = 0.1f;
 	
