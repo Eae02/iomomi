@@ -20,6 +20,9 @@ assets:
   - name: Textures/Grid.png
     format: r8
     filtering: nearest
+  - name: Textures/Crosshair.png
+    format: rgba8
+    filtering: linear
   - name: Textures/Voxel/Diffuse
     generator: Texture2DArray
     loader: Texture2D
