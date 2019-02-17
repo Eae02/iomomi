@@ -32,7 +32,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 		INSTALL_RPATH "$ORIGIN/rt${ARCH_SUFFIX}"
 		BUILD_WITH_INSTALL_RPATH TRUE)
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-	target_compile_options(Gravity PRIVATE /wd4250 /wd4251 /wd4068 /wd4996 /wd4275 /D_CRT_SECURE_NO_WARNINGS)
+	target_compile_options(Gravity PRIVATE /wd4250 /wd4251 /wd4244 /wd4068 /wd4996 /wd4275 /D_CRT_SECURE_NO_WARNINGS $<$<COMPILE_LANGUAGE:CXX>:/FI ${CMAKE_CURRENT_SOURCE_DIR}/Inc/Common.hpp>)
 endif()
 
 set_target_properties(Gravity PROPERTIES
