@@ -43,8 +43,9 @@ bool World::Load(std::istream& stream)
 		if (!regNode || !dataNode)
 			continue;
 		
+		std::string regStr = regNode.as<std::string>();
 		regParts.clear();
-		eg::SplitString(regNode.as<std::string>(), ' ', regParts);
+		eg::SplitString(regStr, ' ', regParts);
 		if (regParts.size() != 3)
 			continue;
 		
