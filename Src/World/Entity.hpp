@@ -15,6 +15,14 @@ public:
 		m_position = position;
 	}
 	
+	struct EditorInteractArgs
+	{
+		const class World* world;
+		eg::Ray viewRay;
+	};
+	
+	virtual bool EditorInteract(const EditorInteractArgs& args);
+	
 private:
 	glm::vec3 m_position;
 };

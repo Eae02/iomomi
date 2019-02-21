@@ -44,7 +44,7 @@ private:
 	{
 		Walls,
 		Corners,
-		Objects
+		Entities
 	};
 	Tool m_tool = Tool::Walls;
 	

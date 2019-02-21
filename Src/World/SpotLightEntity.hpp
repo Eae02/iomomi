@@ -30,6 +30,8 @@ public:
 	
 	void SetCutoff(float cutoffAngle, float penumbraAngle);
 	
+	bool EditorInteract(const EditorInteractArgs& args) override;
+	
 	inline float GetRange() const
 	{
 		return m_range;

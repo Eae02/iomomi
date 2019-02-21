@@ -61,3 +61,8 @@ void SpotLightEntity::InitDrawData(SpotLightDrawData& data) const
 	data.penumbraScale = m_penumbraScale;
 	data.radiance = m_radiance;
 }
+
+bool SpotLightEntity::EditorInteract(const Entity::EditorInteractArgs& args)
+{
+	Entity::EditorInteract(args);
+}

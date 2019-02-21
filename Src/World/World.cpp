@@ -345,6 +345,19 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 			args.objectRenderer->Add(gravityCornerModel, GravityCornerMaterial::instance, transform);
 		}
 	}
+	
+	for (int64_t i = (int64_t)m_spotLights.size() - 1; i >= 0; i--)
+	{
+		if (auto spotLight = m_spotLights[i].lock())
+		{
+			spotLight->InitDrawData(args.spotLights.emplace_back());
+		}
+		else
+		{
+			m_spotLights[i].swap(m_spotLights.back());
+			m_spotLights.pop_back();
+		}
+	}
 }
 
 void World::Draw()
@@ -787,4 +800,11 @@ PickWallResult World::PickWall(const eg::Ray& ray) const
 	}
 	
 	return result;
+}
+
+void World::AddEntity(std::shared_ptr<Entity> entity)
+{
+	if (auto spotLight = std::dynamic_pointer_cast<SpotLightEntity>(entity))
+		m_spotLights.emplace_back(spotLight);
+	m_entities.push_back(std::move(entity));
 }

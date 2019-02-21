@@ -95,7 +95,7 @@ void Editor::RunFrame(float dt)
 	{
 		ImGui::RadioButton("Walls", reinterpret_cast<int*>(&m_tool), (int)Tool::Walls);
 		ImGui::RadioButton("Corners", reinterpret_cast<int*>(&m_tool), (int)Tool::Corners);
-		ImGui::RadioButton("Objects", reinterpret_cast<int*>(&m_tool), (int)Tool::Objects);
+		ImGui::RadioButton("Entities", reinterpret_cast<int*>(&m_tool), (int)Tool::Entities);
 	}
 	ImGui::End();
 	

@@ -57,6 +57,8 @@ public:
 	
 	uint8_t GetTexture(const glm::ivec3& pos, Dir side) const;
 	
+	void AddEntity(std::shared_ptr<Entity> entity);
+	
 	void PrepareForDraw(struct PrepareDrawArgs& args);
 	
 	void Draw();
