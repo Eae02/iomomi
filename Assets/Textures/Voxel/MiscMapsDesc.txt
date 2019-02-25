@@ -1,0 +1,4 @@
+Misc maps contain:
+Red channel - roughness
+Green channel - metallic
+Blue channel - ambient occlusion

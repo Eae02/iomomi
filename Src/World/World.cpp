@@ -213,11 +213,13 @@ void World::SetTexture(const glm::ivec3& pos, Dir side, uint8_t textureLayer)
 #endif
 	
 	auto [localC, regionC] = DecomposeGlobalCoordinate(pos);
-	const Region* region = GetRegion(regionC);
+	Region* region = GetRegion(regionC, true);
 	
 	const uint64_t shift = (uint64_t)side * 8;
 	uint64_t& voxelRef = region->data->voxels[localC.x][localC.y][localC.z];
-	voxelRef = (voxelRef & ~(0xFFULL << shift)) | (textureLayer << shift);
+	voxelRef = (voxelRef & ~(0xFFULL << shift)) | ((uint64_t)textureLayer << shift);
+	m_anyOutOfDate = true;
+	region->voxelsOutOfDate = true;
 }
 
 uint8_t World::GetTexture(const glm::ivec3& pos, Dir side) const
@@ -460,7 +462,7 @@ void World::BuildRegionMesh(glm::ivec3 coordinate, World::RegionData& region, bo
 					//Only emit triangles for voxels that face into a solid voxel
 					if (IsAir(nPos))
 						continue;
-					const uint8_t textureLayer = (region.voxels[x][y][z] >> (8 * s)) & 0xFFULL;
+					const uint8_t textureLayer = (region.voxels[x][y][z] >> (uint64_t)(8 * s)) & 0xFFULL;
 					if (textureLayer == 0 && !includeNoDraw)
 						continue;
 					

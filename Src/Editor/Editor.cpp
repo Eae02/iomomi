@@ -19,6 +19,13 @@ Editor::Editor(RenderContext& renderCtx)
 	m_projection.SetFieldOfViewDeg(75.0f);
 }
 
+const char* TextureNames[] =
+{
+	"No Draw",
+	"Tactile Gray",
+	"Metal 1"
+};
+
 void Editor::RunFrame(float dt)
 {
 	if (m_world == nullptr)
@@ -96,6 +103,40 @@ void Editor::RunFrame(float dt)
 		ImGui::RadioButton("Walls", reinterpret_cast<int*>(&m_tool), (int)Tool::Walls);
 		ImGui::RadioButton("Corners", reinterpret_cast<int*>(&m_tool), (int)Tool::Corners);
 		ImGui::RadioButton("Entities", reinterpret_cast<int*>(&m_tool), (int)Tool::Entities);
+	}
+	if (m_tool == Tool::Walls)
+	{
+		if (ImGui::CollapsingHeader("Textures", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ImGui::BeginChildFrame(ImGui::GetID("TexturesList"), ImVec2(0, 300));
+			
+			for (size_t i = 0; i < eg::ArrayLen(TextureNames); i++)
+			{
+				const float ICON_HEIGHT = 64;
+				if (ImGui::Selectable(TextureNames[i], false) &&  m_selState == SelState::SelectDone)
+				{
+					glm::ivec3 mn = glm::min(m_selection1, m_selection2);
+					glm::ivec3 mx = glm::max(m_selection1, m_selection2);
+					
+					for (int x = mn.x; x <= mx.x; x++)
+					{
+						for (int y = mn.y; y <= mx.y; y++)
+						{
+							for (int z = mn.z; z <= mx.z; z++)
+							{
+								glm::ivec3 pos = glm::ivec3(x, y, z) + DirectionVector(m_selectionNormal);
+								if (m_world->IsAir(pos))
+								{
+									m_world->SetTexture(pos, m_selectionNormal, i);
+								}
+							}
+						}
+					}
+				}
+			}
+			
+			ImGui::EndChildFrame();
+		}
 	}
 	ImGui::End();
 	

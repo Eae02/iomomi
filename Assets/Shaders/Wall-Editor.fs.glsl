@@ -1,5 +1,7 @@
 #version 450 core
 
+#include "Inc/EditorLight.glh"
+
 layout(location=0) in vec3 texCoord_in;
 layout(location=1) in vec3 normal_in;
 layout(location=2) in vec3 tangent_in;
@@ -36,11 +38,7 @@ void main()
 	ao2 = pow(clamp(ao2, vec2(0.0), vec2(1.0)), vec2(0.5));
 	float ao = ao2.x * ao2.y;
 	
-	const float LIGHT_INTENSITY = 0.5;
-	const float BRIGHTNESS = 1.2;
-	float light = (max(dot(normal, vec3(1, 1, 1)), 0.0) * LIGHT_INTENSITY + 1.0 - LIGHT_INTENSITY) * ao * BRIGHTNESS;
-	
-	color *= light;
+	color *= CalcEditorLight(normal, ao);
 	
 	float gridIntensity = texture(gridSampler, texCoord_in.xy).r;
 	color = mix(color, vec3(1.0), gridIntensity);
