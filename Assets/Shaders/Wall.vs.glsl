@@ -23,7 +23,7 @@ void main()
 	tangent_out = tangent_in;
 	
 	vec3 biTangent = cross(tangent_in, normal_in);
-	texCoord_out = vec3(texCoordAO_in.xy / 255.0, texCoordAO_in.z);
+	texCoord_out = vec3(texCoordAO_in.xy / 255.0, float(texCoordAO_in.z) - 1);
 	
 	const float AO_BIAS = 0.30; //Increasing this makes the maximum amount of AO less intense.
 	const float AO_SCALE = 3.5; //Decreasing this makes AO continue further from walls.

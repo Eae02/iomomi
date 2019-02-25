@@ -13,8 +13,8 @@ MainGameState::MainGameState(RenderContext& renderCtx)
 	m_prepareDrawArgs.objectRenderer = &m_renderCtx->objectRenderer;
 	
 	m_projection.SetFieldOfViewDeg(80.0f);
-	//std::ifstream stream(eg::ExeRelPath("levels/test.gwd"), std::ios::binary);
 	
+	/*
 	m_spotLights[0].SetPosition(glm::vec3(2.5f, 4.0f, 1.5f));
 	m_spotLights[0].SetDirection(glm::vec3(0, -1, 0.1f));
 	m_spotLights[0].SetRadiance(eg::ColorLin(eg::ColorSRGB::FromHex(0xe4f1fc)).ScaleRGB(30));
@@ -23,7 +23,7 @@ MainGameState::MainGameState(RenderContext& renderCtx)
 	m_spotLights[1].SetPosition(glm::vec3(2.5f, 4.0f, -4.5f));
 	m_spotLights[1].SetDirection(glm::vec3(0, -1, -0.1f));
 	m_spotLights[1].SetRadiance(eg::ColorLin(eg::ColorSRGB::FromHex(0xe4f1fc)).ScaleRGB(30));
-	m_spotLights[1].SetCutoff(glm::radians(80.0f), 0.7f);
+	m_spotLights[1].SetCutoff(glm::radians(80.0f), 0.7f);*/
 }
 
 void MainGameState::LoadWorld(std::istream& stream)
@@ -57,11 +57,6 @@ void MainGameState::RunFrame(float dt)
 	m_renderCtx->objectRenderer.Begin(ObjectMaterial::PipelineType::Game);
 	
 	m_prepareDrawArgs.spotLights.clear();
-	for (const SpotLightEntity& sl : m_spotLights)
-	{
-		sl.InitDrawData(m_prepareDrawArgs.spotLights.emplace_back());
-	}
-	
 	m_world.PrepareForDraw(m_prepareDrawArgs);
 	
 	m_renderCtx->objectRenderer.End();

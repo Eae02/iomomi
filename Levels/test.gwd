@@ -14,3 +14,34 @@ voxels:
     data: !!binary "eNrt1bEJACAMRNGMIOL+szpBCokBkfeaK6/8ES3G4fq/ayYLAJ30/81/ANB//QcA/dV/AKhYyeq//gMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAfGkDMIIGow=="
   - reg: 0 0 0
     data: !!binary "eNrt1aENADAMA0GP0LLuP2ml4oZGinRHDB86eU7+22UVqw8A/k8fAPyfPgD4P30A8H9T+rtYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACGuKrdA9w="
+entities:
+  - type: SpotLight
+    pos:
+      - 2.49761868
+      - 3.91942739
+      - 1.59140444
+    range: 61.9758034
+    cutoff: 1.39626348
+    penumbra: 0.34906587
+    yaw: 0
+    pitch: -1.57079637
+    intensity: 15
+    color:
+      - 0.866666675
+      - 0.960784316
+      - 1
+  - type: SpotLight
+    pos:
+      - 2.31454277
+      - 4
+      - -4.52818584
+    range: 61.9758034
+    cutoff: 1.39626348
+    penumbra: 0.34906587
+    yaw: 0
+    pitch: -1.57079637
+    intensity: 15
+    color:
+      - 0.865116298
+      - 0.961464047
+      - 1

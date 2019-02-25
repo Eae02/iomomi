@@ -115,6 +115,8 @@ void Editor::RunFrame(float dt)
 			UpdateToolWalls(dt);
 		else if (m_tool == Tool::Corners)
 			UpdateToolCorners(dt);
+		else if (m_tool == Tool::Entities)
+			UpdateToolEntities(dt);
 	}
 	
 	m_selection2Anim += std::min(dt * 20, 1.0f) * (glm::vec3(m_selection2) - m_selection2Anim);
@@ -124,6 +126,9 @@ void Editor::RunFrame(float dt)
 
 void Editor::UpdateToolCorners(float dt)
 {
+	if (ImGui::GetIO().WantCaptureMouse)
+		return;
+	
 	eg::Ray viewRay = eg::Ray::UnprojectScreen(RenderSettings::instance->invViewProjection, eg::CursorPos());
 	PickWallResult pickResult = m_world->PickWall(viewRay);
 	
@@ -197,8 +202,156 @@ void Editor::UpdateToolCorners(float dt)
 	}
 }
 
+void Editor::UpdateToolEntities(float dt)
+{
+	const float ICON_SIZE = 32;
+	
+	auto AllowMouseInteract = [&] { return !ImGui::GetIO().WantCaptureMouse && !m_translationGizmo.HasInputFocus(); };
+	
+	auto viewRay = eg::MakeLazy([&]
+	{
+		return eg::Ray::UnprojectScreen(RenderSettings::instance->invViewProjection, eg::CursorPos());
+	});
+	
+	//Updates the translation gizmo
+	if (!m_selectedEntities.empty() && !ImGui::GetIO().WantCaptureMouse)
+	{
+		glm::vec3 prevPos;
+		for (const std::shared_ptr<Entity>& selectedEntity : m_selectedEntities)
+		{
+			prevPos += selectedEntity->Position();
+		}
+		prevPos /= (float)m_selectedEntities.size();
+		
+		glm::vec3 newPos = prevPos;
+		m_translationGizmo.Update(newPos, RenderSettings::instance->viewProjection, *viewRay);
+		
+		for (const std::shared_ptr<Entity>& selectedEntity : m_selectedEntities)
+		{
+			selectedEntity->SetPosition(selectedEntity->Position() + newPos - prevPos);
+		}
+	}
+	
+	//Updates entity icons
+	m_entityIcons.clear();
+	for (const std::shared_ptr<Entity>& entity : m_world->Entities())
+	{
+		glm::vec4 sp4 = RenderSettings::instance->viewProjection * glm::vec4(entity->Position(), 1.0f);
+		glm::vec3 sp3 = glm::vec3(sp4) / sp4.w;
+		glm::vec2 screenPos = (glm::vec2(sp3) * 0.5f + 0.5f) * glm::vec2(eg::CurrentResolutionX(), eg::CurrentResolutionY());
+		
+		m_entityIcons.push_back({ eg::Rectangle::CreateCentered(screenPos, ICON_SIZE, ICON_SIZE), sp3.z, entity });
+	}
+	
+	std::sort(m_entityIcons.begin(), m_entityIcons.end(), [&] (const EntityIcon& a, const EntityIcon& b)
+	{
+		return a.depth > b.depth;
+	});
+	
+	glm::vec2 flippedCursorPos(eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY());
+	
+	//Updates the selected entity
+	if (eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft) && AllowMouseInteract())
+	{
+		if (!eg::IsButtonDown(eg::Button::LeftControl) && !eg::IsButtonDown(eg::Button::RightControl))
+		{
+			m_selectedEntities.clear();
+		}
+		
+		for (int64_t i = (int64_t)m_entityIcons.size() - 1; i >= 0; i--)
+		{
+			if (m_entityIcons[i].rectangle.Contains(flippedCursorPos))
+			{
+				m_selectedEntities.push_back(m_entityIcons[i].entity);
+				break;
+			}
+		}
+	}
+	
+	//Opens settings windows
+	if (ImGui::IsMouseDoubleClicked(0) && AllowMouseInteract())
+	{
+		for (int64_t i = (int64_t)m_entityIcons.size() - 1; i >= 0; i--)
+		{
+			if (m_entityIcons[i].rectangle.Contains(flippedCursorPos))
+			{
+				std::weak_ptr<Entity> entityWeak = m_entityIcons[i].entity;
+				if (!std::any_of(m_settingsWindowEntities.begin(), m_settingsWindowEntities.end(),
+					[&] (const std::weak_ptr<Entity>& e) { return e.lock() == m_entityIcons[i].entity; }))
+				{
+					m_settingsWindowEntities.emplace_back(m_entityIcons[i].entity);
+				}
+				break;
+			}
+		}
+	}
+	
+	//Updates settings windows
+	for (int64_t i = (int64_t)m_settingsWindowEntities.size() - 1; i >= 0; i--)
+	{
+		bool open = true;
+		if (std::shared_ptr<Entity> entity = m_settingsWindowEntities[i].lock())
+		{
+			std::ostringstream labelStream;
+			labelStream << entity->TypeName() << " - Settings##" << entity.get();
+			std::string labelString = labelStream.str();
+			ImGui::SetNextWindowSize(ImVec2(200, 0), ImGuiCond_Appearing);
+			if (ImGui::Begin(labelString.c_str(), &open, ImGuiWindowFlags_NoSavedSettings))
+			{
+				entity->EditorRenderSettings();
+			}
+			ImGui::End();
+		}
+		else
+		{
+			open = false;
+		}
+		if (!open)
+		{
+			m_settingsWindowEntities[i].swap(m_settingsWindowEntities.back());
+			m_settingsWindowEntities.pop_back();
+		}
+	}
+	
+	//Opens the spawn entity menu if the right mouse button is clicked
+	if (eg::IsButtonDown(eg::Button::MouseRight) && !eg::WasButtonDown(eg::Button::MouseRight) && AllowMouseInteract())
+	{
+		ImGui::OpenPopup("SpawnEntity");
+	}
+	
+	if (ImGui::BeginPopup("SpawnEntity"))
+	{
+		ImGui::Text("Spawn Entity");
+		ImGui::Separator();
+		
+		ImGui::BeginChild("EntityTypes", ImVec2(180, 250));
+		for (const EntityType& entityType : entityTypes)
+		{
+			if (ImGui::MenuItem(entityType.DisplayName().c_str()))
+			{
+				PickWallResult pickResult = m_world->PickWall(*viewRay);
+				
+				if (pickResult.intersected)
+				{
+					std::shared_ptr<Entity> entity = entityType.CreateInstance();
+					entity->EditorSpawned(pickResult.intersectPosition, pickResult.normalDir);
+					m_world->AddEntity(std::move(entity));
+				}
+				
+				ImGui::CloseCurrentPopup();
+			}
+		}
+		ImGui::EndChild();
+		
+		ImGui::EndPopup();
+	}
+}
+
 void Editor::UpdateToolWalls(float dt)
 {
+	if (ImGui::GetIO().WantCaptureMouse)
+		return;
+	
 	auto viewRay = eg::MakeLazy([&]
 	{
 		return eg::Ray::UnprojectScreen(RenderSettings::instance->invViewProjection, eg::CursorPos());
@@ -329,6 +482,7 @@ void Editor::UpdateToolWalls(float dt)
 void Editor::DrawWorld()
 {
 	m_primRenderer.Begin(RenderSettings::instance->viewProjection);
+	m_spriteBatch.Begin();
 	m_renderCtx->objectRenderer.Begin(ObjectMaterial::PipelineType::Editor);
 	
 	m_world->PrepareForDraw(m_prepareDrawArgs);
@@ -337,8 +491,11 @@ void Editor::DrawWorld()
 		DrawToolWalls();
 	else if (m_tool == Tool::Corners)
 		DrawToolCorners();
+	else if (m_tool == Tool::Entities)
+		DrawToolEntities();
 	
 	m_primRenderer.End();
+	
 	m_renderCtx->objectRenderer.End();
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
@@ -356,7 +513,17 @@ void Editor::DrawWorld()
 	
 	m_primRenderer.Draw();
 	
+	if (m_tool == Tool::Entities && !m_selectedEntities.empty())
+	{
+		m_translationGizmo.Draw(RenderSettings::instance->viewProjection);
+	}
+	
 	eg::DC.EndRenderPass();
+	
+	eg::RenderPassBeginInfo spriteRPBeginInfo;
+	spriteRPBeginInfo.framebuffer = nullptr;
+	spriteRPBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Load;
+	m_spriteBatch.End(eg::CurrentResolutionX(), eg::CurrentResolutionY(), spriteRPBeginInfo);
 }
 
 void Editor::DrawToolWalls()
@@ -425,6 +592,34 @@ void Editor::DrawToolCorners()
 		eg::ColorSRGB color = eg::ColorSRGB(eg::ColorSRGB::FromHex(0xDB9951).ScaleAlpha(0.4f));
 		m_primRenderer.AddQuad(lineCorners, color);
 		m_primRenderer.AddQuad(lineCorners + 4, color);
+	}
+}
+
+void Editor::DrawToolEntities()
+{
+	const eg::Texture& iconsTexture = eg::GetAsset<eg::Texture>("Textures/EntityIcons.png");
+	
+	auto CreateSrcRectangle = [&] (int index)
+	{
+		return eg::Rectangle(index * 50, 0, 50, 50);
+	};
+	
+	Entity::EditorDrawArgs drawArgs;
+	drawArgs.spriteBatch = &m_spriteBatch;
+	drawArgs.primitiveRenderer = &m_primRenderer;
+	drawArgs.objectRenderer = &m_renderCtx->objectRenderer;
+	
+	for (const EntityIcon& icon : m_entityIcons)
+	{
+		bool selected = eg::Contains(m_selectedEntities, icon.entity);
+		
+		icon.entity->EditorDraw(selected, drawArgs);
+		
+		m_spriteBatch.Draw(iconsTexture, icon.rectangle, eg::ColorLin(eg::Color::White),
+			CreateSrcRectangle(selected ? 1 : 0), eg::FlipFlags::Normal);
+		
+		m_spriteBatch.Draw(iconsTexture, icon.rectangle, eg::ColorLin(eg::Color::White),
+			CreateSrcRectangle(icon.entity->GetEditorIconIndex()), eg::FlipFlags::Normal);
 	}
 }
 

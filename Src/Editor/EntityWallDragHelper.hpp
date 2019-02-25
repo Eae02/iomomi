@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../World/Entity.hpp"
+#include "../World/Entities/Entity.hpp"
 
 class EntityWallDragHelper
 {

@@ -47,6 +47,7 @@ static void OnInit()
 static void OnShutdown()
 {
 	gravityCornerPipelineEditor.Destroy();
+	gravityCornerPipelineGame.Destroy();
 }
 
 EG_ON_INIT(OnInit)

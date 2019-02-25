@@ -4,6 +4,8 @@
 static_assert(sizeof(int) == 4);
 static_assert(sizeof(float) == 4);
 
+void InitEntityTypes();
+
 int main(int argc, char** argv)
 {
 	eg::RunConfig runConfig;
@@ -13,6 +15,7 @@ int main(int argc, char** argv)
 	{
 		eg::LoadAssets("assets", "/");
 		InitLevels();
+		InitEntityTypes();
 	};
 	
 	bool vSync = true;

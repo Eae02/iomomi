@@ -10,4 +10,5 @@ bool EntityWallDragHelper::EditorInteract(Entity& self, const Entity::EditorInte
 	{
 		
 	}
+	return true;
 }

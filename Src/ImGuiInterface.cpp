@@ -118,9 +118,6 @@ void ImGuiInterface::NewFrame()
 {
 	ImGuiIO& io = ImGui::GetIO();
 	
-	m_isMouseCaptured = io.WantCaptureMouse;
-	m_isKeyboardCaptured = io.WantCaptureKeyboard;
-	
 	using namespace std::chrono;
 	high_resolution_clock::time_point time = high_resolution_clock::now();
 	
@@ -182,16 +179,6 @@ void ImGuiInterface::NewFrame()
 	}*/
 	
 	ImGui::NewFrame();
-}
-
-bool ImGuiInterface::IsMouseCaptured()
-{
-	return m_isMouseCaptured;
-}
-
-bool ImGuiInterface::IsKeyboardCaptured()
-{
-	return m_isKeyboardCaptured;
 }
 
 void ImGuiInterface::EndFrame()

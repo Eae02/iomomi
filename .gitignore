@@ -5,4 +5,5 @@
 .vs
 Inc/Common.hpp.gch
 Data/Shaders/*
+*.blend1
 Bin

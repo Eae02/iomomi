@@ -12,6 +12,7 @@ struct
 	eg::Texture* normalMapTexture;
 	eg::Texture* miscMapTexture;
 	eg::Texture* gridTexture;
+	eg::Texture* noDrawTexture;
 	eg::Sampler sampler;
 } wr;
 
@@ -69,6 +70,7 @@ void InitializeWallShader()
 	wr.normalMapTexture = &eg::GetAsset<eg::Texture>("Textures/Voxel/NormalMap");
 	wr.miscMapTexture = &eg::GetAsset<eg::Texture>("Textures/Voxel/MiscMap");
 	wr.gridTexture = &eg::GetAsset<eg::Texture>("Textures/Grid.png");
+	wr.noDrawTexture = &eg::GetAsset<eg::Texture>("Textures/NoDraw.png");
 	
 	eg::SamplerDescription samplerDescription;
 	samplerDescription.maxAnistropy = 16;
@@ -118,6 +120,7 @@ void DrawWallsEditor(const std::function<void()>& drawCallback)
 	eg::DC.BindTexture(*wr.diffuseTexture, 1, &wr.sampler);
 	eg::DC.BindTexture(*wr.normalMapTexture, 2, &wr.sampler);
 	eg::DC.BindTexture(*wr.gridTexture, 3);
+	eg::DC.BindTexture(*wr.noDrawTexture, 4);
 	
 	drawCallback();
 }

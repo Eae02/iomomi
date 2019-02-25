@@ -23,9 +23,11 @@ private:
 	
 	void UpdateToolWalls(float dt);
 	void UpdateToolCorners(float dt);
+	void UpdateToolEntities(float dt);
 	
 	void DrawToolWalls();
 	void DrawToolCorners();
+	void DrawToolEntities();
 	
 	RenderContext* m_renderCtx;
 	PrepareDrawArgs m_prepareDrawArgs;
@@ -39,6 +41,7 @@ private:
 	EditorCamera m_camera;
 	
 	PrimitiveRenderer m_primRenderer;
+	eg::SpriteBatch m_spriteBatch;
 	
 	enum class Tool
 	{
@@ -71,6 +74,18 @@ private:
 	int m_dragDistance;
 	int m_dragDir;
 	int m_dragAirMode;
+	
+	struct EntityIcon
+	{
+		eg::Rectangle rectangle;
+		float depth;
+		std::shared_ptr<Entity> entity;
+	};
+	std::vector<EntityIcon> m_entityIcons;
+	std::vector<std::shared_ptr<Entity>> m_selectedEntities;
+	std::vector<std::weak_ptr<Entity>> m_settingsWindowEntities;
+	
+	eg::TranslationGizmo m_translationGizmo;
 };
 
 extern Editor* editor;

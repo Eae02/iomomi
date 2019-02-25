@@ -3,8 +3,8 @@
 #include <cstddef>
 
 #include "Dir.hpp"
-#include "Entity.hpp"
-#include "SpotLightEntity.hpp"
+#include "Entities/Entity.hpp"
+#include "Entities/SpotLightEntity.hpp"
 #include "../Graphics/Vertex.hpp"
 
 struct WallVertex;
@@ -74,6 +74,11 @@ public:
 	
 	PickWallResult PickWall(const eg::Ray& ray) const;
 	
+	const std::vector<std::shared_ptr<Entity>>& Entities() const
+	{
+		return m_entities;
+	}
+	
 private:
 	static constexpr uint32_t REGION_SIZE = 16;
 	
@@ -119,7 +124,7 @@ private:
 	const Region* GetRegion(const glm::ivec3& coordinate) const;
 	Region* GetRegion(const glm::ivec3& coordinate, bool maybeCreate);
 	
-	void BuildRegionMesh(glm::ivec3 coordinate, RegionData& region);
+	void BuildRegionMesh(glm::ivec3 coordinate, RegionData& region, bool includeNoDraw);
 	void BuildRegionBorderMesh(glm::ivec3 coordinate, RegionData& region);
 	
 	glm::ivec4 GetGravityCornerVoxelPos(glm::ivec3 cornerPos, Dir cornerDir) const;

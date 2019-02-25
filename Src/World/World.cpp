@@ -71,6 +71,24 @@ bool World::Load(std::istream& stream)
 		return false;
 	}
 	
+	if (const YAML::Node& entitiesNode = rootYaml["entities"])
+	{
+		for (const YAML::Node& entityNode : entitiesNode)
+		{
+			std::string typeName = entityNode["type"].as<std::string>("");
+			const EntityType* type = FindEntityType(typeName);
+			if (type == nullptr)
+			{
+				eg::Log(eg::LogLevel::Warning, "wd", "Entity type not found: {0}", typeName);
+				continue;
+			}
+			
+			std::shared_ptr<Entity> entity = type->CreateInstance();
+			entity->Load(entityNode);
+			AddEntity(std::move(entity));
+		}
+	}
+	
 	m_anyOutOfDate = true;
 	
 	return true;
@@ -99,6 +117,16 @@ void World::Save(std::ostream& outStream) const
 			YAML::Binary(reinterpret_cast<const uint8_t*>(regionData.data()), regionData.size());
 		regionDataVectors.push_back(std::move(regionData));
 		
+		emitter << YAML::EndMap;
+	}
+	emitter << YAML::EndSeq;
+	
+	emitter << YAML::Key << "entities" << YAML::Value << YAML::BeginSeq;
+	for (const std::shared_ptr<Entity>& entity : m_entities)
+	{
+		emitter << YAML::BeginMap;
+		emitter << YAML::Key << "type" << YAML::Value << std::string(entity->TypeName());
+		entity->Save(emitter);
 		emitter << YAML::EndMap;
 	}
 	emitter << YAML::EndSeq;
@@ -228,7 +256,7 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 			
 			if (region.voxelsOutOfDate)
 			{
-				BuildRegionMesh(region.coordinate, *region.data);
+				BuildRegionMesh(region.coordinate, *region.data, args.isEditor);
 				region.canDraw = !region.data->indices.empty();
 				region.voxelsOutOfDate = false;
 				uploadVoxels = true;
@@ -407,7 +435,7 @@ void World::DrawEditor()
 	}
 }
 
-void World::BuildRegionMesh(glm::ivec3 coordinate, World::RegionData& region)
+void World::BuildRegionMesh(glm::ivec3 coordinate, World::RegionData& region, bool includeNoDraw)
 {
 	glm::ivec3 globalBase = coordinate * (int)REGION_SIZE;
 	region.vertices.clear();
@@ -433,6 +461,8 @@ void World::BuildRegionMesh(glm::ivec3 coordinate, World::RegionData& region)
 					if (IsAir(nPos))
 						continue;
 					const uint8_t textureLayer = (region.voxels[x][y][z] >> (8 * s)) & 0xFFULL;
+					if (textureLayer == 0 && !includeNoDraw)
+						continue;
 					
 					//The center of the face to be emitted
 					const glm::ivec3 faceCenter2 = globalPos * 2 + 1 - voxel::normals[s];
@@ -694,7 +724,6 @@ const GravityCorner* World::FindGravityCorner(const ClippingArgs& args, Dir curr
 	const GravityCorner* ret = nullptr;
 	
 	constexpr float ACTIVATE_DIST = 0.8f;
-	constexpr float ACTIVATE_MARGIN = 0.2f;
 	constexpr float MAX_HEIGHT_DIFF = 0.1f;
 	
 	glm::vec3 currentDownDir = DirectionVector(currentDown);

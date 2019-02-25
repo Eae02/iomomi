@@ -17,6 +17,9 @@ assets:
   - name: Shaders/SpotLight.vs.glsl
   - name: Shaders/SpotLight.fs.glsl
   - name: Models/GravityCornerConvex.obj
+  - name: Models/EnterRoom.obj
+  - name: Textures/EntityIcons.png
+  - name: Textures/NoDraw.png
   - name: Textures/Grid.png
     format: r8
     filtering: nearest

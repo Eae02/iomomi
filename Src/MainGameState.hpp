@@ -29,8 +29,6 @@ private:
 	
 	World m_world;
 	Player m_player;
-	
-	SpotLightEntity m_spotLights[2];
 };
 
 extern MainGameState* mainGameState;
