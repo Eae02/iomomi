@@ -27,5 +27,5 @@ void main()
 	
 	vec3 albedo = texture(albedoSampler, texCoord_in).rgb;
 	
-	color_out = vec4(albedo * CalcEditorLight(normal, miscMaps.b), 1.0);
+	color_out = vec4(albedo * CalcEditorLight(sNormal, miscMaps.b), 1.0);
 }

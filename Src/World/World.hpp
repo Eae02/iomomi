@@ -133,6 +133,7 @@ private:
 	
 	std::vector<std::shared_ptr<Entity>> m_entities;
 	std::vector<std::weak_ptr<SpotLightEntity>> m_spotLights;
+	std::vector<std::weak_ptr<Entity::IDrawable>> m_drawables;
 	
 	bool m_anyOutOfDate = true;
 	bool m_canDraw = false;

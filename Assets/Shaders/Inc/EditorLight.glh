@@ -5,7 +5,8 @@ float CalcEditorLight(vec3 normal, float ao)
 {
 	const float LIGHT_INTENSITY = 0.5;
 	const float BRIGHTNESS = 1.2;
-	return (max(dot(normal, vec3(1, 1, 1)), 0.0) * LIGHT_INTENSITY + (1.0 - LIGHT_INTENSITY) * ao) * BRIGHTNESS;
+	
+	return (abs(dot(normal, vec3(1, 1, 1))) * LIGHT_INTENSITY + (1.0 - LIGHT_INTENSITY) * ao) * BRIGHTNESS;
 }
 
 #endif

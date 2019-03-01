@@ -3,6 +3,7 @@
 .idea
 .vscode
 .vs
+Assets/.AssetCache
 Inc/Common.hpp.gch
 Data/Shaders/*
 *.blend1

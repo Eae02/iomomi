@@ -1,0 +1,5 @@
+albedo: ../Textures/NoDraw.png
+normalMap: ../Textures/NoDraw.png
+miscMap: ../Textures/NoDraw.png
+roughnessMin: 0.2
+roughnessMax: 1.0

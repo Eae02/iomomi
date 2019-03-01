@@ -6,6 +6,12 @@
 class Entity
 {
 public:
+	class IDrawable
+	{
+	public:
+		virtual void Draw(class ObjectRenderer& renderer) = 0;
+	};
+	
 	virtual ~Entity() = default;
 	
 	const glm::vec3& Position() const

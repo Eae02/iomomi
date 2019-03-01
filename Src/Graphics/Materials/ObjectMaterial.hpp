@@ -10,5 +10,5 @@ public:
 	};
 	
 	virtual eg::PipelineRef GetPipeline(PipelineType pipelineType) const = 0;
-	virtual void Bind() const = 0;
+	virtual void Bind(ObjectMaterial::PipelineType boundPipeline) const = 0;
 };

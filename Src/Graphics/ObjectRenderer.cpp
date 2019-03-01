@@ -132,7 +132,7 @@ void ObjectRenderer::Draw()
 		
 		for (MaterialBucket* material = pipeline->materials; material; material = material->next)
 		{
-			material->material->Bind();
+			material->material->Bind(m_pipelineType);
 			
 			for (ModelBucket* model = material->models; model; model = model->next)
 			{
@@ -141,7 +141,8 @@ void ObjectRenderer::Draw()
 				for (size_t m = 0; m < model->model->NumMeshes(); m++)
 				{
 					const eg::Model::Mesh& mesh = model->model->GetMesh(m);
-					eg::DC.DrawIndexed(mesh.firstIndex, mesh.numIndices, mesh.firstVertex, 0, model->numInstances);
+					eg::DC.DrawIndexed(mesh.firstIndex, mesh.numIndices, mesh.firstVertex,
+						model->instanceBufferOffset, model->numInstances);
 				}
 			}
 		}

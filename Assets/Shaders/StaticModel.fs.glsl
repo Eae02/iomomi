@@ -11,6 +11,11 @@ layout(binding=1) uniform sampler2D albedoSampler;
 layout(binding=2) uniform sampler2D nmSampler;
 layout(binding=3) uniform sampler2D mmSampler;
 
+layout(push_constant) uniform PC
+{
+	vec2 roughnessRange;
+};
+
 void main()
 {
 	vec3 sNormal = normalize(normal_in);
@@ -25,5 +30,6 @@ void main()
 	
 	vec3 albedo = texture(albedoSampler, texCoord_in).rgb;
 	
-	DeferredOut(albedo, normal, mix(0.5, 1.0, miscMaps.r), miscMaps.g, miscMaps.b);
+	float roughness = mix(roughnessRange.x, roughnessRange.y, miscMaps.r);
+	DeferredOut(albedo, sNormal, roughness, miscMaps.g, miscMaps.b);
 }

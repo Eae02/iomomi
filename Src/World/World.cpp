@@ -376,6 +376,21 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 		}
 	}
 	
+	//Processes drawable entities
+	for (int64_t i = (int64_t)m_drawables.size() - 1; i >= 0; i--)
+	{
+		if (auto drawable = m_drawables[i].lock())
+		{
+			drawable->Draw(*args.objectRenderer);
+		}
+		else
+		{
+			m_drawables[i].swap(m_drawables.back());
+			m_drawables.pop_back();
+		}
+	}
+	
+	//Processes spotlight entities
 	for (int64_t i = (int64_t)m_spotLights.size() - 1; i >= 0; i--)
 	{
 		if (auto spotLight = m_spotLights[i].lock())
@@ -837,5 +852,7 @@ void World::AddEntity(std::shared_ptr<Entity> entity)
 {
 	if (auto spotLight = std::dynamic_pointer_cast<SpotLightEntity>(entity))
 		m_spotLights.emplace_back(spotLight);
+	if (auto drawable = std::dynamic_pointer_cast<Entity::IDrawable>(entity))
+		m_drawables.emplace_back(drawable);
 	m_entities.push_back(std::move(entity));
 }

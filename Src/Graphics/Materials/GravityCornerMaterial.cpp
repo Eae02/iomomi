@@ -63,7 +63,7 @@ eg::PipelineRef GravityCornerMaterial::GetPipeline(PipelineType pipelineType) co
 	EG_UNREACHABLE
 }
 
-void GravityCornerMaterial::Bind() const
+void GravityCornerMaterial::Bind(ObjectMaterial::PipelineType boundPipeline) const
 {
 	
 }

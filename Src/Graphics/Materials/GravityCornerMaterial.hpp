@@ -8,7 +8,7 @@ public:
 	GravityCornerMaterial() = default;
 	
 	eg::PipelineRef GetPipeline(PipelineType pipelineType) const override;
-	void Bind() const override;
+	void Bind(ObjectMaterial::PipelineType boundPipeline) const override;
 	
 	static GravityCornerMaterial instance;
 };
