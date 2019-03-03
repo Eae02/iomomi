@@ -4,7 +4,7 @@
 
 #include <fstream>
 
-static const eg::AssetFormat StaticPropMaterialAssetFormat { "StaticPropMaterial", 0 };
+static const eg::AssetFormat StaticPropMaterialAssetFormat { "StaticPropMaterial", 1 };
 
 class StaticPropMaterialGenerator : public eg::AssetGenerator
 {
@@ -21,6 +21,9 @@ public:
 		
 		const float roughnessMin = rootYaml["roughnessMin"].as<float>(0.0f);
 		const float roughnessMax = rootYaml["roughnessMax"].as<float>(1.0f);
+		const float texScale = rootYaml["textureScale"].as<float>(1.0f);
+		const float texScaleX = rootYaml["textureScaleX"].as<float>(texScale);
+		const float texScaleY = rootYaml["textureScaleY"].as<float>(texScale);
 		
 		std::string albedoPath = rootYaml["albedo"].as<std::string>(std::string());
 		std::string normalMapPath = rootYaml["normalMap"].as<std::string>(std::string());
@@ -38,6 +41,8 @@ public:
 		eg::BinWriteString(generateContext.outputStream, miscMapPath);
 		eg::BinWrite(generateContext.outputStream, roughnessMin);
 		eg::BinWrite(generateContext.outputStream, roughnessMax);
+		eg::BinWrite(generateContext.outputStream, texScaleX);
+		eg::BinWrite(generateContext.outputStream, texScaleY);
 		
 		generateContext.AddLoadDependency(std::move(albedoPath));
 		generateContext.AddLoadDependency(std::move(normalMapPath));
@@ -57,8 +62,8 @@ bool StaticPropMaterial::AssetLoader(const eg::AssetLoadContext& loadContext)
 	std::string miscMapTextureName = eg::BinReadString(stream);
 	
 	std::string albedoTexturePath = eg::Concat({ loadContext.DirPath(), albedoTextureName} );
-	std::string normalMapTexturePath = eg::Concat({ loadContext.DirPath(), albedoTextureName} );
-	std::string miscMapTexturePath = eg::Concat({ loadContext.DirPath(), albedoTextureName} );
+	std::string normalMapTexturePath = eg::Concat({ loadContext.DirPath(), normalMapTextureName} );
+	std::string miscMapTexturePath = eg::Concat({ loadContext.DirPath(), miscMapTextureName} );
 	
 	StaticPropMaterial& material = loadContext.CreateResult<StaticPropMaterial>();
 	material.m_albedoTexture = &eg::GetAsset<eg::Texture>(albedoTexturePath);
@@ -67,6 +72,8 @@ bool StaticPropMaterial::AssetLoader(const eg::AssetLoadContext& loadContext)
 	
 	material.m_roughnessMin = eg::BinRead<float>(stream);
 	material.m_roughnessMax = eg::BinRead<float>(stream);
+	material.m_textureScale.x = 1.0f / eg::BinRead<float>(stream);
+	material.m_textureScale.y = 1.0f / eg::BinRead<float>(stream);
 	
 	return true;
 }
@@ -140,9 +147,6 @@ void StaticPropMaterial::Bind(ObjectMaterial::PipelineType boundPipeline) const
 	eg::DC.BindTexture(*m_normalMapTexture, 2, &GetCommonTextureSampler());
 	eg::DC.BindTexture(*m_miscMapTexture, 3, &GetCommonTextureSampler());
 	
-	if (boundPipeline == PipelineType::Game)
-	{
-		float pushConstants[] = {m_roughnessMin, m_roughnessMax};
-		eg::DC.PushConstants(0, sizeof(pushConstants), pushConstants);
-	}
+	float pushConstants[] = {m_roughnessMin, m_roughnessMax, m_textureScale.x, m_textureScale.y};
+	eg::DC.PushConstants(0, sizeof(pushConstants), pushConstants);
 }

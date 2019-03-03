@@ -108,7 +108,7 @@ void Renderer::BeginLighting()
 	
 	eg::DC.BindTexture(m_gbColor1Texture, 0, &m_attachmentSampler);
 	
-	auto ambientColor = eg::ColorLin(eg::ColorSRGB::FromHex(0xf6f9fc)).ScaleRGB(0.3f);
+	auto ambientColor = eg::ColorLin(eg::ColorSRGB::FromHex(0xf6f9fc)).ScaleRGB(0.2f);
 	eg::DC.PushConstants(0, sizeof(float) * 3, &ambientColor.r);
 	
 	eg::DC.Draw(0, 3, 0, 1);

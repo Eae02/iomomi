@@ -1,0 +1,6 @@
+albedo: ../../Textures/Entrance/PaddingA.png
+normalMap: ../../Textures/Entrance/PaddingN.png
+miscMap: ../../Textures/Entrance/PaddingM.png
+roughnessMin: 0.4
+roughnessMax: 0.8
+textureScale: 2.0

@@ -14,6 +14,7 @@ layout(binding=3) uniform sampler2D mmSampler;
 layout(push_constant) uniform PC
 {
 	vec2 roughnessRange;
+	vec2 textureScale;
 };
 
 void main()
@@ -23,13 +24,14 @@ void main()
 	sTangent = normalize(sTangent - dot(sNormal, sTangent) * sNormal);
 	mat3 tbn = mat3(sTangent, cross(sTangent, sNormal), sNormal);
 	
-	vec4 miscMaps = texture(mmSampler, texCoord_in);
+	vec2 texCoord = textureScale * texCoord_in;
+	vec4 miscMaps = texture(mmSampler, texCoord);
 	
-	vec3 nmNormal = (texture(nmSampler, texCoord_in).grb * (255.0 / 128.0)) - vec3(1.0);
+	vec3 nmNormal = (texture(nmSampler, texCoord).grb * (255.0 / 128.0)) - vec3(1.0);
 	vec3 normal = normalize(tbn * nmNormal);
 	
-	vec3 albedo = texture(albedoSampler, texCoord_in).rgb;
+	vec3 albedo = texture(albedoSampler, texCoord).rgb;
 	
 	float roughness = mix(roughnessRange.x, roughnessRange.y, miscMaps.r);
-	DeferredOut(albedo, sNormal, roughness, miscMaps.g, miscMaps.b);
+	DeferredOut(albedo, normal, roughness, miscMaps.g, miscMaps.b);
 }

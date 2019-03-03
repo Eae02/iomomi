@@ -12,6 +12,12 @@ public:
 		virtual void Draw(class ObjectRenderer& renderer) = 0;
 	};
 	
+	class IEditorWallDrag
+	{
+	public:
+		virtual void EditorWallDrag(const glm::vec3& newPosition, Dir wallNormalDir) = 0;
+	};
+	
 	virtual ~Entity() = default;
 	
 	const glm::vec3& Position() const

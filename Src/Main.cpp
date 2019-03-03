@@ -11,7 +11,7 @@ int main(int argc, char** argv)
 {
 	eg::RunConfig runConfig;
 	runConfig.gameName = "Gravity";
-	runConfig.flags = eg::RunFlags::DevMode | eg::RunFlags::DefaultFramebufferSRGB | eg::RunFlags::CreateAssetPackage;
+	runConfig.flags = eg::RunFlags::DevMode | eg::RunFlags::DefaultFramebufferSRGB;
 	runConfig.initialize = []
 	{
 		StaticPropMaterial::InitAssetTypes();

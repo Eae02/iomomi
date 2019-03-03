@@ -9,7 +9,13 @@ public:
 	
 	void Begin(ObjectMaterial::PipelineType pipeline);
 	
-	void Add(const eg::Model& model, const ObjectMaterial& material, const glm::mat4& transform);
+	void Add(const eg::Model& model, const ObjectMaterial& material, const glm::mat4& transform)
+	{
+		const ObjectMaterial* materials[] = { &material };
+		Add(model, materials, transform);
+	}
+	
+	void Add(const eg::Model& model, eg::Span<const ObjectMaterial* const> materials, const glm::mat4& transform);
 	
 	void End();
 	
@@ -24,13 +30,22 @@ private:
 		Instance* next;
 	};
 	
-	struct ModelBucket
+	struct MeshBucket
 	{
-		const eg::Model* model;
+		uint32_t firstVertex;
+		uint32_t firstIndex;
+		uint32_t numIndices;
 		Instance* firstInstance = nullptr;
 		Instance* lastInstance = nullptr;
 		uint32_t numInstances = 0;
 		uint32_t instanceBufferOffset = 0;
+		MeshBucket* next = nullptr;
+	};
+	
+	struct ModelBucket
+	{
+		const eg::Model* model;
+		MeshBucket* meshes;
 		ModelBucket* next = nullptr;
 	};
 	

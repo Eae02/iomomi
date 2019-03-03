@@ -1,5 +1,28 @@
 # Blender MTL File: 'EnterRoom.blend'
-# Material Count: 3
+# Material Count: 5
+
+newmtl Door
+Ns 225.000000
+Ka 1.000000 1.000000 1.000000
+Kd 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.0 0.0 0.0
+Ni 1.450000
+d 1.000000
+illum 2
+
+newmtl Floor
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 1.000000 1.000000 1.000000
+Ke 0.0 0.0 0.0
+Ni 1.450000
+d 1.000000
+illum 3
+map_Bump /home/erik/Desktop/EntranceRoom/EntranceFloorN.png
+map_Kd /home/erik/Desktop/EntranceRoom/EntranceFloorA.tga
+refl /home/erik/Desktop/EntranceRoom/EntranceFloorM.png
 
 newmtl Material.001
 Ns 225.000000
@@ -11,20 +34,23 @@ Ni 1.450000
 d 1.000000
 illum 2
 
-newmtl Material.002
-Ns 225.000000
+newmtl Pipe
+Ns 35.999996
 Ka 1.000000 1.000000 1.000000
-Kd 0.106535 0.106535 0.106535
+Kd 0.147314 0.147314 0.147314
+Ks 0.500000 0.500000 0.500000
+Ke 0.0 0.0 0.0
+Ni 1.450000
+d 1.000000
+illum 3
+
+newmtl WallPadding
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.405363 0.039448
 Ks 0.500000 0.500000 0.500000
 Ke 0.0 0.0 0.0
 Ni 1.450000
 d 1.000000
 illum 2
-
-newmtl None
-Ns 500
-Ka 0.8 0.8 0.8
-Kd 0.8 0.8 0.8
-Ks 0.8 0.8 0.8
-d 1
-illum 2
+map_Kd /home/erik/Desktop/EntranceRoom/PaddingA.png

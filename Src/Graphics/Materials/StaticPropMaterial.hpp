@@ -19,4 +19,5 @@ private:
 	const eg::Texture* m_miscMapTexture;
 	float m_roughnessMin;
 	float m_roughnessMax;
+	glm::vec2 m_textureScale;
 };

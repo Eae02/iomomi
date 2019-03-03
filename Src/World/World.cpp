@@ -381,7 +381,10 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 	{
 		if (auto drawable = m_drawables[i].lock())
 		{
-			drawable->Draw(*args.objectRenderer);
+			if (!args.isEditor)
+			{
+				drawable->Draw(*args.objectRenderer);
+			}
 		}
 		else
 		{

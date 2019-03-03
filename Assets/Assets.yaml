@@ -22,7 +22,32 @@ assets:
   - name: Models/EnterRoom.obj
   - name: Textures/EntityIcons.png
   - name: Textures/NoDraw.png
-  - name: Materials/Entrance.yaml
+    srgb: true
+  - name: Textures/Entrance/FloorA.png
+    srgb: true
+  - name: Textures/Entrance/FloorN.png
+    srgb: false
+  - name: Textures/Entrance/FloorM.png
+    srgb: false
+  - name: Textures/Entrance/PaddingA.png
+    srgb: true
+  - name: Textures/Entrance/PaddingN.png
+    srgb: false
+  - name: Textures/Entrance/PaddingM.png
+    srgb: false
+  - name: Textures/DefaultA.png
+    srgb: true
+  - name: Textures/DefaultN.png
+    srgb: false
+  - name: Textures/DefaultM.png
+    srgb: false
+  - name: Materials/Default.yaml
+    generator: StaticPropMaterial
+    loader: StaticPropMaterial
+  - name: Materials/Entrance/Floor.yaml
+    generator: StaticPropMaterial
+    loader: StaticPropMaterial
+  - name: Materials/Entrance/Padding.yaml
     generator: StaticPropMaterial
     loader: StaticPropMaterial
   - name: Textures/Grid.png
@@ -36,6 +61,8 @@ assets:
     loader: Texture2D
     format: rgba8
     srgb: true
+    width: 512
+    height: 512
     layers:
       - Textures/Voxel/TactileGrayA.png
       - Textures/Voxel/Metal1A.png
@@ -44,6 +71,8 @@ assets:
     loader: Texture2D
     format: rgba8
     srgb: false
+    width: 512
+    height: 512
     layers:
       - Textures/Voxel/TactileGrayN.png
       - Textures/Voxel/Metal1N.png
@@ -52,6 +81,8 @@ assets:
     loader: Texture2D
     format: rgba8
     srgb: false
+    width: 512
+    height: 512
     layers:
       - Textures/Voxel/TactileGrayM.png
       - Textures/Voxel/Metal1M.png

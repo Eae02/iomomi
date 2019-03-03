@@ -2,7 +2,7 @@
 
 #include "Entity.hpp"
 
-class EntranceEntity : public Entity, public Entity::IDrawable
+class EntranceEntity : public Entity, public Entity::IDrawable, public Entity::IEditorWallDrag
 {
 public:
 	EntranceEntity();
@@ -15,6 +15,8 @@ public:
 	
 	void EditorDraw(bool selected, const EditorDrawArgs& drawArgs) const override;
 	
+	void EditorWallDrag(const glm::vec3& newPosition, Dir wallNormalDir) override;
+	
 	void Save(YAML::Emitter& emitter) const override;
 	
 	void Load(const YAML::Node& node) override;
@@ -22,8 +24,7 @@ public:
 private:
 	glm::mat4 GetTransform() const;
 	
+	Dir m_direction = Dir::NegX;
 	const eg::Model* m_model;
-	const class StaticPropMaterial* m_material;
+	std::vector<const class ObjectMaterial*> m_materials;
 };
-
-

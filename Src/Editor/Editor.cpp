@@ -265,7 +265,8 @@ void Editor::UpdateToolEntities(float dt)
 		prevPos /= (float)m_selectedEntities.size();
 		
 		glm::vec3 newPos = prevPos;
-		m_translationGizmo.Update(newPos, RenderSettings::instance->viewProjection, *viewRay);
+		m_translationGizmo.Update(newPos, RenderSettings::instance->cameraPosition,
+		                          RenderSettings::instance->viewProjection, *viewRay);
 		
 		for (const std::shared_ptr<Entity>& selectedEntity : m_selectedEntities)
 		{
@@ -535,6 +536,16 @@ void Editor::DrawWorld()
 	else if (m_tool == Tool::Entities)
 		DrawToolEntities();
 	
+	//Calls EditorDraw on entities
+	Entity::EditorDrawArgs entityDrawArgs;
+	entityDrawArgs.spriteBatch = &m_spriteBatch;
+	entityDrawArgs.primitiveRenderer = &m_primRenderer;
+	entityDrawArgs.objectRenderer = &m_renderCtx->objectRenderer;
+	for (const std::shared_ptr<Entity>& entity : m_world->Entities())
+	{
+		entity->EditorDraw(m_tool == Tool::Entities && eg::Contains(m_selectedEntities, entity), entityDrawArgs);
+	}
+	
 	m_primRenderer.End();
 	
 	m_renderCtx->objectRenderer.End();
@@ -645,16 +656,9 @@ void Editor::DrawToolEntities()
 		return eg::Rectangle(index * 50, 0, 50, 50);
 	};
 	
-	Entity::EditorDrawArgs drawArgs;
-	drawArgs.spriteBatch = &m_spriteBatch;
-	drawArgs.primitiveRenderer = &m_primRenderer;
-	drawArgs.objectRenderer = &m_renderCtx->objectRenderer;
-	
 	for (const EntityIcon& icon : m_entityIcons)
 	{
 		bool selected = eg::Contains(m_selectedEntities, icon.entity);
-		
-		icon.entity->EditorDraw(selected, drawArgs);
 		
 		m_spriteBatch.Draw(iconsTexture, icon.rectangle, eg::ColorLin(eg::Color::White),
 			CreateSrcRectangle(selected ? 1 : 0), eg::FlipFlags::Normal);
