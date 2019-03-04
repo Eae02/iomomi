@@ -85,6 +85,8 @@ private:
 	std::vector<std::shared_ptr<Entity>> m_selectedEntities;
 	std::vector<std::weak_ptr<Entity>> m_settingsWindowEntities;
 	
+	glm::vec3 m_gizmoPosUnaligned;
+	glm::vec3 m_prevGizmoPos;
 	eg::TranslationGizmo m_translationGizmo;
 };
 

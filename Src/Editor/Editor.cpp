@@ -257,21 +257,32 @@ void Editor::UpdateToolEntities(float dt)
 	//Updates the translation gizmo
 	if (!m_selectedEntities.empty() && !ImGui::GetIO().WantCaptureMouse)
 	{
-		glm::vec3 prevPos;
-		for (const std::shared_ptr<Entity>& selectedEntity : m_selectedEntities)
+		if (!m_translationGizmo.HasInputFocus())
 		{
-			prevPos += selectedEntity->Position();
+			m_gizmoPosUnaligned = glm::vec3(0.0f);
+			for (const std::shared_ptr<Entity>& selectedEntity : m_selectedEntities)
+			{
+				m_gizmoPosUnaligned += selectedEntity->Position();
+			}
+			m_gizmoPosUnaligned /= (float)m_selectedEntities.size();
+			m_prevGizmoPos = m_gizmoPosUnaligned;
 		}
-		prevPos /= (float)m_selectedEntities.size();
 		
-		glm::vec3 newPos = prevPos;
-		m_translationGizmo.Update(newPos, RenderSettings::instance->cameraPosition,
+		m_translationGizmo.Update(m_gizmoPosUnaligned, RenderSettings::instance->cameraPosition,
 		                          RenderSettings::instance->viewProjection, *viewRay);
 		
+		glm::vec3 gizmoPosAligned = m_gizmoPosUnaligned;
+		if (!eg::IsButtonDown(eg::Button::LeftShift))
+		{
+			const float STEP = 0.1f;
+			gizmoPosAligned = glm::round(gizmoPosAligned / STEP) * STEP;
+		}
+		
 		for (const std::shared_ptr<Entity>& selectedEntity : m_selectedEntities)
 		{
-			selectedEntity->SetPosition(selectedEntity->Position() + newPos - prevPos);
+			selectedEntity->SetPosition(selectedEntity->Position() + gizmoPosAligned - m_prevGizmoPos);
 		}
+		m_prevGizmoPos = gizmoPosAligned;
 	}
 	
 	//Updates entity icons
