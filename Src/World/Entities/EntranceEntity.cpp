@@ -2,7 +2,7 @@
 #include "../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../Graphics/ObjectRenderer.hpp"
 
-constexpr float MESH_LENGTH = 3.2f;
+constexpr float MESH_LENGTH = 4.8f;
 
 EntranceEntity::EntranceEntity()
 {

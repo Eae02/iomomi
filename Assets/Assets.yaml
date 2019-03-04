@@ -61,8 +61,8 @@ assets:
     loader: Texture2D
     format: rgba8
     srgb: true
-    width: 512
-    height: 512
+    width: 1024
+    height: 1024
     layers:
       - Textures/Voxel/TactileGrayA.png
       - Textures/Voxel/Metal1A.png
@@ -71,8 +71,8 @@ assets:
     loader: Texture2D
     format: rgba8
     srgb: false
-    width: 512
-    height: 512
+    width: 1024
+    height: 1024
     layers:
       - Textures/Voxel/TactileGrayN.png
       - Textures/Voxel/Metal1N.png
@@ -81,8 +81,8 @@ assets:
     loader: Texture2D
     format: rgba8
     srgb: false
-    width: 512
-    height: 512
+    width: 1024
+    height: 1024
     layers:
       - Textures/Voxel/TactileGrayM.png
       - Textures/Voxel/Metal1M.png

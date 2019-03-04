@@ -20,9 +20,9 @@ Ke 0.0 0.0 0.0
 Ni 1.450000
 d 1.000000
 illum 3
-map_Bump /home/erik/Desktop/EntranceRoom/EntranceFloorN.png
-map_Kd /home/erik/Desktop/EntranceRoom/EntranceFloorA.tga
-refl /home/erik/Desktop/EntranceRoom/EntranceFloorM.png
+map_Bump EntranceFloorN.png
+map_Kd EntranceFloorA.tga
+refl EntranceFloorM.png
 
 newmtl Material.001
 Ns 225.000000
@@ -53,4 +53,4 @@ Ke 0.0 0.0 0.0
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd /home/erik/Desktop/EntranceRoom/PaddingA.png
+map_Kd PaddingA.png
