@@ -10,14 +10,14 @@ void ObjectRenderer::Begin(ObjectMaterial::PipelineType pipelineType)
 }
 
 void ObjectRenderer::Add(const eg::Model& model, eg::Span<const ObjectMaterial* const> materials,
-	eg::Span<const glm::mat4> transforms)
+	eg::Span<const glm::mat4> transforms, bool flipWinding)
 {
 	for (size_t meshI = 0; meshI < model.NumMeshes(); meshI++)
 	{
 		const eg::Model::Mesh& mesh = model.GetMesh(meshI);
 		const ObjectMaterial& material = *materials[glm::clamp(mesh.materialIndex, 0, (int)materials.size() - 1)];
 		
-		eg::PipelineRef pipeline = material.GetPipeline(m_pipelineType);
+		eg::PipelineRef pipeline = material.GetPipeline(m_pipelineType, flipWinding);
 		
 		//Selects a pipeline bucket
 		PipelineBucket* pipelineBucket = m_drawList;

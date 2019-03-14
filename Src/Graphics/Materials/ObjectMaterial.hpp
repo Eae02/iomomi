@@ -9,6 +9,6 @@ public:
 		Editor
 	};
 	
-	virtual eg::PipelineRef GetPipeline(PipelineType pipelineType) const = 0;
+	virtual eg::PipelineRef GetPipeline(PipelineType pipelineType, bool flipWinding) const = 0;
 	virtual void Bind(ObjectMaterial::PipelineType boundPipeline) const = 0;
 };

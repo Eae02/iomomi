@@ -1,0 +1,5 @@
+albedo: ../../Textures/Entrance/EditorEntrance.png
+normalMap: ../../Textures/DefaultN.png
+miscMap: ../../Textures/DefaultM.png
+roughnessMin: 1.0
+roughnessMax: 1.0

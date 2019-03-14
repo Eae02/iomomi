@@ -8,8 +8,8 @@ class EntranceEntity : public Entity, public Entity::IDrawable, public Entity::I
 public:
 	enum class Type
 	{
-		Entrance,
-		Exit
+		Entrance = 0,
+		Exit = 1
 	};
 	
 	EntranceEntity();
@@ -32,15 +32,18 @@ public:
 	
 	void CalcClipping(ClippingArgs& args) const override;
 	
+	Type EntranceType() const
+	{
+		return m_type;
+	}
+	
+	void InitPlayer(class Player& player) const;
+	
 private:
 	glm::mat4 GetTransform() const;
 	
 	Dir m_direction = Dir::NegX;
-	const eg::Model* m_model;
-	std::vector<const class ObjectMaterial*> m_materials;
 	
 	Type m_type = Type::Exit;
 	float m_doorOpenProgress = 0;
-	
-	size_t m_doorMeshIndices[2][2];
 };

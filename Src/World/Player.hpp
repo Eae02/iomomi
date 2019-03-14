@@ -24,6 +24,17 @@ public:
 		return m_position;
 	}
 	
+	void SetPosition(const glm::vec3& position)
+	{
+		m_position = position;
+	}
+	
+	void SetRotation(float yaw, float pitch)
+	{
+		m_rotationYaw = yaw;
+		m_rotationPitch = pitch;
+	}
+	
 	Dir CurrentDown() const
 	{
 		return m_down;

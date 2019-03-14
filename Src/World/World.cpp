@@ -74,6 +74,8 @@ bool World::Load(std::istream& stream)
 	m_entities.clear();
 	m_spotLights.clear();
 	m_drawables.clear();
+	m_updatables.clear();
+	m_collidables.clear();
 	if (const YAML::Node& entitiesNode = rootYaml["entities"])
 	{
 		for (const YAML::Node& entityNode : entitiesNode)

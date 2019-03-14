@@ -48,7 +48,7 @@ static void OnShutdown()
 EG_ON_INIT(OnInit)
 EG_ON_SHUTDOWN(OnShutdown)
 
-eg::PipelineRef GravityCornerMaterial::GetPipeline(PipelineType pipelineType) const
+eg::PipelineRef GravityCornerMaterial::GetPipeline(PipelineType pipelineType, bool flipWinding) const
 {
 	switch (pipelineType)
 	{

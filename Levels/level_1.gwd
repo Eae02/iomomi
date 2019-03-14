@@ -23,9 +23,11 @@ entities:
       - 1.5
       - -1
     dir: 5
+    exit: false
   - type: Entrance
     pos:
       - 2.5
       - 1.5
       - 11
     dir: 4
+    exit: true

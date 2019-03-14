@@ -1,5 +1,6 @@
 #include "MainGameState.hpp"
 #include "World/PrepareDrawArgs.hpp"
+#include "World/Entities/EntranceEntity.hpp"
 
 #include <fstream>
 #include <imgui.h>
@@ -31,6 +32,18 @@ void MainGameState::LoadWorld(std::istream& stream)
 	m_world.Load(stream);
 	m_player = { };
 	m_gameTime = 0;
+	
+	for (const std::shared_ptr<Entity>& entity : m_world.Entities())
+	{
+		if (EntranceEntity* entrance = dynamic_cast<EntranceEntity*>(entity.get()))
+		{
+			if (entrance->EntranceType() == EntranceEntity::Type::Entrance)
+			{
+				entrance->InitPlayer(m_player);
+				break;
+			}
+		}
+	}
 }
 
 void MainGameState::RunFrame(float dt)

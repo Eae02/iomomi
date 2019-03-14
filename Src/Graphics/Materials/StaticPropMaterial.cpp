@@ -86,6 +86,7 @@ void StaticPropMaterial::InitAssetTypes()
 
 static eg::Pipeline staticPropPipelineEditor;
 static eg::Pipeline staticPropPipelineGame;
+static eg::Pipeline staticPropPipelineGameFW;
 
 static void OnInit()
 {
@@ -112,6 +113,9 @@ static void OnInit()
 	pipelineCI.attachments[1].format = eg::Format::R8G8B8A8_UNorm;
 	staticPropPipelineGame = eg::Pipeline::Create(pipelineCI);
 	
+	pipelineCI.frontFaceCCW = !pipelineCI.frontFaceCCW;
+	staticPropPipelineGameFW = eg::Pipeline::Create(pipelineCI);
+	
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/StaticModel-Editor.fs.glsl").Handle();
 	pipelineCI.depthFormat = eg::Format::DefaultDepthStencil;
 	pipelineCI.cullMode = eg::CullMode::None;
@@ -124,15 +128,18 @@ static void OnShutdown()
 {
 	staticPropPipelineEditor.Destroy();
 	staticPropPipelineGame.Destroy();
+	staticPropPipelineGameFW.Destroy();
 }
 
 EG_ON_INIT(OnInit)
 EG_ON_SHUTDOWN(OnShutdown)
 
-eg::PipelineRef StaticPropMaterial::GetPipeline(ObjectMaterial::PipelineType pipelineType) const
+eg::PipelineRef StaticPropMaterial::GetPipeline(ObjectMaterial::PipelineType pipelineType, bool flipWinding) const
 {
 	if (pipelineType == ObjectMaterial::PipelineType::Editor)
 		return staticPropPipelineEditor;
+	if (flipWinding)
+		return staticPropPipelineGameFW;
 	return staticPropPipelineGame;
 }
 

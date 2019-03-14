@@ -9,14 +9,14 @@ public:
 	
 	void Begin(ObjectMaterial::PipelineType pipeline);
 	
-	void Add(const eg::Model& model, const ObjectMaterial& material, const glm::mat4& transform)
+	void Add(const eg::Model& model, const ObjectMaterial& material, const glm::mat4& transform, bool flipWinding = false)
 	{
 		const ObjectMaterial* materials[] = { &material };
-		Add(model, materials, { &transform, 1 });
+		Add(model, materials, { &transform, 1 }, flipWinding);
 	}
 	
 	void Add(const eg::Model& model, eg::Span<const ObjectMaterial* const> materials,
-		eg::Span<const glm::mat4> transforms);
+		eg::Span<const glm::mat4> transforms, bool flipWinding = false);
 	
 	void End();
 	

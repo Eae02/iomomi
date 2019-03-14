@@ -5,7 +5,7 @@
 class StaticPropMaterial : public ObjectMaterial
 {
 public:
-	eg::PipelineRef GetPipeline(PipelineType pipelineType) const override;
+	eg::PipelineRef GetPipeline(PipelineType pipelineType, bool flipWinding) const override;
 	
 	void Bind(ObjectMaterial::PipelineType boundPipeline) const override;
 	

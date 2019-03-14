@@ -20,8 +20,14 @@ assets:
   - name: Shaders/SpotLight.fs.glsl
   - name: Models/GravityCornerConvex.obj
   - name: Models/EnterRoom.obj
+  - name: Models/EditorExit.obj
+  - name: Models/EditorEntrance.obj
   - name: Textures/EntityIcons.png
   - name: Textures/NoDraw.png
+    srgb: true
+  - name: Textures/Entrance/EditorEntrance.png
+    srgb: true
+  - name: Textures/Entrance/EditorExit.png
     srgb: true
   - name: Textures/Entrance/FloorA.png
     srgb: true
@@ -48,6 +54,12 @@ assets:
     generator: StaticPropMaterial
     loader: StaticPropMaterial
   - name: Materials/Entrance/Padding.yaml
+    generator: StaticPropMaterial
+    loader: StaticPropMaterial
+  - name: Materials/Entrance/EditorEntrance.yaml
+    generator: StaticPropMaterial
+    loader: StaticPropMaterial
+  - name: Materials/Entrance/EditorExit.yaml
     generator: StaticPropMaterial
     loader: StaticPropMaterial
   - name: Textures/Grid.png
