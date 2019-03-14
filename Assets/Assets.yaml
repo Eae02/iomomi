@@ -47,6 +47,18 @@ assets:
     srgb: false
   - name: Textures/DefaultM.png
     srgb: false
+  - name: Textures/Pipe1A.png
+    srgb: true
+  - name: Textures/Pipe1N.png
+    srgb: false
+  - name: Textures/Pipe1M.png
+    srgb: false
+  - name: Textures/Pipe2A.png
+    srgb: true
+  - name: Textures/Pipe2N.png
+    srgb: false
+  - name: Textures/Pipe2M.png
+    srgb: false
   - name: Materials/Default.yaml
     generator: StaticPropMaterial
     loader: StaticPropMaterial
@@ -60,6 +72,12 @@ assets:
     generator: StaticPropMaterial
     loader: StaticPropMaterial
   - name: Materials/Entrance/EditorExit.yaml
+    generator: StaticPropMaterial
+    loader: StaticPropMaterial
+  - name: Materials/Pipe1.yaml
+    generator: StaticPropMaterial
+    loader: StaticPropMaterial
+  - name: Materials/Pipe2.yaml
     generator: StaticPropMaterial
     loader: StaticPropMaterial
   - name: Textures/Grid.png

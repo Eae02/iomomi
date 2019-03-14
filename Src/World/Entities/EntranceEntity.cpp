@@ -27,6 +27,8 @@ void InitEntranceEntity()
 	s_materials.resize(s_model->NumMaterials(), &eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml"));
 	s_materials.at(s_model->GetMaterialIndex("Floor")) = &eg::GetAsset<StaticPropMaterial>("Materials/Entrance/Floor.yaml");
 	s_materials.at(s_model->GetMaterialIndex("WallPadding")) = &eg::GetAsset<StaticPropMaterial>("Materials/Entrance/Padding.yaml");
+	s_materials.at(s_model->GetMaterialIndex("WallPadding")) = &eg::GetAsset<StaticPropMaterial>("Materials/Entrance/Padding.yaml");
+	s_materials.at(s_model->GetMaterialIndex("CeilPipe")) = &eg::GetAsset<StaticPropMaterial>("Materials/Pipe2.yaml");
 	
 	s_editorEntranceMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Entrance/EditorEntrance.yaml");
 	s_editorExitMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Entrance/EditorExit.yaml");
@@ -155,14 +157,22 @@ void EntranceEntity::Update(const UpdateArgs& args)
 		return glm::distance2(args.player->Position(), pos) < MAX_DIST * MAX_DIST;
 	};
 	
-	bool doorShouldBeOpen = PlayerIsCloseTo(Position());
+	glm::vec3 dirToPlayer = args.player->Position() - Position();
+	glm::vec3 desiredDirToPlayer = DirectionVector(m_direction) * (m_type == Type::Entrance ? 1 : -1);
+	
+	bool doorShouldBeOpen = PlayerIsCloseTo(Position()) && glm::dot(dirToPlayer, desiredDirToPlayer) > 0;
 	
 	if (((int)args.player->CurrentDown() / 2) == ((int)m_direction / 2))
 		doorShouldBeOpen = false;
 	
+	if (!doorShouldBeOpen)
+		m_timeBeforeClose = std::max(m_timeBeforeClose - args.dt, 0.0f);
+	else
+		m_timeBeforeClose = 0.5f;
+	
 	constexpr float TRANSITION_TIME = 0.2f;
 	const float progressDelta = args.dt / TRANSITION_TIME;
-	if (doorShouldBeOpen)
+	if (m_timeBeforeClose > 0)
 		m_doorOpenProgress = std::min(m_doorOpenProgress + progressDelta, 1.0f);
 	else
 		m_doorOpenProgress = std::max(m_doorOpenProgress - progressDelta, 0.0f);
@@ -204,25 +214,31 @@ void EntranceEntity::CalcClipping(ClippingArgs& args) const
 			glm::vec3(colMax.x, colMin.y, colMax.z),
 			glm::vec3(colMax.x, colMax.y, colMax.z),
 			glm::vec3(colMax.x, colMax.y, colMin.z)
-		},
-	};
-	
-	//Expands polygons along x and y
-	for (int i = 0; i < 4; i++)
-	{
-		glm::vec3 center;
-		for (int j = 0; j < 4; j++)
-			center += colPolygons[i][j];
-		center /= 4.0f;
-		for (int j = 0; j < 4; j++)
-		{
-			colPolygons[i][j] = (colPolygons[i][j] - center) * glm::vec3(1.2f, 1.2f, -1.0f) + center;
 		}
-	}
+	};
 	
 	for (int i = 0; i < 4; i++)
 	{
 		CalcPolygonClipping(args, colPolygons[i]);
+	}
+	
+	float doorsX[4] = { 4.7f, 4.3f, -4.3f, -4.7f };
+	for (int i = 0; i < 4; i++)
+	{
+		if (m_doorOpenProgress > 0.1f && (i / 2) == (1 - (int)m_type))
+			continue;
+		
+		glm::vec3 doorMin(transform * glm::vec4(doorsX[i], 0, -COL_SIZE_Z, 1));
+		glm::vec3 doorMax(transform * glm::vec4(doorsX[i], COL_SIZE_Y, COL_SIZE_Z, 1));
+		
+		glm::vec3 doorPolygon[4] =
+		{
+			glm::vec3(doorMin.x, doorMin.y, doorMin.z),
+			glm::vec3(doorMax.x, doorMin.y, doorMin.z),
+			glm::vec3(doorMax.x, doorMax.y, doorMin.z),
+			glm::vec3(doorMin.x, doorMax.y, doorMin.z)
+		};
+		CalcPolygonClipping(args, doorPolygon);
 	}
 }
 

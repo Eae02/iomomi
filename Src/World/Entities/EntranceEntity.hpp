@@ -46,4 +46,5 @@ private:
 	
 	Type m_type = Type::Exit;
 	float m_doorOpenProgress = 0;
+	float m_timeBeforeClose = 0;
 };

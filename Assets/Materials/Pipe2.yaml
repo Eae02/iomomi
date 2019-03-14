@@ -1,0 +1,5 @@
+albedo: ../Textures/Pipe2A.png
+normalMap: ../Textures/Pipe2N.png
+miscMap: ../Textures/Pipe2M.png
+roughnessMin: 0.5
+roughnessMax: 1.0
