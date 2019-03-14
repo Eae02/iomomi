@@ -5,22 +5,20 @@ eg::Pipeline primPipeline;
 
 void PrimitiveRenderer::OnInit()
 {
-	eg::ShaderProgram program;
-	program.AddStageFromAsset("Shaders/Primitive.vs.glsl");
-	program.AddStageFromAsset("Shaders/Primitive.fs.glsl");
+	eg::PipelineCreateInfo pipelineCI;
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Primitive.vs.glsl").Handle();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/Primitive.fs.glsl").Handle();
+	pipelineCI.vertexBindings[0] = { sizeof(Vertex), eg::InputRate::Vertex };
+	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, (uint32_t)offsetof(Vertex, position) };
+	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::UInt8Norm, 4, (uint32_t)offsetof(Vertex, color) };
+	pipelineCI.depthFormat = eg::Format::DefaultDepthStencil;
+	pipelineCI.cullMode = eg::CullMode::None;
+	pipelineCI.enableDepthTest = false;
+	pipelineCI.enableDepthWrite = false;
+	pipelineCI.attachments[0].format = eg::Format::DefaultColor;
+	pipelineCI.attachments[0].blend = eg::AlphaBlend;
 	
-	eg::FixedFuncState fixedFuncState;
-	fixedFuncState.vertexBindings[0] = { sizeof(Vertex), eg::InputRate::Vertex };
-	fixedFuncState.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, (uint32_t)offsetof(Vertex, position) };
-	fixedFuncState.vertexAttributes[1] = { 0, eg::DataType::UInt8Norm, 4, (uint32_t)offsetof(Vertex, color) };
-	fixedFuncState.depthFormat = eg::Format::DefaultDepthStencil;
-	fixedFuncState.cullMode = eg::CullMode::None;
-	fixedFuncState.enableDepthTest = false;
-	fixedFuncState.enableDepthWrite = false;
-	fixedFuncState.attachments[0].format = eg::Format::DefaultColor;
-	fixedFuncState.attachments[0].blend = eg::AlphaBlend;
-	
-	primPipeline = program.CreatePipeline(fixedFuncState);
+	primPipeline = eg::Pipeline::Create(pipelineCI);
 }
 
 void PrimitiveRenderer::OnShutdown()

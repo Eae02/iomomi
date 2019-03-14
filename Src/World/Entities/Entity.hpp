@@ -1,7 +1,9 @@
 #pragma once
 
 #include <yaml-cpp/yaml.h>
+
 #include "../Dir.hpp"
+#include "../Clipping.hpp"
 
 class Entity
 {
@@ -16,6 +18,25 @@ public:
 	{
 	public:
 		virtual void EditorWallDrag(const glm::vec3& newPosition, Dir wallNormalDir) = 0;
+	};
+	
+	struct UpdateArgs
+	{
+		float dt;
+		class World* world;
+		class Player* player;
+	};
+	
+	class IUpdatable
+	{
+	public:
+		virtual void Update(const UpdateArgs& args) = 0;
+	};
+	
+	class ICollidable
+	{
+	public:
+		virtual void CalcClipping(ClippingArgs& args) const = 0;
 	};
 	
 	virtual ~Entity() = default;
@@ -44,8 +65,6 @@ public:
 	virtual int GetEditorIconIndex() const;
 	
 	virtual void EditorSpawned(const glm::vec3& wallPosition, Dir wallNormal);
-	
-	virtual bool EditorInteract(const EditorInteractArgs& args);
 	
 	virtual void EditorRenderSettings();
 	

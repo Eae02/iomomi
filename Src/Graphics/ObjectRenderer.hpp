@@ -12,10 +12,11 @@ public:
 	void Add(const eg::Model& model, const ObjectMaterial& material, const glm::mat4& transform)
 	{
 		const ObjectMaterial* materials[] = { &material };
-		Add(model, materials, transform);
+		Add(model, materials, { &transform, 1 });
 	}
 	
-	void Add(const eg::Model& model, eg::Span<const ObjectMaterial* const> materials, const glm::mat4& transform);
+	void Add(const eg::Model& model, eg::Span<const ObjectMaterial* const> materials,
+		eg::Span<const glm::mat4> transforms);
 	
 	void End();
 	

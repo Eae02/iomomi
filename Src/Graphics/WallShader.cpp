@@ -33,53 +33,48 @@ MaterialSettings materialSettings[2] =
 
 void InitializeWallShader()
 {
-	eg::ShaderProgram deferredGeomProgram;
-	deferredGeomProgram.AddStageFromAsset("Shaders/Wall.vs.glsl");
-	deferredGeomProgram.AddStageFromAsset("Shaders/Wall.fs.glsl");
-	
 	//Creates the ambient light pipeline
-	eg::FixedFuncState fixedFuncState;
-	fixedFuncState.enableDepthWrite = true;
-	fixedFuncState.enableDepthTest = true;
-	fixedFuncState.cullMode = eg::CullMode::Back;
-	fixedFuncState.depthFormat = Renderer::DEPTH_FORMAT;
-	fixedFuncState.attachments[0].format = eg::Format::R8G8B8A8_UNorm;
-	fixedFuncState.attachments[1].format = eg::Format::R8G8B8A8_UNorm;
-	fixedFuncState.vertexBindings[0] = { sizeof(WallVertex), eg::InputRate::Vertex };
-	fixedFuncState.vertexAttributes[0] = { 0, eg::DataType::Float32,   3, (uint32_t)offsetof(WallVertex, position) };
-	fixedFuncState.vertexAttributes[1] = { 0, eg::DataType::UInt8,     4, (uint32_t)offsetof(WallVertex, texCoordAO) };
-	fixedFuncState.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallVertex, normal) };
-	fixedFuncState.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallVertex, tangent) };
-	wr.pipelineDeferredGeom = deferredGeomProgram.CreatePipeline(fixedFuncState);
+	eg::PipelineCreateInfo pipelineCI;
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall.vs.glsl").Handle();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall.fs.glsl").Handle();
+	pipelineCI.enableDepthWrite = true;
+	pipelineCI.enableDepthTest = true;
+	pipelineCI.cullMode = eg::CullMode::Back;
+	pipelineCI.depthFormat = Renderer::DEPTH_FORMAT;
+	pipelineCI.attachments[0].format = eg::Format::R8G8B8A8_UNorm;
+	pipelineCI.attachments[1].format = eg::Format::R8G8B8A8_UNorm;
+	pipelineCI.vertexBindings[0] = { sizeof(WallVertex), eg::InputRate::Vertex };
+	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32,   3, (uint32_t)offsetof(WallVertex, position) };
+	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::UInt8,     4, (uint32_t)offsetof(WallVertex, texCoordAO) };
+	pipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallVertex, normal) };
+	pipelineCI.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallVertex, tangent) };
+	wr.pipelineDeferredGeom = eg::Pipeline::Create(pipelineCI);
 	
 	//Creates the editor pipeline
-	eg::ShaderProgram editorProgram;
-	editorProgram.AddStageFromAsset("Shaders/Wall.vs.glsl");
-	editorProgram.AddStageFromAsset("Shaders/Wall-Editor.fs.glsl");
-	fixedFuncState.enableDepthWrite = true;
-	fixedFuncState.depthCompare = eg::CompareOp::Less;
-	fixedFuncState.attachments[0].blend = { };
-	fixedFuncState.depthFormat = eg::Format::DefaultDepthStencil;
-	fixedFuncState.attachments[0].format = eg::Format::DefaultColor;
-	fixedFuncState.attachments[1].format = eg::Format::Undefined;
-	wr.pipelineEditor = editorProgram.CreatePipeline(fixedFuncState);
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall-Editor.fs.glsl").Handle();
+	pipelineCI.enableDepthWrite = true;
+	pipelineCI.depthCompare = eg::CompareOp::Less;
+	pipelineCI.attachments[0].blend = { };
+	pipelineCI.depthFormat = eg::Format::DefaultDepthStencil;
+	pipelineCI.attachments[0].format = eg::Format::DefaultColor;
+	pipelineCI.attachments[1].format = eg::Format::Undefined;
+	wr.pipelineEditor = eg::Pipeline::Create(pipelineCI);
 	
 	//Creates the editor border pipeline
-	eg::ShaderProgram editorBorderProgram;
-	editorBorderProgram.AddStageFromAsset("Shaders/Wall-Border.vs.glsl");
-	editorBorderProgram.AddStageFromAsset("Shaders/Wall-Border.fs.glsl");
-	eg::FixedFuncState edBorderFFS;
-	edBorderFFS.enableDepthWrite = false;
-	edBorderFFS.enableDepthTest = true;
-	edBorderFFS.cullMode = eg::CullMode::None;
-	edBorderFFS.topology = eg::Topology::LineList;
-	edBorderFFS.depthFormat = eg::Format::DefaultDepthStencil;
-	edBorderFFS.attachments[0].format = eg::Format::DefaultColor;
-	edBorderFFS.vertexBindings[0] = { sizeof(WallBorderVertex), eg::InputRate::Vertex };
-	edBorderFFS.vertexAttributes[0] = { 0, eg::DataType::Float32,   4, (uint32_t)offsetof(WallBorderVertex, position) };
-	edBorderFFS.vertexAttributes[1] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallBorderVertex, normal1) };
-	edBorderFFS.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallBorderVertex, normal2) };
-	wr.pipelineBorderEditor = editorBorderProgram.CreatePipeline(edBorderFFS);
+	eg::PipelineCreateInfo borderPipelineCI;
+	borderPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall-Border.vs.glsl").Handle();
+	borderPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall-Border.fs.glsl").Handle();
+	borderPipelineCI.enableDepthWrite = false;
+	borderPipelineCI.enableDepthTest = true;
+	borderPipelineCI.cullMode = eg::CullMode::None;
+	borderPipelineCI.topology = eg::Topology::LineList;
+	borderPipelineCI.depthFormat = eg::Format::DefaultDepthStencil;
+	borderPipelineCI.attachments[0].format = eg::Format::DefaultColor;
+	borderPipelineCI.vertexBindings[0] = { sizeof(WallBorderVertex), eg::InputRate::Vertex };
+	borderPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32,   4, (uint32_t)offsetof(WallBorderVertex, position) };
+	borderPipelineCI.vertexAttributes[1] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallBorderVertex, normal1) };
+	borderPipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallBorderVertex, normal2) };
+	wr.pipelineBorderEditor = eg::Pipeline::Create(borderPipelineCI);
 	
 	wr.diffuseTexture = &eg::GetAsset<eg::Texture>("Textures/Voxel/Diffuse");
 	wr.normalMapTexture = &eg::GetAsset<eg::Texture>("Textures/Voxel/NormalMap");

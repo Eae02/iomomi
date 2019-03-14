@@ -39,6 +39,12 @@ void MainGameState::RunFrame(float dt)
 	{
 		eg::SetRelativeMouseMode(true);
 		m_player.Update(m_world, dt);
+		
+		Entity::UpdateArgs entityUpdateArgs;
+		entityUpdateArgs.dt = dt;
+		entityUpdateArgs.player = &m_player;
+		entityUpdateArgs.world = &m_world;
+		m_world.Update(entityUpdateArgs);
 	}
 	else
 	{

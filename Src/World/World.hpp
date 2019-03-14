@@ -3,20 +3,12 @@
 #include <cstddef>
 
 #include "Dir.hpp"
+#include "Clipping.hpp"
 #include "Entities/Entity.hpp"
 #include "Entities/SpotLightEntity.hpp"
 #include "../Graphics/Vertex.hpp"
 
 struct WallVertex;
-
-struct ClippingArgs
-{
-	glm::vec3 aabbMin;
-	glm::vec3 aabbMax;
-	glm::vec3 move;
-	glm::vec3 colPlaneNormal;
-	float clipDist;
-};
 
 struct PickWallResult
 {
@@ -59,6 +51,8 @@ public:
 	
 	void AddEntity(std::shared_ptr<Entity> entity);
 	
+	void Update(const Entity::UpdateArgs& args);
+	
 	void PrepareForDraw(struct PrepareDrawArgs& args);
 	
 	void Draw();
@@ -89,6 +83,7 @@ private:
 	 * for each side (with 8 bits per side).
 	 * Bits 48-59 store if the sides of this voxel are gravity corners.
 	 * The 60th bit is a 1 if the voxel is air, or 0 otherwise.
+	 * Texture information is stored in the air voxel that the solid voxel faces into.
 	 */
 	struct RegionData
 	{
@@ -133,7 +128,9 @@ private:
 	
 	std::vector<std::shared_ptr<Entity>> m_entities;
 	std::vector<std::weak_ptr<SpotLightEntity>> m_spotLights;
+	std::vector<std::weak_ptr<Entity::IUpdatable>> m_updatables;
 	std::vector<std::weak_ptr<Entity::IDrawable>> m_drawables;
+	std::vector<std::weak_ptr<Entity::ICollidable>> m_collidables;
 	
 	bool m_anyOutOfDate = true;
 	bool m_canDraw = false;

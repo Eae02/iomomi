@@ -1,25 +1,27 @@
 version: 1
 voxels:
+  - reg: -2 0 -1
+    data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
   - reg: -1 -1 -1
     data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
   - reg: -1 0 -1
-    data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
+    data: !!binary "eNrt1rENACAIBEDYf2kT1MIFxMQ7CuieDiIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgFdk1ew1XM+PzNU78gHg3w9gX+KeBfJcBABw/wHgWwNOugAd"
   - reg: -1 0 0
-    data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
+    data: !!binary "eNrt1bENAEAIA7Gw/9JPxwboJewmZcpLAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgN9Vqs1e+wcA/dd/ANjwAEEOACk="
   - reg: 0 -1 -1
-    data: !!binary "eNrt1bENgDAQBMHjK3D/1QLi6QDZEp5x8M4u3AQA/qtyXC/jvnnvkTFvP72f3s9W+wCwxtP/dP8zuf/p/vZ3ZEF/V+8DgP7rPwDov/4DwOeq+1/d/5rc/+r+Vve3stc+AAAAAAAAAAAAAAAAAAAAAAAAAAAAbOQEsNIDIg=="
+    data: !!binary "eNrt1bsNgDAQRMHFFbj/akHCJ1wAHwnPXPDCCzcBgP9p2Y5Ln5vqlv78/4y/V1Nd4D8AfOPc/bmpvrR/59+rqS7yHwDsv/0HAPtv/wHgdm3s/tRU39i/NnZ3aqor/AcAAAAAAAAAAAAAAAAAAAAAAAAAAIAF7dz3BDI="
   - reg: 0 -1 0
     data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
   - reg: 0 0 -1
-    data: !!binary "eNrt1ksOgkAUBMBpT0CM9z+rCGNQPsaFj41VhPSCZDqzalr7tYxPGx45GtLzMn/cZCuQ5dwhB71V/en92fZnLwv6M77XzOfPmXZtAFDqff+XbJ+ybP+/zDP6c5A/r8+6JzX3BAD7b/8BsP/23/4D8E/zP+3/bVqh17z0HVxnwfhO+5d+fg56z+/Pbhb8fvX+tGfafwAAAAAAAAAAAAAAAAAAAAAAAAAAAACAcneD/Qch"
+    data: !!binary "eNrt1jEOgkAQhtEdTrCF9z+rCAMYg2tiBqr3KL7On4RibK1GLE/r7531aW87bSvbb7l7dLR7436MWrgfubt3fnq+GgBcJPKefmsbtUr/s1fux4+WfYDI393q/gPg/rv/AOD+u/8AUHF9lruz9rFcoVenrXkPP1v492PdP3q6d/9+DFu3H7m71/0HAAAAAAAAAAAAAAAAAAAAAAAAAAAAALjPE2fdCCw="
   - reg: 0 0 0
-    data: !!binary "eNrt2jEKwzAQRNGdGyid73/S2JYDUh8ERu81Uy7IxW+cSp2OjJs6apH0adOm2kb3k3439duF9wHY1V28Nu36/rRp97p/9//5EH31HwD9138A0H/9B4B/1Ofqzrgr+5Onu+Pudf968U/1HzD65lwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAF7lC/ocBCs="
+    data: !!binary "eNrt1jEKwzAQRNGdG6jI/c8aETlgE9KFNUHvNVNuoeIrlZpGzpsa1SRrxmX3up+su6n3Nt4HYFer+5/banzZHe6/+n88xFr9B0D/9R8A9F//AeAX9al6XDZzW78fs3fn7ezf/fdX/3P0P/oPAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPCPnnQGBBM="
 entities:
   - type: SpotLight
     pos:
-      - 2.49761868
-      - 3.91942739
-      - 1.59140444
+      - 2.5
+      - 3.9000001
+      - 1.60000002
     range: 61.9758034
     cutoff: 1.39626348
     penumbra: 0.34906587
@@ -32,9 +34,9 @@ entities:
       - 1
   - type: SpotLight
     pos:
-      - 2.31454277
+      - 2.5
       - 4
-      - -4.52818584
+      - -4.5
     range: 61.9758034
     cutoff: 1.39626348
     penumbra: 0.34906587
@@ -47,6 +49,13 @@ entities:
       - 1
   - type: Entrance
     pos:
-      - 0
-      - 0
-      - -5
+      - 2.5
+      - 1.5
+      - -7
+    dir: 5
+  - type: Entrance
+    pos:
+      - 2.5
+      - 1.5
+      - 3
+    dir: 4

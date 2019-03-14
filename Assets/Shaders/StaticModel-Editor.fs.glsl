@@ -15,8 +15,7 @@ layout(binding=3) uniform sampler2D mmSampler;
 
 layout(push_constant) uniform PC
 {
-	vec2 roughnessRange;
-	vec2 textureScale;
+	layout(offset=8) vec2 textureScale;
 };
 
 void main()

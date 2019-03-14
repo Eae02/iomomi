@@ -2,16 +2,6 @@
 
 namespace voxel
 {
-	const glm::ivec3 normals[6] =
-	{
-		{  1, 0, 0 },
-		{ -1, 0, 0 },
-		{ 0,  1, 0 },
-		{ 0, -1, 0 },
-		{ 0, 0,  1 },
-		{ 0, 0, -1 }
-	};
-	
 	const glm::ivec3 tangents[6] =
 	{
 		{ 0, 1, 0 },

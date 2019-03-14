@@ -4,34 +4,28 @@
 
 Renderer::Renderer()
 {
-	eg::ShaderProgram postProgram;
-	postProgram.AddStageFromAsset("Shaders/Post.vs.glsl");
-	postProgram.AddStageFromAsset("Shaders/Post.fs.glsl");
+	eg::PipelineCreateInfo postPipelineCI;
+	postPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Post.vs.glsl").Handle();
+	postPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/Post.fs.glsl").Handle();
+	postPipelineCI.depthFormat = eg::Format::DefaultDepthStencil;
+	postPipelineCI.attachments[0].format = eg::Format::DefaultColor;
+	m_postPipeline = eg::Pipeline::Create(postPipelineCI);
 	
-	eg::FixedFuncState postFFState;
-	postFFState.depthFormat = eg::Format::DefaultDepthStencil;
-	postFFState.attachments[0].format = eg::Format::DefaultColor;
-	m_postPipeline = postProgram.CreatePipeline(postFFState);
+	eg::PipelineCreateInfo ambientPipelineCI;
+	ambientPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Post.vs.glsl").Handle();
+	ambientPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/DeferredBase.fs.glsl").Handle();
+	ambientPipelineCI.attachments[0].format = LIGHT_COLOR_FORMAT;
+	m_ambientPipeline = eg::Pipeline::Create(ambientPipelineCI);
 	
-	eg::ShaderProgram ambientProgram;
-	ambientProgram.AddStageFromAsset("Shaders/Post.vs.glsl");
-	ambientProgram.AddStageFromAsset("Shaders/DeferredBase.fs.glsl");
-	
-	eg::FixedFuncState ambientFFState;
-	ambientFFState.attachments[0].format = LIGHT_COLOR_FORMAT;
-	m_ambientPipeline = ambientProgram.CreatePipeline(ambientFFState);
-	
-	eg::ShaderProgram spotLightProgram;
-	spotLightProgram.AddStageFromAsset("Shaders/SpotLight.vs.glsl");
-	spotLightProgram.AddStageFromAsset("Shaders/SpotLight.fs.glsl");
-	
-	eg::FixedFuncState spotLightFFState;
-	spotLightFFState.attachments[0].format = LIGHT_COLOR_FORMAT;
-	spotLightFFState.attachments[0].blend = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
-	spotLightFFState.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
-	spotLightFFState.vertexBindings[0] = { sizeof(float) * 3, eg::InputRate::Vertex };
-	spotLightFFState.cullMode = eg::CullMode::Front;
-	m_spotLightPipeline = spotLightProgram.CreatePipeline(spotLightFFState);
+	eg::PipelineCreateInfo slPipelineCI;
+	slPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/SpotLight.vs.glsl").Handle();
+	slPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/SpotLight.fs.glsl").Handle();
+	slPipelineCI.attachments[0].format = LIGHT_COLOR_FORMAT;
+	slPipelineCI.attachments[0].blend = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
+	slPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
+	slPipelineCI.vertexBindings[0] = { sizeof(float) * 3, eg::InputRate::Vertex };
+	slPipelineCI.cullMode = eg::CullMode::Front;
+	m_spotLightPipeline = eg::Pipeline::Create(slPipelineCI);
 	
 	eg::SamplerDescription attachmentSamplerDesc;
 	attachmentSamplerDesc.wrapU = eg::WrapMode::ClampToEdge;

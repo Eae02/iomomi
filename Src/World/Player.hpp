@@ -19,6 +19,16 @@ public:
 		return m_eyePosition;
 	}
 	
+	const glm::vec3& Position() const
+	{
+		return m_position;
+	}
+	
+	Dir CurrentDown() const
+	{
+		return m_down;
+	}
+	
 private:
 	static constexpr float HEIGHT = 1.65f;
 	static constexpr float WIDTH = 0.8f;

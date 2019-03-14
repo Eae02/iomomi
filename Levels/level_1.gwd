@@ -1,0 +1,31 @@
+version: 1
+voxels:
+  - reg: -1 -1 -1
+    data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
+  - reg: -1 -1 0
+    data: !!binary "eNrtzbENADAMAkHYIPtPmyzgLoWLO+lFSQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAZm1fOdP6/+MCUs8A/Q=="
+  - reg: -1 0 -1
+    data: !!binary "eNrtzkERADAMw7CMQfmj3RVF+pAI2AkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHDFW8not/q7UO8DUPIB024AWg=="
+  - reg: -1 0 0
+    data: !!binary "eNrtzbENwCAMRUGzQfaflthlIiIQUkRxV/Aq8yMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAICnFu0W16v5btT+5H4N5t2ov+x/tP5bLgBn60fVA9Q="
+  - reg: 0 -1 -1
+    data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
+  - reg: 0 -1 0
+    data: !!binary "eNrt1bEJADAMA0Fpg+w/bbKAy4CLOzAuv1QCAHu0fZczfX0AsP/6AGD/9QHA/usDgP3XBwD7rw8AAAAAAAAAAAAAAAAAAAAAAAAA/HIBM2wF6Q=="
+  - reg: 0 0 -1
+    data: !!binary "eNrt2dEJwCAQRMG1g/RfbRBJC1nwZhpY/x6cScfakif2S/v7CfV9AIY5+ev2d/a+/gOgv/qv/wD8E8AU+2N/Vfv/fYAAMPAAoH/6D4D+29d/AAAAAAAAAAAAAAAAAAAAAAAAAACAS7wxWAIO"
+  - reg: 0 0 0
+    data: !!binary "eNrt1jkOgDAMRUH7Btz/tCyiJAiEHIiYadzlly+Zq5jy4MaDGxfl7/dj32vdLvsnd3vv9gXg20r6Fy/3d6h9/QdA//Vf/wHo9QFYetG41f2zX7Cft/ebV/8B9L+wP/b1HwD9t6//AAAAAAAAAAAAAAAAAAAAAAAAAAAAQ5sB7nsXBQ=="
+entities:
+  - type: Entrance
+    pos:
+      - 2.5
+      - 1.5
+      - -1
+    dir: 5
+  - type: Entrance
+    pos:
+      - 2.5
+      - 1.5
+      - 11
+    dir: 4

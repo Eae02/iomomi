@@ -3,13 +3,13 @@
 #include "Entity.hpp"
 #include "../../Graphics/Lighting/SpotLight.hpp"
 
-class SpotLightEntity : public Entity
+class SpotLightEntity : public Entity, public Entity::IEditorWallDrag
 {
 public:
 	SpotLightEntity()
-		: SpotLightEntity(eg::ColorSRGB(1, 1, 1), 5, 0, 0) { }
+		: SpotLightEntity(eg::ColorSRGB(1, 1, 1), 5) { }
 	
-	SpotLightEntity(const eg::ColorSRGB& color, float intensity, float yaw, float pitch,
+	SpotLightEntity(const eg::ColorSRGB& color, float intensity,
 	                float cutoffAngle = eg::PI / 4, float penumbraAngle = eg::PI / 16);
 	
 	void InitDrawData(SpotLightDrawData& data) const;
@@ -26,7 +26,7 @@ public:
 		return m_rotationMatrix[0];
 	}
 	
-	void SetDirection(float yaw, float pitch);
+	void SetDirection(const glm::vec3& direction);
 	
 	void SetCutoff(float cutoffAngle, float penumbraAngle);
 	
@@ -36,11 +36,11 @@ public:
 	
 	void EditorSpawned(const glm::vec3& wallPosition, Dir wallNormal) override;
 	
-	bool EditorInteract(const EditorInteractArgs& args) override;
-	
 	void EditorRenderSettings() override;
 	
 	void EditorDraw(bool selected, const EditorDrawArgs& drawArgs) const override;
+	
+	void EditorWallDrag(const glm::vec3& newPosition, Dir wallNormalDir) override;
 	
 	inline float GetRange() const
 	{

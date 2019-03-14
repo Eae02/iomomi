@@ -89,40 +89,35 @@ static eg::Pipeline staticPropPipelineGame;
 
 static void OnInit()
 {
-	eg::ShaderProgram shaderProgramGame;
-	shaderProgramGame.AddStageFromAsset("Shaders/Common3D.vs.glsl");
-	shaderProgramGame.AddStageFromAsset("Shaders/StaticModel.fs.glsl");
+	eg::PipelineCreateInfo pipelineCI;
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Common3D.vs.glsl").Handle();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/StaticModel.fs.glsl").Handle();
+	pipelineCI.enableDepthWrite = true;
+	pipelineCI.enableDepthTest = true;
+	pipelineCI.cullMode = eg::CullMode::Back;
+	pipelineCI.frontFaceCCW = true;
+	pipelineCI.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
+	pipelineCI.vertexBindings[1] = { sizeof(float) * 16, eg::InputRate::Instance };
+	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(eg::StdVertex, position) };
+	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::Float32, 2, offsetof(eg::StdVertex, texCoord) };
+	pipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, offsetof(eg::StdVertex, normal) };
+	pipelineCI.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 3, offsetof(eg::StdVertex, tangent) };
+	pipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 4, 0 * sizeof(float) * 4 };
+	pipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 4, 1 * sizeof(float) * 4 };
+	pipelineCI.vertexAttributes[6] = { 1, eg::DataType::Float32, 4, 2 * sizeof(float) * 4 };
+	pipelineCI.vertexAttributes[7] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
 	
-	eg::FixedFuncState fixedFuncState;
-	fixedFuncState.enableDepthWrite = true;
-	fixedFuncState.enableDepthTest = true;
-	fixedFuncState.cullMode = eg::CullMode::Back;
-	fixedFuncState.frontFaceCCW = true;
-	fixedFuncState.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
-	fixedFuncState.vertexBindings[1] = { sizeof(float) * 16, eg::InputRate::Instance };
-	fixedFuncState.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(eg::StdVertex, position) };
-	fixedFuncState.vertexAttributes[1] = { 0, eg::DataType::Float32, 2, offsetof(eg::StdVertex, texCoord) };
-	fixedFuncState.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, offsetof(eg::StdVertex, normal) };
-	fixedFuncState.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 3, offsetof(eg::StdVertex, tangent) };
-	fixedFuncState.vertexAttributes[4] = { 1, eg::DataType::Float32, 4, 0 * sizeof(float) * 4 };
-	fixedFuncState.vertexAttributes[5] = { 1, eg::DataType::Float32, 4, 1 * sizeof(float) * 4 };
-	fixedFuncState.vertexAttributes[6] = { 1, eg::DataType::Float32, 4, 2 * sizeof(float) * 4 };
-	fixedFuncState.vertexAttributes[7] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
+	pipelineCI.depthFormat = Renderer::DEPTH_FORMAT;
+	pipelineCI.attachments[0].format = eg::Format::R8G8B8A8_UNorm;
+	pipelineCI.attachments[1].format = eg::Format::R8G8B8A8_UNorm;
+	staticPropPipelineGame = eg::Pipeline::Create(pipelineCI);
 	
-	fixedFuncState.depthFormat = Renderer::DEPTH_FORMAT;
-	fixedFuncState.attachments[0].format = eg::Format::R8G8B8A8_UNorm;
-	fixedFuncState.attachments[1].format = eg::Format::R8G8B8A8_UNorm;
-	staticPropPipelineGame = shaderProgramGame.CreatePipeline(fixedFuncState);
-	
-	eg::ShaderProgram shaderProgramEditor;
-	shaderProgramEditor.AddStageFromAsset("Shaders/Common3D.vs.glsl");
-	shaderProgramEditor.AddStageFromAsset("Shaders/StaticModel-Editor.fs.glsl");
-	
-	fixedFuncState.depthFormat = eg::Format::DefaultDepthStencil;
-	fixedFuncState.cullMode = eg::CullMode::None;
-	fixedFuncState.attachments[0].format = eg::Format::DefaultColor;
-	fixedFuncState.attachments[1].format = eg::Format::Undefined;
-	staticPropPipelineEditor = shaderProgramEditor.CreatePipeline(fixedFuncState);
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/StaticModel-Editor.fs.glsl").Handle();
+	pipelineCI.depthFormat = eg::Format::DefaultDepthStencil;
+	pipelineCI.cullMode = eg::CullMode::None;
+	pipelineCI.attachments[0].format = eg::Format::DefaultColor;
+	pipelineCI.attachments[1].format = eg::Format::Undefined;
+	staticPropPipelineEditor = eg::Pipeline::Create(pipelineCI);
 }
 
 static void OnShutdown()

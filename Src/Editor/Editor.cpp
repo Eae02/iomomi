@@ -48,6 +48,10 @@ void Editor::RunFrame(float dt)
 						for (int z = 0; z < 3; z++)
 						{
 							m_world->SetIsAir({x, y, z}, true);
+							for (int s = 0; s < 6; s++)
+							{
+								m_world->SetTexture({x, y, z}, (Dir)s, 1);
+							}
 						}
 					}
 				}
@@ -82,6 +86,12 @@ void Editor::RunFrame(float dt)
 	
 	if (m_world == nullptr)
 		return;
+	
+	Entity::UpdateArgs entityUpdateArgs;
+	entityUpdateArgs.dt = dt;
+	entityUpdateArgs.player = nullptr;
+	entityUpdateArgs.world = m_world.get();
+	m_world->Update(entityUpdateArgs);
 	
 	ImGui::SetNextWindowPos(ImVec2(0, eg::CurrentResolutionY() * 0.5f), ImGuiCond_Always, ImVec2(0.0f, 0.5f));
 	ImGui::SetNextWindowSize(ImVec2(200, eg::CurrentResolutionY() * 0.5f), ImGuiCond_Always);
@@ -247,22 +257,59 @@ void Editor::UpdateToolEntities(float dt)
 {
 	const float ICON_SIZE = 32;
 	
-	auto AllowMouseInteract = [&] { return !ImGui::GetIO().WantCaptureMouse && !m_translationGizmo.HasInputFocus(); };
+	auto AllowMouseInteract = [&]
+	{
+		return !ImGui::GetIO().WantCaptureMouse && !m_translationGizmo.HasInputFocus();
+	};
 	
 	auto viewRay = eg::MakeLazy([&]
 	{
 		return eg::Ray::UnprojectScreen(RenderSettings::instance->invViewProjection, eg::CursorPos());
 	});
 	
+	auto SnapToGrid = [&] (const glm::vec3& pos) -> glm::vec3
+	{
+		if (!eg::IsButtonDown(eg::Button::LeftShift))
+		{
+			const float STEP = 0.1f;
+			return glm::round(pos / STEP) * STEP;
+		}
+		return pos;
+	};
+	
+	Entity::IEditorWallDrag* wallDragEntity = nullptr;
+	if (m_selectedEntities.size() == 1)
+	{
+		wallDragEntity = dynamic_cast<Entity::IEditorWallDrag*>(m_selectedEntities[0].get());
+	}
+	
+	//Moves the wall drag entity
+	if (wallDragEntity && eg::IsButtonDown(eg::Button::MouseLeft) && eg::WasButtonDown(eg::Button::MouseLeft))
+	{
+		PickWallResult pickResult = m_world->PickWall(*viewRay);
+		if (pickResult.intersected)
+		{
+			wallDragEntity->EditorWallDrag(SnapToGrid(pickResult.intersectPosition), pickResult.normalDir);
+		}
+	}
+	
 	//Updates the translation gizmo
-	if (!m_selectedEntities.empty() && !ImGui::GetIO().WantCaptureMouse)
+	if (!m_selectedEntities.empty() && !ImGui::GetIO().WantCaptureMouse && !wallDragEntity)
 	{
 		if (!m_translationGizmo.HasInputFocus())
 		{
 			m_gizmoPosUnaligned = glm::vec3(0.0f);
-			for (const std::shared_ptr<Entity>& selectedEntity : m_selectedEntities)
+			for (int64_t i = m_selectedEntities.size() - 1; i >= 0; i--)
 			{
-				m_gizmoPosUnaligned += selectedEntity->Position();
+				if (dynamic_cast<Entity::IEditorWallDrag*>(m_selectedEntities[i].get()))
+				{
+					m_selectedEntities[i].swap(m_selectedEntities.back());
+					m_selectedEntities.pop_back();
+				}
+				else
+				{
+					m_gizmoPosUnaligned += m_selectedEntities[i]->Position();
+				}
 			}
 			m_gizmoPosUnaligned /= (float)m_selectedEntities.size();
 			m_prevGizmoPos = m_gizmoPosUnaligned;
@@ -271,16 +318,11 @@ void Editor::UpdateToolEntities(float dt)
 		m_translationGizmo.Update(m_gizmoPosUnaligned, RenderSettings::instance->cameraPosition,
 		                          RenderSettings::instance->viewProjection, *viewRay);
 		
-		glm::vec3 gizmoPosAligned = m_gizmoPosUnaligned;
-		if (!eg::IsButtonDown(eg::Button::LeftShift))
-		{
-			const float STEP = 0.1f;
-			gizmoPosAligned = glm::round(gizmoPosAligned / STEP) * STEP;
-		}
-		
+		const glm::vec3 gizmoPosAligned = SnapToGrid(m_gizmoPosUnaligned);
+		const glm::vec3 dragDelta = gizmoPosAligned - m_prevGizmoPos;
 		for (const std::shared_ptr<Entity>& selectedEntity : m_selectedEntities)
 		{
-			selectedEntity->SetPosition(selectedEntity->Position() + gizmoPosAligned - m_prevGizmoPos);
+			selectedEntity->SetPosition(selectedEntity->Position() + dragDelta);
 		}
 		m_prevGizmoPos = gizmoPosAligned;
 	}
@@ -458,6 +500,8 @@ void Editor::UpdateToolWalls(float dt)
 						mx[selDim]++;
 					}
 					
+					//Checks if all the next blocks are air.
+					//In this case they should be filled in, otherwise carved out.
 					bool allAir = true;
 					for (int x = mn.x; x <= mx.x; x++)
 					{
@@ -471,7 +515,7 @@ void Editor::UpdateToolWalls(float dt)
 						}
 					}
 					
-					int airMode = allAir ? 1 : 2;
+					const int airMode = allAir ? 1 : 2;
 					if (m_dragAirMode == 0)
 						m_dragAirMode = airMode;
 					
@@ -483,7 +527,50 @@ void Editor::UpdateToolWalls(float dt)
 							{
 								for (int z = mn.z; z <= mx.z; z++)
 								{
-									m_world->SetIsAir({x, y, z}, !allAir);
+									m_world->SetIsAir(glm::ivec3(x, y, z), !allAir);
+								}
+							}
+						}
+						
+						const Dir texSourceSide = m_selectionNormal;
+						
+						const glm::ivec3 absNormal = glm::abs(DirectionVector(m_selectionNormal));
+						glm::ivec3 texSourceOffset, texDestOffset;
+						if (allAir)
+						{
+							texDestOffset = absNormal * newDragDir;
+						}
+						else
+						{
+							texSourceOffset = absNormal * (-newDragDir);
+						}
+						
+						for (int x = mn.x; x <= mx.x; x++)
+						{
+							for (int y = mn.y; y <= mx.y; y++)
+							{
+								for (int z = mn.z; z <= mx.z; z++)
+								{
+									const glm::ivec3 pos(x, y, z);
+									const uint8_t texture = m_world->GetTexture(pos + texSourceOffset, texSourceSide);
+									m_world->SetTexture(pos + texDestOffset, texSourceSide, texture);
+									for (int s = 0; s < 4; s++)
+									{
+										const int stepDim = (selDim + 1 + s / 2) % 3;
+										const Dir stepDir = (Dir)(stepDim * 2 + s % 2);
+										if (!allAir)
+										{
+											m_world->SetTexture(pos, stepDir, texture);
+										}
+										else
+										{
+											const glm::ivec3 npos = pos + DirectionVector(stepDir);
+											if (m_world->IsAir(npos))
+											{
+												m_world->SetTexture(npos, stepDir, texture);
+											}
+										}
+									}
 								}
 							}
 						}

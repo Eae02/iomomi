@@ -9,7 +9,8 @@ void ObjectRenderer::Begin(ObjectMaterial::PipelineType pipelineType)
 	m_totalInstances = 0;
 }
 
-void ObjectRenderer::Add(const eg::Model& model, eg::Span<const ObjectMaterial* const> materials, const glm::mat4& transform)
+void ObjectRenderer::Add(const eg::Model& model, eg::Span<const ObjectMaterial* const> materials,
+	eg::Span<const glm::mat4> transforms)
 {
 	for (size_t meshI = 0; meshI < model.NumMeshes(); meshI++)
 	{
@@ -84,7 +85,7 @@ void ObjectRenderer::Add(const eg::Model& model, eg::Span<const ObjectMaterial* 
 		}
 		
 		Instance* instance = m_allocator.New<Instance>();
-		instance->transform = transform;
+		instance->transform = transforms[std::min(meshI, transforms.size() - 1)];
 		instance->next = nullptr;
 		
 		if (meshBucket->firstInstance == nullptr)

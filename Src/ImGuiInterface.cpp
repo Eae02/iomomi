@@ -43,21 +43,19 @@ ImGuiInterface::ImGuiInterface()
 		return clipboardText.c_str();
 	};
 	
-	eg::ShaderProgram shaderProgram;
-	shaderProgram.AddStageFromAsset("Shaders/ImGui.fs.glsl");
-	shaderProgram.AddStageFromAsset("Shaders/ImGui.vs.glsl");
+	eg::PipelineCreateInfo pipelineCI;
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/ImGui.vs.glsl").Handle();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/ImGui.fs.glsl").Handle();
+	pipelineCI.enableScissorTest = true;
+	pipelineCI.depthFormat = eg::Format::DefaultDepthStencil;
+	pipelineCI.attachments[0].format = eg::Format::DefaultColor;
+	pipelineCI.attachments[0].blend = eg::AlphaBlend;
+	pipelineCI.vertexBindings[0] = { sizeof(ImDrawVert), eg::InputRate::Vertex };
+	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 2, (uint32_t)offsetof(ImDrawVert, pos) };
+	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::Float32, 2, (uint32_t)offsetof(ImDrawVert, uv) };
+	pipelineCI.vertexAttributes[2] = { 0, eg::DataType::UInt8Norm, 4, (uint32_t)offsetof(ImDrawVert, col) };
 	
-	eg::FixedFuncState fixedFuncState;
-	fixedFuncState.enableScissorTest = true;
-	fixedFuncState.depthFormat = eg::Format::DefaultDepthStencil;
-	fixedFuncState.attachments[0].format = eg::Format::DefaultColor;
-	fixedFuncState.attachments[0].blend = eg::AlphaBlend;
-	fixedFuncState.vertexBindings[0] = { sizeof(ImDrawVert), eg::InputRate::Vertex };
-	fixedFuncState.vertexAttributes[0] = { 0, eg::DataType::Float32, 2, (uint32_t)offsetof(ImDrawVert, pos) };
-	fixedFuncState.vertexAttributes[1] = { 0, eg::DataType::Float32, 2, (uint32_t)offsetof(ImDrawVert, uv) };
-	fixedFuncState.vertexAttributes[2] = { 0, eg::DataType::UInt8Norm, 4, (uint32_t)offsetof(ImDrawVert, col) };
-	
-	m_pipeline = shaderProgram.CreatePipeline(fixedFuncState);
+	m_pipeline = eg::Pipeline::Create(pipelineCI);
 	
 	// ** Creates the font texture **
 	const char* fontPaths[] = 

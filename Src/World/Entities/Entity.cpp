@@ -2,11 +2,6 @@
 
 #include <imgui.h>
 
-bool Entity::EditorInteract(const Entity::EditorInteractArgs& args)
-{
-	return false;
-}
-
 void Entity::Save(YAML::Emitter& emitter) const
 {
 	emitter << YAML::Key << "pos" << YAML::Value << YAML::BeginSeq

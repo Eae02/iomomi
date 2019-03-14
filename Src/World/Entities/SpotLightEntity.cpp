@@ -5,34 +5,26 @@
 static std::atomic<uint64_t> nextInstanceID(0);
 
 SpotLightEntity::SpotLightEntity(const eg::ColorSRGB& color, float intensity,
-                                 float yaw, float pitch, float cutoffAngle, float penumbraAngle)
+                                 float cutoffAngle, float penumbraAngle)
 	: m_instanceID(nextInstanceID.fetch_add(1))
 {
-	SetDirection(yaw, pitch);
+	SetDirection(glm::vec3(0, 1, 0));
 	SetCutoff(cutoffAngle, penumbraAngle);
 	SetRadiance(color, intensity);
 }
 
-void SpotLightEntity::SetDirection(float yaw, float pitch)
+void SpotLightEntity::SetDirection(const glm::vec3& direction)
 {
-	float cosPitch = std::cos(pitch);
-	glm::vec3 direction(
-		std::cos(yaw) * cosPitch,
-		std::sin(pitch),
-		std::sin(yaw) * cosPitch
-	);
-	glm::vec3 directionL = glm::cross(direction, glm::vec3(0, 1, 0));
+	glm::vec3 directionN = glm::normalize(direction);
+	glm::vec3 directionL = glm::cross(directionN, glm::vec3(0, 1, 0));
 	
 	if (glm::length2(directionL) < 1E-4f)
 		directionL = glm::vec3(1, 0, 0);
 	else
 		directionL = glm::normalize(directionL);
 	
-	const glm::vec3 lightDirU = glm::cross(direction, directionL);
-	m_rotationMatrix = glm::mat3(directionL, direction, lightDirU);
-	
-	m_yaw = yaw;
-	m_pitch = pitch;
+	const glm::vec3 lightDirU = glm::cross(directionN, directionL);
+	m_rotationMatrix = glm::mat3(directionL, directionN, lightDirU);
 }
 
 void SpotLightEntity::SetCutoff(float cutoffAngle, float penumbraAngle)
@@ -84,20 +76,16 @@ void SpotLightEntity::EditorSpawned(const glm::vec3& wallPosition, Dir wallNorma
 	SetPosition(wallPosition);
 }
 
-bool SpotLightEntity::EditorInteract(const Entity::EditorInteractArgs& args)
-{
-	return Entity::EditorInteract(args);
-}
-
 void SpotLightEntity::Save(YAML::Emitter& emitter) const
 {
 	Entity::Save(emitter);
 	
+	glm::vec3 dir = m_rotationMatrix[1];
+	
 	emitter << YAML::Key << "range" << YAML::Value << m_range
 	        << YAML::Key << "cutoff" << YAML::Value << m_cutoffAngle
 	        << YAML::Key << "penumbra" << YAML::Value << m_penumbraAngle
-	        << YAML::Key << "yaw" << YAML::Value << m_yaw
-	        << YAML::Key << "pitch" << YAML::Value << m_pitch
+	        << YAML::Key << "dir" << YAML::Value << YAML::BeginSeq << dir.x << dir.y << dir.z << YAML::EndSeq
 	        << YAML::Key << "intensity" << YAML::Value << m_intensity
 	        << YAML::Key << "color" << YAML::Value << YAML::BeginSeq
 	        << m_color.r << m_color.g << m_color.b << YAML::EndSeq;
@@ -109,7 +97,10 @@ void SpotLightEntity::Load(const YAML::Node& node)
 	
 	SetCutoff(node["cutoff"].as<float>(eg::PI / 4), node["penumbra"].as<float>(eg::PI / 16));
 	
-	SetDirection(node["yaw"].as<float>(0), node["pitch"].as<float>(0));
+	if (const YAML::Node& dirNode = node["dir"])
+	{
+		SetDirection({ dirNode[0].as<float>(0), dirNode[1].as<float>(0), dirNode[2].as<float>(0) });
+	}
 	
 	eg::ColorSRGB color(1, 1, 1);
 	if (const YAML::Node& colorNode = node["color"])
@@ -125,18 +116,6 @@ void SpotLightEntity::Load(const YAML::Node& node)
 void SpotLightEntity::EditorRenderSettings()
 {
 	Entity::EditorRenderSettings();
-	
-	if (ImGui::SliderAngle("Yaw", &m_yaw))
-	{
-		SetDirection(m_yaw, m_pitch);
-	}
-	
-	if (ImGui::SliderAngle("Pitch", &m_pitch, -90, 90))
-	{
-		SetDirection(m_yaw, m_pitch);
-	}
-	
-	ImGui::Separator();
 	
 	if (ImGui::ColorEdit3("Color", &m_color.r))
 	{
@@ -186,4 +165,10 @@ void SpotLightEntity::EditorDraw(bool selected, const Entity::EditorDrawArgs& dr
 		}
 		drawArgs.primitiveRenderer->AddQuad(positions, m_color);
 	}
+}
+
+void SpotLightEntity::EditorWallDrag(const glm::vec3& newPosition, Dir wallNormalDir)
+{
+	SetPosition(newPosition);
+	SetDirection(DirectionVector(wallNormalDir));
 }

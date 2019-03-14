@@ -71,6 +71,9 @@ bool World::Load(std::istream& stream)
 		return false;
 	}
 	
+	m_entities.clear();
+	m_spotLights.clear();
+	m_drawables.clear();
 	if (const YAML::Node& entitiesNode = rootYaml["entities"])
 	{
 		for (const YAML::Node& entityNode : entitiesNode)
@@ -233,9 +236,34 @@ uint8_t World::GetTexture(const glm::ivec3& pos, Dir side) const
 
 glm::mat3 GravityCorner::MakeRotationMatrix() const
 {
-	glm::vec3 r1 = -DirectionVector(down1);
-	glm::vec3 r2 = -DirectionVector(down2);
+	const glm::vec3 r1 = -DirectionVector(down1);
+	const glm::vec3 r2 = -DirectionVector(down2);
 	return glm::mat3(r1, r2, glm::cross(r1, r2));
+}
+
+void World::Update(const Entity::UpdateArgs& args)
+{
+	for (long i = m_updatables.size() - 1; i >= 0; i--)
+	{
+		if (std::shared_ptr<Entity::IUpdatable> updatable = m_updatables[i].lock())
+		{
+			updatable->Update(args);
+		}
+		else
+		{
+			m_updatables[i].swap(m_updatables.back());
+			m_updatables.pop_back();
+		}
+	}
+	
+	for (long i = m_collidables.size() - 1; i >= 0; i--)
+	{
+		if (m_collidables[i].expired())
+		{
+			m_collidables[i].swap(m_collidables.back());
+			m_collidables.pop_back();
+		}
+	}
 }
 
 void World::PrepareForDraw(PrepareDrawArgs& args)
@@ -278,9 +306,9 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 		
 		if (uploadVoxels)
 		{
-			uint64_t indicesOffset = totalVertices * sizeof(WallVertex);
-			uint64_t borderVerticesOffset = indicesOffset + totalIndices * sizeof(uint16_t);
-			uint64_t uploadBytes = borderVerticesOffset + totalBorderVertices * sizeof(WallBorderVertex);
+			const uint64_t indicesOffset = totalVertices * sizeof(WallVertex);
+			const uint64_t borderVerticesOffset = indicesOffset + totalIndices * sizeof(uint16_t);
+			const uint64_t uploadBytes = borderVerticesOffset + totalBorderVertices * sizeof(WallBorderVertex);
 			
 			//Creates an upload buffer and copies data to it
 			eg::UploadBuffer uploadBuffer = eg::GetTemporaryUploadBuffer(uploadBytes);
@@ -457,7 +485,7 @@ void World::DrawEditor()
 
 void World::BuildRegionMesh(glm::ivec3 coordinate, World::RegionData& region, bool includeNoDraw)
 {
-	glm::ivec3 globalBase = coordinate * (int)REGION_SIZE;
+	const glm::ivec3 globalBase = coordinate * (int)REGION_SIZE;
 	region.vertices.clear();
 	region.indices.clear();
 	
@@ -471,11 +499,12 @@ void World::BuildRegionMesh(glm::ivec3 coordinate, World::RegionData& region, bo
 				if ((region.voxels[x][y][z] & IS_AIR_MASK) == 0)
 					continue;
 				
-				glm::ivec3 globalPos = globalBase + glm::ivec3(x, y, z);
+				const glm::ivec3 globalPos = globalBase + glm::ivec3(x, y, z);
 				
 				for (int s = 0; s < 6; s++)
 				{
-					const glm::ivec3 nPos = globalPos - voxel::normals[s];
+					glm::ivec3 normal = DirectionVector((Dir)s);
+					const glm::ivec3 nPos = globalPos - normal;
 					
 					//Only emit triangles for voxels that face into a solid voxel
 					if (IsAir(nPos))
@@ -485,7 +514,7 @@ void World::BuildRegionMesh(glm::ivec3 coordinate, World::RegionData& region, bo
 						continue;
 					
 					//The center of the face to be emitted
-					const glm::ivec3 faceCenter2 = globalPos * 2 + 1 - voxel::normals[s];
+					const glm::ivec3 faceCenter2 = globalPos * 2 + 1 - normal;
 					
 					//Emits indices
 					const uint16_t baseIndex = (uint16_t)region.vertices.size();
@@ -494,15 +523,15 @@ void World::BuildRegionMesh(glm::ivec3 coordinate, World::RegionData& region, bo
 						region.indices.push_back(baseIndex + i);
 					
 					//Emits vertices
-					glm::ivec3 tangent = voxel::tangents[s];
-					glm::ivec3 biTangent = voxel::biTangents[s];
+					const glm::ivec3 tangent = voxel::tangents[s];
+					const glm::ivec3 biTangent = voxel::biTangents[s];
 					for (int fx = 0; fx < 2; fx++)
 					{
 						for (int fy = 0; fy < 2; fy++)
 						{
-							glm::ivec3 tDir = tangent * (fy * 2 - 1);
-							glm::ivec3 bDir = biTangent * (fx * 2 - 1);
-							glm::ivec3 diagDir = tDir + bDir;
+							const glm::ivec3 tDir = tangent * (fy * 2 - 1);
+							const glm::ivec3 bDir = biTangent * (fx * 2 - 1);
+							const glm::ivec3 diagDir = tDir + bDir;
 							
 							WallVertex& vertex = region.vertices.emplace_back();
 							vertex.position = glm::vec3(faceCenter2 + diagDir) * 0.5f;
@@ -510,7 +539,7 @@ void World::BuildRegionMesh(glm::ivec3 coordinate, World::RegionData& region, bo
 							vertex.texCoordAO[1] = (uint8_t)((1 - fy) * 255);
 							vertex.texCoordAO[2] = textureLayer;
 							vertex.texCoordAO[3] = 0;
-							vertex.SetNormal(voxel::normals[s]);
+							vertex.SetNormal(normal);
 							vertex.SetTangent(tangent);
 							
 							if (!IsAir(globalPos + tDir))
@@ -529,7 +558,7 @@ void World::BuildRegionMesh(glm::ivec3 coordinate, World::RegionData& region, bo
 
 void World::BuildRegionBorderMesh(glm::ivec3 coordinate, World::RegionData& region)
 {
-	glm::ivec3 globalBase = coordinate * (int)REGION_SIZE;
+	const glm::ivec3 globalBase = coordinate * (int)REGION_SIZE;
 	region.borderVertices.clear();
 	region.gravityCorners.clear();
 	
@@ -539,11 +568,11 @@ void World::BuildRegionBorderMesh(glm::ivec3 coordinate, World::RegionData& regi
 		{
 			for (uint32_t z = 0; z < REGION_SIZE; z++)
 			{
-				uint64_t voxel = region.voxels[x][y][z];
+				const uint64_t voxel = region.voxels[x][y][z];
 				if ((voxel & IS_AIR_MASK) == 0)
 					continue;
-				glm::ivec3 gPos = globalBase + glm::ivec3(x, y, z);
-				glm::vec3 cPos = glm::vec3(gPos) + 0.5f;
+				const glm::ivec3 gPos = globalBase + glm::ivec3(x, y, z);
+				const glm::vec3 cPos = glm::vec3(gPos) + 0.5f;
 				
 				for (int dl = 0; dl < 3; dl++)
 				{
@@ -551,18 +580,18 @@ void World::BuildRegionBorderMesh(glm::ivec3 coordinate, World::RegionData& regi
 					dlV[dl] = 1;
 					uV[(dl + 1) % 3] = 1;
 					vV[(dl + 2) % 3] = 1;
-					Dir uDir = (Dir)(((dl + 1) % 3) * 2);
-					Dir vDir = (Dir)(((dl + 2) % 3) * 2);
+					const Dir uDir = (Dir)(((dl + 1) % 3) * 2);
+					const Dir vDir = (Dir)(((dl + 2) % 3) * 2);
 					
 					for (int u = 0; u < 2; u++)
 					{
-						glm::ivec3 uSV = uV * (u * 2 - 1);
+						const glm::ivec3 uSV = uV * (u * 2 - 1);
 						for (int v = 0; v < 2; v++)
 						{
-							glm::ivec3 vSV = vV * (v * 2 - 1);
-							bool uAir = IsAir(gPos + uSV);
-							bool vAir = IsAir(gPos + vSV);
-							bool diagAir = IsAir(gPos + uSV + vSV);
+							const glm::ivec3 vSV = vV * (v * 2 - 1);
+							const bool uAir = IsAir(gPos + uSV);
+							const bool vAir = IsAir(gPos + vSV);
+							const bool diagAir = IsAir(gPos + uSV + vSV);
 							if (diagAir || uAir != vAir)
 								continue;
 							
@@ -574,7 +603,7 @@ void World::BuildRegionBorderMesh(glm::ivec3 coordinate, World::RegionData& regi
 							WallBorderVertex& v2 = region.borderVertices.emplace_back(v1);
 							v2.position -= glm::vec4(dlV, -1);
 							
-							int gBit = (48 + dl * 4 + (1 - v) * 2 + (1 - u));
+							const int gBit = (48 + dl * 4 + (1 - v) * 2 + (1 - u));
 							if ((voxel >> gBit) & 1)
 							{
 								GravityCorner& corner = region.gravityCorners.emplace_back();
@@ -594,17 +623,19 @@ void World::BuildRegionBorderMesh(glm::ivec3 coordinate, World::RegionData& regi
 
 void World::CalcClipping(ClippingArgs& args) const
 {
-	glm::vec3 endMin = args.aabbMin + args.move;
-	glm::vec3 endMax = args.aabbMax + args.move;
+	const glm::vec3 endMin = args.aabbMin + args.move;
+	const glm::vec3 endMax = args.aabbMax + args.move;
 	
 	constexpr float EP = 0.0001f;
 	
 	//Clipping against voxels
 	for (int axis = 0; axis < 3; axis++)
 	{
+		const bool negativeMove = args.move[axis] < 0;
+		
 		int vOffset;
 		float beginA, endA;
-		if (args.move[axis] < 0)
+		if (negativeMove)
 		{
 			beginA = args.aabbMin[axis];
 			endA = endMin[axis];
@@ -617,22 +648,26 @@ void World::CalcClipping(ClippingArgs& args) const
 			vOffset = 0;
 		}
 		
-		int minI = (int)std::floor(std::min(beginA, endA) - EP);
-		int maxI = (int)std::ceil(std::max(beginA, endA) + EP);
+		const int minI = (int)std::floor(std::min(beginA, endA) - EP);
+		const int maxI = (int)std::ceil(std::max(beginA, endA) + EP);
 		
-		int axisB = (axis + 1) % 3;
-		int axisC = (axis + 2) % 3;
+		const int axisB = (axis + 1) % 3;
+		const int axisC = (axis + 2) % 3;
+		
+		glm::ivec3 normal(0);
+		normal[axis] = negativeMove ? 1 : -1;
+		const Dir textureSide = (Dir)(axis * 2 + (negativeMove ? 0 : 1));
 		
 		for (int v = minI; v <= maxI; v++)
 		{
-			float t = (v - beginA) / args.move[axis];
+			const float t = (v - beginA) / args.move[axis];
 			if (t > args.clipDist || t < 0)
 				continue;
 			
-			int minB = (int)std::floor(glm::mix(args.aabbMin[axisB], endMin[axisB], t));
-			int maxB = (int)std::ceil(glm::mix(args.aabbMax[axisB], endMax[axisB], t));
-			int minC = (int)std::floor(glm::mix(args.aabbMin[axisC], endMin[axisC], t));
-			int maxC = (int)std::ceil(glm::mix(args.aabbMax[axisC], endMax[axisC], t));
+			const int minB = (int)std::floor(glm::mix(args.aabbMin[axisB], endMin[axisB], t));
+			const int maxB = (int)std::ceil(glm::mix(args.aabbMax[axisB], endMax[axisB], t));
+			const int minC = (int)std::floor(glm::mix(args.aabbMin[axisC], endMin[axisC], t));
+			const int maxC = (int)std::ceil(glm::mix(args.aabbMax[axisC], endMax[axisC], t));
 			for (int vb = minB; vb < maxB; vb++)
 			{
 				for (int vc = minC; vc < maxC; vc++)
@@ -641,17 +676,22 @@ void World::CalcClipping(ClippingArgs& args) const
 					coord[axis] = v + vOffset;
 					coord[axisB] = vb;
 					coord[axisC] = vc;
-					if (!IsAir(coord))
+					
+					if (!IsAir(coord) && GetTexture(coord + normal, textureSide) != 0)
 					{
-						args.colPlaneNormal = glm::vec3(0);
-						args.colPlaneNormal[axis] = args.move[axis] < 0 ? 1.0f : -1.0f;
-						
+						args.colPlaneNormal = normal;
 						args.clipDist = t;
 						break;
 					}
 				}
 			}
 		}
+	}
+	
+	for (const std::weak_ptr<Entity::ICollidable>& collidable : m_collidables)
+	{
+		if (std::shared_ptr<Entity::ICollidable> collidableS = collidable.lock())
+			collidableS->CalcClipping(args);
 	}
 }
 
@@ -857,5 +897,9 @@ void World::AddEntity(std::shared_ptr<Entity> entity)
 		m_spotLights.emplace_back(spotLight);
 	if (auto drawable = std::dynamic_pointer_cast<Entity::IDrawable>(entity))
 		m_drawables.emplace_back(drawable);
+	if (auto updatable = std::dynamic_pointer_cast<Entity::IUpdatable>(entity))
+		m_updatables.emplace_back(updatable);
+	if (auto collidable = std::dynamic_pointer_cast<Entity::ICollidable>(entity))
+		m_collidables.emplace_back(collidable);
 	m_entities.push_back(std::move(entity));
 }
