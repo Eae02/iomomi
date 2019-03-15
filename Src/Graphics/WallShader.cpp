@@ -40,25 +40,22 @@ void InitializeWallShader()
 	pipelineCI.enableDepthWrite = true;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::Back;
-	pipelineCI.depthFormat = Renderer::DEPTH_FORMAT;
-	pipelineCI.attachments[0].format = eg::Format::R8G8B8A8_UNorm;
-	pipelineCI.attachments[1].format = eg::Format::R8G8B8A8_UNorm;
+	pipelineCI.numColorAttachments = 2;
 	pipelineCI.vertexBindings[0] = { sizeof(WallVertex), eg::InputRate::Vertex };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32,   3, (uint32_t)offsetof(WallVertex, position) };
 	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::UInt8,     4, (uint32_t)offsetof(WallVertex, texCoordAO) };
 	pipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallVertex, normal) };
 	pipelineCI.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallVertex, tangent) };
 	wr.pipelineDeferredGeom = eg::Pipeline::Create(pipelineCI);
+	wr.pipelineDeferredGeom.FramebufferFormatHint(Renderer::GEOMETRY_FB_FORMAT);
 	
 	//Creates the editor pipeline
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall-Editor.fs.glsl").Handle();
 	pipelineCI.enableDepthWrite = true;
 	pipelineCI.depthCompare = eg::CompareOp::Less;
-	pipelineCI.attachments[0].blend = { };
-	pipelineCI.depthFormat = eg::Format::DefaultDepthStencil;
-	pipelineCI.attachments[0].format = eg::Format::DefaultColor;
-	pipelineCI.attachments[1].format = eg::Format::Undefined;
+	pipelineCI.numColorAttachments = 1;
 	wr.pipelineEditor = eg::Pipeline::Create(pipelineCI);
+	wr.pipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
 	//Creates the editor border pipeline
 	eg::PipelineCreateInfo borderPipelineCI;
@@ -68,13 +65,12 @@ void InitializeWallShader()
 	borderPipelineCI.enableDepthTest = true;
 	borderPipelineCI.cullMode = eg::CullMode::None;
 	borderPipelineCI.topology = eg::Topology::LineList;
-	borderPipelineCI.depthFormat = eg::Format::DefaultDepthStencil;
-	borderPipelineCI.attachments[0].format = eg::Format::DefaultColor;
 	borderPipelineCI.vertexBindings[0] = { sizeof(WallBorderVertex), eg::InputRate::Vertex };
 	borderPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32,   4, (uint32_t)offsetof(WallBorderVertex, position) };
 	borderPipelineCI.vertexAttributes[1] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallBorderVertex, normal1) };
 	borderPipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallBorderVertex, normal2) };
 	wr.pipelineBorderEditor = eg::Pipeline::Create(borderPipelineCI);
+	wr.pipelineBorderEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
 	wr.diffuseTexture = &eg::GetAsset<eg::Texture>("Textures/Voxel/Diffuse");
 	wr.normalMapTexture = &eg::GetAsset<eg::Texture>("Textures/Voxel/NormalMap");

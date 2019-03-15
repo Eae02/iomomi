@@ -47,15 +47,14 @@ ImGuiInterface::ImGuiInterface()
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/ImGui.vs.glsl").Handle();
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/ImGui.fs.glsl").Handle();
 	pipelineCI.enableScissorTest = true;
-	pipelineCI.depthFormat = eg::Format::DefaultDepthStencil;
-	pipelineCI.attachments[0].format = eg::Format::DefaultColor;
-	pipelineCI.attachments[0].blend = eg::AlphaBlend;
+	pipelineCI.blendStates[0] = eg::AlphaBlend;
 	pipelineCI.vertexBindings[0] = { sizeof(ImDrawVert), eg::InputRate::Vertex };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 2, (uint32_t)offsetof(ImDrawVert, pos) };
 	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::Float32, 2, (uint32_t)offsetof(ImDrawVert, uv) };
 	pipelineCI.vertexAttributes[2] = { 0, eg::DataType::UInt8Norm, 4, (uint32_t)offsetof(ImDrawVert, col) };
 	
 	m_pipeline = eg::Pipeline::Create(pipelineCI);
+	m_pipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
 	// ** Creates the font texture **
 	const char* fontPaths[] = 

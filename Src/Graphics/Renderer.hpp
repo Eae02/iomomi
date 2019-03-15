@@ -18,6 +18,8 @@ public:
 	static constexpr eg::Format DEPTH_FORMAT = eg::Format::Depth16;
 	static constexpr eg::Format LIGHT_COLOR_FORMAT = eg::Format::R16G16B16A16_Float;
 	
+	static const eg::FramebufferFormatHint GEOMETRY_FB_FORMAT;
+	
 private:
 	int m_resX = -1;
 	int m_resY = -1;

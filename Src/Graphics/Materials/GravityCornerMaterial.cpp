@@ -25,18 +25,15 @@ static void OnInit()
 	pipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 4, 1 * sizeof(float) * 4 };
 	pipelineCI.vertexAttributes[6] = { 1, eg::DataType::Float32, 4, 2 * sizeof(float) * 4 };
 	pipelineCI.vertexAttributes[7] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
-	
-	pipelineCI.depthFormat = Renderer::DEPTH_FORMAT;
-	pipelineCI.attachments[0].format = eg::Format::R8G8B8A8_UNorm;
-	pipelineCI.attachments[1].format = eg::Format::R8G8B8A8_UNorm;
+	pipelineCI.numColorAttachments = 2;
 	gravityCornerPipelineGame = eg::Pipeline::Create(pipelineCI);
+	gravityCornerPipelineGame.FramebufferFormatHint(Renderer::GEOMETRY_FB_FORMAT);
 	
+	pipelineCI.numColorAttachments = 1;
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/GravityCorner-Editor.fs.glsl").Handle();
-	pipelineCI.depthFormat = eg::Format::DefaultDepthStencil;
 	pipelineCI.cullMode = eg::CullMode::None;
-	pipelineCI.attachments[0].format = eg::Format::DefaultColor;
-	pipelineCI.attachments[1].format = eg::Format::Undefined;
 	gravityCornerPipelineEditor = eg::Pipeline::Create(pipelineCI);
+	gravityCornerPipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 }
 
 static void OnShutdown()

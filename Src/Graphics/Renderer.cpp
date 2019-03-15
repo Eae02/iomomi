@@ -2,30 +2,36 @@
 #include "Lighting/LightMeshes.hpp"
 #include "RenderSettings.hpp"
 
+const eg::FramebufferFormatHint Renderer::GEOMETRY_FB_FORMAT =
+{
+	1,
+	Renderer::DEPTH_FORMAT,
+	{ eg::Format::R8G8B8A8_UNorm, eg::Format::R8G8B8A8_UNorm }
+};
+
 Renderer::Renderer()
 {
 	eg::PipelineCreateInfo postPipelineCI;
 	postPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Post.vs.glsl").Handle();
 	postPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/Post.fs.glsl").Handle();
-	postPipelineCI.depthFormat = eg::Format::DefaultDepthStencil;
-	postPipelineCI.attachments[0].format = eg::Format::DefaultColor;
 	m_postPipeline = eg::Pipeline::Create(postPipelineCI);
+	m_postPipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
 	eg::PipelineCreateInfo ambientPipelineCI;
 	ambientPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Post.vs.glsl").Handle();
 	ambientPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/DeferredBase.fs.glsl").Handle();
-	ambientPipelineCI.attachments[0].format = LIGHT_COLOR_FORMAT;
 	m_ambientPipeline = eg::Pipeline::Create(ambientPipelineCI);
+	m_ambientPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT);
 	
 	eg::PipelineCreateInfo slPipelineCI;
 	slPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/SpotLight.vs.glsl").Handle();
 	slPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/SpotLight.fs.glsl").Handle();
-	slPipelineCI.attachments[0].format = LIGHT_COLOR_FORMAT;
-	slPipelineCI.attachments[0].blend = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
+	slPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
 	slPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
 	slPipelineCI.vertexBindings[0] = { sizeof(float) * 3, eg::InputRate::Vertex };
 	slPipelineCI.cullMode = eg::CullMode::Front;
 	m_spotLightPipeline = eg::Pipeline::Create(slPipelineCI);
+	m_spotLightPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT);
 	
 	eg::SamplerDescription attachmentSamplerDesc;
 	attachmentSamplerDesc.wrapU = eg::WrapMode::ClampToEdge;

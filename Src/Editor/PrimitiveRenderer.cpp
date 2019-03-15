@@ -11,14 +11,13 @@ void PrimitiveRenderer::OnInit()
 	pipelineCI.vertexBindings[0] = { sizeof(Vertex), eg::InputRate::Vertex };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, (uint32_t)offsetof(Vertex, position) };
 	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::UInt8Norm, 4, (uint32_t)offsetof(Vertex, color) };
-	pipelineCI.depthFormat = eg::Format::DefaultDepthStencil;
 	pipelineCI.cullMode = eg::CullMode::None;
 	pipelineCI.enableDepthTest = false;
 	pipelineCI.enableDepthWrite = false;
-	pipelineCI.attachments[0].format = eg::Format::DefaultColor;
-	pipelineCI.attachments[0].blend = eg::AlphaBlend;
+	pipelineCI.blendStates[0] = eg::AlphaBlend;
 	
 	primPipeline = eg::Pipeline::Create(pipelineCI);
+	primPipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 }
 
 void PrimitiveRenderer::OnShutdown()
