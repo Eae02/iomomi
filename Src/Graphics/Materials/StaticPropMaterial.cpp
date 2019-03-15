@@ -1,6 +1,7 @@
 #include "StaticPropMaterial.hpp"
 #include "../Renderer.hpp"
 #include "../GraphicsCommon.hpp"
+#include "MeshDrawArgs.hpp"
 
 #include <fstream>
 
@@ -132,21 +133,23 @@ static void OnShutdown()
 EG_ON_INIT(OnInit)
 EG_ON_SHUTDOWN(OnShutdown)
 
-eg::PipelineRef StaticPropMaterial::GetPipeline(ObjectMaterial::PipelineType pipelineType, bool flipWinding) const
+size_t StaticPropMaterial::PipelineHash() const
 {
-	if (pipelineType == ObjectMaterial::PipelineType::Editor)
-		return staticPropPipelineEditor;
-	if (flipWinding)
-		return staticPropPipelineGameFW;
-	return staticPropPipelineGame;
+	return typeid(StaticPropMaterial).hash_code();
 }
 
-void StaticPropMaterial::Bind(ObjectMaterial::PipelineType boundPipeline) const
+void StaticPropMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
-	eg::DC.BindTexture(*m_albedoTexture, 1, &GetCommonTextureSampler());
-	eg::DC.BindTexture(*m_normalMapTexture, 2, &GetCommonTextureSampler());
-	eg::DC.BindTexture(*m_miscMapTexture, 3, &GetCommonTextureSampler());
+	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
+	cmdCtx.BindPipeline(mDrawArgs->editor ? staticPropPipelineEditor : staticPropPipelineGame);
+}
+
+void StaticPropMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
+{
+	cmdCtx.BindTexture(*m_albedoTexture, 1, &GetCommonTextureSampler());
+	cmdCtx.BindTexture(*m_normalMapTexture, 2, &GetCommonTextureSampler());
+	cmdCtx.BindTexture(*m_miscMapTexture, 3, &GetCommonTextureSampler());
 	
 	float pushConstants[] = {m_roughnessMin, m_roughnessMax, m_textureScale.x, m_textureScale.y};
-	eg::DC.PushConstants(0, sizeof(pushConstants), pushConstants);
+	cmdCtx.PushConstants(0, sizeof(pushConstants), pushConstants);
 }

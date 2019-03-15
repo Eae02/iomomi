@@ -14,7 +14,7 @@ public:
 	
 	EntranceEntity();
 	
-	void Draw(class ObjectRenderer& renderer) override;
+	void Draw(eg::MeshBatch& renderer) override;
 	
 	int GetEditorIconIndex() const override;
 	

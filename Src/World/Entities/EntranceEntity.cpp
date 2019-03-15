@@ -1,7 +1,6 @@
 #include "EntranceEntity.hpp"
 #include "../Player.hpp"
 #include "../../Graphics/Materials/StaticPropMaterial.hpp"
-#include "../../Graphics/ObjectRenderer.hpp"
 
 #include <imgui.h>
 
@@ -9,14 +8,14 @@ constexpr float MESH_LENGTH = 4.8f;
 constexpr float MESH_HEIGHT = 3.0f;
 
 static const eg::Model* s_model;
-static std::vector<const ObjectMaterial*> s_materials;
+static std::vector<const eg::IMaterial*> s_materials;
 
 static size_t s_doorMeshIndices[2][2];
 
 static const eg::Model* s_editorEntranceModel;
 static const eg::Model* s_editorExitModel;
-static const ObjectMaterial* s_editorEntranceMaterial;
-static const ObjectMaterial* s_editorExitMaterial;
+static const eg::IMaterial* s_editorEntranceMaterial;
+static const eg::IMaterial* s_editorExitMaterial;
 
 void InitEntranceEntity()
 {
@@ -76,7 +75,7 @@ glm::mat4 EntranceEntity::GetTransform() const
 	return glm::translate(glm::mat4(1.0f), translation) * glm::mat4(rotation);
 }
 
-void EntranceEntity::Draw(ObjectRenderer& renderer)
+void EntranceEntity::Draw(eg::MeshBatch& meshBatch)
 {
 	std::vector<glm::mat4> transforms(s_model->NumMeshes(), GetTransform());
 	
@@ -90,7 +89,10 @@ void EntranceEntity::Draw(ObjectRenderer& renderer)
 		transforms[meshIndex] = transforms[meshIndex] * glm::translate(glm::mat4(1.0f), tVec);
 	}
 	
-	renderer.Add(*s_model, s_materials, transforms);
+	for (size_t i = 0; i < s_model->NumMeshes(); i++)
+	{
+		meshBatch.Add(*s_model, i, *s_materials[s_model->GetMesh(i).materialIndex], transforms[i]);
+	}
 }
 
 int EntranceEntity::GetEditorIconIndex() const
@@ -127,9 +129,9 @@ void EntranceEntity::EditorDraw(bool selected, const Entity::EditorDrawArgs& dra
 	transform *= glm::translate(glm::mat4(), glm::vec3(-MESH_LENGTH - 0.01f, 0, 0));
 	
 	const eg::Model* model = m_type == Type::Entrance ? s_editorEntranceModel : s_editorExitModel;
-	const ObjectMaterial* material = m_type == Type::Entrance ? s_editorEntranceMaterial : s_editorExitMaterial;
+	const eg::IMaterial* material = m_type == Type::Entrance ? s_editorEntranceMaterial : s_editorExitMaterial;
 	
-	drawArgs.objectRenderer->Add(*model, { &material, 1 }, { &transform, 1 });
+	drawArgs.meshBatch->Add(*model, *material, transform);
 }
 
 void EntranceEntity::Save(YAML::Emitter& emitter) const

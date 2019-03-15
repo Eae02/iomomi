@@ -11,7 +11,7 @@ public:
 	class IDrawable
 	{
 	public:
-		virtual void Draw(class ObjectRenderer& renderer) = 0;
+		virtual void Draw(eg::MeshBatch& meshBatch) = 0;
 	};
 	
 	class IEditorWallDrag
@@ -71,8 +71,8 @@ public:
 	struct EditorDrawArgs
 	{
 		eg::SpriteBatch* spriteBatch;
+		eg::MeshBatch* meshBatch;
 		class PrimitiveRenderer* primitiveRenderer;
-		class ObjectRenderer* objectRenderer;
 	};
 	
 	virtual void EditorDraw(bool selected, const EditorDrawArgs& drawArgs) const;

@@ -1,13 +1,13 @@
 #pragma once
 
-#include "ObjectMaterial.hpp"
-
-class StaticPropMaterial : public ObjectMaterial
+class StaticPropMaterial : public eg::IMaterial
 {
 public:
-	eg::PipelineRef GetPipeline(PipelineType pipelineType, bool flipWinding) const override;
+	size_t PipelineHash() const override;
 	
-	void Bind(ObjectMaterial::PipelineType boundPipeline) const override;
+	void BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const override;
+	
+	void BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const override;
 	
 	static void InitAssetTypes();
 	

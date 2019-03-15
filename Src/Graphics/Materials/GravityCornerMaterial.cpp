@@ -1,5 +1,6 @@
 #include "GravityCornerMaterial.hpp"
 #include "../Renderer.hpp"
+#include "MeshDrawArgs.hpp"
 
 GravityCornerMaterial GravityCornerMaterial::instance;
 
@@ -45,17 +46,18 @@ static void OnShutdown()
 EG_ON_INIT(OnInit)
 EG_ON_SHUTDOWN(OnShutdown)
 
-eg::PipelineRef GravityCornerMaterial::GetPipeline(PipelineType pipelineType, bool flipWinding) const
+size_t GravityCornerMaterial::PipelineHash() const
 {
-	switch (pipelineType)
-	{
-	case PipelineType::Game: return gravityCornerPipelineGame;
-	case PipelineType::Editor: return gravityCornerPipelineEditor;
-	}
-	EG_UNREACHABLE
+	return typeid(GravityCornerMaterial).hash_code();
 }
 
-void GravityCornerMaterial::Bind(ObjectMaterial::PipelineType boundPipeline) const
+void GravityCornerMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const
+{
+	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
+	cmdCtx.BindPipeline(mDrawArgs->editor ? gravityCornerPipelineEditor : gravityCornerPipelineGame);
+}
+
+void GravityCornerMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
 	
 }

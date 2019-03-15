@@ -1,6 +1,7 @@
 #include "Editor.hpp"
 #include "../Levels.hpp"
 #include "../MainGameState.hpp"
+#include "../Graphics/Materials/MeshDrawArgs.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -14,7 +15,7 @@ Editor::Editor(RenderContext& renderCtx)
 	: m_renderCtx(&renderCtx)
 {
 	m_prepareDrawArgs.isEditor = true;
-	m_prepareDrawArgs.objectRenderer = &renderCtx.objectRenderer;
+	m_prepareDrawArgs.meshBatch = &renderCtx.meshBatch;
 	
 	m_projection.SetFieldOfViewDeg(75.0f);
 }
@@ -623,7 +624,7 @@ void Editor::DrawWorld()
 {
 	m_primRenderer.Begin(RenderSettings::instance->viewProjection);
 	m_spriteBatch.Begin();
-	m_renderCtx->objectRenderer.Begin(ObjectMaterial::PipelineType::Editor);
+	m_renderCtx->meshBatch.Begin();
 	
 	m_world->PrepareForDraw(m_prepareDrawArgs);
 	
@@ -638,7 +639,7 @@ void Editor::DrawWorld()
 	Entity::EditorDrawArgs entityDrawArgs;
 	entityDrawArgs.spriteBatch = &m_spriteBatch;
 	entityDrawArgs.primitiveRenderer = &m_primRenderer;
-	entityDrawArgs.objectRenderer = &m_renderCtx->objectRenderer;
+	entityDrawArgs.meshBatch = &m_renderCtx->meshBatch;
 	for (const std::shared_ptr<Entity>& entity : m_world->Entities())
 	{
 		entity->EditorDraw(m_tool == Tool::Entities && eg::Contains(m_selectedEntities, entity), entityDrawArgs);
@@ -646,7 +647,7 @@ void Editor::DrawWorld()
 	
 	m_primRenderer.End();
 	
-	m_renderCtx->objectRenderer.End();
+	m_renderCtx->meshBatch.End(eg::DC);
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
 	rpBeginInfo.framebuffer = nullptr;
@@ -659,7 +660,9 @@ void Editor::DrawWorld()
 	
 	m_world->DrawEditor();
 	
-	m_renderCtx->objectRenderer.Draw();
+	MeshDrawArgs mDrawArgs;
+	mDrawArgs.editor = true;
+	m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
 	
 	m_primRenderer.Draw();
 	

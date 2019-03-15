@@ -1,6 +1,7 @@
 #include "MainGameState.hpp"
 #include "World/PrepareDrawArgs.hpp"
 #include "World/Entities/EntranceEntity.hpp"
+#include "Graphics/Materials/MeshDrawArgs.hpp"
 
 #include <fstream>
 #include <imgui.h>
@@ -11,7 +12,7 @@ MainGameState::MainGameState(RenderContext& renderCtx)
 	: m_renderCtx(&renderCtx)
 {
 	m_prepareDrawArgs.isEditor = false;
-	m_prepareDrawArgs.objectRenderer = &m_renderCtx->objectRenderer;
+	m_prepareDrawArgs.meshBatch = &m_renderCtx->meshBatch;
 	
 	m_projection.SetFieldOfViewDeg(80.0f);
 	
@@ -73,18 +74,20 @@ void MainGameState::RunFrame(float dt)
 	RenderSettings::instance->invViewProjection = inverseViewMatrix * m_projection.InverseMatrix();
 	RenderSettings::instance->UpdateBuffer();
 	
-	m_renderCtx->objectRenderer.Begin(ObjectMaterial::PipelineType::Game);
+	m_renderCtx->meshBatch.Begin();
 	
 	m_prepareDrawArgs.spotLights.clear();
 	m_world.PrepareForDraw(m_prepareDrawArgs);
 	
-	m_renderCtx->objectRenderer.End();
+	m_renderCtx->meshBatch.End(eg::DC);
 	
 	m_renderCtx->renderer.BeginGeometry();
 	
 	m_world.Draw();
 	
-	m_renderCtx->objectRenderer.Draw();
+	MeshDrawArgs mDrawArgs;
+	mDrawArgs.editor = false;
+	m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
 	
 	m_renderCtx->renderer.BeginLighting();
 	

@@ -1,14 +1,15 @@
 #pragma once
 
-#include "ObjectMaterial.hpp"
-
-class GravityCornerMaterial : public ObjectMaterial
+class GravityCornerMaterial : public eg::IMaterial
 {
 public:
 	GravityCornerMaterial() = default;
 	
-	eg::PipelineRef GetPipeline(PipelineType pipelineType, bool flipWinding) const override;
-	void Bind(ObjectMaterial::PipelineType boundPipeline) const override;
+	size_t PipelineHash() const override;
+	
+	void BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const override;
+	
+	void BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const override;
 	
 	static GravityCornerMaterial instance;
 };

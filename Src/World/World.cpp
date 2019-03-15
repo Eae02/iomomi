@@ -1,7 +1,6 @@
 #include "World.hpp"
 #include "Voxel.hpp"
 #include "PrepareDrawArgs.hpp"
-#include "../Graphics/ObjectRenderer.hpp"
 #include "../Graphics/Materials/GravityCornerMaterial.hpp"
 #include "../Graphics/RenderSettings.hpp"
 #include "../Graphics/WallShader.hpp"
@@ -402,7 +401,7 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 				glm::scale(glm::mat4(1.0f), glm::vec3(S, -S, 1)) *
 				glm::translate(glm::mat4(1.0f), glm::vec3(1.01f, -1.01f, 0));
 			
-			args.objectRenderer->Add(gravityCornerModel, GravityCornerMaterial::instance, transform);
+			args.meshBatch->Add(gravityCornerModel, GravityCornerMaterial::instance, transform);
 		}
 	}
 	
@@ -413,7 +412,7 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 		{
 			if (!args.isEditor)
 			{
-				drawable->Draw(*args.objectRenderer);
+				drawable->Draw(*args.meshBatch);
 			}
 		}
 		else
