@@ -15,6 +15,8 @@ struct
 	eg::Texture* miscMapTexture;
 	eg::Texture* gridTexture;
 	eg::Texture* noDrawTexture;
+	eg::DescriptorSet gameDescriptorSet;
+	eg::DescriptorSet editorDescriptorSet;
 } wr;
 
 struct MaterialSettings
@@ -41,6 +43,7 @@ void InitializeWallShader()
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::Back;
 	pipelineCI.numColorAttachments = 2;
+	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.vertexBindings[0] = { sizeof(WallVertex), eg::InputRate::Vertex };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32,   3, (uint32_t)offsetof(WallVertex, position) };
 	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::UInt8,     4, (uint32_t)offsetof(WallVertex, texCoordAO) };
@@ -80,6 +83,21 @@ void InitializeWallShader()
 	
 	wr.materialSettingsBuffer = eg::Buffer(eg::BufferFlags::UniformBuffer, sizeof(materialSettings), materialSettings);
 	wr.materialSettingsBuffer.UsageHint(eg::BufferUsage::UniformBuffer, eg::ShaderAccessFlags::Vertex);
+	
+	wr.gameDescriptorSet = { wr.pipelineDeferredGeom, 0 };
+	wr.gameDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+	wr.gameDescriptorSet.BindUniformBuffer(wr.materialSettingsBuffer, 1, 0, sizeof(materialSettings));
+	wr.gameDescriptorSet.BindTexture(*wr.diffuseTexture, 2, &GetCommonTextureSampler());
+	wr.gameDescriptorSet.BindTexture(*wr.normalMapTexture, 3, &GetCommonTextureSampler());
+	wr.gameDescriptorSet.BindTexture(*wr.miscMapTexture, 4, &GetCommonTextureSampler());
+	
+	wr.editorDescriptorSet = { wr.pipelineEditor, 0 };
+	wr.editorDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+	wr.editorDescriptorSet.BindUniformBuffer(wr.materialSettingsBuffer, 1, 0, sizeof(materialSettings));
+	wr.editorDescriptorSet.BindTexture(*wr.diffuseTexture, 2, &GetCommonTextureSampler());
+	wr.editorDescriptorSet.BindTexture(*wr.normalMapTexture, 3, &GetCommonTextureSampler());
+	wr.editorDescriptorSet.BindTexture(*wr.gridTexture, 4);
+	wr.editorDescriptorSet.BindTexture(*wr.noDrawTexture, 5);
 }
 
 static void OnShutdown()
@@ -88,6 +106,9 @@ static void OnShutdown()
 	wr.pipelinePoint.Destroy();
 	wr.pipelineEditor.Destroy();
 	wr.pipelineBorderEditor.Destroy();
+	wr.materialSettingsBuffer.Destroy();
+	wr.gameDescriptorSet.Destroy();
+	wr.editorDescriptorSet.Destroy();
 }
 
 EG_ON_SHUTDOWN(OnShutdown)
@@ -107,12 +128,7 @@ void DrawWalls(const std::function<void()>& drawCallback)
 {
 	eg::DC.BindPipeline(wr.pipelineDeferredGeom);
 	
-	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
-	eg::DC.BindUniformBuffer(wr.materialSettingsBuffer, 1, 0, sizeof(materialSettings));
-	
-	eg::DC.BindTexture(*wr.diffuseTexture, 2, &GetCommonTextureSampler());
-	eg::DC.BindTexture(*wr.normalMapTexture, 3, &GetCommonTextureSampler());
-	eg::DC.BindTexture(*wr.miscMapTexture, 4, &GetCommonTextureSampler());
+	eg::DC.BindDescriptorSet(wr.gameDescriptorSet);
 	
 	drawCallback();
 }
@@ -121,13 +137,7 @@ void DrawWallsEditor(const std::function<void()>& drawCallback)
 {
 	eg::DC.BindPipeline(wr.pipelineEditor);
 	
-	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
-	eg::DC.BindUniformBuffer(wr.materialSettingsBuffer, 1, 0, sizeof(materialSettings));
-	
-	eg::DC.BindTexture(*wr.diffuseTexture, 2, &GetCommonTextureSampler());
-	eg::DC.BindTexture(*wr.normalMapTexture, 3, &GetCommonTextureSampler());
-	eg::DC.BindTexture(*wr.gridTexture, 4);
-	eg::DC.BindTexture(*wr.noDrawTexture, 5);
+	eg::DC.BindDescriptorSet(wr.editorDescriptorSet);
 	
 	drawCallback();
 }

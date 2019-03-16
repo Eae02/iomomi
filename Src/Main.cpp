@@ -16,6 +16,7 @@ int main(int argc, char** argv)
 	{
 		StaticPropMaterial::InitAssetTypes();
 		eg::LoadAssets("assets", "/");
+		RenderSettings::instance = new RenderSettings;
 		InitLevels();
 		InitEntityTypes();
 	};

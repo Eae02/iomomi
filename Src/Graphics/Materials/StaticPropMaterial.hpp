@@ -17,6 +17,9 @@ private:
 	const eg::Texture* m_albedoTexture;
 	const eg::Texture* m_normalMapTexture;
 	const eg::Texture* m_miscMapTexture;
+	mutable eg::DescriptorSet m_descriptorSetGame;
+	mutable eg::DescriptorSet m_descriptorSetEditor;
+	mutable bool m_descriptorsInitialized = false;
 	float m_roughnessMin;
 	float m_roughnessMax;
 	glm::vec2 m_textureScale;

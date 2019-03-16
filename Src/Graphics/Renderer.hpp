@@ -37,4 +37,7 @@ private:
 	eg::Pipeline m_postPipeline;
 	eg::Pipeline m_ambientPipeline;
 	eg::Pipeline m_spotLightPipeline;
+	
+	uint32_t m_spotLightDSIndex = 0;
+	eg::DescriptorSet m_spotLightDescriptorSets[eg::MAX_CONCURRENT_FRAMES];
 };

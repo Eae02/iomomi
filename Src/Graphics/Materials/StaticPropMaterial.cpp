@@ -1,7 +1,8 @@
 #include "StaticPropMaterial.hpp"
+#include "MeshDrawArgs.hpp"
 #include "../Renderer.hpp"
 #include "../GraphicsCommon.hpp"
-#include "MeshDrawArgs.hpp"
+#include "../RenderSettings.hpp"
 
 #include <fstream>
 
@@ -53,6 +54,49 @@ public:
 	}
 };
 
+static eg::Pipeline staticPropPipelineEditor;
+static eg::Pipeline staticPropPipelineGame;
+
+static void OnInit()
+{
+	eg::PipelineCreateInfo pipelineCI;
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Common3D.vs.glsl").Handle();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/StaticModel.fs.glsl").Handle();
+	pipelineCI.enableDepthWrite = true;
+	pipelineCI.enableDepthTest = true;
+	pipelineCI.cullMode = eg::CullMode::Back;
+	pipelineCI.frontFaceCCW = true;
+	pipelineCI.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
+	pipelineCI.vertexBindings[1] = { sizeof(float) * 16, eg::InputRate::Instance };
+	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(eg::StdVertex, position) };
+	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::Float32, 2, offsetof(eg::StdVertex, texCoord) };
+	pipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, offsetof(eg::StdVertex, normal) };
+	pipelineCI.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 3, offsetof(eg::StdVertex, tangent) };
+	pipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 4, 0 * sizeof(float) * 4 };
+	pipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 4, 1 * sizeof(float) * 4 };
+	pipelineCI.vertexAttributes[6] = { 1, eg::DataType::Float32, 4, 2 * sizeof(float) * 4 };
+	pipelineCI.vertexAttributes[7] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
+	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
+	pipelineCI.numColorAttachments = 2;
+	staticPropPipelineGame = eg::Pipeline::Create(pipelineCI);
+	staticPropPipelineGame.FramebufferFormatHint(Renderer::GEOMETRY_FB_FORMAT);
+	
+	pipelineCI.numColorAttachments = 1;
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/StaticModel-Editor.fs.glsl").Handle();
+	pipelineCI.cullMode = eg::CullMode::None;
+	staticPropPipelineEditor = eg::Pipeline::Create(pipelineCI);
+	staticPropPipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
+}
+
+static void OnShutdown()
+{
+	staticPropPipelineEditor.Destroy();
+	staticPropPipelineGame.Destroy();
+}
+
+EG_ON_INIT(OnInit)
+EG_ON_SHUTDOWN(OnShutdown)
+
 bool StaticPropMaterial::AssetLoader(const eg::AssetLoadContext& loadContext)
 {
 	eg::MemoryStreambuf memoryStreambuf(loadContext.Data());
@@ -85,54 +129,6 @@ void StaticPropMaterial::InitAssetTypes()
 	eg::RegisterAssetLoader("StaticPropMaterial", &StaticPropMaterial::AssetLoader, StaticPropMaterialAssetFormat);
 }
 
-static eg::Pipeline staticPropPipelineEditor;
-static eg::Pipeline staticPropPipelineGame;
-static eg::Pipeline staticPropPipelineGameFW;
-
-static void OnInit()
-{
-	eg::PipelineCreateInfo pipelineCI;
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Common3D.vs.glsl").Handle();
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/StaticModel.fs.glsl").Handle();
-	pipelineCI.enableDepthWrite = true;
-	pipelineCI.enableDepthTest = true;
-	pipelineCI.cullMode = eg::CullMode::Back;
-	pipelineCI.frontFaceCCW = true;
-	pipelineCI.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
-	pipelineCI.vertexBindings[1] = { sizeof(float) * 16, eg::InputRate::Instance };
-	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(eg::StdVertex, position) };
-	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::Float32, 2, offsetof(eg::StdVertex, texCoord) };
-	pipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, offsetof(eg::StdVertex, normal) };
-	pipelineCI.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 3, offsetof(eg::StdVertex, tangent) };
-	pipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 4, 0 * sizeof(float) * 4 };
-	pipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 4, 1 * sizeof(float) * 4 };
-	pipelineCI.vertexAttributes[6] = { 1, eg::DataType::Float32, 4, 2 * sizeof(float) * 4 };
-	pipelineCI.vertexAttributes[7] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
-	pipelineCI.numColorAttachments = 2;
-	staticPropPipelineGame = eg::Pipeline::Create(pipelineCI);
-	staticPropPipelineGame.FramebufferFormatHint(Renderer::GEOMETRY_FB_FORMAT);
-	
-	pipelineCI.frontFaceCCW = !pipelineCI.frontFaceCCW;
-	staticPropPipelineGameFW = eg::Pipeline::Create(pipelineCI);
-	staticPropPipelineGameFW.FramebufferFormatHint(Renderer::GEOMETRY_FB_FORMAT);
-	
-	pipelineCI.numColorAttachments = 1;
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/StaticModel-Editor.fs.glsl").Handle();
-	pipelineCI.cullMode = eg::CullMode::None;
-	staticPropPipelineEditor = eg::Pipeline::Create(pipelineCI);
-	staticPropPipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
-}
-
-static void OnShutdown()
-{
-	staticPropPipelineEditor.Destroy();
-	staticPropPipelineGame.Destroy();
-	staticPropPipelineGameFW.Destroy();
-}
-
-EG_ON_INIT(OnInit)
-EG_ON_SHUTDOWN(OnShutdown)
-
 size_t StaticPropMaterial::PipelineHash() const
 {
 	return typeid(StaticPropMaterial).hash_code();
@@ -146,9 +142,25 @@ void StaticPropMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs
 
 void StaticPropMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
-	cmdCtx.BindTexture(*m_albedoTexture, 1, &GetCommonTextureSampler());
-	cmdCtx.BindTexture(*m_normalMapTexture, 2, &GetCommonTextureSampler());
-	cmdCtx.BindTexture(*m_miscMapTexture, 3, &GetCommonTextureSampler());
+	if (!m_descriptorsInitialized)
+	{
+		m_descriptorSetGame = eg::DescriptorSet(staticPropPipelineGame, 0);
+		m_descriptorSetEditor = eg::DescriptorSet(staticPropPipelineEditor, 0);
+		m_descriptorsInitialized = true;
+		
+		m_descriptorSetGame.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+		m_descriptorSetGame.BindTexture(*m_albedoTexture, 1, &GetCommonTextureSampler());
+		m_descriptorSetGame.BindTexture(*m_normalMapTexture, 2, &GetCommonTextureSampler());
+		m_descriptorSetGame.BindTexture(*m_miscMapTexture, 3, &GetCommonTextureSampler());
+		
+		m_descriptorSetEditor.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+		m_descriptorSetEditor.BindTexture(*m_albedoTexture, 1, &GetCommonTextureSampler());
+		m_descriptorSetEditor.BindTexture(*m_normalMapTexture, 2, &GetCommonTextureSampler());
+		m_descriptorSetEditor.BindTexture(*m_miscMapTexture, 3, &GetCommonTextureSampler());
+	}
+	
+	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
+	cmdCtx.BindDescriptorSet(mDrawArgs->editor ? m_descriptorSetEditor : m_descriptorSetGame);
 	
 	float pushConstants[] = {m_roughnessMin, m_roughnessMax, m_textureScale.x, m_textureScale.y};
 	cmdCtx.PushConstants(0, sizeof(pushConstants), pushConstants);

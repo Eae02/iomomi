@@ -9,8 +9,6 @@
 
 Game::Game()
 {
-	RenderSettings::instance = new RenderSettings;
-	
 	editor = new Editor(m_renderCtx);
 	mainGameState = new MainGameState(m_renderCtx);
 	currentGS = editor;

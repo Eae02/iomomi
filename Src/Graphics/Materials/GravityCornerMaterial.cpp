@@ -1,6 +1,7 @@
 #include "GravityCornerMaterial.hpp"
 #include "../Renderer.hpp"
 #include "MeshDrawArgs.hpp"
+#include "../RenderSettings.hpp"
 
 GravityCornerMaterial GravityCornerMaterial::instance;
 
@@ -15,7 +16,6 @@ static void OnInit()
 	pipelineCI.enableDepthWrite = true;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::Back;
-	//pipelineCI.frontFaceCCW = true;
 	pipelineCI.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
 	pipelineCI.vertexBindings[1] = { sizeof(float) * 16, eg::InputRate::Instance };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(eg::StdVertex, position) };
@@ -55,6 +55,7 @@ void GravityCornerMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawA
 {
 	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
 	cmdCtx.BindPipeline(mDrawArgs->editor ? gravityCornerPipelineEditor : gravityCornerPipelineGame);
+	cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
 }
 
 void GravityCornerMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const

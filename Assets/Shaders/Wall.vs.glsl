@@ -44,8 +44,12 @@ void main()
 	const float AO_SCALE = 3.5; //Decreasing this makes AO continue further from walls.
 	
 	vec4 ao;
-	for (int i = 0; i < 4; i++)
+	int i = 0;
+	while (i < 4)
+	{
 		ao[i] = 1 - (texCoordAO_in.w >> i) & 1U;
+		i++;
+	}
 	ao_out = ao * AO_SCALE + AO_BIAS;
 	
 	gl_Position = renderSettings.viewProjection * vec4(position_in, 1.0);
