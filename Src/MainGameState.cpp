@@ -77,6 +77,7 @@ void MainGameState::RunFrame(float dt)
 	m_renderCtx->meshBatch.Begin();
 	
 	m_prepareDrawArgs.spotLights.clear();
+	m_prepareDrawArgs.pointLights.clear();
 	m_world.PrepareForDraw(m_prepareDrawArgs);
 	
 	m_renderCtx->meshBatch.End(eg::DC);
@@ -92,6 +93,7 @@ void MainGameState::RunFrame(float dt)
 	m_renderCtx->renderer.BeginLighting();
 	
 	m_renderCtx->renderer.DrawSpotLights(m_prepareDrawArgs.spotLights);
+	m_renderCtx->renderer.DrawPointLights(m_prepareDrawArgs.pointLights);
 	
 	m_renderCtx->renderer.End();
 	

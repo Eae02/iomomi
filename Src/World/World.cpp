@@ -422,7 +422,7 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 		}
 	}
 	
-	//Processes spotlight entities
+	//Processes spot light entities
 	for (int64_t i = (int64_t)m_spotLights.size() - 1; i >= 0; i--)
 	{
 		if (auto spotLight = m_spotLights[i].lock())
@@ -433,6 +433,20 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 		{
 			m_spotLights[i].swap(m_spotLights.back());
 			m_spotLights.pop_back();
+		}
+	}
+	
+	//Processes point light entities
+	for (int64_t i = (int64_t)m_pointLights.size() - 1; i >= 0; i--)
+	{
+		if (auto pointLight = m_pointLights[i].lock())
+		{
+			pointLight->InitDrawData(args.pointLights.emplace_back());
+		}
+		else
+		{
+			m_pointLights[i].swap(m_pointLights.back());
+			m_pointLights.pop_back();
 		}
 	}
 }
@@ -894,6 +908,8 @@ PickWallResult World::PickWall(const eg::Ray& ray) const
 
 void World::AddEntity(std::shared_ptr<Entity> entity)
 {
+	if (auto pointLight = std::dynamic_pointer_cast<PointLightEntity>(entity))
+		m_pointLights.emplace_back(pointLight);
 	if (auto spotLight = std::dynamic_pointer_cast<SpotLightEntity>(entity))
 		m_spotLights.emplace_back(spotLight);
 	if (auto drawable = std::dynamic_pointer_cast<Entity::IDrawable>(entity))

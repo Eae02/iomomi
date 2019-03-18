@@ -626,6 +626,8 @@ void Editor::DrawWorld()
 	m_spriteBatch.Begin();
 	m_renderCtx->meshBatch.Begin();
 	
+	m_prepareDrawArgs.spotLights.clear();
+	m_prepareDrawArgs.pointLights.clear();
 	m_world->PrepareForDraw(m_prepareDrawArgs);
 	
 	if (m_tool == Tool::Walls)

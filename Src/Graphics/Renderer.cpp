@@ -33,6 +33,16 @@ Renderer::Renderer()
 	m_spotLightPipeline = eg::Pipeline::Create(slPipelineCI);
 	m_spotLightPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT);
 	
+	eg::PipelineCreateInfo plPipelineCI;
+	plPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/PointLight.vs.glsl").Handle();
+	plPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/PointLight.fs.glsl").Handle();
+	plPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
+	plPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
+	plPipelineCI.vertexBindings[0] = { sizeof(float) * 3, eg::InputRate::Vertex };
+	plPipelineCI.cullMode = eg::CullMode::Back;
+	m_pointLightPipeline = eg::Pipeline::Create(plPipelineCI);
+	m_pointLightPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT);
+	
 	eg::SamplerDescription attachmentSamplerDesc;
 	attachmentSamplerDesc.wrapU = eg::WrapMode::ClampToEdge;
 	attachmentSamplerDesc.wrapV = eg::WrapMode::ClampToEdge;
@@ -161,5 +171,28 @@ void Renderer::DrawSpotLights(const std::vector<SpotLightDrawData>& spotLights)
 		eg::DC.PushConstants(0, spotLight);
 		
 		eg::DC.DrawIndexed(0, SPOT_LIGHT_MESH_INDICES, 0, 0, 1);
+	}
+}
+
+void Renderer::DrawPointLights(const std::vector<PointLightDrawData>& pointLights)
+{
+	if (pointLights.empty())
+		return;
+	
+	eg::DC.BindPipeline(m_pointLightPipeline);
+	
+	BindPointLightMesh();
+	
+	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+	
+	eg::DC.BindTexture(m_gbColor1Texture, 1, &m_attachmentSampler);
+	eg::DC.BindTexture(m_gbColor2Texture, 2, &m_attachmentSampler);
+	eg::DC.BindTexture(m_gbDepthTexture, 3, &m_attachmentSampler);
+	
+	for (const PointLightDrawData& pointLight : pointLights)
+	{
+		eg::DC.PushConstants(0, pointLight);
+		
+		eg::DC.DrawIndexed(0, POINT_LIGHT_MESH_INDICES, 0, 0, 1);
 	}
 }

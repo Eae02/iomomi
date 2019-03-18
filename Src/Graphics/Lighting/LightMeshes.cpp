@@ -138,3 +138,9 @@ void BindSpotLightMesh()
 	eg::DC.BindVertexBuffer(0, vertexBuffer, sizeof(sphereMeshVertices));
 	eg::DC.BindIndexBuffer(eg::IndexType::UInt16, indexBuffer, sizeof(sphereMeshIndices));
 }
+
+void BindPointLightMesh()
+{
+	eg::DC.BindVertexBuffer(0, vertexBuffer, 0);
+	eg::DC.BindIndexBuffer(eg::IndexType::UInt16, indexBuffer, 0);
+}

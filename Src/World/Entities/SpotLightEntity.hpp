@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Entity.hpp"
+#include "LightSourceEntity.hpp"
 #include "../../Graphics/Lighting/SpotLight.hpp"
 
-class SpotLightEntity : public Entity, public Entity::IEditorWallDrag
+class SpotLightEntity : public LightSourceEntity, public Entity::IEditorWallDrag
 {
 public:
 	SpotLightEntity()
@@ -13,8 +13,6 @@ public:
 	                float cutoffAngle = eg::PI / 4, float penumbraAngle = eg::PI / 16);
 	
 	void InitDrawData(SpotLightDrawData& data) const;
-	
-	void SetRadiance(const eg::ColorSRGB& color, float intensity);
 	
 	inline const glm::vec3& GetDirection() const
 	{
@@ -42,23 +40,12 @@ public:
 	
 	void EditorWallDrag(const glm::vec3& newPosition, Dir wallNormalDir) override;
 	
-	inline float GetRange() const
-	{
-		return m_range;
-	}
-	
 	inline float GetWidth() const
 	{
 		return m_width;
 	}
 	
-	inline uint64_t GetInstanceID() const
-	{
-		return m_instanceID;
-	}
-	
 private:
-	float m_range = 0.0f;
 	float m_width = 0.0f;
 	
 	float m_yaw;
@@ -70,11 +57,5 @@ private:
 	float m_penumbraBias;
 	float m_penumbraScale;
 	
-	uint64_t m_instanceID;
-	
-	eg::ColorSRGB m_color;
-	float m_intensity;
-	
 	glm::mat3 m_rotationMatrix;
-	glm::vec3 m_radiance;
 };

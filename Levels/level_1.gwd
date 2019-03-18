@@ -31,3 +31,14 @@ entities:
       - 11
     dir: 4
     exit: true
+  - type: PointLight
+    pos:
+      - 1.5
+      - 3.10000014
+      - 5
+    range: 50.6063232
+    intensity: 10
+    color:
+      - 1
+      - 1
+      - 1

@@ -18,6 +18,8 @@ assets:
   - name: Shaders/DeferredBase.fs.glsl
   - name: Shaders/SpotLight.vs.glsl
   - name: Shaders/SpotLight.fs.glsl
+  - name: Shaders/PointLight.vs.glsl
+  - name: Shaders/PointLight.fs.glsl
   - name: Models/GravityCornerConvex.obj
   - name: Models/EnterRoom.obj
   - name: Models/EditorExit.obj
