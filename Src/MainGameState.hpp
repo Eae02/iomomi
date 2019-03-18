@@ -2,6 +2,7 @@
 
 #include "GameState.hpp"
 #include "Graphics/RenderContext.hpp"
+#include "Graphics/Lighting/PointLightShadowMapper.hpp"
 #include "World/World.hpp"
 #include "World/Player.hpp"
 #include "World/PrepareDrawArgs.hpp"
@@ -20,10 +21,13 @@ public:
 private:
 	void DrawOverlay(float dt);
 	
+	void RenderPointLightShadows(const PointLightShadowRenderArgs& args);
+	
 	eg::PerspectiveProjection m_projection;
 	RenderContext* m_renderCtx;
 	
 	PrepareDrawArgs m_prepareDrawArgs;
+	PointLightShadowMapper m_plShadowMapper;
 	
 	float m_gameTime = 0;
 	

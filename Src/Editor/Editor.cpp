@@ -663,7 +663,7 @@ void Editor::DrawWorld()
 	m_world->DrawEditor();
 	
 	MeshDrawArgs mDrawArgs;
-	mDrawArgs.editor = true;
+	mDrawArgs.drawMode = MeshDrawMode::Editor;
 	m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
 	
 	m_primRenderer.Draw();

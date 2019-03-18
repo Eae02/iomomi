@@ -51,6 +51,15 @@ Renderer::Renderer()
 	attachmentSamplerDesc.magFilter = eg::TextureFilter::Nearest;
 	attachmentSamplerDesc.mipFilter = eg::TextureFilter::Nearest;
 	m_attachmentSampler = eg::Sampler(attachmentSamplerDesc);
+	
+	eg::SamplerDescription shadowMapSamplerDesc;
+	shadowMapSamplerDesc.wrapU = eg::WrapMode::Repeat;
+	shadowMapSamplerDesc.wrapV = eg::WrapMode::Repeat;
+	shadowMapSamplerDesc.wrapW = eg::WrapMode::Repeat;
+	shadowMapSamplerDesc.minFilter = eg::TextureFilter::Nearest;
+	shadowMapSamplerDesc.magFilter = eg::TextureFilter::Nearest;
+	shadowMapSamplerDesc.mipFilter = eg::TextureFilter::Nearest;
+	m_shadowMapSampler = eg::Sampler(shadowMapSamplerDesc);
 }
 
 void Renderer::BeginGeometry()
@@ -118,7 +127,7 @@ void Renderer::BeginLighting()
 	
 	eg::DC.BindTexture(m_gbColor1Texture, 0, &m_attachmentSampler);
 	
-	auto ambientColor = eg::ColorLin(eg::ColorSRGB::FromHex(0xf6f9fc)).ScaleRGB(0.2f);
+	auto ambientColor = eg::ColorLin(eg::ColorSRGB::FromHex(0xf6f9fc)).ScaleRGB(0.1f);
 	eg::DC.PushConstants(0, sizeof(float) * 3, &ambientColor.r);
 	
 	eg::DC.Draw(0, 3, 0, 1);
@@ -191,7 +200,9 @@ void Renderer::DrawPointLights(const std::vector<PointLightDrawData>& pointLight
 	
 	for (const PointLightDrawData& pointLight : pointLights)
 	{
-		eg::DC.PushConstants(0, pointLight);
+		eg::DC.BindTexture(pointLight.shadowMap, 4, &m_shadowMapSampler);
+		
+		eg::DC.PushConstants(0, pointLight.pc);
 		
 		eg::DC.DrawIndexed(0, POINT_LIGHT_MESH_INDICES, 0, 0, 1);
 	}

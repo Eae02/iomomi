@@ -4,8 +4,8 @@
 
 void InitializeWallShader();
 
-void DrawWalls(const std::function<void()>& drawCallback);
-
-void DrawWallsEditor(const std::function<void()>& drawCallback);
+void BindWallShaderGame();
+void BindWallShaderEditor();
+void BindWallShaderPointLightShadow(const struct PointLightShadowRenderArgs& renderArgs);
 
 void DrawWallBordersEditor(eg::BufferRef vertexBuffer, uint32_t numVertices);

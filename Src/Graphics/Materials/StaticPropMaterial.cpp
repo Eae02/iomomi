@@ -3,6 +3,7 @@
 #include "../Renderer.hpp"
 #include "../GraphicsCommon.hpp"
 #include "../RenderSettings.hpp"
+#include "../Lighting/PointLightShadowMapper.hpp"
 
 #include <fstream>
 
@@ -56,6 +57,7 @@ public:
 
 static eg::Pipeline staticPropPipelineEditor;
 static eg::Pipeline staticPropPipelineGame;
+static eg::Pipeline staticPropPipelinePLShadow;
 
 static void OnInit()
 {
@@ -86,12 +88,35 @@ static void OnInit()
 	pipelineCI.cullMode = eg::CullMode::None;
 	staticPropPipelineEditor = eg::Pipeline::Create(pipelineCI);
 	staticPropPipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
+	
+	eg::PipelineCreateInfo plsPipelineCI;
+	plsPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Common3D-PLShadow.vs.glsl").Handle();
+	plsPipelineCI.geometryShader = eg::GetAsset<eg::ShaderModule>("Shaders/PointLightShadow.gs.glsl").Handle();
+	plsPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/PointLightShadow.fs.glsl").Handle();
+	plsPipelineCI.enableDepthWrite = true;
+	plsPipelineCI.enableDepthTest = true;
+	plsPipelineCI.cullMode = eg::CullMode::None;
+	plsPipelineCI.frontFaceCCW = true;
+	plsPipelineCI.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
+	plsPipelineCI.vertexBindings[1] = { sizeof(float) * 16, eg::InputRate::Instance };
+	plsPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(eg::StdVertex, position) };
+	plsPipelineCI.vertexAttributes[1] = { 1, eg::DataType::Float32, 4, 0 * sizeof(float) * 4 };
+	plsPipelineCI.vertexAttributes[2] = { 1, eg::DataType::Float32, 4, 1 * sizeof(float) * 4 };
+	plsPipelineCI.vertexAttributes[3] = { 1, eg::DataType::Float32, 4, 2 * sizeof(float) * 4 };
+	plsPipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
+	staticPropPipelinePLShadow = eg::Pipeline::Create(plsPipelineCI);
+	
+	eg::FramebufferFormatHint plsFormatHint;
+	plsFormatHint.sampleCount = 1;
+	plsFormatHint.depthStencilFormat = PointLightShadowMapper::SHADOW_MAP_FORMAT;
+	staticPropPipelinePLShadow.FramebufferFormatHint(plsFormatHint);
 }
 
 static void OnShutdown()
 {
 	staticPropPipelineEditor.Destroy();
 	staticPropPipelineGame.Destroy();
+	staticPropPipelinePLShadow.Destroy();
 }
 
 EG_ON_INIT(OnInit)
@@ -134,14 +159,39 @@ size_t StaticPropMaterial::PipelineHash() const
 	return typeid(StaticPropMaterial).hash_code();
 }
 
-void StaticPropMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const
+inline static eg::PipelineRef GetPipeline(const MeshDrawArgs& drawArgs)
 {
-	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
-	cmdCtx.BindPipeline(mDrawArgs->editor ? staticPropPipelineEditor : staticPropPipelineGame);
+	switch (drawArgs.drawMode)
+	{
+	case MeshDrawMode::Game: return staticPropPipelineGame;
+	case MeshDrawMode::Editor: return staticPropPipelineEditor;
+	case MeshDrawMode::PointLightShadow: return staticPropPipelinePLShadow;
+	}
+	EG_UNREACHABLE
 }
 
-void StaticPropMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
+bool StaticPropMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
+	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
+	eg::PipelineRef pipeline = GetPipeline(*mDrawArgs);
+	if (pipeline.handle == nullptr)
+		return false;
+	cmdCtx.BindPipeline(pipeline);
+	
+	if (mDrawArgs->drawMode == MeshDrawMode::PointLightShadow)
+	{
+		cmdCtx.BindUniformBuffer(mDrawArgs->plShadowRenderArgs->matricesBuffer, 0, 0, 0, PointLightShadowMapper::BUFFER_SIZE);
+	}
+	
+	return true;
+}
+
+bool StaticPropMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
+{
+	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
+	if (mDrawArgs->drawMode == MeshDrawMode::PointLightShadow)
+		return true;
+	
 	if (!m_descriptorsInitialized)
 	{
 		m_descriptorSetGame = eg::DescriptorSet(staticPropPipelineGame, 0);
@@ -159,9 +209,10 @@ void StaticPropMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs
 		m_descriptorSetEditor.BindTexture(*m_miscMapTexture, 3, &GetCommonTextureSampler());
 	}
 	
-	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
-	cmdCtx.BindDescriptorSet(mDrawArgs->editor ? m_descriptorSetEditor : m_descriptorSetGame);
+	cmdCtx.BindDescriptorSet(mDrawArgs->drawMode == MeshDrawMode::Editor ? m_descriptorSetEditor : m_descriptorSetGame);
 	
 	float pushConstants[] = {m_roughnessMin, m_roughnessMax, m_textureScale.x, m_textureScale.y};
 	cmdCtx.PushConstants(0, sizeof(pushConstants), pushConstants);
+	
+	return true;
 }

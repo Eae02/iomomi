@@ -1,12 +1,16 @@
 #pragma once
 
-#pragma pack(push, 1)
+
 struct PointLightDrawData
 {
-	glm::vec3 position;
-	float range;
-	glm::vec3 radiance;
-	int32_t shadowMapIndex;
+#pragma pack(push, 1)
+	struct
+	{
+		glm::vec3 position;
+		float range;
+		glm::vec3 radiance;
+	} pc;
+#pragma pack(pop)
+	eg::TextureRef shadowMap;
 	uint64_t instanceID;
 };
-#pragma pack(pop)

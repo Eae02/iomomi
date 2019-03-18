@@ -25,6 +25,7 @@ public:
 		float dt;
 		class World* world;
 		class Player* player;
+		std::function<void(const eg::Sphere&)> invalidateShadows;
 	};
 	
 	class IUpdatable

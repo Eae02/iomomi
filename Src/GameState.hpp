@@ -3,6 +3,7 @@
 class GameState
 {
 public:
+	virtual ~GameState() = default;
 	virtual void RunFrame(float dt) = 0;
 };
 

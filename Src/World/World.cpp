@@ -453,48 +453,66 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 
 void World::Draw()
 {
-	if (m_canDraw)
+	if (!m_canDraw)
+		return;
+	
+	BindWallShaderGame();
+	
+	eg::DC.BindVertexBuffer(0, m_voxelVertexBuffer, 0);
+	eg::DC.BindIndexBuffer(eg::IndexType::UInt16, m_voxelIndexBuffer, 0);
+	
+	for (const Region& region : m_regions)
 	{
-		eg::DC.BindVertexBuffer(0, m_voxelVertexBuffer, 0);
-		eg::DC.BindIndexBuffer(eg::IndexType::UInt16, m_voxelIndexBuffer, 0);
-		
-		DrawWalls([&]
+		if (region.canDraw)
 		{
-			for (const Region& region : m_regions)
-			{
-				if (region.canDraw)
-				{
-					eg::DC.DrawIndexed(region.data->firstIndex, (uint32_t)region.data->indices.size(),
-						region.data->firstVertex, 0, 1);
-				}
-			}
-		});
+			eg::DC.DrawIndexed(region.data->firstIndex, (uint32_t)region.data->indices.size(),
+				region.data->firstVertex, 0, 1);
+		}
+	}
+}
+
+void World::DrawPointLightShadows(const struct PointLightShadowRenderArgs& renderArgs)
+{
+	if (!m_canDraw)
+		return;
+	
+	BindWallShaderPointLightShadow(renderArgs);
+	
+	eg::DC.BindVertexBuffer(0, m_voxelVertexBuffer, 0);
+	eg::DC.BindIndexBuffer(eg::IndexType::UInt16, m_voxelIndexBuffer, 0);
+	
+	for (const Region& region : m_regions)
+	{
+		if (region.canDraw)
+		{
+			eg::DC.DrawIndexed(region.data->firstIndex, (uint32_t)region.data->indices.size(),
+				region.data->firstVertex, 0, 1);
+		}
 	}
 }
 
 void World::DrawEditor()
 {
-	if (m_canDraw)
+	if (!m_canDraw)
+		return;
+	
+	BindWallShaderEditor();
+	
+	eg::DC.BindVertexBuffer(0, m_voxelVertexBuffer, 0);
+	eg::DC.BindIndexBuffer(eg::IndexType::UInt16, m_voxelIndexBuffer, 0);
+	
+	for (const Region& region : m_regions)
 	{
-		eg::DC.BindVertexBuffer(0, m_voxelVertexBuffer, 0);
-		eg::DC.BindIndexBuffer(eg::IndexType::UInt16, m_voxelIndexBuffer, 0);
-		
-		DrawWallsEditor([&]
+		if (region.canDraw)
 		{
-			for (const Region& region : m_regions)
-			{
-				if (region.canDraw)
-				{
-					eg::DC.DrawIndexed(region.data->firstIndex, (uint32_t)region.data->indices.size(),
-						region.data->firstVertex, 0, 1);
-				}
-			}
-		});
-		
-		if (m_numBorderVertices > 0)
-		{
-			DrawWallBordersEditor(m_borderVertexBuffer, m_numBorderVertices);
+			eg::DC.DrawIndexed(region.data->firstIndex, (uint32_t)region.data->indices.size(),
+				region.data->firstVertex, 0, 1);
 		}
+	}
+	
+	if (m_numBorderVertices > 0)
+	{
+		DrawWallBordersEditor(m_borderVertexBuffer, m_numBorderVertices);
 	}
 }
 

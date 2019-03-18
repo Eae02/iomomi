@@ -33,11 +33,22 @@ entities:
     exit: true
   - type: PointLight
     pos:
-      - 1.5
-      - 3.10000014
-      - 5
-    range: 50.6063232
-    intensity: 10
+      - 2.5
+      - 2
+      - 9.10000038
+    range: 71.5611649
+    intensity: 20
+    color:
+      - 1
+      - 1
+      - 1
+  - type: PointLight
+    pos:
+      - 2.5
+      - 2
+      - 1
+    range: 71.5611649
+    intensity: 20
     color:
       - 1
       - 1

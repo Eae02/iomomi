@@ -15,17 +15,6 @@ MainGameState::MainGameState(RenderContext& renderCtx)
 	m_prepareDrawArgs.meshBatch = &m_renderCtx->meshBatch;
 	
 	m_projection.SetFieldOfViewDeg(80.0f);
-	
-	/*
-	m_spotLights[0].SetPosition(glm::vec3(2.5f, 4.0f, 1.5f));
-	m_spotLights[0].SetDirection(glm::vec3(0, -1, 0.1f));
-	m_spotLights[0].SetRadiance(eg::ColorLin(eg::ColorSRGB::FromHex(0xe4f1fc)).ScaleRGB(30));
-	m_spotLights[0].SetCutoff(glm::radians(80.0f), 0.7f);
-	
-	m_spotLights[1].SetPosition(glm::vec3(2.5f, 4.0f, -4.5f));
-	m_spotLights[1].SetDirection(glm::vec3(0, -1, -0.1f));
-	m_spotLights[1].SetRadiance(eg::ColorLin(eg::ColorSRGB::FromHex(0xe4f1fc)).ScaleRGB(30));
-	m_spotLights[1].SetCutoff(glm::radians(80.0f), 0.7f);*/
 }
 
 void MainGameState::LoadWorld(std::istream& stream)
@@ -58,6 +47,7 @@ void MainGameState::RunFrame(float dt)
 		entityUpdateArgs.dt = dt;
 		entityUpdateArgs.player = &m_player;
 		entityUpdateArgs.world = &m_world;
+		entityUpdateArgs.invalidateShadows = [this] (const eg::Sphere& sphere) { m_plShadowMapper.Invalidate(sphere); };
 		m_world.Update(entityUpdateArgs);
 	}
 	else
@@ -82,12 +72,17 @@ void MainGameState::RunFrame(float dt)
 	
 	m_renderCtx->meshBatch.End(eg::DC);
 	
+	m_plShadowMapper.UpdateShadowMaps(m_prepareDrawArgs.pointLights, [this] (const PointLightShadowRenderArgs& args)
+	{
+		RenderPointLightShadows(args);
+	});
+	
 	m_renderCtx->renderer.BeginGeometry();
 	
 	m_world.Draw();
 	
 	MeshDrawArgs mDrawArgs;
-	mDrawArgs.editor = false;
+	mDrawArgs.drawMode = MeshDrawMode::Game;
 	m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
 	
 	m_renderCtx->renderer.BeginLighting();
@@ -100,6 +95,16 @@ void MainGameState::RunFrame(float dt)
 	DrawOverlay(dt);
 	
 	m_gameTime += dt;
+}
+
+void MainGameState::RenderPointLightShadows(const PointLightShadowRenderArgs& args)
+{
+	m_world.DrawPointLightShadows(args);
+	
+	MeshDrawArgs mDrawArgs;
+	mDrawArgs.drawMode = MeshDrawMode::PointLightShadow;
+	mDrawArgs.plShadowRenderArgs = &args;
+	m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
 }
 
 void MainGameState::DrawOverlay(float dt)

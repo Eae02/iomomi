@@ -21,7 +21,4 @@ public:
 	void Load(const YAML::Node& node) override;
 	
 	int GetEditorIconIndex() const override;
-
-private:
-	
 };

@@ -2,13 +2,14 @@
 #include "RenderSettings.hpp"
 #include "Renderer.hpp"
 #include "GraphicsCommon.hpp"
+#include "Lighting/PointLightShadowMapper.hpp"
 
 struct
 {
 	eg::Pipeline pipelineDeferredGeom;
-	eg::Pipeline pipelinePoint;
 	eg::Pipeline pipelineEditor;
 	eg::Pipeline pipelineBorderEditor;
+	eg::Pipeline pipelinePLShadow;
 	eg::Buffer materialSettingsBuffer;
 	eg::Texture* diffuseTexture;
 	eg::Texture* normalMapTexture;
@@ -75,6 +76,23 @@ void InitializeWallShader()
 	wr.pipelineBorderEditor = eg::Pipeline::Create(borderPipelineCI);
 	wr.pipelineBorderEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
+	//Creates the point light shadow pipeline
+	eg::PipelineCreateInfo plsPipelineCI;
+	plsPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall-PLShadow.vs.glsl").Handle();
+	plsPipelineCI.geometryShader = eg::GetAsset<eg::ShaderModule>("Shaders/PointLightShadow.gs.glsl").Handle();
+	plsPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/PointLightShadow.fs.glsl").Handle();
+	plsPipelineCI.enableDepthWrite = true;
+	plsPipelineCI.enableDepthTest = true;
+	plsPipelineCI.cullMode = eg::CullMode::None;
+	plsPipelineCI.vertexBindings[0] = { sizeof(WallVertex), eg::InputRate::Vertex };
+	plsPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, (uint32_t)offsetof(WallVertex, position) };
+	wr.pipelinePLShadow = eg::Pipeline::Create(plsPipelineCI);
+	
+	eg::FramebufferFormatHint plsFormatHint;
+	plsFormatHint.sampleCount = 1;
+	plsFormatHint.depthStencilFormat = PointLightShadowMapper::SHADOW_MAP_FORMAT;
+	wr.pipelinePLShadow.FramebufferFormatHint(plsFormatHint);
+	
 	wr.diffuseTexture = &eg::GetAsset<eg::Texture>("Textures/Voxel/Diffuse");
 	wr.normalMapTexture = &eg::GetAsset<eg::Texture>("Textures/Voxel/NormalMap");
 	wr.miscMapTexture = &eg::GetAsset<eg::Texture>("Textures/Voxel/MiscMap");
@@ -103,9 +121,9 @@ void InitializeWallShader()
 static void OnShutdown()
 {
 	wr.pipelineDeferredGeom.Destroy();
-	wr.pipelinePoint.Destroy();
 	wr.pipelineEditor.Destroy();
 	wr.pipelineBorderEditor.Destroy();
+	wr.pipelinePLShadow.Destroy();
 	wr.materialSettingsBuffer.Destroy();
 	wr.gameDescriptorSet.Destroy();
 	wr.editorDescriptorSet.Destroy();
@@ -124,22 +142,25 @@ struct LightData
 };
 #pragma pack(pop)
 
-void DrawWalls(const std::function<void()>& drawCallback)
+void BindWallShaderGame()
 {
 	eg::DC.BindPipeline(wr.pipelineDeferredGeom);
 	
 	eg::DC.BindDescriptorSet(wr.gameDescriptorSet);
-	
-	drawCallback();
 }
 
-void DrawWallsEditor(const std::function<void()>& drawCallback)
+void BindWallShaderEditor()
 {
 	eg::DC.BindPipeline(wr.pipelineEditor);
 	
 	eg::DC.BindDescriptorSet(wr.editorDescriptorSet);
+}
+
+void BindWallShaderPointLightShadow(const PointLightShadowRenderArgs& renderArgs)
+{
+	eg::DC.BindPipeline(wr.pipelinePLShadow);
 	
-	drawCallback();
+	eg::DC.BindUniformBuffer(renderArgs.matricesBuffer, 0, 0, 0, PointLightShadowMapper::BUFFER_SIZE);
 }
 
 void DrawWallBordersEditor(eg::BufferRef vertexBuffer, uint32_t numVertices)

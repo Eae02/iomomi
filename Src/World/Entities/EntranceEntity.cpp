@@ -172,12 +172,20 @@ void EntranceEntity::Update(const UpdateArgs& args)
 	else
 		m_timeBeforeClose = 0.5f;
 	
+	float oldOpenProgress = m_doorOpenProgress;
+	
 	constexpr float TRANSITION_TIME = 0.2f;
 	const float progressDelta = args.dt / TRANSITION_TIME;
 	if (m_timeBeforeClose > 0)
 		m_doorOpenProgress = std::min(m_doorOpenProgress + progressDelta, 1.0f);
 	else
 		m_doorOpenProgress = std::max(m_doorOpenProgress - progressDelta, 0.0f);
+	
+	if (std::abs(m_doorOpenProgress - oldOpenProgress) > 1E-6f && args.invalidateShadows)
+	{
+		constexpr float DOOR_RADIUS = 1.5f;
+		args.invalidateShadows(eg::Sphere(Position(), DOOR_RADIUS));
+	}
 }
 
 void EntranceEntity::CalcClipping(ClippingArgs& args) const

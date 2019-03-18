@@ -2,9 +2,10 @@
 
 void PointLightEntity::InitDrawData(PointLightDrawData& data) const
 {
-	data.position = Position();
-	data.radiance = Radiance();
-	data.range = Range();
+	data.pc.position = Position();
+	data.pc.radiance = Radiance();
+	data.pc.range = Range();
+	data.instanceID = InstanceID();
 }
 
 void PointLightEntity::EditorRenderSettings()

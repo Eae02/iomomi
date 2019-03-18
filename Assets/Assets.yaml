@@ -2,6 +2,7 @@ assets:
   - name: Shaders/ImGui.vs.glsl
   - name: Shaders/ImGui.fs.glsl
   - name: Shaders/Common3D.vs.glsl
+  - name: Shaders/Common3D-PLShadow.vs.glsl
   - name: Shaders/GravityCorner.fs.glsl
   - name: Shaders/GravityCorner-Editor.fs.glsl
   - name: Shaders/Primitive.vs.glsl
@@ -15,11 +16,14 @@ assets:
   - name: Shaders/Wall-Editor.fs.glsl
   - name: Shaders/Wall-Border.vs.glsl
   - name: Shaders/Wall-Border.fs.glsl
+  - name: Shaders/Wall-PLShadow.vs.glsl
   - name: Shaders/DeferredBase.fs.glsl
   - name: Shaders/SpotLight.vs.glsl
   - name: Shaders/SpotLight.fs.glsl
   - name: Shaders/PointLight.vs.glsl
   - name: Shaders/PointLight.fs.glsl
+  - name: Shaders/PointLightShadow.gs.glsl
+  - name: Shaders/PointLightShadow.fs.glsl
   - name: Models/GravityCornerConvex.obj
   - name: Models/EnterRoom.obj
   - name: Models/EditorExit.obj

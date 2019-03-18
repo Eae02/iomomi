@@ -17,7 +17,7 @@ public:
 	
 	void End();
 	
-	static constexpr eg::Format DEPTH_FORMAT = eg::Format::Depth16;
+	static constexpr eg::Format DEPTH_FORMAT = eg::Format::Depth32;
 	static constexpr eg::Format LIGHT_COLOR_FORMAT = eg::Format::R16G16B16A16_Float;
 	
 	static const eg::FramebufferFormatHint GEOMETRY_FB_FORMAT;
@@ -35,6 +35,7 @@ private:
 	eg::Framebuffer m_lightOutFramebuffer;
 	
 	eg::Sampler m_attachmentSampler;
+	eg::Sampler m_shadowMapSampler;
 	
 	eg::Pipeline m_postPipeline;
 	eg::Pipeline m_ambientPipeline;

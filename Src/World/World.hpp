@@ -58,6 +58,7 @@ public:
 	
 	void Draw();
 	void DrawEditor();
+	void DrawPointLightShadows(const struct PointLightShadowRenderArgs& renderArgs);
 	
 	void CalcClipping(ClippingArgs& args) const;
 	

@@ -51,14 +51,29 @@ size_t GravityCornerMaterial::PipelineHash() const
 	return typeid(GravityCornerMaterial).hash_code();
 }
 
-void GravityCornerMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const
+inline static eg::PipelineRef GetPipeline(const MeshDrawArgs& drawArgs)
 {
-	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
-	cmdCtx.BindPipeline(mDrawArgs->editor ? gravityCornerPipelineEditor : gravityCornerPipelineGame);
-	cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+	switch (drawArgs.drawMode)
+	{
+	case MeshDrawMode::Game: return gravityCornerPipelineGame;
+	case MeshDrawMode::Editor: return gravityCornerPipelineEditor;
+	case MeshDrawMode::PointLightShadow: return eg::PipelineRef();
+	}
+	EG_UNREACHABLE
 }
 
-void GravityCornerMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
+bool GravityCornerMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
-	
+	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
+	eg::PipelineRef pipeline = GetPipeline(*mDrawArgs);
+	if (pipeline.handle == nullptr)
+		return false;
+	cmdCtx.BindPipeline(pipeline);
+	cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+	return true;
+}
+
+bool GravityCornerMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
+{
+	return true;
 }
