@@ -41,15 +41,11 @@ public:
 	}
 	
 private:
-	static constexpr float HEIGHT = 1.65f;
-	static constexpr float WIDTH = 0.8f;
-	static constexpr float EYE_HEIGHT = HEIGHT * 0.75f;
+	Dir m_down = Dir::NegY;
 	
 	bool m_onGround = false;
 	
-	Dir m_down = Dir::NegY;
-	const GravityCorner* m_currentCorner = nullptr;
-	
+	bool m_gravityTransitionActive = false;
 	float m_transitionTime;
 	glm::vec3 m_oldEyePosition;
 	glm::vec3 m_newPosition;

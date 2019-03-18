@@ -2,25 +2,30 @@
 
 #include <imgui.h>
 
-const float WALK_SPEED = 4.0f;
-const float ACCEL_TIME = 0.1f;
-const float DEACCEL_TIME = 0.05f;
-const float GRAVITY = 20;
-const float JUMP_HEIGHT = 1.1f;
-const float FALLING_GRAVITY_RAMP = 0.1f;
-const float MAX_VERTICAL_SPEED = 100;
+//Constants related to player physics
+static constexpr float WALK_SPEED = 4.0f;
+static constexpr float ACCEL_TIME = 0.1f;
+static constexpr float DEACCEL_TIME = 0.05f;
+static constexpr float GRAVITY = 20;
+static constexpr float JUMP_HEIGHT = 1.1f;
+static constexpr float FALLING_GRAVITY_RAMP = 0.1f;
+static constexpr float MAX_VERTICAL_SPEED = 100;
 
-const float JUMP_ACCEL = std::sqrt(2.0f * JUMP_HEIGHT * GRAVITY);
-const float ACCEL_AMOUNT = WALK_SPEED / ACCEL_TIME;
-const float DEACCEL_AMOUNT = WALK_SPEED / DEACCEL_TIME;
+//Constants related to player size
+static constexpr float HEIGHT = 1.65f;
+static constexpr float WIDTH = 0.8f;
+static constexpr float EYE_HEIGHT = HEIGHT * 0.75f;
+
+//Constants which derive from previous
+static const float JUMP_ACCEL = std::sqrt(2.0f * JUMP_HEIGHT * GRAVITY);
+static const float ACCEL_AMOUNT = WALK_SPEED / ACCEL_TIME;
+static constexpr float DEACCEL_AMOUNT = WALK_SPEED / DEACCEL_TIME;
+static constexpr float EYE_OFFSET = EYE_HEIGHT - HEIGHT / 2;
 
 Player::Player()
-	: m_position(1, 2, 1), m_velocity(0.0f)
-{
-	
-}
+	: m_position(1, 2, 1), m_velocity(0.0f) { }
 
-const glm::vec3 leftDirs[6] =
+static const glm::vec3 leftDirs[6] =
 {
 	{ 0, 1, 0 },
 	{ 0, 1, 0 },
@@ -45,11 +50,11 @@ inline glm::quat GetRotation(float yaw, float pitch, Dir down)
 
 void Player::Update(World& world, float dt)
 {
-	constexpr float EYE_OFFSET = EYE_HEIGHT - HEIGHT / 2;
+	const glm::vec3 up = -DirectionVector(m_down);
 	
-	glm::vec3 up = -DirectionVector(m_down);
-	
-	if (m_currentCorner != nullptr)
+	//Updates the gravity switch transition.
+	//If this is playing remaining update logic will be skipped!
+	if (m_gravityTransitionActive)
 	{
 		constexpr float TRANSITION_DURATION = 0.2f;
 		m_transitionTime += dt / TRANSITION_DURATION;
@@ -58,7 +63,7 @@ void Player::Update(World& world, float dt)
 		{
 			m_position = m_newPosition;
 			m_rotation = m_newRotation;
-			m_currentCorner = nullptr;
+			m_gravityTransitionActive = false;
 		}
 		else
 		{
@@ -71,15 +76,14 @@ void Player::Update(World& world, float dt)
 	
 	const float MOUSE_SENSITIVITY = -0.005f;
 	
-	glm::mat3 oriRotationMatrix(leftDirs[(int)m_down], up, glm::cross(leftDirs[(int)m_down], up));
-	
 	//Updates the camera's rotation
 	m_rotationYaw += eg::CursorDeltaX() * MOUSE_SENSITIVITY;
 	m_rotationPitch = glm::clamp(m_rotationPitch + eg::CursorDeltaY() * MOUSE_SENSITIVITY, -eg::HALF_PI * 0.95f, eg::HALF_PI * 0.95f);
 	
 	m_rotation = GetRotation(m_rotationYaw, m_rotationPitch, m_down);
 	
-	//Constructs the forward and right movement vectors
+	//Constructs the forward and right movement vectors.
+	//These, along with up, are the basis vectors for local space.
 	auto GetDirVector = [&] (const glm::vec3& v)
 	{
 		glm::vec3 v1 = m_rotation * v;
@@ -88,7 +92,7 @@ void Player::Update(World& world, float dt)
 	const glm::vec3 forward = GetDirVector(glm::vec3(0, 0, -1));
 	const glm::vec3 right = GetDirVector(glm::vec3(1, 0, 0));
 	
-	//Changes the basis for the velocity vector to local space
+	//Finds the velocity vector in local space
 	float localVelVertical = glm::dot(up, m_velocity);
 	glm::vec2 localVelPlane(glm::dot(forward, m_velocity), glm::dot(right, m_velocity));
 	glm::vec2 localAccPlane(0.0f);
@@ -117,7 +121,7 @@ void Player::Update(World& world, float dt)
 	{
 		localAccPlane += glm::vec2(1, 0);
 	}
-	else //if (moveBack)
+	else //moveBack must be true
 	{
 		localAccPlane -= glm::vec2(1, 0);
 	}
@@ -141,12 +145,12 @@ void Player::Update(World& world, float dt)
 	{
 		localAccPlane -= glm::vec2(0, 1);
 	}
-	else //if (moveRight)
+	else //moveRight must be true
 	{
 		localAccPlane += glm::vec2(0, 1);
 	}
 	
-	float accelMag = glm::length(localAccPlane);
+	const float accelMag = glm::length(localAccPlane);
 	if (accelMag > 1E-6f)
 	{
 		localAccPlane *= ACCEL_AMOUNT / accelMag;
@@ -160,13 +164,13 @@ void Player::Update(World& world, float dt)
 	}
 	
 	//Caps the local velocity to the walking speed
-	float speed = glm::length(localVelPlane);
+	const float speed = glm::length(localVelPlane);
 	if (speed > WALK_SPEED)
 	{
 		localVelPlane *= WALK_SPEED / speed;
 	}
 	
-	//Updates vertical velocity.
+	//Updates vertical velocity
 	if (eg::IsButtonDown(eg::Button::Space) && m_onGround)
 	{
 		localVelVertical = JUMP_ACCEL;
@@ -179,7 +183,7 @@ void Player::Update(World& world, float dt)
 		localVelVertical = std::max(localVelVertical - gravity * dt, -MAX_VERTICAL_SPEED);
 	}
 	
-	//Reconstructs the world velocity vector.
+	//Reconstructs the world velocity vector
 	glm::vec3 velocityXZ = localVelPlane.x * forward + localVelPlane.y * right;
 	glm::vec3 velocityY = localVelVertical * up;
 	
@@ -190,6 +194,7 @@ void Player::Update(World& world, float dt)
 	
 	glm::vec3 move = m_velocity * dt;
 	
+	//Checks for intersections with gravity corners along the move vector
 	if (m_onGround)
 	{
 		ClippingArgs clippingArgs;
@@ -198,9 +203,14 @@ void Player::Update(World& world, float dt)
 		clippingArgs.aabbMax = m_position + radius;
 		if (const GravityCorner* corner = world.FindGravityCorner(clippingArgs, m_down))
 		{
+			//A gravity corner was found, this code begins transitioning to another gravity
+			
 			const Dir newDown = corner->down1 == m_down ? corner->down2 : corner->down1;
 			const glm::vec3 newUpVec = -DirectionVector(newDown);
+			const glm::quat rotationDiff = glm::angleAxis(eg::HALF_PI, glm::cross(up, newUpVec));
 			
+			//Finds the new position of the player after the transition. This is done by transforming 
+			// the player's position to corner local space, swapping x and y, and transforming back.
 			const glm::mat3 cornerRotation = corner->MakeRotationMatrix();
 			glm::vec3 cornerL = glm::transpose(cornerRotation) * (m_position - corner->position);
 			if (corner->down2 == m_down)
@@ -210,28 +220,28 @@ void Player::Update(World& world, float dt)
 			std::swap(cornerL.x, cornerL.y);
 			m_newPosition = (cornerRotation * cornerL) + corner->position + newUpVec * 0.001f;
 			
-			const glm::quat rotationDiff = glm::angleAxis(eg::HALF_PI, glm::cross(up, newUpVec));
-			
+			//Converts the camera's yaw and pitch to the new gravity
 			glm::vec3 f = glm::inverse(GetDownCorrection(newDown)) * (rotationDiff * (m_rotation * glm::vec3(0, 0, -1)));
 			glm::vec2 f2 = glm::normalize(glm::vec2(f.x, f.z));
-			
 			m_rotationPitch = std::asin(f.y);
 			m_rotationYaw = std::atan2(-f2.x, -f2.y);
 			
+			//Sets up the old and new rotations to be interpolated between in the transition
 			m_oldRotation = m_rotation;
 			m_newRotation = GetRotation(m_rotationYaw, m_rotationPitch, newDown);
 			
+			//Rotates the velocity vector and reassigns some other stuff
 			m_velocity = rotationDiff * m_velocity;
-			m_currentCorner = corner;
 			m_down = newDown;
 			move = { };
 			m_oldEyePosition = m_eyePosition;
+			m_gravityTransitionActive = true;
 			m_transitionTime = 0;
 		}
 	}
 	
+	//Clipping
 	m_onGround = false;
-	
 	constexpr int MAX_CLIP_ITERATIONS = 10;
 	for (int i = 0; i < MAX_CLIP_ITERATIONS; i++)
 	{
@@ -272,7 +282,7 @@ void Player::Update(World& world, float dt)
 
 void Player::GetViewMatrix(glm::mat4& matrixOut, glm::mat4& inverseMatrixOut) const
 {
-	glm::mat4 rotationMatrix = glm::mat4_cast(m_rotation);
+	const glm::mat4 rotationMatrix = glm::mat4_cast(m_rotation);
 	matrixOut = glm::transpose(rotationMatrix) * glm::translate(glm::mat4(1.0f), -m_eyePosition);
 	inverseMatrixOut = glm::translate(glm::mat4(1.0f), m_eyePosition) * rotationMatrix;
 }
@@ -281,8 +291,8 @@ void Player::DebugDraw()
 {
 	ImGui::Text("Position: %.2f, %.2f, %.2f", m_eyePosition.x, m_eyePosition.y, m_eyePosition.z);
 	
-	glm::vec3 forward = m_rotation * glm::vec3(0, 0, -1);
-	glm::vec3 absForward = glm::abs(forward);
+	const glm::vec3 forward = m_rotation * glm::vec3(0, 0, -1);
+	const glm::vec3 absForward = glm::abs(forward);
 	int maxDir = 0;
 	for (int i = 1; i < 3; i++)
 	{
