@@ -148,39 +148,40 @@ void EntranceEntity::Load(const YAML::Node& node)
 	m_type = node["exit"].as<bool>(true) ? Type::Exit : Type::Entrance;
 }
 
+static constexpr float DOOR_OPEN_DIST = 2.5f; //Open the door when the player is closer than this distance
+static constexpr float DOOR_CLOSE_DELAY = 0.5f; //Time in seconds before the door closes after being open
+static constexpr float OPEN_TRANSITION_TIME = 0.2f; //Time in seconds for the open transition
+static constexpr float CLOSE_TRANSITION_TIME = 0.3f; //Time in seconds for the close transition
+
 void EntranceEntity::Update(const UpdateArgs& args)
 {
 	if (args.player == nullptr)
 		return;
 	
-	auto PlayerIsCloseTo = [&] (const glm::vec3& pos)
-	{
-		constexpr float MAX_DIST = 2.5f;
-		return glm::distance2(args.player->Position(), pos) < MAX_DIST * MAX_DIST;
-	};
-	
-	glm::vec3 dirToPlayer = args.player->Position() - Position();
+	glm::vec3 toPlayer = args.player->Position() - Position();
 	glm::vec3 desiredDirToPlayer = DirectionVector(m_direction) * (m_type == Type::Entrance ? 1 : -1);
 	
-	bool doorShouldBeOpen = PlayerIsCloseTo(Position()) && glm::dot(dirToPlayer, desiredDirToPlayer) > 0;
+	const bool open =
+		glm::length2(toPlayer) < DOOR_OPEN_DIST * DOOR_OPEN_DIST && //Player is close to the door
+		glm::dot(toPlayer, desiredDirToPlayer) > 0 && //Player is on the right side of the door
+		((int)args.player->CurrentDown() / 2) != ((int)m_direction / 2); //Player is not "falling into" the door
 	
-	if (((int)args.player->CurrentDown() / 2) == ((int)m_direction / 2))
-		doorShouldBeOpen = false;
+	m_timeBeforeClose = open ? DOOR_CLOSE_DELAY : std::max(m_timeBeforeClose - args.dt, 0.0f);
 	
-	if (!doorShouldBeOpen)
-		m_timeBeforeClose = std::max(m_timeBeforeClose - args.dt, 0.0f);
-	else
-		m_timeBeforeClose = 0.5f;
-	
-	float oldOpenProgress = m_doorOpenProgress;
-	
-	constexpr float TRANSITION_TIME = 0.2f;
-	const float progressDelta = args.dt / TRANSITION_TIME;
+	//Updates the door open progress
+	const float oldOpenProgress = m_doorOpenProgress;
 	if (m_timeBeforeClose > 0)
-		m_doorOpenProgress = std::min(m_doorOpenProgress + progressDelta, 1.0f);
+	{
+		//Door should be open
+		m_doorOpenProgress = std::min(m_doorOpenProgress + args.dt / OPEN_TRANSITION_TIME, 1.0f);
+	}
 	else
-		m_doorOpenProgress = std::max(m_doorOpenProgress - progressDelta, 0.0f);
+	{
+		//Door should be closed
+		m_doorOpenProgress = std::max(m_doorOpenProgress - args.dt / CLOSE_TRANSITION_TIME, 0.0f);
+	}
 	
+	//Invalidates shadows if the open progress changed
 	if (std::abs(m_doorOpenProgress - oldOpenProgress) > 1E-6f && args.invalidateShadows)
 	{
 		constexpr float DOOR_RADIUS = 1.5f;
