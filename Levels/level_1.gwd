@@ -3,25 +3,25 @@ voxels:
   - reg: -1 -1 -1
     data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
   - reg: -1 -1 0
-    data: !!binary "eNrtzbENADAMAkHYIPtPmyzgLoWLO+lFSQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAZm1fOdP6/+MCUs8A/Q=="
+    data: !!binary "eNrtzbENADAMAkHYIPtPm4zgIoWLO+lFSQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAJm1fOdP1/8cFx/8Bew=="
   - reg: -1 0 -1
-    data: !!binary "eNrtzkERADAMw7CMQfmj3RVF+pAI2AkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHDFW8not/q7UO8DUPIB024AWg=="
+    data: !!binary "eNrt0qERACAMBMEPFaT/aoHB0UDMrvm4M0kAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIApq46k/9Wf6ucePfUP9foADNmcyQEO"
   - reg: -1 0 0
-    data: !!binary "eNrtzbENwCAMRUGzQfaflthlIiIQUkRxV/Aq8yMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAICnFu0W16v5btT+5H4N5t2ov+x/tP5bLgBn60fVA9Q="
+    data: !!binary "eNrtzkEKgEAMA8DUF/j/17qyirAqCCJ4mDk0t6QJAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwmlJN5lOu90Xaf7hf2faGTGtJ79v/qQ/2q+/l6B//ud6vnrlLAP5tAeGCBGg="
   - reg: 0 -1 -1
     data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
   - reg: 0 -1 0
-    data: !!binary "eNrt1bEJADAMA0Fpg+w/bbKAy4CLOzAuv1QCAHu0fZczfX0AsP/6AGD/9QHA/usDgP3XBwD7rw8AAAAAAAAAAAAAAAAAAAAAAAAA/HIBM2wF6Q=="
+    data: !!binary "eNrt1TENADAMA0GbQfmjbSFkqbLcSVFGj58AwJ6273Km3z4A6L99ANB/+wCg//YBQP/tA4D+6z8AAAAAAAAAAAAAAAAAAAAAAAAA8MsFVAII3Q=="
   - reg: 0 0 -1
-    data: !!binary "eNrt2dEJwCAQRMG1g/RfbRBJC1nwZhpY/x6cScfakif2S/v7CfV9AIY5+ev2d/a+/gOgv/qv/wD8E8AU+2N/Vfv/fYAAMPAAoH/6D4D+29d/AAAAAAAAAAAAAAAAAAAAAAAAAACAS7wxWAIO"
+    data: !!binary "eNrt2TkOxCAQRcHGJ+D+p7XYEpPTkqlKGDn5Dka8wBFnlCaifs+wn7TfHp3b39+n7wPwe/2yr+scGTren7V33b7+A6D/+q//AGT0v9/+Ja+/t+1v3x3Gj5r3dyj6D3BD/ZP7Y1//AUi47p/Zn3nGc7h/9lP39R8AAAAAAAAAAAAAAAAAAAAAAAAAALjNC3bABbY="
   - reg: 0 0 0
-    data: !!binary "eNrt1jkOgDAMRUH7Btz/tCyiJAiEHIiYadzlly+Zq5jy4MaDGxfl7/dj32vdLvsnd3vv9gXg20r6Fy/3d6h9/QdA//Vf/wHo9QFYetG41f2zX7Cft/ebV/8B9L+wP/b1HwD9t6//AAAAAAAAAAAAAAAAAAAAAAAAAAAAQ5sB7nsXBQ=="
+    data: !!binary "eNrt1kEKwjAUBND/ewLvf1pbiGDFhMaYqvgelFl0MaGLTjI3ccknGQMZB+Xf90fp2+f2an1ePldn/913eDxPsz9qCcB3m7J/8eH9/al++w+A/bf/9h+Asy4A615Ucvb+6a/3jtxLOvub9yD7D2D/J+2PfvsPwJmWsjuVzKX87ztT/1h/NvKt/bf9P9C767f/AAAAAAAAAAAAAAAAAAAAAAAAAAAATVdanxmS"
 entities:
   - type: Entrance
     pos:
       - 2.5
       - 1.5
-      - -1
+      - -3
     dir: 5
     exit: false
   - type: Entrance
@@ -35,21 +35,21 @@ entities:
     pos:
       - 2.5
       - 2
-      - 9.10000038
+      - 8
     range: 71.5611649
     intensity: 20
     color:
-      - 1
-      - 1
+      - 0.897674441
+      - 0.961628556
       - 1
   - type: PointLight
     pos:
       - 2.5
       - 2
-      - 1
+      - 0
     range: 71.5611649
     intensity: 20
     color:
-      - 1
-      - 1
+      - 0.898039222
+      - 0.960784316
       - 1

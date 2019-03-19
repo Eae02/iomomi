@@ -83,7 +83,7 @@ void InitializeWallShader()
 	plsPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/PointLightShadow.fs.glsl").Handle();
 	plsPipelineCI.enableDepthWrite = true;
 	plsPipelineCI.enableDepthTest = true;
-	plsPipelineCI.cullMode = eg::CullMode::None;
+	plsPipelineCI.cullMode = eg::CullMode::Front;
 	plsPipelineCI.vertexBindings[0] = { sizeof(WallVertex), eg::InputRate::Vertex };
 	plsPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, (uint32_t)offsetof(WallVertex, position) };
 	wr.pipelinePLShadow = eg::Pipeline::Create(plsPipelineCI);

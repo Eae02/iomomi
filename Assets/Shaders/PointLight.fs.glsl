@@ -23,7 +23,7 @@ vec3 sampleOffsetDirections[20] = vec3[]
 
 float sampleShadowMap(vec3 sampleVec)
 {
-	return textureLod(shadowMap, sampleVec, 0).r * pc.range + 0.01;
+	return textureLod(shadowMap, sampleVec, 0).r * pc.range;
 }
 
 float getShadowFactor(vec3 worldPosition)

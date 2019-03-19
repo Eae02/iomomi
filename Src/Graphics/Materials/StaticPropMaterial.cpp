@@ -95,7 +95,7 @@ static void OnInit()
 	plsPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/PointLightShadow.fs.glsl").Handle();
 	plsPipelineCI.enableDepthWrite = true;
 	plsPipelineCI.enableDepthTest = true;
-	plsPipelineCI.cullMode = eg::CullMode::None;
+	plsPipelineCI.cullMode = eg::CullMode::Front;
 	plsPipelineCI.frontFaceCCW = true;
 	plsPipelineCI.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
 	plsPipelineCI.vertexBindings[1] = { sizeof(float) * 16, eg::InputRate::Instance };
