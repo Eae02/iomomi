@@ -1,9 +1,6 @@
 [submodule "Deps/yaml-cpp"]
 	path = Deps/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
-[submodule "Deps/json"]
-	path = Deps/json
-	url = https://github.com/nlohmann/json.git
 [submodule "Deps/imgui"]
 	path = Deps/imgui
 	url = https://github.com/ocornut/imgui.git
