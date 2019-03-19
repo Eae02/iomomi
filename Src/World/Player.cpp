@@ -75,10 +75,14 @@ void Player::Update(World& world, float dt)
 	}
 	
 	const float MOUSE_SENSITIVITY = -0.005f;
+	const float GAME_PAD_AXIS_SENSITIVITY = 0.035f;
+	
+	glm::vec2 rotationDelta = glm::vec2(eg::CursorPosDelta()) * MOUSE_SENSITIVITY;
+	rotationDelta -= eg::InputState::Current().RightAnalogValue() * GAME_PAD_AXIS_SENSITIVITY;
 	
 	//Updates the camera's rotation
-	m_rotationYaw += eg::CursorDeltaX() * MOUSE_SENSITIVITY;
-	m_rotationPitch = glm::clamp(m_rotationPitch + eg::CursorDeltaY() * MOUSE_SENSITIVITY, -eg::HALF_PI * 0.95f, eg::HALF_PI * 0.95f);
+	m_rotationYaw += rotationDelta.x;
+	m_rotationPitch = glm::clamp(m_rotationPitch + rotationDelta.y, -eg::HALF_PI * 0.95f, eg::HALF_PI * 0.95f);
 	
 	m_rotation = GetRotation(m_rotationYaw, m_rotationPitch, m_down);
 	
@@ -95,14 +99,14 @@ void Player::Update(World& world, float dt)
 	//Finds the velocity vector in local space
 	float localVelVertical = glm::dot(up, m_velocity);
 	glm::vec2 localVelPlane(glm::dot(forward, m_velocity), glm::dot(right, m_velocity));
-	glm::vec2 localAccPlane(0.0f);
+	glm::vec2 localAccPlane(-eg::AxisValue(eg::ControllerAxis::LeftY), eg::AxisValue(eg::ControllerAxis::LeftX));
 	
-	const bool moveForward = eg::IsButtonDown(eg::Button::W);
-	const bool moveBack =    eg::IsButtonDown(eg::Button::S);
-	const bool moveLeft =    eg::IsButtonDown(eg::Button::A);
-	const bool moveRight =   eg::IsButtonDown(eg::Button::D);
+	const bool moveForward = eg::IsButtonDown(eg::Button::W) || eg::IsButtonDown(eg::Button::CtrlrDPadUp);
+	const bool moveBack =    eg::IsButtonDown(eg::Button::S) || eg::IsButtonDown(eg::Button::CtrlrDPadDown);
+	const bool moveLeft =    eg::IsButtonDown(eg::Button::A) || eg::IsButtonDown(eg::Button::CtrlrDPadLeft);
+	const bool moveRight =   eg::IsButtonDown(eg::Button::D) || eg::IsButtonDown(eg::Button::CtrlrDPadRight);
 	
-	if (moveForward == moveBack)
+	if (moveForward == moveBack && std::abs(localAccPlane.x) < 1E-4f)
 	{
 		if (localVelPlane.x < 0)
 		{
@@ -121,12 +125,12 @@ void Player::Update(World& world, float dt)
 	{
 		localAccPlane += glm::vec2(1, 0);
 	}
-	else //moveBack must be true
+	else if (moveBack)
 	{
 		localAccPlane -= glm::vec2(1, 0);
 	}
 	
-	if (moveRight == moveLeft)
+	if (moveRight == moveLeft && std::abs(localAccPlane.y) < 1E-4f)
 	{
 		if (localVelPlane.y < 0)
 		{
@@ -145,7 +149,7 @@ void Player::Update(World& world, float dt)
 	{
 		localAccPlane -= glm::vec2(0, 1);
 	}
-	else //moveRight must be true
+	else if (moveRight)
 	{
 		localAccPlane += glm::vec2(0, 1);
 	}
@@ -171,7 +175,7 @@ void Player::Update(World& world, float dt)
 	}
 	
 	//Updates vertical velocity
-	if (eg::IsButtonDown(eg::Button::Space) && m_onGround)
+	if ((eg::IsButtonDown(eg::Button::Space) || eg::IsButtonDown(eg::Button::CtrlrA)) && m_onGround)
 	{
 		localVelVertical = JUMP_ACCEL;
 	}
