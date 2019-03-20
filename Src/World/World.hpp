@@ -7,6 +7,7 @@
 #include "Entities/Entity.hpp"
 #include "Entities/SpotLightEntity.hpp"
 #include "Entities/PointLightEntity.hpp"
+#include "Entities/GravitySwitchEntity.hpp"
 #include "../Graphics/Vertex.hpp"
 
 struct WallVertex;
@@ -67,6 +68,8 @@ public:
 	bool IsCorner(const glm::ivec3& cornerPos, Dir cornerDir) const;
 	
 	const GravityCorner* FindGravityCorner(const ClippingArgs& args, Dir currentDown) const;
+	
+	std::shared_ptr<GravitySwitchEntity> FindGravitySwitch(const eg::AABB& aabb, Dir currentDown) const;
 	
 	PickWallResult PickWall(const eg::Ray& ray) const;
 	
@@ -131,6 +134,7 @@ private:
 	std::vector<std::shared_ptr<Entity>> m_entities;
 	std::vector<std::weak_ptr<SpotLightEntity>> m_spotLights;
 	std::vector<std::weak_ptr<PointLightEntity>> m_pointLights;
+	std::vector<std::weak_ptr<GravitySwitchEntity>> m_gravitySwitchEntities;
 	std::vector<std::weak_ptr<Entity::IUpdatable>> m_updatables;
 	std::vector<std::weak_ptr<Entity::IDrawable>> m_drawables;
 	std::vector<std::weak_ptr<Entity::ICollidable>> m_collidables;

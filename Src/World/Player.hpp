@@ -45,7 +45,14 @@ private:
 	
 	bool m_onGround = false;
 	
-	bool m_gravityTransitionActive = false;
+	enum class TransitionMode
+	{
+		None,
+		Corner,
+		Fall
+	};
+	
+	TransitionMode m_gravityTransitionMode = TransitionMode::None;
 	float m_transitionTime;
 	glm::vec3 m_oldEyePosition;
 	glm::vec3 m_newPosition;

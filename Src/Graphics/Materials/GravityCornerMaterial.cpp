@@ -15,6 +15,7 @@ static void OnInit()
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/GravityCorner.fs.glsl").Handle();
 	pipelineCI.enableDepthWrite = true;
 	pipelineCI.enableDepthTest = true;
+	pipelineCI.frontFaceCCW = true;
 	pipelineCI.cullMode = eg::CullMode::Back;
 	pipelineCI.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
 	pipelineCI.vertexBindings[1] = { sizeof(float) * 16, eg::InputRate::Instance };

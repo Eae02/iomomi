@@ -52,16 +52,18 @@ public:
 		m_position = position;
 	}
 	
-	std::string_view TypeName() const
-	{
-		return m_typeName;
-	}
-	
 	struct EditorInteractArgs
 	{
 		const class World* world;
 		eg::Ray viewRay;
 	};
+	
+	const class EntityType* GetType() const
+	{
+		return m_type;
+	}
+	
+	inline std::shared_ptr<Entity> Clone() const;
 	
 	virtual int GetEditorIconIndex() const;
 	
@@ -85,7 +87,7 @@ private:
 	friend class EntityType;
 	
 	glm::vec3 m_position;
-	std::string_view m_typeName;
+	const class EntityType* m_type;
 };
 
 class EntityType
@@ -97,15 +99,27 @@ public:
 		EntityType type;
 		type.m_name = std::move(name); 
 		type.m_displayName = std::move(displayName);
-		type.m_createInstance = [] () -> std::shared_ptr<Entity> { return std::make_shared<T>(); };
+		type.m_createInstance = [] () -> std::shared_ptr<Entity>
+		{
+			return std::make_shared<T>();
+		};
+		type.m_clone = [] (const Entity& entity) -> std::shared_ptr<Entity>
+		{
+			return std::make_shared<T>(static_cast<const T&>(entity));
+		};
 		return type;
 	}
 	
 	std::shared_ptr<Entity> CreateInstance() const
 	{
 		std::shared_ptr<Entity> instance = m_createInstance();
-		instance->m_typeName = m_name;
+		instance->m_type = this;
 		return instance;
+	}
+	
+	std::shared_ptr<Entity> Clone(const Entity& entity) const
+	{
+		return m_clone(entity);
 	}
 	
 	const std::string& Name() const
@@ -122,7 +136,13 @@ private:
 	std::string m_name;
 	std::string m_displayName;
 	std::shared_ptr<Entity> (*m_createInstance)();
+	std::shared_ptr<Entity> (*m_clone)(const Entity&);
 };
+
+inline std::shared_ptr<Entity> Entity::Clone() const
+{
+	return m_type->Clone(*this);
+}
 
 extern std::vector<EntityType> entityTypes;
 

@@ -52,9 +52,11 @@ void Player::Update(World& world, float dt)
 {
 	const glm::vec3 up = -DirectionVector(m_down);
 	
+	auto TransitionInterpol = [&] { return glm::smoothstep(0.0f, 1.0f, m_transitionTime); };
+	
 	//Updates the gravity switch transition.
 	//If this is playing remaining update logic will be skipped!
-	if (m_gravityTransitionActive)
+	if (m_gravityTransitionMode == TransitionMode::Corner)
 	{
 		constexpr float TRANSITION_DURATION = 0.2f;
 		m_transitionTime += dt / TRANSITION_DURATION;
@@ -63,28 +65,45 @@ void Player::Update(World& world, float dt)
 		{
 			m_position = m_newPosition;
 			m_rotation = m_newRotation;
-			m_gravityTransitionActive = false;
+			m_gravityTransitionMode = TransitionMode::None;
 		}
 		else
 		{
-			float a = glm::smoothstep(0.0f, 1.0f, m_transitionTime);
-			m_eyePosition = glm::mix(m_oldEyePosition, m_newPosition + up * EYE_OFFSET, a);
-			m_rotation = glm::slerp(m_oldRotation, m_newRotation, a);
+			m_eyePosition = glm::mix(m_oldEyePosition, m_newPosition + up * EYE_OFFSET, TransitionInterpol());
+			m_rotation = glm::slerp(m_oldRotation, m_newRotation, TransitionInterpol());
 			return;
 		}
 	}
 	
-	const float MOUSE_SENSITIVITY = -0.005f;
-	const float GAME_PAD_AXIS_SENSITIVITY = 0.035f;
-	
-	glm::vec2 rotationDelta = glm::vec2(eg::CursorPosDelta()) * MOUSE_SENSITIVITY;
-	rotationDelta -= eg::InputState::Current().RightAnalogValue() * GAME_PAD_AXIS_SENSITIVITY;
-	
-	//Updates the camera's rotation
-	m_rotationYaw += rotationDelta.x;
-	m_rotationPitch = glm::clamp(m_rotationPitch + rotationDelta.y, -eg::HALF_PI * 0.95f, eg::HALF_PI * 0.95f);
-	
-	m_rotation = GetRotation(m_rotationYaw, m_rotationPitch, m_down);
+	if (m_gravityTransitionMode == TransitionMode::None)
+	{
+		const float MOUSE_SENSITIVITY = -0.005f;
+		const float GAME_PAD_AXIS_SENSITIVITY = 0.035f;
+		
+		glm::vec2 rotationDelta = glm::vec2(eg::CursorPosDelta()) * MOUSE_SENSITIVITY;
+		rotationDelta -= eg::InputState::Current().RightAnalogValue() * GAME_PAD_AXIS_SENSITIVITY;
+		
+		//Updates the camera's rotation
+		m_rotationYaw += rotationDelta.x;
+		m_rotationPitch = glm::clamp(m_rotationPitch + rotationDelta.y, -eg::HALF_PI * 0.95f, eg::HALF_PI * 0.95f);
+		
+		m_rotation = GetRotation(m_rotationYaw, m_rotationPitch, m_down);
+	}
+	else if (m_gravityTransitionMode == TransitionMode::Fall)
+	{
+		constexpr float TRANSITION_DURATION = 0.3f;
+		m_transitionTime += dt / TRANSITION_DURATION;
+		
+		if (m_transitionTime > 1.0f)
+		{
+			m_rotation = m_newRotation;
+			m_gravityTransitionMode = TransitionMode::None;
+		}
+		else
+		{
+			m_rotation = glm::slerp(m_oldRotation, m_newRotation, TransitionInterpol());
+		}
+	}
 	
 	//Constructs the forward and right movement vectors.
 	//These, along with up, are the basis vectors for local space.
@@ -101,81 +120,85 @@ void Player::Update(World& world, float dt)
 	glm::vec2 localVelPlane(glm::dot(forward, m_velocity), glm::dot(right, m_velocity));
 	glm::vec2 localAccPlane(-eg::AxisValue(eg::ControllerAxis::LeftY), eg::AxisValue(eg::ControllerAxis::LeftX));
 	
-	const bool moveForward = eg::IsButtonDown(eg::Button::W) || eg::IsButtonDown(eg::Button::CtrlrDPadUp);
-	const bool moveBack =    eg::IsButtonDown(eg::Button::S) || eg::IsButtonDown(eg::Button::CtrlrDPadDown);
-	const bool moveLeft =    eg::IsButtonDown(eg::Button::A) || eg::IsButtonDown(eg::Button::CtrlrDPadLeft);
-	const bool moveRight =   eg::IsButtonDown(eg::Button::D) || eg::IsButtonDown(eg::Button::CtrlrDPadRight);
-	
-	if (moveForward == moveBack && std::abs(localAccPlane.x) < 1E-4f)
+	if (m_gravityTransitionMode == TransitionMode::None)
 	{
-		if (localVelPlane.x < 0)
+		const bool moveForward = eg::IsButtonDown(eg::Button::W) || eg::IsButtonDown(eg::Button::CtrlrDPadUp);
+		const bool moveBack =    eg::IsButtonDown(eg::Button::S) || eg::IsButtonDown(eg::Button::CtrlrDPadDown);
+		const bool moveLeft =    eg::IsButtonDown(eg::Button::A) || eg::IsButtonDown(eg::Button::CtrlrDPadLeft);
+		const bool moveRight =   eg::IsButtonDown(eg::Button::D) || eg::IsButtonDown(eg::Button::CtrlrDPadRight);
+		
+		if (moveForward == moveBack && std::abs(localAccPlane.x) < 1E-4f)
 		{
-			localVelPlane.x += dt * DEACCEL_AMOUNT;
-			if (localVelPlane.x > 0)
-				localVelPlane.x = 0.0f;
-		}
-		if (localVelPlane.x > 0)
-		{
-			localVelPlane.x -= dt * DEACCEL_AMOUNT;
 			if (localVelPlane.x < 0)
-				localVelPlane.x = 0.0f;
+			{
+				localVelPlane.x += dt * DEACCEL_AMOUNT;
+				if (localVelPlane.x > 0)
+					localVelPlane.x = 0.0f;
+			}
+			if (localVelPlane.x > 0)
+			{
+				localVelPlane.x -= dt * DEACCEL_AMOUNT;
+				if (localVelPlane.x < 0)
+					localVelPlane.x = 0.0f;
+			}
 		}
-	}
-	else if (moveForward)
-	{
-		localAccPlane += glm::vec2(1, 0);
-	}
-	else if (moveBack)
-	{
-		localAccPlane -= glm::vec2(1, 0);
-	}
-	
-	if (moveRight == moveLeft && std::abs(localAccPlane.y) < 1E-4f)
-	{
-		if (localVelPlane.y < 0)
+		else if (moveForward)
 		{
-			localVelPlane.y += dt * DEACCEL_AMOUNT;
-			if (localVelPlane.y > 0)
-				localVelPlane.y = 0.0f;
+			localAccPlane += glm::vec2(1, 0);
 		}
-		if (localVelPlane.y > 0)
+		else if (moveBack)
 		{
-			localVelPlane.y -= dt * DEACCEL_AMOUNT;
+			localAccPlane -= glm::vec2(1, 0);
+		}
+		
+		if (moveRight == moveLeft && std::abs(localAccPlane.y) < 1E-4f)
+		{
 			if (localVelPlane.y < 0)
-				localVelPlane.y = 0.0f;
+			{
+				localVelPlane.y += dt * DEACCEL_AMOUNT;
+				if (localVelPlane.y > 0)
+					localVelPlane.y = 0.0f;
+			}
+			if (localVelPlane.y > 0)
+			{
+				localVelPlane.y -= dt * DEACCEL_AMOUNT;
+				if (localVelPlane.y < 0)
+					localVelPlane.y = 0.0f;
+			}
 		}
-	}
-	else if (moveLeft)
-	{
-		localAccPlane -= glm::vec2(0, 1);
-	}
-	else if (moveRight)
-	{
-		localAccPlane += glm::vec2(0, 1);
-	}
-	
-	const float accelMag = glm::length(localAccPlane);
-	if (accelMag > 1E-6f)
-	{
-		localAccPlane *= ACCEL_AMOUNT / accelMag;
+		else if (moveLeft)
+		{
+			localAccPlane -= glm::vec2(0, 1);
+		}
+		else if (moveRight)
+		{
+			localAccPlane += glm::vec2(0, 1);
+		}
 		
-		//Increases the localAccPlane if the player is being accelerated in the opposite direction of it's current
-		// velocity. This makes direction changes snappier.
-		if (glm::dot(localAccPlane, localVelPlane) < 0.0f)
-			localAccPlane *= 4.0f;
+		const float accelMag = glm::length(localAccPlane);
+		if (accelMag > 1E-6f)
+		{
+			localAccPlane *= ACCEL_AMOUNT / accelMag;
+			
+			//Increases the localAccPlane if the player is being accelerated in the opposite direction of it's current
+			// velocity. This makes direction changes snappier.
+			if (glm::dot(localAccPlane, localVelPlane) < 0.0f)
+				localAccPlane *= 4.0f;
+			
+			localVelPlane += localAccPlane * dt;
+		}
 		
-		localVelPlane += localAccPlane * dt;
-	}
-	
-	//Caps the local velocity to the walking speed
-	const float speed = glm::length(localVelPlane);
-	if (speed > WALK_SPEED)
-	{
-		localVelPlane *= WALK_SPEED / speed;
+		//Caps the local velocity to the walking speed
+		const float speed = glm::length(localVelPlane);
+		if (speed > WALK_SPEED)
+		{
+			localVelPlane *= WALK_SPEED / speed;
+		}
 	}
 	
 	//Updates vertical velocity
-	if ((eg::IsButtonDown(eg::Button::Space) || eg::IsButtonDown(eg::Button::CtrlrA)) && m_onGround)
+	if ((eg::IsButtonDown(eg::Button::Space) || eg::IsButtonDown(eg::Button::CtrlrA)) &&
+	    m_gravityTransitionMode == TransitionMode::None && m_onGround)
 	{
 		localVelVertical = JUMP_ACCEL;
 	}
@@ -199,7 +222,7 @@ void Player::Update(World& world, float dt)
 	glm::vec3 move = m_velocity * dt;
 	
 	//Checks for intersections with gravity corners along the move vector
-	if (m_onGround)
+	if (m_gravityTransitionMode == TransitionMode::None && m_onGround)
 	{
 		ClippingArgs clippingArgs;
 		clippingArgs.move = move;
@@ -239,8 +262,35 @@ void Player::Update(World& world, float dt)
 			m_down = newDown;
 			move = { };
 			m_oldEyePosition = m_eyePosition;
-			m_gravityTransitionActive = true;
+			m_gravityTransitionMode = TransitionMode::Corner;
 			m_transitionTime = 0;
+		}
+	}
+	
+	//Checks for gravity switches
+	if (m_gravityTransitionMode == TransitionMode::None && m_onGround)
+	{
+		glm::vec3 feetPos = m_position - up * (HEIGHT / 2);
+		eg::AABB searchAABB(feetPos - radius, feetPos + radius);
+		if (std::shared_ptr<GravitySwitchEntity> gravitySwitch = world.FindGravitySwitch(searchAABB, m_down))
+		{
+			if (eg::IsButtonDown(eg::Button::E) || eg::IsButtonDown(eg::Button::CtrlrX))
+			{
+				Dir newDown = gravitySwitch->Up();
+				
+				m_rotationYaw += eg::PI;
+				m_rotationPitch = -m_rotationPitch;
+				m_oldRotation = m_rotation;
+				m_newRotation = GetRotation(m_rotationYaw, m_rotationPitch, newDown);
+				
+				m_newPosition = m_position - up * 2.0f;
+				m_velocity = glm::vec3(0);
+				m_down = newDown;
+				move = { };
+				m_oldEyePosition = m_eyePosition;
+				m_gravityTransitionMode = TransitionMode::Fall;
+				m_transitionTime = 0;
+			}
 		}
 	}
 	
@@ -282,6 +332,10 @@ void Player::Update(World& world, float dt)
 	}
 	
 	m_eyePosition = m_position + up * EYE_OFFSET;
+	if (m_gravityTransitionMode == TransitionMode::Fall)
+	{
+		m_eyePosition = glm::mix(m_oldEyePosition, m_eyePosition, TransitionInterpol());
+	}
 }
 
 void Player::GetViewMatrix(glm::mat4& matrixOut, glm::mat4& inverseMatrixOut) const

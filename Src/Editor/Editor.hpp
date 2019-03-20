@@ -88,6 +88,7 @@ private:
 	glm::vec3 m_gizmoPosUnaligned;
 	glm::vec3 m_prevGizmoPos;
 	eg::TranslationGizmo m_translationGizmo;
+	bool m_entitiesCloned = false;
 };
 
 extern Editor* editor;

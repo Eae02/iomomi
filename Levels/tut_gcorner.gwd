@@ -1,0 +1,78 @@
+version: 1
+voxels:
+  - reg: -1 -1 -1
+    data: !!binary "eNrt1SEOwDAMA8C4L+j/X7tNChjoYNDuJMvQ0FUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADBvZd2p/XS+etWe20/vp/cOPbgPAH+U/v/03x978H/T/5/++2O/9i9JEAHB"
+  - reg: -1 -1 0
+    data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
+  - reg: -1 0 -1
+    data: !!binary "eNrt1UEKwjAQBdBMTpClW2/q0Y06C9FaLCRK9T0on0KZvyn8UgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgE+LEt1z6gcA+68fAHa899d5O7VbltF5+HJ/23//5ZPM48P7Gzn6f6n9bn9azfuLWcf33vXX7K/xKif2A/zS/pcJu7dl//69f/3Otr2fvf+R+7/aO3F/I/c/cu8X0/4DlDMWMQwg"
+  - reg: -1 0 0
+    data: !!binary "eNrt1aENACAMRcF2AyT7TwrBUYMhGO7Ml880aQQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwkpFT9LqP+63uN/0VnN1ts7lMAPxf/x8AbhofSgIT"
+  - reg: 0 -1 -1
+    data: !!binary "eNrt1TEKwDAMBEGdXuD/vzY4uHSq4EBgplGnK7cKAHgr6erUmDdPt2uc28/az9rb3IP7AKD/+g8A+q//AKD/+g8A+q//APBL3Zn9nTdP92R/5/t7J2tvc/UfAAAAAAAAAAAAAAAAAAAAAAAAAD51AeB6BS0="
+  - reg: 0 -1 0
+    data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
+  - reg: 0 0 -1
+    data: !!binary "eNrt2DESgjAURdHkV5SwA/e/SmBMYYFEY5BRzmm+heNrnLloSvvyYjljvr/ofpP96v7+56xvab+ps/Vzo7Yb/Xcf9qPsR352D9wH+Bf6q//6D3DN/ud0O7l/9vVf/wHOfx4Yvta/938PX21f//UfQP/1X//1H+CoB4BhLCH6/LYF8Or7U+W+uj91/3pE6X+U3m/dI/sfpf9Rer919R+g9Q+Aftf+b+0DAAAAAAAAAAAAAAAAAAAAAAAA0GQGPkgcNA=="
+  - reg: 0 0 0
+    data: !!binary "eNrt1SESgDAUQ8H8G5T7XxaYqQAqgZrumsjIV3VKq+smLZPU8v/pv/cNAOiv/gOA/uo/ALwO4NGb5/rXfwD037/+A6D//r/834YFgP/7M67/Nf4BAAAAAAAAAAAAAAAAAAAAAAAAmGIHwIUGOg=="
+entities:
+  - type: Entrance
+    pos:
+      - 1.5
+      - 1.5
+      - 3
+    dir: 4
+    exit: false
+  - type: GravitySwitch
+    pos:
+      - 4.5999999
+      - 2.4000001
+      - -10
+    up: 4
+  - type: GravitySwitch
+    pos:
+      - 4.5
+      - 2.5
+      - 3
+    up: 5
+  - type: Entrance
+    pos:
+      - 0.5
+      - 1.5
+      - -12
+    dir: 5
+    exit: true
+  - type: PointLight
+    pos:
+      - 4.5
+      - 2
+      - -7.9000001
+    range: 61.3208008
+    intensity: 15
+    color:
+      - 0.875500262
+      - 0.966698587
+      - 0.990697682
+  - type: PointLight
+    pos:
+      - 2.10000014
+      - 2
+      - 0
+    range: 70.8048096
+    intensity: 20
+    color:
+      - 0.875500262
+      - 0.966698587
+      - 0.990697682
+  - type: PointLight
+    pos:
+      - 0.5
+      - 2
+      - -11
+    range: 61.3208008
+    intensity: 15
+    color:
+      - 0.875500262
+      - 0.966698587
+      - 0.990697682

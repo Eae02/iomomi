@@ -61,10 +61,15 @@ EntranceEntity::EntranceEntity()
 	
 }
 
+const Dir UP_VECTORS[] =
+{
+	Dir::PosY, Dir::PosY, Dir::PosX, Dir::PosX, Dir::PosY, Dir::PosY
+};
+
 glm::mat4 EntranceEntity::GetTransform() const
 {
 	glm::vec3 dir = DirectionVector(m_direction);
-	const glm::vec3 up = std::abs(dir.y) > 0.99f ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
+	const glm::vec3 up = DirectionVector(UP_VECTORS[(int)m_direction]);
 	
 	const glm::vec3 translation = Position() - up * (MESH_HEIGHT / 2) + dir * MESH_LENGTH;
 	
@@ -164,7 +169,7 @@ void EntranceEntity::Update(const UpdateArgs& args)
 	const bool open =
 		glm::length2(toPlayer) < DOOR_OPEN_DIST * DOOR_OPEN_DIST && //Player is close to the door
 		glm::dot(toPlayer, desiredDirToPlayer) > 0 && //Player is on the right side of the door
-		((int)args.player->CurrentDown() / 2) != ((int)m_direction / 2); //Player is not "falling into" the door
+		args.player->CurrentDown() == OppositeDir(UP_VECTORS[(int)m_direction]); //Player has the correct gravity mode
 	
 	m_timeBeforeClose = open ? DOOR_CLOSE_DELAY : std::max(m_timeBeforeClose - args.dt, 0.0f);
 	

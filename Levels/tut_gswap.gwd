@@ -53,3 +53,15 @@ entities:
       - 0.898039222
       - 0.960784316
       - 1
+  - type: GravitySwitch
+    pos:
+      - 4
+      - 0
+      - -0.900000036
+    up: 2
+  - type: GravitySwitch
+    pos:
+      - 0.600000024
+      - 4
+      - 9
+    up: 3

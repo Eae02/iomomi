@@ -25,6 +25,7 @@ assets:
   - name: Shaders/PointLightShadow.gs.glsl
   - name: Shaders/PointLightShadow.fs.glsl
   - name: Models/GravityCornerConvex.obj
+  - name: Models/GravitySwitch.obj
   - name: Models/EnterRoom.obj
   - name: Models/EditorExit.obj
   - name: Models/EditorEntrance.obj

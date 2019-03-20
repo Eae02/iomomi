@@ -129,7 +129,7 @@ void World::Save(std::ostream& outStream) const
 	for (const std::shared_ptr<Entity>& entity : m_entities)
 	{
 		emitter << YAML::BeginMap;
-		emitter << YAML::Key << "type" << YAML::Value << std::string(entity->TypeName());
+		emitter << YAML::Key << "type" << YAML::Value << entity->GetType()->Name();
 		entity->Save(emitter);
 		emitter << YAML::EndMap;
 	}
@@ -184,6 +184,9 @@ void World::SetIsAir(const glm::ivec3& pos, bool isAir)
 		else
 			voxelRef &= ~IS_AIR_MASK;
 		
+		region->voxelsOutOfDate = true;
+		region = nullptr; //region is not valid after this, since GetRegion below can invalidate the pointer
+		
 		for (int s = 0; s < 6; s++)
 		{
 			int sd = s / 2;
@@ -195,7 +198,6 @@ void World::SetIsAir(const glm::ivec3& pos, bool isAir)
 			}
 		}
 		
-		region->voxelsOutOfDate = true;
 		m_anyOutOfDate = true;
 	}
 }
@@ -263,6 +265,15 @@ void World::Update(const Entity::UpdateArgs& args)
 		{
 			m_collidables[i].swap(m_collidables.back());
 			m_collidables.pop_back();
+		}
+	}
+	
+	for (long i = m_gravitySwitchEntities.size() - 1; i >= 0; i--)
+	{
+		if (m_gravitySwitchEntities[i].expired())
+		{
+			m_gravitySwitchEntities[i].swap(m_gravitySwitchEntities.back());
+			m_gravitySwitchEntities.pop_back();
 		}
 	}
 }
@@ -887,6 +898,19 @@ const GravityCorner* World::FindGravityCorner(const ClippingArgs& args, Dir curr
 	return ret;
 }
 
+std::shared_ptr<GravitySwitchEntity> World::FindGravitySwitch(const eg::AABB& aabb, Dir currentDown) const
+{
+	for (const std::weak_ptr<GravitySwitchEntity>& entity : m_gravitySwitchEntities)
+	{
+		if (std::shared_ptr<GravitySwitchEntity> entitySP = entity.lock())
+		{
+			if (entitySP->Up() == OppositeDir(currentDown) && aabb.Contains(entitySP->Position()))
+				return entitySP;
+		}
+	}
+	return nullptr;
+}
+
 PickWallResult World::PickWall(const eg::Ray& ray) const
 {
 	float minDist = INFINITY;
@@ -930,6 +954,8 @@ void World::AddEntity(std::shared_ptr<Entity> entity)
 		m_pointLights.emplace_back(pointLight);
 	if (auto spotLight = std::dynamic_pointer_cast<SpotLightEntity>(entity))
 		m_spotLights.emplace_back(spotLight);
+	if (auto gravitySwitch = std::dynamic_pointer_cast<GravitySwitchEntity>(entity))
+		m_gravitySwitchEntities.emplace_back(gravitySwitch);
 	if (auto drawable = std::dynamic_pointer_cast<Entity::IDrawable>(entity))
 		m_drawables.emplace_back(drawable);
 	if (auto updatable = std::dynamic_pointer_cast<Entity::IUpdatable>(entity))

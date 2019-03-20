@@ -40,8 +40,8 @@ void main()
 		roughnessRange_out = mat.yz;
 	}
 	
-	const float AO_BIAS = 0.30; //Increasing this makes the maximum amount of AO less intense.
-	const float AO_SCALE = 3.5; //Decreasing this makes AO continue further from walls.
+	const float AO_BIAS = 0.05; //Increasing this makes the maximum amount of AO less intense.
+	const float AO_SCALE = 3.0; //Decreasing this makes AO continue further from walls.
 	
 	vec4 ao;
 	int i = 0;

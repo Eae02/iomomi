@@ -270,7 +270,7 @@ void Editor::UpdateToolEntities(float dt)
 	
 	auto SnapToGrid = [&] (const glm::vec3& pos) -> glm::vec3
 	{
-		if (!eg::IsButtonDown(eg::Button::LeftShift))
+		if (!eg::IsButtonDown(eg::Button::LeftAlt))
 		{
 			const float STEP = 0.1f;
 			return glm::round(pos / STEP) * STEP;
@@ -278,11 +278,30 @@ void Editor::UpdateToolEntities(float dt)
 		return pos;
 	};
 	
+	auto MaybeClone = [&] ()
+	{
+		if (!eg::IsButtonDown(eg::Button::LeftShift) || m_entitiesCloned)
+			return false;
+		
+		for (size_t i = 0; i < m_selectedEntities.size(); i++)
+		{
+			m_selectedEntities[i] = m_selectedEntities[i]->Clone();
+			m_world->AddEntity(m_selectedEntities[i]);
+		}
+		m_entitiesCloned = true;
+		return true;
+	};
+	
+	if (!eg::IsButtonDown(eg::Button::LeftShift))
+		m_entitiesCloned = false;
+	
 	Entity::IEditorWallDrag* wallDragEntity = nullptr;
-	if (m_selectedEntities.size() == 1)
+	auto UpdateWallDragEntity = [&]
 	{
 		wallDragEntity = dynamic_cast<Entity::IEditorWallDrag*>(m_selectedEntities[0].get());
-	}
+	};
+	if (m_selectedEntities.size() == 1)
+		UpdateWallDragEntity();
 	
 	//Moves the wall drag entity
 	if (wallDragEntity && eg::IsButtonDown(eg::Button::MouseLeft) && eg::WasButtonDown(eg::Button::MouseLeft))
@@ -290,6 +309,8 @@ void Editor::UpdateToolEntities(float dt)
 		PickWallResult pickResult = m_world->PickWall(*viewRay);
 		if (pickResult.intersected)
 		{
+			if (MaybeClone())
+				UpdateWallDragEntity();
 			wallDragEntity->EditorWallDrag(SnapToGrid(pickResult.intersectPosition), pickResult.normalDir);
 		}
 	}
@@ -321,9 +342,13 @@ void Editor::UpdateToolEntities(float dt)
 		
 		const glm::vec3 gizmoPosAligned = SnapToGrid(m_gizmoPosUnaligned);
 		const glm::vec3 dragDelta = gizmoPosAligned - m_prevGizmoPos;
-		for (const std::shared_ptr<Entity>& selectedEntity : m_selectedEntities)
+		if (glm::length2(dragDelta) > 1E-6f)
 		{
-			selectedEntity->SetPosition(selectedEntity->Position() + dragDelta);
+			MaybeClone();
+			for (const std::shared_ptr<Entity>& selectedEntity : m_selectedEntities)
+			{
+				selectedEntity->SetPosition(selectedEntity->Position() + dragDelta);
+			}
 		}
 		m_prevGizmoPos = gizmoPosAligned;
 	}
@@ -389,7 +414,7 @@ void Editor::UpdateToolEntities(float dt)
 		if (std::shared_ptr<Entity> entity = m_settingsWindowEntities[i].lock())
 		{
 			std::ostringstream labelStream;
-			labelStream << entity->TypeName() << " - Settings##" << entity.get();
+			labelStream << entity->GetType()->DisplayName() << " - Settings##" << entity.get();
 			std::string labelString = labelStream.str();
 			ImGui::SetNextWindowSize(ImVec2(200, 0), ImGuiCond_Appearing);
 			if (ImGui::Begin(labelString.c_str(), &open, ImGuiWindowFlags_NoSavedSettings))
