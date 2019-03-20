@@ -10,9 +10,9 @@ layout(push_constant, std140) uniform PC
 
 layout(location=0) out vec4 color_out;
 
-layout(set=0, binding=4) uniform samplerCube shadowMap;
+layout(set=0, binding=4) uniform samplerCubeShadow shadowMap;
 
-vec3 sampleOffsetDirections[20] = vec3[]
+const vec3 SAMPLE_OFFSETS[] = vec3[]
 (
 	vec3( 1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1,  1,  1), 
 	vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1),
@@ -21,10 +21,8 @@ vec3 sampleOffsetDirections[20] = vec3[]
 	vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
 );
 
-float sampleShadowMap(vec3 sampleVec)
-{
-	return textureLod(shadowMap, sampleVec, 0).r * pc.range;
-}
+const float SAMPLE_DIST = 0.005;
+const float DEPTH_BIAS = 0.001;
 
 float getShadowFactor(vec3 worldPosition)
 {
@@ -34,16 +32,14 @@ float getShadowFactor(vec3 worldPosition)
 	
 	float shadow = 0.0;
 	
-	float occluderDist = fragDepth - sampleShadowMap(lightIn);
-	float diskRadius = 0.005 * (clamp(occluderDist * 2, 0.0, 3.0) + 1);
-	
-	for (int i = 0; i < sampleOffsetDirections.length(); i++)
+	float compare = fragDepth / pc.range - DEPTH_BIAS;
+	for (int i = 0; i < SAMPLE_OFFSETS.length(); i++)
 	{
-		vec3 offset = sampleOffsetDirections[i] * diskRadius;
-		shadow += step(fragDepth, sampleShadowMap(lightIn + offset));
+		vec3 samplePos = lightIn + SAMPLE_OFFSETS[i] * SAMPLE_DIST;
+		shadow += texture(shadowMap, vec4(samplePos, compare)).r;
 	}
 	
-	return shadow / float(sampleOffsetDirections.length());
+	return shadow / float(SAMPLE_OFFSETS.length());
 }
 
 void main()

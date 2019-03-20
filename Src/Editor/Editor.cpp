@@ -149,6 +149,18 @@ void Editor::RunFrame(float dt)
 			ImGui::EndChildFrame();
 		}
 	}
+	else if (m_tool == Tool::Entities)
+	{
+		for (const std::shared_ptr<Entity>& entity : m_selectedEntities)
+		{
+			ImGui::PushID(entity.get());
+			if (ImGui::CollapsingHeader(entity->GetType()->DisplayName().c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				entity->EditorRenderSettings();
+			}
+			ImGui::PopID();
+		}
+	}
 	ImGui::End();
 	
 	glm::mat4 viewMatrix, inverseViewMatrix;
@@ -386,51 +398,6 @@ void Editor::UpdateToolEntities(float dt)
 				m_selectedEntities.push_back(m_entityIcons[i].entity);
 				break;
 			}
-		}
-	}
-	
-	//Opens settings windows
-	if (ImGui::IsMouseDoubleClicked(0) && AllowMouseInteract())
-	{
-		for (int64_t i = (int64_t)m_entityIcons.size() - 1; i >= 0; i--)
-		{
-			if (m_entityIcons[i].rectangle.Contains(flippedCursorPos))
-			{
-				std::weak_ptr<Entity> entityWeak = m_entityIcons[i].entity;
-				if (!std::any_of(m_settingsWindowEntities.begin(), m_settingsWindowEntities.end(),
-					[&] (const std::weak_ptr<Entity>& e) { return e.lock() == m_entityIcons[i].entity; }))
-				{
-					m_settingsWindowEntities.emplace_back(m_entityIcons[i].entity);
-				}
-				break;
-			}
-		}
-	}
-	
-	//Updates settings windows
-	for (int64_t i = (int64_t)m_settingsWindowEntities.size() - 1; i >= 0; i--)
-	{
-		bool open = true;
-		if (std::shared_ptr<Entity> entity = m_settingsWindowEntities[i].lock())
-		{
-			std::ostringstream labelStream;
-			labelStream << entity->GetType()->DisplayName() << " - Settings##" << entity.get();
-			std::string labelString = labelStream.str();
-			ImGui::SetNextWindowSize(ImVec2(200, 0), ImGuiCond_Appearing);
-			if (ImGui::Begin(labelString.c_str(), &open, ImGuiWindowFlags_NoSavedSettings))
-			{
-				entity->EditorRenderSettings();
-			}
-			ImGui::End();
-		}
-		else
-		{
-			open = false;
-		}
-		if (!open)
-		{
-			m_settingsWindowEntities[i].swap(m_settingsWindowEntities.back());
-			m_settingsWindowEntities.pop_back();
 		}
 	}
 	

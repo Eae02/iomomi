@@ -56,9 +56,11 @@ Renderer::Renderer()
 	shadowMapSamplerDesc.wrapU = eg::WrapMode::Repeat;
 	shadowMapSamplerDesc.wrapV = eg::WrapMode::Repeat;
 	shadowMapSamplerDesc.wrapW = eg::WrapMode::Repeat;
-	shadowMapSamplerDesc.minFilter = eg::TextureFilter::Nearest;
-	shadowMapSamplerDesc.magFilter = eg::TextureFilter::Nearest;
+	shadowMapSamplerDesc.minFilter = eg::TextureFilter::Linear;
+	shadowMapSamplerDesc.magFilter = eg::TextureFilter::Linear;
 	shadowMapSamplerDesc.mipFilter = eg::TextureFilter::Nearest;
+	shadowMapSamplerDesc.enableCompare = true;
+	shadowMapSamplerDesc.compareOp = eg::CompareOp::Less;
 	m_shadowMapSampler = eg::Sampler(shadowMapSamplerDesc);
 }
 
