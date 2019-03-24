@@ -121,6 +121,9 @@ void MainGameState::RunFrame(float dt)
 		
 		m_renderTarget = std::make_unique<DeferredRenderer::RenderTarget>((uint32_t)eg::CurrentResolutionX(),
 			(uint32_t)eg::CurrentResolutionY(), m_renderOutputTexture, 0);
+		
+		m_bloomRenderTarget = std::make_unique<eg::BloomRenderer::RenderTarget>(
+			(uint32_t)eg::CurrentResolutionX(), (uint32_t)eg::CurrentResolutionY());
 	}
 	
 	glm::mat4 viewMatrix, inverseViewMatrix;
@@ -151,7 +154,9 @@ void MainGameState::RunFrame(float dt)
 	
 	m_renderOutputTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 	
-	m_postProcessor.Render(m_renderOutputTexture);
+	m_bloomRenderer.Render(glm::vec3(1.0f), m_renderOutputTexture, *m_bloomRenderTarget);
+	
+	m_postProcessor.Render(m_renderOutputTexture, m_bloomRenderTarget->OutputTexture());
 	
 	DrawOverlay(dt);
 	

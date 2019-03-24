@@ -130,7 +130,6 @@ void DeferredRenderer::BeginLighting(RenderTarget& target, const LightProbesMana
 	{
 		eg::DC.BindPipeline(m_constantAmbientPipeline);
 		eg::DC.BindTexture(target.m_gbColor1Texture, 0, 0);
-		ambientColor = ambientColor.ScaleRGB(1.0f);
 	}
 	else
 	{

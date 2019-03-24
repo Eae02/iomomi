@@ -78,10 +78,10 @@ void Player::Update(World& world, float dt)
 	if (m_gravityTransitionMode == TransitionMode::None)
 	{
 		const float MOUSE_SENSITIVITY = -0.005f;
-		const float GAME_PAD_AXIS_SENSITIVITY = 0.005f;
+		const float GAME_PAD_AXIS_SENSITIVITY = 2.0f;
 		
 		glm::vec2 rotationDelta = glm::vec2(eg::CursorPosDelta()) * MOUSE_SENSITIVITY;
-		rotationDelta -= eg::InputState::Current().RightAnalogValue() * GAME_PAD_AXIS_SENSITIVITY;
+		rotationDelta -= eg::InputState::Current().RightAnalogValue() * GAME_PAD_AXIS_SENSITIVITY * dt;
 		
 		//Updates the camera's rotation
 		m_rotationYaw += rotationDelta.x;

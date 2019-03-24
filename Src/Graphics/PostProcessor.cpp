@@ -15,7 +15,7 @@ PostProcessor::PostProcessor()
 	m_inputSampler = eg::Sampler(samplerDescription);
 }
 
-void PostProcessor::Render(eg::TextureRef input)
+void PostProcessor::Render(eg::TextureRef input, eg::TextureRef bloomTexture)
 {
 	eg::RenderPassBeginInfo rpBeginInfo;
 	rpBeginInfo.framebuffer = nullptr;
@@ -26,6 +26,7 @@ void PostProcessor::Render(eg::TextureRef input)
 	eg::DC.BindPipeline(m_postPipeline);
 	
 	eg::DC.BindTexture(input, 0, 0, &m_inputSampler);
+	eg::DC.BindTexture(bloomTexture, 0, 1, &m_inputSampler);
 	
 	eg::DC.Draw(0, 3, 0, 1);
 	

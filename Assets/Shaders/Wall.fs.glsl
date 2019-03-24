@@ -30,5 +30,5 @@ void main()
 	ao2 = pow(clamp(ao2, vec2(0.0), vec2(1.0)), vec2(0.5));
 	float ao = miscMaps.b * ao2.x * ao2.y;
 	
-	DeferredOut(albedo, normal, mix(roughnessRange_in.x, roughnessRange_in.y, miscMaps.r), miscMaps.g * 0.0, ao);
+	DeferredOut(albedo, normal, mix(roughnessRange_in.x, roughnessRange_in.y, miscMaps.r), miscMaps.g, ao);
 }

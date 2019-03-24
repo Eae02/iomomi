@@ -5,7 +5,7 @@ class PostProcessor
 public:
 	PostProcessor();
 	
-	void Render(eg::TextureRef input);
+	void Render(eg::TextureRef input, eg::TextureRef bloomTexture);
 	
 private:
 	eg::Pipeline m_postPipeline;

@@ -9,6 +9,8 @@
 #include "World/PrepareDrawArgs.hpp"
 #include "Graphics/PostProcessor.hpp"
 
+#include <EGame/Graphics/BloomRenderer.hpp>
+
 class MainGameState : public GameState
 {
 public:
@@ -32,10 +34,12 @@ private:
 	
 	PrepareDrawArgs m_prepareDrawArgs;
 	PointLightShadowMapper m_plShadowMapper;
+	eg::BloomRenderer m_bloomRenderer;
 	PostProcessor m_postProcessor;
 	LightProbesManager m_lightProbesManager;
 	
 	std::unique_ptr<DeferredRenderer::RenderTarget> m_renderTarget;
+	std::unique_ptr<eg::BloomRenderer::RenderTarget> m_bloomRenderTarget;
 	eg::Texture m_renderOutputTexture;
 	
 	float m_gameTime = 0;

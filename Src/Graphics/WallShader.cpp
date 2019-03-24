@@ -31,8 +31,8 @@ struct MaterialSettings
 static MaterialSettings materialSettings[] =
 {
 	{ 2.0f, 0.35f, 1.0f },
-	{ 4.0f, 0.05f, 0.2f },
-	{ 4.0f, 0.2f, 0.5f }
+	{ 4.0f, 0.1f, 0.3f },
+	{ 4.0f, 0.3f, 0.6f }
 };
 
 void InitializeWallShader()
