@@ -24,7 +24,8 @@ const char* TextureNames[] =
 {
 	"No Draw",
 	"Tactile Gray",
-	"Metal 1"
+	"Metal 1",
+	"Metal Grid"
 };
 
 void Editor::RunFrame(float dt)

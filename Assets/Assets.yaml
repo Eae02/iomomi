@@ -17,7 +17,8 @@ assets:
   - name: Shaders/Wall-Border.vs.glsl
   - name: Shaders/Wall-Border.fs.glsl
   - name: Shaders/Wall-PLShadow.vs.glsl
-  - name: Shaders/DeferredBase.fs.glsl
+  - name: Shaders/Ambient.fs.glsl
+  - name: Shaders/ConstantAmbient.fs.glsl
   - name: Shaders/SpotLight.vs.glsl
   - name: Shaders/SpotLight.fs.glsl
   - name: Shaders/PointLight.vs.glsl
@@ -103,6 +104,7 @@ assets:
     layers:
       - Textures/Voxel/TactileGrayA.png
       - Textures/Voxel/Metal1A.png
+      - Textures/Voxel/MetalGridA.png
   - name: Textures/Voxel/NormalMap
     generator: Texture2DArray
     loader: Texture2D
@@ -113,6 +115,7 @@ assets:
     layers:
       - Textures/Voxel/TactileGrayN.png
       - Textures/Voxel/Metal1N.png
+      - Textures/Voxel/MetalGridN.png
   - name: Textures/Voxel/MiscMap
     generator: Texture2DArray
     loader: Texture2D
@@ -123,3 +126,4 @@ assets:
     layers:
       - Textures/Voxel/TactileGrayM.png
       - Textures/Voxel/Metal1M.png
+      - Textures/Voxel/MetalGridM.png

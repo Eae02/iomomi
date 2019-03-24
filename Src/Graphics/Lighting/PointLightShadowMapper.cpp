@@ -19,6 +19,15 @@ void PointLightShadowMapper::Invalidate(const eg::Sphere& sphere)
 	}
 }
 
+void PointLightShadowMapper::InvalidateAll()
+{
+	for (ShadowMap& shadowMap : m_shadowMaps)
+	{
+		shadowMap.outOfDate = true;
+		shadowMap.inUse = false;
+	}
+}
+
 void PointLightShadowMapper::SetResolution(uint32_t resolution)
 {
 	m_resolution = resolution;
@@ -26,7 +35,7 @@ void PointLightShadowMapper::SetResolution(uint32_t resolution)
 }
 
 void PointLightShadowMapper::UpdateShadowMaps(
-	std::vector<PointLightDrawData>& pointLights, const RenderCallback& renderCallback)
+	std::vector<PointLightDrawData>& pointLights, const RenderCallback& renderCallback, uint32_t maxUpdates)
 {
 	if (pointLights.empty())
 		return;
@@ -83,7 +92,7 @@ void PointLightShadowMapper::UpdateShadowMaps(
 	});
 	
 	//Updates shadow maps
-	uint32_t numToUpdate = m_maxUpdatesPerFrame;
+	uint32_t numToUpdate = maxUpdates;
 	for (size_t shadowMapIdx : m_updateCandidates)
 	{
 		if (numToUpdate > 0)
@@ -157,7 +166,10 @@ size_t PointLightShadowMapper::AddShadowMap()
 	textureCI.mipLevels = 1;
 	shadowMap.texture = eg::Texture::CreateCube(textureCI);
 	
-	shadowMap.framebuffer = eg::Framebuffer({}, shadowMap.texture);
+	eg::FramebufferAttachment dsAttachment;
+	dsAttachment.texture = shadowMap.texture.handle;
+	dsAttachment.subresource.numArrayLayers = 6;
+	shadowMap.framebuffer = eg::Framebuffer({}, dsAttachment);
 	
 	return idx;
 }

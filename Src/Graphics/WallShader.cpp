@@ -1,6 +1,6 @@
 #include "WallShader.hpp"
 #include "RenderSettings.hpp"
-#include "Renderer.hpp"
+#include "DeferredRenderer.hpp"
 #include "GraphicsCommon.hpp"
 #include "Lighting/PointLightShadowMapper.hpp"
 
@@ -28,16 +28,17 @@ struct MaterialSettings
 	float _padding;
 };
 
-MaterialSettings materialSettings[2] =
+static MaterialSettings materialSettings[] =
 {
 	{ 2.0f, 0.35f, 1.0f },
-	{ 4.0f, 0.2f, 1.0f }
+	{ 4.0f, 0.05f, 0.2f },
+	{ 4.0f, 0.2f, 0.5f }
 };
 
 void InitializeWallShader()
 {
 	//Creates the ambient light pipeline
-	eg::PipelineCreateInfo pipelineCI;
+	eg::GraphicsPipelineCreateInfo pipelineCI;
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall.vs.glsl").Handle();
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall.fs.glsl").Handle();
 	pipelineCI.enableDepthWrite = true;
@@ -51,7 +52,7 @@ void InitializeWallShader()
 	pipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallVertex, normal) };
 	pipelineCI.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallVertex, tangent) };
 	wr.pipelineDeferredGeom = eg::Pipeline::Create(pipelineCI);
-	wr.pipelineDeferredGeom.FramebufferFormatHint(Renderer::GEOMETRY_FB_FORMAT);
+	wr.pipelineDeferredGeom.FramebufferFormatHint(DeferredRenderer::GEOMETRY_FB_FORMAT);
 	
 	//Creates the editor pipeline
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall-Editor.fs.glsl").Handle();
@@ -62,7 +63,7 @@ void InitializeWallShader()
 	wr.pipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
 	//Creates the editor border pipeline
-	eg::PipelineCreateInfo borderPipelineCI;
+	eg::GraphicsPipelineCreateInfo borderPipelineCI;
 	borderPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall-Border.vs.glsl").Handle();
 	borderPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall-Border.fs.glsl").Handle();
 	borderPipelineCI.enableDepthWrite = false;
@@ -77,7 +78,7 @@ void InitializeWallShader()
 	wr.pipelineBorderEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
 	//Creates the point light shadow pipeline
-	eg::PipelineCreateInfo plsPipelineCI;
+	eg::GraphicsPipelineCreateInfo plsPipelineCI;
 	plsPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall-PLShadow.vs.glsl").Handle();
 	plsPipelineCI.geometryShader = eg::GetAsset<eg::ShaderModule>("Shaders/PointLightShadow.gs.glsl").Handle();
 	plsPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/PointLightShadow.fs.glsl").Handle();
@@ -147,14 +148,14 @@ void BindWallShaderGame()
 {
 	eg::DC.BindPipeline(wr.pipelineDeferredGeom);
 	
-	eg::DC.BindDescriptorSet(wr.gameDescriptorSet);
+	eg::DC.BindDescriptorSet(wr.gameDescriptorSet, 0);
 }
 
 void BindWallShaderEditor()
 {
 	eg::DC.BindPipeline(wr.pipelineEditor);
 	
-	eg::DC.BindDescriptorSet(wr.editorDescriptorSet);
+	eg::DC.BindDescriptorSet(wr.editorDescriptorSet, 0);
 }
 
 void BindWallShaderPointLightShadow(const PointLightShadowRenderArgs& renderArgs)
@@ -168,7 +169,7 @@ void DrawWallBordersEditor(eg::BufferRef vertexBuffer, uint32_t numVertices)
 {
 	eg::DC.BindPipeline(wr.pipelineBorderEditor);
 	
-	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 	
 	eg::DC.BindVertexBuffer(0, vertexBuffer, 0);
 	

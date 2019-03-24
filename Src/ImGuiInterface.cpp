@@ -43,7 +43,7 @@ ImGuiInterface::ImGuiInterface()
 		return clipboardText.c_str();
 	};
 	
-	eg::PipelineCreateInfo pipelineCI;
+	eg::GraphicsPipelineCreateInfo pipelineCI;
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/ImGui.vs.glsl").Handle();
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/ImGui.fs.glsl").Handle();
 	pipelineCI.enableScissorTest = true;
@@ -262,7 +262,7 @@ void ImGuiInterface::EndFrame()
 		
 		for (const ImDrawCmd& drawCommand : commandList->CmdBuffer)
 		{
-			eg::DC.BindTexture(*reinterpret_cast<eg::Texture*>(drawCommand.TextureId), 0);
+			eg::DC.BindTexture(*reinterpret_cast<eg::Texture*>(drawCommand.TextureId), 0, 0);
 			
 			if (drawCommand.UserCallback != nullptr)
 			{

@@ -1,11 +1,11 @@
 #include "PrimitiveRenderer.hpp"
-#include "../Graphics/Renderer.hpp"
+#include "../Graphics/DeferredRenderer.hpp"
 
 eg::Pipeline primPipeline;
 
 void PrimitiveRenderer::OnInit()
 {
-	eg::PipelineCreateInfo pipelineCI;
+	eg::GraphicsPipelineCreateInfo pipelineCI;
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Primitive.vs.glsl").Handle();
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/Primitive.fs.glsl").Handle();
 	pipelineCI.vertexBindings[0] = { sizeof(Vertex), eg::InputRate::Vertex };

@@ -78,7 +78,7 @@ void Player::Update(World& world, float dt)
 	if (m_gravityTransitionMode == TransitionMode::None)
 	{
 		const float MOUSE_SENSITIVITY = -0.005f;
-		const float GAME_PAD_AXIS_SENSITIVITY = 0.035f;
+		const float GAME_PAD_AXIS_SENSITIVITY = 0.005f;
 		
 		glm::vec2 rotationDelta = glm::vec2(eg::CursorPosDelta()) * MOUSE_SENSITIVITY;
 		rotationDelta -= eg::InputState::Current().RightAnalogValue() * GAME_PAD_AXIS_SENSITIVITY;
@@ -283,7 +283,7 @@ void Player::Update(World& world, float dt)
 				m_oldRotation = m_rotation;
 				m_newRotation = GetRotation(m_rotationYaw, m_rotationPitch, newDown);
 				
-				m_newPosition = m_position - up * 2.0f;
+				m_newPosition = m_position;// - up * 1.0f;
 				m_velocity = glm::vec3(0);
 				m_down = newDown;
 				move = { };
@@ -309,7 +309,7 @@ void Player::Update(World& world, float dt)
 		clippingArgs.clipDist = 1;
 		world.CalcClipping(clippingArgs);
 		
-		glm::vec3 clippedMove = move * clippingArgs.clipDist;
+		glm::vec3 clippedMove = move * (clippingArgs.clipDist * 0.99f);
 		m_position += clippedMove;
 		
 		if (clippingArgs.clipDist > 0.99999f)

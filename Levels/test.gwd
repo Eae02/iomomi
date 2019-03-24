@@ -1,67 +1,29 @@
 version: 1
 voxels:
-  - reg: -2 0 -1
-    data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
-  - reg: -1 -1 -1
-    data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
-  - reg: -1 0 -1
-    data: !!binary "eNrt1rENACAIBEDYf2kT1MIFxMQ7CuieDiIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgFdk1ew1XM+PzNU78gHg3w9gX+KeBfJcBABw/wHgWwNOugAd"
   - reg: -1 0 0
-    data: !!binary "eNrt1bENAEAIA7Gw/9JPxwboJewmZcpLAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgN9Vqs1e+wcA/dd/ANjwAEEOACk="
-  - reg: 0 -1 -1
-    data: !!binary "eNrt1bsNgDAQRMHFFbj/akHCJ1wAHwnPXPDCCzcBgP9p2Y5Ln5vqlv78/4y/V1Nd4D8AfOPc/bmpvrR/59+rqS7yHwDsv/0HAPtv/wHgdm3s/tRU39i/NnZ3aqor/AcAAAAAAAAAAAAAAAAAAAAAAAAAAIAF7dz3BDI="
+    data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
   - reg: 0 -1 0
     data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
   - reg: 0 0 -1
-    data: !!binary "eNrt1jEOgkAQhtEZTrCFB/L+pxJxQWJwTcxA9R7F1/mTUIwRNXJ5ou07a9PWOGyU7UfffXe0e+F+jlq4n3136/y0/moAcJLs9/RbY9Qq7c+euZ8/WvYBsv/uWvcfAPff/QcA99/9B4CK65P3uC2NV+PZaW2/h58t/Pux3L1dD/eu389h6/az7251/wEAAAAAAAAAAAAAAAAAAAAAAAAAAAAArvMA1NgIcA=="
+    data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
   - reg: 0 0 0
-    data: !!binary "eNrt1jEKwzAQRNGdG6jI/c8aETlgE9KFNUHvNVNuoeIrlZpGzpsa1SRrxmX3up+su6n3Nt4HYFer+5/banzZHe6/+n88xFr9B0D/9R8A9F//AeAX9al6XDZzW78fs3fn7ezf/fdX/3P0P/oPAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPCPnnQGBBM="
+    data: !!binary "eNrt2MEJgDAQBMC7Duy/WhECRogQ1ATRmc9+AvtccpmbWLJkVBlV5knGTfn7/ij91zIA4IH9qzM6Ur/9B+Db+996p3/W/o/pB4B9EI938Kk78/d+AJg2d+U/GY3d67uH6x/+/3f/B8D+23/7D4D9tf8AAAAAAAAAAAAAAAAAAAAAAAAAvNkK+60QyQ=="
 entities:
-  - type: SpotLight
+  - type: PointLight
     pos:
-      - 2.4000001
-      - 4
-      - 1.5
-    range: 61.9758034
-    cutoff: 1.39626348
-    penumbra: 0.34906587
-    dir:
-      - 0
-      - -1
-      - 0
-    intensity: 15
+      - 5.70000029
+      - 2.10000014
+      - 7.20000029
+    range: 50.6063232
+    intensity: 10
     color:
-      - 0.866666675
-      - 0.960784316
       - 1
-  - type: SpotLight
-    pos:
-      - 2.4000001
-      - 4
-      - -5.5999999
-    range: 61.9758034
-    cutoff: 1.39626348
-    penumbra: 0.34906587
-    dir:
-      - 0
-      - -1
-      - 0
-    intensity: 15
-    color:
-      - 0.865116298
-      - 0.961464047
+      - 1
       - 1
   - type: Entrance
     pos:
-      - 2.5
+      - 0
       - 1.5
-      - -7
-    dir: 5
+      - 3.5
+    dir: 1
     exit: false
-  - type: Entrance
-    pos:
-      - 2.5
-      - 1.5
-      - 3
-    dir: 4
-    exit: true

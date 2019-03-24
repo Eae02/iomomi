@@ -2,6 +2,7 @@
 #include "World/PrepareDrawArgs.hpp"
 #include "World/Entities/EntranceEntity.hpp"
 #include "Graphics/Materials/MeshDrawArgs.hpp"
+#include "World/Entities/LightProbeEntity.hpp"
 
 #include <fstream>
 #include <imgui.h>
@@ -34,13 +35,65 @@ void MainGameState::LoadWorld(std::istream& stream)
 			}
 		}
 	}
+	
+	std::vector<LightProbe> lightProbes;
+	for (const std::shared_ptr<Entity>& entity : m_world.Entities())
+	{
+		if (auto* lightProbeEntity = dynamic_cast<LightProbeEntity*>(entity.get()))
+		{
+			lightProbeEntity->GetParameters(lightProbes.emplace_back());
+		}
+	}
+	
+	m_renderCtx->meshBatch.Begin();
+	
+	m_prepareDrawArgs.spotLights.clear();
+	m_prepareDrawArgs.pointLights.clear();
+	m_world.PrepareForDraw(m_prepareDrawArgs);
+	
+	m_renderCtx->meshBatch.End(eg::DC);
+	
+	m_plShadowMapper.InvalidateAll();
+	m_plShadowMapper.UpdateShadowMaps(m_prepareDrawArgs.pointLights, [this] (const PointLightShadowRenderArgs& args)
+	{
+		RenderPointLightShadows(args);
+	}, INT32_MAX);
+	
+	m_lightProbesManager.PrepareWorld(lightProbes, [&] (const LightProbesManager::RenderArgs& args)
+	{
+		RenderSettings::instance->gameTime = 0;
+		RenderSettings::instance->cameraPosition = args.cameraPosition;
+		RenderSettings::instance->viewProjection = args.viewProj;
+		RenderSettings::instance->invViewProjection = args.invViewProj;
+		RenderSettings::instance->UpdateBuffer();
+		
+		DoDeferredRendering(false, *args.renderTarget);
+	});
+}
+
+void MainGameState::DoDeferredRendering(bool useLightProbes, DeferredRenderer::RenderTarget& renderTarget)
+{
+	m_renderCtx->renderer.BeginGeometry(renderTarget);
+	
+	m_world.Draw();
+	
+	MeshDrawArgs mDrawArgs;
+	mDrawArgs.drawMode = MeshDrawMode::Game;
+	m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
+	
+	m_renderCtx->renderer.BeginLighting(renderTarget, useLightProbes ? &m_lightProbesManager : nullptr);
+	
+	m_renderCtx->renderer.DrawSpotLights(renderTarget, m_prepareDrawArgs.spotLights);
+	m_renderCtx->renderer.DrawPointLights(renderTarget, m_prepareDrawArgs.pointLights);
+	
+	m_renderCtx->renderer.End(renderTarget);
 }
 
 void MainGameState::RunFrame(float dt)
 {
 	if (!eg::console::IsShown())
 	{
-		eg::SetRelativeMouseMode(true);
+		eg::SetRelativeMouseMode(false);
 		m_player.Update(m_world, dt);
 		
 		Entity::UpdateArgs entityUpdateArgs;
@@ -53,6 +106,21 @@ void MainGameState::RunFrame(float dt)
 	else
 	{
 		eg::SetRelativeMouseMode(false);
+	}
+	
+	if (m_renderTarget == nullptr || m_renderTarget->Width() != (uint32_t)eg::CurrentResolutionX() ||
+		m_renderTarget->Height() != (uint32_t)eg::CurrentResolutionY())
+	{
+		eg::Texture2DCreateInfo textureCI;
+		textureCI.format = DeferredRenderer::LIGHT_COLOR_FORMAT;
+		textureCI.width = (uint32_t)eg::CurrentResolutionX();
+		textureCI.height = (uint32_t)eg::CurrentResolutionY();
+		textureCI.mipLevels = 1;
+		textureCI.flags = eg::TextureFlags::ShaderSample | eg::TextureFlags::FramebufferAttachment;
+		m_renderOutputTexture = eg::Texture::Create2D(textureCI);
+		
+		m_renderTarget = std::make_unique<DeferredRenderer::RenderTarget>((uint32_t)eg::CurrentResolutionX(),
+			(uint32_t)eg::CurrentResolutionY(), m_renderOutputTexture, 0);
 	}
 	
 	glm::mat4 viewMatrix, inverseViewMatrix;
@@ -75,22 +143,15 @@ void MainGameState::RunFrame(float dt)
 	m_plShadowMapper.UpdateShadowMaps(m_prepareDrawArgs.pointLights, [this] (const PointLightShadowRenderArgs& args)
 	{
 		RenderPointLightShadows(args);
-	});
+	}, 2);
 	
-	m_renderCtx->renderer.BeginGeometry();
+	m_lightProbesManager.PrepareForDraw(m_player.EyePosition());
 	
-	m_world.Draw();
+	DoDeferredRendering(true, *m_renderTarget);
 	
-	MeshDrawArgs mDrawArgs;
-	mDrawArgs.drawMode = MeshDrawMode::Game;
-	m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
+	m_renderOutputTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 	
-	m_renderCtx->renderer.BeginLighting();
-	
-	m_renderCtx->renderer.DrawSpotLights(m_prepareDrawArgs.spotLights);
-	m_renderCtx->renderer.DrawPointLights(m_prepareDrawArgs.pointLights);
-	
-	m_renderCtx->renderer.End();
+	m_postProcessor.Render(m_renderOutputTexture);
 	
 	DrawOverlay(dt);
 	

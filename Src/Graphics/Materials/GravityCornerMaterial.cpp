@@ -1,5 +1,5 @@
 #include "GravityCornerMaterial.hpp"
-#include "../Renderer.hpp"
+#include "../DeferredRenderer.hpp"
 #include "MeshDrawArgs.hpp"
 #include "../RenderSettings.hpp"
 
@@ -10,7 +10,7 @@ static eg::Pipeline gravityCornerPipelineGame;
 
 static void OnInit()
 {
-	eg::PipelineCreateInfo pipelineCI;
+	eg::GraphicsPipelineCreateInfo pipelineCI;
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Common3D.vs.glsl").Handle();
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/GravityCorner.fs.glsl").Handle();
 	pipelineCI.enableDepthWrite = true;
@@ -29,7 +29,7 @@ static void OnInit()
 	pipelineCI.vertexAttributes[7] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
 	pipelineCI.numColorAttachments = 2;
 	gravityCornerPipelineGame = eg::Pipeline::Create(pipelineCI);
-	gravityCornerPipelineGame.FramebufferFormatHint(Renderer::GEOMETRY_FB_FORMAT);
+	gravityCornerPipelineGame.FramebufferFormatHint(DeferredRenderer::GEOMETRY_FB_FORMAT);
 	
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/GravityCorner-Editor.fs.glsl").Handle();
@@ -70,7 +70,7 @@ bool GravityCornerMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawA
 	if (pipeline.handle == nullptr)
 		return false;
 	cmdCtx.BindPipeline(pipeline);
-	cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+	cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 	return true;
 }
 

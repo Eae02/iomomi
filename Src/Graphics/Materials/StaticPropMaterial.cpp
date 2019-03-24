@@ -1,6 +1,6 @@
 #include "StaticPropMaterial.hpp"
 #include "MeshDrawArgs.hpp"
-#include "../Renderer.hpp"
+#include "../DeferredRenderer.hpp"
 #include "../GraphicsCommon.hpp"
 #include "../RenderSettings.hpp"
 #include "../Lighting/PointLightShadowMapper.hpp"
@@ -61,7 +61,7 @@ static eg::Pipeline staticPropPipelinePLShadow;
 
 static void OnInit()
 {
-	eg::PipelineCreateInfo pipelineCI;
+	eg::GraphicsPipelineCreateInfo pipelineCI;
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Common3D.vs.glsl").Handle();
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/StaticModel.fs.glsl").Handle();
 	pipelineCI.enableDepthWrite = true;
@@ -80,7 +80,7 @@ static void OnInit()
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.numColorAttachments = 2;
 	staticPropPipelineGame = eg::Pipeline::Create(pipelineCI);
-	staticPropPipelineGame.FramebufferFormatHint(Renderer::GEOMETRY_FB_FORMAT);
+	staticPropPipelineGame.FramebufferFormatHint(DeferredRenderer::GEOMETRY_FB_FORMAT);
 	
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/StaticModel-Editor.fs.glsl").Handle();
@@ -88,7 +88,7 @@ static void OnInit()
 	staticPropPipelineEditor = eg::Pipeline::Create(pipelineCI);
 	staticPropPipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
-	eg::PipelineCreateInfo plsPipelineCI;
+	eg::GraphicsPipelineCreateInfo plsPipelineCI;
 	plsPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Common3D-PLShadow.vs.glsl").Handle();
 	plsPipelineCI.geometryShader = eg::GetAsset<eg::ShaderModule>("Shaders/PointLightShadow.gs.glsl").Handle();
 	plsPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/PointLightShadow.fs.glsl").Handle();
@@ -208,7 +208,7 @@ bool StaticPropMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs
 		m_descriptorSetEditor.BindTexture(*m_miscMapTexture, 3, &GetCommonTextureSampler());
 	}
 	
-	cmdCtx.BindDescriptorSet(mDrawArgs->drawMode == MeshDrawMode::Editor ? m_descriptorSetEditor : m_descriptorSetGame);
+	cmdCtx.BindDescriptorSet(mDrawArgs->drawMode == MeshDrawMode::Editor ? m_descriptorSetEditor : m_descriptorSetGame, 0);
 	
 	float pushConstants[] = {m_roughnessMin, m_roughnessMax, m_textureScale.x, m_textureScale.y};
 	cmdCtx.PushConstants(0, sizeof(pushConstants), pushConstants);

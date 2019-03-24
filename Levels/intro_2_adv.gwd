@@ -1,0 +1,137 @@
+version: 1
+voxels:
+  - reg: -1 -1 -1
+    data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
+  - reg: -1 -1 0
+    data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
+  - reg: -1 0 -1
+    data: !!binary "eNrt1jEKhDAUBND/SbOl9z+tuhEVRCyUiOS9ZrpMkcAkAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOAbSmSWjGHOnFJ/W1Pn3LsmADTZn2X/8q39673f/jf75+Xun3eW+m8/6CzxG+pxsWap7/syn+mPfvvB/tp/Dvecu3s+S/235++//7ns3pZ1367ymf7oth/sr/3/qhHLTQj6"
+  - reg: -1 0 0
+    data: !!binary "eNrt1uEKgyAYBVDFF/D9n3ZrJcSWFZHKtnN+7COCLpPsGgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADANSnEp5DT9Ls9Q6zNFHKcr9vll/tbc8qfr782/7V88XOmeTbPP70+g/LL848mAJe+rzkufbcxQ6zNG/r/ML/c35p39O/o/Er/L7N5/un1GZvfrP9r55ru5+9/zS/n3PWUnwP07P+09N377NX/tfxe/T8qv9b/Sf/36P/a/+q+//41v5xz11O+/qff/t9536aXMrXu/738aTu07v+R+Uvfj8o/sz7ph/v/AS6uDrs="
+  - reg: -1 1 -1
+    data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
+  - reg: -1 1 0
+    data: !!binary "eNrt1aERAEAIA8HQf9NPByjEM7smMvISAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgW6XavFf/AUD/9R8A9F//AUD/9R8AfvAAxzEAyQ=="
+  - reg: 0 -1 -1
+    data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
+  - reg: 0 -1 0
+    data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
+  - reg: 0 0 -1
+    data: !!binary "eNrt1rGKw0AMRVEN06TM/39tMMhThYhgT1LonEbFwt5kDX4bscc4RDyrG/qXOzMeb37/8aP63tOPtv3vP6++vv7/+iP7o2n/N39/+2//7b/3r76+/bf/9t/+23/vX319/Qb98/+b6urb/0b7314+oHX1Oz7//e9f/U/7v+42M79fdfWvPc+Z+z9z99bNnSvuPf1o28f+2n/7a/8BAAAAAAAAAAAAAAAAAAAAAAAAAACA0wtfyBbU"
+  - reg: 0 0 0
+    data: !!binary "eNrt11GKwkAQBNAZ+gIueP+zbmJ6ZRIIwm4yEzbv/ZQiWKDQpbXOyqO2WcqjdFJv31+yt8nQ37u/DKL/2v3zi7HchVK3Ge/n+vX/8f7Nj36d9tf+67d/+u2Pfvtvf+2/fvun/5j7/8w7v854P7d/Z/VH9kf2tvmP+kftf8ndW2XH+3v3fvs7tv/28gev/v3XY3sfet6Js/t/3u/C/a/vZy+P+QM4rD/v3jiRn3+bPe/vzfunrmX32tRv/+3vNfrjtX/PvA/rnP7/97hPsb1PR96pT/u79H9l7zpjyj77X3ezz/6f1j98/wEAAAAAAAAAAAAAAAAAAAAAAAAAAIDDfQPO9RTQ"
+  - reg: 0 1 -1
+    data: !!binary "eNrt1bEJADAMA0Fpg+w/bdJkhUDwHQaXKj95qz3XrPszbB8AJtJ/ANB//QcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOAHG+/PAP0="
+  - reg: 0 1 0
+    data: !!binary "eNrt1aERACAQBDG2A/qvlkHjMAgS8S9Pbo1qzPa9/9d6vA8AP0r/AUD/9R8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOC5vNBA8="
+entities:
+  - type: Entrance
+    pos:
+      - 1.5
+      - 1.5
+      - 3
+    dir: 4
+    exit: false
+  - type: Entrance
+    pos:
+      - -2
+      - 4.5
+      - -6.5
+    dir: 1
+    exit: true
+  - type: GravitySwitch
+    pos:
+      - 1.5
+      - 0
+      - -0.5
+    up: 2
+  - type: GravitySwitch
+    pos:
+      - 1.39999998
+      - 18
+      - 6.30000019
+    up: 3
+  - type: GravitySwitch
+    pos:
+      - -2.5
+      - 11.5
+      - 8
+    up: 5
+  - type: PointLight
+    pos:
+      - 1.5
+      - 8.5
+      - -0.5
+    range: 87.6413116
+    intensity: 30
+    color:
+      - 1
+      - 1
+      - 1
+  - type: PointLight
+    pos:
+      - -1.60000002
+      - 13.1999998
+      - 6
+    range: 79.8204651
+    intensity: 30
+    color:
+      - 0.342671692
+      - 0.920930207
+      - 0.559518337
+  - type: PointLight
+    pos:
+      - 1.5
+      - 4.5
+      - -5.9000001
+    range: 87.6413116
+    intensity: 30
+    color:
+      - 1
+      - 1
+      - 1
+  - type: PointLight
+    pos:
+      - 1.20000005
+      - 16.6000004
+      - 2.5
+    range: 79.8204651
+    intensity: 30
+    color:
+      - 0.342671692
+      - 0.920930207
+      - 0.559518337
+  - type: LightProbe
+    pos:
+      - 1.5
+      - 3
+      - -1
+    pRad:
+      - 3.5
+      - 3
+      - 4
+    iRad:
+      - 3.5
+      - 3
+      - 4
+    iFade:
+      - 0.5
+      - 0.5
+      - 0.5
+  - type: LightProbe
+    pos:
+      - 1.5
+      - 12
+      - -0.5
+    pRad:
+      - 1.5
+      - 6
+      - 1.5
+    iRad:
+      - 1.5
+      - 6
+      - 1.5
+    iFade:
+      - 0.5
+      - 0.5
+      - 0.5
