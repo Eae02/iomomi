@@ -202,8 +202,8 @@ void EntranceEntity::CalcClipping(ClippingArgs& args) const
 	constexpr float COL_SIZE_Y = 3.0f;
 	constexpr float COL_SIZE_Z = 1.5f;
 	
-	glm::vec3 colMin(transform * glm::vec4(-COL_SIZE_X, 0, -COL_SIZE_Z, 1));
-	glm::vec3 colMax(transform * glm::vec4(COL_SIZE_X, COL_SIZE_Y, COL_SIZE_Z, 1));
+	glm::vec3 colMin(-COL_SIZE_X, 0, -COL_SIZE_Z);
+	glm::vec3 colMax(COL_SIZE_X, COL_SIZE_Y, COL_SIZE_Z);
 	
 	glm::vec3 colPolygons[4][4] =
 	{
@@ -221,20 +221,22 @@ void EntranceEntity::CalcClipping(ClippingArgs& args) const
 		},
 		{ //Left side
 			glm::vec3(colMin.x, colMin.y, colMin.z),
-			glm::vec3(colMin.x, colMin.y, colMax.z),
-			glm::vec3(colMin.x, colMax.y, colMax.z),
+			glm::vec3(colMax.x, colMin.y, colMin.z),
+			glm::vec3(colMax.x, colMax.y, colMin.z),
 			glm::vec3(colMin.x, colMax.y, colMin.z)
 		},
 		{ //Right side
-			glm::vec3(colMax.x, colMin.y, colMin.z),
+			glm::vec3(colMin.x, colMin.y, colMax.z),
 			glm::vec3(colMax.x, colMin.y, colMax.z),
 			glm::vec3(colMax.x, colMax.y, colMax.z),
-			glm::vec3(colMax.x, colMax.y, colMin.z)
+			glm::vec3(colMin.x, colMax.y, colMax.z)
 		}
 	};
 	
 	for (int i = 0; i < 4; i++)
 	{
+		for (int j = 0; j < 4; j++)
+			colPolygons[i][j] = glm::vec3(transform * glm::vec4(colPolygons[i][j], 1));
 		CalcPolygonClipping(args, colPolygons[i]);
 	}
 	
@@ -244,16 +246,21 @@ void EntranceEntity::CalcClipping(ClippingArgs& args) const
 		if (m_doorOpenProgress > 0.1f && (i / 2) == (1 - (int)m_type))
 			continue;
 		
-		glm::vec3 doorMin(transform * glm::vec4(doorsX[i], 0, -COL_SIZE_Z, 1));
-		glm::vec3 doorMax(transform * glm::vec4(doorsX[i], COL_SIZE_Y, COL_SIZE_Z, 1));
+		glm::vec3 doorMin(doorsX[i], 0, -COL_SIZE_Z);
+		glm::vec3 doorMax(doorsX[i], COL_SIZE_Y, COL_SIZE_Z);
 		
 		glm::vec3 doorPolygon[4] =
 		{
 			glm::vec3(doorMin.x, doorMin.y, doorMin.z),
-			glm::vec3(doorMax.x, doorMin.y, doorMin.z),
-			glm::vec3(doorMax.x, doorMax.y, doorMin.z),
+			glm::vec3(doorMin.x, doorMin.y, doorMax.z),
+			glm::vec3(doorMin.x, doorMax.y, doorMax.z),
 			glm::vec3(doorMin.x, doorMax.y, doorMin.z)
 		};
+		for (int j = 0; j < 4; j++)
+		{
+			doorPolygon[j] = glm::vec3(transform * glm::vec4(doorPolygon[j], 1));
+		}
+		
 		CalcPolygonClipping(args, doorPolygon);
 	}
 }
