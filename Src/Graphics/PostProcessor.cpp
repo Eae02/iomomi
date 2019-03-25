@@ -1,5 +1,8 @@
 #include "PostProcessor.hpp"
 
+static constexpr float EXPOSURE = 1.4f;
+static constexpr float BLOOM_INTENSITY = 0.5f;
+
 PostProcessor::PostProcessor()
 {
 	eg::GraphicsPipelineCreateInfo postPipelineCI;
@@ -27,6 +30,9 @@ void PostProcessor::Render(eg::TextureRef input, eg::TextureRef bloomTexture)
 	
 	eg::DC.BindTexture(input, 0, 0, &m_inputSampler);
 	eg::DC.BindTexture(bloomTexture, 0, 1, &m_inputSampler);
+	
+	float pc[] = { EXPOSURE, BLOOM_INTENSITY };
+	eg::DC.PushConstants(0, sizeof(pc), pc);
 	
 	eg::DC.Draw(0, 3, 0, 1);
 	
