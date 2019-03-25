@@ -59,6 +59,7 @@ inline static eg::PipelineRef GetPipeline(const MeshDrawArgs& drawArgs)
 	case MeshDrawMode::Game: return gravityCornerPipelineGame;
 	case MeshDrawMode::Editor: return gravityCornerPipelineEditor;
 	case MeshDrawMode::PointLightShadow: return eg::PipelineRef();
+	default: return eg::PipelineRef();
 	}
 	EG_UNREACHABLE
 }

@@ -5,6 +5,7 @@
 enum class MeshDrawMode
 {
 	Game,
+	Emissive,
 	Editor,
 	PointLightShadow
 };

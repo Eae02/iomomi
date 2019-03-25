@@ -51,7 +51,7 @@ float geometrySmith(vec3 normal, vec3 toEye, vec3 toLight, float roughness)
 
 float calcAttenuation(float distToLight)
 {
-	return 2.0 / (distToLight * distToLight + 1.0);
+	return 1.0 / (distToLight * distToLight + 1.0);
 }
 
 layout(constant_id=10) const bool enableDirectSpecular = true;

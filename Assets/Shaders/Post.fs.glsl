@@ -1,6 +1,6 @@
 #version 450 core
 
-const float exposure = 1.1f;
+const float exposure = 1.25f;
 
 layout(location=0) in vec2 texCoord_in;
 

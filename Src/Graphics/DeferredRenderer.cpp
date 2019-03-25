@@ -29,6 +29,7 @@ DeferredRenderer::DeferredRenderer()
 	eg::GraphicsPipelineCreateInfo constAmbientPipelineCI;
 	constAmbientPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Post.vs.glsl").Handle();
 	constAmbientPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/ConstantAmbient.fs.glsl").Handle();
+	constAmbientPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
 	m_constantAmbientPipeline = eg::Pipeline::Create(constAmbientPipelineCI);
 	m_constantAmbientPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT);
 	
@@ -97,7 +98,9 @@ DeferredRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height,
 	lightFBAttachments[0].texture = outputTexture.handle;
 	lightFBAttachments[0].subresource.firstArrayLayer = outputArrayLayer;
 	lightFBAttachments[0].subresource.numArrayLayers = 1;
-	m_outputFramebuffer = eg::Framebuffer(lightFBAttachments);
+	m_lightingFramebuffer = eg::Framebuffer(lightFBAttachments);
+	
+	m_emissiveFramebuffer = eg::Framebuffer(lightFBAttachments, m_gbDepthTexture.handle);
 }
 
 void DeferredRenderer::BeginGeometry(RenderTarget& target) const
@@ -111,6 +114,18 @@ void DeferredRenderer::BeginGeometry(RenderTarget& target) const
 	eg::DC.BeginRenderPass(rpBeginInfo);
 }
 
+void DeferredRenderer::BeginEmissive(DeferredRenderer::RenderTarget& target)
+{
+	eg::DC.EndRenderPass();
+	
+	eg::RenderPassBeginInfo rpBeginInfo;
+	rpBeginInfo.framebuffer = target.m_emissiveFramebuffer.handle;
+	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
+	rpBeginInfo.colorAttachments[0].clearValue = eg::ColorLin(eg::Color::Black);
+	
+	eg::DC.BeginRenderPass(rpBeginInfo);
+}
+
 void DeferredRenderer::BeginLighting(RenderTarget& target, const LightProbesManager* lightProbesManager) const
 {
 	eg::DC.EndRenderPass();
@@ -120,8 +135,8 @@ void DeferredRenderer::BeginLighting(RenderTarget& target, const LightProbesMana
 	target.m_gbDepthTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = target.m_outputFramebuffer.handle;
-	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
+	rpBeginInfo.framebuffer = target.m_lightingFramebuffer.handle;
+	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Load;
 	
 	eg::DC.BeginRenderPass(rpBeginInfo);
 	
@@ -139,9 +154,8 @@ void DeferredRenderer::BeginLighting(RenderTarget& target, const LightProbesMana
 		eg::DC.BindTexture(target.m_gbColor1Texture, 0, 1);
 		eg::DC.BindTexture(target.m_gbColor2Texture, 0, 2);
 		eg::DC.BindTexture(target.m_gbDepthTexture, 0, 3);
-		
-		ambientColor = ambientColor.ScaleRGB(0.2f);
 	}
+	ambientColor = ambientColor.ScaleRGB(0.15f);
 	
 	eg::DC.PushConstants(0, sizeof(float) * 3, &ambientColor.r);
 	

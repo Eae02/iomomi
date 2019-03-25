@@ -33,12 +33,15 @@ public:
 		eg::Framebuffer m_gbFramebuffer;
 		
 		eg::TextureRef m_outputTexture;
-		eg::Framebuffer m_outputFramebuffer;
+		eg::Framebuffer m_lightingFramebuffer;
+		eg::Framebuffer m_emissiveFramebuffer;
 	};
 	
 	DeferredRenderer();
 	
 	void BeginGeometry(RenderTarget& target) const;
+	
+	void BeginEmissive(RenderTarget& target);
 	
 	void BeginLighting(RenderTarget& target, const class LightProbesManager* lightProbesManager) const;
 	

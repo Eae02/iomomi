@@ -165,6 +165,7 @@ inline static eg::PipelineRef GetPipeline(const MeshDrawArgs& drawArgs)
 	case MeshDrawMode::Game: return staticPropPipelineGame;
 	case MeshDrawMode::Editor: return staticPropPipelineEditor;
 	case MeshDrawMode::PointLightShadow: return staticPropPipelinePLShadow;
+	default: return eg::PipelineRef();
 	}
 	EG_UNREACHABLE
 }

@@ -12,7 +12,7 @@ public:
 	PointLightEntity(const eg::ColorSRGB& color, float intensity)
 		: LightSourceEntity(color, intensity) { }
 	
-	void InitDrawData(PointLightDrawData& data) const;
+	virtual void InitDrawData(PointLightDrawData& data) const;
 	
 	void EditorRenderSettings() override;
 	

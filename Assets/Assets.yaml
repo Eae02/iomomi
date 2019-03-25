@@ -17,6 +17,8 @@ assets:
   - name: Shaders/Wall-Border.vs.glsl
   - name: Shaders/Wall-Border.fs.glsl
   - name: Shaders/Wall-PLShadow.vs.glsl
+  - name: Shaders/Emissive.vs.glsl
+  - name: Shaders/Emissive.fs.glsl
   - name: Shaders/Ambient.fs.glsl
   - name: Shaders/ConstantAmbient.fs.glsl
   - name: Shaders/SpotLight.vs.glsl
@@ -30,6 +32,7 @@ assets:
   - name: Models/EnterRoom.obj
   - name: Models/EditorExit.obj
   - name: Models/EditorEntrance.obj
+  - name: Models/WallLight.obj
   - name: Textures/EntityIcons.png
   - name: Textures/NoDraw.png
     srgb: true

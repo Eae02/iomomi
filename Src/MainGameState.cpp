@@ -36,39 +36,11 @@ void MainGameState::LoadWorld(std::istream& stream)
 		}
 	}
 	
-	std::vector<LightProbe> lightProbes;
-	for (const std::shared_ptr<Entity>& entity : m_world.Entities())
-	{
-		if (auto* lightProbeEntity = dynamic_cast<LightProbeEntity*>(entity.get()))
-		{
-			lightProbeEntity->GetParameters(lightProbes.emplace_back());
-		}
-	}
-	
-	m_renderCtx->meshBatch.Begin();
-	
-	m_prepareDrawArgs.spotLights.clear();
-	m_prepareDrawArgs.pointLights.clear();
-	m_world.PrepareForDraw(m_prepareDrawArgs);
-	
-	m_renderCtx->meshBatch.End(eg::DC);
-	
 	m_plShadowMapper.InvalidateAll();
 	m_plShadowMapper.UpdateShadowMaps(m_prepareDrawArgs.pointLights, [this] (const PointLightShadowRenderArgs& args)
 	{
 		RenderPointLightShadows(args);
 	}, INT32_MAX);
-	
-	m_lightProbesManager.PrepareWorld(lightProbes, [&] (const LightProbesManager::RenderArgs& args)
-	{
-		RenderSettings::instance->gameTime = 0;
-		RenderSettings::instance->cameraPosition = args.cameraPosition;
-		RenderSettings::instance->viewProjection = args.viewProj;
-		RenderSettings::instance->invViewProjection = args.invViewProj;
-		RenderSettings::instance->UpdateBuffer();
-		
-		DoDeferredRendering(false, *args.renderTarget);
-	});
 }
 
 void MainGameState::DoDeferredRendering(bool useLightProbes, DeferredRenderer::RenderTarget& renderTarget)
@@ -81,7 +53,12 @@ void MainGameState::DoDeferredRendering(bool useLightProbes, DeferredRenderer::R
 	mDrawArgs.drawMode = MeshDrawMode::Game;
 	m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
 	
-	m_renderCtx->renderer.BeginLighting(renderTarget, useLightProbes ? &m_lightProbesManager : nullptr);
+	m_renderCtx->renderer.BeginEmissive(renderTarget);
+	
+	mDrawArgs.drawMode = MeshDrawMode::Emissive;
+	m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
+	
+	m_renderCtx->renderer.BeginLighting(renderTarget, nullptr);
 	
 	m_renderCtx->renderer.DrawSpotLights(renderTarget, m_prepareDrawArgs.spotLights);
 	m_renderCtx->renderer.DrawPointLights(renderTarget, m_prepareDrawArgs.pointLights);
