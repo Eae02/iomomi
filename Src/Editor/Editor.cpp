@@ -281,6 +281,11 @@ void Editor::UpdateToolEntities(float dt)
 		return eg::Ray::UnprojectScreen(RenderSettings::instance->invViewProjection, eg::CursorPos());
 	});
 	
+	if (eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft))
+	{
+		m_mouseDownPos = eg::CursorPos();
+	}
+	
 	auto SnapToGrid = [&] (const glm::vec3& pos) -> glm::vec3
 	{
 		if (!eg::IsButtonDown(eg::Button::LeftAlt))
@@ -319,13 +324,26 @@ void Editor::UpdateToolEntities(float dt)
 	//Moves the wall drag entity
 	if (wallDragEntity && eg::IsButtonDown(eg::Button::MouseLeft) && eg::WasButtonDown(eg::Button::MouseLeft))
 	{
-		PickWallResult pickResult = m_world->PickWall(*viewRay);
-		if (pickResult.intersected)
+		constexpr int DRAG_BEGIN_DELTA = 10;
+		if (m_isDraggingWallEntity)
 		{
-			if (MaybeClone())
-				UpdateWallDragEntity();
-			wallDragEntity->EditorWallDrag(SnapToGrid(pickResult.intersectPosition), pickResult.normalDir);
+			PickWallResult pickResult = m_world->PickWall(*viewRay);
+			if (pickResult.intersected)
+			{
+				if (MaybeClone())
+					UpdateWallDragEntity();
+				wallDragEntity->EditorWallDrag(SnapToGrid(pickResult.intersectPosition), pickResult.normalDir);
+			}
 		}
+		else if (std::abs(m_mouseDownPos.x - eg::CursorX()) > DRAG_BEGIN_DELTA ||
+		         std::abs(m_mouseDownPos.y - eg::CursorY()) > DRAG_BEGIN_DELTA)
+		{
+			m_isDraggingWallEntity = true;
+		}
+	}
+	else
+	{
+		m_isDraggingWallEntity = false;
 	}
 	
 	//Updates the translation gizmo
@@ -400,6 +418,16 @@ void Editor::UpdateToolEntities(float dt)
 				break;
 			}
 		}
+	}
+	
+	//Despawns entities if delete is pressed
+	if (eg::IsButtonDown(eg::Button::Delete) && !eg::WasButtonDown(eg::Button::Delete))
+	{
+		for (std::shared_ptr<Entity>& entity : m_selectedEntities)
+		{
+			m_world->DespawnEntity(entity.get());
+		}
+		m_selectedEntities.clear();
 	}
 	
 	//Opens the spawn entity menu if the right mouse button is clicked

@@ -43,36 +43,51 @@ entities:
       - -12
     dir: 5
     exit: true
-  - type: PointLight
+  - type: WallLight
+    up: 3
     pos:
-      - 4.5
-      - 2
-      - -7.9000001
-    range: 61.3208008
-    intensity: 15
-    color:
-      - 0.875500262
-      - 0.966698587
-      - 0.990697682
-  - type: PointLight
-    pos:
-      - 2.10000014
-      - 2
       - 0
-    range: 70.8048096
+      - 4
+      - 1
+    range: 79.6495743
+    intensity: 25
+    color:
+      - 0.819607854
+      - 0.972549021
+      - 0.996078432
+  - type: WallLight
+    up: 3
+    pos:
+      - 4
+      - 4
+      - -8
+    range: 71.2421494
     intensity: 20
     color:
-      - 0.875500262
-      - 0.966698587
-      - 0.990697682
-  - type: PointLight
+      - 0.819607854
+      - 0.972549021
+      - 0.996078432
+  - type: WallLight
+    up: 3
     pos:
-      - 0.5
-      - 2
-      - -11
-    range: 61.3208008
-    intensity: 15
+      - 0
+      - 4
+      - -8
+    range: 71.2421494
+    intensity: 20
     color:
-      - 0.875500262
-      - 0.966698587
-      - 0.990697682
+      - 0.819607854
+      - 0.972549021
+      - 0.996078432
+  - type: WallLight
+    up: 3
+    pos:
+      - 4
+      - 4
+      - 1
+    range: 79.6495743
+    intensity: 25
+    color:
+      - 0.819607854
+      - 0.972549021
+      - 0.996078432

@@ -57,6 +57,8 @@ public:
 	
 	void PrepareForDraw(struct PrepareDrawArgs& args);
 	
+	void DespawnEntity(const Entity* entity);
+	
 	void Draw();
 	void DrawEditor();
 	void DrawPointLightShadows(const struct PointLightShadowRenderArgs& renderArgs);

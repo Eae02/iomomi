@@ -964,3 +964,15 @@ void World::AddEntity(std::shared_ptr<Entity> entity)
 		m_collidables.emplace_back(collidable);
 	m_entities.push_back(std::move(entity));
 }
+
+void World::DespawnEntity(const Entity* entity)
+{
+	for (size_t i = 0; i < m_entities.size(); i++)
+	{
+		if (m_entities[i].get() == entity)
+		{
+			m_entities[i].swap(m_entities.back());
+			m_entities.pop_back();
+		}
+	}
+}

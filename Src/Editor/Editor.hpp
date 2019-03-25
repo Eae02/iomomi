@@ -88,6 +88,9 @@ private:
 	glm::vec3 m_prevGizmoPos;
 	eg::TranslationGizmo m_translationGizmo;
 	bool m_entitiesCloned = false;
+	
+	glm::ivec2 m_mouseDownPos;
+	bool m_isDraggingWallEntity = false;
 };
 
 extern Editor* editor;

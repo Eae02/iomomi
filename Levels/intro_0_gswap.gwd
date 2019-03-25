@@ -3,19 +3,19 @@ voxels:
   - reg: -1 -1 -1
     data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
   - reg: -1 -1 0
-    data: !!binary "eNrtzTENADAMA0GnCMofbQOhQ4YMd3rJoxMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANjlV6e7v+p/xANgHAY0="
+    data: !!binary "eNrtzbENADAMAkHYIPtPm4zgIoWLO+lFSQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAJm1fOdP1/8cFx/8Bew=="
   - reg: -1 0 -1
-    data: !!binary "eNrt0qERACAMBMEPFaT/aoHB0UDMrvm4M0kAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIApq46k/9Wf6ucePfUP9foADNmcyQEO"
+    data: !!binary "eNrt0qERACAMBMHP0ED6rxYYHA3E7JqPO5MEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACYsupI+l/9qX7u0VP/UK8PwJAN7okBGg=="
   - reg: -1 0 0
-    data: !!binary "eNrtzkEKgEAMA8DUF/j/17qyirAqCCJ4mDk0t6QJAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwmlJN5lOu90Xaf7hf2faGTGtJ79v/qQ/2q+/l6B//ud6vnrlLAP5tAeGCBGg="
+    data: !!binary "eNrtzkEKgEAMA8AUP+D/X+vKKsKqIIjgYebQ3JImAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAaEo1mU+53hdp/+F+ZdsbMq0lvW//pz7Yr76Xo3/853q/euYuAfi3BT0YBJo="
   - reg: 0 -1 -1
     data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
   - reg: 0 -1 0
-    data: !!binary "eNrt1bENACAMA0GHCdh/WigYIB0g3UlRSpefAMA9VbUvs/vtA4D+2wcA/bcPAPpvHwD03z4APND/cfrW/PYBAAAAAAAAAAAAAAAAAAAAAAAAgF8sBFII7w=="
+    data: !!binary "eNrt1TENADAMA0GbQfmjbSFkqbLcSVFGj58AwJ6273Km3z4A6L99ANB/+wCg//YBQP/tA4D+6z8AAAAAAAAAAAAAAAAAAAAAAAAA8MsFVAII3Q=="
   - reg: 0 0 -1
-    data: !!binary "eNrt2TkOxCAQRcHGJ+D+p7XYEpPTkqlKGDn5Dka8wBFnlCaifs+wn7TfHp3b39+n7wPwe/2yr+scGTren7V33b7+A6D/+q//AGT0v9/+Ja+/t+1v3x3Gj5r3dyj6D3BD/ZP7Y1//AUi47p/Zn3nGc7h/9lP39R8AAAAAAAAAAAAAAAAAAAAAAAAAALjNC3bABbY="
+    data: !!binary "eNrt2TkOxCAQRcFGvgD3P63FlpiclkxVwsjJdzDiBY44ozQR9XuG/aT99ujc/v4+fR+A3+uXfV3nyNDx/qy96/b1HwD913/9ByCj//32L3n9vW1/++4wftS8v0PRf4Ab6p/cH/v6D0DCdf/M/swznsP9s5+6r/8AAAAAAAAAAAAAAAAAAAAAAAAAAMBtXoiwBcI="
   - reg: 0 0 0
-    data: !!binary "eNrt1kEKwjAUBND/ewLvf1pbiGDFhMaYqvgelFl0MaGLTjI3ccknGQMZB+Xf90fp2+f2an1ePldn/913eDxPsz9qCcB3m7J/8eH9/al++w+A/bf/9h+Asy4A615Ucvb+6a/3jtxLOvub9yD7D2D/J+2PfvsPwJmWsjuVzKX87ztT/1h/NvKt/bf9P9C767f/AAAAAAAAAAAAAAAAAAAAAAAAAAAATVdanxmS"
+    data: !!binary "eNrt1kEKwjAUBND/6QW8/2ltIYIVExpjquJ7UGbRxYQuOsncxCWfZAxkHJR/3x+lb5/bq/V5+Vyd/Xff4fE8zf6oJQDfbcr+xYf396f67T8A9t/+238AzroArHtRydn7p7/eO3Iv6exv3oPsP4D9n7Q/+u0/AGdayu5UMpfyv+9M/WP92ci39t/2/0Dvrt/+AwAAAAAAAAAAAAAAAAAAAAAAAAAANF0BVuQZxA=="
 entities:
   - type: Entrance
     pos:
@@ -31,28 +31,40 @@ entities:
       - 11
     dir: 4
     exit: true
-  - type: PointLight
+  - type: LightProbe
     pos:
       - 2.5
       - 2
-      - 8
-    range: 71.5611649
-    intensity: 20
-    color:
-      - 0.897674441
-      - 0.961628556
-      - 1
-  - type: PointLight
+      - -1
+    pRad:
+      - 3.5
+      - 2
+      - 2
+    iRad:
+      - 3.5
+      - 2
+      - 2
+    iFade:
+      - 0.5
+      - 0.5
+      - 0.5
+  - type: LightProbe
     pos:
       - 2.5
       - 2
-      - 0
-    range: 71.5611649
-    intensity: 20
-    color:
-      - 0.898039222
-      - 0.960784316
-      - 1
+      - 9
+    pRad:
+      - 3.5
+      - 2
+      - 2
+    iRad:
+      - 3.5
+      - 2
+      - 2
+    iFade:
+      - 0.5
+      - 0.5
+      - 0.5
   - type: GravitySwitch
     pos:
       - 4
@@ -82,37 +94,27 @@ entities:
       - 0.5
       - 0.5
       - 0.5
-  - type: LightProbe
+  - type: WallLight
+    up: 3
     pos:
       - 2.5
-      - 2
-      - 9
-    pRad:
-      - 3.5
-      - 2
-      - 2
-    iRad:
-      - 3.5
-      - 2
-      - 2
-    iFade:
-      - 0.5
-      - 0.5
-      - 0.5
-  - type: LightProbe
-    pos:
-      - 2.5
-      - 2
+      - 4
       - -1
-    pRad:
-      - 3.5
-      - 2
-      - 2
-    iRad:
-      - 3.5
-      - 2
-      - 2
-    iFade:
-      - 0.5
-      - 0.5
-      - 0.5
+    range: 87.2505875
+    intensity: 30
+    color:
+      - 0.819607854
+      - 0.972549021
+      - 0.996078432
+  - type: WallLight
+    up: 3
+    pos:
+      - 2.5
+      - 4
+      - 9
+    range: 87.2505875
+    intensity: 30
+    color:
+      - 0.819607854
+      - 0.972549021
+      - 0.996078432

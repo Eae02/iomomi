@@ -37,10 +37,6 @@ void MainGameState::LoadWorld(std::istream& stream)
 	}
 	
 	m_plShadowMapper.InvalidateAll();
-	m_plShadowMapper.UpdateShadowMaps(m_prepareDrawArgs.pointLights, [this] (const PointLightShadowRenderArgs& args)
-	{
-		RenderPointLightShadows(args);
-	}, INT32_MAX);
 }
 
 void MainGameState::DoDeferredRendering(bool useLightProbes, DeferredRenderer::RenderTarget& renderTarget)

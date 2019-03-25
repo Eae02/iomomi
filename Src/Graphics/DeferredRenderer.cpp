@@ -120,6 +120,7 @@ void DeferredRenderer::BeginEmissive(DeferredRenderer::RenderTarget& target)
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
 	rpBeginInfo.framebuffer = target.m_emissiveFramebuffer.handle;
+	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Load;
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
 	rpBeginInfo.colorAttachments[0].clearValue = eg::ColorLin(eg::Color::Black);
 	
