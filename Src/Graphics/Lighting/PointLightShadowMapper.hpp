@@ -40,6 +40,7 @@ private:
 		eg::Framebuffer framebuffer;
 		eg::Sphere sphere;
 		uint64_t currentLightID;
+		uint64_t lastUpdateFrame;
 		bool outOfDate;
 		bool inUse;
 	};

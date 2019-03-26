@@ -23,19 +23,20 @@ std::tuple<glm::ivec3, glm::ivec3> World::DecomposeGlobalCoordinate(const glm::i
 	return std::make_tuple(localCoord, regionCoord);
 }
 
-bool World::Load(std::istream& stream)
+std::unique_ptr<World> World::Load(std::istream& stream)
 {
 	YAML::Node rootYaml = YAML::Load(stream);
 	int version = rootYaml["version"].as<int>(10000);
 	if (version != CURRENT_VERSION)
 	{
 		eg::Log(eg::LogLevel::Warning, "wd", "Unsupported world version");
-		return false;
+		return nullptr;
 	}
 	
 	std::vector<std::string_view> regParts;
 	
-	m_regions.clear();
+	std::unique_ptr<World> world = std::make_unique<World>();
+	
 	for (const YAML::Node& regionNode : rootYaml["voxels"])
 	{
 		const YAML::Node& regNode = regionNode["reg"];
@@ -49,7 +50,7 @@ bool World::Load(std::istream& stream)
 		if (regParts.size() != 3)
 			continue;
 		
-		Region& region = m_regions.emplace_back();
+		Region& region = world->m_regions.emplace_back();
 		for (int i = 0; i < 3; i++)
 			region.coordinate[i] = atoi(regParts[i].data());
 		region.voxelsOutOfDate = true;
@@ -61,21 +62,16 @@ bool World::Load(std::istream& stream)
 		if (!eg::Decompress(dataBin.data(), dataBin.size(), region.data->voxels, sizeof(RegionData::voxels)))
 		{
 			eg::Log(eg::LogLevel::Error, "wd", "Could not decompress voxels");
-			return false;
+			return nullptr;
 		}
 	}
 	
-	if (!std::is_sorted(m_regions.begin(), m_regions.end()))
+	if (!std::is_sorted(world->m_regions.begin(), world->m_regions.end()))
 	{
 		eg::Log(eg::LogLevel::Error, "wd", "Regions are not sorted");
-		return false;
+		return nullptr;
 	}
 	
-	m_entities.clear();
-	m_spotLights.clear();
-	m_drawables.clear();
-	m_updatables.clear();
-	m_collidables.clear();
 	if (const YAML::Node& entitiesNode = rootYaml["entities"])
 	{
 		for (const YAML::Node& entityNode : entitiesNode)
@@ -90,13 +86,13 @@ bool World::Load(std::istream& stream)
 			
 			std::shared_ptr<Entity> entity = type->CreateInstance();
 			entity->Load(entityNode);
-			AddEntity(std::move(entity));
+			world->AddEntity(std::move(entity));
 		}
 	}
 	
-	m_anyOutOfDate = true;
+	world->m_anyOutOfDate = true;
 	
-	return true;
+	return std::move(world);
 }
 
 void World::Save(std::ostream& outStream) const
@@ -1027,7 +1023,9 @@ void World::DespawnEntity(const Entity* entity)
 
 void World::InitializeBulletPhysics()
 {
-	m_bulletWorld = std::make_unique<btDiscreteDynamicsWorld>(bullet::dispatcher, bullet::broadphase, bullet::solver, bullet::collisionConfig);
+	m_bulletBroadphase = std::make_unique<btDbvtBroadphase>();
+	m_bulletWorld = std::make_unique<btDiscreteDynamicsWorld>(bullet::dispatcher, m_bulletBroadphase.get(),
+		bullet::solver, bullet::collisionConfig);
 	m_bulletWorld->setGravity({ 0, -10, 0 });
 	
 	PrepareRegionMeshes(false);

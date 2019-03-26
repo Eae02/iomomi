@@ -20,11 +20,11 @@ MainGameState::MainGameState(RenderContext& renderCtx)
 
 void MainGameState::LoadWorld(std::istream& stream)
 {
-	m_world.Load(stream);
+	m_world = World::Load(stream);
 	m_player = { };
 	m_gameTime = 0;
 	
-	for (const std::shared_ptr<Entity>& entity : m_world.Entities())
+	for (const std::shared_ptr<Entity>& entity : m_world->Entities())
 	{
 		if (EntranceEntity* entrance = dynamic_cast<EntranceEntity*>(entity.get()))
 		{
@@ -36,7 +36,7 @@ void MainGameState::LoadWorld(std::istream& stream)
 		}
 	}
 	
-	m_world.InitializeBulletPhysics();
+	m_world->InitializeBulletPhysics();
 	
 	m_plShadowMapper.InvalidateAll();
 }
@@ -45,7 +45,7 @@ void MainGameState::DoDeferredRendering(bool useLightProbes, DeferredRenderer::R
 {
 	m_renderCtx->renderer.BeginGeometry(renderTarget);
 	
-	m_world.Draw();
+	m_world->Draw();
 	
 	MeshDrawArgs mDrawArgs;
 	mDrawArgs.drawMode = MeshDrawMode::Game;
@@ -69,14 +69,14 @@ void MainGameState::RunFrame(float dt)
 	if (!eg::console::IsShown())
 	{
 		eg::SetRelativeMouseMode(!eg::DevMode());
-		m_player.Update(m_world, dt);
+		m_player.Update(*m_world, dt);
 		
 		Entity::UpdateArgs entityUpdateArgs;
 		entityUpdateArgs.dt = dt;
 		entityUpdateArgs.player = &m_player;
-		entityUpdateArgs.world = &m_world;
+		entityUpdateArgs.world = m_world.get();
 		entityUpdateArgs.invalidateShadows = [this] (const eg::Sphere& sphere) { m_plShadowMapper.Invalidate(sphere); };
-		m_world.Update(entityUpdateArgs);
+		m_world->Update(entityUpdateArgs);
 	}
 	else
 	{
@@ -114,7 +114,7 @@ void MainGameState::RunFrame(float dt)
 	
 	m_prepareDrawArgs.spotLights.clear();
 	m_prepareDrawArgs.pointLights.clear();
-	m_world.PrepareForDraw(m_prepareDrawArgs);
+	m_world->PrepareForDraw(m_prepareDrawArgs);
 	
 	m_renderCtx->meshBatch.End(eg::DC);
 	
@@ -140,7 +140,7 @@ void MainGameState::RunFrame(float dt)
 
 void MainGameState::RenderPointLightShadows(const PointLightShadowRenderArgs& args)
 {
-	m_world.DrawPointLightShadows(args);
+	m_world->DrawPointLightShadows(args);
 	
 	MeshDrawArgs mDrawArgs;
 	mDrawArgs.drawMode = MeshDrawMode::PointLightShadow;

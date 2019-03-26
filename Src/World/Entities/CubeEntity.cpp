@@ -46,10 +46,14 @@ void CubeEntity::Draw(eg::MeshBatch& meshBatch)
 
 void CubeEntity::Update(const Entity::UpdateArgs& args)
 {
-	if (m_rigidBody.getLinearVelocity().length2() > 1E-4f || m_rigidBody.getAngularVelocity().length2() > 1E-4f)
+	if (args.player && (m_rigidBody.getLinearVelocity().length2() > 1E-4f ||
+	    m_rigidBody.getAngularVelocity().length2() > 1E-4f))
 	{
 		btTransform transform;
 		m_motionState.getWorldTransform(transform);
+		
+		m_rotation = bullet::ToGLM(transform.getRotation());
+		SetPosition(bullet::ToGLM(transform.getOrigin()));
 		
 		args.invalidateShadows(eg::Sphere(bullet::ToGLM(transform.getOrigin()), RADIUS * std::sqrt(3.0f)));
 	}

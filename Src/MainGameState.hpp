@@ -44,7 +44,7 @@ private:
 	
 	float m_gameTime = 0;
 	
-	World m_world;
+	std::unique_ptr<World> m_world;
 	Player m_player;
 };
 

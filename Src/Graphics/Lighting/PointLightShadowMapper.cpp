@@ -79,16 +79,12 @@ void PointLightShadowMapper::UpdateShadowMaps(
 		}
 	}
 	
-	//Sorts update candidates, first by whether they are in use or not and secondly by their distance to the camera.
-	const glm::vec3& cameraPos = RenderSettings::instance->cameraPosition;
+	//Sorts update candidates, first by whether they are in use or not and secondly by how long since they were last updated.
 	std::sort(m_updateCandidates.begin(), m_updateCandidates.end(), [&] (size_t a, size_t b)
 	{
-		if (m_shadowMaps[a].inUse == m_shadowMaps[b].inUse)
-		{
-			return glm::distance2(m_shadowMaps[a].sphere.position, cameraPos) <
-			       glm::distance2(m_shadowMaps[b].sphere.position, cameraPos);
-		}
-		return m_shadowMaps[a].inUse < m_shadowMaps[b].inUse;
+		if (m_shadowMaps[a].inUse != m_shadowMaps[b].inUse)
+			return m_shadowMaps[a].inUse < m_shadowMaps[b].inUse;
+		return m_shadowMaps[a].lastUpdateFrame < m_shadowMaps[b].lastUpdateFrame;
 	});
 	
 	//Updates shadow maps
@@ -149,6 +145,7 @@ void PointLightShadowMapper::UpdateShadowMap(size_t index, const RenderCallback&
 	
 	m_shadowMaps[index].inUse = true;
 	m_shadowMaps[index].outOfDate = false;
+	m_shadowMaps[index].lastUpdateFrame = eg::FrameIdx();
 }
 
 size_t PointLightShadowMapper::AddShadowMap()
@@ -158,6 +155,7 @@ size_t PointLightShadowMapper::AddShadowMap()
 	ShadowMap& shadowMap = m_shadowMaps.emplace_back();
 	shadowMap.outOfDate = true;
 	shadowMap.inUse = false;
+	shadowMap.lastUpdateFrame = 0;
 	
 	eg::TextureCubeCreateInfo textureCI;
 	textureCI.format = SHADOW_MAP_FORMAT;

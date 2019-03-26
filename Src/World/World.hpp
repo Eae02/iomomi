@@ -40,13 +40,27 @@ class World
 public:
 	World();
 	
-	bool Load(std::istream& stream);
+	//Move breaks bullet
+	World(World&&) = delete;
+	World(const World&) = delete;
+	World& operator=(World&&) = delete;
+	World& operator=(const World&) = delete;
+	
+	static std::unique_ptr<World> Load(std::istream& stream);
 	
 	void Save(std::ostream& outStream) const;
 	
 	void SetIsAir(const glm::ivec3& pos, bool isAir);
 	
 	bool IsAir(const glm::ivec3& pos) const;
+	
+	void SetTextureSafe(const glm::ivec3& pos, Dir side, uint8_t textureLayer)
+	{
+		if (IsAir(pos))
+		{
+			SetTexture(pos, side, textureLayer);
+		}
+	}
 	
 	void SetTexture(const glm::ivec3& pos, Dir side, uint8_t textureLayer);
 	
@@ -159,10 +173,11 @@ private:
 	size_t m_borderVertexBufferCapacity = 0;
 	uint32_t m_numBorderVertices;
 	
-	std::unique_ptr<btDiscreteDynamicsWorld> m_bulletWorld;
-	
 	std::unique_ptr<btTriangleMesh> m_wallsBulletMesh;
 	std::unique_ptr<btDefaultMotionState> m_wallsMotionState;
 	std::unique_ptr<btBvhTriangleMeshShape> m_wallsBulletShape;
 	std::unique_ptr<btRigidBody> m_wallsRigidBody;
+	
+	std::unique_ptr<btDbvtBroadphase> m_bulletBroadphase;
+	std::unique_ptr<btDiscreteDynamicsWorld> m_bulletWorld;
 };

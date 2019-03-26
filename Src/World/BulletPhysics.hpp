@@ -6,7 +6,6 @@ namespace bullet
 {
 	extern btDefaultCollisionConfiguration* collisionConfig;
 	extern btCollisionDispatcher* dispatcher;
-	extern btBroadphaseInterface* broadphase;
 	extern btSequentialImpulseConstraintSolver* solver;
 	
 	void Init();

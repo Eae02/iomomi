@@ -25,4 +25,6 @@ public:
 private:
 	btDefaultMotionState m_motionState;
 	btRigidBody m_rigidBody;
+	
+	glm::quat m_rotation;
 };

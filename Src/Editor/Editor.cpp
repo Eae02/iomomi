@@ -52,7 +52,7 @@ void Editor::RunFrame(float dt)
 							m_world->SetIsAir({x, y, z}, true);
 							for (int s = 0; s < 6; s++)
 							{
-								m_world->SetTexture({x, y, z}, (Dir)s, 1);
+								m_world->SetTextureSafe({x, y, z}, (Dir)s, 1);
 							}
 						}
 					}
@@ -68,13 +68,14 @@ void Editor::RunFrame(float dt)
 				std::string label = eg::Concat({ level.name, "###L" });
 				if (ImGui::MenuItem(label.c_str()))
 				{
-					m_world = std::make_unique<World>();
-					
 					std::string path = eg::Concat({ eg::ExeDirPath(), "/levels/", level.name, ".gwd" });
 					std::ifstream stream(path, std::ios::binary);
-					m_world->Load(stream);
 					
-					m_levelName = level.name;
+					if (std::unique_ptr<World> world = World::Load(stream))
+					{
+						m_world = std::move(world);
+						m_levelName = level.name;
+					}
 				}
 				ImGui::PopID();
 			}
@@ -137,10 +138,7 @@ void Editor::RunFrame(float dt)
 							for (int z = mn.z; z <= mx.z; z++)
 							{
 								glm::ivec3 pos = glm::ivec3(x, y, z) + DirectionVector(m_selectionNormal);
-								if (m_world->IsAir(pos))
-								{
-									m_world->SetTexture(pos, m_selectionNormal, i);
-								}
+								m_world->SetTextureSafe(pos, m_selectionNormal, i);
 							}
 						}
 					}
@@ -575,22 +573,19 @@ void Editor::UpdateToolWalls(float dt)
 								{
 									const glm::ivec3 pos(x, y, z);
 									const uint8_t texture = m_world->GetTexture(pos + texSourceOffset, texSourceSide);
-									m_world->SetTexture(pos + texDestOffset, texSourceSide, texture);
+									m_world->SetTextureSafe(pos + texDestOffset, texSourceSide, texture);
 									for (int s = 0; s < 4; s++)
 									{
 										const int stepDim = (selDim + 1 + s / 2) % 3;
 										const Dir stepDir = (Dir)(stepDim * 2 + s % 2);
 										if (!allAir)
 										{
-											m_world->SetTexture(pos, stepDir, texture);
+											m_world->SetTextureSafe(pos, stepDir, texture);
 										}
 										else
 										{
 											const glm::ivec3 npos = pos + DirectionVector(stepDir);
-											if (m_world->IsAir(npos))
-											{
-												m_world->SetTexture(npos, stepDir, texture);
-											}
+											m_world->SetTextureSafe(npos, stepDir, texture);
 										}
 									}
 								}
