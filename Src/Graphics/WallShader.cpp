@@ -133,17 +133,6 @@ static void OnShutdown()
 
 EG_ON_SHUTDOWN(OnShutdown)
 
-static const float ambientColor[] = { 0.15f, 0.12f, 0.13f, 1.0f };
-
-#pragma pack(push, 1)
-struct LightData
-{
-	glm::vec3 pos;
-	float _padding1;
-	glm::vec3 radiance;
-};
-#pragma pack(pop)
-
 void BindWallShaderGame()
 {
 	eg::DC.BindPipeline(wr.pipelineDeferredGeom);
