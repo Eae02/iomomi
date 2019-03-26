@@ -33,6 +33,7 @@ assets:
   - name: Models/EditorExit.obj
   - name: Models/EditorEntrance.obj
   - name: Models/WallLight.obj
+  - name: Models/Cube.obj 
   - name: Textures/EntityIcons.png
   - name: Textures/NoDraw.png
     srgb: true

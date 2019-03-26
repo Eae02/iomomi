@@ -1,6 +1,7 @@
 #include "World.hpp"
 #include "Voxel.hpp"
 #include "PrepareDrawArgs.hpp"
+#include "Entities/IRigidBodyEntity.hpp"
 #include "../Graphics/Materials/GravityCornerMaterial.hpp"
 #include "../Graphics/RenderSettings.hpp"
 #include "../Graphics/WallShader.hpp"
@@ -246,6 +247,11 @@ glm::mat3 GravityCorner::MakeRotationMatrix() const
 
 void World::Update(const Entity::UpdateArgs& args)
 {
+	if (m_bulletWorld)
+	{
+		m_bulletWorld->stepSimulation(args.dt, 10);
+	}
+	
 	for (long i = m_updatables.size() - 1; i >= 0; i--)
 	{
 		if (std::shared_ptr<Entity::IUpdatable> updatable = m_updatables[i].lock())
@@ -280,122 +286,7 @@ void World::Update(const Entity::UpdateArgs& args)
 
 void World::PrepareForDraw(PrepareDrawArgs& args)
 {
-	if (m_anyOutOfDate)
-	{
-		uint32_t totalVertices = 0;
-		uint32_t totalIndices = 0;
-		uint32_t totalBorderVertices = 0;
-		
-		bool uploadVoxels = false;
-		
-		for (Region& region : m_regions)
-		{
-			if (region.gravityCornersOutOfDate || region.voxelsOutOfDate)
-			{
-				BuildRegionBorderMesh(region.coordinate, *region.data);
-				region.gravityCornersOutOfDate = false;
-			}
-			
-			if (region.voxelsOutOfDate)
-			{
-				BuildRegionMesh(region.coordinate, *region.data, args.isEditor);
-				region.canDraw = !region.data->indices.empty();
-				region.voxelsOutOfDate = false;
-				uploadVoxels = true;
-			}
-			
-			totalVertices += region.data->vertices.size();
-			totalIndices += region.data->indices.size();
-			totalBorderVertices += region.data->borderVertices.size();
-		}
-		
-		if (totalIndices == 0)
-		{
-			m_canDraw = false;
-			return;
-		}
-		m_canDraw = true;
-		
-		if (uploadVoxels)
-		{
-			const uint64_t indicesOffset = totalVertices * sizeof(WallVertex);
-			const uint64_t borderVerticesOffset = indicesOffset + totalIndices * sizeof(uint16_t);
-			const uint64_t uploadBytes = borderVerticesOffset + totalBorderVertices * sizeof(WallBorderVertex);
-			
-			//Creates an upload buffer and copies data to it
-			eg::UploadBuffer uploadBuffer = eg::GetTemporaryUploadBuffer(uploadBytes);
-			char* uploadBufferMem = reinterpret_cast<char*>(uploadBuffer.Map());
-			auto* verticesOut = reinterpret_cast<WallVertex*>(uploadBufferMem);
-			auto* indicesOut = reinterpret_cast<uint16_t*>(uploadBufferMem + indicesOffset);
-			auto* borderVerticesOut = reinterpret_cast<WallBorderVertex*>(uploadBufferMem + borderVerticesOffset);
-			
-			uint32_t firstVertex = 0;
-			uint32_t firstIndex = 0;
-			for (Region& region : m_regions)
-			{
-				std::copy_n(region.data->vertices.data(), region.data->vertices.size(), verticesOut + firstVertex);
-				std::copy_n(region.data->indices.data(), region.data->indices.size(), indicesOut + firstIndex);
-				
-				region.data->firstVertex = firstVertex;
-				region.data->firstIndex = firstIndex;
-				
-				firstVertex += region.data->vertices.size();
-				firstIndex += region.data->indices.size();
-				
-				if (args.isEditor)
-				{
-					std::copy_n(region.data->borderVertices.begin(), region.data->borderVertices.size(), borderVerticesOut);
-					borderVerticesOut += region.data->borderVertices.size();
-				}
-			}
-			
-			uploadBuffer.Unmap();
-			
-			//Reallocates the vertex buffer if it is too small
-			if (m_voxelVertexBufferCapacity < totalVertices)
-			{
-				m_voxelVertexBufferCapacity = eg::RoundToNextMultiple(totalVertices, 16 * 1024);
-				m_voxelVertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer | eg::BufferFlags::CopyDst,
-					m_voxelVertexBufferCapacity * sizeof(WallVertex), nullptr);
-			}
-			
-			//Reallocates the index buffer if it is too small
-			if (m_voxelIndexBufferCapacity < totalIndices)
-			{
-				m_voxelIndexBufferCapacity = eg::RoundToNextMultiple(totalIndices, 16 * 1024);
-				m_voxelIndexBuffer = eg::Buffer(eg::BufferFlags::IndexBuffer | eg::BufferFlags::CopyDst,
-					m_voxelIndexBufferCapacity * sizeof(uint16_t), nullptr);
-			}
-			
-			//Reallocates the border vertex buffer if it is too small
-			if (m_borderVertexBufferCapacity < totalBorderVertices)
-			{
-				m_borderVertexBufferCapacity = eg::RoundToNextMultiple(totalBorderVertices, 16 * 1024);
-				m_borderVertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer | eg::BufferFlags::CopyDst,
-					m_borderVertexBufferCapacity * sizeof(WallBorderVertex), nullptr);
-			}
-			
-			//Uploads data to the vertex and index buffers
-			eg::DC.CopyBuffer(uploadBuffer.buffer, m_voxelVertexBuffer, uploadBuffer.offset, 0,
-				totalVertices * sizeof(WallVertex));
-			eg::DC.CopyBuffer(uploadBuffer.buffer, m_voxelIndexBuffer, uploadBuffer.offset + indicesOffset, 0,
-				totalIndices * sizeof(uint16_t));
-			
-			m_voxelVertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
-			m_voxelIndexBuffer.UsageHint(eg::BufferUsage::IndexBuffer);
-			
-			if (args.isEditor && totalBorderVertices > 0)
-			{
-				eg::DC.CopyBuffer(uploadBuffer.buffer, m_borderVertexBuffer,
-					uploadBuffer.offset + borderVerticesOffset, 0,
-					totalBorderVertices * sizeof(WallBorderVertex));
-				m_borderVertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
-			}
-			m_numBorderVertices = totalBorderVertices;
-		}
-		
-		m_anyOutOfDate = false;
-	}
+	PrepareRegionMeshes(args.isEditor);
 	
 	eg::Model& gravityCornerModel = eg::GetAsset<eg::Model>("Models/GravityCornerConvex.obj");
 	for (const Region& region : m_regions)
@@ -524,6 +415,126 @@ void World::DrawEditor()
 	if (m_numBorderVertices > 0)
 	{
 		DrawWallBordersEditor(m_borderVertexBuffer, m_numBorderVertices);
+	}
+}
+
+void World::PrepareRegionMeshes(bool isEditor)
+{
+	if (m_anyOutOfDate)
+	{
+		uint32_t totalVertices = 0;
+		uint32_t totalIndices = 0;
+		uint32_t totalBorderVertices = 0;
+		
+		bool uploadVoxels = false;
+		
+		for (Region& region : m_regions)
+		{
+			if (region.gravityCornersOutOfDate || region.voxelsOutOfDate)
+			{
+				BuildRegionBorderMesh(region.coordinate, *region.data);
+				region.gravityCornersOutOfDate = false;
+			}
+			
+			if (region.voxelsOutOfDate)
+			{
+				BuildRegionMesh(region.coordinate, *region.data, isEditor);
+				region.canDraw = !region.data->indices.empty();
+				region.voxelsOutOfDate = false;
+				uploadVoxels = true;
+			}
+			
+			totalVertices += region.data->vertices.size();
+			totalIndices += region.data->indices.size();
+			totalBorderVertices += region.data->borderVertices.size();
+		}
+		
+		if (totalIndices == 0)
+		{
+			m_canDraw = false;
+			return;
+		}
+		m_canDraw = true;
+		
+		if (uploadVoxels)
+		{
+			const uint64_t indicesOffset = totalVertices * sizeof(WallVertex);
+			const uint64_t borderVerticesOffset = indicesOffset + totalIndices * sizeof(uint16_t);
+			const uint64_t uploadBytes = borderVerticesOffset + totalBorderVertices * sizeof(WallBorderVertex);
+			
+			//Creates an upload buffer and copies data to it
+			eg::UploadBuffer uploadBuffer = eg::GetTemporaryUploadBuffer(uploadBytes);
+			char* uploadBufferMem = reinterpret_cast<char*>(uploadBuffer.Map());
+			auto* verticesOut = reinterpret_cast<WallVertex*>(uploadBufferMem);
+			auto* indicesOut = reinterpret_cast<uint16_t*>(uploadBufferMem + indicesOffset);
+			auto* borderVerticesOut = reinterpret_cast<WallBorderVertex*>(uploadBufferMem + borderVerticesOffset);
+			
+			uint32_t firstVertex = 0;
+			uint32_t firstIndex = 0;
+			for (Region& region : m_regions)
+			{
+				std::copy_n(region.data->vertices.data(), region.data->vertices.size(), verticesOut + firstVertex);
+				std::copy_n(region.data->indices.data(), region.data->indices.size(), indicesOut + firstIndex);
+				
+				region.data->firstVertex = firstVertex;
+				region.data->firstIndex = firstIndex;
+				
+				firstVertex += region.data->vertices.size();
+				firstIndex += region.data->indices.size();
+				
+				if (isEditor)
+				{
+					std::copy_n(region.data->borderVertices.begin(), region.data->borderVertices.size(), borderVerticesOut);
+					borderVerticesOut += region.data->borderVertices.size();
+				}
+			}
+			
+			uploadBuffer.Unmap();
+			
+			//Reallocates the vertex buffer if it is too small
+			if (m_voxelVertexBufferCapacity < totalVertices)
+			{
+				m_voxelVertexBufferCapacity = eg::RoundToNextMultiple(totalVertices, 16 * 1024);
+				m_voxelVertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer | eg::BufferFlags::CopyDst,
+					m_voxelVertexBufferCapacity * sizeof(WallVertex), nullptr);
+			}
+			
+			//Reallocates the index buffer if it is too small
+			if (m_voxelIndexBufferCapacity < totalIndices)
+			{
+				m_voxelIndexBufferCapacity = eg::RoundToNextMultiple(totalIndices, 16 * 1024);
+				m_voxelIndexBuffer = eg::Buffer(eg::BufferFlags::IndexBuffer | eg::BufferFlags::CopyDst,
+					m_voxelIndexBufferCapacity * sizeof(uint16_t), nullptr);
+			}
+			
+			//Reallocates the border vertex buffer if it is too small
+			if (m_borderVertexBufferCapacity < totalBorderVertices)
+			{
+				m_borderVertexBufferCapacity = eg::RoundToNextMultiple(totalBorderVertices, 16 * 1024);
+				m_borderVertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer | eg::BufferFlags::CopyDst,
+					m_borderVertexBufferCapacity * sizeof(WallBorderVertex), nullptr);
+			}
+			
+			//Uploads data to the vertex and index buffers
+			eg::DC.CopyBuffer(uploadBuffer.buffer, m_voxelVertexBuffer, uploadBuffer.offset, 0,
+				totalVertices * sizeof(WallVertex));
+			eg::DC.CopyBuffer(uploadBuffer.buffer, m_voxelIndexBuffer, uploadBuffer.offset + indicesOffset, 0,
+				totalIndices * sizeof(uint16_t));
+			
+			m_voxelVertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
+			m_voxelIndexBuffer.UsageHint(eg::BufferUsage::IndexBuffer);
+			
+			if (isEditor && totalBorderVertices > 0)
+			{
+				eg::DC.CopyBuffer(uploadBuffer.buffer, m_borderVertexBuffer,
+					uploadBuffer.offset + borderVerticesOffset, 0,
+					totalBorderVertices * sizeof(WallBorderVertex));
+				m_borderVertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
+			}
+			m_numBorderVertices = totalBorderVertices;
+		}
+		
+		m_anyOutOfDate = false;
 	}
 }
 
@@ -973,6 +984,56 @@ void World::DespawnEntity(const Entity* entity)
 		{
 			m_entities[i].swap(m_entities.back());
 			m_entities.pop_back();
+		}
+	}
+}
+
+void World::InitializeBulletPhysics()
+{
+	m_bulletWorld = std::make_unique<btDiscreteDynamicsWorld>(bullet::dispatcher, bullet::broadphase, bullet::solver, bullet::collisionConfig);
+	m_bulletWorld->setGravity({ 0, -10, 0 });
+	
+	PrepareRegionMeshes(false);
+	
+	m_wallsBulletMesh = std::make_unique<btTriangleMesh>();
+	for (const Region& region : m_regions)
+	{
+		if (!region.canDraw)
+			continue;
+		
+		btIndexedMesh mesh;
+		mesh.m_indexType = PHY_SHORT;
+		mesh.m_vertexType = PHY_FLOAT;
+		
+		mesh.m_numVertices = (int)region.data->vertices.size();
+		mesh.m_vertexStride = sizeof(WallVertex);
+		mesh.m_vertexBase = reinterpret_cast<const uint8_t*>(region.data->vertices.data()) + offsetof(WallVertex, position);
+		
+		mesh.m_numTriangles = (int)region.data->indices.size() / 3;
+		mesh.m_triangleIndexStride = sizeof(uint16_t) * 3;
+		mesh.m_triangleIndexBase = reinterpret_cast<const uint8_t*>(region.data->indices.data());
+		
+		m_wallsBulletMesh->addIndexedMesh(mesh, PHY_SHORT);
+	}
+	
+	m_wallsBulletShape = std::make_unique<btBvhTriangleMeshShape>(m_wallsBulletMesh.get(), true);
+	
+	//Creates the wall rigid body and adds it to the world
+	btTransform startTransform;
+	startTransform.setIdentity();
+	m_wallsMotionState = std::make_unique<btDefaultMotionState>(startTransform);
+	btRigidBody::btRigidBodyConstructionInfo rbInfo(0.0f, m_wallsMotionState.get(), m_wallsBulletShape.get());
+	m_wallsRigidBody = std::make_unique<btRigidBody>(rbInfo);
+	m_bulletWorld->addRigidBody(m_wallsRigidBody.get());
+	
+	for (const std::shared_ptr<Entity>& entity : m_entities)
+	{
+		if (IRigidBodyEntity* rbEntity = dynamic_cast<IRigidBodyEntity*>(entity.get()))
+		{
+			if (btRigidBody* rigidBody = rbEntity->GetRigidBody())
+			{
+				m_bulletWorld->addRigidBody(rigidBody);
+			}
 		}
 	}
 }

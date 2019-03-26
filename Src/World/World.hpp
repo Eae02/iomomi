@@ -4,6 +4,7 @@
 
 #include "Dir.hpp"
 #include "Clipping.hpp"
+#include "BulletPhysics.hpp"
 #include "Entities/Entity.hpp"
 #include "Entities/SpotLightEntity.hpp"
 #include "Entities/PointLightEntity.hpp"
@@ -75,6 +76,8 @@ public:
 	
 	PickWallResult PickWall(const eg::Ray& ray) const;
 	
+	void InitializeBulletPhysics();
+	
 	const std::vector<std::shared_ptr<Entity>>& Entities() const
 	{
 		return m_entities;
@@ -123,6 +126,8 @@ private:
 		}
 	};
 	
+	void PrepareRegionMeshes(bool isEditor);
+	
 	const Region* GetRegion(const glm::ivec3& coordinate) const;
 	Region* GetRegion(const glm::ivec3& coordinate, bool maybeCreate);
 	
@@ -152,4 +157,11 @@ private:
 	eg::Buffer m_borderVertexBuffer;
 	size_t m_borderVertexBufferCapacity = 0;
 	uint32_t m_numBorderVertices;
+	
+	std::unique_ptr<btDiscreteDynamicsWorld> m_bulletWorld;
+	
+	std::unique_ptr<btTriangleMesh> m_wallsBulletMesh;
+	std::unique_ptr<btDefaultMotionState> m_wallsMotionState;
+	std::unique_ptr<btBvhTriangleMeshShape> m_wallsBulletShape;
+	std::unique_ptr<btRigidBody> m_wallsRigidBody;
 };

@@ -4,6 +4,7 @@
 #include "GravitySwitchEntity.hpp"
 #include "LightProbeEntity.hpp"
 #include "WallLightEntity.hpp"
+#include "CubeEntity.hpp"
 
 void InitEntityTypes()
 {
@@ -13,4 +14,5 @@ void InitEntityTypes()
 	DefineEntityType(EntityType::Make<GravitySwitchEntity>("GravitySwitch", "Gravity Switch"));
 	DefineEntityType(EntityType::Make<LightProbeEntity>("LightProbe", "Light Probe"));
 	DefineEntityType(EntityType::Make<WallLightEntity>("WallLight", "Wall Light"));
+	DefineEntityType(EntityType::Make<CubeEntity>("Cube", "Cube"));
 }

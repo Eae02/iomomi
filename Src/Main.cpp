@@ -1,5 +1,6 @@
 #include "Game.hpp"
 #include "Levels.hpp"
+#include "World/BulletPhysics.hpp"
 #include "Graphics/Materials/StaticPropMaterial.hpp"
 
 static_assert(sizeof(int) == 4);
@@ -9,6 +10,8 @@ void InitEntityTypes();
 
 int main(int argc, char** argv)
 {
+	bullet::Init();
+	
 	eg::RunConfig runConfig;
 	runConfig.gameName = "Gravity";
 	runConfig.flags = eg::RunFlags::DevMode | eg::RunFlags::DefaultFramebufferSRGB;
@@ -38,4 +41,6 @@ int main(int argc, char** argv)
 		runConfig.flags |= eg::RunFlags::VSync;
 	
 	eg::Run<Game>(runConfig);
+	
+	bullet::Destroy();
 }

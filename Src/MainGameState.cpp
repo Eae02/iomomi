@@ -36,6 +36,8 @@ void MainGameState::LoadWorld(std::istream& stream)
 		}
 	}
 	
+	m_world.InitializeBulletPhysics();
+	
 	m_plShadowMapper.InvalidateAll();
 }
 

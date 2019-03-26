@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 project(Gravity)
 
 find_package(Threads REQUIRED)
+find_package(Bullet REQUIRED)
 
 if(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
 	set(ARCH_SUFFIX "64")
@@ -50,9 +51,11 @@ target_include_directories(Gravity SYSTEM PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/Deps/utfcpp/source
 	${CMAKE_CURRENT_SOURCE_DIR}/Deps/json/include
 	${CMAKE_CURRENT_SOURCE_DIR}/Deps/imgui
+	${BULLET_INCLUDE_DIRS}
 )
 
 target_link_libraries(Gravity
 	EGame
 	yaml-cpp
+	${BULLET_LIBRARIES}
 )
