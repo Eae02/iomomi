@@ -22,15 +22,25 @@ glm::mat4 WallLightEntity::GetTransform() const
 		glm::scale(glm::mat4(1), glm::vec3(0.25f));
 }
 
+EmissiveMaterial::InstanceData WallLightEntity::GetInstanceData(float colorScale) const
+{
+	eg::ColorLin color = eg::ColorLin(GetColor()).ScaleRGB(colorScale);
+	
+	EmissiveMaterial::InstanceData instanceData;
+	instanceData.transform = GetTransform();
+	instanceData.color = glm::vec4(color.r, color.g, color.b, 1.0f);
+	
+	return instanceData;
+}
+
 void WallLightEntity::Draw(eg::MeshBatch& meshBatch)
 {
-	m_material.SetColor(eg::ColorLin(GetColor()).ScaleRGB(4.0f));
-	meshBatch.Add(*s_model, m_material, GetTransform());
+	meshBatch.Add(*s_model, EmissiveMaterial::instance, GetInstanceData(4.0f));
 }
 
 void WallLightEntity::EditorDraw(bool selected, const Entity::EditorDrawArgs& drawArgs) const
 {
-	drawArgs.meshBatch->Add(*s_model, m_material, GetTransform());
+	drawArgs.meshBatch->Add(*s_model, EmissiveMaterial::instance, GetInstanceData(1.0f));
 }
 
 void WallLightEntity::EditorWallDrag(const glm::vec3& newPosition, Dir wallNormalDir)

@@ -15,12 +15,13 @@ static void OnInit()
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::None;
 	pipelineCI.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
-	pipelineCI.vertexBindings[1] = { sizeof(float) * 16, eg::InputRate::Instance };
+	pipelineCI.vertexBindings[1] = { sizeof(EmissiveMaterial::InstanceData), eg::InputRate::Instance };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(eg::StdVertex, position) };
 	pipelineCI.vertexAttributes[1] = { 1, eg::DataType::Float32, 4, 0 * sizeof(float) * 4 };
 	pipelineCI.vertexAttributes[2] = { 1, eg::DataType::Float32, 4, 1 * sizeof(float) * 4 };
 	pipelineCI.vertexAttributes[3] = { 1, eg::DataType::Float32, 4, 2 * sizeof(float) * 4 };
 	pipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
+	pipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 4, 4 * sizeof(float) * 4 };
 	pipelineCI.numColorAttachments = 1;
 	emissivePipelineGame = eg::Pipeline::Create(pipelineCI);
 	emissivePipelineGame.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT);
@@ -39,6 +40,8 @@ static void OnShutdown()
 
 EG_ON_INIT(OnInit)
 EG_ON_SHUTDOWN(OnShutdown)
+
+EmissiveMaterial EmissiveMaterial::instance;
 
 size_t EmissiveMaterial::PipelineHash() const
 {
@@ -71,6 +74,5 @@ bool EmissiveMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) 
 
 bool EmissiveMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
-	cmdCtx.PushConstants(0, sizeof(float) * 4, &m_color.r);
 	return true;
 }

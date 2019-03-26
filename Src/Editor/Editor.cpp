@@ -62,19 +62,19 @@ void Editor::RunFrame(float dt)
 			ImGui::Separator();
 			ImGui::Text("Open Level");
 			
-			for (Level* level = firstLevel; level != nullptr; level = level->next)
+			for (const Level& level : levels)
 			{
-				ImGui::PushID(level);
-				std::string label = eg::Concat({ level->name, "###L" });
+				ImGui::PushID(&level);
+				std::string label = eg::Concat({ level.name, "###L" });
 				if (ImGui::MenuItem(label.c_str()))
 				{
 					m_world = std::make_unique<World>();
 					
-					std::string path = eg::Concat({ eg::ExeDirPath(), "/levels/", level->name, ".gwd" });
+					std::string path = eg::Concat({ eg::ExeDirPath(), "/levels/", level.name, ".gwd" });
 					std::ifstream stream(path, std::ios::binary);
 					m_world->Load(stream);
 					
-					m_levelName = level->name;
+					m_levelName = level.name;
 				}
 				ImGui::PopID();
 			}

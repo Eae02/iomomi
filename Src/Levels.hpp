@@ -4,12 +4,11 @@
 
 struct Level
 {
-	std::string_view name;
-	Level* next;
+	std::string name;
 };
 
-extern Level* firstLevel;
+extern std::vector<Level> levels;
 
 void InitLevels();
 
-Level* FindLevel(std::string_view name);
+int64_t FindLevel(std::string_view name);

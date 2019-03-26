@@ -23,6 +23,7 @@ public:
 private:
 	glm::mat4 GetTransform() const;
 	
+	EmissiveMaterial::InstanceData GetInstanceData(float colorScale) const;
+	
 	Dir m_dir;
-	EmissiveMaterial m_material;
 };

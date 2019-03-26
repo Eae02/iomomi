@@ -2,12 +2,9 @@
 
 layout(location=0) out vec4 color_out;
 
-layout(push_constant) uniform PC
-{
-	vec4 color;
-};
+layout(location=0) in vec4 color_in;
 
 void main()
 {
-	color_out = color;
+	color_out = color_in;
 }

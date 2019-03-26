@@ -2,9 +2,7 @@
 
 #include <filesystem>
 
-static eg::LinearAllocator levelsMemAllocator;
-
-Level* firstLevel = nullptr;
+std::vector<Level> levels;
 
 void InitLevels()
 {
@@ -15,25 +13,29 @@ void InitLevels()
 	}
 	else
 	{
+		levels.clear();
+		
 		for (auto entry : std::filesystem::directory_iterator(levelsPath))
 		{
 			if (!entry.is_regular_file() || entry.path().extension() != ".gwd")
 				continue;
 			
-			Level* level = levelsMemAllocator.New<Level>();
-			level->name = levelsMemAllocator.MakeStringCopy(entry.path().stem().string());
-			level->next = firstLevel;
-			firstLevel = level;
+			levels.push_back({ entry.path().stem().string() });
 		}
+		
+		std::sort(levels.begin(), levels.end(), [&] (const Level& a, const Level& b)
+		{
+			return a.name < b.name;
+		});
 	}
 }
 
-Level* FindLevel(std::string_view name)
+int64_t FindLevel(std::string_view name)
 {
-	for (Level* level = firstLevel; level != nullptr; level = level->next)
+	for (size_t i = 0; i < levels.size(); i++)
 	{
-		if (level->name == name)
-			return level;
+		if (levels[i].name == name)
+			return i;
 	}
-	return nullptr;
+	return -1;
 }

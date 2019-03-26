@@ -5,9 +5,9 @@ voxels:
   - reg: -1 -1 0
     data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
   - reg: -1 0 -1
-    data: !!binary "eNrt1TEOgCAQBMAjNJb+/7UaQK2UQmJCnGm2Y4sj2QgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAOaRIu1iP1P9xfym+EgDsr/1njNzu20v9rz90yrGs9bk4M9f/3c0x/fHffrC/9p/HO9+l/tfzV/Y/td27su5bL8f0x2/7wf7a/1ltQX8I1g=="
+    data: !!binary "eNrt17sOgzAQBMCz3KT0/39tEJiHIpmkQI4MM812bMFJCxEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY0iRJnv2ltPcW9bU37s/5ve+JgD2v0t/3b30p/3Tv+x+uvn+53rf37JTf2nl8P3TU3K81iy1dsn5OzdO85r+LQ/98Yx+sP/6f+3Pdf/zvff/885b2am/tHL0/lT3v+Zy17Hfd/3ObOY1/Vse+uMR/WD/9Y/6//8GixAH/w=="
   - reg: -1 0 0
-    data: !!binary "eNrt1UsKhDAUBMAXvEDuf1pFIij4YyDJqFULezFgo8TpCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIDfpEiTyPN1PyNdZ73+5ffzfG7/fIPDrN5/+/307b9MAOy//bf/dw3lOTY5RG71/X2+v5zzTerPAfbf/tv/qvu/+zwN/38/37+c83Xqt/80/f6Pz2eb/e+1P937y97/+f6+dv9HYLoOLQ=="
+    data: !!binary "eNrt1kFugzAUBNCP/gXcrHL/kxYVZ2EFU0SFacR7C2aVDELAEAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwzBTTLH6OnYw9eVQuPaWby/k9e/k6/5P7u/n5/bH5+9rz6OVf+3ffn78kAJ+1/7WndDN2pf7D/dv7f3b/1ftfv2PazHHP3+p3XUa5Tf9y/5Um9ZeAO+1/dnLU/v6P/q+3PLs/773/q/+Xw5+/9noOfP9f3l93r8m5P3M+ruS4/qy9bQ7sn2IlLRZnvF839mnI/l+1P/rvvf/fuQ8OZQ=="
   - reg: -1 1 -1
     data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
   - reg: -1 1 0
@@ -17,91 +17,91 @@ voxels:
   - reg: 0 -1 0
     data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
   - reg: 0 0 -1
-    data: !!binary "eNrt1kEKwjAQQNEp2bjs/U8rxWlAUIO00cK8t5mF4NcWMomYY9lErKMZ+oc7LW4vvn/7aDzP6UfZ/ve/V19f/1/99jgg1n3W60f25z5/+9/+t/+dv/r61+ov2V+K9n/z/O1/+9/+d/7q6+tfqN+y3yb39/vNaOrb/4X2f3n5gvrUr/j+55+/+p/uH31O0/L/jab+wftc7v+We6/P53veu3lOP8r2sX/tf/vX/gcAAAAAAAAAAAAAAAAAAAAAAAAAAAB2d6btFuQ="
+    data: !!binary "eNrt1ssOgjAQQNGSblyy8P+/1RCnBE3qI9IK6Tmb2XGVhE5TamNafDBTn/5cm2fvL4/J6VLm4/OnZaaXc5/+Ojf9NET/+9+rr6//r36Oc7HM8fop+m3fv/1v/9v/zl99/WP1y7k4Ddrv8/7tf/vf/nf+6h+sn6Of9fUb9o91AZir8+R9+/9c+394vb5/fX392v1znc3k+H/vZp/+tTr79Ofq/Pk+F/s/x/7Psf/i+c/3vb3vf/fuOjf9NEQf56++vv0PAAAAAAAAAAAAAAAAAAAAAAAAAAAAFDdpExOD"
   - reg: 0 0 0
-    data: !!binary "eNrt10EKgzAUBNCEXMCC9z9rqQ00LlKx1UTJe5vZFAe6+KMxvoQplhnCFBqJw/eH3Ftk0t+6P3Si/9r9cfnBche+pf4fJf1Lf1oetD/jO+2v/ddv//TbX/037I/rPd+b9tf+67d/+s+5//NG2r+z+lPuqeXd+1O+eynv+d78c/9D3r1VNry/o/fb3779w8svvPp33Icye9ynI/u3nnON/noe8wHYrT/fvX5S/v/LbHl/B+//vP8Vqd/+298r7f9czTH2/1HNNv2xmm32/7T+7vsPAAAAAAAAAAAAAAAAAAAAAAAAAAAAHO4JwuMUiA=="
+    data: !!binary "eNrt10FugzAUBFBbvwdgkQP0/qcsBVoZKkRRwIbkvUVmEzEkEgzk/C2lXGakaqbebpaRuvfpT1NvkX1/RP+5zHT8ea33x9RbZN3+nJZ5Yn9qRP+1+/Pwhe08ub/byNv2h/6hP4YD7c885rP7Z//tv/23f/rtv/4G/Xm+53vT/tt/+2//9N9t/2Ojf3hB/OzGTH9T/0v098cb93xvPrn/adr9WUbVC3D8/8usuL+t+zf2/7HMpvsfjfc/2u3Ey/q57vX///6YDzxv/W/dP9332onpd5QZ1fsfszxh5zb6u1nW3P/f578i9dt5+3ul/f9YzUP6u6vvX15N/ffefwAAAAAAAAAAAAAAAAAAAAAAAAAAAOBwX133Fdw="
   - reg: 0 1 -1
     data: !!binary "eNrt1bENwEAMAzELXiD7T5vms8IbgclGpcqruqtTSer5tpb9A8BGOd3NUH+n/wFgZf/79LeH+j/8DwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwD+9ZP8BDQ=="
   - reg: 0 1 0
-    data: !!binary "eNrt1bENgDAQBEGfvgH6rxYhnJBhE1jIM8Ff+OFWWpJ21HUnNvdOq8X/AWBH6f3Ns6ej+9v/ALBl/6v3t3pPR/dr/xf/BwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgDdOhm8ETw=="
+    data: !!binary "eNrt1TsKgDAQRdEMswFx/4sVMY2FkE8RJOcU88opb0aJiHLkfQc2nh2Wbf/Pr539DwA7itrfePe8d3/7HwC27H/W/mbtae/O9n/xfwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGhxAYETBFc="
 entities:
   - type: Entrance
     pos:
       - 1.5
-      - 1.5
-      - 3
+      - 4.5
+      - 6
     dir: 4
     exit: false
   - type: Entrance
     pos:
       - -2
       - 4.5
-      - -6.5
+      - -5.5
     dir: 1
     exit: true
   - type: GravitySwitch
     pos:
       - 1.5
-      - 0
+      - 1
       - -0.5
     up: 2
-  - type: GravitySwitch
-    pos:
-      - 1.39999998
-      - 18
-      - 6.30000019
-    up: 3
-  - type: GravitySwitch
-    pos:
-      - -2.5
-      - 11.5
-      - 8
-    up: 5
   - type: WallLight
     up: 3
     pos:
-      - 1.5
+      - -2
+      - 15
       - 6
-      - -6.5
-    range: 71.1828079
+    range: 69.6727829
     intensity: 20
     color:
-      - 0.819426656
-      - 0.973365009
-      - 0.995348811
-  - type: WallLight
-    up: 3
-    pos:
-      - 1.5
-      - 6
-      - -3.5
-    range: 71.1828079
-    intensity: 20
-    color:
-      - 0.819426656
-      - 0.973365009
-      - 0.995348811
+      - 0.976744175
+      - 0.826191306
+      - 0.717793405
   - type: WallLight
     up: 3
     pos:
       - 1.5
       - 18
       - 2.5
-    range: 71.2421494
+    range: 69.6506271
     intensity: 20
     color:
-      - 0.819607854
-      - 0.972549021
-      - 0.996078432
+      - 0.97647059
+      - 0.827450991
+      - 0.717647076
+  - type: WallLight
+    up: 3
+    pos:
+      - 1.5
+      - 6
+      - 4
+    range: 87.1779175
+    intensity: 30
+    color:
+      - 0.819426656
+      - 0.973365009
+      - 0.995348811
+  - type: WallLight
+    up: 3
+    pos:
+      - 1.5
+      - 6
+      - -5
+    range: 87.1779175
+    intensity: 30
+    color:
+      - 0.819426656
+      - 0.973365009
+      - 0.995348811
   - type: WallLight
     up: 3
     pos:
       - -2.5
-      - 13
-      - -0.5
-    range: 71.2421494
+      - 14
+      - 1.5
+    range: 69.6727829
     intensity: 20
     color:
-      - 0.819607854
-      - 0.972549021
-      - 0.996078432
+      - 0.976744175
+      - 0.826191306
+      - 0.717793405
