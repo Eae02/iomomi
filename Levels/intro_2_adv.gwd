@@ -7,7 +7,7 @@ voxels:
   - reg: -1 0 -1
     data: !!binary "eNrt17sOgzAQBMCz3KT0/39tEJiHIpmkQI4MM812bMFJCxEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY0iRJnv2ltPcW9bU37s/5ve+JgD2v0t/3b30p/3Tv+x+uvn+53rf37JTf2nl8P3TU3K81iy1dsn5OzdO85r+LQ/98Yx+sP/6f+3Pdf/zvff/885b2am/tHL0/lT3v+Zy17Hfd/3ObOY1/Vse+uMR/WD/9Y/6//8GixAH/w=="
   - reg: -1 0 0
-    data: !!binary "eNrt1kFugzAUBNCP/gXcrHL/kxYVZ2EFU0SFacR7C2aVDELAEAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwzBTTLH6OnYw9eVQuPaWby/k9e/k6/5P7u/n5/bH5+9rz6OVf+3ffn78kAJ+1/7WndDN2pf7D/dv7f3b/1ftfv2PazHHP3+p3XUa5Tf9y/5Um9ZeAO+1/dnLU/v6P/q+3PLs/773/q/+Xw5+/9noOfP9f3l93r8m5P3M+ruS4/qy9bQ7sn2IlLRZnvF839mnI/l+1P/rvvf/fuQ8OZQ=="
+    data: !!binary "eNrt1kFug0AQBMBB84GNT/z/pcGBHIhZjLBYgqg60Ce7EQKaCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIB9uugG8XOsZGzJvXLsKdUcz6+v5e/5H9xfzev3x+rvp55HLT/t33x/vkkArrX/U0+pZmxK/bv71/f/6P6z93/6jplntnv+Fr/rMspt+sf7r8xSfwm40/5nJVvt7//o/3rJo/vz3vu/+H/Z/PmbX8+G7//T+6fdm+XQnzkcM/q/2a4/n30v2bC/i4W0WBzxfl3Zpyb7f9b+6L/3/n8DUXYOfQ=="
   - reg: -1 1 -1
     data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
   - reg: -1 1 0
