@@ -1,4 +1,5 @@
 #include "Clipping.hpp"
+#include "World.hpp"
 
 void CalcPolygonClipping(ClippingArgs& args, eg::Span<const glm::vec3> vertices)
 {
@@ -56,6 +57,85 @@ void CalcPolygonClipping(ClippingArgs& args, eg::Span<const glm::vec3> vertices)
 	}
 }
 
+void CalcWorldClipping(const World& world, ClippingArgs& args)
+{
+	const glm::vec3 endMin = args.aabb.min + args.move;
+	const glm::vec3 endMax = args.aabb.max + args.move;
+	
+	constexpr float EP = 0.0001f;
+	
+	//Clipping against voxels
+	for (int axis = 0; axis < 3; axis++)
+	{
+		if (std::abs(args.move[axis]) < 1E-6f)
+			continue;
+		
+		const bool negativeMove = args.move[axis] < 0;
+		
+		int vOffset;
+		float beginA, endA;
+		if (negativeMove)
+		{
+			beginA = args.aabb.min[axis];
+			endA = endMin[axis];
+			vOffset = -1;
+		}
+		else
+		{
+			beginA = args.aabb.max[axis];
+			endA = endMax[axis];
+			vOffset = 0;
+		}
+		
+		const int minI = (int)std::floor(std::min(beginA, endA) - EP) - 1;
+		const int maxI = (int)std::ceil(std::max(beginA, endA) + EP) + 1;
+		
+		const int axisB = (axis + 1) % 3;
+		const int axisC = (axis + 2) % 3;
+		
+		glm::ivec3 normal(0);
+		normal[axis] = negativeMove ? 1 : -1;
+		const Dir textureSide = (Dir)(axis * 2 + (negativeMove ? 0 : 1));
+		
+		for (int v = minI; v <= maxI; v++)
+		{
+			const float t = (v - beginA) / args.move[axis];
+			if (t > args.clipDist || t < -EP)
+				continue;
+			
+			const int minB = (int)std::floor(glm::mix(args.aabb.min[axisB], endMin[axisB], t));
+			const int maxB = (int)std::ceil(glm::mix(args.aabb.max[axisB], endMax[axisB], t));
+			const int minC = (int)std::floor(glm::mix(args.aabb.min[axisC], endMin[axisC], t));
+			const int maxC = (int)std::ceil(glm::mix(args.aabb.max[axisC], endMax[axisC], t));
+			for (int vb = minB; vb < maxB; vb++)
+			{
+				for (int vc = minC; vc < maxC; vc++)
+				{
+					glm::ivec3 coord;
+					coord[axis] = v + vOffset;
+					coord[axisB] = vb;
+					coord[axisC] = vc;
+					
+					if (!world.IsAir(coord) && world.GetTexture(coord + normal, textureSide) != 0)
+					{
+						args.colPlaneNormal = normal;
+						args.clipDist = std::max(t, 0.0f);
+						break;
+					}
+				}
+			}
+		}
+	}
+	
+	for (const std::weak_ptr<Entity::ICollidable>& collidable : world.CollidableEntities())
+	{
+		if (std::shared_ptr<Entity::ICollidable> collidableS = collidable.lock())
+		{
+			collidableS->CalcClipping(args);
+		}
+	}
+}
+
 float CalcCollisionCorrection(const eg::AABB& aabb, const eg::Plane& plane)
 {
 	constexpr float MAX_C = 0.1f;
@@ -70,4 +150,38 @@ float CalcCollisionCorrection(const eg::AABB& aabb, const eg::Plane& plane)
 	}
 	float c = -minD;
 	return (c > maxD || c > MAX_C) ? 0 : c;
+}
+
+glm::vec3 CalcWorldCollisionCorrection(const World& world, const eg::AABB& aabb)
+{
+	glm::ivec3 searchMin(glm::floor(aabb.min));
+	glm::ivec3 searchMax(glm::ceil(aabb.max));
+	
+	for (int x = searchMin.x; x < searchMax.x; x++)
+	{
+		for (int y = searchMin.y; y < searchMax.y; y++)
+		{
+			for (int z = searchMin.z; z < searchMax.z; z++)
+			{
+				glm::ivec3 pos(x, y, z);
+				if (world.IsAir(pos))
+					continue;
+				
+				for (int s = 0; s < 6; s++)
+				{
+					glm::ivec3 toNeighbor = DirectionVector((Dir)s);
+					if (!world.IsAir(pos + toNeighbor) || world.GetTexture(pos + toNeighbor, (Dir)s) == 0)
+						continue;
+					
+					eg::Plane plane(toNeighbor, (pos * 2 + 1 + toNeighbor) / 2);
+					float correction = CalcCollisionCorrection(aabb, plane);
+					if (correction > 0)
+					{
+						return plane.GetNormal() * correction;
+					}
+				}
+			}
+		}
+	}
+	return glm::vec3(0.0f);
 }

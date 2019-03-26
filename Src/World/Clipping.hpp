@@ -19,4 +19,8 @@ struct ClippingArgs
  */
 void CalcPolygonClipping(ClippingArgs& args, eg::Span<const glm::vec3> vertices);
 
+void CalcWorldClipping(const class World& world, ClippingArgs& args);
+
 float CalcCollisionCorrection(const eg::AABB& aabb, const eg::Plane& plane);
+
+glm::vec3 CalcWorldCollisionCorrection(const class World& world, const eg::AABB& aabb);

@@ -78,9 +78,6 @@ public:
 	void DrawEditor();
 	void DrawPointLightShadows(const struct PointLightShadowRenderArgs& renderArgs);
 	
-	void CalcClipping(ClippingArgs& args) const;
-	glm::vec3 GetCollisionCorrection(const eg::AABB& aabb) const;
-	
 	bool IsGravityCorner(const glm::ivec3& cornerPos, Dir cornerDir) const;
 	void SetIsGravityCorner(const glm::ivec3& cornerPos, Dir cornerDir, bool value);
 	bool IsCorner(const glm::ivec3& cornerPos, Dir cornerDir) const;
@@ -96,6 +93,11 @@ public:
 	const std::vector<std::shared_ptr<Entity>>& Entities() const
 	{
 		return m_entities;
+	}
+	
+	const std::vector<std::weak_ptr<Entity::ICollidable>>& CollidableEntities() const
+	{
+		return m_collidables;
 	}
 	
 private:

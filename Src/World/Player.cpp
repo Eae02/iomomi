@@ -283,7 +283,7 @@ void Player::Update(World& world, float dt)
 				m_oldRotation = m_rotation;
 				m_newRotation = GetRotation(m_rotationYaw, m_rotationPitch, newDown);
 				
-				m_newPosition = m_position;// - up * 1.0f;
+				m_newPosition = m_position;
 				m_velocity = glm::vec3(0);
 				m_down = newDown;
 				move = { };
@@ -306,7 +306,7 @@ void Player::Update(World& world, float dt)
 		clippingArgs.move = move;
 		clippingArgs.aabb = GetAABB();
 		clippingArgs.clipDist = 1;
-		world.CalcClipping(clippingArgs);
+		CalcWorldClipping(world, clippingArgs);
 		
 		glm::vec3 clippedMove = move * (clippingArgs.clipDist * 0.99f);
 		m_position += clippedMove;
@@ -330,7 +330,7 @@ void Player::Update(World& world, float dt)
 		}
 	}
 	
-	m_position += world.GetCollisionCorrection(GetAABB());
+	m_position += CalcWorldCollisionCorrection(world, GetAABB());
 	
 	m_eyePosition = m_position + up * EYE_OFFSET;
 	if (m_gravityTransitionMode == TransitionMode::Fall)
