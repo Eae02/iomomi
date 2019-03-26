@@ -676,35 +676,72 @@ void World::BuildRegionBorderMesh(glm::ivec3 coordinate, World::RegionData& regi
 	}
 }
 
+glm::vec3 World::GetCollisionCorrection(const eg::AABB& aabb) const
+{
+	glm::ivec3 searchMin(glm::floor(aabb.min));
+	glm::ivec3 searchMax(glm::ceil(aabb.max));
+	
+	for (int x = searchMin.x; x < searchMax.x; x++)
+	{
+		for (int y = searchMin.y; y < searchMax.y; y++)
+		{
+			for (int z = searchMin.z; z < searchMax.z; z++)
+			{
+				glm::ivec3 pos(x, y, z);
+				if (IsAir(pos))
+					continue;
+				
+				for (int s = 0; s < 6; s++)
+				{
+					glm::ivec3 toNeighbor = DirectionVector((Dir)s);
+					if (!IsAir(pos + toNeighbor) || GetTexture(pos + toNeighbor, (Dir)s) == 0)
+						continue;
+					
+					eg::Plane plane(toNeighbor, (pos * 2 + 1 + toNeighbor) / 2);
+					float correction = CalcCollisionCorrection(aabb, plane);
+					if (correction > 0)
+					{
+						return plane.GetNormal() * correction;
+					}
+				}
+			}
+		}
+	}
+	return glm::vec3(0.0f);
+}
+
 void World::CalcClipping(ClippingArgs& args) const
 {
-	const glm::vec3 endMin = args.aabbMin + args.move;
-	const glm::vec3 endMax = args.aabbMax + args.move;
+	const glm::vec3 endMin = args.aabb.min + args.move;
+	const glm::vec3 endMax = args.aabb.max + args.move;
 	
 	constexpr float EP = 0.0001f;
 	
 	//Clipping against voxels
 	for (int axis = 0; axis < 3; axis++)
 	{
+		if (std::abs(args.move[axis]) < 1E-6f)
+			continue;
+		
 		const bool negativeMove = args.move[axis] < 0;
 		
 		int vOffset;
 		float beginA, endA;
 		if (negativeMove)
 		{
-			beginA = args.aabbMin[axis];
+			beginA = args.aabb.min[axis];
 			endA = endMin[axis];
 			vOffset = -1;
 		}
 		else
 		{
-			beginA = args.aabbMax[axis];
+			beginA = args.aabb.max[axis];
 			endA = endMax[axis];
 			vOffset = 0;
 		}
 		
-		const int minI = (int)std::floor(std::min(beginA, endA) - EP);
-		const int maxI = (int)std::ceil(std::max(beginA, endA) + EP);
+		const int minI = (int)std::floor(std::min(beginA, endA) - EP) - 1;
+		const int maxI = (int)std::ceil(std::max(beginA, endA) + EP) + 1;
 		
 		const int axisB = (axis + 1) % 3;
 		const int axisC = (axis + 2) % 3;
@@ -716,13 +753,13 @@ void World::CalcClipping(ClippingArgs& args) const
 		for (int v = minI; v <= maxI; v++)
 		{
 			const float t = (v - beginA) / args.move[axis];
-			if (t > args.clipDist || t < 0)
+			if (t > args.clipDist || t < -EP)
 				continue;
 			
-			const int minB = (int)std::floor(glm::mix(args.aabbMin[axisB], endMin[axisB], t));
-			const int maxB = (int)std::ceil(glm::mix(args.aabbMax[axisB], endMax[axisB], t));
-			const int minC = (int)std::floor(glm::mix(args.aabbMin[axisC], endMin[axisC], t));
-			const int maxC = (int)std::ceil(glm::mix(args.aabbMax[axisC], endMax[axisC], t));
+			const int minB = (int)std::floor(glm::mix(args.aabb.min[axisB], endMin[axisB], t));
+			const int maxB = (int)std::ceil(glm::mix(args.aabb.max[axisB], endMax[axisB], t));
+			const int minC = (int)std::floor(glm::mix(args.aabb.min[axisC], endMin[axisC], t));
+			const int maxC = (int)std::ceil(glm::mix(args.aabb.max[axisC], endMax[axisC], t));
 			for (int vb = minB; vb < maxB; vb++)
 			{
 				for (int vc = minC; vc < maxC; vc++)
@@ -735,7 +772,7 @@ void World::CalcClipping(ClippingArgs& args) const
 					if (!IsAir(coord) && GetTexture(coord + normal, textureSide) != 0)
 					{
 						args.colPlaneNormal = normal;
-						args.clipDist = t;
+						args.clipDist = std::max(t, 0.0f);
 						break;
 					}
 				}
@@ -833,7 +870,7 @@ bool World::IsCorner(const glm::ivec3& cornerPos, Dir cornerDir) const
 
 const GravityCorner* World::FindGravityCorner(const ClippingArgs& args, Dir currentDown) const
 {
-	glm::vec3 pos = (args.aabbMin + args.aabbMax) / 2.0f;
+	glm::vec3 pos = (args.aabb.min + args.aabb.max) / 2.0f;
 	
 	float minDist = INFINITY;
 	const GravityCorner* ret = nullptr;
@@ -865,8 +902,8 @@ const GravityCorner* World::FindGravityCorner(const ClippingArgs& args, Dir curr
 			return;
 		
 		//Checks that the player is positioned at the same height as the corner
-		float h1 = glm::dot(currentDownDir, corner.position - args.aabbMin);
-		float h2 = glm::dot(currentDownDir, corner.position - args.aabbMax);
+		float h1 = glm::dot(currentDownDir, corner.position - args.aabb.min);
+		float h2 = glm::dot(currentDownDir, corner.position - args.aabb.max);
 		if (std::abs(h1) > MAX_HEIGHT_DIFF && std::abs(h2) > MAX_HEIGHT_DIFF)
 			return;
 		
@@ -883,8 +920,8 @@ const GravityCorner* World::FindGravityCorner(const ClippingArgs& args, Dir curr
 		}
 	};
 	
-	glm::ivec3 gMin = glm::ivec3(glm::floor(glm::min(args.aabbMin, args.aabbMin + args.move))) - 2;
-	glm::ivec3 gMax = glm::ivec3(glm::ceil(glm::max(args.aabbMax, args.aabbMax + args.move))) + 1;
+	glm::ivec3 gMin = glm::ivec3(glm::floor(glm::min(args.aabb.min, args.aabb.min + args.move))) - 2;
+	glm::ivec3 gMax = glm::ivec3(glm::ceil(glm::max(args.aabb.max, args.aabb.max + args.move))) + 1;
 	
 	glm::ivec3 rMin = std::get<1>(DecomposeGlobalCoordinate(gMin));
 	glm::ivec3 rMax = std::get<1>(DecomposeGlobalCoordinate(gMax));

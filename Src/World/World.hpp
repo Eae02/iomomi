@@ -65,6 +65,7 @@ public:
 	void DrawPointLightShadows(const struct PointLightShadowRenderArgs& renderArgs);
 	
 	void CalcClipping(ClippingArgs& args) const;
+	glm::vec3 GetCollisionCorrection(const eg::AABB& aabb) const;
 	
 	bool IsGravityCorner(const glm::ivec3& cornerPos, Dir cornerDir) const;
 	void SetIsGravityCorner(const glm::ivec3& cornerPos, Dir cornerDir, bool value);

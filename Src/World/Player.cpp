@@ -218,6 +218,7 @@ void Player::Update(World& world, float dt)
 	
 	glm::vec3 radius(WIDTH / 2, WIDTH / 2, WIDTH / 2);
 	radius[(int)m_down / 2] = HEIGHT / 2;
+	auto GetAABB = [&] { return eg::AABB(m_position - radius, m_position + radius); };
 	
 	glm::vec3 move = m_velocity * dt;
 	
@@ -226,8 +227,7 @@ void Player::Update(World& world, float dt)
 	{
 		ClippingArgs clippingArgs;
 		clippingArgs.move = move;
-		clippingArgs.aabbMin = m_position - radius;
-		clippingArgs.aabbMax = m_position + radius;
+		clippingArgs.aabb = GetAABB();
 		if (const GravityCorner* corner = world.FindGravityCorner(clippingArgs, m_down))
 		{
 			//A gravity corner was found, this code begins transitioning to another gravity
@@ -304,15 +304,14 @@ void Player::Update(World& world, float dt)
 		
 		ClippingArgs clippingArgs;
 		clippingArgs.move = move;
-		clippingArgs.aabbMin = m_position - radius;
-		clippingArgs.aabbMax = m_position + radius;
+		clippingArgs.aabb = GetAABB();
 		clippingArgs.clipDist = 1;
 		world.CalcClipping(clippingArgs);
 		
 		glm::vec3 clippedMove = move * (clippingArgs.clipDist * 0.99f);
 		m_position += clippedMove;
 		
-		if (clippingArgs.clipDist > 0.99999f)
+		if (clippingArgs.clipDist > 0.9999f)
 			break;
 		
 		move -= clippedMove;
@@ -330,6 +329,8 @@ void Player::Update(World& world, float dt)
 			m_onGround = true;
 		}
 	}
+	
+	m_position += world.GetCollisionCorrection(GetAABB());
 	
 	m_eyePosition = m_position + up * EYE_OFFSET;
 	if (m_gravityTransitionMode == TransitionMode::Fall)

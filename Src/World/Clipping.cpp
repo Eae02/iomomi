@@ -7,17 +7,17 @@ void CalcPolygonClipping(ClippingArgs& args, eg::Span<const glm::vec3> vertices)
 	
 	glm::vec3 aabbVertices[] =
 	{
-		glm::vec3(args.aabbMin.x, args.aabbMin.y, args.aabbMin.z),
-		glm::vec3(args.aabbMin.x, args.aabbMin.y, args.aabbMax.z),
-		glm::vec3(args.aabbMin.x, args.aabbMax.y, args.aabbMin.z),
-		glm::vec3(args.aabbMin.x, args.aabbMax.y, args.aabbMax.z),
-		glm::vec3(args.aabbMax.x, args.aabbMin.y, args.aabbMin.z),
-		glm::vec3(args.aabbMax.x, args.aabbMin.y, args.aabbMax.z),
-		glm::vec3(args.aabbMax.x, args.aabbMax.y, args.aabbMin.z),
-		glm::vec3(args.aabbMax.x, args.aabbMax.y, args.aabbMax.z),
+		glm::vec3(args.aabb.min.x, args.aabb.min.y, args.aabb.min.z),
+		glm::vec3(args.aabb.min.x, args.aabb.min.y, args.aabb.max.z),
+		glm::vec3(args.aabb.min.x, args.aabb.max.y, args.aabb.min.z),
+		glm::vec3(args.aabb.min.x, args.aabb.max.y, args.aabb.max.z),
+		glm::vec3(args.aabb.max.x, args.aabb.min.y, args.aabb.min.z),
+		glm::vec3(args.aabb.max.x, args.aabb.min.y, args.aabb.max.z),
+		glm::vec3(args.aabb.max.x, args.aabb.max.y, args.aabb.min.z),
+		glm::vec3(args.aabb.max.x, args.aabb.max.y, args.aabb.max.z),
 	};
 	
-	glm::vec3 centerAABB = (args.aabbMin + args.aabbMax) / 2.0f;
+	glm::vec3 centerAABB = (args.aabb.min + args.aabb.max) / 2.0f;
 	
 	float div = glm::dot(args.move, plane.GetNormal());
 	if (std::abs(div) < 1E-6f)
@@ -54,4 +54,20 @@ void CalcPolygonClipping(ClippingArgs& args, eg::Span<const glm::vec3> vertices)
 			}
 		}
 	}
+}
+
+float CalcCollisionCorrection(const eg::AABB& aabb, const eg::Plane& plane)
+{
+	constexpr float MAX_C = 0.1f;
+	
+	float minD = 0;
+	float maxD = 0;
+	for (int n = 0; n < 8; n++)
+	{
+		float d = plane.GetDistanceToPoint(aabb.NthVertex(n));
+		minD = std::min(minD, d);
+		maxD = std::max(maxD, d);
+	}
+	float c = -minD;
+	return (c > maxD || c > MAX_C) ? 0 : c;
 }

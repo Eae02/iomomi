@@ -3,8 +3,7 @@
 struct ClippingArgs
 {
 	//Inputs:
-	glm::vec3 aabbMin;
-	glm::vec3 aabbMax;
+	eg::AABB aabb;
 	glm::vec3 move;
 	
 	//Outputs:
@@ -19,3 +18,5 @@ struct ClippingArgs
  * @param vertices The points that make up the polygon.
  */
 void CalcPolygonClipping(ClippingArgs& args, eg::Span<const glm::vec3> vertices);
+
+float CalcCollisionCorrection(const eg::AABB& aabb, const eg::Plane& plane);
