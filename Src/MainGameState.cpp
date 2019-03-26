@@ -66,7 +66,7 @@ void MainGameState::RunFrame(float dt)
 {
 	if (!eg::console::IsShown())
 	{
-		eg::SetRelativeMouseMode(false);
+		eg::SetRelativeMouseMode(!eg::DevMode());
 		m_player.Update(m_world, dt);
 		
 		Entity::UpdateArgs entityUpdateArgs;

@@ -32,7 +32,7 @@ static MaterialSettings materialSettings[] =
 {
 	{ 2.0f, 0.35f, 1.0f },
 	{ 4.0f, 0.1f, 0.3f },
-	{ 5.0f, 0.5f, 0.8f }
+	{ 2.5f, 0.3f, 0.8f }
 };
 
 void InitializeWallShader()
