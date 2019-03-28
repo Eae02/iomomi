@@ -6,8 +6,8 @@
 #include "Clipping.hpp"
 #include "BulletPhysics.hpp"
 #include "Entities/Entity.hpp"
-#include "Entities/SpotLightEntity.hpp"
-#include "Entities/PointLightEntity.hpp"
+#include "Entities/ISpotLightEntity.hpp"
+#include "Entities/IPointLightEntity.hpp"
 #include "Entities/GravitySwitchEntity.hpp"
 #include "../Graphics/Vertex.hpp"
 
@@ -156,8 +156,8 @@ private:
 	std::vector<Region> m_regions;
 	
 	std::vector<std::shared_ptr<Entity>> m_entities;
-	std::vector<std::weak_ptr<SpotLightEntity>> m_spotLights;
-	std::vector<std::weak_ptr<PointLightEntity>> m_pointLights;
+	std::vector<std::weak_ptr<ISpotLightEntity>> m_spotLights;
+	std::vector<std::weak_ptr<IPointLightEntity>> m_pointLights;
 	std::vector<std::weak_ptr<GravitySwitchEntity>> m_gravitySwitchEntities;
 	std::vector<std::weak_ptr<Entity::IUpdatable>> m_updatables;
 	std::vector<std::weak_ptr<Entity::IDrawable>> m_drawables;

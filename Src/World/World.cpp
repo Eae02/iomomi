@@ -325,7 +325,7 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 	{
 		if (auto spotLight = m_spotLights[i].lock())
 		{
-			spotLight->InitDrawData(args.spotLights.emplace_back());
+			spotLight->GetSpotLights(args.spotLights);
 		}
 		else
 		{
@@ -339,7 +339,7 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 	{
 		if (auto pointLight = m_pointLights[i].lock())
 		{
-			pointLight->InitDrawData(args.pointLights.emplace_back());
+			pointLight->GetPointLights(args.pointLights);
 		}
 		else
 		{
@@ -883,9 +883,9 @@ PickWallResult World::PickWall(const eg::Ray& ray) const
 
 void World::AddEntity(std::shared_ptr<Entity> entity)
 {
-	if (auto pointLight = std::dynamic_pointer_cast<PointLightEntity>(entity))
+	if (auto pointLight = std::dynamic_pointer_cast<IPointLightEntity>(entity))
 		m_pointLights.emplace_back(pointLight);
-	if (auto spotLight = std::dynamic_pointer_cast<SpotLightEntity>(entity))
+	if (auto spotLight = std::dynamic_pointer_cast<ISpotLightEntity>(entity))
 		m_spotLights.emplace_back(spotLight);
 	if (auto gravitySwitch = std::dynamic_pointer_cast<GravitySwitchEntity>(entity))
 		m_gravitySwitchEntities.emplace_back(gravitySwitch);

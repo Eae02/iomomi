@@ -1,6 +1,10 @@
 #include "WallLightEntity.hpp"
 #include "../Voxel.hpp"
 #include "../../Graphics/Lighting/PointLight.hpp"
+#include "../../YAMLUtils.hpp"
+#include "../../Graphics/Lighting/Serialize.hpp"
+
+#include <imgui.h>
 
 static eg::Model* s_model;
 
@@ -24,7 +28,7 @@ glm::mat4 WallLightEntity::GetTransform() const
 
 EmissiveMaterial::InstanceData WallLightEntity::GetInstanceData(float colorScale) const
 {
-	eg::ColorLin color = eg::ColorLin(GetColor()).ScaleRGB(colorScale);
+	eg::ColorLin color = eg::ColorLin(m_pointLight.GetColor()).ScaleRGB(colorScale);
 	
 	EmissiveMaterial::InstanceData instanceData;
 	instanceData.transform = GetTransform();
@@ -58,17 +62,28 @@ void WallLightEntity::EditorSpawned(const glm::vec3& wallPosition, Dir wallNorma
 void WallLightEntity::Save(YAML::Emitter& emitter) const
 {
 	emitter << YAML::Key << "up" << YAML::Value << (int)m_dir;
-	PointLightEntity::Save(emitter);
+	SerializePointLight(emitter, m_pointLight);
+	Entity::Save(emitter);
 }
 
 void WallLightEntity::Load(const YAML::Node& node)
 {
 	m_dir = (Dir)node["up"].as<int>(0);
-	PointLightEntity::Load(node);
+	DeserializePointLight(node, m_pointLight);
+	Entity::Load(node);
 }
 
-void WallLightEntity::InitDrawData(PointLightDrawData& data) const
+void WallLightEntity::GetPointLights(std::vector<PointLightDrawData>& drawData) const
 {
-	PointLightEntity::InitDrawData(data);
-	data.pc.position += LIGHT_DIST * glm::vec3(DirectionVector(m_dir));
+	drawData.push_back(m_pointLight.GetDrawData(Position() + LIGHT_DIST * glm::vec3(DirectionVector(m_dir))));
+}
+
+void WallLightEntity::EditorRenderSettings()
+{
+	m_pointLight.RenderRadianceSettings();
+}
+
+int WallLightEntity::GetEditorIconIndex() const
+{
+	return 2;
 }

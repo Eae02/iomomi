@@ -1,9 +1,10 @@
 #pragma once
 
-#include "PointLightEntity.hpp"
+#include "Entity.hpp"
+#include "IPointLightEntity.hpp"
 #include "../../Graphics/Materials/EmissiveMaterial.hpp"
 
-class WallLightEntity : public PointLightEntity, public Entity::IDrawable, public Entity::IEditorWallDrag
+class WallLightEntity : public Entity, public IPointLightEntity, public Entity::IDrawable, public Entity::IEditorWallDrag
 {
 public:
 	void Draw(eg::MeshBatch& meshBatch) override;
@@ -14,7 +15,11 @@ public:
 	
 	void EditorSpawned(const glm::vec3& wallPosition, Dir wallNormal) override;
 	
-	void InitDrawData(PointLightDrawData& data) const override;
+	void GetPointLights(std::vector<PointLightDrawData>& drawData) const override;
+	
+	int GetEditorIconIndex() const override;
+	
+	void EditorRenderSettings() override;
 	
 	void Save(YAML::Emitter& emitter) const override;
 	
@@ -24,6 +29,8 @@ private:
 	glm::mat4 GetTransform() const;
 	
 	EmissiveMaterial::InstanceData GetInstanceData(float colorScale) const;
+	
+	PointLight m_pointLight;
 	
 	Dir m_dir;
 };

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "LightSource.hpp"
 
 struct PointLightDrawData
 {
@@ -13,4 +14,16 @@ struct PointLightDrawData
 #pragma pack(pop)
 	eg::TextureRef shadowMap;
 	uint64_t instanceID;
+};
+
+class PointLight : public LightSource
+{
+public:
+	PointLight()
+		: LightSource(eg::ColorSRGB(1.0f, 1.0f, 1.0f), 20.0f) { }
+	
+	PointLight(const eg::ColorSRGB& color, float intensity)
+		: LightSource(color, intensity) { }
+	
+	PointLightDrawData GetDrawData(const glm::vec3& position) const;
 };

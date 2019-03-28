@@ -1,22 +1,11 @@
 #pragma once
 
-#include "Entity.hpp"
-
-class LightSourceEntity : public Entity
+class LightSource
 {
 public:
-	LightSourceEntity()
-		: LightSourceEntity(eg::ColorSRGB(1, 1, 1), 10) { }
-	
-	LightSourceEntity(const eg::ColorSRGB& color, float intensity);
+	LightSource(const eg::ColorSRGB& color, float intensity);
 	
 	void SetRadiance(const eg::ColorSRGB& color, float intensity);
-	
-	void EditorRenderSettings() override;
-	
-	void Save(YAML::Emitter& emitter) const override;
-	
-	void Load(const YAML::Node& node) override;
 	
 	inline float Range() const
 	{
@@ -43,6 +32,8 @@ public:
 		return m_instanceID;
 	}
 	
+	void RenderRadianceSettings();
+	
 private:
 	float m_range;
 	uint64_t m_instanceID;
@@ -51,4 +42,3 @@ private:
 	eg::ColorSRGB m_color;
 	float m_intensity;
 };
-
