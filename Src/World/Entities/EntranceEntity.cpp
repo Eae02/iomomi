@@ -28,6 +28,7 @@ void InitEntranceEntity()
 	s_materials.at(s_model->GetMaterialIndex("WallPadding")) = &eg::GetAsset<StaticPropMaterial>("Materials/Entrance/Padding.yaml");
 	s_materials.at(s_model->GetMaterialIndex("WallPadding")) = &eg::GetAsset<StaticPropMaterial>("Materials/Entrance/Padding.yaml");
 	s_materials.at(s_model->GetMaterialIndex("CeilPipe")) = &eg::GetAsset<StaticPropMaterial>("Materials/Pipe2.yaml");
+	s_materials.at(s_model->GetMaterialIndex("Door")) = &eg::GetAsset<StaticPropMaterial>("Materials/Entrance/Door1.yaml");
 	
 	s_editorEntranceMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Entrance/EditorEntrance.yaml");
 	s_editorExitMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Entrance/EditorExit.yaml");
@@ -198,7 +199,7 @@ void EntranceEntity::CalcClipping(ClippingArgs& args) const
 {
 	glm::mat4 transform = GetTransform();
 	
-	constexpr float COL_SIZE_X = MESH_LENGTH;
+	constexpr float COL_SIZE_X = MESH_LENGTH * 0.99f;
 	constexpr float COL_SIZE_Y = 3.0f;
 	constexpr float COL_SIZE_Z = 1.5f;
 	
@@ -240,7 +241,7 @@ void EntranceEntity::CalcClipping(ClippingArgs& args) const
 		CalcPolygonClipping(args, colPolygons[i]);
 	}
 	
-	float doorsX[4] = { 4.7f, 4.3f, -4.3f, -4.7f };
+	float doorsX[4] = { MESH_LENGTH, 4.3f, -4.3f, -MESH_LENGTH };
 	for (int i = 0; i < 4; i++)
 	{
 		if (m_doorOpenProgress > 0.1f && (i / 2) == (1 - (int)m_type))

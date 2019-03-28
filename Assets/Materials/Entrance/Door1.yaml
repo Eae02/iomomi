@@ -1,0 +1,5 @@
+albedo: ../../Textures/Entrance/Door1A.png
+normalMap: ../../Textures/Entrance/DoorN.png
+miscMap: ../../Textures/Entrance/DoorM.png
+roughnessMin: 0.2
+roughnessMax: 1.0
