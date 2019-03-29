@@ -121,7 +121,7 @@ void MainGameState::RunFrame(float dt)
 	m_plShadowMapper.UpdateShadowMaps(m_prepareDrawArgs.pointLights, [this] (const PointLightShadowRenderArgs& args)
 	{
 		RenderPointLightShadows(args);
-	}, 2);
+	}, 4);
 	
 	m_lightProbesManager.PrepareForDraw(m_player.EyePosition());
 	

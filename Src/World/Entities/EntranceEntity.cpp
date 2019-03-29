@@ -4,8 +4,10 @@
 
 #include <imgui.h>
 
-constexpr float MESH_LENGTH = 4.8f;
+constexpr float MESH_LENGTH = 4.75f;
 constexpr float MESH_HEIGHT = 3.0f;
+
+PointLight EntranceEntity::s_pointLight(eg::ColorSRGB::FromHex(0xDEEEFD), 20.0f);
 
 static const eg::Model* s_model;
 static std::vector<const eg::IMaterial*> s_materials;
@@ -29,6 +31,7 @@ void InitEntranceEntity()
 	s_materials.at(s_model->GetMaterialIndex("WallPadding")) = &eg::GetAsset<StaticPropMaterial>("Materials/Entrance/Padding.yaml");
 	s_materials.at(s_model->GetMaterialIndex("CeilPipe")) = &eg::GetAsset<StaticPropMaterial>("Materials/Pipe2.yaml");
 	s_materials.at(s_model->GetMaterialIndex("Door")) = &eg::GetAsset<StaticPropMaterial>("Materials/Entrance/Door1.yaml");
+	s_materials.at(s_model->GetMaterialIndex("DoorFrame")) = &eg::GetAsset<StaticPropMaterial>("Materials/Entrance/DoorFrame.yaml");
 	
 	s_editorEntranceMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Entrance/EditorEntrance.yaml");
 	s_editorExitMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Entrance/EditorExit.yaml");
@@ -280,4 +283,11 @@ void EntranceEntity::InitPlayer(Player& player) const
 		{ eg::PI * 1.0f, 0 }
 	};
 	player.SetRotation(rotations[(int)m_direction][0], rotations[(int)m_direction][1]);
+}
+
+void EntranceEntity::GetPointLights(std::vector<PointLightDrawData>& drawData) const
+{
+	glm::vec3 lightPosGlobal(GetTransform() * glm::vec4(0, 2.0f, 1.0f, 1.0f));
+	
+	drawData.push_back(s_pointLight.GetDrawData(lightPosGlobal));
 }

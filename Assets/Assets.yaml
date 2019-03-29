@@ -53,6 +53,12 @@ assets:
     srgb: false
   - name: Textures/Entrance/DoorM.png
     srgb: false
+  - name: Textures/Entrance/DoorFrameA.png
+    srgb: true
+  - name: Textures/Entrance/DoorFrameN.png
+    srgb: false
+  - name: Textures/Entrance/DoorFrameM.png
+    srgb: false
   - name: Textures/Entrance/PaddingA.png
     srgb: true
   - name: Textures/Entrance/PaddingN.png
@@ -84,6 +90,9 @@ assets:
     generator: StaticPropMaterial
     loader: StaticPropMaterial
   - name: Materials/Entrance/Door1.yaml
+    generator: StaticPropMaterial
+    loader: StaticPropMaterial
+  - name: Materials/Entrance/DoorFrame.yaml
     generator: StaticPropMaterial
     loader: StaticPropMaterial
   - name: Materials/Entrance/Padding.yaml

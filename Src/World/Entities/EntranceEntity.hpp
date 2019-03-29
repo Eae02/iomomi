@@ -1,9 +1,10 @@
 #pragma once
 
 #include "Entity.hpp"
+#include "IPointLightEntity.hpp"
 
 class EntranceEntity : public Entity, public Entity::IDrawable, public Entity::IEditorWallDrag,
-	public Entity::IUpdatable, public Entity::ICollidable
+	public Entity::IUpdatable, public Entity::ICollidable, public IPointLightEntity
 {
 public:
 	enum class Type
@@ -32,6 +33,8 @@ public:
 	
 	void CalcClipping(ClippingArgs& args) const override;
 	
+	void GetPointLights(std::vector<PointLightDrawData>& drawData) const override;
+	
 	Type EntranceType() const
 	{
 		return m_type;
@@ -47,4 +50,6 @@ private:
 	Type m_type = Type::Exit;
 	float m_doorOpenProgress = 0;
 	float m_timeBeforeClose = 0;
+	
+	static PointLight s_pointLight;
 };
