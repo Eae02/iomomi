@@ -71,7 +71,7 @@ void Editor::RunFrame(float dt)
 					std::string path = eg::Concat({ eg::ExeDirPath(), "/levels/", level.name, ".gwd" });
 					std::ifstream stream(path, std::ios::binary);
 					
-					if (std::unique_ptr<World> world = World::Load(stream))
+					if (std::unique_ptr<World> world = World::Load(stream, true))
 					{
 						m_world = std::move(world);
 						m_levelName = level.name;

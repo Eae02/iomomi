@@ -7,23 +7,12 @@ voxels:
   - reg: 0 0 -1
     data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
   - reg: 0 0 0
-    data: !!binary "eNrt2MEJgDAQBMC7Duy/WhECRogQ1ATRmc9+AvtccpmbWLJkVBlV5knGTfn7/ij91zIA4IH9qzM6Ur/9B+Db+996p3/W/o/pB4B9EI938Kk78/d+AJg2d+U/GY3d67uH6x/+/3f/B8D+23/7D4D9tf8AAAAAAAAAAAAAAAAAAAAAAAAAvNkK+60QyQ=="
+    data: !!binary "eNrt2DEKgDAQRcHdG3j/06oQCMgWQY2IzjTbCL98xMxdLFncGLhxUf5+P9reuRsAoL/6DwA396/6zv5T/Z+zDwA9iFtXjtc+AHws9+09GUX3xv6H25/+/vf/HwD913/9B0B/9R8AAAAAAAAAAAAAAAAAAAAAAACAN1sBdqAQ0g=="
 entities:
-  - type: PointLight
-    pos:
-      - 5.70000029
-      - 2.10000014
-      - 7.20000029
-    range: 50.6063232
-    intensity: 10
-    color:
-      - 1
-      - 1
-      - 1
   - type: Entrance
     pos:
       - 0
       - 1.5
       - 3.5
     dir: 1
-    exit: false
+    exit: true

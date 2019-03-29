@@ -95,7 +95,7 @@ void CalcWorldClipping(const World& world, ClippingArgs& args)
 		
 		glm::ivec3 normal(0);
 		normal[axis] = negativeMove ? 1 : -1;
-		const Dir textureSide = (Dir)(axis * 2 + (negativeMove ? 0 : 1));
+		const Dir collisionSide = (Dir)(axis * 2 + (negativeMove ? 0 : 1));
 		
 		for (int v = minI; v <= maxI; v++)
 		{
@@ -116,7 +116,7 @@ void CalcWorldClipping(const World& world, ClippingArgs& args)
 					coord[axisB] = vb;
 					coord[axisC] = vc;
 					
-					if (!world.IsAir(coord) && world.GetTexture(coord + normal, textureSide) != 0)
+					if (world.HasCollision(coord, collisionSide))
 					{
 						args.colPlaneNormal = normal;
 						args.clipDist = std::max(t, 0.0f);
@@ -170,7 +170,7 @@ glm::vec3 CalcWorldCollisionCorrection(const World& world, const eg::AABB& aabb)
 				for (int s = 0; s < 6; s++)
 				{
 					glm::ivec3 toNeighbor = DirectionVector((Dir)s);
-					if (!world.IsAir(pos + toNeighbor) || world.GetTexture(pos + toNeighbor, (Dir)s) == 0)
+					if (!world.HasCollision(pos + toNeighbor, OppositeDir((Dir)s)))
 						continue;
 					
 					eg::Plane plane(toNeighbor, (pos * 2 + 1 + toNeighbor) / 2);

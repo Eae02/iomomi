@@ -2,9 +2,10 @@
 
 #include "Entity.hpp"
 #include "IPointLightEntity.hpp"
+#include "IDoorEntity.hpp"
 
 class EntranceEntity : public Entity, public Entity::IDrawable, public Entity::IEditorWallDrag,
-	public Entity::IUpdatable, public Entity::ICollidable, public IPointLightEntity
+	public Entity::IUpdatable, public Entity::ICollidable, public IPointLightEntity, public IDoorEntity
 {
 public:
 	enum class Type
@@ -24,6 +25,8 @@ public:
 	void EditorDraw(bool selected, const EditorDrawArgs& drawArgs) const override;
 	
 	void EditorWallDrag(const glm::vec3& newPosition, Dir wallNormalDir) override;
+	
+	Door GetDoorDescription() const override;
 	
 	void Save(YAML::Emitter& emitter) const override;
 	

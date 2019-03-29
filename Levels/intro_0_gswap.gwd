@@ -13,9 +13,9 @@ voxels:
   - reg: 0 -1 0
     data: !!binary "eNrt1TENADAMA0GbQfmjbSFkqbLcSVFGj58AwJ6273Km3z4A6L99ANB/+wCg//YBQP/tA4D+6z8AAAAAAAAAAAAAAAAAAAAAAAAA8MsFVAII3Q=="
   - reg: 0 0 -1
-    data: !!binary "eNrt2TkOxCAQRcFGvgD3P63FlpiclkxVwsjJdzDiBY44ozQR9XuG/aT99ujc/v4+fR+A3+uXfV3nyNDx/qy96/b1HwD913/9ByCj//32L3n9vW1/++4wftS8v0PRf4Ab6p/cH/v6D0DCdf/M/swznsP9s5+6r/8AAAAAAAAAAAAAAAAAAAAAAAAAAMBtXoiwBcI="
+    data: !!binary "eNrt2TEOgCAQRcElXID7n1YFCiM9m8hMo7H5FoZXGLFHeUS07zXsJ+0/j/btr+/T9wH4vfvA773rh34bGdrbn1dvj9vXfwD0X//1H4CM/vfTv+T197T95b/DuGl5n0PRf4AT6p/cH/v6D0DCcV9nf+Y16ub+2U/d138AAAAAAAAAAAAAAAAAAAAAAAAAAOA0F3CgBcs="
   - reg: 0 0 0
-    data: !!binary "eNrt1kEKwjAUBND/6QW8/2ltIYIVExpjquJ7UGbRxYQuOsncxCWfZAxkHJR/3x+lb5/bq/V5+Vyd/Xff4fE8zf6oJQDfbcr+xYf396f67T8A9t/+238AzroArHtRydn7p7/eO3Iv6exv3oPsP4D9n7Q/+u0/AGdayu5UMpfyv+9M/WP92ci39t/2/0Dvrt/+AwAAAAAAAAAAAAAAAAAAAAAAAAAANF0BVuQZxA=="
+    data: !!binary "eNrt1kEKgzAUBND/8QLe/7RViKClCca0IPU9kFm4mODCSeYq5vyQMZBxUj6+P0rfMddXy3P5XJ39u+/wfp5mf9QSgHuzv/bf/gPYf/tv/+0/wFMuAMteVPLX+6e/3jtyL+nsb96D7D+A/bf/9t/+A/yBqexOJXMq//vO1D/Wn438av+2/yd6D/32HwAAAAAAAAAAAAAAAAAAAAAAAAAAoOkFP6MZzQ=="
 entities:
   - type: Entrance
     pos:
@@ -96,25 +96,23 @@ entities:
       - 0.5
   - type: WallLight
     up: 3
+    color:
+      - 0.819607854
+      - 0.972549021
+      - 0.996078432
+    intensity: 30
     pos:
       - 2.5
       - 4
       - -1
-    range: 87.2505875
-    intensity: 30
+  - type: WallLight
+    up: 3
     color:
       - 0.819607854
       - 0.972549021
       - 0.996078432
-  - type: WallLight
-    up: 3
+    intensity: 30
     pos:
       - 2.5
       - 4
       - 9
-    range: 87.2505875
-    intensity: 30
-    color:
-      - 0.819607854
-      - 0.972549021
-      - 0.996078432

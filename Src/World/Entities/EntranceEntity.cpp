@@ -291,3 +291,12 @@ void EntranceEntity::GetPointLights(std::vector<PointLightDrawData>& drawData) c
 	
 	drawData.push_back(s_pointLight.GetDrawData(lightPosGlobal));
 }
+
+Door EntranceEntity::GetDoorDescription() const
+{
+	Door door;
+	door.position = Position() - glm::vec3(DirectionVector(UP_VECTORS[(int)m_direction])) * 0.5f;
+	door.normal = glm::vec3(DirectionVector(m_direction));
+	door.radius = 1.5f;
+	return door;
+}

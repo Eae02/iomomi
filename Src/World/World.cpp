@@ -23,7 +23,7 @@ std::tuple<glm::ivec3, glm::ivec3> World::DecomposeGlobalCoordinate(const glm::i
 	return std::make_tuple(localCoord, regionCoord);
 }
 
-std::unique_ptr<World> World::Load(std::istream& stream)
+std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 {
 	YAML::Node rootYaml = YAML::Load(stream);
 	int version = rootYaml["version"].as<int>(10000);
@@ -86,6 +86,15 @@ std::unique_ptr<World> World::Load(std::istream& stream)
 			
 			std::shared_ptr<Entity> entity = type->CreateInstance();
 			entity->Load(entityNode);
+			
+			if (!isEditor)
+			{
+				if (IDoorEntity* doorEntity = dynamic_cast<IDoorEntity*>(entity.get()))
+				{
+					world->m_doors.push_back(doorEntity->GetDoorDescription());
+				}
+			}
+			
 			world->AddEntity(std::move(entity));
 		}
 	}
@@ -583,22 +592,30 @@ void World::BuildRegionMesh(glm::ivec3 coordinate, World::RegionData& region, bo
 							const glm::ivec3 tDir = tangent * (fy * 2 - 1);
 							const glm::ivec3 bDir = biTangent * (fx * 2 - 1);
 							const glm::ivec3 diagDir = tDir + bDir;
+							const glm::vec3 pos = glm::vec3(faceCenter2 + diagDir) * 0.5f;
+							
+							float doorDist = INFINITY;
+							for (const Door& door : m_doors)
+							{
+								if (std::abs(glm::dot(door.normal, glm::vec3(normal))) > 0.5f)
+									doorDist = std::min(doorDist, glm::distance(pos, door.position) - door.radius);
+							}
+							const float doorDist255 = (glm::clamp(doorDist, -1.0f, 1.0f) + 1.0f) * 127.0f;
 							
 							WallVertex& vertex = region.vertices.emplace_back();
-							vertex.position = glm::vec3(faceCenter2 + diagDir) * 0.5f;
-							vertex.texCoordAO[0] = (uint8_t)(fx * 255);
-							vertex.texCoordAO[1] = (uint8_t)((1 - fy) * 255);
-							vertex.texCoordAO[2] = textureLayer;
-							vertex.texCoordAO[3] = 0;
+							vertex.position = pos;
+							vertex.misc[WallVertex::M_TexLayer] = textureLayer;
+							vertex.misc[WallVertex::M_DoorDist] = (uint8_t)doorDist255;
+							vertex.misc[WallVertex::M_AO] = 0;
 							vertex.SetNormal(normal);
 							vertex.SetTangent(tangent);
 							
 							if (!IsAir(globalPos + tDir))
-								vertex.texCoordAO[3] |= fy + 1;
+								vertex.misc[WallVertex::M_AO] |= fy + 1;
 							if (!IsAir(globalPos + bDir))
-								vertex.texCoordAO[3] |= (fx + 1) << 2;
-							if (!IsAir(globalPos + diagDir) && vertex.texCoordAO[3] == 0)
-								vertex.texCoordAO[3] = 1 << (fx + 2 * fy);
+								vertex.misc[WallVertex::M_AO] |= (fx + 1) << 2;
+							if (!IsAir(globalPos + diagDir) && vertex.misc[WallVertex::M_AO] == 0)
+								vertex.misc[WallVertex::M_AO] = 1 << (fx + 2 * fy);
 						}
 					}
 				}
@@ -960,4 +977,37 @@ void World::InitializeBulletPhysics()
 			}
 		}
 	}
+}
+
+bool World::HasCollision(const glm::ivec3& pos, Dir side) const
+{
+	if (IsAir(pos) == IsAir(pos + DirectionVector(side)))
+		return false;
+	
+	glm::ivec3 sideNormal = -DirectionVector(side);
+	for (const Door& door : m_doors)
+	{
+		if (std::abs(glm::dot(door.normal, glm::vec3(sideNormal))) < 0.5f)
+			continue;
+		
+		float radSq = door.radius * door.radius;
+		
+		const glm::ivec3 faceCenter2 = pos * 2 + 1 - sideNormal;
+		const glm::ivec3 tangent = voxel::tangents[(int)side];
+		const glm::ivec3 biTangent = voxel::biTangents[(int)side];
+		for (int fx = 0; fx < 2; fx++)
+		{
+			for (int fy = 0; fy < 2; fy++)
+			{
+				const glm::ivec3 tDir = tangent * (fy * 2 - 1);
+				const glm::ivec3 bDir = biTangent * (fx * 2 - 1);
+				const glm::ivec3 diagDir = tDir + bDir;
+				const glm::vec3 vertexPos = glm::vec3(faceCenter2 + diagDir) * 0.5f;
+				if (glm::distance2(door.position, vertexPos) < radSq)
+					return false;
+			}
+		}
+	}
+	
+	return true;
 }

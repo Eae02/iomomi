@@ -20,7 +20,7 @@ MainGameState::MainGameState(RenderContext& renderCtx)
 
 void MainGameState::LoadWorld(std::istream& stream)
 {
-	m_world = World::Load(stream);
+	m_world = World::Load(stream, false);
 	m_player = { };
 	m_gameTime = 0;
 	

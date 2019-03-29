@@ -10,6 +10,7 @@
 #include "Entities/IPointLightEntity.hpp"
 #include "Entities/GravitySwitchEntity.hpp"
 #include "../Graphics/Vertex.hpp"
+#include "Entities/IDoorEntity.hpp"
 
 struct WallVertex;
 
@@ -46,7 +47,7 @@ public:
 	World& operator=(World&&) = delete;
 	World& operator=(const World&) = delete;
 	
-	static std::unique_ptr<World> Load(std::istream& stream);
+	static std::unique_ptr<World> Load(std::istream& stream, bool isEditor);
 	
 	void Save(std::ostream& outStream) const;
 	
@@ -65,6 +66,8 @@ public:
 	void SetTexture(const glm::ivec3& pos, Dir side, uint8_t textureLayer);
 	
 	uint8_t GetTexture(const glm::ivec3& pos, Dir side) const;
+	
+	bool HasCollision(const glm::ivec3& pos, Dir side) const;
 	
 	void AddEntity(std::shared_ptr<Entity> entity);
 	
@@ -162,6 +165,8 @@ private:
 	std::vector<std::weak_ptr<Entity::IUpdatable>> m_updatables;
 	std::vector<std::weak_ptr<Entity::IDrawable>> m_drawables;
 	std::vector<std::weak_ptr<Entity::ICollidable>> m_collidables;
+	
+	std::vector<Door> m_doors;
 	
 	bool m_anyOutOfDate = true;
 	bool m_canDraw = false;

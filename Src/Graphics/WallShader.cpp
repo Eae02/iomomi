@@ -48,7 +48,7 @@ void InitializeWallShader()
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.vertexBindings[0] = { sizeof(WallVertex), eg::InputRate::Vertex };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32,   3, (uint32_t)offsetof(WallVertex, position) };
-	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::UInt8,     4, (uint32_t)offsetof(WallVertex, texCoordAO) };
+	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::UInt8,     4, (uint32_t)offsetof(WallVertex, misc) };
 	pipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallVertex, normal) };
 	pipelineCI.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallVertex, tangent) };
 	wr.pipelineDeferredGeom = eg::Pipeline::Create(pipelineCI);
@@ -80,14 +80,15 @@ void InitializeWallShader()
 	//Creates the point light shadow pipeline
 	eg::GraphicsPipelineCreateInfo plsPipelineCI;
 	plsPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall-PLShadow.vs.glsl").Handle();
-	plsPipelineCI.geometryShader = eg::GetAsset<eg::ShaderModule>("Shaders/PointLightShadow.gs.glsl").Handle();
+	plsPipelineCI.geometryShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall-PLShadow.gs.glsl").Handle();
 	plsPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/PointLightShadow.fs.glsl").Handle();
 	plsPipelineCI.enableDepthWrite = true;
 	plsPipelineCI.enableDepthTest = true;
 	plsPipelineCI.frontFaceCCW = eg::CurrentGraphicsAPI() == eg::GraphicsAPI::Vulkan;
 	plsPipelineCI.cullMode = eg::CullMode::Back;
 	plsPipelineCI.vertexBindings[0] = { sizeof(WallVertex), eg::InputRate::Vertex };
-	plsPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, (uint32_t)offsetof(WallVertex, position) };
+	plsPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32,   3, (uint32_t)offsetof(WallVertex, position) };
+	plsPipelineCI.vertexAttributes[1] = { 0, eg::DataType::UInt8Norm, 1, (uint32_t)offsetof(WallVertex, misc) + 1 };
 	wr.pipelinePLShadow = eg::Pipeline::Create(plsPipelineCI);
 	
 	eg::FramebufferFormatHint plsFormatHint;

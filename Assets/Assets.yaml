@@ -17,6 +17,7 @@ assets:
   - name: Shaders/Wall-Border.vs.glsl
   - name: Shaders/Wall-Border.fs.glsl
   - name: Shaders/Wall-PLShadow.vs.glsl
+  - name: Shaders/Wall-PLShadow.gs.glsl
   - name: Shaders/Emissive.vs.glsl
   - name: Shaders/Emissive.fs.glsl
   - name: Shaders/Ambient.fs.glsl

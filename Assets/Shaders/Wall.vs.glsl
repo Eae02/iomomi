@@ -1,7 +1,7 @@
 #version 450 core
 
 layout(location=0) in vec3 position_in;
-layout(location=1) in uvec4 texCoordAO_in;
+layout(location=1) in uvec4 misc_in;
 layout(location=2) in vec3 normal_in;
 layout(location=3) in vec3 tangent_in;
 
@@ -30,11 +30,11 @@ void main()
 	
 	vec3 biTangent = cross(tangent_in, normal_in);
 	vec2 texCoord2 = vec2(dot(biTangent, position_in), -dot(tangent_in, position_in));
-	texCoord_out = vec4(texCoord2, float(texCoordAO_in.z) - 1, 1.0);
+	texCoord_out = vec4(texCoord2, float(misc_in.x) - 1, 1.0);
 	
-	if (texCoordAO_in.z != 0)
+	if (misc_in.x != 0)
 	{
-		vec4 mat = matSettings[texCoordAO_in.z - 1];
+		vec4 mat = matSettings[misc_in.x - 1];
 		texCoord_out.xy /= mat.x;
 		texCoord_out.w = mat.x;
 		roughnessRange_out = mat.yz;
@@ -47,10 +47,12 @@ void main()
 	int i = 0;
 	while (i < 4)
 	{
-		ao[i] = 1 - (texCoordAO_in.w >> i) & 1U;
+		ao[i] = 1 - (misc_in.z >> i) & 1U;
 		i++;
 	}
 	ao_out = ao * AO_SCALE + AO_BIAS;
+	
+	gl_ClipDistance[0] = misc_in.y / 127.0 - 1.0;
 	
 	gl_Position = renderSettings.viewProjection * vec4(position_in, 1.0);
 }
