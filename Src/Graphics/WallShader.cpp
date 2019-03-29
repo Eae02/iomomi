@@ -51,6 +51,7 @@ void InitializeWallShader()
 	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::UInt8,     4, (uint32_t)offsetof(WallVertex, misc) };
 	pipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallVertex, normal) };
 	pipelineCI.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallVertex, tangent) };
+	pipelineCI.numClipDistances = 1;
 	wr.pipelineDeferredGeom = eg::Pipeline::Create(pipelineCI);
 	wr.pipelineDeferredGeom.FramebufferFormatHint(DeferredRenderer::GEOMETRY_FB_FORMAT);
 	
@@ -59,6 +60,7 @@ void InitializeWallShader()
 	pipelineCI.enableDepthWrite = true;
 	pipelineCI.depthCompare = eg::CompareOp::Less;
 	pipelineCI.numColorAttachments = 1;
+	pipelineCI.numClipDistances = 0;
 	wr.pipelineEditor = eg::Pipeline::Create(pipelineCI);
 	wr.pipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
@@ -86,6 +88,7 @@ void InitializeWallShader()
 	plsPipelineCI.enableDepthTest = true;
 	plsPipelineCI.frontFaceCCW = eg::CurrentGraphicsAPI() == eg::GraphicsAPI::Vulkan;
 	plsPipelineCI.cullMode = eg::CullMode::Back;
+	plsPipelineCI.numClipDistances = 1;
 	plsPipelineCI.vertexBindings[0] = { sizeof(WallVertex), eg::InputRate::Vertex };
 	plsPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32,   3, (uint32_t)offsetof(WallVertex, position) };
 	plsPipelineCI.vertexAttributes[1] = { 0, eg::DataType::UInt8Norm, 1, (uint32_t)offsetof(WallVertex, misc) + 1 };
