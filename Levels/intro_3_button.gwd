@@ -1,0 +1,94 @@
+version: 1
+voxels:
+  - reg: -1 -1 -1
+    data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
+  - reg: -1 -1 0
+    data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
+  - reg: -1 0 -1
+    data: !!binary "eNrt1sFugzAQBNBdc8mR///a4tiqmla09LBBgvcOmZtHRCaTCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAL5aInPJx9ozM/azf25Z0x/37d9OffZnzJ69rOrPGP296GfmyOL7d+D7n6kfriPHvf4z9df19/2fPftZtD85f/9u2z/3P+fO72dV/9j/fN3771l8/w58/0X7d/d+sP/23/7bf/tv/+Gt+/+81o+Z79/Btp3aItY2jl/bfM9esn2+f5fr76cuMfYl4/f9yZr9OdgfJ/dXPf/R/Y+T+vPk57/6/69z++E/PgA8qxGx"
+  - reg: -1 0 0
+    data: !!binary "eNrt1jEOgzAMBVBbWTrmSL3/qSpCxFB2rNbvDVhMX0aBTwQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMBvG5kZGXPN8Z7ye+WXn7/IY/OZ5zyvGa89q/KjSz7Q1/7OzDVHTPm98svPX3H/dc8H9L/+1f/6X/9Dwft/m/Kf65/c/XObD/RRroWPvCjKb79/7Lyoev7X/8/3HNe9fPhDH2NwB20="
+  - reg: 0 -1 -1
+    data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
+  - reg: 0 -1 0
+    data: !!binary "eNrtwQEBAAAAgJD+r+4ICgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYgAAAAQ=="
+  - reg: 0 0 -1
+    data: !!binary "eNrt2ctOwzAQQNGxveky/AH//5UokfuiVsMCx+CcsxkVIQa3am4fEb8rreJSZ+zO6LA/Ryz177dnvt2ecn952rf+qDW3X1jG7Y/B+3udP1JJ++fud/69/Wnw+e/7Y+j9P+d+GEn/9V//9V//9R/913/913/913/953z9P/oFwPf+xvU69zjz7faU+/V/cP8//nL/txm1P3H8fv3Xfybuf9Try9vZ8/VHbrzPeZq53/Nu9P71Hyjp0n7d0Zpd9sdp96e6/+3jP/783fr/0/s/DX78p90PZ+5/rv3N9XnWmnlZZt0fpfa/DOpvqde/k+5PdX8q+q//+o/+H/z+/9T7W9+zvF6Pctf+7O+Pafenh75eZzmy/wD6r//6r/8A+n/O/m+fR3/ePw8vtf/loP4298e0+1/6X/ffvg/ofX4AAAAAAAAAAAAAAAAAAODf+gKmQiRD"
+  - reg: 0 0 0
+    data: !!binary "eNrt2EEKwjAQhtEJucDc/7RSCLVUXbhoJrTvbYKrnwj6VVvbRLTTOUuzv+3l17NHXr8fYy+K9h9//xh7UfX+x9j7OPv+2j7ckP7qv/7rv/7rP/qv/yv1P4v7l+n++q//OsGdHwC+nPbn97/v3/8T9w/963sH3X/i/aO9z4qP/6F78eu0D3DJ80fGpN979tfaX6H/h/8dSvr75H1A//VX/9fpf55O+wD6Zx8A9M8+APytj/70ov7Yr90HAAAAAAAAAAAAAAAAAAAYXp/jD7w="
+entities:
+  - type: Entrance
+    pos:
+      - 6
+      - 9.5
+      - -0.5
+    dir: 0
+    exit: false
+  - type: Entrance
+    pos:
+      - -4
+      - 4.5
+      - -3.5
+    dir: 1
+    exit: true
+  - type: Button
+    pos:
+      - 7.5
+      - 3
+      - -2.5
+    up: 2
+  - type: Cube
+    pos:
+      - -2.5
+      - 8.5
+      - -0.5
+  - type: GravitySwitch
+    pos:
+      - 4.70000029
+      - 9.60000038
+      - -6
+    up: 4
+  - type: WallLight
+    up: 3
+    color:
+      - 0.819607854
+      - 0.972549021
+      - 0.996078432
+    intensity: 20
+    pos:
+      - 7
+      - 7
+      - 0
+  - type: WallLight
+    up: 3
+    color:
+      - 0.819607854
+      - 0.972549021
+      - 0.996078432
+    intensity: 20
+    pos:
+      - 1
+      - 11
+      - 2.5
+  - type: WallLight
+    up: 3
+    color:
+      - 0.819607854
+      - 0.972549021
+      - 0.996078432
+    intensity: 30
+    pos:
+      - 1
+      - 11
+      - -4
+  - type: WallLight
+    up: 3
+    color:
+      - 0.819607854
+      - 0.972549021
+      - 0.996078432
+    intensity: 20
+    pos:
+      - -2.5
+      - 7
+      - 0

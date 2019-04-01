@@ -2,12 +2,17 @@
 #include "../Levels.hpp"
 #include "../MainGameState.hpp"
 #include "../Graphics/Materials/MeshDrawArgs.hpp"
+#include "../World/Entities/ECEditorVisible.hpp"
+#include "../World/Entities/ECWallMounted.hpp"
+#include "../World/EntityTypes.hpp"
 
 #include <filesystem>
 #include <fstream>
 
 #include <imgui.h>
 #include <misc/cpp/imgui_stdlib.h>
+
+static eg::EntitySignature editorVisibleSignature = eg::EntitySignature::Create<ECEditorVisible>();
 
 Editor* editor;
 
@@ -90,7 +95,7 @@ void Editor::RunFrame(float dt)
 	if (m_world == nullptr)
 		return;
 	
-	Entity::UpdateArgs entityUpdateArgs;
+	WorldUpdateArgs entityUpdateArgs;
 	entityUpdateArgs.dt = dt;
 	entityUpdateArgs.player = nullptr;
 	entityUpdateArgs.world = m_world.get();
@@ -150,12 +155,20 @@ void Editor::RunFrame(float dt)
 	}
 	else if (m_tool == Tool::Entities)
 	{
-		for (const std::shared_ptr<Entity>& entity : m_selectedEntities)
+		for (const eg::EntityHandle& entityHandle : m_selectedEntities)
 		{
-			ImGui::PushID(entity.get());
-			if (ImGui::CollapsingHeader(entity->GetType()->DisplayName().c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+			eg::Entity* entity = entityHandle.Get();
+			if (entity == nullptr)
+				continue;
+			
+			ECEditorVisible* edVisible = entity->GetComponent<ECEditorVisible>();
+			if (edVisible == nullptr || edVisible->editorRenderSettings == nullptr)
+				continue;
+			
+			ImGui::PushID(entityHandle.Id());
+			if (ImGui::CollapsingHeader(edVisible->displayName, ImGuiTreeNodeFlags_DefaultOpen))
 			{
-				entity->EditorRenderSettings();
+				edVisible->editorRenderSettings(*entity);
 			}
 			ImGui::PopID();
 		}
@@ -301,8 +314,8 @@ void Editor::UpdateToolEntities(float dt)
 		
 		for (size_t i = 0; i < m_selectedEntities.size(); i++)
 		{
-			m_selectedEntities[i] = m_selectedEntities[i]->Clone();
-			m_world->AddEntity(m_selectedEntities[i]);
+			//m_selectedEntities[i] = m_selectedEntities[i]->Clone();
+			//m_world->EntityManager().AddEntity(m_selectedEntities[i]);
 		}
 		m_entitiesCloned = true;
 		return true;
@@ -311,16 +324,19 @@ void Editor::UpdateToolEntities(float dt)
 	if (!eg::IsButtonDown(eg::Button::LeftShift))
 		m_entitiesCloned = false;
 	
-	Entity::IEditorWallDrag* wallDragEntity = nullptr;
+	ECWallMounted* wallMountedEntity = nullptr;
 	auto UpdateWallDragEntity = [&]
 	{
-		wallDragEntity = dynamic_cast<Entity::IEditorWallDrag*>(m_selectedEntities[0].get());
+		if (eg::Entity* entity = m_selectedEntities[0].Get())
+		{
+			wallMountedEntity = entity->GetComponent<ECWallMounted>();
+		}
 	};
 	if (m_selectedEntities.size() == 1)
 		UpdateWallDragEntity();
 	
 	//Moves the wall drag entity
-	if (wallDragEntity && eg::IsButtonDown(eg::Button::MouseLeft) && eg::WasButtonDown(eg::Button::MouseLeft))
+	if (wallMountedEntity && eg::IsButtonDown(eg::Button::MouseLeft) && eg::WasButtonDown(eg::Button::MouseLeft))
 	{
 		constexpr int DRAG_BEGIN_DELTA = 10;
 		if (m_isDraggingWallEntity)
@@ -330,7 +346,13 @@ void Editor::UpdateToolEntities(float dt)
 			{
 				if (MaybeClone())
 					UpdateWallDragEntity();
-				wallDragEntity->EditorWallDrag(SnapToGrid(pickResult.intersectPosition), pickResult.normalDir);
+				
+				wallMountedEntity->wallUp = pickResult.normalDir;
+				
+				if (auto* positionComp = m_selectedEntities[0].Get()->GetComponent<eg::ECPosition3D>())
+				{
+					positionComp->position = SnapToGrid(pickResult.intersectPosition);
+				}
 			}
 		}
 		else if (std::abs(m_mouseDownPos.x - eg::CursorX()) > DRAG_BEGIN_DELTA ||
@@ -345,22 +367,22 @@ void Editor::UpdateToolEntities(float dt)
 	}
 	
 	//Updates the translation gizmo
-	if (!m_selectedEntities.empty() && !ImGui::GetIO().WantCaptureMouse && !wallDragEntity)
+	if (!m_selectedEntities.empty() && !ImGui::GetIO().WantCaptureMouse && !wallMountedEntity)
 	{
 		if (!m_translationGizmo.HasInputFocus())
 		{
 			m_gizmoPosUnaligned = glm::vec3(0.0f);
 			for (int64_t i = m_selectedEntities.size() - 1; i >= 0; i--)
 			{
-				if (dynamic_cast<Entity::IEditorWallDrag*>(m_selectedEntities[i].get()))
-				{
-					m_selectedEntities[i].swap(m_selectedEntities.back());
-					m_selectedEntities.pop_back();
-				}
-				else
-				{
-					m_gizmoPosUnaligned += m_selectedEntities[i]->Position();
-				}
+				//if (dynamic_cast<Entity::IEditorWallDrag*>(m_selectedEntities[i].get()))
+				//{
+				//	m_selectedEntities[i].swap(m_selectedEntities.back());
+				//	m_selectedEntities.pop_back();
+				//}
+				//else
+				//{
+					m_gizmoPosUnaligned += m_selectedEntities[i].Get()->GetComponent<eg::ECPosition3D>()->position;
+				//}
 			}
 			m_gizmoPosUnaligned /= (float)m_selectedEntities.size();
 			m_prevGizmoPos = m_gizmoPosUnaligned;
@@ -374,9 +396,9 @@ void Editor::UpdateToolEntities(float dt)
 		if (glm::length2(dragDelta) > 1E-6f)
 		{
 			MaybeClone();
-			for (const std::shared_ptr<Entity>& selectedEntity : m_selectedEntities)
+			for (const eg::EntityHandle& selectedEntity : m_selectedEntities)
 			{
-				selectedEntity->SetPosition(selectedEntity->Position() + dragDelta);
+				selectedEntity.Get()->GetComponent<eg::ECPosition3D>()->position += dragDelta;
 			}
 		}
 		m_prevGizmoPos = gizmoPosAligned;
@@ -384,10 +406,15 @@ void Editor::UpdateToolEntities(float dt)
 	
 	//Updates entity icons
 	m_entityIcons.clear();
-	for (const std::shared_ptr<Entity>& entity : m_world->Entities())
+	for (const eg::Entity& entity : m_world->EntityManager().GetEntitySet(editorVisibleSignature))
 	{
-		glm::vec4 sp4 = RenderSettings::instance->viewProjection * glm::vec4(entity->Position(), 1.0f);
+		const eg::ECPosition3D* positionComp = entity.GetComponent<eg::ECPosition3D>();
+		if (positionComp == nullptr)
+			continue;
+		
+		glm::vec4 sp4 = RenderSettings::instance->viewProjection * glm::vec4(positionComp->position, 1.0f);
 		glm::vec3 sp3 = glm::vec3(sp4) / sp4.w;
+		
 		glm::vec2 screenPos = (glm::vec2(sp3) * 0.5f + 0.5f) * glm::vec2(eg::CurrentResolutionX(), eg::CurrentResolutionY());
 		
 		m_entityIcons.push_back({ eg::Rectangle::CreateCentered(screenPos, ICON_SIZE, ICON_SIZE), sp3.z, entity });
@@ -421,9 +448,9 @@ void Editor::UpdateToolEntities(float dt)
 	//Despawns entities if delete is pressed
 	if (eg::IsButtonDown(eg::Button::Delete) && !eg::WasButtonDown(eg::Button::Delete))
 	{
-		for (std::shared_ptr<Entity>& entity : m_selectedEntities)
+		for (const eg::EntityHandle& entity : m_selectedEntities)
 		{
-			m_world->DespawnEntity(entity.get());
+			entity.Get()->Despawn();
 		}
 		m_selectedEntities.clear();
 	}
@@ -440,17 +467,21 @@ void Editor::UpdateToolEntities(float dt)
 		ImGui::Separator();
 		
 		ImGui::BeginChild("EntityTypes", ImVec2(180, 250));
-		for (const EntityType& entityType : entityTypes)
+		for (const SpawnableEntityType& entityType : spawnableEntityTypes)
 		{
-			if (ImGui::MenuItem(entityType.DisplayName().c_str()))
+			if (ImGui::MenuItem(entityType.name.c_str()))
 			{
 				PickWallResult pickResult = m_world->PickWall(*viewRay);
 				
 				if (pickResult.intersected)
 				{
-					std::shared_ptr<Entity> entity = entityType.CreateInstance();
-					entity->EditorSpawned(pickResult.intersectPosition, pickResult.normalDir);
-					m_world->AddEntity(std::move(entity));
+					if (eg::Entity* entity = entityType.factory(m_world->EntityManager()))
+					{
+						if (eg::ECPosition3D* positionComp = entity->GetComponent<eg::ECPosition3D>())
+							positionComp->position = pickResult.intersectPosition;
+						if (ECWallMounted* wallMountedComp = entity->GetComponent<ECWallMounted>())
+							wallMountedComp->wallUp = pickResult.normalDir;
+					}
 				}
 				
 				ImGui::CloseCurrentPopup();
@@ -654,13 +685,19 @@ void Editor::DrawWorld()
 		DrawToolEntities();
 	
 	//Calls EditorDraw on entities
-	Entity::EditorDrawArgs entityDrawArgs;
+	EditorDrawArgs entityDrawArgs;
 	entityDrawArgs.spriteBatch = &m_spriteBatch;
 	entityDrawArgs.primitiveRenderer = &m_primRenderer;
 	entityDrawArgs.meshBatch = &m_renderCtx->meshBatch;
-	for (const std::shared_ptr<Entity>& entity : m_world->Entities())
+	for (eg::Entity& entity : m_world->EntityManager().GetEntitySet(editorVisibleSignature))
 	{
-		entity->EditorDraw(m_tool == Tool::Entities && eg::Contains(m_selectedEntities, entity), entityDrawArgs);
+		const ECEditorVisible* edVisible = entity.GetComponent<ECEditorVisible>();
+		if (edVisible->editorDraw != nullptr)
+		{
+			const bool selected = m_tool == Tool::Entities &&
+				eg::Contains(m_selectedEntities, eg::EntityHandle(entity));
+			edVisible->editorDraw(entity, selected, entityDrawArgs);
+		}
 	}
 	
 	m_primRenderer.End();
@@ -782,8 +819,14 @@ void Editor::DrawToolEntities()
 		m_spriteBatch.Draw(iconsTexture, icon.rectangle, eg::ColorLin(eg::Color::White),
 			CreateSrcRectangle(selected ? 1 : 0), eg::FlipFlags::Normal);
 		
-		m_spriteBatch.Draw(iconsTexture, icon.rectangle, eg::ColorLin(eg::Color::White),
-			CreateSrcRectangle(icon.entity->GetEditorIconIndex()), eg::FlipFlags::Normal);
+		int iconIndex = 5;
+		if (const eg::Entity* entity = icon.entity.Get())
+		{
+			if (const ECEditorVisible* edVisible = entity->GetComponent<ECEditorVisible>())
+				iconIndex = edVisible->iconIndex;
+		}
+		
+		m_spriteBatch.Draw(iconsTexture, icon.rectangle, eg::ColorLin(eg::Color::White), CreateSrcRectangle(iconIndex), eg::FlipFlags::Normal);
 	}
 }
 

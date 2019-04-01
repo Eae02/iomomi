@@ -1,4 +1,6 @@
 #include "Player.hpp"
+#include "Entities/GravitySwitch.hpp"
+#include "Entities/ECWallMounted.hpp"
 
 #include <imgui.h>
 
@@ -271,25 +273,33 @@ void Player::Update(World& world, float dt)
 	if (m_gravityTransitionMode == TransitionMode::None && m_onGround)
 	{
 		glm::vec3 feetPos = m_position - up * (HEIGHT / 2);
-		eg::AABB searchAABB(feetPos - radius, feetPos + radius);
-		if (std::shared_ptr<GravitySwitchEntity> gravitySwitch = world.FindGravitySwitch(searchAABB, m_down))
+		eg::AABB searchAABB(feetPos - 0.1f, feetPos + 0.1f);
+		
+		for (const eg::Entity& entity : world.EntityManager().GetEntitySet(GravitySwitch::EntitySignature))
 		{
-			if (eg::IsButtonDown(eg::Button::E) || eg::IsButtonDown(eg::Button::CtrlrX))
+			if (GravitySwitch::GetAABB(entity).Intersects(searchAABB))
 			{
-				Dir newDown = gravitySwitch->Up();
-				
-				m_rotationYaw += eg::PI;
-				m_rotationPitch = -m_rotationPitch;
-				m_oldRotation = m_rotation;
-				m_newRotation = GetRotation(m_rotationYaw, m_rotationPitch, newDown);
-				
-				m_newPosition = m_position;
-				m_velocity = glm::vec3(0);
-				m_down = newDown;
-				move = { };
-				m_oldEyePosition = m_eyePosition;
-				m_gravityTransitionMode = TransitionMode::Fall;
-				m_transitionTime = 0;
+				if (eg::IsButtonDown(eg::Button::E) || eg::IsButtonDown(eg::Button::CtrlrX))
+				{
+					Dir newDown = entity.GetComponent<ECWallMounted>()->wallUp;
+					
+					m_rotationYaw += eg::PI;
+					m_rotationPitch = -m_rotationPitch;
+					m_oldRotation = m_rotation;
+					m_newRotation = GetRotation(m_rotationYaw, m_rotationPitch, newDown);
+					
+					m_newPosition = m_position;
+					m_velocity = glm::vec3(0);
+					m_down = newDown;
+					move = { };
+					m_oldEyePosition = m_eyePosition;
+					m_gravityTransitionMode = TransitionMode::Fall;
+					m_transitionTime = 0;
+				}
+				else
+				{
+					//TODO: Show help text
+				}
 			}
 		}
 	}

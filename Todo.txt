@@ -1,4 +1,0 @@
-Editor:
- - Test the level
- - Improve wall dragging
-   - Better highlight

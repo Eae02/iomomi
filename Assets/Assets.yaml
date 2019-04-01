@@ -35,6 +35,7 @@ assets:
   - name: Models/EditorEntrance.obj
   - name: Models/WallLight.obj
   - name: Models/Cube.obj 
+  - name: Models/Button.obj
   - name: Textures/EntityIcons.png
   - name: Textures/NoDraw.png
     srgb: true
@@ -72,6 +73,8 @@ assets:
     srgb: false
   - name: Textures/DefaultM.png
     srgb: false
+  - name: Textures/ButtonA.png
+    srgb: true
   - name: Textures/Pipe1A.png
     srgb: true
   - name: Textures/Pipe1N.png
@@ -109,6 +112,9 @@ assets:
     generator: StaticPropMaterial
     loader: StaticPropMaterial
   - name: Materials/Pipe2.yaml
+    generator: StaticPropMaterial
+    loader: StaticPropMaterial
+  - name: Materials/Button.yaml
     generator: StaticPropMaterial
     loader: StaticPropMaterial
   - name: Textures/Grid.png

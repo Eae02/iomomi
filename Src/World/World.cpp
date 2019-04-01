@@ -1,10 +1,14 @@
 #include "World.hpp"
 #include "Voxel.hpp"
 #include "PrepareDrawArgs.hpp"
-#include "Entities/IRigidBodyEntity.hpp"
+#include "Entities/Entrance.hpp"
+#include "Entities/ECDrawable.hpp"
+#include "Entities/ECRigidBody.hpp"
 #include "../Graphics/Materials/GravityCornerMaterial.hpp"
 #include "../Graphics/RenderSettings.hpp"
 #include "../Graphics/WallShader.hpp"
+#include "Entities/WallLight.hpp"
+#include "Entities/GravitySwitch.hpp"
 
 #include <yaml-cpp/yaml.h>
 
@@ -13,7 +17,7 @@ static const uint32_t CURRENT_VERSION = 1;
 
 World::World()
 {
-	
+	m_entityManager.reset(eg::EntityManager::New());
 }
 
 std::tuple<glm::ivec3, glm::ivec3> World::DecomposeGlobalCoordinate(const glm::ivec3& globalC)
@@ -77,25 +81,22 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 		for (const YAML::Node& entityNode : entitiesNode)
 		{
 			std::string typeName = entityNode["type"].as<std::string>("");
-			const EntityType* type = FindEntityType(typeName);
-			if (type == nullptr)
+			
+			if (typeName == "Entrance")
 			{
-				eg::Log(eg::LogLevel::Warning, "wd", "Entity type not found: {0}", typeName);
-				continue;
+				eg::Entity* entity = ECEntrance::CreateEntity(world->EntityManager());
+				ECEntrance::InitFromYAML(*entity, entityNode);
 			}
-			
-			std::shared_ptr<Entity> entity = type->CreateInstance();
-			entity->Load(entityNode);
-			
-			if (!isEditor)
+			else if (typeName == "WallLight")
 			{
-				if (IDoorEntity* doorEntity = dynamic_cast<IDoorEntity*>(entity.get()))
-				{
-					world->m_doors.push_back(doorEntity->GetDoorDescription());
-				}
+				eg::Entity* entity = WallLight::CreateEntity(world->EntityManager());
+				WallLight::InitFromYAML(*entity, entityNode);
 			}
-			
-			world->AddEntity(std::move(entity));
+			else if (typeName == "GravitySwitch")
+			{
+				eg::Entity* entity = GravitySwitch::CreateEntity(world->EntityManager());
+				GravitySwitch::InitFromYAML(*entity, entityNode);
+			}
 		}
 	}
 	
@@ -106,6 +107,7 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 
 void World::Save(std::ostream& outStream) const
 {
+	/*
 	YAML::Emitter emitter;
 	emitter << YAML::BeginMap;
 	emitter << YAML::Key << "version" << YAML::Value << CURRENT_VERSION;
@@ -141,7 +143,7 @@ void World::Save(std::ostream& outStream) const
 	}
 	emitter << YAML::EndSeq;
 	
-	outStream << emitter.c_str();
+	outStream << emitter.c_str();*/
 }
 
 static constexpr uint64_t IS_AIR_MASK = (uint64_t)1 << (uint64_t)60;
@@ -250,43 +252,14 @@ glm::mat3 GravityCorner::MakeRotationMatrix() const
 	return glm::mat3(r1, r2, glm::cross(r1, r2));
 }
 
-void World::Update(const Entity::UpdateArgs& args)
+void World::Update(const WorldUpdateArgs& args)
 {
 	if (m_bulletWorld)
 	{
 		m_bulletWorld->stepSimulation(args.dt, 10);
 	}
 	
-	for (long i = m_updatables.size() - 1; i >= 0; i--)
-	{
-		if (std::shared_ptr<Entity::IUpdatable> updatable = m_updatables[i].lock())
-		{
-			updatable->Update(args);
-		}
-		else
-		{
-			m_updatables[i].swap(m_updatables.back());
-			m_updatables.pop_back();
-		}
-	}
-	
-	for (long i = m_collidables.size() - 1; i >= 0; i--)
-	{
-		if (m_collidables[i].expired())
-		{
-			m_collidables[i].swap(m_collidables.back());
-			m_collidables.pop_back();
-		}
-	}
-	
-	for (long i = m_gravitySwitchEntities.size() - 1; i >= 0; i--)
-	{
-		if (m_gravitySwitchEntities[i].expired())
-		{
-			m_gravitySwitchEntities[i].swap(m_gravitySwitchEntities.back());
-			m_gravitySwitchEntities.pop_back();
-		}
-	}
+	ECEntrance::Update(args);
 }
 
 void World::PrepareForDraw(PrepareDrawArgs& args)
@@ -312,49 +285,15 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 		}
 	}
 	
-	//Processes drawable entities
-	for (int64_t i = (int64_t)m_drawables.size() - 1; i >= 0; i--)
+	if (!args.isEditor)
 	{
-		if (auto drawable = m_drawables[i].lock())
-		{
-			if (!args.isEditor)
-			{
-				drawable->Draw(*args.meshBatch);
-			}
-		}
-		else
-		{
-			m_drawables[i].swap(m_drawables.back());
-			m_drawables.pop_back();
-		}
+		eg::EntitiesInvoke<ECDrawable, eg::MeshBatch&>(*m_entityManager, *args.meshBatch);
 	}
 	
-	//Processes spot light entities
-	for (int64_t i = (int64_t)m_spotLights.size() - 1; i >= 0; i--)
+	static eg::EntitySignature pointLightSignature = eg::EntitySignature::Create<PointLight>();
+	for (const eg::Entity& entity : m_entityManager->GetEntitySet(pointLightSignature))
 	{
-		if (auto spotLight = m_spotLights[i].lock())
-		{
-			spotLight->GetSpotLights(args.spotLights);
-		}
-		else
-		{
-			m_spotLights[i].swap(m_spotLights.back());
-			m_spotLights.pop_back();
-		}
-	}
-	
-	//Processes point light entities
-	for (int64_t i = (int64_t)m_pointLights.size() - 1; i >= 0; i--)
-	{
-		if (auto pointLight = m_pointLights[i].lock())
-		{
-			pointLight->GetPointLights(args.pointLights);
-		}
-		else
-		{
-			m_pointLights[i].swap(m_pointLights.back());
-			m_pointLights.pop_back();
-		}
+		args.pointLights.push_back(entity.GetComponent<PointLight>()->GetDrawData(eg::GetEntityPosition(entity)));
 	}
 }
 
@@ -847,7 +786,7 @@ const GravityCorner* World::FindGravityCorner(const ClippingArgs& args, Dir curr
 	
 	return ret;
 }
-
+/*
 std::shared_ptr<GravitySwitchEntity> World::FindGravitySwitch(const eg::AABB& aabb, Dir currentDown) const
 {
 	for (const std::weak_ptr<GravitySwitchEntity>& entity : m_gravitySwitchEntities)
@@ -859,7 +798,7 @@ std::shared_ptr<GravitySwitchEntity> World::FindGravitySwitch(const eg::AABB& aa
 		}
 	}
 	return nullptr;
-}
+}*/
 
 PickWallResult World::PickWall(const eg::Ray& ray) const
 {
@@ -896,35 +835,6 @@ PickWallResult World::PickWall(const eg::Ray& ray) const
 	}
 	
 	return result;
-}
-
-void World::AddEntity(std::shared_ptr<Entity> entity)
-{
-	if (auto pointLight = std::dynamic_pointer_cast<IPointLightEntity>(entity))
-		m_pointLights.emplace_back(pointLight);
-	if (auto spotLight = std::dynamic_pointer_cast<ISpotLightEntity>(entity))
-		m_spotLights.emplace_back(spotLight);
-	if (auto gravitySwitch = std::dynamic_pointer_cast<GravitySwitchEntity>(entity))
-		m_gravitySwitchEntities.emplace_back(gravitySwitch);
-	if (auto drawable = std::dynamic_pointer_cast<Entity::IDrawable>(entity))
-		m_drawables.emplace_back(drawable);
-	if (auto updatable = std::dynamic_pointer_cast<Entity::IUpdatable>(entity))
-		m_updatables.emplace_back(updatable);
-	if (auto collidable = std::dynamic_pointer_cast<Entity::ICollidable>(entity))
-		m_collidables.emplace_back(collidable);
-	m_entities.push_back(std::move(entity));
-}
-
-void World::DespawnEntity(const Entity* entity)
-{
-	for (size_t i = 0; i < m_entities.size(); i++)
-	{
-		if (m_entities[i].get() == entity)
-		{
-			m_entities[i].swap(m_entities.back());
-			m_entities.pop_back();
-		}
-	}
 }
 
 void World::InitializeBulletPhysics()
@@ -967,14 +877,12 @@ void World::InitializeBulletPhysics()
 	m_wallsRigidBody = std::make_unique<btRigidBody>(rbInfo);
 	m_bulletWorld->addRigidBody(m_wallsRigidBody.get());
 	
-	for (const std::shared_ptr<Entity>& entity : m_entities)
+	static eg::EntitySignature rigidBodySignature = eg::EntitySignature::Create<ECRigidBody>();
+	for (eg::Entity& entity : m_entityManager->GetEntitySet(rigidBodySignature))
 	{
-		if (IRigidBodyEntity* rbEntity = dynamic_cast<IRigidBodyEntity*>(entity.get()))
+		if (btRigidBody* rigidBody = entity.GetComponent<ECRigidBody>()->GetRigidBody())
 		{
-			if (btRigidBody* rigidBody = rbEntity->GetRigidBody())
-			{
-				m_bulletWorld->addRigidBody(rigidBody);
-			}
+			m_bulletWorld->addRigidBody(rigidBody);
 		}
 	}
 }

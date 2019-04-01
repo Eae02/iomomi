@@ -1,5 +1,6 @@
 #include "Clipping.hpp"
 #include "World.hpp"
+#include "Entities/ECCollidable.hpp"
 
 void CalcPolygonClipping(ClippingArgs& args, eg::Span<const glm::vec3> vertices)
 {
@@ -127,13 +128,7 @@ void CalcWorldClipping(const World& world, ClippingArgs& args)
 		}
 	}
 	
-	for (const std::weak_ptr<Entity::ICollidable>& collidable : world.CollidableEntities())
-	{
-		if (std::shared_ptr<Entity::ICollidable> collidableS = collidable.lock())
-		{
-			collidableS->CalcClipping(args);
-		}
-	}
+	eg::EntitiesInvoke<ECCollidable, ClippingArgs&>(world.EntityManager(), args);
 }
 
 float CalcCollisionCorrection(const eg::AABB& aabb, const eg::Plane& plane)

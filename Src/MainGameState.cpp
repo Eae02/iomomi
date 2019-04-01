@@ -1,8 +1,7 @@
 #include "MainGameState.hpp"
 #include "World/PrepareDrawArgs.hpp"
-#include "World/Entities/EntranceEntity.hpp"
 #include "Graphics/Materials/MeshDrawArgs.hpp"
-#include "World/Entities/LightProbeEntity.hpp"
+#include "World/Entities/Entrance.hpp"
 
 #include <fstream>
 #include <imgui.h>
@@ -16,6 +15,10 @@ MainGameState::MainGameState(RenderContext& renderCtx)
 	m_prepareDrawArgs.meshBatch = &m_renderCtx->meshBatch;
 	
 	m_projection.SetFieldOfViewDeg(80.0f);
+	
+	eg::console::AddCommand("relms", 0, [this] (eg::Span<const std::string_view> args) {
+		m_relativeMouseMode = !m_relativeMouseMode;
+	});
 }
 
 void MainGameState::LoadWorld(std::istream& stream)
@@ -24,15 +27,12 @@ void MainGameState::LoadWorld(std::istream& stream)
 	m_player = { };
 	m_gameTime = 0;
 	
-	for (const std::shared_ptr<Entity>& entity : m_world->Entities())
+	for (eg::Entity& entity : m_world->EntityManager().GetEntitySet(ECEntrance::EntitySignature))
 	{
-		if (EntranceEntity* entrance = dynamic_cast<EntranceEntity*>(entity.get()))
+		if (entity.GetComponent<ECEntrance>()->GetType() == ECEntrance::Type::Entrance)
 		{
-			if (entrance->EntranceType() == EntranceEntity::Type::Entrance)
-			{
-				entrance->InitPlayer(m_player);
-				break;
-			}
+			ECEntrance::InitPlayer(entity, m_player);
+			break;
 		}
 	}
 	
@@ -68,15 +68,15 @@ void MainGameState::RunFrame(float dt)
 {
 	if (!eg::console::IsShown())
 	{
-		eg::SetRelativeMouseMode(!eg::DevMode());
+		eg::SetRelativeMouseMode(m_relativeMouseMode);
 		m_player.Update(*m_world, dt);
 		
-		Entity::UpdateArgs entityUpdateArgs;
-		entityUpdateArgs.dt = dt;
-		entityUpdateArgs.player = &m_player;
-		entityUpdateArgs.world = m_world.get();
-		entityUpdateArgs.invalidateShadows = [this] (const eg::Sphere& sphere) { m_plShadowMapper.Invalidate(sphere); };
-		m_world->Update(entityUpdateArgs);
+		WorldUpdateArgs updateArgs;
+		updateArgs.dt = dt;
+		updateArgs.player = &m_player;
+		updateArgs.world = m_world.get();
+		updateArgs.invalidateShadows = [this] (const eg::Sphere& sphere) { m_plShadowMapper.Invalidate(sphere); };
+		m_world->Update(updateArgs);
 	}
 	else
 	{

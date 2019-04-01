@@ -79,10 +79,10 @@ private:
 	{
 		eg::Rectangle rectangle;
 		float depth;
-		std::shared_ptr<Entity> entity;
+		eg::EntityHandle entity;
 	};
 	std::vector<EntityIcon> m_entityIcons;
-	std::vector<std::shared_ptr<Entity>> m_selectedEntities;
+	std::vector<eg::EntityHandle> m_selectedEntities;
 	
 	glm::vec3 m_gizmoPosUnaligned;
 	glm::vec3 m_prevGizmoPos;

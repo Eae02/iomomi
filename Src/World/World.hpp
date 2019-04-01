@@ -5,12 +5,9 @@
 #include "Dir.hpp"
 #include "Clipping.hpp"
 #include "BulletPhysics.hpp"
-#include "Entities/Entity.hpp"
-#include "Entities/ISpotLightEntity.hpp"
-#include "Entities/IPointLightEntity.hpp"
-#include "Entities/GravitySwitchEntity.hpp"
+#include "WorldUpdateArgs.hpp"
+#include "Door.hpp"
 #include "../Graphics/Vertex.hpp"
-#include "Entities/IDoorEntity.hpp"
 
 struct WallVertex;
 
@@ -69,13 +66,9 @@ public:
 	
 	bool HasCollision(const glm::ivec3& pos, Dir side) const;
 	
-	void AddEntity(std::shared_ptr<Entity> entity);
-	
-	void Update(const Entity::UpdateArgs& args);
+	void Update(const WorldUpdateArgs& args);
 	
 	void PrepareForDraw(struct PrepareDrawArgs& args);
-	
-	void DespawnEntity(const Entity* entity);
 	
 	void Draw();
 	void DrawEditor();
@@ -87,20 +80,13 @@ public:
 	
 	const GravityCorner* FindGravityCorner(const ClippingArgs& args, Dir currentDown) const;
 	
-	std::shared_ptr<GravitySwitchEntity> FindGravitySwitch(const eg::AABB& aabb, Dir currentDown) const;
-	
 	PickWallResult PickWall(const eg::Ray& ray) const;
 	
 	void InitializeBulletPhysics();
 	
-	const std::vector<std::shared_ptr<Entity>>& Entities() const
+	eg::EntityManager& EntityManager() const
 	{
-		return m_entities;
-	}
-	
-	const std::vector<std::weak_ptr<Entity::ICollidable>>& CollidableEntities() const
-	{
-		return m_collidables;
+		return *m_entityManager;
 	}
 	
 private:
@@ -158,13 +144,7 @@ private:
 	
 	std::vector<Region> m_regions;
 	
-	std::vector<std::shared_ptr<Entity>> m_entities;
-	std::vector<std::weak_ptr<ISpotLightEntity>> m_spotLights;
-	std::vector<std::weak_ptr<IPointLightEntity>> m_pointLights;
-	std::vector<std::weak_ptr<GravitySwitchEntity>> m_gravitySwitchEntities;
-	std::vector<std::weak_ptr<Entity::IUpdatable>> m_updatables;
-	std::vector<std::weak_ptr<Entity::IDrawable>> m_drawables;
-	std::vector<std::weak_ptr<Entity::ICollidable>> m_collidables;
+	eg::EntityManagerUP m_entityManager;
 	
 	std::vector<Door> m_doors;
 	

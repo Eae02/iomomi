@@ -6,8 +6,6 @@
 static_assert(sizeof(int) == 4);
 static_assert(sizeof(float) == 4);
 
-void InitEntityTypes();
-
 int main(int argc, char** argv)
 {
 	bullet::Init();
@@ -22,7 +20,6 @@ int main(int argc, char** argv)
 		eg::LoadAssets("assets", "/");
 		RenderSettings::instance = new RenderSettings;
 		InitLevels();
-		InitEntityTypes();
 	};
 	
 	bool vSync = true;

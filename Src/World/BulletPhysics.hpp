@@ -25,5 +25,10 @@ namespace bullet
 	{
 		return btVector3(v3.x, v3.y, v3.z);
 	}
+	
+	inline btQuaternion FromGLM(const glm::quat& q)
+	{
+		return btQuaternion(q.x, q.y, q.z, q.w);
+	}
 }
 
