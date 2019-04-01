@@ -5,6 +5,7 @@
 #include "ECDrawable.hpp"
 #include "../Player.hpp"
 #include "../../Graphics/Materials/StaticPropMaterial.hpp"
+#include "../../Graphics/Lighting/PointLight.hpp"
 #include "../../YAMLUtils.hpp"
 #include "../../../Protobuf/Build/EntranceEntity.pb.h"
 
@@ -18,6 +19,8 @@ eg::EntitySignature ECEntrance::EntitySignature = eg::EntitySignature::Create<
     ECCollidable,
     eg::ECPosition3D
     >();
+
+static eg::EntitySignature lightChildSignature = eg::EntitySignature::Create<eg::ECPosition3D, PointLight>();
 
 static constexpr float MESH_LENGTH = 4.75f;
 static constexpr float MESH_HEIGHT = 3.0f;
@@ -329,9 +332,12 @@ struct EntranceSerializer : public eg::IEntitySerializer
 		ECEntrance& entranceEC = entity.GetComponent<ECEntrance>();
 		entranceEC.SetType(entrancePB.isexit() ? ECEntrance::Type::Exit : ECEntrance::Type::Entrance);
 		
-		entity.GetComponent<eg::ECPosition3D>().position = { entrancePB.posx(), entrancePB.posy(), entrancePB.posz() };
-		
+		glm::vec3 position(entrancePB.posx(), entrancePB.posy(), entrancePB.posz());
+		entity.InitComponent<eg::ECPosition3D>(position);
 		entity.GetComponent<ECWallMounted>().wallUp = (Dir)entrancePB.dir();
+		
+		eg::Entity& lightChild = eg::Deref(entity.FindChildBySignature(lightChildSignature));
+		lightChild.InitComponent<eg::ECPosition3D>(glm::vec3(GetTransform(entity) * glm::vec4(0, 2.0f, 1.0f, 1.0f)) - position);
 	}
 };
 
@@ -344,6 +350,9 @@ eg::Entity* ECEntrance::CreateEntity(eg::EntityManager& entityManager)
 	entity.InitComponent<ECEditorVisible>("Entrance/Exit", &ECEntrance::EditorDraw, &ECEntrance::EditorRenderSettings);
 	entity.GetComponent<ECCollidable>().SetCallback(&ECEntrance::CalcClipping);
 	entity.GetComponent<ECDrawable>().SetCallback(&ECEntrance::Draw);
+	
+	eg::Entity& lightChild = entityManager.AddEntity(lightChildSignature, &entity);
+	lightChild.InitComponent<PointLight>(eg::ColorSRGB::FromHex(0xDEEEFD), 20.0f);
 	
 	return &entity;
 }
