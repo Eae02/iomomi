@@ -6,6 +6,7 @@
 #include "../Player.hpp"
 #include "../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../YAMLUtils.hpp"
+#include "../../../Protobuf/Build/EntranceEntity.pb.h"
 
 #include <imgui.h>
 
@@ -295,9 +296,50 @@ Door ECEntrance::GetDoorDescription(eg::Entity& entity)
 	return door;
 }
 
+struct EntranceSerializer : public eg::IEntitySerializer
+{
+	std::string_view GetName() const override
+	{
+		return "Entrance";
+	}
+	
+	void Serialize(const eg::Entity& entity, std::ostream& stream) const override
+	{
+		gravity_pb::EntranceEntity entrancePB;
+		
+		entrancePB.set_isexit(entity.GetComponent<ECEntrance>()->GetType() == ECEntrance::Type::Exit);
+		
+		entrancePB.set_dir((gravity_pb::Dir)entity.GetComponent<ECWallMounted>()->wallUp);
+		
+		glm::vec3 pos = entity.GetComponent<eg::ECPosition3D>()->position;
+		entrancePB.set_posx(pos.x);
+		entrancePB.set_posy(pos.y);
+		entrancePB.set_posz(pos.z);
+		
+		entrancePB.SerializeToOstream(&stream);
+	}
+	
+	void Deserialize(eg::EntityManager& entityManager, std::istream& stream) const override
+	{
+		eg::Entity& entity = *ECEntrance::CreateEntity(entityManager);
+		
+		gravity_pb::EntranceEntity entrancePB;
+		entrancePB.ParseFromIstream(&stream);
+		
+		ECEntrance* entranceEC = entity.GetComponent<ECEntrance>();
+		entranceEC->SetType(entrancePB.isexit() ? ECEntrance::Type::Exit : ECEntrance::Type::Entrance);
+		
+		entity.GetComponent<eg::ECPosition3D>()->position = { entrancePB.posx(), entrancePB.posy(), entrancePB.posz() };
+		
+		entity.GetComponent<ECWallMounted>()->wallUp = (Dir)entrancePB.dir();
+	}
+};
+
+eg::IEntitySerializer* ECEntrance::EntitySerializer = new EntranceSerializer;
+
 eg::Entity* ECEntrance::CreateEntity(eg::EntityManager& entityManager)
 {
-	eg::Entity& entity = entityManager.AddEntity(EntitySignature);
+	eg::Entity& entity = entityManager.AddEntity(EntitySignature, nullptr, EntitySerializer);
 	
 	entity.GetComponent<ECEditorVisible>()->Init("Entrance/Exit", &ECEntrance::EditorDraw, &ECEntrance::EditorRenderSettings);
 	entity.GetComponent<ECCollidable>()->SetCallback(&ECEntrance::CalcClipping);

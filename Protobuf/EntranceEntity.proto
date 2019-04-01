@@ -1,0 +1,13 @@
+syntax="proto3";
+
+package gravity_pb;
+
+import "Dir.proto";
+
+message EntranceEntity {
+	float posX = 1;
+	float posY = 2;
+	float posZ = 3;
+	Dir dir = 4;
+	bool isExit = 5;
+}

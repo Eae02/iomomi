@@ -2,12 +2,12 @@
 
 enum class Dir
 {
-	PosX,
-	NegX,
-	PosY,
-	NegY,
-	PosZ,
-	NegZ
+	PosX = 0,
+	NegX = 1,
+	PosY = 2,
+	NegY = 3,
+	PosZ = 4,
+	NegZ = 5
 };
 
 extern const char* DirectionNames[6];

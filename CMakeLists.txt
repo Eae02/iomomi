@@ -3,6 +3,7 @@ project(Gravity)
 
 find_package(Threads REQUIRED)
 find_package(Bullet REQUIRED)
+find_package(Protobuf REQUIRED)
 
 if(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
 	set(ARCH_SUFFIX "64")
@@ -15,7 +16,7 @@ add_subdirectory(Deps/yaml-cpp)
 
 include("${EGAME_CMAKE_DIR}/EGameTargets.cmake")
 
-file(GLOB_RECURSE SOURCE_FILES Src/*.cpp Src/*.hpp)
+file(GLOB_RECURSE SOURCE_FILES Src/*.cpp Src/*.hpp Protobuf/Build/*.cc)
 
 set(IMGUI_FILES Deps/imgui/imconfig.h Deps/imgui/imgui.h Deps/imgui/imgui.cpp Deps/imgui/imgui_demo.cpp Deps/imgui/imgui_draw.cpp
 	Deps/imgui/imgui_internal.h Deps/imgui/imgui_widgets.cpp Deps/imgui/imstb_rectpack.h Deps/imgui/imstb_textedit.h
@@ -58,5 +59,6 @@ target_include_directories(Gravity SYSTEM PRIVATE
 target_link_libraries(Gravity
 	EGame
 	yaml-cpp
+	protobuf::libprotobuf
 	${BULLET_LIBRARIES}
 )

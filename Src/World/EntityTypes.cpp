@@ -9,3 +9,10 @@ std::vector<SpawnableEntityType> spawnableEntityTypes =
 	SpawnableEntityType { &ECEntrance::CreateEntity, "Entrance/Exit" },
 	SpawnableEntityType { &GravitySwitch::CreateEntity, "Gravity Switch" }
 };
+
+std::vector<const eg::IEntitySerializer*> entitySerializers;
+
+void InitEntitySerializers()
+{
+	entitySerializers.push_back(ECEntrance::EntitySerializer);
+}

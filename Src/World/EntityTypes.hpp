@@ -9,3 +9,5 @@ struct SpawnableEntityType
 };
 
 extern std::vector<SpawnableEntityType> spawnableEntityTypes;
+
+extern std::vector<const eg::IEntitySerializer*> entitySerializers;

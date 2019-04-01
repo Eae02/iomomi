@@ -38,6 +38,8 @@ public:
 	
 	static eg::EntitySignature EntitySignature;
 	
+	static eg::IEntitySerializer* EntitySerializer;
+	
 private:
 	static void CalcClipping(eg::Entity& entity, ClippingArgs& args);
 	

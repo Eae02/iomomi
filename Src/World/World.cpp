@@ -4,15 +4,15 @@
 #include "Entities/Entrance.hpp"
 #include "Entities/ECDrawable.hpp"
 #include "Entities/ECRigidBody.hpp"
+#include "Entities/WallLight.hpp"
+#include "Entities/GravitySwitch.hpp"
+#include "EntityTypes.hpp"
 #include "../Graphics/Materials/GravityCornerMaterial.hpp"
 #include "../Graphics/RenderSettings.hpp"
 #include "../Graphics/WallShader.hpp"
-#include "Entities/WallLight.hpp"
-#include "Entities/GravitySwitch.hpp"
 
 #include <yaml-cpp/yaml.h>
 
-static const char MAGIC[] = { (char)250, 'E', 'G', 'W' };
 static const uint32_t CURRENT_VERSION = 1;
 
 World::World()
@@ -27,7 +27,7 @@ std::tuple<glm::ivec3, glm::ivec3> World::DecomposeGlobalCoordinate(const glm::i
 	return std::make_tuple(localCoord, regionCoord);
 }
 
-std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
+std::unique_ptr<World> World::LoadYAML(std::istream& stream, bool isEditor)
 {
 	YAML::Node rootYaml = YAML::Load(stream);
 	int version = rootYaml["version"].as<int>(10000);
@@ -105,8 +105,62 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 	return std::move(world);
 }
 
+static char MAGIC[] = { (char)0xFF, 'G', 'W', 'D' };
+
+std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
+{
+	char magicBuf[sizeof(MAGIC)];
+	stream.read(magicBuf, sizeof(magicBuf));
+	if (std::memcmp(magicBuf, MAGIC, sizeof(MAGIC)))
+		return nullptr;
+	
+	std::unique_ptr<World> world = std::make_unique<World>();
+	
+	uint32_t version = eg::BinRead<uint32_t>(stream);
+	
+	uint32_t numRegions = eg::BinRead<uint32_t>(stream);
+	for (uint32_t i = 0; i < numRegions; i++)
+	{
+		Region& region = world->m_regions.emplace_back();
+		for (int c = 0; c < 3; c++)
+		{
+			region.coordinate[c] = eg::BinRead<int32_t>(stream);
+		}
+		region.voxelsOutOfDate = true;
+		region.gravityCornersOutOfDate = true;
+		region.canDraw = false;
+		region.data = std::make_unique<RegionData>();
+		
+		if (!eg::ReadCompressedSection(stream, region.data->voxels, sizeof(RegionData::voxels)))
+		{
+			eg::Log(eg::LogLevel::Error, "wd", "Could not decompress voxels");
+			return nullptr;
+		}
+	}
+	
+	world->EntityManager().Deserialize(stream, entitySerializers);
+	
+	return world;
+}
+
 void World::Save(std::ostream& outStream) const
 {
+	outStream.write(MAGIC, sizeof(MAGIC));
+	eg::BinWrite(outStream, CURRENT_VERSION);
+	
+	eg::BinWrite(outStream, (uint32_t)m_regions.size());
+	for (const Region& region : m_regions)
+	{
+		for (int c = 0; c < 3; c++)
+		{
+			eg::BinWrite(outStream, (int32_t)region.coordinate[c]);
+		}
+		
+		eg::WriteCompressedSection(outStream, region.data->voxels, sizeof(RegionData::voxels));
+	}
+	
+	m_entityManager->Serialize(outStream);
+	
 	/*
 	YAML::Emitter emitter;
 	emitter << YAML::BeginMap;
