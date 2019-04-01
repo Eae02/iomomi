@@ -36,15 +36,14 @@ struct GravityCorner
 class World
 {
 public:
-	World();
+	World()
+		: World(eg::EntityManager::New()) { }
 	
 	//Move breaks bullet
 	World(World&&) = delete;
 	World(const World&) = delete;
 	World& operator=(World&&) = delete;
 	World& operator=(const World&) = delete;
-	
-	static std::unique_ptr<World> LoadYAML(std::istream& stream, bool isEditor);
 	
 	static std::unique_ptr<World> Load(std::istream& stream, bool isEditor);
 	
@@ -92,6 +91,9 @@ public:
 	}
 	
 private:
+	explicit World(eg::EntityManager* entityManager)
+		: m_entityManager(entityManager) { }
+	
 	static constexpr uint32_t REGION_SIZE = 16;
 	
 	inline static std::tuple<glm::ivec3, glm::ivec3> DecomposeGlobalCoordinate(const glm::ivec3& globalC);

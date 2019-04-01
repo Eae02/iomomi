@@ -1,4 +1,4 @@
-PROTOBUFS=Dir EntranceEntity
+PROTOBUFS=Dir EntranceEntity WallLightEntity GravitySwitchEntity
 
 all: $(addprefix Build/, $(addsuffix .pb.h, $(PROTOBUFS)))
 

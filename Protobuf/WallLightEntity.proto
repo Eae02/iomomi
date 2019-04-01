@@ -1,0 +1,16 @@
+syntax="proto3";
+
+package gravity_pb;
+
+import "Dir.proto";
+
+message WallLightEntity {
+	float posX = 1;
+	float posY = 2;
+	float posZ = 3;
+	Dir dir = 4;
+	float colorR = 5;
+	float colorG = 6;
+	float colorB = 7;
+	float intensity = 8;
+}

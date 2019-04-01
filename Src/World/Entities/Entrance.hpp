@@ -5,8 +5,6 @@
 #include "../WorldUpdateArgs.hpp"
 #include "../Door.hpp"
 
-#include <yaml-cpp/yaml.h>
-
 class ECEntrance
 {
 public:
@@ -32,9 +30,7 @@ public:
 	
 	static eg::Entity* CreateEntity(eg::EntityManager& entityManager);
 	
-	static void InitFromYAML(eg::Entity& entity, const YAML::Node& node);
-	
-	static Door GetDoorDescription(eg::Entity& entity);
+	static Door GetDoorDescription(const eg::Entity& entity);
 	
 	static eg::EntitySignature EntitySignature;
 	

@@ -5,6 +5,7 @@
 #include "../Voxel.hpp"
 #include "../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../YAMLUtils.hpp"
+#include "../../../Protobuf/Build/GravitySwitchEntity.pb.h"
 
 namespace GravitySwitch
 {
@@ -41,17 +42,47 @@ namespace GravitySwitch
 	
 	eg::Entity* CreateEntity(eg::EntityManager& entityManager)
 	{
-		eg::Entity& entity = entityManager.AddEntity(EntitySignature);
+		eg::Entity& entity = entityManager.AddEntity(EntitySignature, nullptr, EntitySerializer);
 		
-		entity.GetComponent<ECDrawable>()->SetCallback(&Draw);
-		entity.GetComponent<ECEditorVisible>()->Init("Gravity Switch", &EditorDraw, &ECEditorVisible::RenderDefaultSettings);
+		entity.GetComponent<ECDrawable>().SetCallback(&Draw);
+		entity.InitComponent<ECEditorVisible>("Gravity Switch", &EditorDraw, &ECEditorVisible::RenderDefaultSettings);
 		
 		return &entity;
 	}
 	
-	void InitFromYAML(eg::Entity& entity, const YAML::Node& node)
+	struct GravitySwitchSerializer : public eg::IEntitySerializer
 	{
-		entity.GetComponent<eg::ECPosition3D>()->position = ReadYAMLVec3(node["pos"]);
-		entity.GetComponent<ECWallMounted>()->wallUp = (Dir)node["up"].as<int>();
-	}
+		std::string_view GetName() const override
+		{
+			return "GravitySwitch";
+		}
+		
+		void Serialize(const eg::Entity& entity, std::ostream& stream) const override
+		{
+			gravity_pb::GravitySwitchEntity switchPB;
+			
+			switchPB.set_dir((gravity_pb::Dir)entity.GetComponent<ECWallMounted>().wallUp);
+			
+			glm::vec3 pos = entity.GetComponent<eg::ECPosition3D>().position;
+			switchPB.set_posx(pos.x);
+			switchPB.set_posy(pos.y);
+			switchPB.set_posz(pos.z);
+			
+			switchPB.SerializeToOstream(&stream);
+		}
+		
+		void Deserialize(eg::EntityManager& entityManager, std::istream& stream) const override
+		{
+			eg::Entity& entity = *CreateEntity(entityManager);
+			
+			gravity_pb::GravitySwitchEntity switchPB;
+			switchPB.ParseFromIstream(&stream);
+			
+			entity.InitComponent<eg::ECPosition3D>(switchPB.posx(), switchPB.posy(), switchPB.posz());
+			
+			entity.GetComponent<ECWallMounted>().wallUp = (Dir)switchPB.dir();
+		}
+	};
+	
+	eg::IEntitySerializer* EntitySerializer = new GravitySwitchSerializer;
 }

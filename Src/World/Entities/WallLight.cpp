@@ -6,13 +6,16 @@
 #include "../../Graphics/Materials/EmissiveMaterial.hpp"
 #include "../../YAMLUtils.hpp"
 #include "../../Graphics/Lighting/Serialize.hpp"
+#include "../../../Protobuf/Build/WallLightEntity.pb.h"
 
 #include <imgui.h>
 
 namespace WallLight
 {
 	static eg::EntitySignature entitySignature = eg::EntitySignature::Create<
-		ECDrawable, ECEditorVisible, ECWallMounted, eg::ECPosition3D, PointLight>();
+		ECDrawable, ECEditorVisible, ECWallMounted, eg::ECPosition3D>();
+	
+	static eg::EntitySignature lightChildSignature = eg::EntitySignature::Create<eg::ECPosition3D, PointLight>();
 	
 	static eg::Model* model;
 	
@@ -26,11 +29,15 @@ namespace WallLight
 	
 	EG_ON_INIT(OnInit)
 	
+	template <typename E>
+	inline auto& GetPointLight(E& entity)
+	{
+		return eg::Deref(entity.FindChildBySignature(lightChildSignature)).template GetComponent<PointLight>();
+	}
+	
 	inline EmissiveMaterial::InstanceData GetInstanceData(const eg::Entity& entity, float colorScale)
 	{
-		const PointLight* light = entity.GetComponent<PointLight>();
-		
-		eg::ColorLin color = eg::ColorLin(light->GetColor()).ScaleRGB(colorScale);
+		eg::ColorLin color = eg::ColorLin(GetPointLight(entity).GetColor()).ScaleRGB(colorScale);
 		
 		EmissiveMaterial::InstanceData instanceData;
 		instanceData.transform = ECWallMounted::GetTransform(entity, MODEL_SCALE);
@@ -55,23 +62,68 @@ namespace WallLight
 		
 		ImGui::Separator();
 		
-		entity.GetComponent<PointLight>()->RenderRadianceSettings();
+		GetPointLight(entity).RenderRadianceSettings();
 	}
 	
 	eg::Entity* CreateEntity(eg::EntityManager& entityManager)
 	{
-		eg::Entity& entity = entityManager.AddEntity(entitySignature);
+		eg::Entity& entity = entityManager.AddEntity(entitySignature, nullptr, EntitySerializer);
 		
-		entity.GetComponent<ECDrawable>()->SetCallback(&Draw);
-		entity.GetComponent<ECEditorVisible>()->Init("Wall Light", 3, &EditorDraw, &EditorRenderSettings);
+		entity.GetComponent<ECDrawable>().SetCallback(&Draw);
+		entity.InitComponent<ECEditorVisible>("Wall Light", 3, &EditorDraw, &EditorRenderSettings);
+		
+		entityManager.AddEntity(lightChildSignature, &entity);
 		
 		return &entity;
 	}
 	
-	void InitFromYAML(eg::Entity& entity, const YAML::Node& node)
+	struct WallLightSerializer : public eg::IEntitySerializer
 	{
-		entity.GetComponent<eg::ECPosition3D>()->position = ReadYAMLVec3(node["pos"]);
-		entity.GetComponent<ECWallMounted>()->wallUp = (Dir)node["up"].as<int>();
-		DeserializePointLight(node, *entity.GetComponent<PointLight>());
-	}
+		std::string_view GetName() const override
+		{
+			return "WallLight";
+		}
+		
+		void Serialize(const eg::Entity& entity, std::ostream& stream) const override
+		{
+			gravity_pb::WallLightEntity wallLightPB;
+			
+			wallLightPB.set_dir((gravity_pb::Dir)entity.GetComponent<ECWallMounted>().wallUp);
+			
+			glm::vec3 pos = entity.GetComponent<eg::ECPosition3D>().position;
+			wallLightPB.set_posx(pos.x);
+			wallLightPB.set_posy(pos.y);
+			wallLightPB.set_posz(pos.z);
+			
+			const PointLight& light = GetPointLight(entity);
+			wallLightPB.set_colorr(light.GetColor().r);
+			wallLightPB.set_colorg(light.GetColor().g);
+			wallLightPB.set_colorb(light.GetColor().b);
+			wallLightPB.set_intensity(light.Intensity());
+			
+			wallLightPB.SerializeToOstream(&stream);
+		}
+		
+		void Deserialize(eg::EntityManager& entityManager, std::istream& stream) const override
+		{
+			eg::Entity& entity = *CreateEntity(entityManager);
+			
+			gravity_pb::WallLightEntity wallLightPB;
+			wallLightPB.ParseFromIstream(&stream);
+			
+			entity.InitComponent<eg::ECPosition3D>(wallLightPB.posx(), wallLightPB.posy(), wallLightPB.posz());
+			
+			const Dir dir = (Dir)wallLightPB.dir();
+			entity.GetComponent<ECWallMounted>().wallUp = dir;
+			
+			eg::Entity& lightEntity = eg::Deref(entity.FindChildBySignature(lightChildSignature));
+			
+			lightEntity.InitComponent<eg::ECPosition3D>(glm::vec3(DirectionVector(dir)) * LIGHT_DIST);
+			
+			eg::ColorSRGB color(wallLightPB.colorr(), wallLightPB.colorg(), wallLightPB.colorb());
+			lightEntity.GetComponent<PointLight>().SetRadiance(color, wallLightPB.intensity());
+		}
+	};
+	
+	eg::IEntitySerializer* EntitySerializer = new WallLightSerializer;
 }

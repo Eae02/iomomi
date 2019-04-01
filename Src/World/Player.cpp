@@ -281,7 +281,7 @@ void Player::Update(World& world, float dt)
 			{
 				if (eg::IsButtonDown(eg::Button::E) || eg::IsButtonDown(eg::Button::CtrlrX))
 				{
-					Dir newDown = entity.GetComponent<ECWallMounted>()->wallUp;
+					Dir newDown = entity.GetComponent<ECWallMounted>().wallUp;
 					
 					m_rotationYaw += eg::PI;
 					m_rotationPitch = -m_rotationPitch;

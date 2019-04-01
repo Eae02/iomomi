@@ -15,94 +15,11 @@
 
 static const uint32_t CURRENT_VERSION = 1;
 
-World::World()
-{
-	m_entityManager.reset(eg::EntityManager::New());
-}
-
 std::tuple<glm::ivec3, glm::ivec3> World::DecomposeGlobalCoordinate(const glm::ivec3& globalC)
 {
 	glm::ivec3 localCoord(globalC.x & (REGION_SIZE - 1), globalC.y & (REGION_SIZE - 1), globalC.z & (REGION_SIZE - 1));
 	glm::ivec3 regionCoord = (globalC - localCoord) / (int)REGION_SIZE;
 	return std::make_tuple(localCoord, regionCoord);
-}
-
-std::unique_ptr<World> World::LoadYAML(std::istream& stream, bool isEditor)
-{
-	YAML::Node rootYaml = YAML::Load(stream);
-	int version = rootYaml["version"].as<int>(10000);
-	if (version != CURRENT_VERSION)
-	{
-		eg::Log(eg::LogLevel::Warning, "wd", "Unsupported world version");
-		return nullptr;
-	}
-	
-	std::vector<std::string_view> regParts;
-	
-	std::unique_ptr<World> world = std::make_unique<World>();
-	
-	for (const YAML::Node& regionNode : rootYaml["voxels"])
-	{
-		const YAML::Node& regNode = regionNode["reg"];
-		const YAML::Node& dataNode = regionNode["data"];
-		if (!regNode || !dataNode)
-			continue;
-		
-		std::string regStr = regNode.as<std::string>();
-		regParts.clear();
-		eg::SplitString(regStr, ' ', regParts);
-		if (regParts.size() != 3)
-			continue;
-		
-		Region& region = world->m_regions.emplace_back();
-		for (int i = 0; i < 3; i++)
-			region.coordinate[i] = atoi(regParts[i].data());
-		region.voxelsOutOfDate = true;
-		region.gravityCornersOutOfDate = true;
-		region.canDraw = false;
-		region.data = std::make_unique<RegionData>();
-		
-		YAML::Binary dataBin = dataNode.as<YAML::Binary>();
-		if (!eg::Decompress(dataBin.data(), dataBin.size(), region.data->voxels, sizeof(RegionData::voxels)))
-		{
-			eg::Log(eg::LogLevel::Error, "wd", "Could not decompress voxels");
-			return nullptr;
-		}
-	}
-	
-	if (!std::is_sorted(world->m_regions.begin(), world->m_regions.end()))
-	{
-		eg::Log(eg::LogLevel::Error, "wd", "Regions are not sorted");
-		return nullptr;
-	}
-	
-	if (const YAML::Node& entitiesNode = rootYaml["entities"])
-	{
-		for (const YAML::Node& entityNode : entitiesNode)
-		{
-			std::string typeName = entityNode["type"].as<std::string>("");
-			
-			if (typeName == "Entrance")
-			{
-				eg::Entity* entity = ECEntrance::CreateEntity(world->EntityManager());
-				ECEntrance::InitFromYAML(*entity, entityNode);
-			}
-			else if (typeName == "WallLight")
-			{
-				eg::Entity* entity = WallLight::CreateEntity(world->EntityManager());
-				WallLight::InitFromYAML(*entity, entityNode);
-			}
-			else if (typeName == "GravitySwitch")
-			{
-				eg::Entity* entity = GravitySwitch::CreateEntity(world->EntityManager());
-				GravitySwitch::InitFromYAML(*entity, entityNode);
-			}
-		}
-	}
-	
-	world->m_anyOutOfDate = true;
-	
-	return std::move(world);
 }
 
 static char MAGIC[] = { (char)0xFF, 'G', 'W', 'D' };
@@ -112,13 +29,21 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 	char magicBuf[sizeof(MAGIC)];
 	stream.read(magicBuf, sizeof(magicBuf));
 	if (std::memcmp(magicBuf, MAGIC, sizeof(MAGIC)))
+	{
+		eg::Log(eg::LogLevel::Error, "wd", "Invalid world file");
 		return nullptr;
+	}
 	
-	std::unique_ptr<World> world = std::make_unique<World>();
+	std::unique_ptr<World> world(new World(nullptr));
 	
-	uint32_t version = eg::BinRead<uint32_t>(stream);
+	const uint32_t version = eg::BinRead<uint32_t>(stream);
+	if (version != CURRENT_VERSION)
+	{
+		eg::Log(eg::LogLevel::Error, "wd", "Unsupported world format");
+		return nullptr;
+	}
 	
-	uint32_t numRegions = eg::BinRead<uint32_t>(stream);
+	const uint32_t numRegions = eg::BinRead<uint32_t>(stream);
 	for (uint32_t i = 0; i < numRegions; i++)
 	{
 		Region& region = world->m_regions.emplace_back();
@@ -138,7 +63,23 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 		}
 	}
 	
-	world->EntityManager().Deserialize(stream, entitySerializers);
+	if (!std::is_sorted(world->m_regions.begin(), world->m_regions.end()))
+	{
+		eg::Log(eg::LogLevel::Error, "wd", "Regions are not sorted");
+		return nullptr;
+	}
+	
+	world->m_entityManager.reset(eg::EntityManager::Deserialize(stream, entitySerializers));
+	
+	if (!isEditor)
+	{
+		for (const eg::Entity& entranceEntity : world->EntityManager().GetEntitySet(ECEntrance::EntitySignature))
+		{
+			world->m_doors.push_back(ECEntrance::GetDoorDescription(entranceEntity));
+		}
+	}
+	
+	world->m_anyOutOfDate = true;
 	
 	return world;
 }
@@ -160,44 +101,6 @@ void World::Save(std::ostream& outStream) const
 	}
 	
 	m_entityManager->Serialize(outStream);
-	
-	/*
-	YAML::Emitter emitter;
-	emitter << YAML::BeginMap;
-	emitter << YAML::Key << "version" << YAML::Value << CURRENT_VERSION;
-	emitter << YAML::Key << "voxels" << YAML::Value << YAML::BeginSeq;
-	
-	std::vector<std::vector<char>> regionDataVectors;
-	
-	for (const Region& region : m_regions)
-	{
-		std::ostringstream coordStream;
-		coordStream << region.coordinate.x << " " << region.coordinate.y << " " << region.coordinate.z;
-		
-		emitter << YAML::BeginMap;
-		emitter << YAML::Key << "reg" << YAML::Value << coordStream.str();
-		
-		std::vector<char> regionData = eg::Compress(region.data->voxels, sizeof(RegionData::voxels));
-		
-		emitter << YAML::Key << "data" << YAML::Value <<
-			YAML::Binary(reinterpret_cast<const uint8_t*>(regionData.data()), regionData.size());
-		regionDataVectors.push_back(std::move(regionData));
-		
-		emitter << YAML::EndMap;
-	}
-	emitter << YAML::EndSeq;
-	
-	emitter << YAML::Key << "entities" << YAML::Value << YAML::BeginSeq;
-	for (const std::shared_ptr<Entity>& entity : m_entities)
-	{
-		emitter << YAML::BeginMap;
-		emitter << YAML::Key << "type" << YAML::Value << entity->GetType()->Name();
-		entity->Save(emitter);
-		emitter << YAML::EndMap;
-	}
-	emitter << YAML::EndSeq;
-	
-	outStream << emitter.c_str();*/
 }
 
 static constexpr uint64_t IS_AIR_MASK = (uint64_t)1 << (uint64_t)60;
@@ -347,7 +250,7 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 	static eg::EntitySignature pointLightSignature = eg::EntitySignature::Create<PointLight>();
 	for (const eg::Entity& entity : m_entityManager->GetEntitySet(pointLightSignature))
 	{
-		args.pointLights.push_back(entity.GetComponent<PointLight>()->GetDrawData(eg::GetEntityPosition(entity)));
+		args.pointLights.push_back(entity.GetComponent<PointLight>().GetDrawData(eg::GetEntityPosition(entity)));
 	}
 }
 
@@ -934,7 +837,7 @@ void World::InitializeBulletPhysics()
 	static eg::EntitySignature rigidBodySignature = eg::EntitySignature::Create<ECRigidBody>();
 	for (eg::Entity& entity : m_entityManager->GetEntitySet(rigidBodySignature))
 	{
-		if (btRigidBody* rigidBody = entity.GetComponent<ECRigidBody>()->GetRigidBody())
+		if (btRigidBody* rigidBody = entity.GetComponent<ECRigidBody>().GetRigidBody())
 		{
 			m_bulletWorld->addRigidBody(rigidBody);
 		}

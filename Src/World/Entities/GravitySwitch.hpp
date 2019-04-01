@@ -8,5 +8,5 @@ namespace GravitySwitch
 	
 	eg::AABB GetAABB(const eg::Entity& entity);
 	
-	void InitFromYAML(eg::Entity& entity, const YAML::Node& node);
+	extern eg::IEntitySerializer* EntitySerializer;
 }

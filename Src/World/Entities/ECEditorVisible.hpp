@@ -12,26 +12,22 @@ struct ECEditorVisible
 	using DrawCallback = void(*)(eg::Entity& entity, bool selected, const EditorDrawArgs& drawArgs);
 	using RenderSettingsCallback = void(*)(eg::Entity& entity);
 	
-	DrawCallback editorDraw = nullptr;
-	RenderSettingsCallback editorRenderSettings = nullptr;
 	const char* displayName;
-	int iconIndex = 5;
+	int iconIndex;
+	DrawCallback editorDraw;
+	RenderSettingsCallback editorRenderSettings;
 	
 	static void RenderDefaultSettings(eg::Entity& entity);
 	
-	void Init(const char* _displayName, DrawCallback draw, RenderSettingsCallback renderSettings)
-	{
-		editorDraw = draw;
-		editorRenderSettings = renderSettings;
-		displayName = _displayName;
-	}
+	ECEditorVisible()
+		: ECEditorVisible(nullptr, nullptr) { }
 	
-	void Init(const char* _displayName, int _iconIndex,
-		DrawCallback draw, RenderSettingsCallback renderSettings)
-	{
-		editorDraw = draw;
-		editorRenderSettings = renderSettings;
-		displayName = _displayName;
-		iconIndex = _iconIndex;
-	}
+	ECEditorVisible(const char* _displayName, DrawCallback _editorDraw)
+		: ECEditorVisible(_displayName, 5, _editorDraw, &ECEditorVisible::RenderDefaultSettings) { }
+	
+	ECEditorVisible(const char* _displayName, DrawCallback _editorDraw, RenderSettingsCallback _editorRenderSettings)
+		: ECEditorVisible(_displayName, 5, _editorDraw, _editorRenderSettings) { }
+	
+	ECEditorVisible(const char* _displayName, int _iconIndex, DrawCallback _editorDraw, RenderSettingsCallback _editorRenderSettings)
+		: displayName(_displayName), iconIndex(_iconIndex), editorDraw(_editorDraw), editorRenderSettings(_editorRenderSettings) { }
 };

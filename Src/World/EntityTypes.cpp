@@ -15,4 +15,6 @@ std::vector<const eg::IEntitySerializer*> entitySerializers;
 void InitEntitySerializers()
 {
 	entitySerializers.push_back(ECEntrance::EntitySerializer);
+	entitySerializers.push_back(WallLight::EntitySerializer);
+	entitySerializers.push_back(GravitySwitch::EntitySerializer);
 }

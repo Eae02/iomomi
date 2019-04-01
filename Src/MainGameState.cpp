@@ -29,7 +29,7 @@ void MainGameState::LoadWorld(std::istream& stream)
 	
 	for (eg::Entity& entity : m_world->EntityManager().GetEntitySet(ECEntrance::EntitySignature))
 	{
-		if (entity.GetComponent<ECEntrance>()->GetType() == ECEntrance::Type::Entrance)
+		if (entity.GetComponent<ECEntrance>().GetType() == ECEntrance::Type::Entrance)
 		{
 			ECEntrance::InitPlayer(entity, m_player);
 			break;

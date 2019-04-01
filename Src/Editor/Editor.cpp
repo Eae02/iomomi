@@ -76,7 +76,7 @@ void Editor::RunFrame(float dt)
 					std::string path = eg::Concat({ eg::ExeDirPath(), "/levels/", level.name, ".gwd" });
 					std::ifstream stream(path, std::ios::binary);
 					
-					if (std::unique_ptr<World> world = World::LoadYAML(stream, true))
+					if (std::unique_ptr<World> world = World::Load(stream, true))
 					{
 						m_world = std::move(world);
 						m_levelName = level.name;
@@ -130,7 +130,6 @@ void Editor::RunFrame(float dt)
 			
 			for (size_t i = 0; i < eg::ArrayLen(TextureNames); i++)
 			{
-				const float ICON_HEIGHT = 64;
 				if (ImGui::Selectable(TextureNames[i], false) &&  m_selState == SelState::SelectDone)
 				{
 					glm::ivec3 mn = glm::min(m_selection1, m_selection2);
@@ -161,7 +160,7 @@ void Editor::RunFrame(float dt)
 			if (entity == nullptr)
 				continue;
 			
-			ECEditorVisible* edVisible = entity->GetComponent<ECEditorVisible>();
+			ECEditorVisible* edVisible = entity->FindComponent<ECEditorVisible>();
 			if (edVisible == nullptr || edVisible->editorRenderSettings == nullptr)
 				continue;
 			
@@ -329,7 +328,7 @@ void Editor::UpdateToolEntities(float dt)
 	{
 		if (eg::Entity* entity = m_selectedEntities[0].Get())
 		{
-			wallMountedEntity = entity->GetComponent<ECWallMounted>();
+			wallMountedEntity = entity->FindComponent<ECWallMounted>();
 		}
 	};
 	if (m_selectedEntities.size() == 1)
@@ -349,7 +348,7 @@ void Editor::UpdateToolEntities(float dt)
 				
 				wallMountedEntity->wallUp = pickResult.normalDir;
 				
-				if (auto* positionComp = m_selectedEntities[0].Get()->GetComponent<eg::ECPosition3D>())
+				if (eg::ECPosition3D* positionComp = m_selectedEntities[0].Get()->FindComponent<eg::ECPosition3D>())
 				{
 					positionComp->position = SnapToGrid(pickResult.intersectPosition);
 				}
@@ -381,7 +380,7 @@ void Editor::UpdateToolEntities(float dt)
 				//}
 				//else
 				//{
-					m_gizmoPosUnaligned += m_selectedEntities[i].Get()->GetComponent<eg::ECPosition3D>()->position;
+					m_gizmoPosUnaligned += m_selectedEntities[i].Get()->GetComponent<eg::ECPosition3D>().position;
 				//}
 			}
 			m_gizmoPosUnaligned /= (float)m_selectedEntities.size();
@@ -398,7 +397,7 @@ void Editor::UpdateToolEntities(float dt)
 			MaybeClone();
 			for (const eg::EntityHandle& selectedEntity : m_selectedEntities)
 			{
-				selectedEntity.Get()->GetComponent<eg::ECPosition3D>()->position += dragDelta;
+				selectedEntity.Get()->GetComponent<eg::ECPosition3D>().position += dragDelta;
 			}
 		}
 		m_prevGizmoPos = gizmoPosAligned;
@@ -408,7 +407,7 @@ void Editor::UpdateToolEntities(float dt)
 	m_entityIcons.clear();
 	for (const eg::Entity& entity : m_world->EntityManager().GetEntitySet(editorVisibleSignature))
 	{
-		const eg::ECPosition3D* positionComp = entity.GetComponent<eg::ECPosition3D>();
+		const eg::ECPosition3D* positionComp = entity.FindComponent<eg::ECPosition3D>();
 		if (positionComp == nullptr)
 			continue;
 		
@@ -477,9 +476,9 @@ void Editor::UpdateToolEntities(float dt)
 				{
 					if (eg::Entity* entity = entityType.factory(m_world->EntityManager()))
 					{
-						if (eg::ECPosition3D* positionComp = entity->GetComponent<eg::ECPosition3D>())
+						if (eg::ECPosition3D* positionComp = entity->FindComponent<eg::ECPosition3D>())
 							positionComp->position = pickResult.intersectPosition;
-						if (ECWallMounted* wallMountedComp = entity->GetComponent<ECWallMounted>())
+						if (ECWallMounted* wallMountedComp = entity->FindComponent<ECWallMounted>())
 							wallMountedComp->wallUp = pickResult.normalDir;
 					}
 				}
@@ -691,7 +690,7 @@ void Editor::DrawWorld()
 	entityDrawArgs.meshBatch = &m_renderCtx->meshBatch;
 	for (eg::Entity& entity : m_world->EntityManager().GetEntitySet(editorVisibleSignature))
 	{
-		const ECEditorVisible* edVisible = entity.GetComponent<ECEditorVisible>();
+		const ECEditorVisible* edVisible = entity.FindComponent<ECEditorVisible>();
 		if (edVisible->editorDraw != nullptr)
 		{
 			const bool selected = m_tool == Tool::Entities &&
@@ -820,10 +819,9 @@ void Editor::DrawToolEntities()
 			CreateSrcRectangle(selected ? 1 : 0), eg::FlipFlags::Normal);
 		
 		int iconIndex = 5;
-		if (const eg::Entity* entity = icon.entity.Get())
+		if (const ECEditorVisible* edVisible = icon.entity.FindComponent<ECEditorVisible>())
 		{
-			if (const ECEditorVisible* edVisible = entity->GetComponent<ECEditorVisible>())
-				iconIndex = edVisible->iconIndex;
+			iconIndex = edVisible->iconIndex;
 		}
 		
 		m_spriteBatch.Draw(iconsTexture, icon.rectangle, eg::ColorLin(eg::Color::White), CreateSrcRectangle(iconIndex), eg::FlipFlags::Normal);

@@ -88,14 +88,14 @@ const Dir UP_VECTORS[] =
 
 inline glm::mat4 GetTransform(eg::Entity& entity)
 {
-	Dir direction = entity.GetComponent<ECWallMounted>()->wallUp;
+	Dir direction = entity.GetComponent<ECWallMounted>().wallUp;
 	
 	glm::vec3 dir = DirectionVector(direction);
 	const glm::vec3 up = DirectionVector(UP_VECTORS[(int)direction]);
 	
 	const glm::vec3 translation = eg::GetEntityPosition(entity) - up * (MESH_HEIGHT / 2) + dir * MESH_LENGTH;
 	
-	if (entity.GetComponent<ECEntrance>()->GetType() == ECEntrance::Type::Exit)
+	if (entity.GetComponent<ECEntrance>().GetType() == ECEntrance::Type::Exit)
 		dir = -dir;
 	const glm::mat3 rotation(dir, up, glm::cross(dir, up));
 	
@@ -109,35 +109,35 @@ void ECEntrance::Update(const WorldUpdateArgs& args)
 	
 	for (eg::Entity& entity : args.world->EntityManager().GetEntitySet(EntitySignature))
 	{
-		Dir direction = entity.GetComponent<ECWallMounted>()->wallUp;
+		Dir direction = entity.GetComponent<ECWallMounted>().wallUp;
 		glm::vec3 position = eg::GetEntityPosition(entity);
-		ECEntrance* entranceEC = entity.GetComponent<ECEntrance>();
+		ECEntrance& entranceEC = entity.GetComponent<ECEntrance>();
 		
 		glm::vec3 toPlayer = args.player->Position() - position;
-		glm::vec3 desiredDirToPlayer = DirectionVector(direction) * (entranceEC->m_type == Type::Entrance ? 1 : -1);
+		glm::vec3 desiredDirToPlayer = DirectionVector(direction) * (entranceEC.m_type == Type::Entrance ? 1 : -1);
 		
 		const bool open =
 			glm::length2(toPlayer) < DOOR_OPEN_DIST * DOOR_OPEN_DIST && //Player is close to the door
 			glm::dot(toPlayer, desiredDirToPlayer) > 0 && //Player is on the right side of the door
 			args.player->CurrentDown() == OppositeDir(UP_VECTORS[(int)direction]); //Player has the correct gravity mode
 		
-		entranceEC->m_timeBeforeClose = open ? DOOR_CLOSE_DELAY : std::max(entranceEC->m_timeBeforeClose - args.dt, 0.0f);
+		entranceEC.m_timeBeforeClose = open ? DOOR_CLOSE_DELAY : std::max(entranceEC.m_timeBeforeClose - args.dt, 0.0f);
 		
 		//Updates the door open progress
-		const float oldOpenProgress = entranceEC->m_doorOpenProgress;
-		if (entranceEC->m_timeBeforeClose > 0)
+		const float oldOpenProgress = entranceEC.m_doorOpenProgress;
+		if (entranceEC.m_timeBeforeClose > 0)
 		{
 			//Door should be open
-			entranceEC->m_doorOpenProgress = std::min(entranceEC->m_doorOpenProgress + args.dt / OPEN_TRANSITION_TIME, 1.0f);
+			entranceEC.m_doorOpenProgress = std::min(entranceEC.m_doorOpenProgress + args.dt / OPEN_TRANSITION_TIME, 1.0f);
 		}
 		else
 		{
 			//Door should be closed
-			entranceEC->m_doorOpenProgress = std::max(entranceEC->m_doorOpenProgress - args.dt / CLOSE_TRANSITION_TIME, 0.0f);
+			entranceEC.m_doorOpenProgress = std::max(entranceEC.m_doorOpenProgress - args.dt / CLOSE_TRANSITION_TIME, 0.0f);
 		}
 		
 		//Invalidates shadows if the open progress changed
-		if (std::abs(entranceEC->m_doorOpenProgress - oldOpenProgress) > 1E-6f && args.invalidateShadows)
+		if (std::abs(entranceEC.m_doorOpenProgress - oldOpenProgress) > 1E-6f && args.invalidateShadows)
 		{
 			constexpr float DOOR_RADIUS = 1.5f;
 			args.invalidateShadows(eg::Sphere(position, DOOR_RADIUS));
@@ -147,7 +147,7 @@ void ECEntrance::Update(const WorldUpdateArgs& args)
 
 void ECEntrance::CalcClipping(eg::Entity& entity, ClippingArgs& args)
 {
-	const ECEntrance* entranceEC = entity.GetComponent<ECEntrance>();
+	const ECEntrance& entranceEC = entity.GetComponent<ECEntrance>();
 	glm::mat4 transform = GetTransform(entity);
 	
 	constexpr float COL_SIZE_X = MESH_LENGTH * 0.99f;
@@ -195,7 +195,7 @@ void ECEntrance::CalcClipping(eg::Entity& entity, ClippingArgs& args)
 	float doorsX[4] = { MESH_LENGTH, 4.3f, -4.3f, -MESH_LENGTH };
 	for (int i = 0; i < 4; i++)
 	{
-		if (entranceEC->m_doorOpenProgress > 0.1f && (i / 2) == (1 - (int)entranceEC->m_type))
+		if (entranceEC.m_doorOpenProgress > 0.1f && (i / 2) == (1 - (int)entranceEC.m_type))
 			continue;
 		
 		glm::vec3 doorMin(doorsX[i], 0, -COL_SIZE_Z);
@@ -219,14 +219,14 @@ void ECEntrance::CalcClipping(eg::Entity& entity, ClippingArgs& args)
 
 void ECEntrance::Draw(eg::Entity& entity, eg::MeshBatch& meshBatch)
 {
-	const ECEntrance* entranceEC = entity.GetComponent<ECEntrance>();
+	const ECEntrance& entranceEC = entity.GetComponent<ECEntrance>();
 	
 	std::vector<glm::mat4> transforms(entrance.model->NumMeshes(), GetTransform(entity));
 	
-	float doorMoveDist = glm::smoothstep(0.0f, 1.0f, entranceEC->m_doorOpenProgress) * 1.2f;
+	float doorMoveDist = glm::smoothstep(0.0f, 1.0f, entranceEC.m_doorOpenProgress) * 1.2f;
 	for (int h = 0; h < 2; h++)
 	{
-		size_t meshIndex = entrance.doorMeshIndices[1 - (int)entranceEC->m_type][h];
+		size_t meshIndex = entrance.doorMeshIndices[1 - (int)entranceEC.m_type][h];
 		glm::vec3 tVec = glm::vec3(0, 1, -1) * doorMoveDist;
 		if (h == 0)
 			tVec = -tVec;
@@ -242,17 +242,17 @@ void ECEntrance::Draw(eg::Entity& entity, eg::MeshBatch& meshBatch)
 
 void ECEntrance::EditorDraw(eg::Entity& entity, bool selected, const EditorDrawArgs& drawArgs)
 {
-	const ECEntrance* entranceEC = entity.GetComponent<ECEntrance>();
+	const ECEntrance& entranceEC = entity.GetComponent<ECEntrance>();
 	glm::mat4 transform = GetTransform(entity);
 	
-	if (entranceEC->m_type == Type::Exit)
+	if (entranceEC.m_type == Type::Exit)
 	{
 		transform *= glm::scale(glm::mat4(), glm::vec3(-1, 1, 1));
 	}
 	transform *= glm::translate(glm::mat4(), glm::vec3(-MESH_LENGTH - 0.01f, 0, 0));
 	
-	auto model = entranceEC->m_type == Type::Entrance ? entrance.editorEntModel : entrance.editorExitModel;
-	auto material = entranceEC->m_type == Type::Entrance ? entrance.editorEntMaterial : entrance.editorExitMaterial;
+	auto model = entranceEC.m_type == Type::Entrance ? entrance.editorEntModel : entrance.editorExitModel;
+	auto material = entranceEC.m_type == Type::Entrance ? entrance.editorEntMaterial : entrance.editorExitMaterial;
 	
 	drawArgs.meshBatch->Add(*model, *material, transform);
 }
@@ -263,12 +263,12 @@ void ECEntrance::EditorRenderSettings(eg::Entity& entity)
 	
 	ImGui::Separator();
 	
-	ImGui::Combo("Type", reinterpret_cast<int*>(&entity.GetComponent<ECEntrance>()->m_type), "Entrance\0Exit\0");
+	ImGui::Combo("Type", reinterpret_cast<int*>(&entity.GetComponent<ECEntrance>().m_type), "Entrance\0Exit\0");
 }
 
 void ECEntrance::InitPlayer(eg::Entity& entity, Player& player)
 {
-	Dir direction = entity.GetComponent<ECWallMounted>()->wallUp;
+	Dir direction = entity.GetComponent<ECWallMounted>().wallUp;
 	
 	player.SetPosition(eg::GetEntityPosition(entity) + glm::vec3(DirectionVector(direction)) * MESH_LENGTH);
 	
@@ -285,9 +285,9 @@ void ECEntrance::InitPlayer(eg::Entity& entity, Player& player)
 	player.SetRotation(rotations[(int)direction][0], rotations[(int)direction][1]);
 }
 
-Door ECEntrance::GetDoorDescription(eg::Entity& entity)
+Door ECEntrance::GetDoorDescription(const eg::Entity& entity)
 {
-	Dir direction = entity.GetComponent<ECWallMounted>()->wallUp;
+	Dir direction = entity.GetComponent<ECWallMounted>().wallUp;
 	
 	Door door;
 	door.position = eg::GetEntityPosition(entity) - glm::vec3(DirectionVector(UP_VECTORS[(int)direction])) * 0.5f;
@@ -307,11 +307,11 @@ struct EntranceSerializer : public eg::IEntitySerializer
 	{
 		gravity_pb::EntranceEntity entrancePB;
 		
-		entrancePB.set_isexit(entity.GetComponent<ECEntrance>()->GetType() == ECEntrance::Type::Exit);
+		entrancePB.set_isexit(entity.GetComponent<ECEntrance>().GetType() == ECEntrance::Type::Exit);
 		
-		entrancePB.set_dir((gravity_pb::Dir)entity.GetComponent<ECWallMounted>()->wallUp);
+		entrancePB.set_dir((gravity_pb::Dir)entity.GetComponent<ECWallMounted>().wallUp);
 		
-		glm::vec3 pos = entity.GetComponent<eg::ECPosition3D>()->position;
+		glm::vec3 pos = entity.GetComponent<eg::ECPosition3D>().position;
 		entrancePB.set_posx(pos.x);
 		entrancePB.set_posy(pos.y);
 		entrancePB.set_posz(pos.z);
@@ -326,12 +326,12 @@ struct EntranceSerializer : public eg::IEntitySerializer
 		gravity_pb::EntranceEntity entrancePB;
 		entrancePB.ParseFromIstream(&stream);
 		
-		ECEntrance* entranceEC = entity.GetComponent<ECEntrance>();
-		entranceEC->SetType(entrancePB.isexit() ? ECEntrance::Type::Exit : ECEntrance::Type::Entrance);
+		ECEntrance& entranceEC = entity.GetComponent<ECEntrance>();
+		entranceEC.SetType(entrancePB.isexit() ? ECEntrance::Type::Exit : ECEntrance::Type::Entrance);
 		
-		entity.GetComponent<eg::ECPosition3D>()->position = { entrancePB.posx(), entrancePB.posy(), entrancePB.posz() };
+		entity.GetComponent<eg::ECPosition3D>().position = { entrancePB.posx(), entrancePB.posy(), entrancePB.posz() };
 		
-		entity.GetComponent<ECWallMounted>()->wallUp = (Dir)entrancePB.dir();
+		entity.GetComponent<ECWallMounted>().wallUp = (Dir)entrancePB.dir();
 	}
 };
 
@@ -341,16 +341,9 @@ eg::Entity* ECEntrance::CreateEntity(eg::EntityManager& entityManager)
 {
 	eg::Entity& entity = entityManager.AddEntity(EntitySignature, nullptr, EntitySerializer);
 	
-	entity.GetComponent<ECEditorVisible>()->Init("Entrance/Exit", &ECEntrance::EditorDraw, &ECEntrance::EditorRenderSettings);
-	entity.GetComponent<ECCollidable>()->SetCallback(&ECEntrance::CalcClipping);
-	entity.GetComponent<ECDrawable>()->SetCallback(&ECEntrance::Draw);
+	entity.InitComponent<ECEditorVisible>("Entrance/Exit", &ECEntrance::EditorDraw, &ECEntrance::EditorRenderSettings);
+	entity.GetComponent<ECCollidable>().SetCallback(&ECEntrance::CalcClipping);
+	entity.GetComponent<ECDrawable>().SetCallback(&ECEntrance::Draw);
 	
 	return &entity;
-}
-
-void ECEntrance::InitFromYAML(eg::Entity& entity, const YAML::Node& node)
-{
-	entity.GetComponent<eg::ECPosition3D>()->position = ReadYAMLVec3(node["pos"]);
-	entity.GetComponent<ECWallMounted>()->wallUp = (Dir)node["dir"].as<int>();
-	entity.GetComponent<ECEntrance>()->m_type = node["exit"].as<bool>() ? Type::Exit : Type::Entrance;
 }
