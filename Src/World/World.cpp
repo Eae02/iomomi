@@ -245,6 +245,10 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 	if (!args.isEditor)
 	{
 		eg::EntitiesInvoke<ECDrawable, eg::MeshBatch&>(*m_entityManager, *args.meshBatch);
+		
+		DrawMessage drawMessage;
+		drawMessage.meshBatch = args.meshBatch;
+		m_entityManager->SendMessageToAll(drawMessage);
 	}
 	
 	static eg::EntitySignature pointLightSignature = eg::EntitySignature::Create<PointLight>();

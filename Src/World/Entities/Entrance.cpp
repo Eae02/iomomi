@@ -1,8 +1,6 @@
 #include "Entrance.hpp"
 #include "ECWallMounted.hpp"
 #include "ECEditorVisible.hpp"
-#include "ECCollidable.hpp"
-#include "ECDrawable.hpp"
 #include "../Player.hpp"
 #include "../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../Graphics/Lighting/PointLight.hpp"
@@ -15,10 +13,11 @@ eg::EntitySignature ECEntrance::EntitySignature = eg::EntitySignature::Create<
     ECEntrance,
     ECWallMounted,
     ECEditorVisible,
-    ECDrawable,
-    ECCollidable,
     eg::ECPosition3D
     >();
+
+eg::MessageReceiver ECEntrance::MessageReceiver = eg::MessageReceiver::Create<ECEntrance,
+    CalculateCollisionMessage, DrawMessage>();
 
 static eg::EntitySignature lightChildSignature = eg::EntitySignature::Create<eg::ECPosition3D, PointLight>();
 
@@ -148,9 +147,8 @@ void ECEntrance::Update(const WorldUpdateArgs& args)
 	}
 }
 
-void ECEntrance::CalcClipping(eg::Entity& entity, ClippingArgs& args)
+void ECEntrance::HandleMessage(eg::Entity& entity, const CalculateCollisionMessage& message)
 {
-	const ECEntrance& entranceEC = entity.GetComponent<ECEntrance>();
 	glm::mat4 transform = GetTransform(entity);
 	
 	constexpr float COL_SIZE_X = MESH_LENGTH * 0.99f;
@@ -192,13 +190,13 @@ void ECEntrance::CalcClipping(eg::Entity& entity, ClippingArgs& args)
 	{
 		for (int j = 0; j < 4; j++)
 			colPolygons[i][j] = glm::vec3(transform * glm::vec4(colPolygons[i][j], 1));
-		CalcPolygonClipping(args, colPolygons[i]);
+		CalcPolygonClipping(*message.clippingArgs, colPolygons[i]);
 	}
 	
 	float doorsX[4] = { MESH_LENGTH, 4.3f, -4.3f, -MESH_LENGTH };
 	for (int i = 0; i < 4; i++)
 	{
-		if (entranceEC.m_doorOpenProgress > 0.1f && (i / 2) == (1 - (int)entranceEC.m_type))
+		if (m_doorOpenProgress > 0.1f && (i / 2) == (1 - (int)m_type))
 			continue;
 		
 		glm::vec3 doorMin(doorsX[i], 0, -COL_SIZE_Z);
@@ -216,20 +214,18 @@ void ECEntrance::CalcClipping(eg::Entity& entity, ClippingArgs& args)
 			doorPolygon[j] = glm::vec3(transform * glm::vec4(doorPolygon[j], 1));
 		}
 		
-		CalcPolygonClipping(args, doorPolygon);
+		CalcPolygonClipping(*message.clippingArgs, doorPolygon);
 	}
 }
 
-void ECEntrance::Draw(eg::Entity& entity, eg::MeshBatch& meshBatch)
+void ECEntrance::HandleMessage(eg::Entity& entity, const DrawMessage& message)
 {
-	const ECEntrance& entranceEC = entity.GetComponent<ECEntrance>();
-	
 	std::vector<glm::mat4> transforms(entrance.model->NumMeshes(), GetTransform(entity));
 	
-	float doorMoveDist = glm::smoothstep(0.0f, 1.0f, entranceEC.m_doorOpenProgress) * 1.2f;
+	float doorMoveDist = glm::smoothstep(0.0f, 1.0f, m_doorOpenProgress) * 1.2f;
 	for (int h = 0; h < 2; h++)
 	{
-		size_t meshIndex = entrance.doorMeshIndices[1 - (int)entranceEC.m_type][h];
+		size_t meshIndex = entrance.doorMeshIndices[1 - (int)m_type][h];
 		glm::vec3 tVec = glm::vec3(0, 1, -1) * doorMoveDist;
 		if (h == 0)
 			tVec = -tVec;
@@ -239,7 +235,7 @@ void ECEntrance::Draw(eg::Entity& entity, eg::MeshBatch& meshBatch)
 	for (size_t i = 0; i < entrance.model->NumMeshes(); i++)
 	{
 		const size_t materialIndex = entrance.model->GetMesh(i).materialIndex;
-		meshBatch.Add(*entrance.model, i, *entrance.materials[materialIndex], transforms[i]);
+		message.meshBatch->Add(*entrance.model, i, *entrance.materials[materialIndex], transforms[i]);
 	}
 }
 
@@ -348,8 +344,6 @@ eg::Entity* ECEntrance::CreateEntity(eg::EntityManager& entityManager)
 	eg::Entity& entity = entityManager.AddEntity(EntitySignature, nullptr, EntitySerializer);
 	
 	entity.InitComponent<ECEditorVisible>("Entrance/Exit", &ECEntrance::EditorDraw, &ECEntrance::EditorRenderSettings);
-	entity.GetComponent<ECCollidable>().SetCallback(&ECEntrance::CalcClipping);
-	entity.GetComponent<ECDrawable>().SetCallback(&ECEntrance::Draw);
 	
 	eg::Entity& lightChild = entityManager.AddEntity(lightChildSignature, &entity);
 	lightChild.InitComponent<PointLight>(eg::ColorSRGB::FromHex(0xDEEEFD), 20.0f);

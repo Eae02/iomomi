@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ECEditorVisible.hpp"
+#include "Messages.hpp"
 #include "../Clipping.hpp"
 #include "../WorldUpdateArgs.hpp"
 #include "../Door.hpp"
@@ -24,6 +25,10 @@ public:
 		m_type = type;
 	}
 	
+	void HandleMessage(eg::Entity& entity, const CalculateCollisionMessage& message);
+	
+	void HandleMessage(eg::Entity& entity, const DrawMessage& message);
+	
 	static void InitPlayer(eg::Entity& entity, class Player& player);
 	
 	static void Update(const WorldUpdateArgs& updateArgs);
@@ -36,11 +41,9 @@ public:
 	
 	static eg::IEntitySerializer* EntitySerializer;
 	
+	static eg::MessageReceiver MessageReceiver;
+	
 private:
-	static void CalcClipping(eg::Entity& entity, ClippingArgs& args);
-	
-	static void Draw(eg::Entity& entity, eg::MeshBatch& meshBatch);
-	
 	static void EditorDraw(eg::Entity& entity, bool selected, const EditorDrawArgs& drawArgs);
 	static void EditorRenderSettings(eg::Entity& entity);
 	

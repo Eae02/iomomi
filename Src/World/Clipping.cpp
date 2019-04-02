@@ -1,6 +1,6 @@
 #include "Clipping.hpp"
 #include "World.hpp"
-#include "Entities/ECCollidable.hpp"
+#include "Entities/Messages.hpp"
 
 void CalcPolygonClipping(ClippingArgs& args, eg::Span<const glm::vec3> vertices)
 {
@@ -128,7 +128,9 @@ void CalcWorldClipping(const World& world, ClippingArgs& args)
 		}
 	}
 	
-	eg::EntitiesInvoke<ECCollidable, ClippingArgs&>(world.EntityManager(), args);
+	CalculateCollisionMessage message;
+	message.clippingArgs = &args;
+	world.EntityManager().SendMessageToAll(message);
 }
 
 float CalcCollisionCorrection(const eg::AABB& aabb, const eg::Plane& plane)
