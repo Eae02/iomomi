@@ -1,7 +1,7 @@
 #include "GravitySwitch.hpp"
-#include "ECDrawable.hpp"
 #include "ECEditorVisible.hpp"
 #include "ECWallMounted.hpp"
+#include "Messages.hpp"
 #include "../Voxel.hpp"
 #include "../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../YAMLUtils.hpp"
@@ -9,10 +9,20 @@
 
 namespace GravitySwitch
 {
-	eg::EntitySignature EntitySignature = eg::EntitySignature::Create<
-		ECDrawable, ECEditorVisible, ECWallMounted, eg::ECPosition3D>();
+	struct ECGravitySwitch
+	{
+		void HandleMessage(eg::Entity& entity, const EditorDrawMessage& message);
+		void HandleMessage(eg::Entity& entity, const EditorRenderImGuiMessage& message);
+		void HandleMessage(eg::Entity& entity, const DrawMessage& message);
+		
+		static eg::MessageReceiver MessageReceiver;
+	};
 	
-	static constexpr float SCALE = 1.0f;
+	eg::MessageReceiver ECGravitySwitch::MessageReceiver = eg::MessageReceiver::Create<
+		ECGravitySwitch, EditorDrawMessage, EditorRenderImGuiMessage, DrawMessage>();
+	
+	eg::EntitySignature EntitySignature = eg::EntitySignature::Create<
+		ECEditorVisible, ECWallMounted, ECGravitySwitch, eg::ECPosition3D>();
 	
 	static eg::Model* s_model;
 	static eg::IMaterial* s_material;
@@ -25,27 +35,26 @@ namespace GravitySwitch
 	
 	EG_ON_INIT(OnInit)
 	
-	void Draw(eg::Entity& entity, eg::MeshBatch& meshBatch)
+	void ECGravitySwitch::HandleMessage(eg::Entity& entity, const DrawMessage& message)
 	{
-		meshBatch.Add(*s_model, *s_material, ECWallMounted::GetTransform(entity, SCALE));
+		message.meshBatch->Add(*s_model, *s_material, ECWallMounted::GetTransform(entity, SCALE));
 	}
 	
-	void EditorDraw(eg::Entity& entity, bool selected, const EditorDrawArgs& drawArgs)
+	void ECGravitySwitch::HandleMessage(eg::Entity& entity, const EditorRenderImGuiMessage& message)
 	{
-		drawArgs.meshBatch->Add(*s_model, *s_material, ECWallMounted::GetTransform(entity, SCALE));
+		ECEditorVisible::RenderDefaultSettings(entity);
 	}
 	
-	eg::AABB GetAABB(const eg::Entity& entity)
+	void ECGravitySwitch::HandleMessage(eg::Entity& entity, const EditorDrawMessage& message)
 	{
-		return ECWallMounted::GetAABB(entity, SCALE, 0.2f);
+		message.meshBatch->Add(*s_model, *s_material, ECWallMounted::GetTransform(entity, SCALE));
 	}
 	
 	eg::Entity* CreateEntity(eg::EntityManager& entityManager)
 	{
 		eg::Entity& entity = entityManager.AddEntity(EntitySignature, nullptr, EntitySerializer);
 		
-		entity.GetComponent<ECDrawable>().SetCallback(&Draw);
-		entity.InitComponent<ECEditorVisible>("Gravity Switch", &EditorDraw, &ECEditorVisible::RenderDefaultSettings);
+		entity.InitComponent<ECEditorVisible>("Gravity Switch");
 		
 		return &entity;
 	}

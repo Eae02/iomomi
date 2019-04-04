@@ -5,7 +5,7 @@ class PrimitiveRenderer
 public:
 	PrimitiveRenderer() = default;
 	
-	void Begin(const glm::mat4& viewProjection);
+	void Begin(const glm::mat4& viewProjection, const glm::vec3& cameraPos);
 	
 	void End();
 	
@@ -24,10 +24,13 @@ public:
 	
 	void AddQuad(const glm::vec3 positions[4], const eg::ColorSRGB& color);
 	
+	void AddLine(const glm::vec3& a, const glm::vec3& b, const eg::ColorSRGB& color, float width = 0.01f);
+	
 	static void OnInit();
 	static void OnShutdown();
 	
 private:
+	glm::vec3 m_cameraPos;
 	glm::mat4 m_viewProjection;
 	
 	struct Triangle

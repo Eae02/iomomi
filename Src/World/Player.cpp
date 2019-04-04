@@ -1,6 +1,8 @@
 #include "Player.hpp"
 #include "Entities/GravitySwitch.hpp"
 #include "Entities/ECWallMounted.hpp"
+#include "Entities/ECFloorButton.hpp"
+#include "Entities/ECActivator.hpp"
 
 #include <imgui.h>
 
@@ -301,6 +303,16 @@ void Player::Update(World& world, float dt)
 					//TODO: Show help text
 				}
 			}
+		}
+	}
+	
+	for (eg::Entity& floorButtonEntity : world.EntityManager().GetEntitySet(ECFloorButton::EntitySignature))
+	{
+		glm::vec3 toButton = glm::normalize(eg::GetEntityPosition(floorButtonEntity) - m_position);
+		if (glm::dot(toButton, glm::normalize(move)) > 0.1f &&
+		    ECFloorButton::GetAABB(floorButtonEntity).Intersects(GetAABB()))
+		{
+			floorButtonEntity.HandleMessage(ActivateMessage());
 		}
 	}
 	

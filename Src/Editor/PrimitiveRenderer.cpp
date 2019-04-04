@@ -28,9 +28,10 @@ void PrimitiveRenderer::OnShutdown()
 EG_ON_INIT(PrimitiveRenderer::OnInit)
 EG_ON_SHUTDOWN(PrimitiveRenderer::OnShutdown)
 
-void PrimitiveRenderer::Begin(const glm::mat4& viewProjection)
+void PrimitiveRenderer::Begin(const glm::mat4& viewProjection, const glm::vec3& cameraPos)
 {
 	m_viewProjection = viewProjection;
+	m_cameraPos = cameraPos;
 	m_triangles.clear();
 	m_vertices.clear();
 }
@@ -71,6 +72,13 @@ void PrimitiveRenderer::AddQuad(const glm::vec3* positions, const eg::ColorSRGB&
 		AddVertex(positions[i], color);
 	AddTriangle(baseIdx + 0, baseIdx + 1, baseIdx + 2);
 	AddTriangle(baseIdx + 1, baseIdx + 2, baseIdx + 3);
+}
+
+void PrimitiveRenderer::AddLine(const glm::vec3& a, const glm::vec3& b, const eg::ColorSRGB& color, float width)
+{
+	const glm::vec3 side = glm::normalize(glm::cross(a - m_cameraPos, b - m_cameraPos)) * (width * 0.5f);
+	const glm::vec3 quadPositions[] = { a - side, b - side, a + side, b + side };
+	AddQuad(quadPositions, color);
 }
 
 void PrimitiveRenderer::End()

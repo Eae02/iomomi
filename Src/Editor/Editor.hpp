@@ -59,6 +59,8 @@ private:
 		Dragging
 	};
 	
+	eg::Ray m_viewRay;
+	
 	SelState m_selState = SelState::NoSelection;
 	glm::ivec3 m_selection1;
 	glm::ivec3 m_selection2;
@@ -83,6 +85,17 @@ private:
 	};
 	std::vector<EntityIcon> m_entityIcons;
 	std::vector<eg::EntityHandle> m_selectedEntities;
+	
+	struct ActConnection
+	{
+		eg::EntityHandle activator;
+		eg::EntityHandle activatable;
+	};
+	std::vector<ActConnection> m_actConnections;
+	eg::EntityHandle m_connectingActivator;
+	
+	void InitializeActConnections();
+	void RemoveActConnections(eg::EntityHandle entity);
 	
 	glm::vec3 m_gizmoPosUnaligned;
 	glm::vec3 m_prevGizmoPos;

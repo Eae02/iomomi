@@ -5,6 +5,8 @@
 #include "../World/Entities/ECEditorVisible.hpp"
 #include "../World/Entities/ECWallMounted.hpp"
 #include "../World/EntityTypes.hpp"
+#include "../World/Entities/ECActivatable.hpp"
+#include "../World/Entities/ECActivator.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -47,6 +49,7 @@ void Editor::RunFrame(float dt)
 				m_levelName = std::move(m_newLevelName);
 				m_newLevelName = { };
 				m_world = std::make_unique<World>();
+				InitializeActConnections();
 				
 				for (int x = 0; x < 3; x++)
 				{
@@ -80,6 +83,7 @@ void Editor::RunFrame(float dt)
 					{
 						m_world = std::move(world);
 						m_levelName = level.name;
+						InitializeActConnections();
 					}
 				}
 				ImGui::PopID();
@@ -161,13 +165,23 @@ void Editor::RunFrame(float dt)
 				continue;
 			
 			ECEditorVisible* edVisible = entity->FindComponent<ECEditorVisible>();
-			if (edVisible == nullptr || edVisible->editorRenderSettings == nullptr)
+			if (edVisible == nullptr)
 				continue;
 			
 			ImGui::PushID(entityHandle.Id());
 			if (ImGui::CollapsingHeader(edVisible->displayName, ImGuiTreeNodeFlags_DefaultOpen))
 			{
-				edVisible->editorRenderSettings(*entity);
+				EditorRenderImGuiMessage message;
+				entity->HandleMessage(message);
+				
+				if (entity->FindComponent<ECActivator>())
+				{
+					if (ImGui::Button("Connect..."))
+					{
+						m_connectingActivator = *entity;
+						RemoveActConnections(m_connectingActivator);
+					}
+				}
 			}
 			ImGui::PopID();
 		}
@@ -181,6 +195,8 @@ void Editor::RunFrame(float dt)
 	RenderSettings::instance->invViewProjection = inverseViewMatrix * m_projection.InverseMatrix();
 	RenderSettings::instance->cameraPosition = glm::vec3(inverseViewMatrix[3]);
 	RenderSettings::instance->UpdateBuffer();
+	
+	m_viewRay = eg::Ray::UnprojectScreen(RenderSettings::instance->invViewProjection, eg::CursorPos());
 	
 	if (!eg::console::IsShown())
 	{
@@ -204,8 +220,7 @@ void Editor::UpdateToolCorners(float dt)
 	if (ImGui::GetIO().WantCaptureMouse)
 		return;
 	
-	eg::Ray viewRay = eg::Ray::UnprojectScreen(RenderSettings::instance->invViewProjection, eg::CursorPos());
-	PickWallResult pickResult = m_world->PickWall(viewRay);
+	PickWallResult pickResult = m_world->PickWall(m_viewRay);
 	
 	m_hoveredCornerDim = -1;
 	
@@ -277,6 +292,42 @@ void Editor::UpdateToolCorners(float dt)
 	}
 }
 
+void Editor::InitializeActConnections()
+{
+	m_actConnections.clear();
+	for (const eg::Entity& activatorEntity : m_world->EntityManager().GetEntitySet(ECActivator::Signature))
+	{
+		uint32_t activatableName = activatorEntity.GetComponent<ECActivator>().activatableName;
+		for (const eg::Entity& activatableEntity : m_world->EntityManager().GetEntitySet(ECActivatable::Signature))
+		{
+			if (activatableEntity.GetComponent<ECActivatable>().Name() == activatableName)
+			{
+				m_actConnections.push_back({ activatorEntity, activatableEntity });
+				break;
+			}
+		}
+	}
+}
+
+void Editor::RemoveActConnections(eg::EntityHandle entity)
+{
+	for (int64_t i = (int64_t)m_actConnections.size() - 1; i >= 0; i--)
+	{
+		if (m_actConnections[i].activator == entity || m_actConnections[i].activatable == entity)
+		{
+			ECActivatable* activatable = m_actConnections[i].activatable.FindComponent<ECActivatable>();
+			ECActivator* activator = m_actConnections[i].activatable.FindComponent<ECActivator>();
+			if (activatable && activator)
+			{
+				activatable->RemoveSource(activator->sourceIndex);
+			}
+			
+			m_actConnections[i] = m_actConnections.back();
+			m_actConnections.pop_back();
+		}
+	}
+}
+
 void Editor::UpdateToolEntities(float dt)
 {
 	const float ICON_SIZE = 32;
@@ -285,11 +336,6 @@ void Editor::UpdateToolEntities(float dt)
 	{
 		return !ImGui::GetIO().WantCaptureMouse && !m_translationGizmo.HasInputFocus();
 	};
-	
-	auto viewRay = eg::MakeLazy([&]
-	{
-		return eg::Ray::UnprojectScreen(RenderSettings::instance->invViewProjection, eg::CursorPos());
-	});
 	
 	if (eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft))
 	{
@@ -334,13 +380,17 @@ void Editor::UpdateToolEntities(float dt)
 	if (m_selectedEntities.size() == 1)
 		UpdateWallDragEntity();
 	
+	const bool mouseClicked = eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft);
+	const bool mouseHeld = eg::IsButtonDown(eg::Button::MouseLeft) && eg::WasButtonDown(eg::Button::MouseLeft);
+	const bool isConnectingActivator = m_connectingActivator.Get();
+	
 	//Moves the wall drag entity
-	if (wallMountedEntity && eg::IsButtonDown(eg::Button::MouseLeft) && eg::WasButtonDown(eg::Button::MouseLeft))
+	if (wallMountedEntity && !isConnectingActivator && mouseHeld)
 	{
 		constexpr int DRAG_BEGIN_DELTA = 10;
 		if (m_isDraggingWallEntity)
 		{
-			PickWallResult pickResult = m_world->PickWall(*viewRay);
+			PickWallResult pickResult = m_world->PickWall(m_viewRay);
 			if (pickResult.intersected)
 			{
 				if (MaybeClone())
@@ -366,7 +416,7 @@ void Editor::UpdateToolEntities(float dt)
 	}
 	
 	//Updates the translation gizmo
-	if (!m_selectedEntities.empty() && !ImGui::GetIO().WantCaptureMouse && !wallMountedEntity)
+	if (!m_selectedEntities.empty() && !ImGui::GetIO().WantCaptureMouse && !wallMountedEntity && !isConnectingActivator)
 	{
 		if (!m_translationGizmo.HasInputFocus())
 		{
@@ -388,7 +438,7 @@ void Editor::UpdateToolEntities(float dt)
 		}
 		
 		m_translationGizmo.Update(m_gizmoPosUnaligned, RenderSettings::instance->cameraPosition,
-		                          RenderSettings::instance->viewProjection, *viewRay);
+		                          RenderSettings::instance->viewProjection, m_viewRay);
 		
 		const glm::vec3 gizmoPosAligned = SnapToGrid(m_gizmoPosUnaligned);
 		const glm::vec3 dragDelta = gizmoPosAligned - m_prevGizmoPos;
@@ -426,22 +476,51 @@ void Editor::UpdateToolEntities(float dt)
 	
 	glm::vec2 flippedCursorPos(eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY());
 	
-	//Updates the selected entity
-	if (eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft) && AllowMouseInteract())
+	//Updates which entities are selected
+	if (mouseClicked && AllowMouseInteract())
 	{
 		if (!eg::IsButtonDown(eg::Button::LeftControl) && !eg::IsButtonDown(eg::Button::RightControl))
 		{
 			m_selectedEntities.clear();
 		}
 		
+		bool anySelected = false;
 		for (int64_t i = (int64_t)m_entityIcons.size() - 1; i >= 0; i--)
 		{
 			if (m_entityIcons[i].rectangle.Contains(flippedCursorPos))
 			{
 				m_selectedEntities.push_back(m_entityIcons[i].entity);
+				anySelected = true;
 				break;
 			}
 		}
+		
+		//Connects the activator to the selected entity
+		if (eg::Entity* activatorEntity = m_connectingActivator.Get())
+		{
+			ECActivator& activator = activatorEntity->GetComponent<ECActivator>();
+			activator.activatableName = 0;
+			
+			if (anySelected)
+			{
+				if (ECActivatable* activatable = m_selectedEntities.back().FindComponent<ECActivatable>())
+				{
+					int sourceIndex = activatable->AddSource();
+					if (sourceIndex != -1)
+					{
+						activator.activatableName = activatable->Name();
+						activator.sourceIndex = sourceIndex;
+						m_actConnections.push_back({ m_connectingActivator, m_selectedEntities.back() });
+					}
+					else
+					{
+						eg::Log(eg::LogLevel::Error, "ent", "Too many sources bound to activatable entity");
+					}
+				}
+			}
+			
+			m_connectingActivator = { };
+		};
 	}
 	
 	//Despawns entities if delete is pressed
@@ -470,7 +549,7 @@ void Editor::UpdateToolEntities(float dt)
 		{
 			if (ImGui::MenuItem(entityType.name.c_str()))
 			{
-				PickWallResult pickResult = m_world->PickWall(*viewRay);
+				PickWallResult pickResult = m_world->PickWall(m_viewRay);
 				
 				if (pickResult.intersected)
 				{
@@ -497,16 +576,11 @@ void Editor::UpdateToolWalls(float dt)
 	if (ImGui::GetIO().WantCaptureMouse)
 		return;
 	
-	auto viewRay = eg::MakeLazy([&]
-	{
-		return eg::Ray::UnprojectScreen(RenderSettings::instance->invViewProjection, eg::CursorPos());
-	});
-	
 	//Handles mouse move events
 	if (eg::IsButtonDown(eg::Button::MouseLeft) && eg::WasButtonDown(eg::Button::MouseLeft) &&
 	    eg::CursorPos() != eg::PrevCursorPos())
 	{
-		PickWallResult pickResult = m_world->PickWall(*viewRay);
+		PickWallResult pickResult = m_world->PickWall(m_viewRay);
 		
 		int selDim = (int)m_selectionNormal / 2;
 		if (m_selState == SelState::Selecting)
@@ -521,7 +595,7 @@ void Editor::UpdateToolWalls(float dt)
 		else if (m_selState == SelState::Dragging)
 		{
 			eg::Ray dragLineRay(m_dragStartPos, glm::abs(DirectionVector(m_selectionNormal)));
-			float closestPoint = dragLineRay.GetClosestPoint(*viewRay);
+			float closestPoint = dragLineRay.GetClosestPoint(m_viewRay);
 			if (!std::isnan(closestPoint))
 			{
 				int newDragDist = (int)glm::round(closestPoint);
@@ -668,7 +742,7 @@ void Editor::UpdateToolWalls(float dt)
 
 void Editor::DrawWorld()
 {
-	m_primRenderer.Begin(RenderSettings::instance->viewProjection);
+	m_primRenderer.Begin(RenderSettings::instance->viewProjection, RenderSettings::instance->cameraPosition);
 	m_spriteBatch.Begin();
 	m_renderCtx->meshBatch.Begin();
 	
@@ -683,21 +757,18 @@ void Editor::DrawWorld()
 	else if (m_tool == Tool::Entities)
 		DrawToolEntities();
 	
-	//Calls EditorDraw on entities
-	EditorDrawArgs entityDrawArgs;
-	entityDrawArgs.spriteBatch = &m_spriteBatch;
-	entityDrawArgs.primitiveRenderer = &m_primRenderer;
-	entityDrawArgs.meshBatch = &m_renderCtx->meshBatch;
-	for (eg::Entity& entity : m_world->EntityManager().GetEntitySet(editorVisibleSignature))
+	//Sends the editor draw message to entities
+	EditorDrawMessage drawMessage;
+	drawMessage.spriteBatch = &m_spriteBatch;
+	drawMessage.primitiveRenderer = &m_primRenderer;
+	drawMessage.meshBatch = &m_renderCtx->meshBatch;
+	drawMessage.getDrawMode = [this] (const eg::Entity* entity)
 	{
-		const ECEditorVisible* edVisible = entity.FindComponent<ECEditorVisible>();
-		if (edVisible->editorDraw != nullptr)
-		{
-			const bool selected = m_tool == Tool::Entities &&
-				eg::Contains(m_selectedEntities, eg::EntityHandle(entity));
-			edVisible->editorDraw(entity, selected, entityDrawArgs);
-		}
-	}
+		if (eg::Contains(m_selectedEntities, eg::EntityHandle(*entity)))
+			return EntityEditorDrawMode::Selected;
+		return EntityEditorDrawMode::Default;
+	};
+	m_world->EntityManager().SendMessageToAll(drawMessage);
 	
 	m_primRenderer.End();
 	
@@ -802,8 +873,28 @@ void Editor::DrawToolCorners()
 	}
 }
 
+static constexpr float ACT_CONNECTION_LINE_WIDTH = 0.04f;
+static const eg::ColorSRGB ACT_CONNECTION_COLOR = eg::ColorSRGB::FromRGBAHex(0x0870c896);
+
 void Editor::DrawToolEntities()
 {
+	for (const ActConnection& connection : m_actConnections)
+	{
+		glm::vec3 a = eg::GetEntityPosition(eg::Deref(connection.activator.Get()));
+		glm::vec3 b = eg::GetEntityPosition(eg::Deref(connection.activatable.Get()));
+		m_primRenderer.AddLine(a, b, ACT_CONNECTION_COLOR, ACT_CONNECTION_LINE_WIDTH);
+	}
+	
+	if (eg::Entity* connectionSrc = m_connectingActivator.Get())
+	{
+		PickWallResult pickRes = m_world->PickWall(m_viewRay);
+		if (pickRes.intersected)
+		{
+			glm::vec3 a = eg::GetEntityPosition(eg::Deref(connectionSrc));
+			m_primRenderer.AddLine(a, pickRes.intersectPosition, ACT_CONNECTION_COLOR, ACT_CONNECTION_LINE_WIDTH);
+		}
+	}
+	
 	const eg::Texture& iconsTexture = eg::GetAsset<eg::Texture>("Textures/EntityIcons.png");
 	
 	auto CreateSrcRectangle = [&] (int index)
@@ -813,18 +904,28 @@ void Editor::DrawToolEntities()
 	
 	for (const EntityIcon& icon : m_entityIcons)
 	{
-		bool selected = eg::Contains(m_selectedEntities, icon.entity);
+		const bool selected = eg::Contains(m_selectedEntities, icon.entity);
 		
-		m_spriteBatch.Draw(iconsTexture, icon.rectangle, eg::ColorLin(eg::Color::White),
+		eg::ColorLin color(eg::Color::White);
+		
+		//Makes the icon slightly transparent if the user is establishing
+		// an activation connection and this entity isn't activatable.
+		if (m_connectingActivator.Get() && icon.entity.FindComponent<ECActivatable>() == nullptr)
+			color.a *= 0.5f;
+		
+		//Draws the background sprite
+		m_spriteBatch.Draw(iconsTexture, icon.rectangle, color,
 			CreateSrcRectangle(selected ? 1 : 0), eg::FlipFlags::Normal);
 		
+		//Selctes which icon to use
 		int iconIndex = 5;
 		if (const ECEditorVisible* edVisible = icon.entity.FindComponent<ECEditorVisible>())
 		{
 			iconIndex = edVisible->iconIndex;
 		}
 		
-		m_spriteBatch.Draw(iconsTexture, icon.rectangle, eg::ColorLin(eg::Color::White), CreateSrcRectangle(iconIndex), eg::FlipFlags::Normal);
+		//Draws the icon
+		m_spriteBatch.Draw(iconsTexture, icon.rectangle, color, CreateSrcRectangle(iconIndex), eg::FlipFlags::Normal);
 	}
 }
 

@@ -1,6 +1,7 @@
 #include "Entrance.hpp"
 #include "ECWallMounted.hpp"
 #include "ECEditorVisible.hpp"
+#include "ECActivatable.hpp"
 #include "../Player.hpp"
 #include "../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../Graphics/Lighting/PointLight.hpp"
@@ -13,11 +14,12 @@ eg::EntitySignature ECEntrance::EntitySignature = eg::EntitySignature::Create<
     ECEntrance,
     ECWallMounted,
     ECEditorVisible,
+    ECActivatable,
     eg::ECPosition3D
     >();
 
 eg::MessageReceiver ECEntrance::MessageReceiver = eg::MessageReceiver::Create<ECEntrance,
-    CalculateCollisionMessage, DrawMessage>();
+    CalculateCollisionMessage, DrawMessage, EditorRenderImGuiMessage, EditorDrawMessage>();
 
 static eg::EntitySignature lightChildSignature = eg::EntitySignature::Create<eg::ECPosition3D, PointLight>();
 
@@ -114,11 +116,12 @@ void ECEntrance::Update(const WorldUpdateArgs& args)
 		Dir direction = entity.GetComponent<ECWallMounted>().wallUp;
 		glm::vec3 position = eg::GetEntityPosition(entity);
 		ECEntrance& entranceEC = entity.GetComponent<ECEntrance>();
+		ECActivatable& activatableEC = entity.GetComponent<ECActivatable>();
 		
 		glm::vec3 toPlayer = args.player->Position() - position;
 		glm::vec3 desiredDirToPlayer = DirectionVector(direction) * (entranceEC.m_type == Type::Entrance ? 1 : -1);
 		
-		const bool open =
+		bool open = activatableEC.AllSourcesActive() &&
 			glm::length2(toPlayer) < DOOR_OPEN_DIST * DOOR_OPEN_DIST && //Player is close to the door
 			glm::dot(toPlayer, desiredDirToPlayer) > 0 && //Player is on the right side of the door
 			args.player->CurrentDown() == OppositeDir(UP_VECTORS[(int)direction]); //Player has the correct gravity mode
@@ -239,7 +242,7 @@ void ECEntrance::HandleMessage(eg::Entity& entity, const DrawMessage& message)
 	}
 }
 
-void ECEntrance::EditorDraw(eg::Entity& entity, bool selected, const EditorDrawArgs& drawArgs)
+void ECEntrance::HandleMessage(eg::Entity& entity, const EditorDrawMessage& message)
 {
 	const ECEntrance& entranceEC = entity.GetComponent<ECEntrance>();
 	glm::mat4 transform = GetTransform(entity);
@@ -253,10 +256,10 @@ void ECEntrance::EditorDraw(eg::Entity& entity, bool selected, const EditorDrawA
 	auto model = entranceEC.m_type == Type::Entrance ? entrance.editorEntModel : entrance.editorExitModel;
 	auto material = entranceEC.m_type == Type::Entrance ? entrance.editorEntMaterial : entrance.editorExitMaterial;
 	
-	drawArgs.meshBatch->Add(*model, *material, transform);
+	message.meshBatch->Add(*model, *material, transform);
 }
 
-void ECEntrance::EditorRenderSettings(eg::Entity& entity)
+void ECEntrance::HandleMessage(eg::Entity& entity, const EditorRenderImGuiMessage& message)
 {
 	ECEditorVisible::RenderDefaultSettings(entity);
 	
@@ -315,6 +318,10 @@ struct EntranceSerializer : public eg::IEntitySerializer
 		entrancePB.set_posy(pos.y);
 		entrancePB.set_posz(pos.z);
 		
+		const ECActivatable& activatable = entity.GetComponent<ECActivatable>();
+		entrancePB.set_name(activatable.Name());
+		entrancePB.set_reqactivations(activatable.EnabledSources());
+		
 		entrancePB.SerializeToOstream(&stream);
 	}
 	
@@ -334,6 +341,11 @@ struct EntranceSerializer : public eg::IEntitySerializer
 		
 		eg::Entity& lightChild = eg::Deref(entity.FindChildBySignature(lightChildSignature));
 		lightChild.InitComponent<eg::ECPosition3D>(glm::vec3(GetTransform(entity) * glm::vec4(0, 2.0f, 1.0f, 1.0f)) - position);
+		
+		ECActivatable& activatable = entity.GetComponent<ECActivatable>();
+		if (entrancePB.name() != 0)
+			activatable.SetName(entrancePB.name());
+		activatable.SetEnabledSources(entrancePB.reqactivations());
 	}
 };
 
@@ -343,7 +355,7 @@ eg::Entity* ECEntrance::CreateEntity(eg::EntityManager& entityManager)
 {
 	eg::Entity& entity = entityManager.AddEntity(EntitySignature, nullptr, EntitySerializer);
 	
-	entity.InitComponent<ECEditorVisible>("Entrance/Exit", &ECEntrance::EditorDraw, &ECEntrance::EditorRenderSettings);
+	entity.InitComponent<ECEditorVisible>("Entrance/Exit");
 	
 	eg::Entity& lightChild = entityManager.AddEntity(lightChildSignature, &entity);
 	lightChild.InitComponent<PointLight>(eg::ColorSRGB::FromHex(0xDEEEFD), 20.0f);

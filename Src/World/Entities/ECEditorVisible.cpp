@@ -9,4 +9,3 @@ void ECEditorVisible::RenderDefaultSettings(eg::Entity& entity)
 		ImGui::DragFloat3("Position", &positionComp->position.x, 0.1f);
 	}
 }
-

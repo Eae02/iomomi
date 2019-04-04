@@ -1,7 +1,7 @@
 #include "WallLight.hpp"
-#include "ECDrawable.hpp"
 #include "ECEditorVisible.hpp"
 #include "ECWallMounted.hpp"
+#include "Messages.hpp"
 #include "../../Graphics/Lighting/PointLight.hpp"
 #include "../../Graphics/Materials/EmissiveMaterial.hpp"
 #include "../../YAMLUtils.hpp"
@@ -12,8 +12,20 @@
 
 namespace WallLight
 {
+	struct ECWallLight
+	{
+		void HandleMessage(eg::Entity& entity, const EditorDrawMessage& message);
+		void HandleMessage(eg::Entity& entity, const EditorRenderImGuiMessage& message);
+		void HandleMessage(eg::Entity& entity, const DrawMessage& message);
+		
+		static eg::MessageReceiver MessageReceiver;
+	};
+	
+	eg::MessageReceiver ECWallLight::MessageReceiver = eg::MessageReceiver::Create<
+		ECWallLight, EditorDrawMessage, EditorRenderImGuiMessage, DrawMessage>();
+	
 	static eg::EntitySignature entitySignature = eg::EntitySignature::Create<
-		ECDrawable, ECEditorVisible, ECWallMounted, eg::ECPosition3D>();
+		ECEditorVisible, ECWallMounted, ECWallLight, eg::ECPosition3D>();
 	
 	static eg::EntitySignature lightChildSignature = eg::EntitySignature::Create<eg::ECPosition3D, PointLight>();
 	
@@ -46,17 +58,17 @@ namespace WallLight
 		return instanceData;
 	}
 	
-	void Draw(eg::Entity& entity, eg::MeshBatch& meshBatch)
+	void ECWallLight::HandleMessage(eg::Entity& entity, const DrawMessage& message)
 	{
-		meshBatch.Add(*model, EmissiveMaterial::instance, GetInstanceData(entity, 4.0f));
+		message.meshBatch->Add(*model, EmissiveMaterial::instance, GetInstanceData(entity, 4.0f));
 	}
 	
-	void EditorDraw(eg::Entity& entity, bool selected, const EditorDrawArgs& drawArgs)
+	void ECWallLight::HandleMessage(eg::Entity& entity, const EditorDrawMessage& message)
 	{
-		drawArgs.meshBatch->Add(*model, EmissiveMaterial::instance, GetInstanceData(entity, 1.0f));
+		message.meshBatch->Add(*model, EmissiveMaterial::instance, GetInstanceData(entity, 1.0f));
 	}
 	
-	void EditorRenderSettings(eg::Entity& entity)
+	void ECWallLight::HandleMessage(eg::Entity& entity, const EditorRenderImGuiMessage& message)
 	{
 		ECEditorVisible::RenderDefaultSettings(entity);
 		
@@ -69,8 +81,7 @@ namespace WallLight
 	{
 		eg::Entity& entity = entityManager.AddEntity(entitySignature, nullptr, EntitySerializer);
 		
-		entity.GetComponent<ECDrawable>().SetCallback(&Draw);
-		entity.InitComponent<ECEditorVisible>("Wall Light", 3, &EditorDraw, &EditorRenderSettings);
+		entity.InitComponent<ECEditorVisible>("Wall Light", 3);
 		
 		entityManager.AddEntity(lightChildSignature, &entity);
 		

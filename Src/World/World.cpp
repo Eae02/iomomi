@@ -2,7 +2,6 @@
 #include "Voxel.hpp"
 #include "PrepareDrawArgs.hpp"
 #include "Entities/Entrance.hpp"
-#include "Entities/ECDrawable.hpp"
 #include "Entities/ECRigidBody.hpp"
 #include "Entities/WallLight.hpp"
 #include "Entities/GravitySwitch.hpp"
@@ -10,6 +9,7 @@
 #include "../Graphics/Materials/GravityCornerMaterial.hpp"
 #include "../Graphics/RenderSettings.hpp"
 #include "../Graphics/WallShader.hpp"
+#include "Entities/ECActivator.hpp"
 
 #include <yaml-cpp/yaml.h>
 
@@ -217,6 +217,8 @@ void World::Update(const WorldUpdateArgs& args)
 	}
 	
 	ECEntrance::Update(args);
+	
+	ECActivator::Update(args);
 }
 
 void World::PrepareForDraw(PrepareDrawArgs& args)
@@ -244,8 +246,6 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 	
 	if (!args.isEditor)
 	{
-		eg::EntitiesInvoke<ECDrawable, eg::MeshBatch&>(*m_entityManager, *args.meshBatch);
-		
 		DrawMessage drawMessage;
 		drawMessage.meshBatch = args.meshBatch;
 		m_entityManager->SendMessageToAll(drawMessage);

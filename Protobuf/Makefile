@@ -1,6 +1,10 @@
-PROTOBUFS=Dir EntranceEntity WallLightEntity GravitySwitchEntity
+PROTOBUFS=Dir EntranceEntity WallLightEntity GravitySwitchEntity FloorButtonEntity
+BUILD_DIR=Build
 
-all: $(addprefix Build/, $(addsuffix .pb.h, $(PROTOBUFS)))
+all: $(BUILD_DIR) $(addprefix $(BUILD_DIR)/, $(addsuffix .pb.h, $(PROTOBUFS)))
 
-Build/%.pb.h : %.proto
-	protoc --cpp_out=Build $<
+$(BUILD_DIR):
+	mkdir -p Build
+
+$(BUILD_DIR)/%.pb.h: %.proto
+	protoc --cpp_out=$(BUILD_DIR) $<

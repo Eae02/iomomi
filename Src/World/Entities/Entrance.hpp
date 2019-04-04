@@ -26,8 +26,9 @@ public:
 	}
 	
 	void HandleMessage(eg::Entity& entity, const CalculateCollisionMessage& message);
-	
 	void HandleMessage(eg::Entity& entity, const DrawMessage& message);
+	void HandleMessage(eg::Entity& entity, const EditorDrawMessage& message);
+	void HandleMessage(eg::Entity& entity, const EditorRenderImGuiMessage& message);
 	
 	static void InitPlayer(eg::Entity& entity, class Player& player);
 	
@@ -44,9 +45,6 @@ public:
 	static eg::MessageReceiver MessageReceiver;
 	
 private:
-	static void EditorDraw(eg::Entity& entity, bool selected, const EditorDrawArgs& drawArgs);
-	static void EditorRenderSettings(eg::Entity& entity);
-	
 	Type m_type = Type::Entrance;
 	float m_doorOpenProgress = 0;
 	float m_timeBeforeClose = 0;
