@@ -15,6 +15,13 @@ public:
 		return m_rigidBody.has_value() ? &m_rigidBody.value() : nullptr;
 	}
 	
+	btTransform GetBulletTransform() const
+	{
+		btTransform transform;
+		m_motionState.getWorldTransform(transform);
+		return transform;
+	}
+	
 	void Init(float mass, btCollisionShape& shape);
 	
 	//Copies the transform from the given entity's transform components to the rigid body

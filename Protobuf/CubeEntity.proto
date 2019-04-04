@@ -1,0 +1,13 @@
+syntax="proto3";
+
+package gravity_pb;
+
+message CubeEntity {
+	float posX = 1;
+	float posY = 2;
+	float posZ = 3;
+	float rotationX = 4;
+	float rotationY = 5;
+	float rotationZ = 6;
+	float rotationW = 7;
+}

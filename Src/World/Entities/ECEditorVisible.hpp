@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../Dir.hpp"
+
 enum class EntityEditorDrawMode
 {
 	Default,
@@ -13,6 +15,12 @@ struct EditorDrawMessage : eg::Message<EditorDrawMessage>
 	eg::MeshBatch* meshBatch;
 	class PrimitiveRenderer* primitiveRenderer;
 	std::function<EntityEditorDrawMode(const eg::Entity*)> getDrawMode;
+};
+
+struct EditorSpawnedMessage : eg::Message<EditorSpawnedMessage>
+{
+	glm::vec3 wallPosition;
+	Dir wallNormal;
 };
 
 struct EditorRenderImGuiMessage : eg::Message<EditorRenderImGuiMessage> { };

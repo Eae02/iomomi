@@ -35,5 +35,18 @@ void ECRigidBody::PullTransform(eg::Entity& entity)
 
 void ECRigidBody::PushTransform(eg::Entity& entity)
 {
+	ECRigidBody& rigidBody = entity.GetComponent<ECRigidBody>();
 	
+	btTransform transform;
+	rigidBody.m_motionState.getWorldTransform(transform);
+	
+	if (eg::ECPosition3D* positionEC = entity.FindComponent<eg::ECPosition3D>())
+	{
+		positionEC->position = bullet::ToGLM(transform.getOrigin());
+	}
+	
+	if (eg::ECRotation3D* rotationEC = entity.FindComponent<eg::ECRotation3D>())
+	{
+		rotationEC->rotation = bullet::ToGLM(transform.getRotation());
+	}
 }

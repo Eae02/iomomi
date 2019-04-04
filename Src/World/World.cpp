@@ -10,6 +10,7 @@
 #include "../Graphics/RenderSettings.hpp"
 #include "../Graphics/WallShader.hpp"
 #include "Entities/ECActivator.hpp"
+#include "Entities/Cube.hpp"
 
 #include <yaml-cpp/yaml.h>
 
@@ -215,6 +216,8 @@ void World::Update(const WorldUpdateArgs& args)
 	{
 		m_bulletWorld->stepSimulation(args.dt, 10);
 	}
+	
+	Cube::Update(args);
 	
 	ECEntrance::Update(args);
 	
