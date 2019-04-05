@@ -1,8 +1,8 @@
 #include "Player.hpp"
-#include "Entities/GravitySwitch.hpp"
 #include "Entities/ECWallMounted.hpp"
 #include "Entities/ECFloorButton.hpp"
 #include "Entities/ECActivator.hpp"
+#include "Entities/ECInteractable.hpp"
 
 #include <imgui.h>
 
@@ -15,16 +15,11 @@ static constexpr float JUMP_HEIGHT = 1.1f;
 static constexpr float FALLING_GRAVITY_RAMP = 0.1f;
 static constexpr float MAX_VERTICAL_SPEED = 100;
 
-//Constants related to player size
-static constexpr float HEIGHT = 1.65f;
-static constexpr float WIDTH = 0.8f;
-static constexpr float EYE_HEIGHT = HEIGHT * 0.75f;
-
 //Constants which derive from previous
 static const float JUMP_ACCEL = std::sqrt(2.0f * JUMP_HEIGHT * GRAVITY);
 static const float ACCEL_AMOUNT = WALK_SPEED / ACCEL_TIME;
 static constexpr float DEACCEL_AMOUNT = WALK_SPEED / DEACCEL_TIME;
-static constexpr float EYE_OFFSET = EYE_HEIGHT - HEIGHT / 2;
+static constexpr float EYE_OFFSET = Player::EYE_HEIGHT - Player::HEIGHT / 2;
 
 Player::Player()
 	: m_position(1, 2, 1), m_velocity(0.0f) { }
@@ -220,9 +215,8 @@ void Player::Update(World& world, float dt)
 	
 	m_velocity = velocityXZ + velocityY;
 	
-	glm::vec3 radius(WIDTH / 2, WIDTH / 2, WIDTH / 2);
-	radius[(int)m_down / 2] = HEIGHT / 2;
-	auto GetAABB = [&] { return eg::AABB(m_position - radius, m_position + radius); };
+	m_radius = glm::vec3(WIDTH / 2, WIDTH / 2, WIDTH / 2);
+	m_radius[(int)m_down / 2] = HEIGHT / 2;
 	
 	glm::vec3 move = m_velocity * dt;
 	
@@ -271,37 +265,33 @@ void Player::Update(World& world, float dt)
 		}
 	}
 	
-	//Checks for gravity switches
-	if (m_gravityTransitionMode == TransitionMode::None && m_onGround)
+	//Checks for interactable entities
+	if (m_gravityTransitionMode == TransitionMode::None)
 	{
-		glm::vec3 feetPos = m_position - up * (HEIGHT / 2);
-		eg::AABB searchAABB(feetPos - 0.1f, feetPos + 0.1f);
-		
-		for (const eg::Entity& entity : world.EntityManager().GetEntitySet(GravitySwitch::EntitySignature))
+		static eg::EntitySignature interactableSig = eg::EntitySignature::Create<ECInteractable>();
+		eg::Entity* interactableEntity = nullptr;
+		int bestInteractPriority = 0;
+		for (eg::Entity& entity : world.EntityManager().GetEntitySet(interactableSig))
 		{
-			if (GravitySwitch::GetAABB(entity).Intersects(searchAABB))
+			int thisPriority = entity.GetComponent<ECInteractable>().checkInteraction(entity, *this);
+			if (thisPriority > bestInteractPriority)
 			{
-				if (eg::IsButtonDown(eg::Button::E) || eg::IsButtonDown(eg::Button::CtrlrX))
-				{
-					Dir newDown = entity.GetComponent<ECWallMounted>().wallUp;
-					
-					m_rotationYaw += eg::PI;
-					m_rotationPitch = -m_rotationPitch;
-					m_oldRotation = m_rotation;
-					m_newRotation = GetRotation(m_rotationYaw, m_rotationPitch, newDown);
-					
-					m_newPosition = m_position;
-					m_velocity = glm::vec3(0);
-					m_down = newDown;
-					move = { };
-					m_oldEyePosition = m_eyePosition;
-					m_gravityTransitionMode = TransitionMode::Fall;
-					m_transitionTime = 0;
-				}
-				else
-				{
-					//TODO: Show help text
-				}
+				interactableEntity = &entity;
+				bestInteractPriority = thisPriority;
+			}
+		}
+		
+		if (interactableEntity != nullptr)
+		{
+			ECInteractable& interactable = interactableEntity->GetComponent<ECInteractable>();
+			if ((eg::IsButtonDown(eg::Button::E) && !eg::WasButtonDown(eg::Button::E)) ||
+				(eg::IsButtonDown(eg::Button::CtrlrX) && !eg::WasButtonDown(eg::Button::CtrlrX)))
+			{
+				interactable.interact(*interactableEntity, *this);
+			}
+			else
+			{
+				//TODO: Show help text
 			}
 		}
 	}
@@ -361,11 +351,31 @@ void Player::Update(World& world, float dt)
 	}
 }
 
+void Player::SetDown(Dir newDown)
+{
+	m_rotationYaw += eg::PI;
+	m_rotationPitch = -m_rotationPitch;
+	m_oldRotation = m_rotation;
+	m_newRotation = GetRotation(m_rotationYaw, m_rotationPitch, newDown);
+	
+	m_newPosition = m_position;
+	m_velocity = glm::vec3(0);
+	m_down = newDown;
+	m_oldEyePosition = m_eyePosition;
+	m_gravityTransitionMode = TransitionMode::Fall;
+	m_transitionTime = 0;
+}
+
 void Player::GetViewMatrix(glm::mat4& matrixOut, glm::mat4& inverseMatrixOut) const
 {
 	const glm::mat4 rotationMatrix = glm::mat4_cast(m_rotation);
 	matrixOut = glm::transpose(rotationMatrix) * glm::translate(glm::mat4(1.0f), -m_eyePosition);
 	inverseMatrixOut = glm::translate(glm::mat4(1.0f), m_eyePosition) * rotationMatrix;
+}
+
+glm::vec3 Player::Forward() const
+{
+	return m_rotation * glm::vec3(0, 0, -1);
 }
 
 void Player::DebugDraw()

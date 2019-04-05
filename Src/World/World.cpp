@@ -212,12 +212,12 @@ glm::mat3 GravityCorner::MakeRotationMatrix() const
 
 void World::Update(const WorldUpdateArgs& args)
 {
+	Cube::Update(args);
+	
 	if (m_bulletWorld)
 	{
 		m_bulletWorld->stepSimulation(args.dt, 10);
 	}
-	
-	Cube::Update(args);
 	
 	ECEntrance::Update(args);
 	
@@ -806,7 +806,7 @@ void World::InitializeBulletPhysics()
 	m_bulletBroadphase = std::make_unique<btDbvtBroadphase>();
 	m_bulletWorld = std::make_unique<btDiscreteDynamicsWorld>(bullet::dispatcher, m_bulletBroadphase.get(),
 		bullet::solver, bullet::collisionConfig);
-	m_bulletWorld->setGravity({ 0, -10, 0 });
+	m_bulletWorld->setGravity({ 0, -bullet::GRAVITY, 0 });
 	
 	PrepareRegionMeshes(false);
 	

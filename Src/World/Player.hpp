@@ -24,6 +24,8 @@ public:
 		return m_position;
 	}
 	
+	glm::vec3 Forward() const;
+	
 	void SetPosition(const glm::vec3& position)
 	{
 		m_position = position;
@@ -39,6 +41,22 @@ public:
 	{
 		return m_down;
 	}
+	
+	eg::AABB GetAABB() const
+	{
+		return eg::AABB(m_position - m_radius, m_position + m_radius);
+	}
+	
+	void SetDown(Dir newDown);
+	
+	bool OnGround() const
+	{
+		return m_onGround;
+	}
+	
+	static constexpr float HEIGHT = 1.65f;
+	static constexpr float WIDTH = 0.8f;
+	static constexpr float EYE_HEIGHT = HEIGHT * 0.75f;
 	
 private:
 	Dir m_down = Dir::NegY;
@@ -63,6 +81,8 @@ private:
 	glm::vec3 m_eyePosition;
 	glm::vec3 m_velocity;
 	glm::quat m_rotation;
+	
+	glm::vec3 m_radius;
 	
 	float m_rotationYaw = 0;
 	float m_rotationPitch = 0;

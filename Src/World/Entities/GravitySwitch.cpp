@@ -2,6 +2,8 @@
 #include "ECEditorVisible.hpp"
 #include "ECWallMounted.hpp"
 #include "Messages.hpp"
+#include "ECInteractable.hpp"
+#include "../Player.hpp"
 #include "../Voxel.hpp"
 #include "../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../YAMLUtils.hpp"
@@ -22,7 +24,7 @@ namespace GravitySwitch
 		ECGravitySwitch, EditorDrawMessage, EditorRenderImGuiMessage, DrawMessage>();
 	
 	eg::EntitySignature EntitySignature = eg::EntitySignature::Create<
-		ECEditorVisible, ECWallMounted, ECGravitySwitch, eg::ECPosition3D>();
+		ECEditorVisible, ECWallMounted, ECGravitySwitch, ECInteractable, eg::ECPosition3D>();
 	
 	static eg::Model* s_model;
 	static eg::IMaterial* s_material;
@@ -50,11 +52,29 @@ namespace GravitySwitch
 		message.meshBatch->Add(*s_model, *s_material, ECWallMounted::GetTransform(entity, SCALE));
 	}
 	
+	static void Interact(eg::Entity& entity, Player& player)
+	{
+		player.SetDown(entity.GetComponent<ECWallMounted>().wallUp);
+	}
+	
+	static int CheckInteraction(const eg::Entity& entity, const Player& player)
+	{
+		constexpr int INTERACT_PRIORITY = 1;
+		
+		glm::vec3 playerFeetPos = player.Position() +
+			glm::vec3(DirectionVector(player.CurrentDown())) * (Player::HEIGHT * 0.5f * 0.95f);
+		
+		return (player.CurrentDown() == OppositeDir(entity.GetComponent<ECWallMounted>().wallUp) &&
+		        player.OnGround() && GetAABB(entity).Contains(playerFeetPos)) ? INTERACT_PRIORITY : 0;
+	}
+	
 	eg::Entity* CreateEntity(eg::EntityManager& entityManager)
 	{
 		eg::Entity& entity = entityManager.AddEntity(EntitySignature, nullptr, EntitySerializer);
 		
 		entity.InitComponent<ECEditorVisible>("Gravity Switch");
+		
+		entity.InitComponent<ECInteractable>("Flip Gravity", &Interact, &CheckInteraction);
 		
 		return &entity;
 	}

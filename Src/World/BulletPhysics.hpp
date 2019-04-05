@@ -8,6 +8,8 @@ namespace bullet
 	extern btCollisionDispatcher* dispatcher;
 	extern btSequentialImpulseConstraintSolver* solver;
 	
+	static constexpr float GRAVITY = 10;
+	
 	void Init();
 	void Destroy();
 	

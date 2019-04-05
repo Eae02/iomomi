@@ -24,6 +24,8 @@ public:
 	
 	void Init(float mass, btCollisionShape& shape);
 	
+	void SetMass(float mass);
+	
 	//Copies the transform from the given entity's transform components to the rigid body
 	static void PullTransform(eg::Entity& entity);
 	

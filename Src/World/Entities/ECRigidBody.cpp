@@ -8,6 +8,13 @@ void ECRigidBody::Init(float mass, btCollisionShape& shape)
 	m_rigidBody = btRigidBody(mass, &m_motionState, &shape, localInertia);
 }
 
+void ECRigidBody::SetMass(float mass)
+{
+	btVector3 localInertia;
+	m_rigidBody->getCollisionShape()->calculateLocalInertia(mass, localInertia);
+	m_rigidBody->setMassProps(mass, localInertia);
+}
+
 void ECRigidBody::PullTransform(eg::Entity& entity)
 {
 	ECRigidBody& rigidBody = entity.GetComponent<ECRigidBody>();
