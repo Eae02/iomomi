@@ -92,7 +92,7 @@ const Dir UP_VECTORS[] =
 
 inline glm::mat4 GetTransform(eg::Entity& entity)
 {
-	Dir direction = entity.GetComponent<ECWallMounted>().wallUp;
+	Dir direction = OppositeDir(entity.GetComponent<ECWallMounted>().wallUp);
 	
 	glm::vec3 dir = DirectionVector(direction);
 	const glm::vec3 up = DirectionVector(UP_VECTORS[(int)direction]);
@@ -113,7 +113,7 @@ void ECEntrance::Update(const WorldUpdateArgs& args)
 	
 	for (eg::Entity& entity : args.world->EntityManager().GetEntitySet(EntitySignature))
 	{
-		Dir direction = entity.GetComponent<ECWallMounted>().wallUp;
+		Dir direction = OppositeDir(entity.GetComponent<ECWallMounted>().wallUp);
 		glm::vec3 position = eg::GetEntityPosition(entity);
 		ECEntrance& entranceEC = entity.GetComponent<ECEntrance>();
 		ECActivatable& activatableEC = entity.GetComponent<ECActivatable>();
@@ -270,7 +270,7 @@ void ECEntrance::HandleMessage(eg::Entity& entity, const EditorRenderImGuiMessag
 
 void ECEntrance::InitPlayer(eg::Entity& entity, Player& player)
 {
-	Dir direction = entity.GetComponent<ECWallMounted>().wallUp;
+	Dir direction = OppositeDir(entity.GetComponent<ECWallMounted>().wallUp);
 	
 	player.SetPosition(eg::GetEntityPosition(entity) + glm::vec3(DirectionVector(direction)) * MESH_LENGTH);
 	
@@ -289,7 +289,7 @@ void ECEntrance::InitPlayer(eg::Entity& entity, Player& player)
 
 Door ECEntrance::GetDoorDescription(const eg::Entity& entity)
 {
-	Dir direction = entity.GetComponent<ECWallMounted>().wallUp;
+	Dir direction = OppositeDir(entity.GetComponent<ECWallMounted>().wallUp);
 	
 	Door door;
 	door.position = eg::GetEntityPosition(entity) - glm::vec3(DirectionVector(UP_VECTORS[(int)direction])) * 0.5f;
@@ -311,7 +311,7 @@ struct EntranceSerializer : public eg::IEntitySerializer
 		
 		entrancePB.set_isexit(entity.GetComponent<ECEntrance>().GetType() == ECEntrance::Type::Exit);
 		
-		entrancePB.set_dir((gravity_pb::Dir)entity.GetComponent<ECWallMounted>().wallUp);
+		entrancePB.set_dir((gravity_pb::Dir)OppositeDir(entity.GetComponent<ECWallMounted>().wallUp));
 		
 		glm::vec3 pos = entity.GetComponent<eg::ECPosition3D>().position;
 		entrancePB.set_posx(pos.x);
@@ -337,7 +337,7 @@ struct EntranceSerializer : public eg::IEntitySerializer
 		
 		glm::vec3 position(entrancePB.posx(), entrancePB.posy(), entrancePB.posz());
 		entity.InitComponent<eg::ECPosition3D>(position);
-		entity.GetComponent<ECWallMounted>().wallUp = (Dir)entrancePB.dir();
+		entity.GetComponent<ECWallMounted>().wallUp = OppositeDir((Dir)entrancePB.dir());
 		
 		eg::Entity& lightChild = eg::Deref(entity.FindChildBySignature(lightChildSignature));
 		lightChild.InitComponent<eg::ECPosition3D>(glm::vec3(GetTransform(entity) * glm::vec4(0, 2.0f, 1.0f, 1.0f)) - position);
