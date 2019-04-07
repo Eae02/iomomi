@@ -22,6 +22,12 @@ public:
 		return transform;
 	}
 	
+	void SetWorldTransform(const btTransform& transform)
+	{
+		m_motionState.setWorldTransform(transform);
+		m_rigidBody->setWorldTransform(transform);
+	}
+	
 	void Init(float mass, btCollisionShape& shape);
 	
 	void SetMass(float mass);

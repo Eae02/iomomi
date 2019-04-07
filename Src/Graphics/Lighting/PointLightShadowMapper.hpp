@@ -21,8 +21,8 @@ public:
 	
 	void InvalidateAll();
 	
-	void UpdateShadowMaps(std::vector<PointLightDrawData>& pointLights, const RenderCallback& renderCallback,
-		uint32_t maxUpdates);
+	void UpdateShadowMaps(std::vector<PointLightDrawData>& pointLights,
+		const RenderCallback& renderCallback, uint32_t maxUpdates);
 	
 	static constexpr eg::Format SHADOW_MAP_FORMAT = eg::Format::Depth16;
 	static constexpr uint32_t BUFFER_SIZE = sizeof(glm::mat4) * 6 + sizeof(float) * 4;

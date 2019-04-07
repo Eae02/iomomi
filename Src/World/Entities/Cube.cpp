@@ -88,24 +88,29 @@ namespace Cube
 	{
 		ECCube& cube = entity.GetComponent<ECCube>();
 		cube.isPickedUp = !cube.isPickedUp;
+		player.SetIsCarrying(cube.isPickedUp);
 		
-		if (cube.isPickedUp)
+		if (!cube.isPickedUp)
 		{
-			entity.GetComponent<eg::ECPosition3D>().position += glm::vec3(0, 0.1f, 0);
-			ECRigidBody::PullTransform(entity);
+			ECRigidBody& rigidBody = entity.GetComponent<ECRigidBody>();
+			
+			//Clear the cube's velocity so that it's impossible to fling the cube around.
+			rigidBody.GetRigidBody()->setLinearVelocity(btVector3(0, 0, 0));
+			rigidBody.GetRigidBody()->setAngularVelocity(btVector3(0, 0, 0));
 		}
 	}
 	
 	static int CheckInteraction(const eg::Entity& entity, const Player& player)
 	{
-		static constexpr int PICK_UP_INTERACT_PRIORITY = 2;
-		
 		//Very high so that dropping the cube has higher priority than other interactions.
 		static constexpr int DROP_INTERACT_PRIORITY = 1000;
-		
 		if (entity.GetComponent<ECCube>().isPickedUp)
 			return DROP_INTERACT_PRIORITY;
 		
+		if (player.IsCarrying())
+			return 0;
+		
+		static constexpr int PICK_UP_INTERACT_PRIORITY = 2;
 		static constexpr float MAX_INTERACT_DIST = 1.5f;
 		eg::Ray ray(player.Position(), player.Forward());
 		float intersectDist;
@@ -118,54 +123,60 @@ namespace Cube
 		return 0;
 	}
 	
-	void Update(const WorldUpdateArgs& args)
+	void UpdatePreSim(const WorldUpdateArgs& args)
 	{
-		if (args.player)
+		for (eg::Entity& entity : args.world->EntityManager().GetEntitySet(EntitySignature))
 		{
-			for (eg::Entity& entity : args.world->EntityManager().GetEntitySet(EntitySignature))
+			ECRigidBody& rigidBody = entity.GetComponent<ECRigidBody>();
+			
+			if (entity.GetComponent<ECCube>().isPickedUp)
 			{
-				auto GetPosition = [&] { return entity.GetComponent<eg::ECPosition3D>().position; };
-				
-				ECRigidBody& rigidBody = entity.GetComponent<ECRigidBody>();
 				ECRigidBody::PushTransform(entity);
 				
-				if (entity.GetComponent<ECCube>().isPickedUp)
-				{
-					constexpr float DIST_FROM_PLAYER = RADIUS + 0.5f;
-					glm::vec3 desiredPosition = args.player->Position() + args.player->Forward() * DIST_FROM_PLAYER;
-					
-					eg::AABB desiredAABB(desiredPosition - RADIUS * 1.001f, desiredPosition + RADIUS * 1.001f);
-					desiredPosition += CalcWorldCollisionCorrection(*args.world, desiredAABB);
-					
-					glm::vec3 deltaPos = desiredPosition - GetPosition();
-					
-					rigidBody.GetRigidBody()->setGravity(btVector3(0, 0, 0));
-					rigidBody.GetRigidBody()->setLinearVelocity(btVector3(0, 0, 0));
-					rigidBody.GetRigidBody()->setAngularVelocity(btVector3(0, 0, 0));
-					rigidBody.GetRigidBody()->clearForces();
-					rigidBody.GetRigidBody()->applyCentralImpulse(bullet::FromGLM(deltaPos / args.dt));
-				}
-				else
-				{
-					rigidBody.GetRigidBody()->setGravity(btVector3(0, -bullet::GRAVITY, 0));
-				}
+				constexpr float DIST_FROM_PLAYER = RADIUS + 0.5f;
+				glm::vec3 desiredPosition = args.player->EyePosition() + args.player->Forward() * DIST_FROM_PLAYER;
 				
-				if (rigidBody.GetRigidBody()->getLinearVelocity().length2() > 1E-4f ||
-				    rigidBody.GetRigidBody()->getAngularVelocity().length2() > 1E-4f)
-				{
-					args.invalidateShadows(GetSphere(entity));
-				}
+				eg::AABB desiredAABB(desiredPosition - RADIUS * 1.001f, desiredPosition + RADIUS * 1.001f);
+				desiredPosition += CalcWorldCollisionCorrection(*args.world, desiredAABB, RADIUS);
 				
-				const glm::vec3 down(0, -1, 0);
-				const eg::AABB cubeAABB(GetPosition() - RADIUS, GetPosition() + RADIUS);
+				glm::vec3 deltaPos = (desiredPosition - entity.GetComponent<eg::ECPosition3D>().position) * 0.75f;
 				
-				for (eg::Entity& buttonEntity : args.world->EntityManager().GetEntitySet(ECFloorButton::EntitySignature))
+				rigidBody.GetRigidBody()->setGravity(btVector3(0, 0, 0));
+				rigidBody.GetRigidBody()->setLinearVelocity(bullet::FromGLM(deltaPos / args.dt));
+				rigidBody.GetRigidBody()->setAngularVelocity(btVector3(0, 0, 0));
+				rigidBody.GetRigidBody()->clearForces();
+			}
+			else
+			{
+				rigidBody.GetRigidBody()->setGravity(btVector3(0, -bullet::GRAVITY, 0));
+			}
+		}
+	}
+	
+	void UpdatePostSim(const WorldUpdateArgs& args)
+	{
+		for (eg::Entity& entity : args.world->EntityManager().GetEntitySet(EntitySignature))
+		{
+			glm::vec3 position = entity.GetComponent<eg::ECPosition3D>().position;
+			
+			ECRigidBody& rigidBody = entity.GetComponent<ECRigidBody>();
+			ECRigidBody::PushTransform(entity);
+			
+			if (rigidBody.GetRigidBody()->getLinearVelocity().length2() > 1E-4f ||
+			    rigidBody.GetRigidBody()->getAngularVelocity().length2() > 1E-4f)
+			{
+				args.invalidateShadows(GetSphere(entity));
+			}
+			
+			const glm::vec3 down(0, -1, 0);
+			const eg::AABB cubeAABB(position - RADIUS, position + RADIUS);
+			
+			for (eg::Entity& buttonEntity : args.world->EntityManager().GetEntitySet(ECFloorButton::EntitySignature))
+			{
+				glm::vec3 toButton = glm::normalize(eg::GetEntityPosition(buttonEntity) - position);
+				if (glm::dot(toButton, down) > 0.1f && ECFloorButton::GetAABB(buttonEntity).Intersects(cubeAABB))
 				{
-					glm::vec3 toButton = glm::normalize(eg::GetEntityPosition(buttonEntity) - GetPosition());
-					if (glm::dot(toButton, down) > 0.1f && ECFloorButton::GetAABB(buttonEntity).Intersects(cubeAABB))
-					{
-						buttonEntity.HandleMessage(ActivateMessage());
-					}
+					buttonEntity.HandleMessage(ActivateMessage());
 				}
 			}
 		}
@@ -182,6 +193,7 @@ namespace Cube
 		ECRigidBody& rigidBody = entity.GetComponent<ECRigidBody>();
 		rigidBody.Init(MASS, *collisionShape);
 		rigidBody.GetRigidBody()->setFlags(BT_DISABLE_WORLD_GRAVITY);
+		rigidBody.GetRigidBody()->setActivationState(DISABLE_DEACTIVATION);
 		
 		return &entity;
 	}

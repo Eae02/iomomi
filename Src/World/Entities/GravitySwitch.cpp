@@ -64,8 +64,15 @@ namespace GravitySwitch
 		glm::vec3 playerFeetPos = player.Position() +
 			glm::vec3(DirectionVector(player.CurrentDown())) * (Player::HEIGHT * 0.5f * 0.95f);
 		
-		return (player.CurrentDown() == OppositeDir(entity.GetComponent<ECWallMounted>().wallUp) &&
-		        player.OnGround() && GetAABB(entity).Contains(playerFeetPos)) ? INTERACT_PRIORITY : 0;
+		if (player.CurrentDown() == OppositeDir(entity.GetComponent<ECWallMounted>().wallUp) &&
+		    player.OnGround() && GetAABB(entity).Contains(playerFeetPos) && !player.IsCarrying())
+		{
+			return INTERACT_PRIORITY;
+		}
+		else
+		{
+			return 0;
+		}
 	}
 	
 	eg::Entity* CreateEntity(eg::EntityManager& entityManager)

@@ -188,6 +188,8 @@ void Editor::RunFrame(float dt)
 	}
 	ImGui::End();
 	
+	m_world->EntityManager().EndFrame();
+	
 	glm::mat4 viewMatrix, inverseViewMatrix;
 	m_camera.GetViewMatrix(viewMatrix, inverseViewMatrix);
 	

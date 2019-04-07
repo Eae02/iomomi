@@ -133,10 +133,8 @@ void CalcWorldClipping(const World& world, ClippingArgs& args)
 	world.EntityManager().SendMessageToAll(message);
 }
 
-float CalcCollisionCorrection(const eg::AABB& aabb, const eg::Plane& plane)
+float CalcCollisionCorrection(const eg::AABB& aabb, const eg::Plane& plane, float maxC)
 {
-	constexpr float MAX_C = 0.1f;
-	
 	float minD = 0;
 	float maxD = 0;
 	for (int n = 0; n < 8; n++)
@@ -146,10 +144,10 @@ float CalcCollisionCorrection(const eg::AABB& aabb, const eg::Plane& plane)
 		maxD = std::max(maxD, d);
 	}
 	float c = -minD;
-	return (c > maxD || c > MAX_C) ? 0 : c;
+	return (c > maxD || c > maxC) ? 0 : c;
 }
 
-glm::vec3 CalcWorldCollisionCorrection(const World& world, const eg::AABB& aabb)
+glm::vec3 CalcWorldCollisionCorrection(const World& world, const eg::AABB& aabb, float maxC)
 {
 	glm::ivec3 searchMin(glm::floor(aabb.min));
 	glm::ivec3 searchMax(glm::ceil(aabb.max));
@@ -171,7 +169,7 @@ glm::vec3 CalcWorldCollisionCorrection(const World& world, const eg::AABB& aabb)
 						continue;
 					
 					eg::Plane plane(toNeighbor, (pos * 2 + 1 + toNeighbor) / 2);
-					float correction = CalcCollisionCorrection(aabb, plane);
+					float correction = CalcCollisionCorrection(aabb, plane, maxC);
 					if (correction > 0)
 					{
 						return plane.GetNormal() * correction;

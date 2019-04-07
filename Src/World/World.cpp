@@ -212,16 +212,20 @@ glm::mat3 GravityCorner::MakeRotationMatrix() const
 
 void World::Update(const WorldUpdateArgs& args)
 {
-	Cube::Update(args);
-	
 	if (m_bulletWorld)
 	{
+		Cube::UpdatePreSim(args);
+		
 		m_bulletWorld->stepSimulation(args.dt, 10);
+		
+		Cube::UpdatePostSim(args);
 	}
 	
 	ECEntrance::Update(args);
 	
 	ECActivator::Update(args);
+	
+	m_entityManager->EndFrame();
 }
 
 void World::PrepareForDraw(PrepareDrawArgs& args)

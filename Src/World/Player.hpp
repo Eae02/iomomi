@@ -54,6 +54,16 @@ public:
 		return m_onGround;
 	}
 	
+	void SetIsCarrying(bool isCarrying)
+	{
+		m_isCarrying = isCarrying;
+	}
+	
+	bool IsCarrying() const
+	{
+		return m_isCarrying;
+	}
+	
 	static constexpr float HEIGHT = 1.65f;
 	static constexpr float WIDTH = 0.8f;
 	static constexpr float EYE_HEIGHT = HEIGHT * 0.75f;
@@ -62,6 +72,7 @@ private:
 	Dir m_down = Dir::NegY;
 	
 	bool m_onGround = false;
+	bool m_isCarrying = false;
 	
 	enum class TransitionMode
 	{

@@ -221,7 +221,7 @@ void Player::Update(World& world, float dt)
 	glm::vec3 move = m_velocity * dt;
 	
 	//Checks for intersections with gravity corners along the move vector
-	if (m_gravityTransitionMode == TransitionMode::None && m_onGround)
+	if (m_gravityTransitionMode == TransitionMode::None && m_onGround && !m_isCarrying)
 	{
 		ClippingArgs clippingArgs;
 		clippingArgs.move = move;

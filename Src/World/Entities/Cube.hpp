@@ -8,7 +8,8 @@ namespace Cube
 	
 	eg::Entity* CreateEntity(eg::EntityManager& entityManager);
 	
-	void Update(const WorldUpdateArgs& args);
+	void UpdatePreSim(const WorldUpdateArgs& args);
+	void UpdatePostSim(const WorldUpdateArgs& args);
 	
 	extern eg::IEntitySerializer* EntitySerializer;
 }
