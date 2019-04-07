@@ -21,6 +21,12 @@ struct EditorSpawnedMessage : eg::Message<EditorSpawnedMessage>
 {
 	glm::vec3 wallPosition;
 	Dir wallNormal;
+	class World* world;
+};
+
+struct EditorWallsChangedMessage : eg::Message<EditorWallsChangedMessage>
+{
+	class World* world;
 };
 
 struct EditorRenderImGuiMessage : eg::Message<EditorRenderImGuiMessage> { };

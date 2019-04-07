@@ -561,6 +561,12 @@ void Editor::UpdateToolEntities(float dt)
 							positionComp->position = pickResult.intersectPosition;
 						if (ECWallMounted* wallMountedComp = entity->FindComponent<ECWallMounted>())
 							wallMountedComp->wallUp = pickResult.normalDir;
+						
+						EditorSpawnedMessage spawnedMessage;
+						spawnedMessage.wallPosition = pickResult.intersectPosition;
+						spawnedMessage.wallNormal = pickResult.normalDir;
+						spawnedMessage.world = m_world.get();
+						entity->HandleMessage(spawnedMessage);
 					}
 				}
 				
