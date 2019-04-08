@@ -6,6 +6,7 @@
 #include "../GameState.hpp"
 #include "EditorCamera.hpp"
 #include "PrimitiveRenderer.hpp"
+#include "LiquidPlaneRenderer.hpp"
 
 class Editor : public GameState
 {
@@ -39,6 +40,8 @@ private:
 	
 	eg::PerspectiveProjection m_projection;
 	EditorCamera m_camera;
+	
+	LiquidPlaneRenderer m_liquidPlaneRenderer;
 	
 	PrimitiveRenderer m_primRenderer;
 	eg::SpriteBatch m_spriteBatch;

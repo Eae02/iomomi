@@ -254,6 +254,7 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 	if (!args.isEditor)
 	{
 		DrawMessage drawMessage;
+		drawMessage.world = this;
 		drawMessage.meshBatch = args.meshBatch;
 		m_entityManager->SendMessageToAll(drawMessage);
 	}

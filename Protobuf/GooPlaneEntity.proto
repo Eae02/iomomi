@@ -1,0 +1,9 @@
+syntax="proto3";
+
+package gravity_pb;
+
+message GooPlaneEntity {
+	float posX = 1;
+	float posY = 2;
+	float posZ = 3;
+}

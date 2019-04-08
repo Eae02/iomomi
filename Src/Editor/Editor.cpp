@@ -386,6 +386,13 @@ void Editor::UpdateToolEntities(float dt)
 	const bool mouseHeld = eg::IsButtonDown(eg::Button::MouseLeft) && eg::WasButtonDown(eg::Button::MouseLeft);
 	const bool isConnectingActivator = m_connectingActivator.Get();
 	
+	auto SendMovedMessage = [&] (eg::Entity& entity)
+	{
+		EditorMovedMessage message;
+		message.world = m_world.get();
+		m_selectedEntities[0].Get()->HandleMessage(message);
+	};
+	
 	//Moves the wall drag entity
 	if (wallMountedEntity && !isConnectingActivator && mouseHeld)
 	{
@@ -403,6 +410,7 @@ void Editor::UpdateToolEntities(float dt)
 				if (eg::ECPosition3D* positionComp = m_selectedEntities[0].Get()->FindComponent<eg::ECPosition3D>())
 				{
 					positionComp->position = SnapToGrid(pickResult.intersectPosition);
+					SendMovedMessage(*m_selectedEntities[0].Get());
 				}
 			}
 		}
@@ -450,6 +458,7 @@ void Editor::UpdateToolEntities(float dt)
 			for (const eg::EntityHandle& selectedEntity : m_selectedEntities)
 			{
 				selectedEntity.Get()->GetComponent<eg::ECPosition3D>().position += dragDelta;
+				SendMovedMessage(*selectedEntity.Get());
 			}
 		}
 		m_prevGizmoPos = gizmoPosAligned;
@@ -782,6 +791,8 @@ void Editor::DrawWorld()
 	
 	m_renderCtx->meshBatch.End(eg::DC);
 	
+	m_liquidPlaneRenderer.Prepare(*m_world, RenderSettings::instance->cameraPosition);
+	
 	eg::RenderPassBeginInfo rpBeginInfo;
 	rpBeginInfo.framebuffer = nullptr;
 	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Clear;
@@ -803,6 +814,8 @@ void Editor::DrawWorld()
 	{
 		m_translationGizmo.Draw(RenderSettings::instance->viewProjection);
 	}
+	
+	m_liquidPlaneRenderer.Render();
 	
 	eg::DC.EndRenderPass();
 	

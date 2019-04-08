@@ -29,6 +29,11 @@ struct EditorWallsChangedMessage : eg::Message<EditorWallsChangedMessage>
 	class World* world;
 };
 
+struct EditorMovedMessage : eg::Message<EditorMovedMessage>
+{
+	class World* world;
+};
+
 struct EditorRenderImGuiMessage : eg::Message<EditorRenderImGuiMessage> { };
 
 struct ECEditorVisible

@@ -11,6 +11,10 @@ assets:
   - name: Shaders/Post.fs.glsl
   - name: Shaders/StaticModel.fs.glsl
   - name: Shaders/StaticModel-Editor.fs.glsl
+  - name: Shaders/LiquidPlaneEditor.vs.glsl
+  - name: Shaders/LiquidPlaneEditor.fs.glsl
+  - name: Shaders/GooPlane.vs.glsl
+  - name: Shaders/GooPlane.fs.glsl
   - name: Shaders/Wall.vs.glsl
   - name: Shaders/Wall.fs.glsl
   - name: Shaders/Wall-Editor.fs.glsl
