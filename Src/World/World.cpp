@@ -212,13 +212,20 @@ glm::mat3 GravityCorner::MakeRotationMatrix() const
 
 void World::Update(const WorldUpdateArgs& args)
 {
-	if (m_bulletWorld)
+	constexpr int UPDATE_FREQ = 100;
+	int64_t nanoTime = eg::NanoTime();
+	if (m_bulletWorld && (nanoTime - m_lastPhysicsUpdate) > (int64_t)(1000000000 / UPDATE_FREQ))
 	{
-		Cube::UpdatePreSim(args);
+		WorldUpdateArgs argsCopy = args;
+		argsCopy.dt = m_lastPhysicsUpdate == -1 ? (1.0f / UPDATE_FREQ) : (nanoTime - m_lastPhysicsUpdate) * 1E-9f;
 		
-		m_bulletWorld->stepSimulation(args.dt, 10);
+		Cube::UpdatePreSim(argsCopy);
 		
-		Cube::UpdatePostSim(args);
+		m_bulletWorld->stepSimulation(argsCopy.dt, 10);
+		
+		Cube::UpdatePostSim(argsCopy);
+		
+		m_lastPhysicsUpdate = nanoTime;
 	}
 	
 	ECEntrance::Update(args);
