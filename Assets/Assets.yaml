@@ -32,6 +32,8 @@ assets:
   - name: Shaders/PointLight.fs.glsl
   - name: Shaders/PointLightShadow.gs.glsl
   - name: Shaders/PointLightShadow.fs.glsl
+  - name: Shaders/GooPlane.vs.glsl
+  - name: Shaders/GooPlane.fs.glsl
   - name: Models/GravityCornerConvex.obj
   - name: Models/GravitySwitch.obj
   - name: Models/EnterRoom.obj
@@ -90,6 +92,8 @@ assets:
   - name: Textures/Pipe2N.png
     srgb: false
   - name: Textures/Pipe2M.png
+    srgb: false
+  - name: Textures/SlimeN.png
     srgb: false
   - name: Materials/Default.yaml
     generator: StaticPropMaterial
