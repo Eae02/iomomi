@@ -263,6 +263,7 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 		DrawMessage drawMessage;
 		drawMessage.world = this;
 		drawMessage.meshBatch = args.meshBatch;
+		drawMessage.reflectionPlanes = &args.reflectionPlanes;
 		m_entityManager->SendMessageToAll(drawMessage);
 	}
 	
@@ -299,6 +300,26 @@ void World::DrawPointLightShadows(const struct PointLightShadowRenderArgs& rende
 		return;
 	
 	BindWallShaderPointLightShadow(renderArgs);
+	
+	eg::DC.BindVertexBuffer(0, m_voxelVertexBuffer, 0);
+	eg::DC.BindIndexBuffer(eg::IndexType::UInt16, m_voxelIndexBuffer, 0);
+	
+	for (const Region& region : m_regions)
+	{
+		if (region.canDraw)
+		{
+			eg::DC.DrawIndexed(region.data->firstIndex, (uint32_t)region.data->indices.size(),
+				region.data->firstVertex, 0, 1);
+		}
+	}
+}
+
+void World::DrawPlanarReflections(const eg::Plane& plane)
+{
+	if (!m_canDraw)
+		return;
+	
+	BindWallShaderPlanarReflections(plane);
 	
 	eg::DC.BindVertexBuffer(0, m_voxelVertexBuffer, 0);
 	eg::DC.BindIndexBuffer(eg::IndexType::UInt16, m_voxelIndexBuffer, 0);

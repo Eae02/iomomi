@@ -25,6 +25,8 @@ public:
 private:
 	void DoDeferredRendering(bool useLightProbes, DeferredRenderer::RenderTarget& renderTarget);
 	
+	void RenderPlanarReflections(const RenderSettings& renderSettings, eg::FramebufferRef framebuffer);
+	
 	void DrawOverlay(float dt);
 	
 	void RenderPointLightShadows(const PointLightShadowRenderArgs& args);

@@ -3,9 +3,12 @@
 #include "RenderSettings.hpp"
 #include "QualityLevel.hpp"
 
+#include <functional>
+
 class PlanarReflectionsManager
 {
 public:
+	PlanarReflectionsManager();
 	
 	void SetQuality(QualityLevel qualityLevel);
 	
@@ -13,7 +16,10 @@ public:
 	
 	void BeginFrame();
 	
-	uint32_t RenderPlanarReflections(const eg::Plane& plane);
+	using RenderCallback = std::function<void(const RenderSettings&, eg::FramebufferRef framebuffer)>;
+	
+	uint32_t RenderPlanarReflections(const eg::Plane& plane, const RenderSettings& realRenderSettings,
+		const RenderCallback& renderCallback);
 	
 private:
 	inline bool LitReflections()
@@ -21,10 +27,16 @@ private:
 		return m_qualityLevel >= QualityLevel::High;
 	}
 	
-	std::vector<eg::Texture> m_reflectionTextures;
+	struct RenderTexture
+	{
+		eg::Texture texture;
+		eg::Framebuffer framebuffer;
+	};
+	
+	std::vector<RenderTexture> m_reflectionTextures;
 	uint32_t m_numUsedReflectionTextures = 0;
 	
-	eg::Texture m_depthBuffer;
+	eg::Texture m_depthTexture;
 	
 	QualityLevel m_qualityLevel;
 	eg::Format m_textureFormat;

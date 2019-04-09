@@ -7,6 +7,7 @@ enum class MeshDrawMode
 	Game,
 	Emissive,
 	Editor,
+	PlanarReflection,
 	PointLightShadow
 };
 

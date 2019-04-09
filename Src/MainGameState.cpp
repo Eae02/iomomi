@@ -1,6 +1,7 @@
 #include "MainGameState.hpp"
 #include "World/PrepareDrawArgs.hpp"
 #include "Graphics/Materials/MeshDrawArgs.hpp"
+#include "Graphics/RenderSettings.hpp"
 #include "World/Entities/Entrance.hpp"
 
 #include <fstream>
@@ -62,6 +63,31 @@ void MainGameState::DoDeferredRendering(bool useLightProbes, DeferredRenderer::R
 	m_renderCtx->renderer.DrawPointLights(renderTarget, m_prepareDrawArgs.pointLights);
 	
 	m_renderCtx->renderer.End(renderTarget);
+}
+
+void MainGameState::RenderPlanarReflections(const RenderSettings& renderSettings, eg::FramebufferRef framebuffer)
+{
+	RenderSettings* originalRenderSettings = RenderSettings::instance;
+	RenderSettings::instance = const_cast<RenderSettings*>(&renderSettings);
+	
+	eg::RenderPassBeginInfo rpBeginInfo;
+	rpBeginInfo.framebuffer = framebuffer.handle;
+	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
+	rpBeginInfo.colorAttachments[0].clearValue = eg::ColorLin(eg::Color::Black);
+	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Discard;
+	rpBeginInfo.depthClearValue = 1.0f;
+	
+	eg::DC.BeginRenderPass(rpBeginInfo);
+	
+	m_world->Draw();
+	
+	//MeshDrawArgs mDrawArgs;
+	//mDrawArgs.drawMode = MeshDrawMode::PlanarReflection;
+	//m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
+	
+	eg::DC.EndRenderPass();
+	
+	RenderSettings::instance = originalRenderSettings;
 }
 
 void MainGameState::RunFrame(float dt)

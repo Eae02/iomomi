@@ -5,6 +5,7 @@
 struct DrawMessage : eg::Message<DrawMessage>
 {
 	eg::MeshBatch* meshBatch;
+	std::vector<eg::Plane>* reflectionPlanes;
 	const class World* world;
 };
 

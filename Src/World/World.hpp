@@ -73,6 +73,7 @@ public:
 	
 	void Draw();
 	void DrawEditor();
+	void DrawPlanarReflections(const eg::Plane& plane);
 	void DrawPointLightShadows(const struct PointLightShadowRenderArgs& renderArgs);
 	
 	bool IsGravityCorner(const glm::ivec3& cornerPos, Dir cornerDir) const;
