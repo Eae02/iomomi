@@ -3,6 +3,7 @@
 #include "Graphics/Materials/MeshDrawArgs.hpp"
 #include "Graphics/RenderSettings.hpp"
 #include "World/Entities/Entrance.hpp"
+#include "Graphics/PlanarReflectionsManager.hpp"
 
 #include <fstream>
 #include <imgui.h>
@@ -65,29 +66,25 @@ void MainGameState::DoDeferredRendering(bool useLightProbes, DeferredRenderer::R
 	m_renderCtx->renderer.End(renderTarget);
 }
 
-void MainGameState::RenderPlanarReflections(const RenderSettings& renderSettings, eg::FramebufferRef framebuffer)
+void MainGameState::RenderPlanarReflections(const ReflectionPlane& plane, eg::FramebufferRef framebuffer)
 {
-	RenderSettings* originalRenderSettings = RenderSettings::instance;
-	RenderSettings::instance = const_cast<RenderSettings*>(&renderSettings);
-	
 	eg::RenderPassBeginInfo rpBeginInfo;
 	rpBeginInfo.framebuffer = framebuffer.handle;
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
 	rpBeginInfo.colorAttachments[0].clearValue = eg::ColorLin(eg::Color::Black);
-	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Discard;
+	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Clear;
 	rpBeginInfo.depthClearValue = 1.0f;
 	
 	eg::DC.BeginRenderPass(rpBeginInfo);
 	
-	m_world->Draw();
+	m_world->DrawPlanarReflections(plane.plane);
 	
-	//MeshDrawArgs mDrawArgs;
-	//mDrawArgs.drawMode = MeshDrawMode::PlanarReflection;
-	//m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
+	MeshDrawArgs mDrawArgs;
+	mDrawArgs.drawMode = MeshDrawMode::PlanarReflection;
+	mDrawArgs.reflectionPlane = plane.plane;
+	m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
 	
 	eg::DC.EndRenderPass();
-	
-	RenderSettings::instance = originalRenderSettings;
 }
 
 void MainGameState::RunFrame(float dt)
@@ -124,7 +121,7 @@ void MainGameState::RunFrame(float dt)
 			(uint32_t)eg::CurrentResolutionY(), m_renderOutputTexture, 0);
 		
 		m_bloomRenderTarget = std::make_unique<eg::BloomRenderer::RenderTarget>(
-			(uint32_t)eg::CurrentResolutionX(), (uint32_t)eg::CurrentResolutionY());
+			(uint32_t)eg::CurrentResolutionX(), (uint32_t)eg::CurrentResolutionY(), 3);
 	}
 	
 	glm::mat4 viewMatrix, inverseViewMatrix;
@@ -140,9 +137,20 @@ void MainGameState::RunFrame(float dt)
 	
 	m_prepareDrawArgs.spotLights.clear();
 	m_prepareDrawArgs.pointLights.clear();
+	m_prepareDrawArgs.reflectionPlanes.clear();
 	m_world->PrepareForDraw(m_prepareDrawArgs);
 	
 	m_renderCtx->meshBatch.End(eg::DC);
+	
+	m_planarReflectionsManager.BeginFrame();
+	for (ReflectionPlane* reflectionPlane : m_prepareDrawArgs.reflectionPlanes)
+	{
+		m_planarReflectionsManager.RenderPlanarReflections(*reflectionPlane,
+			[&] (const ReflectionPlane& plane, eg::FramebufferRef framebuffer)
+		{
+			RenderPlanarReflections(plane, framebuffer);
+		});
+	}
 	
 	m_plShadowMapper.UpdateShadowMaps(m_prepareDrawArgs.pointLights, [this] (const PointLightShadowRenderArgs& args)
 	{
@@ -199,4 +207,5 @@ void MainGameState::DrawOverlay(float dt)
 void MainGameState::SetResolution(int width, int height)
 {
 	m_projection.SetResolution(width, height);
+	m_planarReflectionsManager.ResolutionChanged();
 }

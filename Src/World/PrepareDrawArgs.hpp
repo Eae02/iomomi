@@ -8,6 +8,6 @@ struct PrepareDrawArgs
 	bool isEditor;
 	std::vector<SpotLightDrawData> spotLights;
 	std::vector<PointLightDrawData> pointLights;
-	std::vector<eg::Plane> reflectionPlanes;
+	std::vector<struct ReflectionPlane*> reflectionPlanes;
 	eg::MeshBatch* meshBatch;
 };

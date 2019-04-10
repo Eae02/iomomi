@@ -5,6 +5,12 @@
 
 #include <functional>
 
+struct ReflectionPlane
+{
+	eg::Plane plane;
+	eg::TextureRef texture;
+};
+
 class PlanarReflectionsManager
 {
 public:
@@ -16,10 +22,9 @@ public:
 	
 	void BeginFrame();
 	
-	using RenderCallback = std::function<void(const RenderSettings&, eg::FramebufferRef framebuffer)>;
+	using RenderCallback = std::function<void(const ReflectionPlane& plane, eg::FramebufferRef framebuffer)>;
 	
-	uint32_t RenderPlanarReflections(const eg::Plane& plane, const RenderSettings& realRenderSettings,
-		const RenderCallback& renderCallback);
+	void RenderPlanarReflections(ReflectionPlane& plane, const RenderCallback& renderCallback);
 	
 private:
 	inline bool LitReflections()
@@ -42,6 +47,4 @@ private:
 	eg::Format m_textureFormat;
 	uint32_t m_textureWidth;
 	uint32_t m_textureHeight;
-	
-	RenderSettings m_renderSettings;
 };

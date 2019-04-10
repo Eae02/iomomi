@@ -1,10 +1,11 @@
 #version 450 core
 
 #include "Inc/DeferredGeom.glh"
+#include "Inc/RenderSettings.glh"
+
+#include <EGame.glh>
 
 layout(location=0) in vec3 worldPos_in;
-
-#include "Inc/RenderSettings.glh"
 
 layout(set=0, binding=0, std140) uniform RenderSettingsUB
 {
@@ -22,6 +23,11 @@ layout(set=0, binding=1, std140) uniform NMTransformsUB
 
 layout(set=0, binding=2) uniform sampler2D normalMap;
 
+layout(set=1, binding=0) uniform sampler2D reflectionMap;
+
+const float ROUGHNESS = 0.2;
+const float DISTORT_INTENSITY = 0.1;
+
 void main()
 {
 	vec3 normal = vec3(0.0);
@@ -37,5 +43,18 @@ void main()
 	normal = normalize(normal);
 	brightness /= NM_SAMPLES;
 	
-	DeferredOut(color * mix(minBrightness, 1.0, brightness), normal, 0.25, 1.0, 1.0);
+	vec3 toEye = renderSettings.cameraPosition - worldPos_in;
+	float distToEye = length(toEye);
+	vec3 toEyeN = toEye / distToEye;
+	
+	vec3 reflSampleWS = worldPos_in - reflect(-toEye, normal) * DISTORT_INTENSITY;
+	vec4 reflSamplePPS = renderSettings.viewProjection * vec4(reflSampleWS, 1.0);
+	vec2 reflSampleSS = (reflSamplePPS.xy / reflSamplePPS.w) * 0.5 + 0.5;
+	if (EG_VULKAN)
+		reflSampleSS.y = 1.0 - reflSampleSS.y;
+	
+	vec3 waterColor = color * mix(minBrightness, 1.0, brightness);
+	vec3 reflColor = texture(reflectionMap, reflSampleSS).rgb * color;
+	
+	DeferredOut(mix(waterColor, reflColor, 0.75), normal, ROUGHNESS, 1.0, 2.0);
 }

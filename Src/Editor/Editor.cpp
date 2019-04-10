@@ -49,6 +49,7 @@ void Editor::RunFrame(float dt)
 				m_levelName = std::move(m_newLevelName);
 				m_newLevelName = { };
 				m_world = std::make_unique<World>();
+				m_selectedEntities.clear();
 				InitializeActConnections();
 				
 				for (int x = 0; x < 3; x++)
@@ -82,6 +83,7 @@ void Editor::RunFrame(float dt)
 					if (std::unique_ptr<World> world = World::Load(stream, true))
 					{
 						m_world = std::move(world);
+						m_selectedEntities.clear();
 						m_levelName = level.name;
 						InitializeActConnections();
 					}
@@ -765,6 +767,7 @@ void Editor::DrawWorld()
 	
 	m_prepareDrawArgs.spotLights.clear();
 	m_prepareDrawArgs.pointLights.clear();
+	m_prepareDrawArgs.reflectionPlanes.clear();
 	m_world->PrepareForDraw(m_prepareDrawArgs);
 	
 	if (m_tool == Tool::Walls)

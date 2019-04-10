@@ -2,13 +2,9 @@
 #define LIGHT_H
 
 #include "GBData.glh"
+#include "Fresnel.glh"
 
 const float PI = 3.141;
-
-vec3 fresnelSchlick(float cosT, vec3 F0, float roughness)
-{
-	return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosT, 5.0);
-}
 
 vec3 calcFresnel(GBData data, vec3 toEye)
 {

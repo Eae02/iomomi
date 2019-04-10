@@ -19,6 +19,7 @@ private:
 	const eg::Texture* m_miscMapTexture;
 	mutable eg::DescriptorSet m_descriptorSetGame;
 	mutable eg::DescriptorSet m_descriptorSetEditor;
+	mutable eg::DescriptorSet m_descriptorSetPlanarRefl;
 	mutable bool m_descriptorsInitialized = false;
 	float m_roughnessMin;
 	float m_roughnessMax;

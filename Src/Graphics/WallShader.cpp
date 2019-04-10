@@ -57,21 +57,24 @@ void InitializeWallShader()
 	wr.pipelineDeferredGeom = eg::Pipeline::Create(pipelineCI);
 	wr.pipelineDeferredGeom.FramebufferFormatHint(DeferredRenderer::GEOMETRY_FB_FORMAT);
 	
-	//Creates the editor pipeline
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall-Editor.fs.glsl").Handle();
-	pipelineCI.enableDepthWrite = true;
-	pipelineCI.depthCompare = eg::CompareOp::Less;
-	pipelineCI.numColorAttachments = 1;
-	pipelineCI.numClipDistances = 0;
-	wr.pipelineEditor = eg::Pipeline::Create(pipelineCI);
-	wr.pipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
-	
 	//Creates the planar reflections pipeline
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall-PlanarRefl.vs.glsl").Handle();
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall-PlanarRefl.fs.glsl").Handle();
 	pipelineCI.numColorAttachments = 1;
+	pipelineCI.frontFaceCCW = true;
 	pipelineCI.numClipDistances = 2;
 	wr.pipelinePlanarReflection = eg::Pipeline::Create(pipelineCI);
+	
+	//Creates the editor pipeline
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall.vs.glsl").Handle();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall-Editor.fs.glsl").Handle();
+	pipelineCI.enableDepthWrite = true;
+	pipelineCI.depthCompare = eg::CompareOp::Less;
+	pipelineCI.frontFaceCCW = false;
+	pipelineCI.numColorAttachments = 1;
+	pipelineCI.numClipDistances = 0;
+	wr.pipelineEditor = eg::Pipeline::Create(pipelineCI);
+	wr.pipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
 	//Creates the editor border pipeline
 	eg::GraphicsPipelineCreateInfo borderPipelineCI;
@@ -174,11 +177,11 @@ void BindWallShaderPointLightShadow(const PointLightShadowRenderArgs& renderArgs
 
 void BindWallShaderPlanarReflections(const eg::Plane& plane)
 {
-	eg::DC.BindPipeline(wr.pipelineBorderEditor);
+	eg::DC.BindPipeline(wr.pipelinePlanarReflection);
 	
 	eg::DC.BindDescriptorSet(wr.planarReflDescriptorSet, 0);
 	
-	glm::vec4 planeV4(plane.GetNormal(), plane.GetDistance());
+	glm::vec4 planeV4(plane.GetNormal(), -plane.GetDistance());
 	eg::DC.PushConstants(0, planeV4);
 }
 

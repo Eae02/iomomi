@@ -58,6 +58,7 @@ public:
 static eg::Pipeline staticPropPipelineEditor;
 static eg::Pipeline staticPropPipelineGame;
 static eg::Pipeline staticPropPipelinePLShadow;
+static eg::Pipeline staticPropPipelinePlanarRefl;
 
 static void OnInit()
 {
@@ -87,6 +88,19 @@ static void OnInit()
 	pipelineCI.cullMode = eg::CullMode::None;
 	staticPropPipelineEditor = eg::Pipeline::Create(pipelineCI);
 	staticPropPipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
+	
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Common3D-PlanarRefl.vs.glsl").Handle();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/StaticModel-PlanarRefl.fs.glsl").Handle();
+	pipelineCI.cullMode = eg::CullMode::Back;
+	pipelineCI.frontFaceCCW = true;
+	pipelineCI.numClipDistances = 1;
+	pipelineCI.vertexAttributes[2] = { 1, eg::DataType::Float32, 4, 0 * sizeof(float) * 4 };
+	pipelineCI.vertexAttributes[3] = { 1, eg::DataType::Float32, 4, 1 * sizeof(float) * 4 };
+	pipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 4, 2 * sizeof(float) * 4 };
+	pipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
+	pipelineCI.vertexAttributes[6] = { };
+	pipelineCI.vertexAttributes[7] = { };
+	staticPropPipelinePlanarRefl = eg::Pipeline::Create(pipelineCI);
 	
 	eg::GraphicsPipelineCreateInfo plsPipelineCI;
 	plsPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Common3D-PLShadow.vs.glsl").Handle();
@@ -165,6 +179,7 @@ inline static eg::PipelineRef GetPipeline(const MeshDrawArgs& drawArgs)
 	case MeshDrawMode::Game: return staticPropPipelineGame;
 	case MeshDrawMode::Editor: return staticPropPipelineEditor;
 	case MeshDrawMode::PointLightShadow: return staticPropPipelinePLShadow;
+	case MeshDrawMode::PlanarReflection: return staticPropPipelinePlanarRefl;
 	default: return eg::PipelineRef();
 	}
 	EG_UNREACHABLE
@@ -196,6 +211,7 @@ bool StaticPropMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs
 	{
 		m_descriptorSetGame = eg::DescriptorSet(staticPropPipelineGame, 0);
 		m_descriptorSetEditor = eg::DescriptorSet(staticPropPipelineEditor, 0);
+		m_descriptorSetPlanarRefl = eg::DescriptorSet(staticPropPipelinePlanarRefl, 0);
 		m_descriptorsInitialized = true;
 		
 		m_descriptorSetGame.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
@@ -203,16 +219,43 @@ bool StaticPropMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs
 		m_descriptorSetGame.BindTexture(*m_normalMapTexture, 2, &GetCommonTextureSampler());
 		m_descriptorSetGame.BindTexture(*m_miscMapTexture, 3, &GetCommonTextureSampler());
 		
+		m_descriptorSetPlanarRefl.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+		m_descriptorSetPlanarRefl.BindTexture(*m_albedoTexture, 1, &GetCommonTextureSampler());
+		m_descriptorSetPlanarRefl.BindTexture(*m_miscMapTexture, 2, &GetCommonTextureSampler());
+		
 		m_descriptorSetEditor.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
 		m_descriptorSetEditor.BindTexture(*m_albedoTexture, 1, &GetCommonTextureSampler());
 		m_descriptorSetEditor.BindTexture(*m_normalMapTexture, 2, &GetCommonTextureSampler());
 		m_descriptorSetEditor.BindTexture(*m_miscMapTexture, 3, &GetCommonTextureSampler());
 	}
 	
-	cmdCtx.BindDescriptorSet(mDrawArgs->drawMode == MeshDrawMode::Editor ? m_descriptorSetEditor : m_descriptorSetGame, 0);
+	switch (mDrawArgs->drawMode)
+	{
+	case MeshDrawMode::Game:
+		cmdCtx.BindDescriptorSet(m_descriptorSetGame, 0);
+		break;
+	case MeshDrawMode::PlanarReflection:
+		cmdCtx.BindDescriptorSet(m_descriptorSetPlanarRefl, 0);
+		break;
+	case MeshDrawMode::Editor:
+		cmdCtx.BindDescriptorSet(m_descriptorSetEditor, 0);
+		break;
+	}
 	
-	float pushConstants[] = {m_roughnessMin, m_roughnessMax, m_textureScale.x, m_textureScale.y};
-	cmdCtx.PushConstants(0, sizeof(pushConstants), pushConstants);
+	if (mDrawArgs->drawMode == MeshDrawMode::PlanarReflection)
+	{
+		float pushConstants[6];
+		std::copy_n(&mDrawArgs->reflectionPlane.GetNormal().x, 3, pushConstants);
+		pushConstants[3] = -mDrawArgs->reflectionPlane.GetDistance();
+		pushConstants[4] = m_textureScale.x;
+		pushConstants[5] = m_textureScale.y;
+		cmdCtx.PushConstants(0, sizeof(pushConstants), pushConstants);
+	}
+	else
+	{
+		float pushConstants[] = { m_roughnessMin, m_roughnessMax, m_textureScale.x, m_textureScale.y };
+		cmdCtx.PushConstants(0, sizeof(pushConstants), pushConstants);
+	}
 	
 	return true;
 }

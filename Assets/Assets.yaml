@@ -3,6 +3,7 @@ assets:
   - name: Shaders/ImGui.fs.glsl
   - name: Shaders/Common3D.vs.glsl
   - name: Shaders/Common3D-PLShadow.vs.glsl
+  - name: Shaders/Common3D-PlanarRefl.vs.glsl
   - name: Shaders/GravityCorner.fs.glsl
   - name: Shaders/GravityCorner-Editor.fs.glsl
   - name: Shaders/Primitive.vs.glsl
@@ -11,6 +12,7 @@ assets:
   - name: Shaders/Post.fs.glsl
   - name: Shaders/StaticModel.fs.glsl
   - name: Shaders/StaticModel-Editor.fs.glsl
+  - name: Shaders/StaticModel-PlanarRefl.fs.glsl
   - name: Shaders/LiquidPlaneEditor.vs.glsl
   - name: Shaders/LiquidPlaneEditor.fs.glsl
   - name: Shaders/GooPlane.vs.glsl
@@ -36,6 +38,7 @@ assets:
   - name: Shaders/PointLightShadow.fs.glsl
   - name: Shaders/GooPlane.vs.glsl
   - name: Shaders/GooPlane.fs.glsl
+  - name: Shaders/GooPlane-Emissive.fs.glsl
   - name: Models/GravityCornerConvex.obj
   - name: Models/GravitySwitch.obj
   - name: Models/EnterRoom.obj

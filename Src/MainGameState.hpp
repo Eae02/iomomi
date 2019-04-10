@@ -8,6 +8,7 @@
 #include "World/Player.hpp"
 #include "World/PrepareDrawArgs.hpp"
 #include "Graphics/PostProcessor.hpp"
+#include "Graphics/PlanarReflectionsManager.hpp"
 
 #include <EGame/Graphics/BloomRenderer.hpp>
 
@@ -25,7 +26,7 @@ public:
 private:
 	void DoDeferredRendering(bool useLightProbes, DeferredRenderer::RenderTarget& renderTarget);
 	
-	void RenderPlanarReflections(const RenderSettings& renderSettings, eg::FramebufferRef framebuffer);
+	void RenderPlanarReflections(const ReflectionPlane& plane, eg::FramebufferRef framebuffer);
 	
 	void DrawOverlay(float dt);
 	
@@ -39,6 +40,7 @@ private:
 	eg::BloomRenderer m_bloomRenderer;
 	PostProcessor m_postProcessor;
 	LightProbesManager m_lightProbesManager;
+	PlanarReflectionsManager m_planarReflectionsManager;
 	
 	std::unique_ptr<DeferredRenderer::RenderTarget> m_renderTarget;
 	std::unique_ptr<eg::BloomRenderer::RenderTarget> m_bloomRenderTarget;

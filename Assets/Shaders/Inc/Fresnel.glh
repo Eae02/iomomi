@@ -1,0 +1,9 @@
+#ifndef FRESNEL_H
+#define FRESNEL_H
+
+vec3 fresnelSchlick(float cosT, vec3 F0, float roughness)
+{
+	return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosT, 5.0);
+}
+
+#endif

@@ -1,7 +1,7 @@
 #version 450 core
 
 layout(location=0) in vec4 texCoord_in;
-layout(location=3) in vec4 ao_in;
+layout(location=1) in vec4 ao_in;
 
 layout(location=0) out vec4 color_out;
 
@@ -15,7 +15,8 @@ void main()
 	ao2 = pow(clamp(ao2, vec2(0.0), vec2(1.0)), vec2(0.5));
 	float ao = ao2.x * ao2.y;
 	
-	color *= 0.8 + 0.2 * ao;
+	const float AMBIENT_INTENSITY = 0.1;
+	color *= (1.0 - AMBIENT_INTENSITY) + AMBIENT_INTENSITY * ao;
 	
 	color_out = vec4(color, 1.0);
 }

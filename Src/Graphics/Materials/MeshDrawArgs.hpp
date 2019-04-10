@@ -14,5 +14,6 @@ enum class MeshDrawMode
 struct MeshDrawArgs
 {
 	MeshDrawMode drawMode;
+	eg::Plane reflectionPlane;
 	const PointLightShadowRenderArgs* plShadowRenderArgs;
 };

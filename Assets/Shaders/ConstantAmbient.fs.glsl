@@ -14,5 +14,5 @@ layout(push_constant) uniform PC
 void main()
 {
 	vec4 c1 = texture(gbColor1Sampler, texCoord_in);
-	color_out = vec4(c1.xyz * ambient * c1.w, 1.0);
+	color_out = vec4(c1.xyz * (c1.w > 0.99 ? vec3(1.0) : (ambient * c1.w)), 1.0);
 }
