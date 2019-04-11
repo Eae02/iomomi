@@ -6,7 +6,7 @@ class ECActivator
 {
 public:
 	uint32_t activatableName = 0;
-	int sourceIndex = 0;
+	int targetConnectionIndex = 0;
 	
 	void HandleMessage(eg::Entity& entity, const ActivateMessage& message);
 	

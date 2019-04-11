@@ -338,7 +338,7 @@ struct EntranceSerializer : public eg::IEntitySerializer
 		
 		const ECActivatable& activatable = entity.GetComponent<ECActivatable>();
 		entrancePB.set_name(activatable.Name());
-		entrancePB.set_reqactivations(activatable.EnabledSources());
+		entrancePB.set_reqactivations(activatable.EnabledConnections());
 		
 		entrancePB.SerializeToOstream(&stream);
 	}
@@ -363,7 +363,7 @@ struct EntranceSerializer : public eg::IEntitySerializer
 		ECActivatable& activatable = entity.GetComponent<ECActivatable>();
 		if (entrancePB.name() != 0)
 			activatable.SetName(entrancePB.name());
-		activatable.SetEnabledSources(entrancePB.reqactivations());
+		activatable.SetEnabledConnections(entrancePB.reqactivations());
 	}
 };
 

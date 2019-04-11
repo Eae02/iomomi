@@ -87,6 +87,7 @@ private:
 		eg::Rectangle rectangle;
 		float depth;
 		eg::EntityHandle entity;
+		int actConnectionIndex;
 	};
 	std::vector<EntityIcon> m_entityIcons;
 	std::vector<eg::EntityHandle> m_selectedEntities;
@@ -100,7 +101,7 @@ private:
 	eg::EntityHandle m_connectingActivator;
 	
 	void InitializeActConnections();
-	void RemoveActConnections(eg::EntityHandle entity);
+	void RemoveActConnections(eg::EntityHandle entity, int targetConnectionIndex);
 	
 	glm::vec3 m_gizmoPosUnaligned;
 	glm::vec3 m_prevGizmoPos;

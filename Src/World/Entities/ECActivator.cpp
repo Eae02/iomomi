@@ -29,7 +29,7 @@ void ECActivator::Update(const WorldUpdateArgs& args)
 			eg::Entity* activatableEntity = ECActivatable::FindByName(*entity.Manager(), activator.activatableName);
 			if (activatableEntity != nullptr)
 			{
-				activatableEntity->GetComponent<ECActivatable>().SetActivated(activator.sourceIndex, activated);
+				activatableEntity->GetComponent<ECActivatable>().SetActivated(activator.targetConnectionIndex, activated);
 				break;
 			}
 		}

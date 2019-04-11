@@ -187,7 +187,7 @@ void Editor::RunFrame(float dt)
 					if (ImGui::Button("Connect..."))
 					{
 						m_connectingActivator = *entity;
-						RemoveActConnections(m_connectingActivator);
+						RemoveActConnections(m_connectingActivator, -1);
 					}
 				}
 			}
@@ -319,20 +319,26 @@ void Editor::InitializeActConnections()
 	}
 }
 
-void Editor::RemoveActConnections(eg::EntityHandle entity)
+void Editor::RemoveActConnections(eg::EntityHandle entity, int targetConnectionIndex)
 {
 	for (int64_t i = (int64_t)m_actConnections.size() - 1; i >= 0; i--)
 	{
-		if (m_actConnections[i].activator == entity || m_actConnections[i].activatable == entity)
+		if (m_actConnections[i].activator == entity || (m_actConnections[i].activatable == entity))
 		{
 			ECActivatable* activatable = m_actConnections[i].activatable.FindComponent<ECActivatable>();
 			ECActivator* activator = m_actConnections[i].activator.FindComponent<ECActivator>();
 			if (activatable && activator)
 			{
+				if (m_actConnections[i].activatable == entity && targetConnectionIndex != -1 &&
+				    activator->targetConnectionIndex != targetConnectionIndex)
+				{
+					continue;
+				}
+				
 				if (auto* lightStrip = m_actConnections[i].activator.FindComponent<ECActivationLightStrip>())
 					lightStrip->ClearGeneratedMesh();
 				
-				activatable->RemoveSource(activator->sourceIndex);
+				activatable->SetDisconnected(activator->targetConnectionIndex);
 			}
 			
 			m_actConnections[i] = m_actConnections.back();
@@ -488,16 +494,36 @@ void Editor::UpdateToolEntities(float dt)
 	m_entityIcons.clear();
 	for (const eg::Entity& entity : m_world->EntityManager().GetEntitySet(editorVisibleSignature))
 	{
-		const eg::ECPosition3D* positionComp = entity.FindComponent<eg::ECPosition3D>();
-		if (positionComp == nullptr)
-			continue;
+		auto AddIcon = [&] (const glm::vec3& worldPos, int actConnectionIndex)
+		{
+			glm::vec4 sp4 = RenderSettings::instance->viewProjection * glm::vec4(worldPos, 1.0f);
+			glm::vec3 sp3 = glm::vec3(sp4) / sp4.w;
+			
+			glm::vec2 screenPos = (glm::vec2(sp3) * 0.5f + 0.5f) *
+				glm::vec2(eg::CurrentResolutionX(), eg::CurrentResolutionY());
+			
+			EntityIcon& icon = m_entityIcons.emplace_back();
+			icon.rectangle = eg::Rectangle::CreateCentered(screenPos, ICON_SIZE, ICON_SIZE);
+			icon.depth = sp3.z;
+			icon.entity = entity;
+			icon.actConnectionIndex = actConnectionIndex;
+		};
 		
-		glm::vec4 sp4 = RenderSettings::instance->viewProjection * glm::vec4(positionComp->position, 1.0f);
-		glm::vec3 sp3 = glm::vec3(sp4) / sp4.w;
-		
-		glm::vec2 screenPos = (glm::vec2(sp3) * 0.5f + 0.5f) * glm::vec2(eg::CurrentResolutionX(), eg::CurrentResolutionY());
-		
-		m_entityIcons.push_back({ eg::Rectangle::CreateCentered(screenPos, ICON_SIZE, ICON_SIZE), sp3.z, entity });
+		if (isConnectingActivator)
+		{
+			if (const ECActivatable* activatableComp = entity.FindComponent<ECActivatable>())
+			{
+				std::vector<glm::vec3> connectionPoints = activatableComp->GetConnectionPoints(entity);
+				for (int i = 0; i < (int)connectionPoints.size(); i++)
+				{
+					AddIcon(connectionPoints[i], i);
+				}
+			}
+		}
+		else if (const eg::ECPosition3D* positionComp = entity.FindComponent<eg::ECPosition3D>())
+		{
+			AddIcon(positionComp->position, -1);
+		}
 	}
 	
 	std::sort(m_entityIcons.begin(), m_entityIcons.end(), [&] (const EntityIcon& a, const EntityIcon& b)
@@ -515,44 +541,38 @@ void Editor::UpdateToolEntities(float dt)
 			m_selectedEntities.clear();
 		}
 		
-		bool anySelected = false;
 		for (int64_t i = (int64_t)m_entityIcons.size() - 1; i >= 0; i--)
 		{
 			if (m_entityIcons[i].rectangle.Contains(flippedCursorPos))
 			{
-				m_selectedEntities.push_back(m_entityIcons[i].entity);
-				anySelected = true;
-				break;
-			}
-		}
-		
-		//Connects the activator to the selected entity
-		if (eg::Entity* activatorEntity = m_connectingActivator.Get())
-		{
-			ECActivator& activator = activatorEntity->GetComponent<ECActivator>();
-			activator.activatableName = 0;
-			
-			if (anySelected)
-			{
-				if (ECActivatable* activatable = m_selectedEntities.back().FindComponent<ECActivatable>())
+				//Connects the activator to the selected entity
+				if (eg::Entity* activatorEntity = m_connectingActivator.Get())
 				{
-					int sourceIndex = activatable->AddSource();
-					if (sourceIndex != -1)
+					ECActivator& activator = activatorEntity->GetComponent<ECActivator>();
+					activator.activatableName = 0;
+					
+					if (ECActivatable* activatable = m_entityIcons[i].entity.FindComponent<ECActivatable>())
 					{
+						int connectionIndex = m_entityIcons[i].actConnectionIndex;
+						RemoveActConnections(m_entityIcons[i].entity, connectionIndex);
+						
+						activatable->SetConnected(connectionIndex);
+						
 						activator.activatableName = activatable->Name();
-						activator.sourceIndex = sourceIndex;
-						m_actConnections.push_back({ m_connectingActivator, m_selectedEntities.back() });
+						activator.targetConnectionIndex = connectionIndex;
+						m_actConnections.push_back({ m_connectingActivator, m_entityIcons[i].entity });
 						ECActivationLightStrip::GenerateForActivator(*m_world, *activatorEntity);
 					}
-					else
-					{
-						eg::Log(eg::LogLevel::Error, "ent", "Too many sources bound to activatable entity");
-					}
+					
+					m_connectingActivator = { };
+					break;
+				}
+				else
+				{
+					m_selectedEntities.push_back(m_entityIcons[i].entity);
 				}
 			}
-			
-			m_connectingActivator = { };
-		};
+		}
 	}
 	
 	//Despawns entities if delete is pressed
@@ -923,25 +943,25 @@ void Editor::DrawToolCorners()
 	}
 }
 
-static constexpr float ACT_CONNECTION_LINE_WIDTH = 0.04f;
-static const eg::ColorSRGB ACT_CONNECTION_COLOR = eg::ColorSRGB::FromRGBAHex(0x0870c896);
+static constexpr float ACT_CONNECTION_LINE_WIDTH = 0.06f;
+static const eg::ColorSRGB ACT_CONNECTION_COLOR = eg::ColorSRGB::FromRGBAHex(0x0870c8c8);
 
 void Editor::DrawToolEntities()
 {
+	//Draws activation connections
 	for (const ActConnection& connection : m_actConnections)
 	{
-		glm::vec3 a = eg::GetEntityPosition(eg::Deref(connection.activator.Get()));
-		glm::vec3 b = eg::GetEntityPosition(eg::Deref(connection.activatable.Get()));
-		m_primRenderer.AddLine(a, b, ACT_CONNECTION_COLOR, ACT_CONNECTION_LINE_WIDTH);
-	}
-	
-	if (eg::Entity* connectionSrc = m_connectingActivator.Get())
-	{
-		PickWallResult pickRes = m_world->PickWall(m_viewRay);
-		if (pickRes.intersected)
+		if (eg::Contains(m_selectedEntities, connection.activator) || eg::Contains(m_selectedEntities, connection.activatable))
 		{
-			glm::vec3 a = eg::GetEntityPosition(eg::Deref(connectionSrc));
-			m_primRenderer.AddLine(a, pickRes.intersectPosition, ACT_CONNECTION_COLOR, ACT_CONNECTION_LINE_WIDTH);
+			const ECActivator* activatorComp = connection.activator.FindComponent<ECActivator>();
+			const ECActivatable* activatableComp = connection.activatable.FindComponent<ECActivatable>();
+			
+			if (activatorComp != nullptr && activatableComp != nullptr)
+			{
+				glm::vec3 a = eg::GetEntityPosition(eg::Deref(connection.activator.Get()));
+				glm::vec3 b = eg::GetEntityPosition(eg::Deref(connection.activatable.Get()));
+				m_primRenderer.AddLine(a, b, ACT_CONNECTION_COLOR, ACT_CONNECTION_LINE_WIDTH);
+			}
 		}
 	}
 	
@@ -958,18 +978,17 @@ void Editor::DrawToolEntities()
 		
 		eg::ColorLin color(eg::Color::White);
 		
-		//Makes the icon slightly transparent if the user is establishing
-		// an activation connection and this entity isn't activatable.
-		if (m_connectingActivator.Get() && icon.entity.FindComponent<ECActivatable>() == nullptr)
-			color.a *= 0.5f;
-		
 		//Draws the background sprite
 		m_spriteBatch.Draw(iconsTexture, icon.rectangle, color,
 			CreateSrcRectangle(selected ? 1 : 0), eg::FlipFlags::Normal);
 		
-		//Selctes which icon to use
+		//Selects which icon to use
 		int iconIndex = 5;
-		if (const ECEditorVisible* edVisible = icon.entity.FindComponent<ECEditorVisible>())
+		if (icon.actConnectionIndex != -1)
+		{
+			iconIndex = 6;
+		}
+		else if (const ECEditorVisible* edVisible = icon.entity.FindComponent<ECEditorVisible>())
 		{
 			iconIndex = edVisible->iconIndex;
 		}

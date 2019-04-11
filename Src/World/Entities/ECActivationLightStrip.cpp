@@ -384,7 +384,7 @@ void ECActivationLightStrip::GenerateForActivator(const World& world, eg::Entity
 	PathPoint points[2];
 	points[0].position = eg::GetEntityPosition(activatorEntity);
 	points[0].wallNormal = activatorEntity.GetComponent<ECWallMounted>().wallUp;
-	points[1].position = connectionPoints[std::min<size_t>(activator->sourceIndex, connectionPoints.size() - 1)];
+	points[1].position = connectionPoints[std::min<size_t>(activator->targetConnectionIndex, connectionPoints.size() - 1)];
 	points[1].wallNormal = activatableEntity->GetComponent<ECWallMounted>().wallUp;
 	
 	lightStrip->Generate(world, points);

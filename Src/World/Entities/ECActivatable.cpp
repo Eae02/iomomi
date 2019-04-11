@@ -4,12 +4,12 @@
 
 eg::EntitySignature ECActivatable::Signature = eg::EntitySignature::Create<ECActivatable>();
 
-void ECActivatable::SetActivated(int source, bool activated)
+void ECActivatable::SetActivated(int connection, bool activated)
 {
 	if (activated)
-		m_activations |= 1U << source;
+		m_activations |= 1U << connection;
 	else
-		m_activations &= ~(1U << source);
+		m_activations &= ~(1U << connection);
 	
 	if (AllSourcesActive())
 	{
@@ -19,7 +19,7 @@ void ECActivatable::SetActivated(int source, bool activated)
 
 bool ECActivatable::AllSourcesActive() const
 {
-	return (m_activations & m_enabledSources) == m_enabledSources;
+	return (m_activations & m_enabledConnections) == m_enabledConnections;
 }
 
 static std::mt19937 nameGen { (uint32_t)std::time(nullptr) };
@@ -38,23 +38,14 @@ ECActivatable::ECActivatable(GetConnectionPointsCallback getConnectionPoints)
 		m_getConnectionPoints = &GetConnectionPointsDefault;
 }
 
-void ECActivatable::RemoveSource(int source)
+void ECActivatable::SetDisconnected(int connection)
 {
-	m_enabledSources &= ~(1U << source);
+	m_enabledConnections &= ~(1U << connection);
 }
 
-int ECActivatable::AddSource()
+void ECActivatable::SetConnected(int connection)
 {
-	for (int i = 0; i < 32; i++)
-	{
-		uint32_t mask = 1U << i;
-		if ((m_enabledSources & mask) == 0)
-		{
-			m_enabledSources |= mask;
-			return i;
-		}
-	}
-	return -1;
+	m_enabledConnections |= 1U << connection;
 }
 
 eg::Entity* ECActivatable::FindByName(eg::EntityManager& entityManager, uint32_t name)

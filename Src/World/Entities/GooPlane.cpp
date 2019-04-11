@@ -113,6 +113,7 @@ namespace GooPlane
 	static void OnShutdown()
 	{
 		GooPlaneMaterial::s_pipeline = { };
+		GooPlaneMaterial::s_emissivePipeline = { };
 		GooPlaneMaterial::s_descriptorSet = { };
 		GooPlaneMaterial::s_textureTransformsBuffer = { };
 	}

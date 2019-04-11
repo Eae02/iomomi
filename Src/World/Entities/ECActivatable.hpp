@@ -19,23 +19,23 @@ public:
 		m_name = name;
 	}
 	
-	uint32_t EnabledSources() const
+	uint32_t EnabledConnections() const
 	{
-		return m_enabledSources;
+		return m_enabledConnections;
 	}
 	
-	void SetEnabledSources(uint32_t enabledSources)
+	void SetEnabledConnections(uint32_t enabledConnections)
 	{
-		m_enabledSources = enabledSources;
+		m_enabledConnections = enabledConnections;
 	}
 	
-	int AddSource();
+	void SetConnected(int connection);
 	
-	void RemoveSource(int source);
+	void SetDisconnected(int connection);
 	
 	bool AllSourcesActive() const;
 	
-	void SetActivated(int source, bool activated);
+	void SetActivated(int connection, bool activated);
 	
 	static std::vector<glm::vec3> GetConnectionPoints(const eg::Entity& entity);
 	
@@ -45,7 +45,7 @@ public:
 	
 private:
 	uint32_t m_name;
-	uint32_t m_enabledSources = 0;
+	uint32_t m_enabledConnections = 0;
 	uint32_t m_activations = 0;
 	GetConnectionPointsCallback m_getConnectionPoints;
 };
