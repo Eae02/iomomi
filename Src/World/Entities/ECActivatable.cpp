@@ -24,8 +24,19 @@ bool ECActivatable::AllSourcesActive() const
 
 static std::mt19937 nameGen { (uint32_t)std::time(nullptr) };
 
-ECActivatable::ECActivatable()
-	: m_name(std::max<uint32_t>(nameGen(), 1)) { }
+static std::vector<glm::vec3> GetConnectionPointsDefault(const eg::Entity& entity)
+{
+	return { eg::GetEntityPosition(entity) };
+}
+
+ECActivatable::ECActivatable(GetConnectionPointsCallback getConnectionPoints)
+	: m_name(std::max<uint32_t>(nameGen(), 1))
+{
+	if (getConnectionPoints != nullptr)
+		m_getConnectionPoints = getConnectionPoints;
+	else
+		m_getConnectionPoints = &GetConnectionPointsDefault;
+}
 
 void ECActivatable::RemoveSource(int source)
 {
@@ -44,4 +55,20 @@ int ECActivatable::AddSource()
 		}
 	}
 	return -1;
+}
+
+eg::Entity* ECActivatable::FindByName(eg::EntityManager& entityManager, uint32_t name)
+{
+	for (eg::Entity& activatableEntity : entityManager.GetEntitySet(ECActivatable::Signature))
+	{
+		ECActivatable& activatable = activatableEntity.GetComponent<ECActivatable>();
+		if (activatable.Name() == name)
+			return &activatableEntity;
+	}
+	return nullptr;
+}
+
+std::vector<glm::vec3> ECActivatable::GetConnectionPoints(const eg::Entity& entity)
+{
+	return entity.GetComponent<ECActivatable>().m_getConnectionPoints(entity);
 }

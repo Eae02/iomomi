@@ -24,10 +24,11 @@ assets:
   - name: Shaders/Wall-Border.fs.glsl
   - name: Shaders/Wall-PLShadow.vs.glsl
   - name: Shaders/Wall-PLShadow.gs.glsl
-  - name: Shaders/Wall-PlanarRefl.vs.glsl
   - name: Shaders/Wall-PlanarRefl.fs.glsl
   - name: Shaders/Emissive.vs.glsl
   - name: Shaders/Emissive.fs.glsl
+  - name: Shaders/LightStrip.vs.glsl
+  - name: Shaders/LightStrip.fs.glsl
   - name: Shaders/Ambient.fs.glsl
   - name: Shaders/ConstantAmbient.fs.glsl
   - name: Shaders/SpotLight.vs.glsl
@@ -47,6 +48,7 @@ assets:
   - name: Models/WallLight.obj
   - name: Models/Cube.obj 
   - name: Models/Button.obj
+  - name: Models/ActivationStripStraight.obj
   - name: Textures/EntityIcons.png
   - name: Textures/NoDraw.png
     srgb: true

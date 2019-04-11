@@ -44,8 +44,8 @@ ImGuiInterface::ImGuiInterface()
 	};
 	
 	eg::GraphicsPipelineCreateInfo pipelineCI;
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/ImGui.vs.glsl").Handle();
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/ImGui.fs.glsl").Handle();
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/ImGui.vs.glsl").DefaultVariant();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/ImGui.fs.glsl").DefaultVariant();
 	pipelineCI.enableScissorTest = true;
 	pipelineCI.blendStates[0] = eg::AlphaBlend;
 	pipelineCI.vertexBindings[0] = { sizeof(ImDrawVert), eg::InputRate::Vertex };

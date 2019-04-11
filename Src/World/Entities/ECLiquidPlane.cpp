@@ -1,6 +1,7 @@
 #include "ECLiquidPlane.hpp"
 #include "ECWallMounted.hpp"
 #include "../World.hpp"
+#include "../../Vec3Compare.hpp"
 
 eg::MessageReceiver ECLiquidPlane::MessageReceiver = eg::MessageReceiver::Create<ECLiquidPlane,
 	EditorSpawnedMessage, EditorWallsChangedMessage, EditorMovedMessage>();

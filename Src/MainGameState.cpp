@@ -4,6 +4,7 @@
 #include "Graphics/RenderSettings.hpp"
 #include "World/Entities/Entrance.hpp"
 #include "Graphics/PlanarReflectionsManager.hpp"
+#include "World/Entities/ECActivationLightStrip.hpp"
 
 #include <fstream>
 #include <imgui.h>
@@ -39,6 +40,8 @@ void MainGameState::LoadWorld(std::istream& stream)
 	}
 	
 	m_world->InitializeBulletPhysics();
+	
+	ECActivationLightStrip::GenerateAll(*m_world);
 	
 	m_plShadowMapper.InvalidateAll();
 }

@@ -3,6 +3,7 @@
 #include "ECEditorVisible.hpp"
 #include "ECActivator.hpp"
 #include "Messages.hpp"
+#include "ECActivationLightStrip.hpp"
 #include "../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../Protobuf/Build/FloorButtonEntity.pb.h"
 
@@ -21,7 +22,7 @@ eg::MessageReceiver ECFloorButton::MessageReceiver = eg::MessageReceiver::Create
 		ECFloorButton, EditorDrawMessage, EditorRenderImGuiMessage, DrawMessage>();
 
 eg::EntitySignature ECFloorButton::EntitySignature = eg::EntitySignature::Create<
-    eg::ECPosition3D, ECWallMounted, ECEditorVisible, ECFloorButton, ECActivator>();
+    eg::ECPosition3D, ECWallMounted, ECEditorVisible, ECFloorButton, ECActivator, ECActivationLightStrip>();
 
 void ECFloorButton::HandleMessage(eg::Entity& entity, const DrawMessage& message)
 {

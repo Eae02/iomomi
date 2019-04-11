@@ -11,8 +11,8 @@ static eg::Pipeline gravityCornerPipelineGame;
 static void OnInit()
 {
 	eg::GraphicsPipelineCreateInfo pipelineCI;
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Common3D.vs.glsl").Handle();
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/GravityCorner.fs.glsl").Handle();
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Common3D.vs.glsl").DefaultVariant();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityCorner.fs.glsl").DefaultVariant();
 	pipelineCI.enableDepthWrite = true;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.frontFaceCCW = true;
@@ -32,7 +32,7 @@ static void OnInit()
 	gravityCornerPipelineGame.FramebufferFormatHint(DeferredRenderer::GEOMETRY_FB_FORMAT);
 	
 	pipelineCI.numColorAttachments = 1;
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/GravityCorner-Editor.fs.glsl").Handle();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityCorner-Editor.fs.glsl").DefaultVariant();
 	pipelineCI.cullMode = eg::CullMode::None;
 	gravityCornerPipelineEditor = eg::Pipeline::Create(pipelineCI);
 	gravityCornerPipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);

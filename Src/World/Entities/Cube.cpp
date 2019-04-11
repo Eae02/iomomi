@@ -107,7 +107,7 @@ namespace Cube
 		if (entity.GetComponent<ECCube>().isPickedUp)
 			return DROP_INTERACT_PRIORITY;
 		
-		if (player.IsCarrying())
+		if (player.IsCarrying() || !player.OnGround())
 			return 0;
 		
 		static constexpr int PICK_UP_INTERACT_PRIORITY = 2;

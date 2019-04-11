@@ -18,8 +18,8 @@ struct LightProbeUB
 LightProbesManager::LightProbesManager()
 {
 	eg::GraphicsPipelineCreateInfo ambientPipelineCI;
-	ambientPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Post.vs.glsl").Handle();
-	ambientPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/Ambient.fs.glsl").Handle();
+	ambientPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
+	ambientPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Ambient.fs.glsl").DefaultVariant();
 	ambientPipelineCI.setBindModes[1] = eg::BindMode::DescriptorSet;
 	m_ambientPipeline = eg::Pipeline::Create(ambientPipelineCI);
 	m_ambientPipeline.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT);

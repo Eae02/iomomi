@@ -60,7 +60,7 @@ void PlanarReflectionsManager::RenderPlanarReflections(ReflectionPlane& plane,
 void PlanarReflectionsManager::SetQuality(QualityLevel qualityLevel)
 {
 	m_qualityLevel = qualityLevel;
-	m_textureFormat = eg::Format::R8G8B8A8_UNorm;
+	m_textureFormat = qualityLevel >= QualityLevel::High ? eg::Format::R16G16B16A16_Float: eg::Format::R8G8B8A8_UNorm;
 	ResolutionChanged();
 }
 

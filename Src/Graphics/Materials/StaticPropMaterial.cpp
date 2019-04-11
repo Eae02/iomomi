@@ -63,8 +63,8 @@ static eg::Pipeline staticPropPipelinePlanarRefl;
 static void OnInit()
 {
 	eg::GraphicsPipelineCreateInfo pipelineCI;
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Common3D.vs.glsl").Handle();
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/StaticModel.fs.glsl").Handle();
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Common3D.vs.glsl").DefaultVariant();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/StaticModel.fs.glsl").DefaultVariant();
 	pipelineCI.enableDepthWrite = true;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::Back;
@@ -84,13 +84,13 @@ static void OnInit()
 	staticPropPipelineGame.FramebufferFormatHint(DeferredRenderer::GEOMETRY_FB_FORMAT);
 	
 	pipelineCI.numColorAttachments = 1;
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/StaticModel-Editor.fs.glsl").Handle();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/StaticModel-Editor.fs.glsl").DefaultVariant();
 	pipelineCI.cullMode = eg::CullMode::None;
 	staticPropPipelineEditor = eg::Pipeline::Create(pipelineCI);
 	staticPropPipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Common3D-PlanarRefl.vs.glsl").Handle();
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/StaticModel-PlanarRefl.fs.glsl").Handle();
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Common3D-PlanarRefl.vs.glsl").DefaultVariant();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/StaticModel-PlanarRefl.fs.glsl").DefaultVariant();
 	pipelineCI.cullMode = eg::CullMode::Back;
 	pipelineCI.frontFaceCCW = true;
 	pipelineCI.numClipDistances = 1;
@@ -103,9 +103,9 @@ static void OnInit()
 	staticPropPipelinePlanarRefl = eg::Pipeline::Create(pipelineCI);
 	
 	eg::GraphicsPipelineCreateInfo plsPipelineCI;
-	plsPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Common3D-PLShadow.vs.glsl").Handle();
-	plsPipelineCI.geometryShader = eg::GetAsset<eg::ShaderModule>("Shaders/PointLightShadow.gs.glsl").Handle();
-	plsPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/PointLightShadow.fs.glsl").Handle();
+	plsPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Common3D-PLShadow.vs.glsl").DefaultVariant();
+	plsPipelineCI.geometryShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLightShadow.gs.glsl").DefaultVariant();
+	plsPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLightShadow.fs.glsl").DefaultVariant();
 	plsPipelineCI.enableDepthWrite = true;
 	plsPipelineCI.enableDepthTest = true;
 	plsPipelineCI.frontFaceCCW = eg::CurrentGraphicsAPI() == eg::GraphicsAPI::Vulkan;

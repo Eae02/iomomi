@@ -26,14 +26,11 @@ void ECActivator::Update(const WorldUpdateArgs& args)
 		if (activated != activator.m_isActivated)
 		{
 			activator.m_isActivated = activated;
-			for (eg::Entity& activatableEntity : entity.Manager()->GetEntitySet(ECActivatable::Signature))
+			eg::Entity* activatableEntity = ECActivatable::FindByName(*entity.Manager(), activator.activatableName);
+			if (activatableEntity != nullptr)
 			{
-				ECActivatable& activatable = activatableEntity.GetComponent<ECActivatable>();
-				if (activatable.Name() == activator.activatableName)
-				{
-					activatable.SetActivated(activator.sourceIndex, activated);
-					break;
-				}
+				activatableEntity->GetComponent<ECActivatable>().SetActivated(activator.sourceIndex, activated);
+				break;
 			}
 		}
 	}

@@ -90,7 +90,7 @@ const Dir UP_VECTORS[] =
 	Dir::PosY, Dir::PosY, Dir::PosX, Dir::PosX, Dir::PosY, Dir::PosY
 };
 
-inline glm::mat4 GetTransform(eg::Entity& entity)
+inline glm::mat4 GetTransform(const eg::Entity& entity)
 {
 	Dir direction = OppositeDir(entity.GetComponent<ECWallMounted>().wallUp);
 	
@@ -298,6 +298,24 @@ Door ECEntrance::GetDoorDescription(const eg::Entity& entity)
 	return door;
 }
 
+static std::vector<glm::vec3> GetConnectionPoints(const eg::Entity& entity)
+{
+	const glm::mat4 transform = GetTransform(entity);
+	const glm::vec3 connectionPointsLocal[] = 
+	{
+		glm::vec3(MESH_LENGTH, 1.0f, -1.5f),
+		glm::vec3(MESH_LENGTH, 1.0f, 1.5f),
+		glm::vec3(MESH_LENGTH, 2.5f, 0.0f)
+	};
+	
+	std::vector<glm::vec3> connectionPoints;
+	for (const glm::vec3& connectionPointLocal : connectionPointsLocal)
+	{
+		connectionPoints.emplace_back(transform * glm::vec4(connectionPointLocal, 1.0f));
+	}
+	return connectionPoints;
+}
+
 struct EntranceSerializer : public eg::IEntitySerializer
 {
 	std::string_view GetName() const override
@@ -356,6 +374,7 @@ eg::Entity* ECEntrance::CreateEntity(eg::EntityManager& entityManager)
 	eg::Entity& entity = entityManager.AddEntity(EntitySignature, nullptr, EntitySerializer);
 	
 	entity.InitComponent<ECEditorVisible>("Entrance/Exit");
+	entity.InitComponent<ECActivatable>(&GetConnectionPoints);
 	
 	eg::Entity& lightChild = entityManager.AddEntity(lightChildSignature, &entity);
 	lightChild.InitComponent<PointLight>(eg::ColorSRGB::FromHex(0xDEEEFD), 20.0f);

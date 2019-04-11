@@ -6,8 +6,8 @@
 LiquidPlaneRenderer::LiquidPlaneRenderer()
 {
 	eg::GraphicsPipelineCreateInfo pipelineCI;
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/LiquidPlaneEditor.vs.glsl").Handle();
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/LiquidPlaneEditor.fs.glsl").Handle();
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/LiquidPlaneEditor.vs.glsl").DefaultVariant();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/LiquidPlaneEditor.fs.glsl").DefaultVariant();
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::None;

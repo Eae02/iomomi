@@ -27,15 +27,15 @@ EG_ON_INIT(OnInit)
 DeferredRenderer::DeferredRenderer()
 {
 	eg::GraphicsPipelineCreateInfo constAmbientPipelineCI;
-	constAmbientPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Post.vs.glsl").Handle();
-	constAmbientPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/ConstantAmbient.fs.glsl").Handle();
+	constAmbientPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
+	constAmbientPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/ConstantAmbient.fs.glsl").DefaultVariant();
 	constAmbientPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
 	m_constantAmbientPipeline = eg::Pipeline::Create(constAmbientPipelineCI);
 	m_constantAmbientPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT);
 	
 	eg::GraphicsPipelineCreateInfo slPipelineCI;
-	slPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/SpotLight.vs.glsl").Handle();
-	slPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/SpotLight.fs.glsl").Handle();
+	slPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/SpotLight.vs.glsl").DefaultVariant();
+	slPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/SpotLight.fs.glsl").DefaultVariant();
 	slPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
 	slPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
 	slPipelineCI.vertexBindings[0] = { sizeof(float) * 3, eg::InputRate::Vertex };
@@ -44,8 +44,8 @@ DeferredRenderer::DeferredRenderer()
 	m_spotLightPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT);
 	
 	eg::GraphicsPipelineCreateInfo plPipelineCI;
-	plPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/PointLight.vs.glsl").Handle();
-	plPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/PointLight.fs.glsl").Handle();
+	plPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLight.vs.glsl").DefaultVariant();
+	plPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLight.fs.glsl").DefaultVariant();
 	plPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
 	plPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
 	plPipelineCI.vertexBindings[0] = { sizeof(float) * 3, eg::InputRate::Vertex };

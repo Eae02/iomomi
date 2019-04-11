@@ -12,6 +12,11 @@ public:
 	
 	static void Update(const struct WorldUpdateArgs& args);
 	
+	bool IsActivated() const
+	{
+		return m_isActivated;
+	}
+	
 	static eg::MessageReceiver MessageReceiver;
 	
 	static eg::EntitySignature Signature;

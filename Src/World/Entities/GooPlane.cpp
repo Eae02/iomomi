@@ -64,8 +64,8 @@ namespace GooPlane
 	static void OnInit()
 	{
 		eg::GraphicsPipelineCreateInfo pipelineCI;
-		pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/GooPlane.vs.glsl").Handle();
-		pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/GooPlane.fs.glsl").Handle();
+		pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GooPlane.vs.glsl").DefaultVariant();
+		pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GooPlane.fs.glsl").DefaultVariant();
 		pipelineCI.enableDepthWrite = true;
 		pipelineCI.enableDepthTest = true;
 		pipelineCI.cullMode = eg::CullMode::Back;
@@ -77,7 +77,7 @@ namespace GooPlane
 		pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
 		GooPlaneMaterial::s_pipeline = eg::Pipeline::Create(pipelineCI);
 		
-		pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/GooPlane-Emissive.fs.glsl").Handle();
+		pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GooPlane-Emissive.fs.glsl").DefaultVariant();
 		pipelineCI.numColorAttachments = 1;
 		pipelineCI.depthCompare = eg::CompareOp::LessOrEqual;
 		pipelineCI.enableDepthWrite = false;

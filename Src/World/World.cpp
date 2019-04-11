@@ -11,6 +11,7 @@
 #include "../Graphics/WallShader.hpp"
 #include "Entities/ECActivator.hpp"
 #include "Entities/Cube.hpp"
+#include "Entities/ECActivationLightStrip.hpp"
 
 #include <yaml-cpp/yaml.h>
 
@@ -227,6 +228,8 @@ void World::Update(const WorldUpdateArgs& args)
 		
 		m_lastPhysicsUpdate = nanoTime;
 	}
+	
+	ECActivationLightStrip::Update(*m_entityManager, args.dt);
 	
 	ECEntrance::Update(args);
 	

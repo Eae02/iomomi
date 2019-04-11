@@ -41,8 +41,8 @@ void InitializeWallShader()
 {
 	//Creates the ambient light pipeline
 	eg::GraphicsPipelineCreateInfo pipelineCI;
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall.vs.glsl").Handle();
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall.fs.glsl").Handle();
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall.vs.glsl").GetVariant("VDefault");
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall.fs.glsl").DefaultVariant();
 	pipelineCI.enableDepthWrite = true;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::Back;
@@ -58,16 +58,16 @@ void InitializeWallShader()
 	wr.pipelineDeferredGeom.FramebufferFormatHint(DeferredRenderer::GEOMETRY_FB_FORMAT);
 	
 	//Creates the planar reflections pipeline
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall-PlanarRefl.vs.glsl").Handle();
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall-PlanarRefl.fs.glsl").Handle();
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall.vs.glsl").GetVariant("VPlanarRefl");
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall-PlanarRefl.fs.glsl").DefaultVariant();
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.frontFaceCCW = true;
 	pipelineCI.numClipDistances = 2;
 	wr.pipelinePlanarReflection = eg::Pipeline::Create(pipelineCI);
 	
 	//Creates the editor pipeline
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall.vs.glsl").Handle();
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall-Editor.fs.glsl").Handle();
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall.vs.glsl").GetVariant("VDefault");
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall-Editor.fs.glsl").DefaultVariant();
 	pipelineCI.enableDepthWrite = true;
 	pipelineCI.depthCompare = eg::CompareOp::Less;
 	pipelineCI.frontFaceCCW = false;
@@ -78,8 +78,8 @@ void InitializeWallShader()
 	
 	//Creates the editor border pipeline
 	eg::GraphicsPipelineCreateInfo borderPipelineCI;
-	borderPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall-Border.vs.glsl").Handle();
-	borderPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall-Border.fs.glsl").Handle();
+	borderPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall-Border.vs.glsl").DefaultVariant();
+	borderPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall-Border.fs.glsl").DefaultVariant();
 	borderPipelineCI.enableDepthWrite = false;
 	borderPipelineCI.enableDepthTest = true;
 	borderPipelineCI.cullMode = eg::CullMode::None;
@@ -93,9 +93,9 @@ void InitializeWallShader()
 	
 	//Creates the point light shadow pipeline
 	eg::GraphicsPipelineCreateInfo plsPipelineCI;
-	plsPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall-PLShadow.vs.glsl").Handle();
-	plsPipelineCI.geometryShader = eg::GetAsset<eg::ShaderModule>("Shaders/Wall-PLShadow.gs.glsl").Handle();
-	plsPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/PointLightShadow.fs.glsl").Handle();
+	plsPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall-PLShadow.vs.glsl").DefaultVariant();
+	plsPipelineCI.geometryShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall-PLShadow.gs.glsl").DefaultVariant();
+	plsPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLightShadow.fs.glsl").DefaultVariant();
 	plsPipelineCI.enableDepthWrite = true;
 	plsPipelineCI.enableDepthTest = true;
 	plsPipelineCI.frontFaceCCW = eg::CurrentGraphicsAPI() == eg::GraphicsAPI::Vulkan;

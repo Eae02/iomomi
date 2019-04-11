@@ -7,6 +7,7 @@
 #include "../World/EntityTypes.hpp"
 #include "../World/Entities/ECActivatable.hpp"
 #include "../World/Entities/ECActivator.hpp"
+#include "../World/Entities/ECActivationLightStrip.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -35,6 +36,13 @@ const char* TextureNames[] =
 	"Metal Grid"
 };
 
+void Editor::InitWorld()
+{
+	m_selectedEntities.clear();
+	InitializeActConnections();
+	ECActivationLightStrip::GenerateAll(*m_world);
+}
+
 void Editor::RunFrame(float dt)
 {
 	if (m_world == nullptr)
@@ -49,8 +57,7 @@ void Editor::RunFrame(float dt)
 				m_levelName = std::move(m_newLevelName);
 				m_newLevelName = { };
 				m_world = std::make_unique<World>();
-				m_selectedEntities.clear();
-				InitializeActConnections();
+				InitWorld();
 				
 				for (int x = 0; x < 3; x++)
 				{
@@ -83,9 +90,8 @@ void Editor::RunFrame(float dt)
 					if (std::unique_ptr<World> world = World::Load(stream, true))
 					{
 						m_world = std::move(world);
-						m_selectedEntities.clear();
 						m_levelName = level.name;
-						InitializeActConnections();
+						InitWorld();
 					}
 				}
 				ImGui::PopID();
@@ -320,9 +326,12 @@ void Editor::RemoveActConnections(eg::EntityHandle entity)
 		if (m_actConnections[i].activator == entity || m_actConnections[i].activatable == entity)
 		{
 			ECActivatable* activatable = m_actConnections[i].activatable.FindComponent<ECActivatable>();
-			ECActivator* activator = m_actConnections[i].activatable.FindComponent<ECActivator>();
+			ECActivator* activator = m_actConnections[i].activator.FindComponent<ECActivator>();
 			if (activatable && activator)
 			{
+				if (auto* lightStrip = m_actConnections[i].activator.FindComponent<ECActivationLightStrip>())
+					lightStrip->ClearGeneratedMesh();
+				
 				activatable->RemoveSource(activator->sourceIndex);
 			}
 			
@@ -388,8 +397,17 @@ void Editor::UpdateToolEntities(float dt)
 	const bool mouseHeld = eg::IsButtonDown(eg::Button::MouseLeft) && eg::WasButtonDown(eg::Button::MouseLeft);
 	const bool isConnectingActivator = m_connectingActivator.Get();
 	
-	auto SendMovedMessage = [&] (eg::Entity& entity)
+	auto EntityMoved = [&] (eg::Entity& entity)
 	{
+		for (const ActConnection& connection : m_actConnections)
+		{
+			eg::Entity* activatorEntity = connection.activator.Get();
+			if (activatorEntity != nullptr && (&entity == activatorEntity || &entity == connection.activatable.Get()))
+			{
+				ECActivationLightStrip::GenerateForActivator(*m_world, *activatorEntity);
+			}
+		}
+		
 		EditorMovedMessage message;
 		message.world = m_world.get();
 		m_selectedEntities[0].Get()->HandleMessage(message);
@@ -412,7 +430,7 @@ void Editor::UpdateToolEntities(float dt)
 				if (eg::ECPosition3D* positionComp = m_selectedEntities[0].Get()->FindComponent<eg::ECPosition3D>())
 				{
 					positionComp->position = SnapToGrid(pickResult.intersectPosition);
-					SendMovedMessage(*m_selectedEntities[0].Get());
+					EntityMoved(*m_selectedEntities[0].Get());
 				}
 			}
 		}
@@ -435,15 +453,15 @@ void Editor::UpdateToolEntities(float dt)
 			m_gizmoPosUnaligned = glm::vec3(0.0f);
 			for (int64_t i = m_selectedEntities.size() - 1; i >= 0; i--)
 			{
-				//if (dynamic_cast<Entity::IEditorWallDrag*>(m_selectedEntities[i].get()))
-				//{
-				//	m_selectedEntities[i].swap(m_selectedEntities.back());
-				//	m_selectedEntities.pop_back();
-				//}
-				//else
-				//{
+				if (m_selectedEntities[i].FindComponent<ECWallMounted>())
+				{
+					m_selectedEntities[i] = m_selectedEntities.back();
+					m_selectedEntities.pop_back();
+				}
+				else
+				{
 					m_gizmoPosUnaligned += m_selectedEntities[i].Get()->GetComponent<eg::ECPosition3D>().position;
-				//}
+				}
 			}
 			m_gizmoPosUnaligned /= (float)m_selectedEntities.size();
 			m_prevGizmoPos = m_gizmoPosUnaligned;
@@ -460,7 +478,7 @@ void Editor::UpdateToolEntities(float dt)
 			for (const eg::EntityHandle& selectedEntity : m_selectedEntities)
 			{
 				selectedEntity.Get()->GetComponent<eg::ECPosition3D>().position += dragDelta;
-				SendMovedMessage(*selectedEntity.Get());
+				EntityMoved(*selectedEntity.Get());
 			}
 		}
 		m_prevGizmoPos = gizmoPosAligned;
@@ -524,6 +542,7 @@ void Editor::UpdateToolEntities(float dt)
 						activator.activatableName = activatable->Name();
 						activator.sourceIndex = sourceIndex;
 						m_actConnections.push_back({ m_connectingActivator, m_selectedEntities.back() });
+						ECActivationLightStrip::GenerateForActivator(*m_world, *activatorEntity);
 					}
 					else
 					{
@@ -813,9 +832,16 @@ void Editor::DrawWorld()
 	
 	m_primRenderer.Draw();
 	
-	if (m_tool == Tool::Entities && !m_selectedEntities.empty())
+	if (m_tool == Tool::Entities)
 	{
-		m_translationGizmo.Draw(RenderSettings::instance->viewProjection);
+		for (const eg::EntityHandle& entity : m_selectedEntities)
+		{
+			if (!entity.FindComponent<ECWallMounted>())
+			{
+				m_translationGizmo.Draw(RenderSettings::instance->viewProjection);
+				break;
+			}
+		}
 	}
 	
 	m_liquidPlaneRenderer.Render();

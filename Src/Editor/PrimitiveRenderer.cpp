@@ -6,8 +6,8 @@ eg::Pipeline primPipeline;
 void PrimitiveRenderer::OnInit()
 {
 	eg::GraphicsPipelineCreateInfo pipelineCI;
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModule>("Shaders/Primitive.vs.glsl").Handle();
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModule>("Shaders/Primitive.fs.glsl").Handle();
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Primitive.vs.glsl").DefaultVariant();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Primitive.fs.glsl").DefaultVariant();
 	pipelineCI.vertexBindings[0] = { sizeof(Vertex), eg::InputRate::Vertex };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, (uint32_t)offsetof(Vertex, position) };
 	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::UInt8Norm, 4, (uint32_t)offsetof(Vertex, color) };

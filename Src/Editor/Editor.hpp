@@ -18,6 +18,8 @@ public:
 	void SetResolution(int width, int height);
 	
 private:
+	void InitWorld();
+	
 	void DrawWorld();
 	
 	void DrawMenuBar();
