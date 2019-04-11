@@ -1,10 +1,10 @@
 #include "ECActivationLightStrip.hpp"
 #include "ECActivator.hpp"
 #include "ECActivatable.hpp"
+#include "ECWallMounted.hpp"
 #include "../World.hpp"
 #include "../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../Vec3Compare.hpp"
-#include "ECWallMounted.hpp"
 
 #include <tuple>
 
@@ -30,6 +30,8 @@ void ECActivationLightStrip::OnInit()
 {
 	s_models[MV_Straight] = &eg::GetAsset<eg::Model>("Models/ActivationStripStraight.obj");
 	s_materials[MV_Straight] = &eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml");
+	s_models[MV_Bend] = &eg::GetAsset<eg::Model>("Models/ActivationStripBend.obj");
+	s_materials[MV_Bend] = &eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml");
 }
 
 void ECActivationLightStrip::OnShutdown()
@@ -229,12 +231,16 @@ void ECActivationLightStrip::Generate(const World& world, eg::Span<const PathPoi
 			((!isAir[0][0][0] && !isAir[0][1][0]) || (!isAir[1][0][0] && !isAir[1][1][0]));
 	};
 	
+	m_maxTransitionProgress = 0;
+	ClearGeneratedMesh();
+	
 	for (size_t i = 1; i < points.size(); i++)
 	{
 		glm::ivec3 sourcePos = GetDoublePos(points[i - 1].position);
 		glm::ivec3 targetPos = GetDoublePos(points[i].position);
 		
 		nodeData.clear();
+		pq = { };
 		
 		//Inserts the four source nodes into the priority queue and node data map
 		for (Dir orthoDir : ORTHO_DIRS[(int)points[i - 1].wallNormal / 2])
@@ -317,51 +323,83 @@ void ECActivationLightStrip::Generate(const World& world, eg::Span<const PathPoi
 			ProcessEdge(nextStepPos, 0, 1);
 		}
 		
-		ClearGeneratedMesh();
 		if (pq.empty())
 		{
 			eg::Log(eg::LogLevel::Warning, "misc", "Unable to find path for activation light strip!");
 			return;
 		}
 		
-		//Reconstructs the path
+		//Returns whether the given node has a previous node
+		auto HasPrev = [&] (const NodePos& pos)
+		{
+			return pos.doublePos != sourcePos || pos.wallNormal != points[i - 1].wallNormal;
+		};
+		
+		//Walks through the found path backwards and constructs the list of mesh instances.
 		int accDistance = 0;
-		for (NodePos pos = lastPos; pos.doublePos != sourcePos || pos.wallNormal != points[i - 1].wallNormal;)
+		for (NodePos pos = lastPos; HasPrev(pos);)
 		{
 			NodePos prevPos = nodeData.at(pos).prevPos;
 			
 			LightStripMaterial::InstanceData* instanceData = nullptr;
 			
-			if (pos.stepDirection == prevPos.stepDirection && pos.wallNormal == prevPos.wallNormal)
+			NodePos prev4[4];
+			prev4[0] = pos;
+			prev4[1] = prevPos;
+			int numPrev = 2;
+			while (HasPrev(prev4[numPrev - 1]) && numPrev < 4)
 			{
-				glm::vec3 rotationY = DirectionVector(pos.wallNormal);
-				glm::vec3 rotationZ = DirectionVector(pos.stepDirection);
-				glm::vec3 rotationX = glm::cross(rotationY, rotationZ);
+				prev4[numPrev] = nodeData.at(prev4[numPrev - 1]).prevPos;
+				numPrev++;
+			}
+			
+			glm::vec3 rotationY = DirectionVector(pos.wallNormal);
+			glm::vec3 rotationZ = DirectionVector(pos.stepDirection);
+			glm::vec3 rotationX, translation;
+			
+			//If a bend mesh is to be inserted, the wall normal for the previous 4 nodes must all be the same and the
+			// step direction must be the same for p0 and p1 and also the same for p2 and p3 (but different from p0 and p1).
+			if (numPrev == 4 && prev4[0].wallNormal == prev4[1].wallNormal &&
+			    prev4[1].wallNormal == prev4[2].wallNormal && prev4[2].wallNormal == prev4[3].wallNormal &&
+			    prev4[0].stepDirection == prev4[1].stepDirection && prev4[2].stepDirection == prev4[3].stepDirection && 
+			    prev4[1].stepDirection != prev4[2].stepDirection)
+			{
+				rotationX = -DirectionVector(prev4[2].stepDirection);
 				
-				const float SCALE = 0.25f;
-				glm::mat3 rotationScaleMatrix(rotationX * SCALE, rotationY * SCALE, rotationZ * SCALE);
+				//If rotationZ cross rotationX isn't aligned with rotationY, the winding will be wrong.
+				// So swap rotationX and rotationZ in this case.
+				if (glm::dot(glm::cross(rotationZ, rotationX), rotationY) < 0)
+					std::swap(rotationX, rotationZ);
 				
-				glm::vec3 midPos = glm::vec3(pos.doublePos + prevPos.doublePos) / 4.0f;
-				
+				translation = glm::vec3(prevPos.doublePos) / 2.0f;
+				instanceData = &m_instances[MV_Bend].emplace_back();
+				pos = prev4[2];
+			}
+			else if (pos.stepDirection == prevPos.stepDirection && pos.wallNormal == prevPos.wallNormal)
+			{
+				rotationX = glm::cross(rotationY, rotationZ);
+				translation = glm::vec3(pos.doublePos + prevPos.doublePos) / 4.0f;
 				instanceData = &m_instances[MV_Straight].emplace_back();
-				instanceData->transform = glm::translate(glm::mat4(1), midPos) * glm::mat4(rotationScaleMatrix);
 			}
 			
 			if (instanceData != nullptr)
 			{
+				const float SCALE = 0.25f;
+				glm::mat3 rotationScaleMatrix(rotationX * SCALE, rotationY * SCALE, rotationZ * SCALE);
+				instanceData->transform = glm::translate(glm::mat4(1), translation) * glm::mat4(rotationScaleMatrix);
 				instanceData->lightProgress = accDistance;
+				accDistance++;
 			}
 			
-			accDistance++;
-			pos = prevPos;
+			pos = nodeData.at(pos).prevPos;
 		}
 		
-		m_maxTransitionProgress = accDistance + 1;
 		for (int v = 0; v < MV_Count; v++)
 		{
 			for (LightStripMaterial::InstanceData& instanceData : m_instances[v])
-				instanceData.lightProgress = accDistance - instanceData.lightProgress;
+				instanceData.lightProgress = m_maxTransitionProgress + accDistance - instanceData.lightProgress;
 		}
+		m_maxTransitionProgress += accDistance + 1;
 	}
 }
 
