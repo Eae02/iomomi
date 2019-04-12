@@ -36,6 +36,7 @@ static void OnInit()
 	
 	pipelineCI.label = "EmissivePlanarRefl";
 	pipelineCI.vertexShader = vertexShader.GetVariant("VPlanarRefl");
+	pipelineCI.numClipDistances = 1;
 	emissivePipelinePlanarRefl = eg::Pipeline::Create(pipelineCI);
 }
 
