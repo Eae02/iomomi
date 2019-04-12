@@ -3,9 +3,12 @@
 RenderSettings* RenderSettings::instance;
 
 RenderSettings::RenderSettings()
-	: m_buffer(eg::BufferFlags::UniformBuffer | eg::BufferFlags::CopyDst, BUFFER_SIZE, nullptr)
 {
-	
+	eg::BufferCreateInfo createInfo;
+	createInfo.flags = eg::BufferFlags::UniformBuffer | eg::BufferFlags::CopyDst;
+	createInfo.size = BUFFER_SIZE;
+	createInfo.label = "RenderSettings";
+	m_buffer = eg::Buffer(createInfo);
 }
 
 void RenderSettings::UpdateBuffer()

@@ -8,6 +8,7 @@ PostProcessor::PostProcessor()
 	eg::GraphicsPipelineCreateInfo postPipelineCI;
 	postPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
 	postPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.fs.glsl").DefaultVariant();
+	postPipelineCI.label = "PostProcess";
 	m_postPipeline = eg::Pipeline::Create(postPipelineCI);
 	m_postPipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	

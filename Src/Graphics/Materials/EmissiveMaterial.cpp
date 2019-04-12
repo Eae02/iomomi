@@ -26,12 +26,15 @@ static void OnInit()
 	pipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
 	pipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 4, 4 * sizeof(float) * 4 };
 	pipelineCI.numColorAttachments = 1;
+	pipelineCI.label = "EmissiveGame";
 	emissivePipelineGame = eg::Pipeline::Create(pipelineCI);
-	emissivePipelineGame.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT);
+	emissivePipelineGame.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT, DeferredRenderer::DEPTH_FORMAT);
 	
+	pipelineCI.label = "EmissiveEditor";
 	emissivePipelineEditor = eg::Pipeline::Create(pipelineCI);
 	emissivePipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
+	pipelineCI.label = "EmissivePlanarRefl";
 	pipelineCI.vertexShader = vertexShader.GetVariant("VPlanarRefl");
 	emissivePipelinePlanarRefl = eg::Pipeline::Create(pipelineCI);
 }

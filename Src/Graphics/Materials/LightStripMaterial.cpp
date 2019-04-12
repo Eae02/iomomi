@@ -25,16 +25,19 @@ static void OnInit()
 	pipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
 	pipelineCI.vertexAttributes[6] = { 1, eg::DataType::Float32, 1, 4 * sizeof(float) * 4 };
 	pipelineCI.numColorAttachments = 1;
+	pipelineCI.label = "LightStripGame";
 	lightStripPipelineGame = eg::Pipeline::Create(pipelineCI);
-	lightStripPipelineGame.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT);
+	lightStripPipelineGame.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT, DeferredRenderer::DEPTH_FORMAT);
 	
 	pipelineCI.cullMode = eg::CullMode::None;
+	pipelineCI.label = "LightStripEditor";
 	lightStripPipelineEditor = eg::Pipeline::Create(pipelineCI);
 	lightStripPipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/LightStrip.vs.glsl").GetVariant("VPlanarRefl");
 	pipelineCI.cullMode = eg::CullMode::Front;
 	pipelineCI.numClipDistances = 1;
+	pipelineCI.label = "LightStripPlanarRefl";
 	lightStripPipelinePlanarRefl = eg::Pipeline::Create(pipelineCI);
 }
 
@@ -42,6 +45,7 @@ static void OnShutdown()
 {
 	lightStripPipelineEditor.Destroy();
 	lightStripPipelineGame.Destroy();
+	lightStripPipelinePlanarRefl.Destroy();
 }
 
 EG_ON_INIT(OnInit)

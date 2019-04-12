@@ -23,7 +23,7 @@ eg::MessageReceiver ECEntrance::MessageReceiver = eg::MessageReceiver::Create<EC
 
 static eg::EntitySignature lightChildSignature = eg::EntitySignature::Create<eg::ECPosition3D, PointLight>();
 
-static constexpr float MESH_LENGTH = 4.75f;
+static constexpr float MESH_LENGTH = 4.7f;
 static constexpr float MESH_HEIGHT = 3.0f;
 
 static constexpr float DOOR_OPEN_DIST = 2.5f; //Open the door when the player is closer than this distance

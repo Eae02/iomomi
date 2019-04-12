@@ -28,12 +28,14 @@ static void OnInit()
 	pipelineCI.vertexAttributes[6] = { 1, eg::DataType::Float32, 4, 2 * sizeof(float) * 4 };
 	pipelineCI.vertexAttributes[7] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
 	pipelineCI.numColorAttachments = 2;
+	pipelineCI.label = "GravityCornerGame";
 	gravityCornerPipelineGame = eg::Pipeline::Create(pipelineCI);
 	gravityCornerPipelineGame.FramebufferFormatHint(DeferredRenderer::GEOMETRY_FB_FORMAT);
 	
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityCorner-Editor.fs.glsl").DefaultVariant();
 	pipelineCI.cullMode = eg::CullMode::None;
+	pipelineCI.label = "GravityCornerEditor";
 	gravityCornerPipelineEditor = eg::Pipeline::Create(pipelineCI);
 	gravityCornerPipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 }

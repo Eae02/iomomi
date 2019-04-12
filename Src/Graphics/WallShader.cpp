@@ -143,13 +143,7 @@ void InitializeWallShader()
 
 static void OnShutdown()
 {
-	wr.pipelineDeferredGeom.Destroy();
-	wr.pipelineEditor.Destroy();
-	wr.pipelineBorderEditor.Destroy();
-	wr.pipelinePLShadow.Destroy();
-	wr.materialSettingsBuffer.Destroy();
-	wr.gameDescriptorSet.Destroy();
-	wr.editorDescriptorSet.Destroy();
+	wr = { };
 }
 
 EG_ON_SHUTDOWN(OnShutdown)

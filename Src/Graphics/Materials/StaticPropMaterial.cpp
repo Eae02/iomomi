@@ -80,12 +80,14 @@ static void OnInit()
 	pipelineCI.vertexAttributes[7] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.numColorAttachments = 2;
+	pipelineCI.label = "StaticPropGame";
 	staticPropPipelineGame = eg::Pipeline::Create(pipelineCI);
 	staticPropPipelineGame.FramebufferFormatHint(DeferredRenderer::GEOMETRY_FB_FORMAT);
 	
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/StaticModel-Editor.fs.glsl").DefaultVariant();
 	pipelineCI.cullMode = eg::CullMode::None;
+	pipelineCI.label = "StaticPropEditor";
 	staticPropPipelineEditor = eg::Pipeline::Create(pipelineCI);
 	staticPropPipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
@@ -100,6 +102,7 @@ static void OnInit()
 	pipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
 	pipelineCI.vertexAttributes[6] = { };
 	pipelineCI.vertexAttributes[7] = { };
+	pipelineCI.label = "StaticPropPlanarRefl";
 	staticPropPipelinePlanarRefl = eg::Pipeline::Create(pipelineCI);
 	
 	eg::GraphicsPipelineCreateInfo plsPipelineCI;
@@ -117,6 +120,7 @@ static void OnInit()
 	plsPipelineCI.vertexAttributes[2] = { 1, eg::DataType::Float32, 4, 1 * sizeof(float) * 4 };
 	plsPipelineCI.vertexAttributes[3] = { 1, eg::DataType::Float32, 4, 2 * sizeof(float) * 4 };
 	plsPipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
+	pipelineCI.label = "StaticPropPLS";
 	staticPropPipelinePLShadow = eg::Pipeline::Create(plsPipelineCI);
 	
 	eg::FramebufferFormatHint plsFormatHint;
@@ -129,6 +133,7 @@ static void OnShutdown()
 {
 	staticPropPipelineEditor.Destroy();
 	staticPropPipelineGame.Destroy();
+	staticPropPipelinePlanarRefl.Destroy();
 	staticPropPipelinePLShadow.Destroy();
 }
 
