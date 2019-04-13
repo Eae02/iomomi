@@ -119,28 +119,6 @@ void ECActivationLightStrip::Update(eg::EntityManager& entityManager, float dt)
 	}
 }
 
-struct NodeDistance
-{
-	int directionChanges;
-	int distance;
-	
-	bool operator==(const NodeDistance& other) const
-	{
-		return directionChanges == other.directionChanges && distance == other.distance;
-	}
-	
-	bool operator!=(const NodeDistance& other) const
-	{
-		return !operator==(other);
-	}
-	
-	bool operator<(const NodeDistance& other) const
-	{
-		return std::make_tuple(distance, directionChanges) <
-		       std::make_tuple(other.distance, other.directionChanges);
-	}
-};
-
 struct NodePos
 {
 	Dir wallNormal;
@@ -156,22 +134,31 @@ struct NodePos
 	{
 		return !operator==(other);
 	}
-	
-	bool operator<(const NodePos& other) const
+};
+
+struct NodePosHash
+{
+	size_t operator()(const NodePos& n) const noexcept
 	{
-		return std::make_tuple((int)wallNormal, (int)stepDirection, doublePos.x, doublePos.y, doublePos.z) <
-		       std::make_tuple((int)other.wallNormal, (int)other.stepDirection, other.doublePos.x, other.doublePos.y, other.doublePos.z);
+		size_t hash = 0;
+		eg::HashAppend(hash, (int)n.stepDirection);
+		eg::HashAppend(hash, (int)n.wallNormal);
+		eg::HashAppend(hash, (int)n.doublePos.x);
+		eg::HashAppend(hash, (int)n.doublePos.y);
+		eg::HashAppend(hash, (int)n.doublePos.z);
+		return hash;
 	}
 };
 
 struct QueueEntry
 {
-	NodeDistance distance;
+	int distance;
+	int distanceH;
 	NodePos pos;
 	
 	bool operator<(const QueueEntry& other) const
 	{
-		return other.distance < distance;
+		return other.distanceH < distanceH;
 	}
 };
 
@@ -191,14 +178,12 @@ void ECActivationLightStrip::Generate(const World& world, eg::Span<const PathPoi
 {
 	struct NodeData
 	{
-		NodeDistance minDist;
+		int minDist;
 		NodePos prevPos;
 	};
 	
-	std::map<NodePos, NodeData> nodeData;
+	std::unordered_map<NodePos, NodeData, NodePosHash> nodeData;
 	std::priority_queue<QueueEntry, std::vector<QueueEntry>> pq;
-	
-	const NodeDistance initialDistance = { 0, 0 };
 	
 	auto IsValidPosition = [&] (const NodePos& pos)
 	{
@@ -239,6 +224,13 @@ void ECActivationLightStrip::Generate(const World& world, eg::Span<const PathPoi
 		glm::ivec3 sourcePos = GetDoublePos(points[i - 1].position);
 		glm::ivec3 targetPos = GetDoublePos(points[i].position);
 		
+		auto QueuePush = [&] (int dist, const NodePos& pos)
+		{
+			glm::ivec3 sDelta = glm::abs(pos.doublePos - targetPos);
+			int heuristic = sDelta.x + sDelta.y + sDelta.z;
+			pq.push({ dist, dist + heuristic, pos });
+		};
+		
 		nodeData.clear();
 		pq = { };
 		
@@ -250,11 +242,11 @@ void ECActivationLightStrip::Generate(const World& world, eg::Span<const PathPoi
 			nodePos.stepDirection = orthoDir;
 			nodePos.doublePos = sourcePos;
 			
-			nodeData.emplace(nodePos, NodeData{ initialDistance });
-			pq.push({ initialDistance, nodePos });
+			nodeData.emplace(nodePos, NodeData{ 0 });
+			QueuePush(0, nodePos);
 		}
 		
-		//Dijkstra's algorithm
+		//A*
 		NodePos lastPos;
 		while (!pq.empty())
 		{
@@ -270,26 +262,24 @@ void ECActivationLightStrip::Generate(const World& world, eg::Span<const PathPoi
 			if (curEntry.distance != nodeData.at(curEntry.pos).minDist)
 				continue;
 			
-			auto ProcessEdge = [&] (const NodePos& nextPos, int deltaDirChange, int deltaDist)
+			int nextDist = curEntry.distance + 1;
+			
+			auto ProcessEdge = [&] (const NodePos& nextPos)
 			{
 				if (!IsValidPosition(nextPos))
 					return;
-				
-				NodeDistance nextDist = curEntry.distance;
-				nextDist.directionChanges += deltaDirChange;
-				nextDist.distance += deltaDist;
 				
 				auto dataIt = nodeData.find(nextPos);
 				if (dataIt == nodeData.end())
 				{
 					nodeData.emplace(nextPos, NodeData { nextDist, curEntry.pos });
-					pq.push({ nextDist, nextPos });
+					QueuePush(nextDist, nextPos);
 				}
 				else if (nextDist < dataIt->second.minDist)
 				{
 					dataIt->second.minDist = nextDist;
 					dataIt->second.prevPos = curEntry.pos;
-					pq.push({ nextDist, nextPos });
+					QueuePush(nextDist, nextPos);
 				}
 			};
 			
@@ -300,7 +290,7 @@ void ECActivationLightStrip::Generate(const World& world, eg::Span<const PathPoi
 				{
 					NodePos nextPos = curEntry.pos;
 					nextPos.stepDirection = orthoDir;
-					ProcessEdge(nextPos, 1, 0);
+					ProcessEdge(nextPos);
 				}
 			}
 			
@@ -313,14 +303,14 @@ void ECActivationLightStrip::Generate(const World& world, eg::Span<const PathPoi
 					nextPos.doublePos = curEntry.pos.doublePos;
 					nextPos.wallNormal = n ? OppositeDir(curEntry.pos.stepDirection) : curEntry.pos.stepDirection;
 					nextPos.stepDirection = s ? OppositeDir(curEntry.pos.wallNormal) : curEntry.pos.wallNormal;
-					ProcessEdge(nextPos, 1, 0);
+					ProcessEdge(nextPos);
 				}
 			}
 			
 			//Processes the edge from continuing to move in the step direction
 			NodePos nextStepPos = curEntry.pos;
 			nextStepPos.doublePos += DirectionVector(curEntry.pos.stepDirection);
-			ProcessEdge(nextStepPos, 0, 1);
+			ProcessEdge(nextStepPos);
 		}
 		
 		if (pq.empty())
