@@ -2,4 +2,4 @@ albedo: ../Textures/DefaultA.png
 normalMap: ../Textures/DefaultN.png
 miscMap: ../Textures/DefaultM.png
 roughnessMin: 0.2
-roughnessMax: 1.0
+roughnessMax: 0.5

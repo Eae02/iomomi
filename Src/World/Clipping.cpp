@@ -64,6 +64,7 @@ void CalcWorldClipping(const World& world, ClippingArgs& args)
 	const glm::vec3 endMax = args.aabb.max + args.move;
 	
 	constexpr float EP = 0.0001f;
+	args.clipDist += EP;
 	
 	//Clipping against voxels
 	for (int axis = 0; axis < 3; axis++)
@@ -131,6 +132,8 @@ void CalcWorldClipping(const World& world, ClippingArgs& args)
 	CalculateCollisionMessage message;
 	message.clippingArgs = &args;
 	world.EntityManager().SendMessageToAll(message);
+	
+	args.clipDist = std::min(args.clipDist, 1.0f);
 }
 
 float CalcCollisionCorrection(const eg::AABB& aabb, const eg::Plane& plane, float maxC)

@@ -200,6 +200,7 @@ void Player::Update(World& world, float dt)
 	    m_gravityTransitionMode == TransitionMode::None && m_onGround)
 	{
 		localVelVertical = JUMP_ACCEL;
+		m_onGround = false;
 	}
 	else
 	{
@@ -219,6 +220,11 @@ void Player::Update(World& world, float dt)
 	m_radius[(int)m_down / 2] = HEIGHT / 2;
 	
 	glm::vec3 move = m_velocity * dt;
+	
+	//Without this, onGround can turn off at high framerates because
+	// the player is not being pushed into the ground hard enough.
+	if (m_onGround)
+		move -= up * 0.001f;
 	
 	//Checks for intersections with gravity corners along the move vector
 	if (m_gravityTransitionMode == TransitionMode::None && m_onGround && !m_isCarrying)
@@ -323,15 +329,7 @@ void Player::Update(World& world, float dt)
 		glm::vec3 clippedMove = move * (clippingArgs.clipDist * 0.99f);
 		m_position += clippedMove;
 		
-		if (clippingArgs.clipDist > 0.9999f)
-			break;
-		
-		move -= clippedMove;
-		
-		glm::vec3 n = clippingArgs.colPlaneNormal;
-		move -= n * glm::dot(move, n);
-		
-		const float nDotUp = glm::dot(n, up);
+		const float nDotUp = glm::dot(clippingArgs.colPlaneNormal, up);
 		if (std::abs(nDotUp) > 0.9f)
 		{
 			m_velocity -= up * glm::dot(m_velocity, up);
@@ -340,6 +338,13 @@ void Player::Update(World& world, float dt)
 		{
 			m_onGround = true;
 		}
+		
+		if (clippingArgs.clipDist > 0.9999f)
+			break;
+		
+		move -= clippedMove;
+		
+		move -= clippingArgs.colPlaneNormal * glm::dot(move, clippingArgs.colPlaneNormal);
 	}
 	
 	m_position += CalcWorldCollisionCorrection(world, GetAABB());

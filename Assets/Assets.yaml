@@ -103,7 +103,14 @@ assets:
     srgb: false
   - name: Textures/SlimeN.png
     srgb: false
+  - name: Textures/CubeA.png
+    srgb: true
+  - name: Textures/CubeM.png
+    srgb: false
   - name: Materials/Default.yaml
+    generator: StaticPropMaterial
+    loader: StaticPropMaterial
+  - name: Materials/Cube.yaml
     generator: StaticPropMaterial
     loader: StaticPropMaterial
   - name: Materials/Entrance/Floor.yaml

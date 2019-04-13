@@ -153,8 +153,6 @@ private:
 	
 	std::vector<Door> m_doors;
 	
-	int64_t m_lastPhysicsUpdate = -1;
-	
 	bool m_anyOutOfDate = true;
 	bool m_canDraw = false;
 	

@@ -28,7 +28,7 @@ namespace Cube
 		collisionShape = std::make_unique<btBoxShape>(btVector3(RADIUS, RADIUS, RADIUS));
 		
 		cubeModel = &eg::GetAsset<eg::Model>("Models/Cube.obj");
-		cubeMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml");
+		cubeMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Cube.yaml");
 	}
 	
 	EG_ON_INIT(OnInit)
@@ -90,6 +90,8 @@ namespace Cube
 		cube.isPickedUp = !cube.isPickedUp;
 		player.SetIsCarrying(cube.isPickedUp);
 		
+		std::cout << "I" << std::endl;
+		
 		if (!cube.isPickedUp)
 		{
 			ECRigidBody& rigidBody = entity.GetComponent<ECRigidBody>();
@@ -142,7 +144,7 @@ namespace Cube
 				glm::vec3 deltaPos = (desiredPosition - entity.GetComponent<eg::ECPosition3D>().position) * 0.75f;
 				
 				rigidBody.GetRigidBody()->setGravity(btVector3(0, 0, 0));
-				rigidBody.GetRigidBody()->setLinearVelocity(bullet::FromGLM(deltaPos / args.dt));
+				rigidBody.GetRigidBody()->setLinearVelocity(bullet::FromGLM(deltaPos / std::max(args.dt, 1.0f / 60.0f)));
 				rigidBody.GetRigidBody()->setAngularVelocity(btVector3(0, 0, 0));
 				rigidBody.GetRigidBody()->clearForces();
 			}
