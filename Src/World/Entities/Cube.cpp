@@ -190,7 +190,7 @@ namespace Cube
 		
 		entity.InitComponent<ECInteractable>("Pick Up", &Interact, &CheckInteraction);
 		
-		entity.InitComponent<ECEditorVisible>("Cube");
+		entity.InitComponent<ECEditorVisible>("Cube", 4);
 		
 		ECRigidBody& rigidBody = entity.GetComponent<ECRigidBody>();
 		rigidBody.Init(MASS, *collisionShape);
