@@ -33,6 +33,7 @@ layout(binding=2, std140) uniform LightSettingsUB
 
 const float MESH_SCALE = 0.6;
 const float EMI_MAP_SCALE = 0.5;
+const float ANIMATION_SPEED = 0.75;
 
 const vec2[] EMI_PAN_DIRECTIONS = vec2[] (
 	vec2(1, 1),
@@ -50,7 +51,7 @@ float sampleEmiMap(vec2 pos)
 	for (int i = 0; i < EMI_PAN_DIRECTIONS.length(); i++)
 	{
 		vec2 oPan = vec2(-EMI_PAN_DIRECTIONS[i].y, EMI_PAN_DIRECTIONS[i].x);
-		vec2 samplePos = vec2(dot(pos, EMI_PAN_DIRECTIONS[i]) + renderSettings.gameTime, dot(pos, oPan));
+		vec2 samplePos = vec2(dot(pos, EMI_PAN_DIRECTIONS[i]) + ANIMATION_SPEED * renderSettings.gameTime, dot(pos, oPan));
 		brightness += texture(emissionMap, samplePos * EMI_MAP_SCALE).r;
 	}
 	return brightness * intensity / EMI_PAN_DIRECTIONS.length();
