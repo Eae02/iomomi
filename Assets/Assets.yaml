@@ -37,6 +37,9 @@ assets:
   - name: Shaders/PointLight.fs.glsl
   - name: Shaders/PointLightShadow.gs.glsl
   - name: Shaders/PointLightShadow.fs.glsl
+  - name: Shaders/GravitySwitch.fs.glsl
+  - name: Shaders/GravitySwitchVolLight.vs.glsl
+  - name: Shaders/GravitySwitchVolLight.fs.glsl
   - name: Shaders/GooPlane.vs.glsl
   - name: Shaders/GooPlane.fs.glsl
   - name: Shaders/GooPlane-Emissive.fs.glsl
@@ -107,10 +110,23 @@ assets:
     srgb: true
   - name: Textures/CubeM.png
     srgb: false
+  - name: Textures/GravitySwitchA.png
+    srgb: true
+  - name: Textures/GravitySwitchN.png
+    srgb: false
+  - name: Textures/GravitySwitchM.png
+    srgb: false
+  - name: Textures/Hex.png
+    srgb: false
+  - name: Textures/GravitySwitchVolEmi.png
+    srgb: false
   - name: Materials/Default.yaml
     generator: StaticPropMaterial
     loader: StaticPropMaterial
   - name: Materials/Cube.yaml
+    generator: StaticPropMaterial
+    loader: StaticPropMaterial
+  - name: Materials/GravitySwitch.yaml
     generator: StaticPropMaterial
     loader: StaticPropMaterial
   - name: Materials/Entrance/Floor.yaml

@@ -61,6 +61,9 @@ void MainGameState::DoDeferredRendering(bool useLightProbes, DeferredRenderer::R
 	mDrawArgs.drawMode = MeshDrawMode::Emissive;
 	m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
 	
+	mDrawArgs.drawMode = MeshDrawMode::VolLight;
+	m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
+	
 	m_renderCtx->renderer.BeginLighting(renderTarget, nullptr);
 	
 	m_renderCtx->renderer.DrawSpotLights(renderTarget, m_prepareDrawArgs.spotLights);

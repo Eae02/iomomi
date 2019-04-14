@@ -90,8 +90,6 @@ namespace Cube
 		cube.isPickedUp = !cube.isPickedUp;
 		player.SetIsCarrying(cube.isPickedUp);
 		
-		std::cout << "I" << std::endl;
-		
 		if (!cube.isPickedUp)
 		{
 			ECRigidBody& rigidBody = entity.GetComponent<ECRigidBody>();

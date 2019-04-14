@@ -5,8 +5,10 @@
 #include "ECInteractable.hpp"
 #include "../Player.hpp"
 #include "../Voxel.hpp"
-#include "../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../YAMLUtils.hpp"
+#include "../../Graphics/Materials/StaticPropMaterial.hpp"
+#include "../../Graphics/Materials/GravitySwitchMaterial.hpp"
+#include "../../Graphics/Materials/GravitySwitchVolLightMaterial.hpp"
 #include "../../../Protobuf/Build/GravitySwitchEntity.pb.h"
 
 namespace GravitySwitch
@@ -18,6 +20,8 @@ namespace GravitySwitch
 		void HandleMessage(eg::Entity& entity, const DrawMessage& message);
 		
 		static eg::MessageReceiver MessageReceiver;
+		
+		GravitySwitchVolLightMaterial volLightMaterial;
 	};
 	
 	eg::MessageReceiver ECGravitySwitch::MessageReceiver = eg::MessageReceiver::Create<
@@ -28,18 +32,36 @@ namespace GravitySwitch
 	
 	static eg::Model* s_model;
 	static eg::IMaterial* s_material;
+	static int s_centerMaterialIndex;
 	
 	static void OnInit()
 	{
 		s_model = &eg::GetAsset<eg::Model>("Models/GravitySwitch.obj");
-		s_material = &eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml");
+		s_material = &eg::GetAsset<StaticPropMaterial>("Materials/GravitySwitch.yaml");
+		s_centerMaterialIndex = s_model->GetMaterialIndex("Center");
 	}
 	
 	EG_ON_INIT(OnInit)
 	
+	inline void Draw(const eg::Entity& entity, eg::MeshBatch& meshBatch)
+	{
+		for (size_t m = 0; m < s_model->NumMeshes(); m++)
+		{
+			const eg::IMaterial* material = s_material;
+			if (s_model->GetMesh(m).materialIndex == s_centerMaterialIndex)
+				material = &GravitySwitchMaterial::instance;
+			
+			meshBatch.Add(*s_model, m, *material, ECWallMounted::GetTransform(entity, SCALE));
+		}
+	}
+	
 	void ECGravitySwitch::HandleMessage(eg::Entity& entity, const DrawMessage& message)
 	{
-		message.meshBatch->Add(*s_model, *s_material, ECWallMounted::GetTransform(entity, SCALE));
+		Draw(entity, *message.meshBatch);
+		
+		volLightMaterial.rotationMatrix = ECWallMounted::GetRotationMatrix(entity);
+		volLightMaterial.switchPosition = eg::GetEntityPosition(entity);
+		message.meshBatch->Add(GravitySwitchVolLightMaterial::GetMesh(), volLightMaterial);
 	}
 	
 	void ECGravitySwitch::HandleMessage(eg::Entity& entity, const EditorRenderImGuiMessage& message)
@@ -49,7 +71,7 @@ namespace GravitySwitch
 	
 	void ECGravitySwitch::HandleMessage(eg::Entity& entity, const EditorDrawMessage& message)
 	{
-		message.meshBatch->Add(*s_model, *s_material, ECWallMounted::GetTransform(entity, SCALE));
+		Draw(entity, *message.meshBatch);
 	}
 	
 	static void Interact(eg::Entity& entity, Player& player)

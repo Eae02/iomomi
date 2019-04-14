@@ -3,6 +3,8 @@
 
 #include <Deferred.glh>
 
+#define AO_PRELIT 2.0
+
 layout(location=0) out vec4 color0_out;
 layout(location=1) out vec4 color1_out;
 

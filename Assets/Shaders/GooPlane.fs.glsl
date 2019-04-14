@@ -56,5 +56,5 @@ void main()
 	vec3 waterColor = color * mix(minBrightness, 1.0, brightness);
 	vec3 reflColor = texture(reflectionMap, reflSampleSS).rgb * color;
 	
-	DeferredOut(mix(waterColor, reflColor, 0.75), normal, ROUGHNESS, 1.0, 2.0);
+	DeferredOut(mix(waterColor, reflColor, 0.75), normal, ROUGHNESS, 1.0, AO_PRELIT);
 }
