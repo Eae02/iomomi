@@ -356,9 +356,11 @@ void Player::Update(World& world, float dt)
 	}
 }
 
-void Player::SetDown(Dir newDown)
+void Player::FlipDown()
 {
-	m_rotationYaw += eg::PI;
+	Dir newDown = OppositeDir(m_down);
+	
+	m_rotationYaw = -m_rotationYaw + eg::PI;
 	m_rotationPitch = -m_rotationPitch;
 	m_oldRotation = m_rotation;
 	m_newRotation = GetRotation(m_rotationYaw, m_rotationPitch, newDown);

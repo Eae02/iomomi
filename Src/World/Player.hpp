@@ -47,7 +47,7 @@ public:
 		return eg::AABB(m_position - m_radius, m_position + m_radius);
 	}
 	
-	void SetDown(Dir newDown);
+	void FlipDown();
 	
 	bool OnGround() const
 	{

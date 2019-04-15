@@ -76,7 +76,7 @@ namespace GravitySwitch
 	
 	static void Interact(eg::Entity& entity, Player& player)
 	{
-		player.SetDown(entity.GetComponent<ECWallMounted>().wallUp);
+		player.FlipDown();
 	}
 	
 	static int CheckInteraction(const eg::Entity& entity, const Player& player)
