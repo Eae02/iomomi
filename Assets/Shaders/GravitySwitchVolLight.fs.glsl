@@ -21,7 +21,7 @@ layout(binding=1) uniform sampler2D emissionMap;
 
 const vec3 COLOR = vec3(0.3, 0.8, 1.5) * 3;
 
-const float MAX_RAY_DIST = 2.0;
+const float MAX_RAY_DIST = 2.5;
 const int RAY_STEPS = 32;
 
 layout(binding=2, std140) uniform LightSettingsUB
@@ -66,7 +66,7 @@ vec3 volLight(vec3 worldPos)
 {
 	vec3 toSwitchLocal = transpose(rotationMatrix) * (worldPos - switchPos);
 	
-	vec2 emiPos = toSwitchLocal.xz / (MESH_SCALE * (tMax * toSwitchLocal.y + 1));
+	vec2 emiPos = toSwitchLocal.xz / (MESH_SCALE * (tMax * toSwitchLocal.y + 1.0));
 	float emiIntensity = sampleEmiMap(emiPos);
 	float atten = lenSq(toSwitchLocal * vec3(1, 3, 1));
 	

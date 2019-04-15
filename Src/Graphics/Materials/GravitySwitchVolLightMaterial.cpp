@@ -1,6 +1,7 @@
 #include "GravitySwitchVolLightMaterial.hpp"
 #include "MeshDrawArgs.hpp"
 #include "../RenderSettings.hpp"
+#include "../DeferredRenderer.hpp"
 
 #include <random>
 
@@ -8,7 +9,7 @@ static eg::Pipeline gsVolLightPipeline;
 
 const float YMIN = 0.1f;
 const float YMAX = 2.0f;
-const float SIZE = 1.2f;
+const float SIZE = 1.0f;
 static const float cubeVertices[] =
 {
 	-SIZE, YMAX,  SIZE,
@@ -45,10 +46,11 @@ struct LightDataBuffer
 static eg::Buffer cubeVertexBuffer;
 static eg::Buffer lightDataBuffer;
 
-static eg::Sampler emiMapSampler;
+static eg::DescriptorSet lightVolDescriptorSet;
 
 static void OnInit()
 {
+	//Creates the volumetric light pipeline
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravitySwitchVolLight.vs.glsl").DefaultVariant();
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravitySwitchVolLight.fs.glsl").DefaultVariant();
@@ -56,13 +58,15 @@ static void OnInit()
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::Front;
+	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.vertexBindings[0] = { sizeof(float) * 3, eg::InputRate::Vertex };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
 	pipelineCI.label = "GravSwitchVolLight";
 	pipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
 	gsVolLightPipeline = eg::Pipeline::Create(pipelineCI);
-	//gravitySwitchPipelineGame.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT, DeferredRenderer::DEPTH_FORMAT);
+	gsVolLightPipeline.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT, DeferredRenderer::DEPTH_FORMAT);
 	
+	//Initializes the light data uniform buffer data
 	LightDataBuffer lightDataBufferStruct;
 	lightDataBufferStruct.tMax = std::tan(glm::radians(MAX_ANGLE));
 	lightDataBufferStruct.inverseMaxY = 1.0f / (YMAX * 0.9f);
@@ -74,13 +78,17 @@ static void OnInit()
 		lightDataBufferStruct.samplePoints[i] = (i + offDist(rand)) / (float)RAY_STEPS; 
 	}
 	
+	//Creates the light data uniform buffer
 	eg::BufferCreateInfo lightDataBufferCreateInfo;
 	lightDataBufferCreateInfo.label = "GravitySwitchVolUB";
 	lightDataBufferCreateInfo.size = sizeof(lightDataBufferStruct);
 	lightDataBufferCreateInfo.initialData = &lightDataBufferStruct;
-	lightDataBufferCreateInfo.flags = eg::BufferFlags::VertexBuffer;
+	lightDataBufferCreateInfo.flags = eg::BufferFlags::UniformBuffer;
 	lightDataBuffer = eg::Buffer(lightDataBufferCreateInfo);
 	
+	lightDataBuffer.UsageHint(eg::BufferUsage::UniformBuffer, eg::ShaderAccessFlags::Fragment);
+	
+	//Creates the vertex buffer to use when rendering volumetric lighting
 	eg::BufferCreateInfo vbCreateInfo;
 	vbCreateInfo.label = "CubeVertexBuffer";
 	vbCreateInfo.size = sizeof(cubeVertices);
@@ -90,12 +98,10 @@ static void OnInit()
 	
 	cubeVertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
 	
-	eg::SamplerDescription samplerDesc;
-	samplerDesc.wrapU = eg::WrapMode::ClampToBorder;
-	samplerDesc.wrapV = eg::WrapMode::ClampToBorder;
-	samplerDesc.wrapW = eg::WrapMode::ClampToBorder;
-	samplerDesc.borderColor = eg::BorderColor::F0000;
-	emiMapSampler = eg::Sampler(samplerDesc);
+	lightVolDescriptorSet = eg::DescriptorSet(gsVolLightPipeline, 0);
+	lightVolDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+	lightVolDescriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/GravitySwitchVolEmi.png"), 1);
+	lightVolDescriptorSet.BindUniformBuffer(lightDataBuffer, 2, 0, sizeof(LightDataBuffer));
 }
 
 static void OnShutdown()
@@ -103,7 +109,7 @@ static void OnShutdown()
 	gsVolLightPipeline.Destroy();
 	cubeVertexBuffer.Destroy();
 	lightDataBuffer.Destroy();
-	emiMapSampler = { };
+	lightVolDescriptorSet.Destroy();
 }
 
 EG_ON_INIT(OnInit)
@@ -122,11 +128,7 @@ bool GravitySwitchVolLightMaterial::BindPipeline(eg::CommandContext& cmdCtx, voi
 	
 	cmdCtx.BindPipeline(gsVolLightPipeline);
 	
-	cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
-	
-	cmdCtx.BindTexture(eg::GetAsset<eg::Texture>("Textures/GravitySwitchVolEmi.png"), 0, 1);
-	
-	cmdCtx.BindUniformBuffer(lightDataBuffer, 0, 2, 0, sizeof(LightDataBuffer));
+	cmdCtx.BindDescriptorSet(lightVolDescriptorSet, 0);
 	
 	if (mDrawArgs->drawMode == MeshDrawMode::PlanarReflection)
 	{
