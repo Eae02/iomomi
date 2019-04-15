@@ -779,19 +779,6 @@ const GravityCorner* World::FindGravityCorner(const ClippingArgs& args, Dir curr
 	
 	return ret;
 }
-/*
-std::shared_ptr<GravitySwitchEntity> World::FindGravitySwitch(const eg::AABB& aabb, Dir currentDown) const
-{
-	for (const std::weak_ptr<GravitySwitchEntity>& entity : m_gravitySwitchEntities)
-	{
-		if (std::shared_ptr<GravitySwitchEntity> entitySP = entity.lock())
-		{
-			if (entitySP->Up() == OppositeDir(currentDown) && aabb.Contains(entitySP->Position()))
-				return entitySP;
-		}
-	}
-	return nullptr;
-}*/
 
 PickWallResult World::PickWall(const eg::Ray& ray) const
 {
