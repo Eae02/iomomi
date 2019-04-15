@@ -1,6 +1,7 @@
 #include "GravitySwitchMaterial.hpp"
 #include "MeshDrawArgs.hpp"
 #include "../RenderSettings.hpp"
+#include "../DeferredRenderer.hpp"
 
 static eg::Pipeline gravitySwitchPipelineEditor;
 static eg::Pipeline gravitySwitchPipelineGame;
@@ -31,7 +32,7 @@ static void OnInit()
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.label = "GravSwitchGame";
 	gravitySwitchPipelineGame = eg::Pipeline::Create(pipelineCI);
-	//gravitySwitchPipelineGame.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT, DeferredRenderer::DEPTH_FORMAT);
+	gravitySwitchPipelineGame.FramebufferFormatHint(DeferredRenderer::GEOMETRY_FB_FORMAT);
 	
 	pipelineCI.label = "GravSwitchEditor";
 	pipelineCI.fragmentShader = fragmentShader.GetVariant("VEditor");
