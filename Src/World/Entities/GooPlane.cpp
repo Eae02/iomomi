@@ -20,7 +20,10 @@ namespace GooPlane
 	{
 		size_t PipelineHash() const override
 		{
-			return typeid(GooPlaneMaterial).hash_code();
+			size_t h = typeid(GooPlaneMaterial).hash_code();
+			if (m_reflectionPlane.texture.handle == nullptr)
+				h++;
+			return h;
 		}
 		
 		bool BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const override
@@ -29,7 +32,12 @@ namespace GooPlane
 			if (!(drawMode == MeshDrawMode::Game || drawMode == MeshDrawMode::Emissive))
 				return false;
 			
-			cmdCtx.BindPipeline(drawMode == MeshDrawMode::Game ? s_pipeline : s_emissivePipeline);
+			if (drawMode == MeshDrawMode::Emissive)
+				cmdCtx.BindPipeline(s_emissivePipeline);
+			else if (m_reflectionPlane.texture.handle)
+				cmdCtx.BindPipeline(s_pipelineReflEnabled);
+			else
+				cmdCtx.BindPipeline(s_pipelineReflDisabled);
 			
 			cmdCtx.BindDescriptorSet(s_descriptorSet, 0);
 			
@@ -38,7 +46,8 @@ namespace GooPlane
 		
 		bool BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const override
 		{
-			if (static_cast<MeshDrawArgs*>(drawArgs)->drawMode == MeshDrawMode::Game)
+			if (static_cast<MeshDrawArgs*>(drawArgs)->drawMode == MeshDrawMode::Game &&
+			    m_reflectionPlane.texture.handle != nullptr)
 			{
 				cmdCtx.BindTexture(m_reflectionPlane.texture, 1, 0);
 			}
@@ -48,13 +57,15 @@ namespace GooPlane
 		
 		ReflectionPlane m_reflectionPlane;
 		
-		static eg::Pipeline s_pipeline;
+		static eg::Pipeline s_pipelineReflEnabled;
+		static eg::Pipeline s_pipelineReflDisabled;
 		static eg::Pipeline s_emissivePipeline;
 		static eg::Buffer s_textureTransformsBuffer;
 		static eg::DescriptorSet s_descriptorSet;
 	};
 	
-	eg::Pipeline GooPlaneMaterial::s_pipeline;
+	eg::Pipeline GooPlaneMaterial::s_pipelineReflEnabled;
+	eg::Pipeline GooPlaneMaterial::s_pipelineReflDisabled;
 	eg::Pipeline GooPlaneMaterial::s_emissivePipeline;
 	eg::Buffer GooPlaneMaterial::s_textureTransformsBuffer;
 	eg::DescriptorSet GooPlaneMaterial::s_descriptorSet;
@@ -63,9 +74,11 @@ namespace GooPlane
 	
 	static void OnInit()
 	{
+		eg::ShaderModuleAsset& fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GooPlane.fs.glsl");
+		
 		eg::GraphicsPipelineCreateInfo pipelineCI;
 		pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GooPlane.vs.glsl").DefaultVariant();
-		pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GooPlane.fs.glsl").DefaultVariant();
+		pipelineCI.fragmentShader = fragmentShader.GetVariant("VDefault");
 		pipelineCI.enableDepthWrite = true;
 		pipelineCI.enableDepthTest = true;
 		pipelineCI.cullMode = eg::CullMode::Back;
@@ -75,7 +88,11 @@ namespace GooPlane
 		pipelineCI.setBindModes[1] = eg::BindMode::Dynamic;
 		pipelineCI.vertexBindings[0] = { sizeof(glm::vec3), eg::InputRate::Vertex };
 		pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
-		GooPlaneMaterial::s_pipeline = eg::Pipeline::Create(pipelineCI);
+		
+		GooPlaneMaterial::s_pipelineReflEnabled = eg::Pipeline::Create(pipelineCI);
+		
+		pipelineCI.fragmentShader = fragmentShader.GetVariant("VNoRefl");
+		GooPlaneMaterial::s_pipelineReflDisabled = eg::Pipeline::Create(pipelineCI);
 		
 		pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GooPlane-Emissive.fs.glsl").DefaultVariant();
 		pipelineCI.numColorAttachments = 1;
@@ -83,7 +100,7 @@ namespace GooPlane
 		pipelineCI.enableDepthWrite = false;
 		GooPlaneMaterial::s_emissivePipeline = eg::Pipeline::Create(pipelineCI);
 		
-		GooPlaneMaterial::s_descriptorSet = eg::DescriptorSet(GooPlaneMaterial::s_pipeline, 0);
+		GooPlaneMaterial::s_descriptorSet = eg::DescriptorSet(GooPlaneMaterial::s_pipelineReflEnabled, 0);
 		
 		struct
 		{
@@ -112,7 +129,8 @@ namespace GooPlane
 	
 	static void OnShutdown()
 	{
-		GooPlaneMaterial::s_pipeline = { };
+		GooPlaneMaterial::s_pipelineReflEnabled = { };
+		GooPlaneMaterial::s_pipelineReflDisabled = { };
 		GooPlaneMaterial::s_emissivePipeline = { };
 		GooPlaneMaterial::s_descriptorSet = { };
 		GooPlaneMaterial::s_textureTransformsBuffer = { };
@@ -141,6 +159,7 @@ namespace GooPlane
 		liquidPlane.MaybeUpdate(entity, *message.world);
 		
 		m_material.m_reflectionPlane.plane = { glm::vec3(0, 1, 0), entity.GetComponent<eg::ECPosition3D>().position };
+		m_material.m_reflectionPlane.texture = { };
 		
 		if (liquidPlane.NumIndices() != 0)
 		{

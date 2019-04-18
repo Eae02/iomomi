@@ -2,7 +2,7 @@
 
 PlanarReflectionsManager::PlanarReflectionsManager()
 {
-	SetQuality(QualityLevel::High);
+	SetQuality(QualityLevel::Off);
 }
 
 void PlanarReflectionsManager::BeginFrame()
@@ -13,6 +13,9 @@ void PlanarReflectionsManager::BeginFrame()
 void PlanarReflectionsManager::RenderPlanarReflections(ReflectionPlane& plane,
 	const PlanarReflectionsManager::RenderCallback& renderCallback)
 {
+	if (m_qualityLevel == QualityLevel::Off)
+		return;
+	
 	if (m_depthTexture.handle == nullptr)
 	{
 		eg::Texture2DCreateInfo depthTextureCI;
