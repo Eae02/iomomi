@@ -1,6 +1,7 @@
 #version 450 core
 
 #include "Inc/EditorLight.glh"
+#include "Inc/NormalMap.glh"
 
 layout(location=0) in vec4 texCoord_in;
 layout(location=1) in vec3 normal_in;
@@ -30,8 +31,7 @@ void main()
 	else
 	{
 		color = texture(albedoSampler, texCoord_in.xyz).rgb;
-		vec3 nmNormal = (texture(normalMapSampler, texCoord_in.xyz).grb * (255.0 / 128.0)) - vec3(1.0);
-		normal = normalize(tbn * nmNormal);
+		normal = normalMapToWorld(texture(normalMapSampler, texCoord_in.xyz).xy, tbn);
 	}
 	
 	vec2 ao2 = vec2(min(ao_in.x, ao_in.y), min(ao_in.w, ao_in.z));

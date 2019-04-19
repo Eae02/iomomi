@@ -1,6 +1,7 @@
 #version 450 core
 
 #include "Inc/DeferredGeom.glh"
+#include "Inc/NormalMap.glh"
 
 layout(location=0) in vec4 texCoord_in;
 layout(location=1) in vec3 normal_in;
@@ -21,8 +22,7 @@ void main()
 	
 	vec4 miscMaps = texture(mmSampler, texCoord_in.xyz);
 	
-	vec3 nmNormal = (texture(nmSampler, texCoord_in.xyz).grb * (255.0 / 128.0)) - vec3(1.0);
-	vec3 normal = normalize(tbn * nmNormal);
+	vec3 normal = normalMapToWorld(texture(nmSampler, texCoord_in.xyz).xy, tbn);
 	
 	vec3 albedo = texture(albedoSampler, texCoord_in.xyz).rgb;
 	

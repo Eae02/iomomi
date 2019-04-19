@@ -1,3 +1,8 @@
+mipShift: &MipShift
+  low: 2
+  medium: 1
+  high: 0
+
 assets:
   - name: Shaders/ImGui.vs.glsl
   - name: Shaders/ImGui.fs.glsl
@@ -53,73 +58,190 @@ assets:
   - name: Models/Button.obj
   - name: Models/ActivationStripStraight.obj
   - name: Models/ActivationStripBend.obj
+  
+  #Textures:
   - name: Textures/EntityIcons.png
   - name: Textures/NoDraw.png
+    mipShift: *MipShift
     srgb: true
+    format: bc1
   - name: Textures/Entrance/EditorEntrance.png
+    mipShift: *MipShift
     srgb: true
+    format: bc1
   - name: Textures/Entrance/EditorExit.png
+    mipShift: *MipShift
     srgb: true
+    format: bc1
+    
   - name: Textures/Entrance/FloorA.png
+    mipShift: *MipShift
     srgb: true
+    format: bc1
   - name: Textures/Entrance/FloorN.png
+    mipShift: *MipShift
     srgb: false
+    format: bc5
   - name: Textures/Entrance/FloorM.png
+    mipShift: *MipShift
     srgb: false
+    format: bc1
+    
   - name: Textures/Entrance/Door1A.png
+    mipShift: *MipShift
     srgb: true
+    format: bc1
   - name: Textures/Entrance/DoorN.png
+    mipShift: *MipShift
     srgb: false
+    format: bc5
   - name: Textures/Entrance/DoorM.png
+    mipShift: *MipShift
     srgb: false
+    format: bc1
+    
   - name: Textures/Entrance/DoorFrameA.png
+    mipShift: *MipShift
     srgb: true
+    format: bc1
   - name: Textures/Entrance/DoorFrameN.png
+    mipShift: *MipShift
     srgb: false
+    format: bc5
   - name: Textures/Entrance/DoorFrameM.png
+    mipShift: *MipShift
     srgb: false
+    format: bc1
+    
   - name: Textures/Entrance/PaddingA.png
+    mipShift: *MipShift
     srgb: true
+    format: bc1
   - name: Textures/Entrance/PaddingN.png
+    mipShift: *MipShift
     srgb: false
+    format: bc5
   - name: Textures/Entrance/PaddingM.png
+    mipShift: *MipShift
     srgb: false
+    format: bc1
+    
   - name: Textures/DefaultA.png
     srgb: true
+    format: bc1
   - name: Textures/DefaultN.png
     srgb: false
+    format: rgba8
   - name: Textures/DefaultM.png
     srgb: false
+    format: rgba8
+    
   - name: Textures/ButtonA.png
+    mipShift: *MipShift
     srgb: true
+    format: bc1
+    
   - name: Textures/Pipe1A.png
+    mipShift: *MipShift
     srgb: true
+    format: bc1
   - name: Textures/Pipe1N.png
+    mipShift: *MipShift
     srgb: false
+    format: bc5
   - name: Textures/Pipe1M.png
+    mipShift: *MipShift
     srgb: false
+    format: bc1
+    
   - name: Textures/Pipe2A.png
+    mipShift: *MipShift
     srgb: true
+    format: bc1
   - name: Textures/Pipe2N.png
+    mipShift: *MipShift
     srgb: false
+    format: bc5
   - name: Textures/Pipe2M.png
+    mipShift: *MipShift
     srgb: false
+    format: bc1
+    
   - name: Textures/SlimeN.png
+    mipShift: *MipShift
     srgb: false
+    format: rgba8
+    
   - name: Textures/CubeA.png
+    mipShift: *MipShift
     srgb: true
+    format: bc1
   - name: Textures/CubeM.png
+    mipShift: *MipShift
     srgb: false
+    format: bc1
+    
   - name: Textures/GravitySwitchA.png
+    mipShift: *MipShift
     srgb: true
+    format: bc1
   - name: Textures/GravitySwitchN.png
+    mipShift: *MipShift
     srgb: false
+    format: bc5
   - name: Textures/GravitySwitchM.png
+    mipShift: *MipShift
     srgb: false
+    format: bc1
+    
   - name: Textures/Hex.png
     srgb: false
+    format: bc4
+    
   - name: Textures/GravitySwitchVolEmi.png
     srgb: false
+    format: bc4
+    
+  - name: Textures/Grid.png
+    format: r8
+    filtering: nearest
+  - name: Textures/Crosshair.png
+    format: rgba8
+    filtering: linear
+    
+  - name: Textures/Voxel/Diffuse
+    generator: Texture2DArray
+    loader: Texture2D
+    mipShift: *MipShift
+    srgb: true
+    format: bc1
+    layers:
+      - Textures/Voxel/TactileGrayA.png
+      - Textures/Voxel/Metal1A.png
+      - Textures/Voxel/MetalGridA.png
+  - name: Textures/Voxel/NormalMap
+    generator: Texture2DArray
+    loader: Texture2D
+    mipShift: *MipShift
+    srgb: false
+    format: bc5
+    layers:
+      - Textures/Voxel/TactileGrayN.png
+      - Textures/Voxel/Metal1N.png
+      - Textures/Voxel/MetalGridN.png
+  - name: Textures/Voxel/MiscMap
+    generator: Texture2DArray
+    loader: Texture2D
+    mipShift: *MipShift
+    srgb: false
+    format: bc1
+    layers:
+      - Textures/Voxel/TactileGrayM.png
+      - Textures/Voxel/Metal1M.png
+      - Textures/Voxel/MetalGridM.png
+
+    
+    #Materials
   - name: Materials/Default.yaml
     generator: StaticPropMaterial
     loader: StaticPropMaterial
@@ -156,42 +278,4 @@ assets:
   - name: Materials/Button.yaml
     generator: StaticPropMaterial
     loader: StaticPropMaterial
-  - name: Textures/Grid.png
-    format: r8
-    filtering: nearest
-  - name: Textures/Crosshair.png
-    format: rgba8
-    filtering: linear
-  - name: Textures/Voxel/Diffuse
-    generator: Texture2DArray
-    loader: Texture2D
-    format: rgba8
-    srgb: true
-    width: 1024
-    height: 1024
-    layers:
-      - Textures/Voxel/TactileGrayA.png
-      - Textures/Voxel/Metal1A.png
-      - Textures/Voxel/MetalGridA.png
-  - name: Textures/Voxel/NormalMap
-    generator: Texture2DArray
-    loader: Texture2D
-    format: rgba8
-    srgb: false
-    width: 1024
-    height: 1024
-    layers:
-      - Textures/Voxel/TactileGrayN.png
-      - Textures/Voxel/Metal1N.png
-      - Textures/Voxel/MetalGridN.png
-  - name: Textures/Voxel/MiscMap
-    generator: Texture2DArray
-    loader: Texture2D
-    format: rgba8
-    srgb: false
-    width: 1024
-    height: 1024
-    layers:
-      - Textures/Voxel/TactileGrayM.png
-      - Textures/Voxel/Metal1M.png
-      - Textures/Voxel/MetalGridM.png
+  
