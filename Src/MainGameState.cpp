@@ -5,6 +5,7 @@
 #include "World/Entities/Entrance.hpp"
 #include "Graphics/PlanarReflectionsManager.hpp"
 #include "World/Entities/ECActivationLightStrip.hpp"
+#include "Graphics/Materials/GravityCornerLightMaterial.hpp"
 
 #include <fstream>
 #include <imgui.h>
@@ -111,6 +112,8 @@ void MainGameState::RunFrame(float dt)
 	{
 		eg::SetRelativeMouseMode(false);
 	}
+	
+	GravityCornerLightMaterial::instance.Update(dt);
 	
 	if (m_renderTarget == nullptr || m_renderTarget->Width() != (uint32_t)eg::CurrentResolutionX() ||
 		m_renderTarget->Height() != (uint32_t)eg::CurrentResolutionY())

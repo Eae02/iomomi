@@ -24,4 +24,6 @@ private:
 	float m_roughnessMin;
 	float m_roughnessMax;
 	glm::vec2 m_textureScale;
+	bool m_backfaceCull = true;
+	bool m_castShadows = true;
 };

@@ -24,6 +24,7 @@ struct GravityCorner
 	Dir down1;
 	Dir down2;
 	glm::vec3 position;
+	bool isEnd[2];
 	
 	/**
 	 * Creates a rotation matrix for rotating from local space to world space.

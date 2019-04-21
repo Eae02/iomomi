@@ -6,12 +6,13 @@
 #include "Entities/WallLight.hpp"
 #include "Entities/GravitySwitch.hpp"
 #include "EntityTypes.hpp"
-#include "../Graphics/Materials/GravityCornerMaterial.hpp"
+#include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
 #include "../Graphics/RenderSettings.hpp"
 #include "../Graphics/WallShader.hpp"
 #include "Entities/ECActivator.hpp"
 #include "Entities/Cube.hpp"
 #include "Entities/ECActivationLightStrip.hpp"
+#include "../Graphics/Materials/StaticPropMaterial.hpp"
 
 #include <yaml-cpp/yaml.h>
 
@@ -236,6 +237,18 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 	PrepareRegionMeshes(args.isEditor);
 	
 	eg::Model& gravityCornerModel = eg::GetAsset<eg::Model>("Models/GravityCornerConvex.obj");
+	const eg::IMaterial& gravityCornerMat = eg::GetAsset<StaticPropMaterial>("Materials/GravityCorner.yaml");
+	
+	int endMeshIndex = -1;
+	int midMeshIndex = -1;
+	for (int i = 0; i < (int)gravityCornerModel.NumMeshes(); i++)
+	{
+		if (gravityCornerModel.GetMesh(i).name == "End")
+			endMeshIndex = i;
+		else if (gravityCornerModel.GetMesh(i).name == "Mid")
+			midMeshIndex = i;
+	}
+	
 	for (const Region& region : m_regions)
 	{
 		if (!region.canDraw)
@@ -243,14 +256,25 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 		
 		for (const GravityCorner& corner : region.data->gravityCorners)
 		{
-			const float S = 0.25f;
-			
-			glm::mat4 transform = glm::translate(glm::mat4(1.0f), corner.position) *
-				glm::mat4(corner.MakeRotationMatrix()) *
-				glm::scale(glm::mat4(1.0f), glm::vec3(S, -S, 1)) *
-				glm::translate(glm::mat4(1.0f), glm::vec3(1.01f, -1.01f, 0));
-			
-			args.meshBatch->Add(gravityCornerModel, GravityCornerMaterial::instance, transform);
+			for (int s = 0; s < 2; s++)
+			{
+				glm::mat4 transform = glm::translate(glm::mat4(1.0f), corner.position) *
+				                      glm::mat4(corner.MakeRotationMatrix()) *
+				                      glm::translate(glm::mat4(1.0f), glm::vec3(0.01f, 0.01f, 0));
+				
+				if (s)
+				{
+					transform = transform *
+					            glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 1)) *
+					            glm::scale(glm::mat4(1.0f), glm::vec3(1, 1, -1));
+				}
+				
+				glm::mat4 transformLight = transform * glm::translate(glm::mat4(1.0f), glm::vec3(0.01f, 0.01f, 0));
+				
+				int meshIndex = corner.isEnd[s] ? endMeshIndex : midMeshIndex;
+				args.meshBatch->Add(gravityCornerModel, meshIndex, GravityCornerLightMaterial::instance, transformLight);
+				args.meshBatch->Add(gravityCornerModel, meshIndex, gravityCornerMat, transform);
+			}
 		}
 	}
 	
@@ -603,8 +627,8 @@ void World::BuildRegionBorderMesh(glm::ivec3 coordinate, World::RegionData& regi
 							WallBorderVertex& v2 = region.borderVertices.emplace_back(v1);
 							v2.position -= glm::vec4(dlV, -1);
 							
-							const int gBit = (48 + dl * 4 + (1 - v) * 2 + (1 - u));
-							if ((voxel >> gBit) & 1)
+							const uint64_t gBit = (48 + dl * 4 + (1 - v) * 2 + (1 - u));
+							if ((voxel >> gBit) & 1U)
 							{
 								GravityCorner& corner = region.gravityCorners.emplace_back();
 								corner.position = cPos + 0.5f * glm::vec3(uSV + vSV - dlV);
@@ -612,6 +636,21 @@ void World::BuildRegionBorderMesh(glm::ivec3 coordinate, World::RegionData& regi
 								corner.down2 = v ? vDir : OppositeDir(vDir);
 								if (u != v)
 									corner.position += dlV;
+								
+								for (int s = 0; s < 2; s++)
+								{
+									glm::ivec3 nextGlobalPos = gPos + dlV * (((s + u + v) % 2) * 2 - 1);
+									auto [nextLocalC, nextRegionC] = DecomposeGlobalCoordinate(nextGlobalPos);
+									const Region* nextRegion = GetRegion(nextRegionC);
+									if (nextRegion == nullptr)
+									{
+										corner.isEnd[s] = true;
+										continue;
+									}
+									
+									const uint64_t nextVoxel = nextRegion->data->voxels[nextLocalC.x][nextLocalC.y][nextLocalC.z];
+									corner.isEnd[s] = ((nextVoxel >> gBit) & 1U) == 0;
+								}
 							}
 						}
 					}

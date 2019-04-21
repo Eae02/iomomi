@@ -3,7 +3,7 @@
 #include "MainGameState.hpp"
 #include "Editor/Editor.hpp"
 #include "Graphics/WallShader.hpp"
-#include "Graphics/Materials/GravityCornerMaterial.hpp"
+#include "Graphics/Materials/GravityCornerLightMaterial.hpp"
 
 #include <fstream>
 

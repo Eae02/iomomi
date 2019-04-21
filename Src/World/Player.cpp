@@ -3,6 +3,7 @@
 #include "Entities/ECFloorButton.hpp"
 #include "Entities/ECActivator.hpp"
 #include "Entities/ECInteractable.hpp"
+#include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
 
 #include <imgui.h>
 
@@ -268,6 +269,9 @@ void Player::Update(World& world, float dt)
 			m_oldEyePosition = m_eyePosition;
 			m_gravityTransitionMode = TransitionMode::Corner;
 			m_transitionTime = 0;
+			
+			glm::vec3 activatePos = cornerRotation * glm::vec3(0.3f, 0.3f, cornerL.z) + corner->position;
+			GravityCornerLightMaterial::instance.Activate(activatePos);
 		}
 	}
 	

@@ -19,7 +19,7 @@ layout(binding=0, std140) uniform RenderSettingsUB
 
 layout(binding=1) uniform sampler2D emissionMap;
 
-const vec3 COLOR = vec3(0.3, 0.8, 1.5) * 3;
+const vec3 COLOR = vec3(0.12, 0.9, 0.7) * 3;
 
 const float MAX_RAY_DIST = 2.5;
 const int RAY_STEPS = 32;

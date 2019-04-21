@@ -9,8 +9,7 @@ assets:
   - name: Shaders/Common3D.vs.glsl
   - name: Shaders/Common3D-PLShadow.vs.glsl
   - name: Shaders/Common3D-PlanarRefl.vs.glsl
-  - name: Shaders/GravityCorner.fs.glsl
-  - name: Shaders/GravityCorner-Editor.fs.glsl
+  - name: Shaders/GravityCornerLight.fs.glsl
   - name: Shaders/Primitive.vs.glsl
   - name: Shaders/Primitive.fs.glsl
   - name: Shaders/Post.vs.glsl
@@ -42,12 +41,13 @@ assets:
   - name: Shaders/PointLight.fs.glsl
   - name: Shaders/PointLightShadow.gs.glsl
   - name: Shaders/PointLightShadow.fs.glsl
-  - name: Shaders/GravitySwitch.fs.glsl
+  - name: Shaders/GravitySwitchLight.fs.glsl
   - name: Shaders/GravitySwitchVolLight.vs.glsl
   - name: Shaders/GravitySwitchVolLight.fs.glsl
   - name: Shaders/GooPlane.vs.glsl
   - name: Shaders/GooPlane.fs.glsl
   - name: Shaders/GooPlane-Emissive.fs.glsl
+  
   - name: Models/GravityCornerConvex.obj
   - name: Models/GravitySwitch.obj
   - name: Models/EnterRoom.obj
@@ -140,6 +140,25 @@ assets:
     mipShift: *MipShift
     srgb: true
     format: bc1
+
+  - name: Textures/GravityCornerA.png
+    mipShift:
+      low: 1
+      medium: 0
+      high: 0
+    srgb: true
+    format: bc1
+  - name: Textures/GravityCornerM.png
+    mipShift:
+      low: 1
+      medium: 0
+      high: 0
+    srgb: false
+    format: bc1
+    
+  - name: Textures/GravityCornerLightDist.png
+    srgb: false
+    format: bc4
     
   - name: Textures/Pipe1A.png
     mipShift: *MipShift
@@ -276,6 +295,9 @@ assets:
     generator: StaticPropMaterial
     loader: StaticPropMaterial
   - name: Materials/Button.yaml
+    generator: StaticPropMaterial
+    loader: StaticPropMaterial
+  - name: Materials/GravityCorner.yaml
     generator: StaticPropMaterial
     loader: StaticPropMaterial
   

@@ -1,0 +1,6 @@
+albedo: ../Textures/GravityCornerA.png
+normalMap: ../Textures/DefaultN.png
+miscMap: ../Textures/GravityCornerM.png
+roughnessMin: 0.1
+roughnessMax: 1.0
+backfaceCull: false

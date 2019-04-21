@@ -16,6 +16,8 @@ int main(int argc, char** argv)
 	
 	bullet::Init();
 	
+	eg::TextureAssetQuality = eg::TextureQuality::Low;
+	
 	eg::RunConfig runConfig;
 	runConfig.gameName = "Gravity";
 	runConfig.flags = eg::RunFlags::DevMode | eg::RunFlags::DefaultFramebufferSRGB;

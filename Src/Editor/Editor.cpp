@@ -204,6 +204,7 @@ void Editor::RunFrame(float dt)
 	RenderSettings::instance->viewProjection = m_projection.Matrix() * viewMatrix;
 	RenderSettings::instance->invViewProjection = inverseViewMatrix * m_projection.InverseMatrix();
 	RenderSettings::instance->cameraPosition = glm::vec3(inverseViewMatrix[3]);
+	RenderSettings::instance->gameTime += dt;
 	RenderSettings::instance->UpdateBuffer();
 	
 	m_viewRay = eg::Ray::UnprojectScreen(RenderSettings::instance->invViewProjection, eg::CursorPos());

@@ -23,7 +23,7 @@ layout(location=2) in vec3 normal_in;
 
 const float ROUGHNESS = 0.4;
 
-const vec3 COLOR = vec3(0.3, 0.8, 1.5);
+const vec3 COLOR = vec3(0.12, 0.9, 0.7);
 
 void main()
 {
