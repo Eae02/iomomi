@@ -2,7 +2,7 @@
 
 enum class QualityLevel
 {
-	Off,
+	VeryLow,
 	Low,
 	Medium,
 	High,

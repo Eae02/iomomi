@@ -2,7 +2,7 @@
 
 PlanarReflectionsManager::PlanarReflectionsManager()
 {
-	SetQuality(QualityLevel::Off);
+	SetQuality(QualityLevel::Medium);
 }
 
 void PlanarReflectionsManager::BeginFrame()
@@ -13,7 +13,7 @@ void PlanarReflectionsManager::BeginFrame()
 void PlanarReflectionsManager::RenderPlanarReflections(ReflectionPlane& plane,
 	const PlanarReflectionsManager::RenderCallback& renderCallback)
 {
-	if (m_qualityLevel == QualityLevel::Off)
+	if (m_qualityLevel == QualityLevel::VeryLow)
 		return;
 	
 	if (m_depthTexture.handle == nullptr)
@@ -62,6 +62,8 @@ void PlanarReflectionsManager::RenderPlanarReflections(ReflectionPlane& plane,
 
 void PlanarReflectionsManager::SetQuality(QualityLevel qualityLevel)
 {
+	if (m_qualityLevel == qualityLevel)
+		return;
 	m_qualityLevel = qualityLevel;
 	m_textureFormat = qualityLevel >= QualityLevel::High ? eg::Format::R16G16B16A16_Float: eg::Format::R8G8B8A8_UNorm;
 	ResolutionChanged();
@@ -72,7 +74,7 @@ void PlanarReflectionsManager::ResolutionChanged()
 	int textureDiv;
 	if (m_qualityLevel <= QualityLevel::Low)
 		textureDiv = 4;
-	else if (m_qualityLevel <= QualityLevel::Medium)
+	else if (m_qualityLevel <= QualityLevel::High)
 		textureDiv = 2;
 	else
 		textureDiv = 1;

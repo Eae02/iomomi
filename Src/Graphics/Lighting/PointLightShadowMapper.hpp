@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PointLight.hpp"
+#include "../QualityLevel.hpp"
 
 struct PointLightShadowRenderArgs
 {
@@ -15,14 +16,14 @@ public:
 	
 	PointLightShadowMapper();
 	
-	void SetResolution(uint32_t resolution);
+	void SetQuality(QualityLevel quality);
 	
 	void Invalidate(const eg::Sphere& sphere);
 	
 	void InvalidateAll();
 	
 	void UpdateShadowMaps(std::vector<PointLightDrawData>& pointLights,
-		const RenderCallback& renderCallback, uint32_t maxUpdates);
+		const RenderCallback& renderCallback, bool limitUpdates);
 	
 	static constexpr eg::Format SHADOW_MAP_FORMAT = eg::Format::Depth16;
 	static constexpr uint32_t BUFFER_SIZE = sizeof(glm::mat4) * 6 + sizeof(float) * 4;
@@ -32,6 +33,7 @@ private:
 	
 	void UpdateShadowMap(size_t index, const RenderCallback& renderCallback);
 	
+	QualityLevel m_qualityLevel = QualityLevel::Medium;
 	uint32_t m_resolution = 256;
 	
 	struct ShadowMap

@@ -10,6 +10,7 @@ struct PointLightDrawData
 		glm::vec3 position;
 		float range;
 		glm::vec3 radiance;
+		float invRange;
 	} pc;
 #pragma pack(pop)
 	eg::TextureRef shadowMap;

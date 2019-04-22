@@ -1,16 +1,19 @@
 #include "PostProcessor.hpp"
 
-static constexpr float EXPOSURE = 1.4f;
-static constexpr float BLOOM_INTENSITY = 0.5f;
-
 PostProcessor::PostProcessor()
 {
+	const eg::ShaderModuleAsset& fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.fs.glsl");
+	
 	eg::GraphicsPipelineCreateInfo postPipelineCI;
 	postPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
-	postPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.fs.glsl").DefaultVariant();
+	postPipelineCI.fragmentShader = fragmentShader.GetVariant("VNoBloom");
 	postPipelineCI.label = "PostProcess";
-	m_postPipeline = eg::Pipeline::Create(postPipelineCI);
-	m_postPipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
+	m_pipelineNoBloom = eg::Pipeline::Create(postPipelineCI);
+	m_pipelineNoBloom.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
+	
+	postPipelineCI.fragmentShader = fragmentShader.GetVariant("VBloom");
+	m_pipelineBloom = eg::Pipeline::Create(postPipelineCI);
+	m_pipelineBloom.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
 	eg::SamplerDescription samplerDescription;
 	samplerDescription.wrapU = eg::WrapMode::ClampToEdge;
@@ -19,7 +22,7 @@ PostProcessor::PostProcessor()
 	m_inputSampler = eg::Sampler(samplerDescription);
 }
 
-void PostProcessor::Render(eg::TextureRef input, eg::TextureRef bloomTexture)
+void PostProcessor::Render(eg::TextureRef input, const eg::BloomRenderer::RenderTarget* bloomRenderTarget)
 {
 	eg::RenderPassBeginInfo rpBeginInfo;
 	rpBeginInfo.framebuffer = nullptr;
@@ -27,13 +30,23 @@ void PostProcessor::Render(eg::TextureRef input, eg::TextureRef bloomTexture)
 	
 	eg::DC.BeginRenderPass(rpBeginInfo);
 	
-	eg::DC.BindPipeline(m_postPipeline);
+	if (bloomRenderTarget != nullptr)
+	{
+		eg::DC.BindPipeline(m_pipelineBloom);
+		eg::DC.BindTexture(bloomRenderTarget->OutputTexture(), 0, 1, &m_inputSampler);
+		
+		float pc[] = { exposure, bloomIntensity };
+		eg::DC.PushConstants(0, sizeof(pc), pc);
+	}
+	else
+	{
+		eg::DC.BindPipeline(m_pipelineNoBloom);
+		
+		float pc[] = { exposure };
+		eg::DC.PushConstants(0, sizeof(pc), pc);
+	}
 	
 	eg::DC.BindTexture(input, 0, 0, &m_inputSampler);
-	eg::DC.BindTexture(bloomTexture, 0, 1, &m_inputSampler);
-	
-	float pc[] = { EXPOSURE, BLOOM_INTENSITY };
-	eg::DC.PushConstants(0, sizeof(pc), pc);
 	
 	eg::DC.Draw(0, 3, 0, 1);
 	

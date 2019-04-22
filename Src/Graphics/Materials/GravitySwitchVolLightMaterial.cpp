@@ -2,6 +2,7 @@
 #include "MeshDrawArgs.hpp"
 #include "../RenderSettings.hpp"
 #include "../DeferredRenderer.hpp"
+#include "../../Settings.hpp"
 
 #include <random>
 
@@ -30,18 +31,18 @@ static const float cubeVertices[] =
 
 static constexpr float MAX_ANGLE = 30.0f;
 
-static constexpr int RAY_STEPS = 32;
-
 #pragma pack(push, 1)
 struct LightDataBuffer
 {
 	float tMax;
 	float inverseMaxY;
-	float _p1;
-	float _p2;
-	float samplePoints[RAY_STEPS];
+	float distScale;
+	int quarterRaySteps;
+	float samplePoints[48];
 };
 #pragma pack(pop)
+
+static QualityLevel currentQualityLevel = QualityLevel::VeryLow;
 
 static eg::Buffer cubeVertexBuffer;
 static eg::Buffer lightDataBuffer;
@@ -64,29 +65,16 @@ static void OnInit()
 	pipelineCI.label = "GravSwitchVolLight";
 	pipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
 	gsVolLightPipeline = eg::Pipeline::Create(pipelineCI);
-	gsVolLightPipeline.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT, DeferredRenderer::DEPTH_FORMAT);
-	
-	//Initializes the light data uniform buffer data
-	LightDataBuffer lightDataBufferStruct;
-	lightDataBufferStruct.tMax = std::tan(glm::radians(MAX_ANGLE));
-	lightDataBufferStruct.inverseMaxY = 1.0f / (YMAX * 0.9f);
-	
-	std::mt19937 rand(std::time(nullptr));
-	std::uniform_real_distribution<float> offDist(0.0f, 1.0f);
-	for (int i = 0; i < RAY_STEPS; i++)
-	{
-		lightDataBufferStruct.samplePoints[i] = (i + offDist(rand)) / (float)RAY_STEPS; 
-	}
+	gsVolLightPipeline.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT_LDR, DeferredRenderer::DEPTH_FORMAT);
+	gsVolLightPipeline.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT_HDR, DeferredRenderer::DEPTH_FORMAT);
 	
 	//Creates the light data uniform buffer
 	eg::BufferCreateInfo lightDataBufferCreateInfo;
 	lightDataBufferCreateInfo.label = "GravitySwitchVolUB";
-	lightDataBufferCreateInfo.size = sizeof(lightDataBufferStruct);
-	lightDataBufferCreateInfo.initialData = &lightDataBufferStruct;
-	lightDataBufferCreateInfo.flags = eg::BufferFlags::UniformBuffer;
+	lightDataBufferCreateInfo.size = sizeof(LightDataBuffer);
+	lightDataBufferCreateInfo.initialData = nullptr;
+	lightDataBufferCreateInfo.flags = eg::BufferFlags::UniformBuffer | eg::BufferFlags::Update;
 	lightDataBuffer = eg::Buffer(lightDataBufferCreateInfo);
-	
-	lightDataBuffer.UsageHint(eg::BufferUsage::UniformBuffer, eg::ShaderAccessFlags::Fragment);
 	
 	//Creates the vertex buffer to use when rendering volumetric lighting
 	eg::BufferCreateInfo vbCreateInfo;
@@ -120,10 +108,44 @@ size_t GravitySwitchVolLightMaterial::PipelineHash() const
 	return typeid(GravitySwitchVolLightMaterial).hash_code();
 }
 
+void GravitySwitchVolLightMaterial::SetQuality(QualityLevel qualityLevel)
+{
+	if (qualityLevel == currentQualityLevel)
+		return;
+	currentQualityLevel = qualityLevel;
+	
+	if (qualityLevel < QualityLevel::Medium)
+		return;
+	
+	//Initializes the light data uniform buffer data
+	LightDataBuffer lightDataBufferStruct;
+	lightDataBufferStruct.tMax = std::tan(glm::radians(MAX_ANGLE));
+	lightDataBufferStruct.inverseMaxY = 1.0f / (YMAX * 0.9f);
+	
+	int raySteps = 20;
+	if (settings.lightingQuality == QualityLevel::High)
+		raySteps = 32;
+	else if (settings.lightingQuality == QualityLevel::VeryHigh)
+		raySteps = 40;
+	
+	lightDataBufferStruct.distScale = 1.0f / raySteps;
+	lightDataBufferStruct.quarterRaySteps = raySteps / 4;
+	
+	std::mt19937 rand(std::time(nullptr));
+	std::uniform_real_distribution<float> offDist(0.0f, 1.0f);
+	for (int i = 0; i < raySteps; i++)
+	{
+		lightDataBufferStruct.samplePoints[i] = (i + offDist(rand)) / (float)raySteps;
+	}
+	
+	eg::DC.UpdateBuffer(lightDataBuffer, 0, sizeof(LightDataBuffer), &lightDataBufferStruct);
+	lightDataBuffer.UsageHint(eg::BufferUsage::UniformBuffer, eg::ShaderAccessFlags::Fragment);
+}
+
 bool GravitySwitchVolLightMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
 	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
-	if (mDrawArgs->drawMode != MeshDrawMode::VolLight)
+	if (mDrawArgs->drawMode != MeshDrawMode::VolLight || currentQualityLevel < QualityLevel::Medium)
 		return false;
 	
 	cmdCtx.BindPipeline(gsVolLightPipeline);

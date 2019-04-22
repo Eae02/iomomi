@@ -32,6 +32,8 @@ private:
 	
 	void RenderPointLightShadows(const PointLightShadowRenderArgs& args);
 	
+	int m_lastSettingsGeneration = -1;
+	
 	eg::PerspectiveProjection m_projection;
 	RenderContext* m_renderCtx;
 	
@@ -41,6 +43,8 @@ private:
 	PostProcessor m_postProcessor;
 	LightProbesManager m_lightProbesManager;
 	PlanarReflectionsManager m_planarReflectionsManager;
+	
+	QualityLevel m_lightingQuality = QualityLevel::Low;
 	
 	std::unique_ptr<DeferredRenderer::RenderTarget> m_renderTarget;
 	std::unique_ptr<eg::BloomRenderer::RenderTarget> m_bloomRenderTarget;

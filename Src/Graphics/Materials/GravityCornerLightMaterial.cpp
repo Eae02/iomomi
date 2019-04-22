@@ -31,7 +31,8 @@ static void OnInit()
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.label = "GravityCornerLight";
 	gravityCornerPipeline = eg::Pipeline::Create(pipelineCI);
-	gravityCornerPipeline.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT, DeferredRenderer::DEPTH_FORMAT);
+	gravityCornerPipeline.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT_HDR, DeferredRenderer::DEPTH_FORMAT);
+	gravityCornerPipeline.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT_LDR, DeferredRenderer::DEPTH_FORMAT);
 	gravityCornerPipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
 	gravityCornerDescriptorSet = eg::DescriptorSet(gravityCornerPipeline, 0);

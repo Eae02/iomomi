@@ -27,7 +27,8 @@ static void OnInit()
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.label = "LightStripGame";
 	lightStripPipelineGame = eg::Pipeline::Create(pipelineCI);
-	lightStripPipelineGame.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT, DeferredRenderer::DEPTH_FORMAT);
+	lightStripPipelineGame.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT_LDR, DeferredRenderer::DEPTH_FORMAT);
+	lightStripPipelineGame.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT_HDR, DeferredRenderer::DEPTH_FORMAT);
 	
 	pipelineCI.cullMode = eg::CullMode::None;
 	pipelineCI.label = "LightStripEditor";

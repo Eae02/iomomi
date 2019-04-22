@@ -43,7 +43,7 @@ private:
 	
 	eg::Texture m_depthTexture;
 	
-	QualityLevel m_qualityLevel;
+	QualityLevel m_qualityLevel = QualityLevel::Low;
 	eg::Format m_textureFormat;
 	uint32_t m_textureWidth;
 	uint32_t m_textureHeight;

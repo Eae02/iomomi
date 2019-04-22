@@ -22,13 +22,14 @@ layout(binding=1) uniform sampler2D emissionMap;
 const vec3 COLOR = vec3(0.12, 0.9, 0.7) * 3;
 
 const float MAX_RAY_DIST = 2.5;
-const int RAY_STEPS = 32;
 
 layout(binding=2, std140) uniform LightSettingsUB
 {
 	float tMax;
 	float inverseMaxY;
-	vec4 samplePoints[RAY_STEPS / 4];
+	float distScale;
+	int quarterRaySteps;
+	vec4 samplePoints[10];
 };
 
 const float MESH_SCALE = 0.6;
@@ -80,12 +81,15 @@ void main()
 	toEye /= distToEye;
 	
 	float rayDist = min(distToEye, MAX_RAY_DIST);
-	float ds = rayDist / float(RAY_STEPS);
+	float ds = rayDist * distScale;
 	
 	vec3 color = vec3(0.0);
-	for (int i = 0; i < RAY_STEPS; i++)
+	for (int i = 0; i < quarterRaySteps; i++)
 	{
-		color += volLight(worldPos_in + toEye * (rayDist * samplePoints[i / 4][i % 4])) * ds;
+		for (int j = 0; j < 4; j++)
+		{
+			color += volLight(worldPos_in + toEye * (rayDist * samplePoints[i][j])) * ds;
+		}
 	}
 	
 	color_out = vec4(color, 0.0);

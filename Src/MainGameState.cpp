@@ -6,6 +6,8 @@
 #include "Graphics/PlanarReflectionsManager.hpp"
 #include "World/Entities/ECActivationLightStrip.hpp"
 #include "Graphics/Materials/GravityCornerLightMaterial.hpp"
+#include "Settings.hpp"
+#include "Graphics/Materials/GravitySwitchVolLightMaterial.hpp"
 
 #include <fstream>
 #include <imgui.h>
@@ -18,10 +20,19 @@ MainGameState::MainGameState(RenderContext& renderCtx)
 	m_prepareDrawArgs.isEditor = false;
 	m_prepareDrawArgs.meshBatch = &m_renderCtx->meshBatch;
 	
-	m_projection.SetFieldOfViewDeg(80.0f);
-	
-	eg::console::AddCommand("relms", 0, [this] (eg::Span<const std::string_view> args) {
+	eg::console::AddCommand("relms", 0, [this] (eg::Span<const std::string_view> args)
+	{
 		m_relativeMouseMode = !m_relativeMouseMode;
+	});
+	
+	eg::console::AddCommand("exposure", 1, [this] (eg::Span<const std::string_view> args)
+	{
+		m_postProcessor.exposure = std::stof(std::string(args[0]));
+	});
+	
+	eg::console::AddCommand("bloomIntensity", 1, [this] (eg::Span<const std::string_view> args)
+	{
+		m_postProcessor.bloomIntensity = std::stof(std::string(args[0]));
 	});
 }
 
@@ -49,28 +60,49 @@ void MainGameState::LoadWorld(std::istream& stream)
 
 void MainGameState::DoDeferredRendering(bool useLightProbes, DeferredRenderer::RenderTarget& renderTarget)
 {
-	m_renderCtx->renderer.BeginGeometry(renderTarget);
-	
-	m_world->Draw();
-	
 	MeshDrawArgs mDrawArgs;
-	mDrawArgs.drawMode = MeshDrawMode::Game;
-	m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
 	
-	m_renderCtx->renderer.BeginEmissive(renderTarget);
+	{
+		auto gpuTimerGeom = eg::StartGPUTimer("Geometry");
+		auto cpuTimerGeom = eg::StartCPUTimer("Geometry");
+		
+		m_renderCtx->renderer.BeginGeometry(renderTarget);
+		
+		m_world->Draw();
+		
+		mDrawArgs.drawMode = MeshDrawMode::Game;
+		m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
+	}
 	
-	mDrawArgs.drawMode = MeshDrawMode::Emissive;
-	m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
+	{
+		auto gpuTimerEmi = eg::StartGPUTimer("Emissive");
+		auto cpuTimerEmi = eg::StartCPUTimer("Emissive");
+		
+		m_renderCtx->renderer.BeginEmissive(renderTarget);
+		
+		mDrawArgs.drawMode = MeshDrawMode::Emissive;
+		m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
+	}
 	
-	mDrawArgs.drawMode = MeshDrawMode::VolLight;
-	m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
+	{
+		auto gpuTimerVolLight = eg::StartGPUTimer("Volumetric Lighting");
+		auto cpuTimerVolLight = eg::StartCPUTimer("Volumetric Lighting");
+		
+		mDrawArgs.drawMode = MeshDrawMode::VolLight;
+		m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
+	}
 	
-	m_renderCtx->renderer.BeginLighting(renderTarget, nullptr);
-	
-	m_renderCtx->renderer.DrawSpotLights(renderTarget, m_prepareDrawArgs.spotLights);
-	m_renderCtx->renderer.DrawPointLights(renderTarget, m_prepareDrawArgs.pointLights);
-	
-	m_renderCtx->renderer.End(renderTarget);
+	{
+		auto gpuTimerLight = eg::StartGPUTimer("Lighting");
+		auto cpuTimerLight = eg::StartCPUTimer("Lighting");
+		
+		m_renderCtx->renderer.BeginLighting(renderTarget, nullptr);
+		
+		m_renderCtx->renderer.DrawSpotLights(renderTarget, m_prepareDrawArgs.spotLights);
+		m_renderCtx->renderer.DrawPointLights(renderTarget, m_prepareDrawArgs.pointLights);
+		
+		m_renderCtx->renderer.End(renderTarget);
+	}
 }
 
 void MainGameState::RenderPlanarReflections(const ReflectionPlane& plane, eg::FramebufferRef framebuffer)
@@ -113,13 +145,35 @@ void MainGameState::RunFrame(float dt)
 		eg::SetRelativeMouseMode(false);
 	}
 	
+	if (m_lastSettingsGeneration != SettingsGeneration())
+	{
+		m_projection.SetFieldOfViewDeg(settings.fieldOfViewDeg);
+		
+		m_planarReflectionsManager.SetQuality(settings.reflectionsQuality);
+		m_plShadowMapper.SetQuality(settings.shadowQuality);
+		
+		GravitySwitchVolLightMaterial::SetQuality(settings.lightingQuality);
+		
+		m_lastSettingsGeneration = SettingsGeneration();
+		
+		if (m_lightingQuality != settings.lightingQuality)
+		{
+			m_lightingQuality = settings.lightingQuality;
+			m_renderTarget.reset();
+			m_bloomRenderTarget.reset();
+		}
+	}
+	
 	GravityCornerLightMaterial::instance.Update(dt);
 	
 	if (m_renderTarget == nullptr || m_renderTarget->Width() != (uint32_t)eg::CurrentResolutionX() ||
 		m_renderTarget->Height() != (uint32_t)eg::CurrentResolutionY())
 	{
 		eg::Texture2DCreateInfo textureCI;
-		textureCI.format = DeferredRenderer::LIGHT_COLOR_FORMAT;
+		if (settings.HDREnabled())
+			textureCI.format = DeferredRenderer::LIGHT_COLOR_FORMAT_HDR;
+		else
+			textureCI.format = DeferredRenderer::LIGHT_COLOR_FORMAT_LDR;
 		textureCI.width = (uint32_t)eg::CurrentResolutionX();
 		textureCI.height = (uint32_t)eg::CurrentResolutionY();
 		textureCI.mipLevels = 1;
@@ -129,9 +183,14 @@ void MainGameState::RunFrame(float dt)
 		m_renderTarget = std::make_unique<DeferredRenderer::RenderTarget>((uint32_t)eg::CurrentResolutionX(),
 			(uint32_t)eg::CurrentResolutionY(), m_renderOutputTexture, 0);
 		
-		m_bloomRenderTarget = std::make_unique<eg::BloomRenderer::RenderTarget>(
-			(uint32_t)eg::CurrentResolutionX(), (uint32_t)eg::CurrentResolutionY(), 3);
+		if (settings.BloomEnabled())
+		{
+			m_bloomRenderTarget = std::make_unique<eg::BloomRenderer::RenderTarget>(
+				(uint32_t)eg::CurrentResolutionX(), (uint32_t)eg::CurrentResolutionY(), 3);
+		}
 	}
+	
+	auto cpuTimerPrepare = eg::StartCPUTimer("Prepare Draw");
 	
 	glm::mat4 viewMatrix, inverseViewMatrix;
 	m_player.GetViewMatrix(viewMatrix, inverseViewMatrix);
@@ -151,6 +210,11 @@ void MainGameState::RunFrame(float dt)
 	
 	m_renderCtx->meshBatch.End(eg::DC);
 	
+	cpuTimerPrepare.Stop();
+	
+	auto cpuTimerPlanarRefl = eg::StartCPUTimer("Planar Reflections");
+	auto gpuTimerPlanarRefl = eg::StartGPUTimer("Planar Reflections");
+	
 	m_planarReflectionsManager.BeginFrame();
 	for (ReflectionPlane* reflectionPlane : m_prepareDrawArgs.reflectionPlanes)
 	{
@@ -161,10 +225,13 @@ void MainGameState::RunFrame(float dt)
 		});
 	}
 	
+	cpuTimerPlanarRefl.Stop();
+	gpuTimerPlanarRefl.Stop();
+	
 	m_plShadowMapper.UpdateShadowMaps(m_prepareDrawArgs.pointLights, [this] (const PointLightShadowRenderArgs& args)
 	{
 		RenderPointLightShadows(args);
-	}, 4);
+	}, true);
 	
 	m_lightProbesManager.PrepareForDraw(m_player.EyePosition());
 	
@@ -172,9 +239,18 @@ void MainGameState::RunFrame(float dt)
 	
 	m_renderOutputTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 	
-	m_bloomRenderer.Render(glm::vec3(1.0f), m_renderOutputTexture, *m_bloomRenderTarget);
+	if (m_bloomRenderTarget != nullptr)
+	{
+		auto gpuTimerBloom = eg::StartGPUTimer("Bloom");
+		auto cpuTimerBloom = eg::StartCPUTimer("Bloom");
+		m_bloomRenderer.Render(glm::vec3(1.0f), m_renderOutputTexture, *m_bloomRenderTarget);
+	}
 	
-	m_postProcessor.Render(m_renderOutputTexture, m_bloomRenderTarget->OutputTexture());
+	{
+		auto gpuTimerPost = eg::StartGPUTimer("Post");
+		auto cpuTimerPost = eg::StartCPUTimer("Post");
+		m_postProcessor.Render(m_renderOutputTexture, m_bloomRenderTarget.get());
+	}
 	
 	DrawOverlay(dt);
 	

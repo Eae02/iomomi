@@ -1,5 +1,6 @@
 #include "Game.hpp"
 #include "Levels.hpp"
+#include "Settings.hpp"
 #include "World/BulletPhysics.hpp"
 #include "Graphics/Materials/StaticPropMaterial.hpp"
 
@@ -16,7 +17,14 @@ int main(int argc, char** argv)
 	
 	bullet::Init();
 	
-	eg::TextureAssetQuality = eg::TextureQuality::Low;
+	std::string appDataDirPath = eg::AppDataPath() + "EaeGravity";
+	if (!eg::FileExists(appDataDirPath.c_str()))
+	{
+		eg::CreateDirectory(appDataDirPath.c_str());
+	}
+	
+	LoadSettings();
+	eg::TextureAssetQuality = settings.textureQuality;
 	
 	eg::RunConfig runConfig;
 	runConfig.gameName = "Gravity";
@@ -24,6 +32,7 @@ int main(int argc, char** argv)
 	runConfig.defaultDepthStencilFormat = eg::Format::Depth32;
 	runConfig.initialize = []
 	{
+		eg::console::AddCommand("opt", 1, &OptCommand);
 		InitEntitySerializers();
 		StaticPropMaterial::InitAssetTypes();
 		eg::LoadAssets("assets", "/");

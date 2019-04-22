@@ -2,6 +2,7 @@
 #include "Lighting/LightProbesManager.hpp"
 #include "Lighting/LightMeshes.hpp"
 #include "RenderSettings.hpp"
+#include "../Settings.hpp"
 
 const eg::FramebufferFormatHint DeferredRenderer::GEOMETRY_FB_FORMAT =
 {
@@ -31,7 +32,8 @@ DeferredRenderer::DeferredRenderer()
 	constAmbientPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/ConstantAmbient.fs.glsl").DefaultVariant();
 	constAmbientPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
 	m_constantAmbientPipeline = eg::Pipeline::Create(constAmbientPipelineCI);
-	m_constantAmbientPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT);
+	m_constantAmbientPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
+	m_constantAmbientPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
 	
 	eg::GraphicsPipelineCreateInfo slPipelineCI;
 	slPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/SpotLight.vs.glsl").DefaultVariant();
@@ -41,17 +43,26 @@ DeferredRenderer::DeferredRenderer()
 	slPipelineCI.vertexBindings[0] = { sizeof(float) * 3, eg::InputRate::Vertex };
 	slPipelineCI.cullMode = eg::CullMode::Front;
 	m_spotLightPipeline = eg::Pipeline::Create(slPipelineCI);
-	m_spotLightPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT);
+	m_spotLightPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
+	m_spotLightPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
+	
+	const eg::ShaderModuleAsset& pointLightFS = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLight.fs.glsl");
 	
 	eg::GraphicsPipelineCreateInfo plPipelineCI;
 	plPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLight.vs.glsl").DefaultVariant();
-	plPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLight.fs.glsl").DefaultVariant();
+	plPipelineCI.fragmentShader = pointLightFS.GetVariant("VSoftShadows");
 	plPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
 	plPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
 	plPipelineCI.vertexBindings[0] = { sizeof(float) * 3, eg::InputRate::Vertex };
 	plPipelineCI.cullMode = eg::CullMode::Back;
-	m_pointLightPipeline = eg::Pipeline::Create(plPipelineCI);
-	m_pointLightPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT);
+	m_pointLightPipelineSoftShadows = eg::Pipeline::Create(plPipelineCI);
+	m_pointLightPipelineSoftShadows.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
+	m_pointLightPipelineSoftShadows.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
+	
+	plPipelineCI.fragmentShader = pointLightFS.GetVariant("VHardShadows");
+	m_pointLightPipelineHardShadows = eg::Pipeline::Create(plPipelineCI);
+	m_pointLightPipelineHardShadows.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
+	m_pointLightPipelineHardShadows.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
 	
 	eg::SamplerDescription shadowMapSamplerDesc;
 	shadowMapSamplerDesc.wrapU = eg::WrapMode::Repeat;
@@ -196,7 +207,9 @@ void DeferredRenderer::DrawPointLights(RenderTarget& target, const std::vector<P
 	if (pointLights.empty())
 		return;
 	
-	eg::DC.BindPipeline(m_pointLightPipeline);
+	bool softShadows = settings.shadowQuality >= QualityLevel::Medium;
+	
+	eg::DC.BindPipeline(softShadows ? m_pointLightPipelineSoftShadows : m_pointLightPipelineHardShadows);
 	
 	BindPointLightMesh();
 	

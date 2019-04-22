@@ -2,6 +2,7 @@
 #include "MeshDrawArgs.hpp"
 #include "../DeferredRenderer.hpp"
 #include "../RenderSettings.hpp"
+#include "../../Settings.hpp"
 
 static eg::Pipeline emissivePipelineEditor;
 static eg::Pipeline emissivePipelineGame;
@@ -28,7 +29,7 @@ static void OnInit()
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.label = "EmissiveGame";
 	emissivePipelineGame = eg::Pipeline::Create(pipelineCI);
-	emissivePipelineGame.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT, DeferredRenderer::DEPTH_FORMAT);
+	emissivePipelineGame.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT_HDR, DeferredRenderer::DEPTH_FORMAT);
 	
 	pipelineCI.label = "EmissiveEditor";
 	emissivePipelineEditor = eg::Pipeline::Create(pipelineCI);

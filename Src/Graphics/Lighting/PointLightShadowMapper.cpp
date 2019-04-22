@@ -28,15 +28,36 @@ void PointLightShadowMapper::InvalidateAll()
 	}
 }
 
-void PointLightShadowMapper::SetResolution(uint32_t resolution)
+void PointLightShadowMapper::SetQuality(QualityLevel quality)
 {
-	m_resolution = resolution;
+	if (quality == m_qualityLevel)
+		return;
+	m_qualityLevel = quality;
+	
+	switch (quality)
+	{
+	case QualityLevel::VeryLow:
+		m_resolution = 128;
+		break;
+	case QualityLevel::Low:
+	case QualityLevel::Medium:
+		m_resolution = 256;
+		break;
+	case QualityLevel::High:
+	case QualityLevel::VeryHigh:
+		m_resolution = 512;
+		break;
+	}
+	
 	m_shadowMaps.clear();
 }
 
 void PointLightShadowMapper::UpdateShadowMaps(
-	std::vector<PointLightDrawData>& pointLights, const RenderCallback& renderCallback, uint32_t maxUpdates)
+	std::vector<PointLightDrawData>& pointLights, const RenderCallback& renderCallback, bool limitUpdates)
 {
+	auto gpuTimer = eg::StartGPUTimer("PL Shadows");
+	auto cpuTimer = eg::StartCPUTimer("PL Shadows");
+	
 	if (pointLights.empty())
 		return;
 	
@@ -87,8 +108,13 @@ void PointLightShadowMapper::UpdateShadowMaps(
 		return m_shadowMaps[a].lastUpdateFrame < m_shadowMaps[b].lastUpdateFrame;
 	});
 	
+	uint32_t numToUpdate = UINT32_MAX;
+	if (limitUpdates)
+	{
+		numToUpdate = (int)m_qualityLevel + 1;
+	}
+	
 	//Updates shadow maps
-	uint32_t numToUpdate = maxUpdates;
 	for (size_t shadowMapIdx : m_updateCandidates)
 	{
 		if (numToUpdate > 0)

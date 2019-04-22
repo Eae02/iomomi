@@ -22,7 +22,8 @@ LightProbesManager::LightProbesManager()
 	ambientPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Ambient.fs.glsl").DefaultVariant();
 	ambientPipelineCI.setBindModes[1] = eg::BindMode::DescriptorSet;
 	m_ambientPipeline = eg::Pipeline::Create(ambientPipelineCI);
-	m_ambientPipeline.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT);
+	m_ambientPipeline.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT_LDR);
+	m_ambientPipeline.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT_HDR);
 	
 	const uint32_t probesUBSize = sizeof(LightProbeUB) * MAX_VISIBLE;
 	m_probesUniformBuffer = eg::Buffer(eg::BufferFlags::CopyDst | eg::BufferFlags::UniformBuffer, probesUBSize, nullptr);
@@ -36,7 +37,7 @@ LightProbesManager::LightProbesManager()
 	
 	eg::TextureCubeCreateInfo environmentMapCI;
 	environmentMapCI.width = RENDER_RESOLUTION;
-	environmentMapCI.format = DeferredRenderer::LIGHT_COLOR_FORMAT;
+	environmentMapCI.format = DeferredRenderer::LIGHT_COLOR_FORMAT_HDR;
 	environmentMapCI.mipLevels = 1;
 	environmentMapCI.flags = eg::TextureFlags::ShaderSample | eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ManualBarrier;
 	environmentMapCI.defaultSamplerDescription = &envMapSamplerDesc;
