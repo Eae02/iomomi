@@ -23,6 +23,15 @@ void DecodeQualityLevel(std::string_view name, QualityLevel& def)
 		eg::Log(eg::LogLevel::Error, "opt", "Unknwon quality level '{0}'", name);
 }
 
+inline void CheckMSAA()
+{
+	uint32_t validMsaaSamples[] = { 1, 2, 4, 8 };
+	if (!eg::Contains(validMsaaSamples, settings.msaaSamples))
+	{
+		settings.msaaSamples = 1;
+	}
+}
+
 void LoadSettings()
 {
 	settingsPath = eg::AppDataPath() + "EaeGravity/Settings.yaml";
@@ -44,7 +53,10 @@ void LoadSettings()
 	DecodeQualityLevel(settingsNode["reflectionsQuality"].as<std::string>("medium"), settings.reflectionsQuality);
 	DecodeQualityLevel(settingsNode["shadowQuality"].as<std::string>("medium"), settings.shadowQuality);
 	DecodeQualityLevel(settingsNode["lightingQuality"].as<std::string>("medium"), settings.lightingQuality);
+	settings.msaaSamples = settingsNode["msaaSamples"].as<uint32_t>(1);
 	settings.fieldOfViewDeg = settingsNode["fieldOfView"].as<float>(80.0f);
+	
+	CheckMSAA();
 }
 
 int settingsGeneration = 0;
@@ -111,6 +123,19 @@ void OptCommand(eg::Span<const std::string_view> args)
 		else
 		{
 			settings.fieldOfViewDeg = glm::clamp(std::stof(std::string(args[1])), 60.0f, 90.0f);
+			SettingsChanged();
+		}
+	}
+	else if (args[0] == "msaa")
+	{
+		if (args.size() == 1)
+		{
+			eg::Log(eg::LogLevel::Info, "opt", "MSAA: {0}", settings.msaaSamples);
+		}
+		else
+		{
+			settings.msaaSamples = std::stoi(std::string(args[1]));
+			CheckMSAA();
 			SettingsChanged();
 		}
 	}

@@ -9,6 +9,7 @@ struct Settings
 	QualityLevel reflectionsQuality = QualityLevel::Medium;
 	QualityLevel lightingQuality = QualityLevel::High;
 	float fieldOfViewDeg = 80.0f;
+	uint32_t msaaSamples = 1;
 	
 	bool HDREnabled() const
 	{

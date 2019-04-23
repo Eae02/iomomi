@@ -19,7 +19,7 @@ LightProbesManager::LightProbesManager()
 {
 	eg::GraphicsPipelineCreateInfo ambientPipelineCI;
 	ambientPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
-	ambientPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Ambient.fs.glsl").DefaultVariant();
+	ambientPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Ambient.fs.glsl").GetVariant("VMSAA");
 	ambientPipelineCI.setBindModes[1] = eg::BindMode::DescriptorSet;
 	m_ambientPipeline = eg::Pipeline::Create(ambientPipelineCI);
 	m_ambientPipeline.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT_LDR);
@@ -46,7 +46,7 @@ LightProbesManager::LightProbesManager()
 	m_envMapRenderTargets.reserve(6);
 	for (uint32_t i = 0; i < 6; i++)
 	{
-		m_envMapRenderTargets.emplace_back(RENDER_RESOLUTION, RENDER_RESOLUTION, m_environmentMap, i);
+		m_envMapRenderTargets.emplace_back(RENDER_RESOLUTION, RENDER_RESOLUTION, 1, m_environmentMap, i);
 	}
 }
 

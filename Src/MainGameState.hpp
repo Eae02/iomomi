@@ -45,6 +45,7 @@ private:
 	PlanarReflectionsManager m_planarReflectionsManager;
 	
 	QualityLevel m_lightingQuality = QualityLevel::Low;
+	uint32_t m_msaaSamples = 0;
 	
 	std::unique_ptr<DeferredRenderer::RenderTarget> m_renderTarget;
 	std::unique_ptr<eg::BloomRenderer::RenderTarget> m_bloomRenderTarget;

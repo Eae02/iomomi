@@ -27,43 +27,6 @@ EG_ON_INIT(OnInit)
 
 DeferredRenderer::DeferredRenderer()
 {
-	eg::GraphicsPipelineCreateInfo constAmbientPipelineCI;
-	constAmbientPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
-	constAmbientPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/ConstantAmbient.fs.glsl").DefaultVariant();
-	constAmbientPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
-	m_constantAmbientPipeline = eg::Pipeline::Create(constAmbientPipelineCI);
-	m_constantAmbientPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
-	m_constantAmbientPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
-	
-	eg::GraphicsPipelineCreateInfo slPipelineCI;
-	slPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/SpotLight.vs.glsl").DefaultVariant();
-	slPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/SpotLight.fs.glsl").DefaultVariant();
-	slPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
-	slPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
-	slPipelineCI.vertexBindings[0] = { sizeof(float) * 3, eg::InputRate::Vertex };
-	slPipelineCI.cullMode = eg::CullMode::Front;
-	m_spotLightPipeline = eg::Pipeline::Create(slPipelineCI);
-	m_spotLightPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
-	m_spotLightPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
-	
-	const eg::ShaderModuleAsset& pointLightFS = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLight.fs.glsl");
-	
-	eg::GraphicsPipelineCreateInfo plPipelineCI;
-	plPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLight.vs.glsl").DefaultVariant();
-	plPipelineCI.fragmentShader = pointLightFS.GetVariant("VSoftShadows");
-	plPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
-	plPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
-	plPipelineCI.vertexBindings[0] = { sizeof(float) * 3, eg::InputRate::Vertex };
-	plPipelineCI.cullMode = eg::CullMode::Back;
-	m_pointLightPipelineSoftShadows = eg::Pipeline::Create(plPipelineCI);
-	m_pointLightPipelineSoftShadows.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
-	m_pointLightPipelineSoftShadows.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
-	
-	plPipelineCI.fragmentShader = pointLightFS.GetVariant("VHardShadows");
-	m_pointLightPipelineHardShadows = eg::Pipeline::Create(plPipelineCI);
-	m_pointLightPipelineHardShadows.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
-	m_pointLightPipelineHardShadows.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
-	
 	eg::SamplerDescription shadowMapSamplerDesc;
 	shadowMapSamplerDesc.wrapU = eg::WrapMode::Repeat;
 	shadowMapSamplerDesc.wrapV = eg::WrapMode::Repeat;
@@ -76,17 +39,77 @@ DeferredRenderer::DeferredRenderer()
 	m_shadowMapSampler = eg::Sampler(shadowMapSamplerDesc);
 }
 
-DeferredRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height,
+void DeferredRenderer::CreatePipelines()
+{
+	eg::SpecializationConstantEntry specConstantEntries[1];
+	specConstantEntries[0].constantID = 100;
+	specConstantEntries[0].size = sizeof(uint32_t);
+	specConstantEntries[0].offset = 0;
+	
+	bool msVariant = eg::CurrentGraphicsAPI() != eg::GraphicsAPI::OpenGL || m_currentSampleCount != 1;
+	
+	std::string_view variantName = msVariant ? "VMSAA" : "VDefault";
+	
+	eg::GraphicsPipelineCreateInfo constAmbientPipelineCI;
+	constAmbientPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
+	constAmbientPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/ConstantAmbient.fs.glsl").GetVariant(variantName);
+	constAmbientPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
+	constAmbientPipelineCI.fragmentShader.specConstants = specConstantEntries;
+	constAmbientPipelineCI.fragmentShader.specConstantsData = &m_currentSampleCount;
+	constAmbientPipelineCI.fragmentShader.specConstantsDataSize = sizeof(uint32_t);
+	m_constantAmbientPipeline = eg::Pipeline::Create(constAmbientPipelineCI);
+	m_constantAmbientPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
+	m_constantAmbientPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
+	
+	eg::GraphicsPipelineCreateInfo slPipelineCI;
+	slPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/SpotLight.vs.glsl").DefaultVariant();
+	slPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/SpotLight.fs.glsl").GetVariant(variantName);
+	slPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
+	slPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
+	slPipelineCI.vertexBindings[0] = { sizeof(float) * 3, eg::InputRate::Vertex };
+	slPipelineCI.cullMode = eg::CullMode::Front;
+	slPipelineCI.fragmentShader.specConstants = specConstantEntries;
+	slPipelineCI.fragmentShader.specConstantsData = &m_currentSampleCount;
+	slPipelineCI.fragmentShader.specConstantsDataSize = sizeof(uint32_t);
+	m_spotLightPipeline = eg::Pipeline::Create(slPipelineCI);
+	m_spotLightPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
+	m_spotLightPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
+	
+	const eg::ShaderModuleAsset& pointLightFS = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLight.fs.glsl");
+	
+	eg::GraphicsPipelineCreateInfo plPipelineCI;
+	plPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLight.vs.glsl").DefaultVariant();
+	plPipelineCI.fragmentShader = pointLightFS.GetVariant(msVariant ? "VSoftShadowsMS" : "VSoftShadows");
+	plPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
+	plPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
+	plPipelineCI.vertexBindings[0] = { sizeof(float) * 3, eg::InputRate::Vertex };
+	plPipelineCI.cullMode = eg::CullMode::Back;
+	plPipelineCI.fragmentShader.specConstants = specConstantEntries;
+	plPipelineCI.fragmentShader.specConstantsData = &m_currentSampleCount;
+	plPipelineCI.fragmentShader.specConstantsDataSize = sizeof(uint32_t);
+	m_pointLightPipelineSoftShadows = eg::Pipeline::Create(plPipelineCI);
+	m_pointLightPipelineSoftShadows.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
+	m_pointLightPipelineSoftShadows.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
+	
+	plPipelineCI.fragmentShader = pointLightFS.GetVariant(msVariant ? "VHardShadowsMS" : "VHardShadows");
+	m_pointLightPipelineHardShadows = eg::Pipeline::Create(plPipelineCI);
+	m_pointLightPipelineHardShadows.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
+	m_pointLightPipelineHardShadows.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
+}
+
+DeferredRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height, uint32_t samples,
 	eg::TextureRef outputTexture, uint32_t outputArrayLayer)
 {
 	m_width = width;
 	m_height = height;
 	m_outputTexture = outputTexture;
+	m_samples = samples;
 	
 	eg::Texture2DCreateInfo colorTexCreateInfo;
 	colorTexCreateInfo.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample;
 	colorTexCreateInfo.width = m_width;
 	colorTexCreateInfo.height = m_height;
+	colorTexCreateInfo.sampleCount = samples;
 	colorTexCreateInfo.mipLevels = 1;
 	colorTexCreateInfo.format = eg::Format::R8G8B8A8_UNorm;
 	colorTexCreateInfo.defaultSamplerDescription = &s_attachmentSamplerDesc;
@@ -94,16 +117,22 @@ DeferredRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height,
 	m_gbColor2Texture = eg::Texture::Create2D(colorTexCreateInfo);
 	
 	eg::Texture2DCreateInfo depthTexCreateInfo;
-	depthTexCreateInfo.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample;
+	depthTexCreateInfo.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample | eg::TextureFlags::CopySrc;
 	depthTexCreateInfo.width = m_width;
 	depthTexCreateInfo.height = m_height;
+	depthTexCreateInfo.sampleCount = samples;
 	depthTexCreateInfo.mipLevels = 1;
 	depthTexCreateInfo.format = DEPTH_FORMAT;
 	depthTexCreateInfo.defaultSamplerDescription = &s_attachmentSamplerDesc;
 	m_gbDepthTexture = eg::Texture::Create2D(depthTexCreateInfo);
 	
 	eg::FramebufferAttachment gbColorAttachments[] = { m_gbColor1Texture.handle, m_gbColor2Texture.handle };
-	m_gbFramebuffer = eg::Framebuffer(gbColorAttachments, m_gbDepthTexture.handle);
+	
+	eg::FramebufferCreateInfo gbFramebufferCI;
+	gbFramebufferCI.colorAttachments = gbColorAttachments;
+	gbFramebufferCI.depthStencilAttachment = m_gbDepthTexture.handle;
+	
+	m_gbFramebuffer = eg::Framebuffer(gbFramebufferCI);
 	
 	eg::FramebufferAttachment lightFBAttachments[1];
 	lightFBAttachments[0].texture = outputTexture.handle;
@@ -111,7 +140,41 @@ DeferredRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height,
 	lightFBAttachments[0].subresource.numArrayLayers = 1;
 	m_lightingFramebuffer = eg::Framebuffer(lightFBAttachments);
 	
-	m_emissiveFramebuffer = eg::Framebuffer(lightFBAttachments, m_gbDepthTexture.handle);
+	eg::FramebufferCreateInfo emissiveFramebufferCI;
+	emissiveFramebufferCI.depthStencilAttachment = m_gbDepthTexture.handle;
+	
+	eg::FramebufferAttachment emissiveColorAttachments[1];
+	if (samples > 1)
+	{
+		eg::Texture2DCreateInfo emissiveTexCreateInfo;
+		emissiveTexCreateInfo.flags = eg::TextureFlags::FramebufferAttachment;
+		emissiveTexCreateInfo.width = m_width;
+		emissiveTexCreateInfo.height = m_height;
+		emissiveTexCreateInfo.sampleCount = samples;
+		emissiveTexCreateInfo.mipLevels = 1;
+		emissiveTexCreateInfo.format = DeferredRenderer::LIGHT_COLOR_FORMAT_HDR;
+		m_emissiveTexture = eg::Texture::Create2D(emissiveTexCreateInfo);
+		
+		emissiveColorAttachments[0] = m_emissiveTexture.handle;
+		
+		emissiveFramebufferCI.colorAttachments = emissiveColorAttachments;
+		emissiveFramebufferCI.colorResolveAttachments = lightFBAttachments;
+	}
+	else
+	{
+		emissiveFramebufferCI.colorAttachments = lightFBAttachments;
+	}
+	
+	m_emissiveFramebuffer = eg::Framebuffer(emissiveFramebufferCI);
+}
+
+void DeferredRenderer::PollSettingsChanged()
+{
+	if (settings.msaaSamples != m_currentSampleCount)
+	{
+		m_currentSampleCount = settings.msaaSamples;
+		CreatePipelines();
+	}
 }
 
 void DeferredRenderer::BeginGeometry(RenderTarget& target) const

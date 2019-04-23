@@ -1,11 +1,9 @@
 #version 450 core
 
+#pragma variants VDefault VMSAA
+
 #include "Inc/DeferredLight.glh"
 #include "Inc/Light.glh"
-
-layout(location=0) in vec2 texCoord_in;
-
-layout(location=0) out vec4 color_out;
 
 struct LightProbe
 {
@@ -30,10 +28,8 @@ layout(push_constant) uniform PC
 	vec3 constantAmbient;
 };
 
-void main()
+vec3 CalculateLighting(GBData gb)
 {
-	GBData gb = ReadGB(texCoord_in);
-	
 	vec3 irradiance = vec3(0.0);
 	vec3 prefilteredColor = vec3(0.0);
 	
@@ -81,5 +77,5 @@ void main()
 	
 	vec3 ambient = kD * diffuse + specular + gb.albedo * constantAmbient * max(1.0 - totalWeight, 0.0);
 	
-	color_out = vec4(ambient * gb.ao, 1);
+	return ambient * gb.ao;
 }

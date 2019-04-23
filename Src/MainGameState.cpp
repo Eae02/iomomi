@@ -156,8 +156,9 @@ void MainGameState::RunFrame(float dt)
 		
 		m_lastSettingsGeneration = SettingsGeneration();
 		
-		if (m_lightingQuality != settings.lightingQuality)
+		if (m_lightingQuality != settings.lightingQuality || m_msaaSamples != settings.msaaSamples)
 		{
+			m_msaaSamples = settings.msaaSamples;
 			m_lightingQuality = settings.lightingQuality;
 			m_renderTarget.reset();
 			m_bloomRenderTarget.reset();
@@ -181,7 +182,7 @@ void MainGameState::RunFrame(float dt)
 		m_renderOutputTexture = eg::Texture::Create2D(textureCI);
 		
 		m_renderTarget = std::make_unique<DeferredRenderer::RenderTarget>((uint32_t)eg::CurrentResolutionX(),
-			(uint32_t)eg::CurrentResolutionY(), m_renderOutputTexture, 0);
+			(uint32_t)eg::CurrentResolutionY(), settings.msaaSamples, m_renderOutputTexture, 0);
 		
 		if (settings.BloomEnabled())
 		{

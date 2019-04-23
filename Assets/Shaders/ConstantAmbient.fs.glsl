@@ -1,10 +1,16 @@
 #version 450 core
 
-layout(location=0) in vec2 texCoord_in;
+#pragma variants VDefault VMSAA
 
 layout(location=0) out vec4 color_out;
 
+layout(constant_id=100) const int numSamples = 1;
+
+#ifdef VMSAA
+layout(binding=0) uniform sampler2DMS gbColor1Sampler;
+#else
 layout(binding=0) uniform sampler2D gbColor1Sampler;
+#endif
 
 layout(push_constant) uniform PC
 {
@@ -13,6 +19,13 @@ layout(push_constant) uniform PC
 
 void main()
 {
-	vec4 c1 = texture(gbColor1Sampler, texCoord_in);
-	color_out = vec4(c1.xyz * (c1.w > 0.99 ? vec3(1.0) : (ambient * c1.w)), 1.0);
+	color_out = vec4(0, 0, 0, 1);
+	
+	for (int i = 0; i < numSamples; i++)
+	{
+		vec4 c1 = texelFetch(gbColor1Sampler, ivec2(gl_FragCoord.xy), i);
+		color_out.rgb += c1.xyz * (c1.w > 0.99 ? vec3(1.0) : (ambient * c1.w));
+	}
+	
+	color_out.rgb /= float(numSamples);
 }

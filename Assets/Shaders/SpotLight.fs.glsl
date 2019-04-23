@@ -1,3 +1,7 @@
+#version 450 core
+
+#pragma variants VDefault VMSAA
+
 #include "Inc/Light.glh"
 #include "Inc/DeferredLight.glh"
 
@@ -13,13 +17,8 @@ layout(push_constant, std140) uniform PC
 	float width;
 } pc;
 
-layout(location=0) out vec4 color_out;
-
-void main()
+vec3 CalculateLighting(GBData gbData)
 {
-	vec2 screenCoord = gl_FragCoord.xy / vec2(textureSize(gbColor1Sampler, 0));
-	GBData gbData = ReadGB(screenCoord);
-	
 	vec3 toLight = pc.position - gbData.worldPos;
 	float dist = length(toLight);
 	toLight /= dist;
@@ -37,5 +36,5 @@ void main()
 	
 	radiance *= penumbraFactor;
 	
-	color_out = vec4(calcDirectReflectance(toLight, toEye, fresnel, gbData, radiance), 0.0);
+	return calcDirectReflectance(toLight, toEye, fresnel, gbData, radiance);
 }
