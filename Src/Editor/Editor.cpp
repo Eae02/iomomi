@@ -84,7 +84,7 @@ void Editor::RunFrame(float dt)
 				std::string label = eg::Concat({ level.name, "###L" });
 				if (ImGui::MenuItem(label.c_str()))
 				{
-					std::string path = eg::Concat({ eg::ExeDirPath(), "/levels/", level.name, ".gwd" });
+					std::string path = GetLevelPath(level.name);
 					std::ifstream stream(path, std::ios::binary);
 					
 					if (std::unique_ptr<World> world = World::Load(stream, true))

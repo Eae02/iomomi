@@ -1,18 +1,18 @@
 #include "World.hpp"
 #include "Voxel.hpp"
 #include "PrepareDrawArgs.hpp"
-#include "Entities/Entrance.hpp"
 #include "Entities/ECRigidBody.hpp"
 #include "Entities/WallLight.hpp"
 #include "Entities/GravitySwitch.hpp"
 #include "EntityTypes.hpp"
-#include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
-#include "../Graphics/RenderSettings.hpp"
-#include "../Graphics/WallShader.hpp"
 #include "Entities/ECActivator.hpp"
 #include "Entities/Cube.hpp"
 #include "Entities/ECActivationLightStrip.hpp"
+#include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
 #include "../Graphics/Materials/StaticPropMaterial.hpp"
+#include "../Graphics/RenderSettings.hpp"
+#include "../Graphics/WallShader.hpp"
+#include "Entities/Entrance.hpp"
 
 #include <yaml-cpp/yaml.h>
 
@@ -216,6 +216,8 @@ void World::Update(const WorldUpdateArgs& args)
 {
 	if (m_bulletWorld)
 	{
+		auto physicsCPUTimer = eg::StartCPUTimer("Physics");
+		
 		Cube::UpdatePreSim(args);
 		
 		m_bulletWorld->stepSimulation(args.dt, 10);
@@ -224,8 +226,6 @@ void World::Update(const WorldUpdateArgs& args)
 	}
 	
 	ECActivationLightStrip::Update(*m_entityManager, args.dt);
-	
-	ECEntrance::Update(args);
 	
 	ECActivator::Update(args);
 	

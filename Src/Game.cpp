@@ -1,6 +1,7 @@
 #include "Game.hpp"
 #include "GameState.hpp"
 #include "MainGameState.hpp"
+#include "Levels.hpp"
 #include "Editor/Editor.hpp"
 #include "Graphics/WallShader.hpp"
 #include "Graphics/Materials/GravityCornerLightMaterial.hpp"
@@ -17,6 +18,22 @@ Game::Game()
 	{
 		currentGS = editor;
 		eg::console::Hide();
+	});
+	
+	eg::console::AddCommand("play", 1, [this] (eg::Span<const std::string_view> args)
+	{
+		int64_t levelIndex = FindLevel(args[0]);
+		if (levelIndex == -1)
+		{
+			eg::Log(eg::LogLevel::Error, "lvl", "Level not found: {0}", args[0]);
+			return;
+		}
+		
+		std::string levelPath = GetLevelPath(levels[levelIndex].name);
+		std::ifstream levelStream(levelPath, std::ios::binary);
+		
+		currentGS = mainGameState;
+		mainGameState->LoadWorld(levelStream, levelIndex);
 	});
 	
 	InitializeWallShader();

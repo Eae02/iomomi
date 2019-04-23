@@ -405,3 +405,11 @@ void Player::DebugDraw()
 	const char* dirNames = "XYZ";
 	ImGui::Text("Facing: %c%c", forward[maxDir] < 0 ? '-' : '+', dirNames[maxDir]);
 }
+
+void Player::Reset()
+{
+	m_down = Dir::NegY;
+	m_onGround = false;
+	m_isCarrying = false;
+	m_gravityTransitionMode = TransitionMode::None;
+}
