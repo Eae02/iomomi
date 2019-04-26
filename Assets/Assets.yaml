@@ -44,6 +44,8 @@ assets:
   - name: Shaders/GravitySwitchLight.fs.glsl
   - name: Shaders/GravitySwitchVolLight.vs.glsl
   - name: Shaders/GravitySwitchVolLight.fs.glsl
+  - name: Shaders/Decal.vs.glsl
+  - name: Shaders/Decal.fs.glsl
   - name: Shaders/GooPlane.vs.glsl
   - name: Shaders/GooPlane.fs.glsl
   - name: Shaders/GooPlane-Emissive.fs.glsl
@@ -73,6 +75,11 @@ assets:
     mipShift: *MipShift
     srgb: true
     format: bc1
+    
+  - name: Textures/StainDecal0.png
+    mipShift: *MipShift
+    srgb: true
+    format: bc3
     
   - name: Textures/Entrance/FloorA.png
     mipShift: *MipShift
@@ -259,6 +266,10 @@ assets:
       - Textures/Voxel/Metal1M.png
       - Textures/Voxel/MetalGridM.png
 
+    #Decal materials
+  - name: Materials/Decals/Stain0.yaml
+    generator: DecalMaterial
+    loader: DecalMaterial
     
     #Materials
   - name: Materials/Default.yaml

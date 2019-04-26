@@ -268,6 +268,8 @@ bool StaticPropMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs
 	case MeshDrawMode::Editor:
 		cmdCtx.BindDescriptorSet(m_descriptorSetEditor, 0);
 		break;
+	default:
+		EG_UNREACHABLE;
 	}
 	
 	if (mDrawArgs->drawMode == MeshDrawMode::PlanarReflection)

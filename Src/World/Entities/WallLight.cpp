@@ -60,12 +60,12 @@ namespace WallLight
 	
 	void ECWallLight::HandleMessage(eg::Entity& entity, const DrawMessage& message)
 	{
-		message.meshBatch->Add(*model, EmissiveMaterial::instance, GetInstanceData(entity, 4.0f));
+		message.meshBatch->AddModel(*model, EmissiveMaterial::instance, GetInstanceData(entity, 4.0f));
 	}
 	
 	void ECWallLight::HandleMessage(eg::Entity& entity, const EditorDrawMessage& message)
 	{
-		message.meshBatch->Add(*model, EmissiveMaterial::instance, GetInstanceData(entity, 1.0f));
+		message.meshBatch->AddModel(*model, EmissiveMaterial::instance, GetInstanceData(entity, 1.0f));
 	}
 	
 	void ECWallLight::HandleMessage(eg::Entity& entity, const EditorRenderImGuiMessage& message)

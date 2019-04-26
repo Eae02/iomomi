@@ -66,11 +66,11 @@ void ECActivationLightStrip::Draw(eg::MeshBatch& meshBatch)
 			{
 				if (s_models[v]->GetMesh(i).materialIndex == lightMaterialIndex)
 				{
-					meshBatch.Add(*s_models[v], i, m_material, instanceData);
+					meshBatch.AddModelMesh(*s_models[v], i, m_material, instanceData);
 				}
 				else
 				{
-					meshBatch.Add(*s_models[v], i, *s_materials[v], instanceData.transform);
+					meshBatch.AddModelMesh(*s_models[v], i, *s_materials[v], instanceData.transform);
 				}
 			}
 		}

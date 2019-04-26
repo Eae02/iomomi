@@ -1,4 +1,4 @@
-PROTOBUFS=Dir EntranceEntity WallLightEntity GravitySwitchEntity FloorButtonEntity CubeEntity GooPlaneEntity
+PROTOBUFS=Dir EntranceEntity WallLightEntity GravitySwitchEntity FloorButtonEntity CubeEntity GooPlaneEntity DecalEntity
 BUILD_DIR=Build
 
 all: $(BUILD_DIR) $(addprefix $(BUILD_DIR)/, $(addsuffix .pb.h, $(PROTOBUFS)))

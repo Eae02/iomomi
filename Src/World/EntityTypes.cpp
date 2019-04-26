@@ -5,6 +5,7 @@
 #include "Entities/GravitySwitch.hpp"
 #include "Entities/ECFloorButton.hpp"
 #include "Entities/GooPlane.hpp"
+#include "Entities/ECDecal.hpp"
 
 std::vector<SpawnableEntityType> spawnableEntityTypes = 
 {
@@ -13,7 +14,8 @@ std::vector<SpawnableEntityType> spawnableEntityTypes =
 	SpawnableEntityType { &GravitySwitch::CreateEntity, "Gravity Switch" },
 	SpawnableEntityType { &Cube::CreateEntity, "Cube" },
 	SpawnableEntityType { &ECFloorButton::CreateEntity, "Floor Button" },
-	SpawnableEntityType { &GooPlane::CreateEntity, "Goo" }
+	SpawnableEntityType { &GooPlane::CreateEntity, "Goo" },
+	SpawnableEntityType { &ECDecal::CreateEntity, "Decal" }
 };
 
 std::vector<const eg::IEntitySerializer*> entitySerializers;
@@ -26,4 +28,5 @@ void InitEntitySerializers()
 	entitySerializers.push_back(Cube::EntitySerializer);
 	entitySerializers.push_back(GooPlane::EntitySerializer);
 	entitySerializers.push_back(ECFloorButton::EntitySerializer);
+	entitySerializers.push_back(ECDecal::EntitySerializer);
 }

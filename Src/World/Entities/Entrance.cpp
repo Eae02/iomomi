@@ -238,7 +238,7 @@ void ECEntrance::HandleMessage(eg::Entity& entity, const DrawMessage& message)
 	for (size_t i = 0; i < entrance.model->NumMeshes(); i++)
 	{
 		const size_t materialIndex = entrance.model->GetMesh(i).materialIndex;
-		message.meshBatch->Add(*entrance.model, i, *entrance.materials[materialIndex], transforms[i]);
+		message.meshBatch->AddModelMesh(*entrance.model, i, *entrance.materials[materialIndex], transforms[i]);
 	}
 }
 
@@ -256,7 +256,7 @@ void ECEntrance::HandleMessage(eg::Entity& entity, const EditorDrawMessage& mess
 	auto model = entranceEC.m_type == Type::Entrance ? entrance.editorEntModel : entrance.editorExitModel;
 	auto material = entranceEC.m_type == Type::Entrance ? entrance.editorEntMaterial : entrance.editorExitMaterial;
 	
-	message.meshBatch->Add(*model, *material, transform);
+	message.meshBatch->AddModel(*model, *material, transform);
 }
 
 void ECEntrance::HandleMessage(eg::Entity& entity, const EditorRenderImGuiMessage& message)
