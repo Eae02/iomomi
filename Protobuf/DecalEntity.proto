@@ -1,0 +1,15 @@
+syntax="proto3";
+
+package gravity_pb;
+
+import "Dir.proto";
+
+message DecalEntity {
+	float posX = 1;
+	float posY = 2;
+	float posZ = 3;
+	Dir dir = 4;
+	string materialName = 5;
+	float rotation = 6;
+	float scale = 7;
+}

@@ -51,7 +51,7 @@ namespace GravitySwitch
 			if (s_model->GetMesh(m).materialIndex == s_centerMaterialIndex)
 				material = &GravitySwitchMaterial::instance;
 			
-			meshBatch.Add(*s_model, m, *material, ECWallMounted::GetTransform(entity, SCALE));
+			meshBatch.AddModelMesh(*s_model, m, *material, ECWallMounted::GetTransform(entity, SCALE));
 		}
 	}
 	
@@ -61,7 +61,7 @@ namespace GravitySwitch
 		
 		volLightMaterial.rotationMatrix = ECWallMounted::GetRotationMatrix(entity);
 		volLightMaterial.switchPosition = eg::GetEntityPosition(entity);
-		message.meshBatch->Add(GravitySwitchVolLightMaterial::GetMesh(), volLightMaterial);
+		message.meshBatch->AddNoData(GravitySwitchVolLightMaterial::GetMesh(), volLightMaterial);
 	}
 	
 	void ECGravitySwitch::HandleMessage(eg::Entity& entity, const EditorRenderImGuiMessage& message)

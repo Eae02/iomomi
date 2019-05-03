@@ -272,8 +272,8 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 				glm::mat4 transformLight = transform * glm::translate(glm::mat4(1.0f), glm::vec3(0.01f, 0.01f, 0));
 				
 				int meshIndex = corner.isEnd[s] ? endMeshIndex : midMeshIndex;
-				args.meshBatch->Add(gravityCornerModel, meshIndex, GravityCornerLightMaterial::instance, transformLight);
-				args.meshBatch->Add(gravityCornerModel, meshIndex, gravityCornerMat, transform);
+				args.meshBatch->AddModelMesh(gravityCornerModel, meshIndex, GravityCornerLightMaterial::instance, transformLight);
+				args.meshBatch->AddModelMesh(gravityCornerModel, meshIndex, gravityCornerMat, transform);
 			}
 		}
 	}

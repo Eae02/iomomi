@@ -164,7 +164,7 @@ namespace GooPlane
 		if (liquidPlane.NumIndices() != 0)
 		{
 			message.reflectionPlanes->push_back(&m_material.m_reflectionPlane);
-			message.meshBatch->Add(liquidPlane.GetMesh(), m_material);
+			message.meshBatch->AddNoData(liquidPlane.GetMesh(), m_material);
 		}
 	}
 	

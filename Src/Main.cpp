@@ -3,6 +3,7 @@
 #include "Settings.hpp"
 #include "World/BulletPhysics.hpp"
 #include "Graphics/Materials/StaticPropMaterial.hpp"
+#include "Graphics/Materials/DecalMaterial.hpp"
 
 #include <google/protobuf/stubs/common.h>
 
@@ -35,6 +36,7 @@ int main(int argc, char** argv)
 		eg::console::AddCommand("opt", 1, &OptCommand);
 		InitEntitySerializers();
 		StaticPropMaterial::InitAssetTypes();
+		DecalMaterial::InitAssetTypes();
 		eg::LoadAssets("assets", "/");
 		RenderSettings::instance = new RenderSettings;
 		InitLevels();

@@ -26,12 +26,12 @@ eg::EntitySignature ECFloorButton::EntitySignature = eg::EntitySignature::Create
 
 void ECFloorButton::HandleMessage(eg::Entity& entity, const DrawMessage& message)
 {
-	message.meshBatch->Add(*s_model, *s_material, ECWallMounted::GetTransform(entity, SCALE));
+	message.meshBatch->AddModel(*s_model, *s_material, ECWallMounted::GetTransform(entity, SCALE));
 }
 
 void ECFloorButton::HandleMessage(eg::Entity& entity, const EditorDrawMessage& message)
 {
-	message.meshBatch->Add(*s_model, *s_material, ECWallMounted::GetTransform(entity, SCALE));
+	message.meshBatch->AddModel(*s_model, *s_material, ECWallMounted::GetTransform(entity, SCALE));
 }
 
 void ECFloorButton::HandleMessage(eg::Entity& entity, const EditorRenderImGuiMessage& message)

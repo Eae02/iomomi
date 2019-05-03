@@ -60,7 +60,7 @@ namespace Cube
 	void ECCube::HandleMessage(eg::Entity& entity, const EditorDrawMessage& message)
 	{
 		glm::mat4 worldMatrix = eg::GetEntityTransform3D(entity) * glm::scale(glm::mat4(1), glm::vec3(RADIUS));
-		message.meshBatch->Add(*cubeModel, *cubeMaterial, worldMatrix);
+		message.meshBatch->AddModel(*cubeModel, *cubeMaterial, worldMatrix);
 	}
 	
 	void ECCube::HandleMessage(eg::Entity& entity, const EditorRenderImGuiMessage& message)
@@ -76,7 +76,7 @@ namespace Cube
 		transform.getOpenGLMatrix(reinterpret_cast<float*>(&worldMatrix));
 		worldMatrix *= glm::scale(glm::mat4(1), glm::vec3(RADIUS));
 		
-		message.meshBatch->Add(*cubeModel, *cubeMaterial, worldMatrix);
+		message.meshBatch->AddModel(*cubeModel, *cubeMaterial, worldMatrix);
 	}
 	
 	inline eg::Sphere GetSphere(const eg::Entity& entity)
