@@ -141,6 +141,8 @@ void MainGameState::RunFrame(float dt)
 {
 	if (!eg::console::IsShown())
 	{
+		auto worldUpdateCPUTimer = eg::StartCPUTimer("World Update");
+		
 		eg::SetRelativeMouseMode(m_relativeMouseMode);
 		m_player.Update(*m_world, dt);
 		
@@ -165,8 +167,6 @@ void MainGameState::RunFrame(float dt)
 				LoadWorld(stream, nextLevelIndex, currentExit);
 			}
 		}
-		
-		auto worldUpdateCPUTimer = eg::StartCPUTimer("World Update");
 		
 		updateArgs.player = &m_player;
 		updateArgs.world = m_world.get();
@@ -266,7 +266,7 @@ void MainGameState::RunFrame(float dt)
 		RenderPointLightShadows(args);
 	}, true);
 	
-	m_lightProbesManager.PrepareForDraw(m_player.EyePosition());
+	//m_lightProbesManager.PrepareForDraw(m_player.EyePosition());
 	
 	DoDeferredRendering(true, *m_renderTarget);
 	

@@ -4,7 +4,8 @@ layout(location=0) in vec3 position_in;
 layout(location=1) in vec2 texCoord_in;
 layout(location=2) in mat4 worldTransform_in;
 
-layout(location=0) out vec2 texCoord_out;
+layout(location=0) out vec3 worldPos_out;
+layout(location=1) out vec2 texCoord_out;
 
 #include "Inc/RenderSettings.glh"
 
@@ -24,9 +25,9 @@ void main()
 	texCoord_out = texCoord_in;
 	
 	float distToPlane = dot(plane, vec4(worldPos, 1.0));
-	vec3 flippedPos = worldPos - (2 * distToPlane) * plane.xyz;
+	worldPos_out = worldPos - (2 * distToPlane) * plane.xyz;
 	
 	gl_ClipDistance[0] = distToPlane;
 	
-	gl_Position = renderSettings.viewProjection * vec4(flippedPos, 1.0);
+	gl_Position = renderSettings.viewProjection * vec4(worldPos_out, 1.0);
 }

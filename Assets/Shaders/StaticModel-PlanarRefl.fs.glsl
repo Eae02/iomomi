@@ -2,7 +2,7 @@
 
 #include "Inc/EditorLight.glh"
 
-layout(location=0) in vec2 texCoord_in;
+layout(location=1) in vec2 texCoord_in;
 
 layout(location=0) out vec4 color_out;
 

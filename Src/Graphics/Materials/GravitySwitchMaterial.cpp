@@ -41,10 +41,21 @@ static void OnInit()
 	gravitySwitchPipelineEditor = eg::Pipeline::Create(pipelineCI);
 	gravitySwitchPipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
-	//pipelineCI.label = "EmissivePlanarRefl";
-	//pipelineCI.vertexShader = vertexShader.GetVariant("VPlanarRefl");
-	//pipelineCI.numClipDistances = 1;
-	//emissivePipelinePlanarRefl = eg::Pipeline::Create(pipelineCI);
+	pipelineCI.label = "GravSwitchPlanarRefl";
+	pipelineCI.fragmentShader = fragmentShader.GetVariant("VPlanarRefl");
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Common3D-PlanarRefl.vs.glsl").DefaultVariant();
+	pipelineCI.cullMode = eg::CullMode::Back;
+	pipelineCI.frontFaceCCW = !pipelineCI.frontFaceCCW;
+	pipelineCI.numClipDistances = 1;
+	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(eg::StdVertex, position) };
+	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::Float32, 2, offsetof(eg::StdVertex, texCoord) };
+	pipelineCI.vertexAttributes[2] = { 1, eg::DataType::Float32, 4, 0 * sizeof(float) * 4 };
+	pipelineCI.vertexAttributes[3] = { 1, eg::DataType::Float32, 4, 1 * sizeof(float) * 4 };
+	pipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 4, 2 * sizeof(float) * 4 };
+	pipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
+	pipelineCI.vertexAttributes[6] = { };
+	pipelineCI.vertexAttributes[7] = { };
+	gravitySwitchPipelinePlanarRefl = eg::Pipeline::Create(pipelineCI);
 	
 	gravitySwitchDescriptorSet = eg::DescriptorSet(gravitySwitchPipelineGame, 0);
 	gravitySwitchDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
@@ -75,7 +86,7 @@ inline static eg::PipelineRef GetPipeline(const MeshDrawArgs& drawArgs)
 	{
 	case MeshDrawMode::Game: return gravitySwitchPipelineGame;
 	case MeshDrawMode::Editor: return gravitySwitchPipelineEditor;
-	//case MeshDrawMode::PlanarReflection: return gravitySwitchPipelinePlanarRefl;
+	case MeshDrawMode::PlanarReflection: return gravitySwitchPipelinePlanarRefl;
 	default: return eg::PipelineRef();
 	}
 }
