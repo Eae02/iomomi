@@ -21,7 +21,7 @@ public:
 	
 	void SetResolution(int width, int height);
 	
-	void LoadWorld(std::istream& stream);
+	void LoadWorld(std::istream& stream, int64_t levelIndex = -1, const eg::Entity* exitEntity = nullptr);
 	
 private:
 	void DoDeferredRendering(bool useLightProbes, DeferredRenderer::RenderTarget& renderTarget);
@@ -33,6 +33,8 @@ private:
 	void RenderPointLightShadows(const PointLightShadowRenderArgs& args);
 	
 	int m_lastSettingsGeneration = -1;
+	
+	int64_t m_currentLevelIndex = -1;
 	
 	eg::PerspectiveProjection m_projection;
 	RenderContext* m_renderCtx;

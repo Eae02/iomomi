@@ -37,6 +37,16 @@ public:
 		m_rotationPitch = pitch;
 	}
 	
+	float RotationYaw() const
+	{
+		return m_rotationYaw;
+	}
+	
+	float RotationPitch() const
+	{
+		return m_rotationPitch;
+	}
+	
 	Dir CurrentDown() const
 	{
 		return m_down;
@@ -63,6 +73,8 @@ public:
 	{
 		return m_isCarrying;
 	}
+	
+	void Reset();
 	
 	static constexpr float HEIGHT = 1.65f;
 	static constexpr float WIDTH = 0.8f;

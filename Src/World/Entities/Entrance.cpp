@@ -90,7 +90,7 @@ const Dir UP_VECTORS[] =
 	Dir::PosY, Dir::PosY, Dir::PosX, Dir::PosX, Dir::PosY, Dir::PosY
 };
 
-inline glm::mat4 GetTransform(const eg::Entity& entity)
+inline std::tuple<glm::mat3, glm::vec3> GetTransformParts(const eg::Entity& entity)
 {
 	Dir direction = OppositeDir(entity.GetComponent<ECWallMounted>().wallUp);
 	
@@ -101,16 +101,17 @@ inline glm::mat4 GetTransform(const eg::Entity& entity)
 	
 	if (entity.GetComponent<ECEntrance>().GetType() == ECEntrance::Type::Exit)
 		dir = -dir;
-	const glm::mat3 rotation(dir, up, glm::cross(dir, up));
-	
+	return std::make_tuple(glm::mat3(dir, up, glm::cross(dir, up)), translation);
+}
+
+inline glm::mat4 GetTransform(const eg::Entity& entity)
+{
+	auto [rotation, translation] = GetTransformParts(entity);
 	return glm::translate(glm::mat4(1.0f), translation) * glm::mat4(rotation);
 }
 
-void ECEntrance::Update(const WorldUpdateArgs& args)
+void ECEntrance::Update(const WorldUpdateArgs& args, eg::Entity** switchEntranceOut)
 {
-	if (args.player == nullptr)
-		return;
-	
 	for (eg::Entity& entity : args.world->EntityManager().GetEntitySet(EntitySignature))
 	{
 		Dir direction = OppositeDir(entity.GetComponent<ECWallMounted>().wallUp);
@@ -119,11 +120,13 @@ void ECEntrance::Update(const WorldUpdateArgs& args)
 		ECActivatable& activatableEC = entity.GetComponent<ECActivatable>();
 		
 		glm::vec3 toPlayer = args.player->Position() - position;
-		glm::vec3 desiredDirToPlayer = DirectionVector(direction) * (entranceEC.m_type == Type::Entrance ? 1 : -1);
+		glm::vec3 openDirToPlayer = DirectionVector(direction) * (entranceEC.m_type == Type::Entrance ? 1 : -1);
+		
+		float minDist = (entranceEC.m_doorOpenProgress > 1E-4f) ? -1.0f : 0.0f;
 		
 		bool open = activatableEC.AllSourcesActive() &&
 			glm::length2(toPlayer) < DOOR_OPEN_DIST * DOOR_OPEN_DIST && //Player is close to the door
-			glm::dot(toPlayer, desiredDirToPlayer) > 0 && //Player is on the right side of the door
+			glm::dot(toPlayer, openDirToPlayer) > minDist && //Player is on the right side of the door
 			args.player->CurrentDown() == OppositeDir(UP_VECTORS[(int)direction]); //Player has the correct gravity mode
 		
 		entranceEC.m_timeBeforeClose = open ? DOOR_CLOSE_DELAY : std::max(entranceEC.m_timeBeforeClose - args.dt, 0.0f);
@@ -146,6 +149,22 @@ void ECEntrance::Update(const WorldUpdateArgs& args)
 		{
 			constexpr float DOOR_RADIUS = 1.5f;
 			args.invalidateShadows(eg::Sphere(position, DOOR_RADIUS));
+		}
+		
+		if (entranceEC.m_type == Type::Exit && entranceEC.m_doorOpenProgress == 0 &&
+		    glm::dot(toPlayer, openDirToPlayer) < -0.5f && switchEntranceOut != nullptr)
+		{
+			glm::vec3 diag(1.8f);
+			diag[(int)direction / 2] = 0.0f;
+			
+			glm::vec3 midEnd = position + glm::vec3(DirectionVector(direction)) * MESH_LENGTH * 2.0f;
+			
+			eg::AABB targetAABB(position - diag, midEnd + diag);
+			
+			if (targetAABB.Intersects(args.player->GetAABB()))
+			{
+				*switchEntranceOut = &entity;
+			}
 		}
 	}
 }
@@ -268,23 +287,37 @@ void ECEntrance::HandleMessage(eg::Entity& entity, const EditorRenderImGuiMessag
 	ImGui::Combo("Type", reinterpret_cast<int*>(&entity.GetComponent<ECEntrance>().m_type), "Entrance\0Exit\0");
 }
 
+const float forwardRotations[6] =
+{
+	eg::PI * 0.5f,
+	eg::PI * 1.5f,
+	0,
+	0,
+	eg::PI * 2.0f,
+	eg::PI * 1.0f
+};
+
 void ECEntrance::InitPlayer(eg::Entity& entity, Player& player)
 {
 	Dir direction = OppositeDir(entity.GetComponent<ECWallMounted>().wallUp);
 	
 	player.SetPosition(eg::GetEntityPosition(entity) + glm::vec3(DirectionVector(direction)) * MESH_LENGTH);
 	
-	float rotations[6][2] =
-	{
-		{ eg::PI * 0.5f, 0 },
-		{ eg::PI * 1.5f, 0 },
-		{ 0, eg::HALF_PI },
-		{ 0, -eg::HALF_PI },
-		{ eg::PI * 2.0f, 0 },
-		{ eg::PI * 1.0f, 0 }
-	};
+	player.SetRotation(forwardRotations[(int)direction], 0.0f);
+}
+
+void ECEntrance::MovePlayer(const eg::Entity& oldExit, const eg::Entity& newEntrance, Player& player)
+{
+	auto [oldRotation, oldTranslation] = GetTransformParts(oldExit);
+	auto [newRotation, newTranslation] = GetTransformParts(newEntrance);
 	
-	player.SetRotation(rotations[(int)direction][0], rotations[(int)direction][1]);
+	glm::vec3 posLocal = glm::transpose(oldRotation) * (player.Position() - oldTranslation);
+	player.SetPosition(newRotation * posLocal + newTranslation + glm::vec3(0, 0.001f, 0));
+	
+	Dir oldDir = OppositeDir(oldExit.GetComponent<ECWallMounted>().wallUp);
+	Dir newDir = OppositeDir(newEntrance.GetComponent<ECWallMounted>().wallUp);
+	float yaw = player.RotationYaw() - forwardRotations[(int)oldDir] + eg::PI + forwardRotations[(int)newDir];
+	player.SetRotation(yaw, player.RotationPitch());
 }
 
 Door ECEntrance::GetDoorDescription(const eg::Entity& entity)

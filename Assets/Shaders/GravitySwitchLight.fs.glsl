@@ -17,9 +17,10 @@ layout(set=0, binding=0, std140) uniform RenderSettingsUB
 
 layout(binding=1) uniform sampler2D hexSampler;
 
-layout(location=0) in vec3 worldPos_in;
 layout(location=1) in vec2 texCoord_in;
+#ifdef VDefault
 layout(location=2) in vec3 normal_in;
+#endif
 
 const float ROUGHNESS = 0.4;
 

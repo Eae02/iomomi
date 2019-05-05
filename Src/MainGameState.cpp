@@ -3,11 +3,12 @@
 #include "Graphics/Materials/MeshDrawArgs.hpp"
 #include "Graphics/RenderSettings.hpp"
 #include "World/Entities/Entrance.hpp"
-#include "Graphics/PlanarReflectionsManager.hpp"
 #include "World/Entities/ECActivationLightStrip.hpp"
+#include "Graphics/PlanarReflectionsManager.hpp"
 #include "Graphics/Materials/GravityCornerLightMaterial.hpp"
-#include "Settings.hpp"
 #include "Graphics/Materials/GravitySwitchVolLightMaterial.hpp"
+#include "Settings.hpp"
+#include "Levels.hpp"
 
 #include <fstream>
 #include <imgui.h>
@@ -36,20 +37,30 @@ MainGameState::MainGameState(RenderContext& renderCtx)
 	});
 }
 
-void MainGameState::LoadWorld(std::istream& stream)
+void MainGameState::LoadWorld(std::istream& stream, int64_t levelIndex, const eg::Entity* exitEntity)
 {
-	m_world = World::Load(stream, false);
-	m_player = { };
+	auto newWorld = World::Load(stream, false);
+	m_player.Reset();
 	m_gameTime = 0;
+	m_currentLevelIndex = levelIndex;
 	
-	for (eg::Entity& entity : m_world->EntityManager().GetEntitySet(ECEntrance::EntitySignature))
+	for (eg::Entity& entity : newWorld->EntityManager().GetEntitySet(ECEntrance::EntitySignature))
 	{
 		if (entity.GetComponent<ECEntrance>().GetType() == ECEntrance::Type::Entrance)
 		{
-			ECEntrance::InitPlayer(entity, m_player);
+			if (exitEntity != nullptr)
+			{
+				ECEntrance::MovePlayer(*exitEntity, entity, m_player);
+			}
+			else
+			{
+				ECEntrance::InitPlayer(entity, m_player);
+			}
 			break;
 		}
 	}
+	
+	m_world = std::move(newWorld);
 	
 	m_world->InitializeBulletPhysics();
 	
@@ -130,6 +141,8 @@ void MainGameState::RunFrame(float dt)
 {
 	if (!eg::console::IsShown())
 	{
+		auto worldUpdateCPUTimer = eg::StartCPUTimer("World Update");
+		
 		eg::SetRelativeMouseMode(m_relativeMouseMode);
 		m_player.Update(*m_world, dt);
 		
@@ -138,6 +151,25 @@ void MainGameState::RunFrame(float dt)
 		updateArgs.player = &m_player;
 		updateArgs.world = m_world.get();
 		updateArgs.invalidateShadows = [this] (const eg::Sphere& sphere) { m_plShadowMapper.Invalidate(sphere); };
+		
+		eg::Entity* currentExit = nullptr;
+		ECEntrance::Update(updateArgs, &currentExit);
+		
+		if (currentExit != nullptr && m_currentLevelIndex != -1)
+		{
+			const std::string& exitName = currentExit->GetComponent<ECEntrance>().ExitName();
+			int64_t nextLevelIndex = GetNextLevelIndex(m_currentLevelIndex, exitName);
+			if (nextLevelIndex != -1)
+			{
+				eg::Log(eg::LogLevel::Info, "lvl", "Going to next level '{0}'", levels[nextLevelIndex].name);
+				std::string path = GetLevelPath(levels[nextLevelIndex].name);
+				std::ifstream stream(path, std::ios::binary);
+				LoadWorld(stream, nextLevelIndex, currentExit);
+			}
+		}
+		
+		updateArgs.player = &m_player;
+		updateArgs.world = m_world.get();
 		m_world->Update(updateArgs);
 	}
 	else
@@ -234,7 +266,7 @@ void MainGameState::RunFrame(float dt)
 		RenderPointLightShadows(args);
 	}, true);
 	
-	m_lightProbesManager.PrepareForDraw(m_player.EyePosition());
+	//m_lightProbesManager.PrepareForDraw(m_player.EyePosition());
 	
 	DoDeferredRendering(true, *m_renderTarget);
 	

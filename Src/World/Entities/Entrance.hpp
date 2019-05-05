@@ -25,6 +25,11 @@ public:
 		m_type = type;
 	}
 	
+	const std::string& ExitName() const
+	{
+		return m_name;
+	}
+	
 	void HandleMessage(eg::Entity& entity, const CalculateCollisionMessage& message);
 	void HandleMessage(eg::Entity& entity, const DrawMessage& message);
 	void HandleMessage(eg::Entity& entity, const EditorDrawMessage& message);
@@ -32,7 +37,9 @@ public:
 	
 	static void InitPlayer(eg::Entity& entity, class Player& player);
 	
-	static void Update(const WorldUpdateArgs& updateArgs);
+	static void MovePlayer(const eg::Entity& oldExit, const eg::Entity& newEntrance, class Player& player);
+	
+	static void Update(const WorldUpdateArgs& updateArgs, eg::Entity** switchEntranceOut);
 	
 	static eg::Entity* CreateEntity(eg::EntityManager& entityManager);
 	
@@ -45,6 +52,7 @@ public:
 	static eg::MessageReceiver MessageReceiver;
 	
 private:
+	std::string m_name = "main";
 	Type m_type = Type::Entrance;
 	float m_doorOpenProgress = 0;
 	float m_timeBeforeClose = 0;
