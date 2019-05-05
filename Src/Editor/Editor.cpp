@@ -117,7 +117,7 @@ void Editor::RunFrame(float dt)
 	ImGui::SetNextWindowSize(ImVec2(200, eg::CurrentResolutionY() * 0.5f), ImGuiCond_Always);
 	ImGui::Begin("Editor", nullptr, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoCollapse |
 	             ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
-	if (ImGui::Button("Test Level (F5)", ImVec2(ImGui::GetContentRegionAvailWidth(), 0)))
+	if (ImGui::Button("Test Level (F5)", ImVec2(ImGui::GetContentRegionAvail().x, 0)))
 	{
 		std::stringstream stream;
 		m_world->Save(stream);
