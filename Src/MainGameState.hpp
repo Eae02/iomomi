@@ -9,6 +9,7 @@
 #include "World/PrepareDrawArgs.hpp"
 #include "Graphics/PostProcessor.hpp"
 #include "Graphics/PlanarReflectionsManager.hpp"
+#include "World/GravityGun.hpp"
 
 #include <EGame/Graphics/BloomRenderer.hpp>
 
@@ -58,6 +59,7 @@ private:
 	
 	std::unique_ptr<World> m_world;
 	Player m_player;
+	GravityGun m_gravityGun;
 };
 
 extern MainGameState* mainGameState;

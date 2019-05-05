@@ -819,10 +819,10 @@ const GravityCorner* World::FindGravityCorner(const ClippingArgs& args, Dir curr
 	return ret;
 }
 
-PickWallResult World::PickWall(const eg::Ray& ray) const
+WallRayIntersectResult World::RayIntersectWall(const eg::Ray& ray) const
 {
 	float minDist = INFINITY;
-	PickWallResult result;
+	WallRayIntersectResult result;
 	result.intersected = false;
 	
 	for (int dim = 0; dim < 3; dim++)
@@ -853,6 +853,31 @@ PickWallResult World::PickWall(const eg::Ray& ray) const
 		}
 	}
 	
+	return result;
+}
+
+RayIntersectResult World::RayIntersect(const eg::Ray& ray) const
+{
+	RayIntersectArgs intersectArgs;
+	RayIntersectMessage message;
+	message.rayIntersectArgs = &intersectArgs;
+	
+	intersectArgs.entity = nullptr;
+	intersectArgs.distance = INFINITY;
+	intersectArgs.ray = ray;
+	
+	WallRayIntersectResult wallResult = RayIntersectWall(ray);
+	if (wallResult.intersected)
+	{
+		intersectArgs.distance = glm::dot(wallResult.intersectPosition - ray.GetStart(), ray.GetDirection());
+	}
+	
+	m_entityManager->SendMessageToAll(message);
+	
+	RayIntersectResult result;
+	result.entity = intersectArgs.entity;
+	result.distance = intersectArgs.distance;
+	result.intersected = intersectArgs.distance != INFINITY;
 	return result;
 }
 

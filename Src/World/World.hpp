@@ -11,12 +11,19 @@
 
 struct WallVertex;
 
-struct PickWallResult
+struct WallRayIntersectResult
 {
 	bool intersected;
 	glm::ivec3 voxelPosition;
 	glm::vec3 intersectPosition;
 	Dir normalDir;
+};
+
+struct RayIntersectResult
+{
+	bool intersected;
+	eg::Entity* entity;
+	float distance;
 };
 
 struct GravityCorner
@@ -83,7 +90,9 @@ public:
 	
 	const GravityCorner* FindGravityCorner(const ClippingArgs& args, Dir currentDown) const;
 	
-	PickWallResult PickWall(const eg::Ray& ray) const;
+	WallRayIntersectResult RayIntersectWall(const eg::Ray& ray) const;
+	
+	RayIntersectResult RayIntersect(const eg::Ray& ray) const;
 	
 	void InitializeBulletPhysics();
 	

@@ -139,12 +139,23 @@ void MainGameState::RenderPlanarReflections(const ReflectionPlane& plane, eg::Fr
 
 void MainGameState::RunFrame(float dt)
 {
+	glm::mat4 viewMatrix, inverseViewMatrix, viewProjMatrix, inverseViewProjMatrix;
+	auto UpdateViewProjMatrices = [&] ()
+	{
+		m_player.GetViewMatrix(viewMatrix, inverseViewMatrix);
+		viewProjMatrix = m_projection.Matrix() * viewMatrix;
+		inverseViewProjMatrix = inverseViewMatrix * m_projection.InverseMatrix();
+	};
+	
 	if (!eg::console::IsShown())
 	{
 		auto worldUpdateCPUTimer = eg::StartCPUTimer("World Update");
 		
 		eg::SetRelativeMouseMode(m_relativeMouseMode);
 		m_player.Update(*m_world, dt);
+		
+		UpdateViewProjMatrices();
+		m_gravityGun.Update(*m_world, m_player, inverseViewProjMatrix);
 		
 		WorldUpdateArgs updateArgs;
 		updateArgs.dt = dt;
@@ -175,6 +186,7 @@ void MainGameState::RunFrame(float dt)
 	else
 	{
 		eg::SetRelativeMouseMode(false);
+		UpdateViewProjMatrices();
 	}
 	
 	if (m_lastSettingsGeneration != SettingsGeneration())
@@ -225,13 +237,10 @@ void MainGameState::RunFrame(float dt)
 	
 	auto cpuTimerPrepare = eg::StartCPUTimer("Prepare Draw");
 	
-	glm::mat4 viewMatrix, inverseViewMatrix;
-	m_player.GetViewMatrix(viewMatrix, inverseViewMatrix);
-	
 	RenderSettings::instance->gameTime = m_gameTime;
 	RenderSettings::instance->cameraPosition = m_player.EyePosition();
-	RenderSettings::instance->viewProjection = m_projection.Matrix() * viewMatrix;
-	RenderSettings::instance->invViewProjection = inverseViewMatrix * m_projection.InverseMatrix();
+	RenderSettings::instance->viewProjection = viewProjMatrix;
+	RenderSettings::instance->invViewProjection = inverseViewProjMatrix;
 	RenderSettings::instance->UpdateBuffer();
 	
 	m_renderCtx->meshBatch.Begin();

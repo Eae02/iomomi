@@ -5,6 +5,7 @@
 #include "ECActivator.hpp"
 #include "ECInteractable.hpp"
 #include "Messages.hpp"
+#include "../GravityGun.hpp"
 #include "../Clipping.hpp"
 #include "../Player.hpp"
 #include "../WorldUpdateArgs.hpp"
@@ -39,17 +40,28 @@ namespace Cube
 		void HandleMessage(eg::Entity& entity, const EditorDrawMessage& message);
 		void HandleMessage(eg::Entity& entity, const EditorRenderImGuiMessage& message);
 		void HandleMessage(eg::Entity& entity, const DrawMessage& message);
+		void HandleMessage(eg::Entity& entity, const RayIntersectMessage& message);
+		
+		void HandleMessage(eg::Entity& entity, const GravityChargeSetMessage& message);
+		void HandleMessage(eg::Entity& entity, const GravityChargeResetMessage& message);
 		
 		static eg::MessageReceiver MessageReceiver;
 		
 		bool isPickedUp = false;
+		Dir currentDown = Dir::NegY;
 	};
 	
 	eg::MessageReceiver ECCube::MessageReceiver = eg::MessageReceiver::Create<
-	    ECCube, EditorSpawnedMessage, EditorDrawMessage, EditorRenderImGuiMessage, DrawMessage>();
+	    ECCube, EditorSpawnedMessage, EditorDrawMessage, EditorRenderImGuiMessage, DrawMessage,
+	    RayIntersectMessage, GravityChargeSetMessage, GravityChargeResetMessage>();
 	
 	eg::EntitySignature EntitySignature = eg::EntitySignature::Create<
 	    ECCube, ECEditorVisible, ECRigidBody, ECInteractable, eg::ECPosition3D, eg::ECRotation3D>();
+	
+	inline eg::Sphere GetSphere(const eg::Entity& entity)
+	{
+		return eg::Sphere(entity.GetComponent<eg::ECPosition3D>().position, RADIUS * std::sqrt(3.0f));
+	}
 	
 	void ECCube::HandleMessage(eg::Entity& entity, const EditorSpawnedMessage& message)
 	{
@@ -79,9 +91,29 @@ namespace Cube
 		message.meshBatch->AddModel(*cubeModel, *cubeMaterial, worldMatrix);
 	}
 	
-	inline eg::Sphere GetSphere(const eg::Entity& entity)
+	void ECCube::HandleMessage(eg::Entity& entity, const RayIntersectMessage& message)
 	{
-		return eg::Sphere(entity.GetComponent<eg::ECPosition3D>().position, RADIUS * std::sqrt(3.0f));
+		float distance;
+		if (message.rayIntersectArgs->ray.Intersects(GetSphere(entity), distance) &&
+		    distance > 0 && distance < message.rayIntersectArgs->distance)
+		{
+			message.rayIntersectArgs->distance = distance;
+			message.rayIntersectArgs->entity = &entity;
+		}
+	}
+	
+	void ECCube::HandleMessage(eg::Entity& entity, const GravityChargeSetMessage& message)
+	{
+		if (isPickedUp)
+			return;
+		
+		currentDown = message.newDown;
+		*message.set = true;
+	}
+	
+	void ECCube::HandleMessage(eg::Entity& entity, const GravityChargeResetMessage& message)
+	{
+		currentDown = Dir::NegY;
 	}
 	
 	static void Interact(eg::Entity& entity, Player& player)
@@ -128,8 +160,9 @@ namespace Cube
 		for (eg::Entity& entity : args.world->EntityManager().GetEntitySet(EntitySignature))
 		{
 			ECRigidBody& rigidBody = entity.GetComponent<ECRigidBody>();
+			ECCube& cube = entity.GetComponent<ECCube>();
 			
-			if (entity.GetComponent<ECCube>().isPickedUp)
+			if (cube.isPickedUp)
 			{
 				ECRigidBody::PushTransform(entity);
 				
@@ -148,7 +181,8 @@ namespace Cube
 			}
 			else
 			{
-				rigidBody.GetRigidBody()->setGravity(btVector3(0, -bullet::GRAVITY, 0));
+				glm::vec3 gravity = glm::vec3(DirectionVector(cube.currentDown)) * bullet::GRAVITY;
+				rigidBody.GetRigidBody()->setGravity(bullet::FromGLM(gravity));
 			}
 		}
 	}
@@ -168,7 +202,7 @@ namespace Cube
 				args.invalidateShadows(GetSphere(entity));
 			}
 			
-			const glm::vec3 down(0, -1, 0);
+			const glm::vec3 down(DirectionVector(entity.GetComponent<ECCube>().currentDown));
 			const eg::AABB cubeAABB(position - RADIUS, position + RADIUS);
 			
 			for (eg::Entity& buttonEntity : args.world->EntityManager().GetEntitySet(ECFloorButton::EntitySignature))

@@ -1,6 +1,6 @@
 #include "GravityCornerLightMaterial.hpp"
-#include "../DeferredRenderer.hpp"
 #include "MeshDrawArgs.hpp"
+#include "../DeferredRenderer.hpp"
 #include "../RenderSettings.hpp"
 
 GravityCornerLightMaterial GravityCornerLightMaterial::instance;

@@ -231,7 +231,7 @@ void Editor::UpdateToolCorners(float dt)
 	if (ImGui::GetIO().WantCaptureMouse)
 		return;
 	
-	PickWallResult pickResult = m_world->PickWall(m_viewRay);
+	WallRayIntersectResult pickResult = m_world->RayIntersectWall(m_viewRay);
 	
 	m_hoveredCornerDim = -1;
 	
@@ -426,7 +426,7 @@ void Editor::UpdateToolEntities(float dt)
 		constexpr int DRAG_BEGIN_DELTA = 10;
 		if (m_isDraggingWallEntity)
 		{
-			PickWallResult pickResult = m_world->PickWall(m_viewRay);
+			WallRayIntersectResult pickResult = m_world->RayIntersectWall(m_viewRay);
 			if (pickResult.intersected)
 			{
 				if (MaybeClone())
@@ -602,7 +602,7 @@ void Editor::UpdateToolEntities(float dt)
 		{
 			if (ImGui::MenuItem(entityType.name.c_str()))
 			{
-				PickWallResult pickResult = m_world->PickWall(m_viewRay);
+				WallRayIntersectResult pickResult = m_world->RayIntersectWall(m_viewRay);
 				
 				if (pickResult.intersected)
 				{
@@ -639,7 +639,7 @@ void Editor::UpdateToolWalls(float dt)
 	if (eg::IsButtonDown(eg::Button::MouseLeft) && eg::WasButtonDown(eg::Button::MouseLeft) &&
 	    eg::CursorPos() != eg::PrevCursorPos())
 	{
-		PickWallResult pickResult = m_world->PickWall(m_viewRay);
+		WallRayIntersectResult pickResult = m_world->RayIntersectWall(m_viewRay);
 		
 		int selDim = (int)m_selectionNormal / 2;
 		if (m_selState == SelState::Selecting)

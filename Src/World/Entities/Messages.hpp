@@ -13,3 +13,15 @@ struct CalculateCollisionMessage : eg::Message<CalculateCollisionMessage>
 {
 	struct ClippingArgs* clippingArgs;
 };
+
+struct RayIntersectArgs
+{
+	eg::Ray ray;
+	eg::Entity* entity = nullptr;
+	float distance = INFINITY;
+};
+
+struct RayIntersectMessage : eg::Message<RayIntersectMessage>
+{
+	RayIntersectArgs* rayIntersectArgs;
+};
