@@ -1,4 +1,5 @@
 #include "PostProcessor.hpp"
+#include "../Settings.hpp"
 
 PostProcessor::PostProcessor()
 {
@@ -35,14 +36,14 @@ void PostProcessor::Render(eg::TextureRef input, const eg::BloomRenderer::Render
 		eg::DC.BindPipeline(m_pipelineBloom);
 		eg::DC.BindTexture(bloomRenderTarget->OutputTexture(), 0, 1, &m_inputSampler);
 		
-		float pc[] = { exposure, bloomIntensity };
+		float pc[] = { settings.exposure, bloomIntensity };
 		eg::DC.PushConstants(0, sizeof(pc), pc);
 	}
 	else
 	{
 		eg::DC.BindPipeline(m_pipelineNoBloom);
 		
-		float pc[] = { exposure };
+		float pc[] = { settings.exposure };
 		eg::DC.PushConstants(0, sizeof(pc), pc);
 	}
 	

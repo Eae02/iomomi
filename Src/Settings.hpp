@@ -11,6 +11,8 @@ struct Settings
 	float fieldOfViewDeg = 80.0f;
 	uint32_t msaaSamples = 1;
 	
+	float exposure = 1.2f;
+	
 	bool HDREnabled() const
 	{
 		return lightingQuality >= QualityLevel::Low;

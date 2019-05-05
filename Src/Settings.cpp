@@ -55,6 +55,7 @@ void LoadSettings()
 	DecodeQualityLevel(settingsNode["lightingQuality"].as<std::string>("medium"), settings.lightingQuality);
 	settings.msaaSamples = settingsNode["msaaSamples"].as<uint32_t>(1);
 	settings.fieldOfViewDeg = settingsNode["fieldOfView"].as<float>(80.0f);
+	settings.exposure = settingsNode["exposure"].as<float>(1.2f);
 	
 	CheckMSAA();
 }
@@ -136,6 +137,18 @@ void OptCommand(eg::Span<const std::string_view> args)
 		{
 			settings.msaaSamples = std::stoi(std::string(args[1]));
 			CheckMSAA();
+			SettingsChanged();
+		}
+	}
+	else if (args[0] == "exposure")
+	{
+		if (args.size() == 1)
+		{
+			eg::Log(eg::LogLevel::Info, "opt", "Exposure: {0}", settings.exposure);
+		}
+		else
+		{
+			settings.exposure = std::stof(std::string(args[1]));
 			SettingsChanged();
 		}
 	}

@@ -230,7 +230,7 @@ void DeferredRenderer::BeginLighting(RenderTarget& target, const LightProbesMana
 		eg::DC.BindTexture(target.m_gbColor2Texture, 0, 2);
 		eg::DC.BindTexture(target.m_gbDepthTexture, 0, 3);
 	}
-	ambientColor = ambientColor.ScaleRGB(0.1f);
+	ambientColor = ambientColor.ScaleRGB(0.15f);
 	
 	eg::DC.PushConstants(0, sizeof(float) * 3, &ambientColor.r);
 	

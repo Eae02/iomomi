@@ -26,11 +26,6 @@ MainGameState::MainGameState(RenderContext& renderCtx)
 		m_relativeMouseMode = !m_relativeMouseMode;
 	});
 	
-	eg::console::AddCommand("exposure", 1, [this] (eg::Span<const std::string_view> args)
-	{
-		m_postProcessor.exposure = std::stof(std::string(args[0]));
-	});
-	
 	eg::console::AddCommand("bloomIntensity", 1, [this] (eg::Span<const std::string_view> args)
 	{
 		m_postProcessor.bloomIntensity = std::stof(std::string(args[0]));
