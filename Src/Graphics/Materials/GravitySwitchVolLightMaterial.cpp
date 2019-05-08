@@ -5,6 +5,7 @@
 #include "../../Settings.hpp"
 
 #include <random>
+#include <ctime>
 
 static eg::Pipeline gsVolLightPipeline;
 
