@@ -58,6 +58,7 @@ assets:
   - name: Models/WallLight.obj
   - name: Models/Cube.obj 
   - name: Models/Button.obj
+  - name: Models/Platform.obj
   - name: Models/ActivationStripStraight.obj
   - name: Models/ActivationStripBend.obj
   

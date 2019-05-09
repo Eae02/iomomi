@@ -4,6 +4,7 @@
 #include "Graphics/RenderSettings.hpp"
 #include "World/Entities/Entrance.hpp"
 #include "World/Entities/ECActivationLightStrip.hpp"
+#include "World/Entities/ECPlatform.hpp"
 #include "Graphics/PlanarReflectionsManager.hpp"
 #include "Graphics/Materials/GravityCornerLightMaterial.hpp"
 #include "Graphics/Materials/GravitySwitchVolLightMaterial.hpp"
@@ -146,17 +147,19 @@ void MainGameState::RunFrame(float dt)
 	{
 		auto worldUpdateCPUTimer = eg::StartCPUTimer("World Update");
 		
-		eg::SetRelativeMouseMode(m_relativeMouseMode);
-		m_player.Update(*m_world, dt);
-		
-		UpdateViewProjMatrices();
-		m_gravityGun.Update(*m_world, m_player, inverseViewProjMatrix);
-		
 		WorldUpdateArgs updateArgs;
 		updateArgs.dt = dt;
 		updateArgs.player = &m_player;
 		updateArgs.world = m_world.get();
 		updateArgs.invalidateShadows = [this] (const eg::Sphere& sphere) { m_plShadowMapper.Invalidate(sphere); };
+		
+		ECPlatform::Update(updateArgs);
+		
+		eg::SetRelativeMouseMode(m_relativeMouseMode);
+		m_player.Update(*m_world, dt);
+		
+		UpdateViewProjMatrices();
+		m_gravityGun.Update(*m_world, m_player, inverseViewProjMatrix);
 		
 		eg::Entity* currentExit = nullptr;
 		ECEntrance::Update(updateArgs, &currentExit);

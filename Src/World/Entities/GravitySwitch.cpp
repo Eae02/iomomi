@@ -83,11 +83,8 @@ namespace GravitySwitch
 	{
 		constexpr int INTERACT_PRIORITY = 1;
 		
-		glm::vec3 playerFeetPos = player.Position() +
-			glm::vec3(DirectionVector(player.CurrentDown())) * (Player::HEIGHT * 0.5f * 0.95f);
-		
 		if (player.CurrentDown() == OppositeDir(entity.GetComponent<ECWallMounted>().wallUp) &&
-		    player.OnGround() && GetAABB(entity).Contains(playerFeetPos) && !player.IsCarrying())
+		    player.OnGround() && GetAABB(entity).Contains(player.FeetPosition()) && !player.IsCarrying())
 		{
 			return INTERACT_PRIORITY;
 		}

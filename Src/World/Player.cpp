@@ -4,6 +4,7 @@
 #include "Entities/ECActivator.hpp"
 #include "Entities/ECInteractable.hpp"
 #include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
+#include "Entities/ECPlatform.hpp"
 
 #include <imgui.h>
 
@@ -203,7 +204,7 @@ void Player::Update(World& world, float dt)
 		localVelVertical = JUMP_ACCEL;
 		m_onGround = false;
 	}
-	else
+	else if (m_currentPlatform == nullptr)
 	{
 		float gravity = GRAVITY;
 		gravity *= 1.0f + FALLING_GRAVITY_RAMP * glm::clamp(-localVelVertical, 0.0f, 1.0f);
@@ -222,9 +223,9 @@ void Player::Update(World& world, float dt)
 	
 	glm::vec3 move = m_velocity * dt;
 	
-	//Without this, onGround can turn off at high framerates because
+	//Without this, onGround can turn off at high frame rates because
 	// the player is not being pushed into the ground hard enough.
-	if (m_onGround)
+	if (m_onGround && m_currentPlatform == nullptr)
 		move -= up * 0.001f;
 	
 	//Checks for intersections with gravity corners along the move vector
@@ -316,8 +317,43 @@ void Player::Update(World& world, float dt)
 		}
 	}
 	
-	//Clipping
 	m_onGround = false;
+	
+	int downDim = (int)m_down / 2;
+	int downSign = ((int)m_down % 2) ? -1 : 1;
+	
+	if (m_currentPlatform != nullptr)
+	{
+		glm::vec3 platformMove = m_currentPlatform->GetComponent<ECPlatform>().moveDelta;
+		
+		float fromPlatformY = m_position[downDim] - ECPlatform::GetPosition(*m_currentPlatform)[downDim];
+		platformMove -= std::min(fromPlatformY - (HEIGHT * 0.5f) - 0.05f, 0.0f) * up;
+		
+		ClipAndMove(world, platformMove, true);
+		m_onGround = true;
+	}
+	
+	ClipAndMove(world, move, false);
+	
+	glm::vec3 feetPos = m_position + glm::vec3(DirectionVector(m_down)) * (HEIGHT * 0.5f);
+	glm::vec3 platformSearchMax = feetPos + 0.05f;
+	glm::vec3 platformSearchMin = feetPos - 0.05f;
+	float platformSearchDown = std::max(move[downDim] * downSign, 0.2f) * downSign;
+	platformSearchMax[downDim] = feetPos[downDim];
+	platformSearchMin[downDim] = feetPos[downDim] + platformSearchDown;
+	eg::AABB platformSearchAABB(platformSearchMin, platformSearchMax);
+	m_currentPlatform = ECPlatform::FindPlatform(platformSearchAABB, world.EntityManager());
+	
+	m_eyePosition = m_position + up * EYE_OFFSET;
+	if (m_gravityTransitionMode == TransitionMode::Fall)
+	{
+		m_eyePosition = glm::mix(m_oldEyePosition, m_eyePosition, TransitionInterpol());
+	}
+}
+
+void Player::ClipAndMove(const World& world, glm::vec3 move, bool skipPlatforms)
+{
+	const glm::vec3 up = -DirectionVector(m_down);
 	constexpr int MAX_CLIP_ITERATIONS = 10;
 	for (int i = 0; i < MAX_CLIP_ITERATIONS; i++)
 	{
@@ -328,9 +364,10 @@ void Player::Update(World& world, float dt)
 		clippingArgs.move = move;
 		clippingArgs.aabb = GetAABB();
 		clippingArgs.clipDist = 1;
+		clippingArgs.skipPlatforms = skipPlatforms;
 		CalcWorldClipping(world, clippingArgs);
 		
-		glm::vec3 clippedMove = move * (clippingArgs.clipDist * 0.99f);
+		glm::vec3 clippedMove = move * clippingArgs.clipDist;
 		m_position += clippedMove;
 		
 		const float nDotUp = glm::dot(clippingArgs.colPlaneNormal, up);
@@ -352,12 +389,6 @@ void Player::Update(World& world, float dt)
 	}
 	
 	m_position += CalcWorldCollisionCorrection(world, GetAABB());
-	
-	m_eyePosition = m_position + up * EYE_OFFSET;
-	if (m_gravityTransitionMode == TransitionMode::Fall)
-	{
-		m_eyePosition = glm::mix(m_oldEyePosition, m_eyePosition, TransitionInterpol());
-	}
 }
 
 void Player::FlipDown()
@@ -404,6 +435,7 @@ void Player::DebugDraw()
 	
 	const char* dirNames = "XYZ";
 	ImGui::Text("Facing: %c%c", forward[maxDir] < 0 ? '-' : '+', dirNames[maxDir]);
+	ImGui::Text(m_currentPlatform ? "Platform: Yes" : "Platform: No");
 }
 
 void Player::Reset()
@@ -412,4 +444,10 @@ void Player::Reset()
 	m_onGround = false;
 	m_isCarrying = false;
 	m_gravityTransitionMode = TransitionMode::None;
+	m_currentPlatform = nullptr;
+}
+
+glm::vec3 Player::FeetPosition() const
+{
+	return m_position + glm::vec3(DirectionVector(m_down)) * (HEIGHT * 0.5f * 0.95f);
 }

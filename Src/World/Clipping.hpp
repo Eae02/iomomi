@@ -5,6 +5,7 @@ struct ClippingArgs
 	//Inputs:
 	eg::AABB aabb;
 	glm::vec3 move;
+	bool skipPlatforms;
 	
 	//Outputs:
 	glm::vec3 colPlaneNormal;

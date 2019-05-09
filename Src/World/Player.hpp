@@ -59,6 +59,8 @@ public:
 	
 	void FlipDown();
 	
+	glm::vec3 FeetPosition() const;
+	
 	bool OnGround() const
 	{
 		return m_onGround;
@@ -81,6 +83,8 @@ public:
 	static constexpr float EYE_HEIGHT = HEIGHT * 0.75f;
 	
 private:
+	void ClipAndMove(const World& world, glm::vec3 move, bool skipPlatforms);
+	
 	Dir m_down = Dir::NegY;
 	
 	bool m_onGround = false;
@@ -109,4 +113,6 @@ private:
 	
 	float m_rotationYaw = 0;
 	float m_rotationPitch = 0;
+	
+	eg::Entity* m_currentPlatform = nullptr;
 };
