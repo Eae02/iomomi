@@ -52,6 +52,7 @@ inline glm::quat GetRotation(float yaw, float pitch, Dir down)
 void Player::Update(World& world, float dt)
 {
 	const glm::vec3 up = -DirectionVector(m_down);
+	eg::Entity* currentPlatform = m_currentPlatform.Get();
 	
 	auto TransitionInterpol = [&] { return glm::smoothstep(0.0f, 1.0f, m_transitionTime); };
 	
@@ -204,7 +205,7 @@ void Player::Update(World& world, float dt)
 		localVelVertical = JUMP_ACCEL;
 		m_onGround = false;
 	}
-	else if (m_currentPlatform == nullptr)
+	else if (currentPlatform == nullptr)
 	{
 		float gravity = GRAVITY;
 		gravity *= 1.0f + FALLING_GRAVITY_RAMP * glm::clamp(-localVelVertical, 0.0f, 1.0f);
@@ -225,7 +226,7 @@ void Player::Update(World& world, float dt)
 	
 	//Without this, onGround can turn off at high frame rates because
 	// the player is not being pushed into the ground hard enough.
-	if (m_onGround && m_currentPlatform == nullptr)
+	if (m_onGround && currentPlatform == nullptr)
 		move -= up * 0.001f;
 	
 	//Checks for intersections with gravity corners along the move vector
@@ -307,6 +308,7 @@ void Player::Update(World& world, float dt)
 		}
 	}
 	
+	//Activates floor buttons which the player is moving into
 	for (eg::Entity& floorButtonEntity : world.EntityManager().GetEntitySet(ECFloorButton::EntitySignature))
 	{
 		glm::vec3 toButton = glm::normalize(eg::GetEntityPosition(floorButtonEntity) - m_position);
@@ -319,31 +321,39 @@ void Player::Update(World& world, float dt)
 	
 	m_onGround = false;
 	
-	int downDim = (int)m_down / 2;
-	int downSign = ((int)m_down % 2) ? -1 : 1;
+	const int downDim = (int)m_down / 2;
+	const int downSign = ((int)m_down % 2) ? -1 : 1;
 	
-	if (m_currentPlatform != nullptr)
+	//Moves the player with the current platform, if one is set 
+	if (currentPlatform != nullptr)
 	{
-		glm::vec3 platformMove = m_currentPlatform->GetComponent<ECPlatform>().moveDelta;
+		glm::vec3 platformMove = currentPlatform->GetComponent<ECPlatform>().moveDelta;
 		
-		float fromPlatformY = m_position[downDim] - ECPlatform::GetPosition(*m_currentPlatform)[downDim];
-		platformMove -= std::min(fromPlatformY - (HEIGHT * 0.5f) - 0.05f, 0.0f) * up;
+		//The player's position should be slightly above the platform (PLAYER_PLATFORM_MARGIN)
+		// at all times to prevent the player from falling through the platform when it moves up.
+		constexpr float PLAYER_PLATFORM_MARGIN = 0.05f;
+		const float fromPlatformY = m_position[downDim] - ECPlatform::GetPosition(*currentPlatform)[downDim];
+		platformMove -= std::min(fromPlatformY - (HEIGHT * 0.5f) - PLAYER_PLATFORM_MARGIN, 0.0f) * up;
 		
 		ClipAndMove(world, platformMove, true);
-		m_onGround = true;
+		m_onGround = true; //Always on ground if on a platform
 	}
 	
 	ClipAndMove(world, move, false);
 	
-	glm::vec3 feetPos = m_position + glm::vec3(DirectionVector(m_down)) * (HEIGHT * 0.5f);
+	//Searches for a platform under the player's feet
+	const glm::vec3 feetPos = m_position + glm::vec3(DirectionVector(m_down)) * (HEIGHT * 0.5f);
 	glm::vec3 platformSearchMax = feetPos + 0.05f;
 	glm::vec3 platformSearchMin = feetPos - 0.05f;
-	float platformSearchDown = std::max(move[downDim] * downSign, 0.2f) * downSign;
 	platformSearchMax[downDim] = feetPos[downDim];
-	platformSearchMin[downDim] = feetPos[downDim] + platformSearchDown;
-	eg::AABB platformSearchAABB(platformSearchMin, platformSearchMax);
-	m_currentPlatform = ECPlatform::FindPlatform(platformSearchAABB, world.EntityManager());
+	platformSearchMin[downDim] = feetPos[downDim] + std::max(move[downDim] * downSign, 0.2f) * downSign;
+	currentPlatform = ECPlatform::FindPlatform(eg::AABB(platformSearchMin, platformSearchMax), world.EntityManager());
+	if (currentPlatform == nullptr)
+		m_currentPlatform = { };
+	else
+		m_currentPlatform = *currentPlatform;
 	
+	//Updates the eye position
 	m_eyePosition = m_position + up * EYE_OFFSET;
 	if (m_gravityTransitionMode == TransitionMode::Fall)
 	{
@@ -435,7 +445,6 @@ void Player::DebugDraw()
 	
 	const char* dirNames = "XYZ";
 	ImGui::Text("Facing: %c%c", forward[maxDir] < 0 ? '-' : '+', dirNames[maxDir]);
-	ImGui::Text(m_currentPlatform ? "Platform: Yes" : "Platform: No");
 }
 
 void Player::Reset()
@@ -444,7 +453,7 @@ void Player::Reset()
 	m_onGround = false;
 	m_isCarrying = false;
 	m_gravityTransitionMode = TransitionMode::None;
-	m_currentPlatform = nullptr;
+	m_currentPlatform = { };
 }
 
 glm::vec3 Player::FeetPosition() const

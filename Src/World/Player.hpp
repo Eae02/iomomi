@@ -114,5 +114,5 @@ private:
 	float m_rotationYaw = 0;
 	float m_rotationPitch = 0;
 	
-	eg::Entity* m_currentPlatform = nullptr;
+	eg::EntityHandle m_currentPlatform;
 };

@@ -172,7 +172,7 @@ namespace Cube
 				eg::AABB desiredAABB(desiredPosition - RADIUS * 1.001f, desiredPosition + RADIUS * 1.001f);
 				desiredPosition += CalcWorldCollisionCorrection(*args.world, desiredAABB, RADIUS);
 				
-				glm::vec3 deltaPos = (desiredPosition - entity.GetComponent<eg::ECPosition3D>().position) * 0.75f;
+				glm::vec3 deltaPos = desiredPosition - entity.GetComponent<eg::ECPosition3D>().position;
 				
 				rigidBody.GetRigidBody()->setGravity(btVector3(0, 0, 0));
 				rigidBody.GetRigidBody()->setLinearVelocity(bullet::FromGLM(deltaPos / std::max(args.dt, 1.0f / 60.0f)));

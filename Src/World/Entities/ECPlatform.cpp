@@ -98,22 +98,18 @@ void ECPlatform::HandleMessage(eg::Entity& entity, const CalculateCollisionMessa
 	if (message.clippingArgs->skipPlatforms)
 		return;
 	
-	const glm::vec3 localCoords[] =
-	{
-		glm::vec3(-1, 0, 0),
-		glm::vec3(1, 0, 0),
-		glm::vec3(1, 0, -2),
-		glm::vec3(-1, 0, -2),
-	};
+	//The platform's floor polygon in local space
+	const glm::vec3 floorLocalCoords[] = { { -1, 0, 0 }, { 1, 0, 0 }, { 1, 0, -2 }, { -1, 0, -2 } };
 	
+	//Transforms the floor polygon to world space
 	const glm::mat4 transform = GetPlatformTransform(entity);
-	glm::vec3 worldCoords[4];
+	glm::vec3 floorWorldCoords[4];
 	for (int i = 0; i < 4; i++)
 	{
-		worldCoords[i] = transform * glm::vec4(localCoords[i], 1.0f);
+		floorWorldCoords[i] = transform * glm::vec4(floorLocalCoords[i], 1.0f);
 	}
 	
-	CalcPolygonClipping(*message.clippingArgs, worldCoords);
+	CalcPolygonClipping(*message.clippingArgs, floorWorldCoords);
 }
 
 void ECPlatform::Update(const WorldUpdateArgs& args)
@@ -122,17 +118,20 @@ void ECPlatform::Update(const WorldUpdateArgs& args)
 	{
 		ECPlatform& platform = entity.GetComponent<ECPlatform>();
 		
-		const bool activated = entity.GetComponent<ECActivatable>().AllSourcesActive();
-		const float slideDelta = args.dt / platform.slideTime;
-		
 		const glm::vec3 oldPos = GetPosition(entity);
 		
+		//Updates the slide progress
+		const bool activated = entity.GetComponent<ECActivatable>().AllSourcesActive();
+		const float slideDelta = args.dt / platform.slideTime;
 		if (activated)
 			platform.slideProgress = std::min(platform.slideProgress + slideDelta, 1.0f);
 		else
 			platform.slideProgress = std::max(platform.slideProgress - slideDelta, 0.0f);
 		
+		//Sets the move delta, which will be used by the player update function
 		platform.moveDelta = GetPosition(entity) - oldPos;
+		
+		//Updates shadows if the platform moved
 		if (glm::length2(platform.moveDelta) > 1E-5f)
 		{
 			args.invalidateShadows(eg::Sphere::CreateEnclosing(GetAABB(entity)));
