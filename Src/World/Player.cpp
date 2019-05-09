@@ -15,7 +15,7 @@ static constexpr float DEACCEL_TIME = 0.05f;
 static constexpr float GRAVITY = 20;
 static constexpr float JUMP_HEIGHT = 1.1f;
 static constexpr float FALLING_GRAVITY_RAMP = 0.1f;
-static constexpr float MAX_VERTICAL_SPEED = 100;
+static constexpr float MAX_VERTICAL_SPEED = 300;
 
 //Constants which derive from previous
 static const float JUMP_ACCEL = std::sqrt(2.0f * JUMP_HEIGHT * GRAVITY);
