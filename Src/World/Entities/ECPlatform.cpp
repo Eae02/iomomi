@@ -2,6 +2,7 @@
 #include "ECWallMounted.hpp"
 #include "ECEditorVisible.hpp"
 #include "ECActivatable.hpp"
+#include "ECRigidBody.hpp"
 #include "../World.hpp"
 #include "../Clipping.hpp"
 #include "../WorldUpdateArgs.hpp"
@@ -13,16 +14,20 @@
 static eg::Model* platformModel;
 static eg::IMaterial* platformMaterial;
 
+static std::unique_ptr<btCollisionShape> platformCollisionShape;
+
 static void OnInit()
 {
 	platformModel = &eg::GetAsset<eg::Model>("Models/Platform.obj");
 	platformMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml");
+	
+	platformCollisionShape = std::make_unique<btBoxShape>(btVector3(1.0f, 0.05f, 1.0f));
 }
 
 EG_ON_INIT(OnInit)
 
 eg::EntitySignature ECPlatform::EntitySignature = eg::EntitySignature::Create<
-    eg::ECPosition3D, ECWallMounted, ECPlatform, ECEditorVisible, ECActivatable>();
+    eg::ECPosition3D, ECWallMounted, ECPlatform, ECEditorVisible, ECActivatable, ECRigidBody>();
 
 eg::MessageReceiver ECPlatform::MessageReceiver = eg::MessageReceiver::Create<ECPlatform,
     EditorDrawMessage, EditorRenderImGuiMessage, DrawMessage, RayIntersectMessage, CalculateCollisionMessage>();
@@ -30,6 +35,12 @@ eg::MessageReceiver ECPlatform::MessageReceiver = eg::MessageReceiver::Create<EC
 eg::Entity* ECPlatform::CreateEntity(eg::EntityManager& entityManager)
 {
 	eg::Entity& entity = entityManager.AddEntity(EntitySignature, nullptr, EntitySerializer);
+	
+	ECRigidBody& rigidBody = entity.GetComponent<ECRigidBody>();
+	rigidBody.Init(0.0f, *platformCollisionShape);
+	rigidBody.GetRigidBody()->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
+	rigidBody.GetRigidBody()->setActivationState(DISABLE_DEACTIVATION);
+	rigidBody.GetRigidBody()->setFriction(10.0f);
 	
 	entity.InitComponent<ECEditorVisible>("Platform");
 	
@@ -136,6 +147,12 @@ void ECPlatform::Update(const WorldUpdateArgs& args)
 		{
 			args.invalidateShadows(eg::Sphere::CreateEnclosing(GetAABB(entity)));
 		}
+		
+		ECRigidBody& rigidBody = entity.GetComponent<ECRigidBody>();
+		btTransform rbTransform;
+		rbTransform.setIdentity();
+		rbTransform.setOrigin(bullet::FromGLM(glm::vec3(GetPlatformTransform(entity) * glm::vec4(0.0f, -0.05f, -1.0f, 1.0f))));
+		rigidBody.SetWorldTransform(rbTransform);
 	}
 }
 

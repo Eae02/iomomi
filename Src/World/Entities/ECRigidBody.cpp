@@ -15,7 +15,7 @@ void ECRigidBody::SetMass(float mass)
 	m_rigidBody->setMassProps(mass, localInertia);
 }
 
-void ECRigidBody::PullTransform(eg::Entity& entity)
+void ECRigidBody::PullTransform(eg::Entity& entity, bool clearVelocity)
 {
 	ECRigidBody& rigidBody = entity.GetComponent<ECRigidBody>();
 	
@@ -35,9 +35,12 @@ void ECRigidBody::PullTransform(eg::Entity& entity)
 	rigidBody.m_motionState.setWorldTransform(transform);
 	rigidBody.m_rigidBody->setWorldTransform(transform);
 	
-	rigidBody.m_rigidBody->setLinearVelocity(btVector3(0.0f, 0.0f, 0.0f));
-	rigidBody.m_rigidBody->setAngularVelocity(btVector3(0.0f, 0.0f, 0.0f));
-	rigidBody.m_rigidBody->clearForces();
+	if (clearVelocity)
+	{
+		rigidBody.m_rigidBody->setLinearVelocity(btVector3(0.0f, 0.0f, 0.0f));
+		rigidBody.m_rigidBody->setAngularVelocity(btVector3(0.0f, 0.0f, 0.0f));
+		rigidBody.m_rigidBody->clearForces();
+	}
 }
 
 void ECRigidBody::PushTransform(eg::Entity& entity)

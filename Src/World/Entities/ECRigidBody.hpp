@@ -33,7 +33,7 @@ public:
 	void SetMass(float mass);
 	
 	//Copies the transform from the given entity's transform components to the rigid body
-	static void PullTransform(eg::Entity& entity);
+	static void PullTransform(eg::Entity& entity, bool clearVelocity = true);
 	
 	//Copies the transform from the given entity's rigid body to its transform components
 	static void PushTransform(eg::Entity& entity);

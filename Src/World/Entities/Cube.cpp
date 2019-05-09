@@ -16,7 +16,7 @@
 
 namespace Cube
 {
-	static constexpr float MASS = 10.0f;
+	static constexpr float MASS = 100.0f;
 	static constexpr float RADIUS = 0.4f;
 	
 	static std::unique_ptr<btCollisionShape> collisionShape;
