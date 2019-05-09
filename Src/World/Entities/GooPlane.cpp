@@ -159,7 +159,7 @@ namespace GooPlane
 		liquidPlane.MaybeUpdate(entity, *message.world);
 		
 		m_material.m_reflectionPlane.plane = { glm::vec3(0, 1, 0), entity.GetComponent<eg::ECPosition3D>().position };
-		m_material.m_reflectionPlane.texture = { };
+		m_material.m_reflectionPlane.texture = eg::TextureRef();
 		
 		if (liquidPlane.NumIndices() != 0)
 		{
