@@ -61,7 +61,7 @@ public:
 	
 	void PollSettingsChanged();
 	
-	static constexpr eg::Format DEPTH_FORMAT = eg::Format::Depth16;
+	static constexpr eg::Format DEPTH_FORMAT = eg::Format::Depth32;
 	static constexpr eg::Format LIGHT_COLOR_FORMAT_LDR = eg::Format::R8G8B8A8_UNorm;
 	static constexpr eg::Format LIGHT_COLOR_FORMAT_HDR = eg::Format::R16G16B16A16_Float;
 	
