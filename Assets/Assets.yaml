@@ -59,6 +59,7 @@ assets:
   - name: Models/Cube.obj 
   - name: Models/Button.obj
   - name: Models/Platform.obj
+  - name: Models/PlatformSlider.obj
   - name: Models/ActivationStripStraight.obj
   - name: Models/ActivationStripBend.obj
   
@@ -220,6 +221,15 @@ assets:
     mipShift: *MipShift
     srgb: false
     format: bc1
+
+  - name: Textures/PlatformSliderA.png
+    mipShift: *MipShift
+    srgb: true
+    format: bc1
+  - name: Textures/PlatformSliderM.png
+    mipShift: *MipShift
+    srgb: false
+    format: bc1
     
   - name: Textures/Hex.png
     srgb: false
@@ -312,4 +322,6 @@ assets:
   - name: Materials/GravityCorner.yaml
     generator: StaticPropMaterial
     loader: StaticPropMaterial
-  
+  - name: Materials/PlatformSlider.yaml
+    generator: StaticPropMaterial
+    loader: StaticPropMaterial  

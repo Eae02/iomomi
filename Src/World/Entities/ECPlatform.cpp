@@ -14,12 +14,18 @@
 static eg::Model* platformModel;
 static eg::IMaterial* platformMaterial;
 
+static eg::Model* platformSliderModel;
+static eg::IMaterial* platformSliderMaterial;
+
 static std::unique_ptr<btCollisionShape> platformCollisionShape;
 
 static void OnInit()
 {
 	platformModel = &eg::GetAsset<eg::Model>("Models/Platform.obj");
 	platformMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml");
+	
+	platformSliderModel = &eg::GetAsset<eg::Model>("Models/PlatformSlider.obj");
+	platformSliderMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/PlatformSlider.yaml");
 	
 	platformCollisionShape = std::make_unique<btBoxShape>(btVector3(1.0f, 0.05f, 1.0f));
 }
@@ -32,6 +38,8 @@ eg::EntitySignature ECPlatform::EntitySignature = eg::EntitySignature::Create<
 eg::MessageReceiver ECPlatform::MessageReceiver = eg::MessageReceiver::Create<ECPlatform,
     EditorDrawMessage, EditorRenderImGuiMessage, DrawMessage, RayIntersectMessage, CalculateCollisionMessage>();
 
+std::vector<glm::vec3> GetPlatformConnectionPoints(const eg::Entity& entity);
+
 eg::Entity* ECPlatform::CreateEntity(eg::EntityManager& entityManager)
 {
 	eg::Entity& entity = entityManager.AddEntity(EntitySignature, nullptr, EntitySerializer);
@@ -43,18 +51,43 @@ eg::Entity* ECPlatform::CreateEntity(eg::EntityManager& entityManager)
 	rigidBody.GetRigidBody()->setFriction(10.0f);
 	
 	entity.InitComponent<ECEditorVisible>("Platform");
+	entity.InitComponent<ECActivatable>(&GetPlatformConnectionPoints);
 	
 	return &entity;
 }
 
+static const glm::mat4 PLATFORM_ROTATION_MATRIX(0, 0, -1, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 1);
+
+//Gets the transformation matrix for the platform without any sliding
+inline glm::mat4 GetPlatformBaseTransform(const eg::Entity& entity)
+{
+	return ECWallMounted::GetTransform(entity, 1.0f) * PLATFORM_ROTATION_MATRIX;
+}
+
+//Gets the transformation matrix for the platform, slided to it's current position
 inline glm::mat4 GetPlatformTransform(const eg::Entity& entity)
 {
 	const ECPlatform& platform = entity.GetComponent<ECPlatform>();
 	const glm::vec2 slideOffset = platform.slideOffset * glm::smoothstep(0.0f, 1.0f, platform.slideProgress);
 	
-	return ECWallMounted::GetTransform(entity, 1.0f) *
-		glm::mat4(glm::vec4(0, 0, -1, 0), glm::vec4(1, 0, 0, 0), glm::vec4(0, -1, 0, 0), glm::vec4(0, 0, 0, 1)) *
-		glm::translate(glm::mat4(1.0f), glm::vec3(slideOffset.x, slideOffset.y, 0));
+	return glm::translate(GetPlatformBaseTransform(entity), glm::vec3(slideOffset.x, slideOffset.y, 0));
+}
+
+std::vector<glm::vec3> GetPlatformConnectionPoints(const eg::Entity& entity)
+{
+	const glm::mat4 baseTransform = GetPlatformBaseTransform(entity);
+	const ECPlatform& platform = entity.GetComponent<ECPlatform>();
+	
+	const float connectionPoints[] = { 0.0f, 0.5f, 1.0f };
+	
+	std::vector<glm::vec3> connectionPointsWS(std::size(connectionPoints));
+	for (size_t i = 0; i < std::size(connectionPoints); i++)
+	{
+		const glm::vec2 slideOffset = platform.slideOffset * connectionPoints[i];
+		connectionPointsWS[i] = baseTransform * glm::vec4(slideOffset.x, slideOffset.y, 0, 1);
+	}
+	
+	return connectionPointsWS;
 }
 
 glm::vec3 ECPlatform::GetPosition(const eg::Entity& entity)
@@ -80,14 +113,37 @@ eg::Entity* ECPlatform::FindPlatform(const eg::AABB& searchAABB, eg::EntityManag
 	return nullptr;
 }
 
+inline void DrawPlatform(const eg::Entity& entity, eg::MeshBatch& meshBatch)
+{
+	const ECPlatform& platform = entity.GetComponent<ECPlatform>();
+	const float slideDist = glm::length(platform.slideOffset);
+	
+	constexpr float SLIDER_MODEL_SCALE = 0.75f;
+	constexpr float SLIDER_MODEL_LENGTH = 0.2f;
+	const int numSliderInstances = std::round(slideDist / (SLIDER_MODEL_LENGTH * SLIDER_MODEL_SCALE));
+	
+	const glm::vec3 localFwd = glm::normalize(glm::vec3(platform.slideOffset.y, 0, -platform.slideOffset.x));
+	const glm::vec3 localUp(0, 1, 0);
+	const glm::mat4 sliderTransform = ECWallMounted::GetTransform(entity, 1.0f) *
+		glm::mat4(glm::mat3(glm::cross(localUp, localFwd), localUp, localFwd) * SLIDER_MODEL_SCALE);
+	
+	for (int i = 1; i <= numSliderInstances; i++)
+	{
+		meshBatch.AddModel(*platformSliderModel, *platformSliderMaterial,
+			glm::translate(sliderTransform, glm::vec3(0, 0, SLIDER_MODEL_LENGTH * i)));
+	}
+	
+	meshBatch.AddModel(*platformModel, *platformMaterial, GetPlatformTransform(entity));
+}
+
 void ECPlatform::HandleMessage(eg::Entity& entity, const EditorDrawMessage& message)
 {
-	message.meshBatch->AddModel(*platformModel, *platformMaterial, GetPlatformTransform(entity));
+	DrawPlatform(entity, *message.meshBatch);
 }
 
 void ECPlatform::HandleMessage(eg::Entity& entity, const DrawMessage& message)
 {
-	message.meshBatch->AddModel(*platformModel, *platformMaterial, GetPlatformTransform(entity));
+	DrawPlatform(entity, *message.meshBatch);
 }
 
 void ECPlatform::HandleMessage(eg::Entity& entity, const EditorRenderImGuiMessage& message)
@@ -148,10 +204,12 @@ void ECPlatform::Update(const WorldUpdateArgs& args)
 			args.invalidateShadows(eg::Sphere::CreateEnclosing(GetAABB(entity)));
 		}
 		
+		static const glm::vec4 RIGID_BODY_OFFSET_LOCAL(0, -0.05f, -1, 1);
+		
 		ECRigidBody& rigidBody = entity.GetComponent<ECRigidBody>();
 		btTransform rbTransform;
 		rbTransform.setIdentity();
-		rbTransform.setOrigin(bullet::FromGLM(glm::vec3(GetPlatformTransform(entity) * glm::vec4(0.0f, -0.05f, -1.0f, 1.0f))));
+		rbTransform.setOrigin(bullet::FromGLM(glm::vec3(GetPlatformTransform(entity) * RIGID_BODY_OFFSET_LOCAL)));
 		rigidBody.SetWorldTransform(rbTransform);
 	}
 }
