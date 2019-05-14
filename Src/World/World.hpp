@@ -101,6 +101,8 @@ public:
 		return *m_entityManager;
 	}
 	
+	bool playerHasGravityGun = false;
+	
 private:
 	explicit World(eg::EntityManager* entityManager)
 		: m_entityManager(entityManager) { }

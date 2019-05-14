@@ -24,6 +24,16 @@ public:
 		return m_position;
 	}
 	
+	const glm::quat& Rotation() const
+	{
+		return m_rotation;
+	}
+	
+	const glm::vec3& Velocity() const
+	{
+		return m_velocity;
+	}
+	
 	glm::vec3 Forward() const;
 	
 	void SetPosition(const glm::vec3& position)

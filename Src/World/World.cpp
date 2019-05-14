@@ -16,8 +16,6 @@
 
 #include <yaml-cpp/yaml.h>
 
-static const uint32_t CURRENT_VERSION = 1;
-
 std::tuple<glm::ivec3, glm::ivec3> World::DecomposeGlobalCoordinate(const glm::ivec3& globalC)
 {
 	glm::ivec3 localCoord(globalC.x & (REGION_SIZE - 1), globalC.y & (REGION_SIZE - 1), globalC.z & (REGION_SIZE - 1));
@@ -40,7 +38,7 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 	std::unique_ptr<World> world(new World(nullptr));
 	
 	const uint32_t version = eg::BinRead<uint32_t>(stream);
-	if (version != CURRENT_VERSION)
+	if (version != 1 && version != 2)
 	{
 		eg::Log(eg::LogLevel::Error, "wd", "Unsupported world format");
 		return nullptr;
@@ -72,6 +70,11 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 		return nullptr;
 	}
 	
+	if (version == 2)
+	{
+		world->playerHasGravityGun = eg::BinRead<uint8_t>(stream);
+	}
+	
 	world->m_entityManager.reset(eg::EntityManager::Deserialize(stream, entitySerializers));
 	
 	if (!isEditor)
@@ -89,6 +92,8 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 
 void World::Save(std::ostream& outStream) const
 {
+	static const uint32_t CURRENT_VERSION = 2;
+	
 	outStream.write(MAGIC, sizeof(MAGIC));
 	eg::BinWrite(outStream, CURRENT_VERSION);
 	
@@ -102,6 +107,8 @@ void World::Save(std::ostream& outStream) const
 		
 		eg::WriteCompressedSection(outStream, region.data->voxels, sizeof(RegionData::voxels));
 	}
+	
+	eg::BinWrite<uint8_t>(outStream, playerHasGravityGun);
 	
 	m_entityManager->Serialize(outStream);
 }

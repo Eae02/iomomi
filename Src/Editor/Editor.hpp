@@ -110,6 +110,8 @@ private:
 	
 	glm::ivec2 m_mouseDownPos;
 	bool m_isDraggingWallEntity = false;
+	
+	bool m_levelSettingsOpen = false;
 };
 
 extern Editor* editor;

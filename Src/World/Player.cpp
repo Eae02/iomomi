@@ -77,7 +77,7 @@ void Player::Update(World& world, float dt)
 		}
 	}
 	
-	if (m_gravityTransitionMode == TransitionMode::None)
+	if (m_gravityTransitionMode == TransitionMode::None && !eg::IsButtonDown(eg::Button::F8))
 	{
 		const float MOUSE_SENSITIVITY = -0.005f;
 		const float GAME_PAD_AXIS_SENSITIVITY = 2.0f;

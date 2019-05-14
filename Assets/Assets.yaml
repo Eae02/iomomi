@@ -60,6 +60,7 @@ assets:
   - name: Models/Button.obj
   - name: Models/Platform.obj
   - name: Models/PlatformSlider.obj
+  - name: Models/GravityGun.obj
   - name: Models/ActivationStripStraight.obj
   - name: Models/ActivationStripBend.obj
   
@@ -105,6 +106,19 @@ assets:
     srgb: false
     format: bc5
   - name: Textures/Entrance/DoorM.png
+    mipShift: *MipShift
+    srgb: false
+    format: bc1
+
+  - name: Textures/GravityGunMainA.png
+    mipShift: *MipShift
+    srgb: true
+    format: bc1
+  - name: Textures/GravityGunMainN.png
+    mipShift: *MipShift
+    srgb: false
+    format: bc5
+  - name: Textures/GravityGunMainM.png
     mipShift: *MipShift
     srgb: false
     format: bc1
@@ -287,6 +301,9 @@ assets:
     generator: StaticPropMaterial
     loader: StaticPropMaterial
   - name: Materials/Cube.yaml
+    generator: StaticPropMaterial
+    loader: StaticPropMaterial
+  - name: Materials/GravityGunMainA.yaml
     generator: StaticPropMaterial
     loader: StaticPropMaterial
   - name: Materials/GravitySwitch.yaml

@@ -21,6 +21,8 @@ MainGameState::MainGameState(RenderContext& renderCtx)
 {
 	m_prepareDrawArgs.isEditor = false;
 	m_prepareDrawArgs.meshBatch = &m_renderCtx->meshBatch;
+	m_projection.SetZNear(0.02f);
+	m_projection.SetZFar(200.0f);
 	
 	eg::console::AddCommand("relms", 0, [this] (eg::Span<const std::string_view> args)
 	{
@@ -159,7 +161,10 @@ void MainGameState::RunFrame(float dt)
 		m_player.Update(*m_world, dt);
 		
 		UpdateViewProjMatrices();
-		m_gravityGun.Update(*m_world, m_player, inverseViewProjMatrix);
+		if (m_world->playerHasGravityGun)
+		{
+			m_gravityGun.Update(*m_world, m_player, inverseViewProjMatrix, dt);
+		}
 		
 		eg::Entity* currentExit = nullptr;
 		ECEntrance::Update(updateArgs, &currentExit);
@@ -247,6 +252,10 @@ void MainGameState::RunFrame(float dt)
 	m_prepareDrawArgs.pointLights.clear();
 	m_prepareDrawArgs.reflectionPlanes.clear();
 	m_world->PrepareForDraw(m_prepareDrawArgs);
+	if (m_world->playerHasGravityGun)
+	{
+		m_gravityGun.Draw(m_renderCtx->meshBatch);
+	}
 	
 	m_renderCtx->meshBatch.End(eg::DC);
 	

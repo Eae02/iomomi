@@ -1,0 +1,7 @@
+albedo: ../Textures/GravityGunMainA.png
+normalMap: ../Textures/GravityGunMainN.png
+miscMap: ../Textures/GravityGunMainM.png
+roughnessMin: 0.2
+roughnessMax: 0.8
+backfaceCull: true
+castShadows: false

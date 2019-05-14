@@ -107,6 +107,15 @@ void Editor::RunFrame(float dt)
 	if (m_world == nullptr)
 		return;
 	
+	if (m_levelSettingsOpen)
+	{
+		if (ImGui::Begin("Level Settings", &m_levelSettingsOpen))
+		{
+			ImGui::Checkbox("Has Gravity Gun", &m_world->playerHasGravityGun);
+		}
+		ImGui::End();
+	}
+	
 	WorldUpdateArgs entityUpdateArgs;
 	entityUpdateArgs.dt = dt;
 	entityUpdateArgs.player = nullptr;
@@ -1016,6 +1025,16 @@ void Editor::DrawMenuBar()
 			{
 				m_levelName.clear();
 				m_world = nullptr;
+			}
+			
+			ImGui::EndMenu();
+		}
+		
+		if (ImGui::BeginMenu("View"))
+		{
+			if (ImGui::MenuItem("Level Settings"))
+			{
+				m_levelSettingsOpen = true;
 			}
 			
 			ImGui::EndMenu();
