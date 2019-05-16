@@ -132,7 +132,7 @@ void ECLiquidPlane::GenerateMesh(const eg::Entity& entity)
 	void* uploadMem = uploadBuffer.Map();
 	std::memcpy(uploadMem, vertices.data(), verticesSize);
 	std::memcpy(static_cast<char*>(uploadMem) + verticesSize, indices.data(), indicesSize);
-	uploadBuffer.Unmap();
+	uploadBuffer.Flush();
 	
 	if (m_verticesCapacity < vertices.size())
 	{

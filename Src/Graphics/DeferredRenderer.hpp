@@ -27,6 +27,11 @@ public:
 			return m_samples;
 		}
 		
+		eg::TextureRef ResolvedDepthTexture() const
+		{
+			return m_samples <= 1 ? m_gbDepthTexture : m_resolvedDepthTexture;
+		}
+		
 	private:
 		friend class DeferredRenderer;
 		
@@ -38,6 +43,8 @@ public:
 		eg::Texture m_gbColor2Texture;
 		eg::Texture m_gbDepthTexture;
 		eg::Framebuffer m_gbFramebuffer;
+		
+		eg::Texture m_resolvedDepthTexture;
 		
 		eg::Texture m_emissiveTexture;
 		

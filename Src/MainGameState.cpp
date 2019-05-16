@@ -17,12 +17,14 @@
 MainGameState* mainGameState;
 
 MainGameState::MainGameState(RenderContext& renderCtx)
-	: m_renderCtx(&renderCtx)
+	: m_renderCtx(&renderCtx), m_particleManager(&m_particleRenderer.GetTexture())
 {
 	m_prepareDrawArgs.isEditor = false;
 	m_prepareDrawArgs.meshBatch = &m_renderCtx->meshBatch;
 	m_projection.SetZNear(0.02f);
 	m_projection.SetZFar(200.0f);
+	
+	//m_particleEmitterInstance = m_particleManager.AddEmitter(eg::GetAsset<eg::ParticleEmitterType>("Particles/BlueOrb.ype"));
 	
 	eg::console::AddCommand("relms", 0, [this] (eg::Span<const std::string_view> args)
 	{
@@ -110,6 +112,8 @@ void MainGameState::DoDeferredRendering(bool useLightProbes, DeferredRenderer::R
 		m_renderCtx->renderer.DrawSpotLights(renderTarget, m_prepareDrawArgs.spotLights);
 		m_renderCtx->renderer.DrawPointLights(renderTarget, m_prepareDrawArgs.pointLights);
 		
+		m_particleRenderer.Draw(m_particleManager, renderTarget.ResolvedDepthTexture());
+		
 		m_renderCtx->renderer.End(renderTarget);
 	}
 }
@@ -163,8 +167,10 @@ void MainGameState::RunFrame(float dt)
 		UpdateViewProjMatrices();
 		if (m_world->playerHasGravityGun)
 		{
-			m_gravityGun.Update(*m_world, m_player, inverseViewProjMatrix, dt);
+			m_gravityGun.Update(*m_world, m_particleManager, m_player, inverseViewProjMatrix, dt);
 		}
+		
+		eg::ECParticleSystem::Update(m_world->EntityManager());
 		
 		eg::Entity* currentExit = nullptr;
 		ECEntrance::Update(updateArgs, &currentExit);
@@ -191,6 +197,8 @@ void MainGameState::RunFrame(float dt)
 		eg::SetRelativeMouseMode(false);
 		UpdateViewProjMatrices();
 	}
+	
+	eg::Frustum frustum(inverseViewProjMatrix);
 	
 	if (m_lastSettingsGeneration != SettingsGeneration())
 	{
@@ -260,6 +268,8 @@ void MainGameState::RunFrame(float dt)
 	m_renderCtx->meshBatch.End(eg::DC);
 	
 	cpuTimerPrepare.Stop();
+	
+	m_particleManager.Step(dt, frustum, m_player.Rotation() * glm::vec3(0, 0, -1));
 	
 	auto cpuTimerPlanarRefl = eg::StartCPUTimer("Planar Reflections");
 	auto gpuTimerPlanarRefl = eg::StartGPUTimer("Planar Reflections");
@@ -333,6 +343,7 @@ void MainGameState::DrawOverlay(float dt)
 	ImGui::Text("Graphics API: %s", graphicsAPIName);
 	ImGui::Separator();
 	m_player.DebugDraw();
+	ImGui::Text("Particles: %d", m_particleManager.ParticlesToDraw());
 	
 	ImGui::End();
 	ImGui::PopStyleVar();

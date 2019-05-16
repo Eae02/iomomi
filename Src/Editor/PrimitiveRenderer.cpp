@@ -121,7 +121,7 @@ void PrimitiveRenderer::End()
 			indicesOut[3 * i + j] = m_triangles[i].indices[j];
 	}
 	
-	uploadBuffer.Unmap();
+	uploadBuffer.Flush();
 	
 	//Uploads vertices and indices to the GPU
 	eg::DC.CopyBuffer(uploadBuffer.buffer, m_vertexBuffer, uploadBuffer.offset, 0, verticesBytes);

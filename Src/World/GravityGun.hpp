@@ -18,13 +18,12 @@ class GravityGun
 public:
 	GravityGun();
 	
-	void Update(class World& world, const class Player& player, const glm::mat4& inverseViewProj, float dt);
+	void Update(class World& world, eg::ParticleManager& particleManager, const class Player& player,
+		const glm::mat4& inverseViewProj, float dt);
 	
 	void Draw(eg::MeshBatch& meshBatch);
 	
 private:
-	eg::EntityHandle m_gravityChargedEntity;
-	
 	glm::vec3 m_gunOffset;
 	glm::mat4 m_gunTransform;
 	

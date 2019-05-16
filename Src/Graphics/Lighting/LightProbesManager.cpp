@@ -226,7 +226,7 @@ void LightProbesManager::PrepareForDraw(const glm::vec3& cameraPosition)
 		probes[i].inflInner = probe.influenceRad;
 		probes[i].inflFalloff = glm::vec3(1.0f) / probe.influenceFade;
 	}
-	uploadBuffer.Unmap();
+	uploadBuffer.Flush();
 	
 	eg::DC.CopyBuffer(uploadBuffer.buffer, m_probesUniformBuffer, uploadBuffer.offset, 0, uploadBuffer.range);
 	m_probesUniformBuffer.UsageHint(eg::BufferUsage::UniformBuffer, eg::ShaderAccessFlags::Fragment);

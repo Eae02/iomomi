@@ -46,6 +46,8 @@ assets:
   - name: Shaders/GravitySwitchVolLight.fs.glsl
   - name: Shaders/Decal.vs.glsl
   - name: Shaders/Decal.fs.glsl
+  - name: Shaders/Particle.vs.glsl
+  - name: Shaders/Particle.fs.glsl
   - name: Shaders/GooPlane.vs.glsl
   - name: Shaders/GooPlane.fs.glsl
   - name: Shaders/GooPlane-Emissive.fs.glsl
@@ -64,6 +66,8 @@ assets:
   - name: Models/ActivationStripStraight.obj
   - name: Models/ActivationStripBend.obj
   
+  - name: Particles/BlueOrb.ype
+  
   #Textures:
   - name: Textures/EntityIcons.png
   - name: Textures/NoDraw.png
@@ -81,6 +85,12 @@ assets:
     
   - name: Textures/StainDecal0.png
     mipShift: *MipShift
+    srgb: true
+    format: bc3
+
+  - name: Textures/Particles.png
+    mipShift: *MipShift
+    mipLevels: 8
     srgb: true
     format: bc3
     

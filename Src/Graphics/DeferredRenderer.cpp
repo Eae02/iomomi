@@ -132,6 +132,20 @@ DeferredRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height, ui
 	gbFramebufferCI.colorAttachments = gbColorAttachments;
 	gbFramebufferCI.depthStencilAttachment = m_gbDepthTexture.handle;
 	
+	if (samples > 1)
+	{
+		eg::Texture2DCreateInfo resolvedDepthTexCreateInfo;
+		resolvedDepthTexCreateInfo.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample;
+		resolvedDepthTexCreateInfo.width = m_width;
+		resolvedDepthTexCreateInfo.height = m_height;
+		resolvedDepthTexCreateInfo.sampleCount = 1;
+		resolvedDepthTexCreateInfo.mipLevels = 1;
+		resolvedDepthTexCreateInfo.format = DeferredRenderer::DEPTH_FORMAT;
+		m_resolvedDepthTexture = eg::Texture::Create2D(resolvedDepthTexCreateInfo);
+		
+		gbFramebufferCI.depthStencilResolveAttachment = m_resolvedDepthTexture.handle;
+	}
+	
 	m_gbFramebuffer = eg::Framebuffer(gbFramebufferCI);
 	
 	eg::FramebufferAttachment lightFBAttachments[1];

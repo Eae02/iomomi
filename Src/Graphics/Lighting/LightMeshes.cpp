@@ -115,7 +115,7 @@ static void Initialize()
 	indexBuffer = { eg::BufferFlags::CopyDst | eg::BufferFlags::IndexBuffer, indicesBytes, nullptr };
 	vertexBuffer = { eg::BufferFlags::CopyDst | eg::BufferFlags::VertexBuffer, verticesBytes, nullptr };
 	
-	uploadBuffer.Unmap(0, uploadBytes);
+	uploadBuffer.Flush(0, uploadBytes);
 	
 	eg::DC.CopyBuffer(uploadBuffer, vertexBuffer, 0, 0, verticesBytes);
 	eg::DC.CopyBuffer(uploadBuffer, indexBuffer, verticesBytes, 0, indicesBytes);

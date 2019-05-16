@@ -457,7 +457,7 @@ void World::PrepareRegionMeshes(bool isEditor)
 				}
 			}
 			
-			uploadBuffer.Unmap();
+			uploadBuffer.Flush();
 			
 			//Reallocates the vertex buffer if it is too small
 			if (m_voxelVertexBufferCapacity < totalVertices)

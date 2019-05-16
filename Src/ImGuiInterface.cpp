@@ -86,7 +86,7 @@ ImGuiInterface::ImGuiInterface()
 	eg::Buffer fontUploadBuffer(eg::BufferFlags::CopySrc | eg::BufferFlags::HostAllocate | eg::BufferFlags::MapWrite, fontTexBytes, nullptr);
 	void* fontUploadMem = fontUploadBuffer.Map(0, fontTexBytes);
 	std::memcpy(fontUploadMem, fontTexPixels, fontTexBytes);
-	fontUploadBuffer.Unmap(0, fontTexBytes);
+	fontUploadBuffer.Flush(0, fontTexBytes);
 	
 	eg::SamplerDescription fontTexSampler;
 	fontTexSampler.wrapU = eg::WrapMode::ClampToEdge;
@@ -232,7 +232,7 @@ void ImGuiInterface::EndFrame()
 		indexCount += cmdList->IdxBuffer.Size;
 	}
 	
-	uploadBuffer.Unmap();
+	uploadBuffer.Flush();
 	
 	eg::DC.CopyBuffer(uploadBuffer.buffer, m_vertexBuffer, uploadBuffer.offset, 0, verticesBytes);
 	eg::DC.CopyBuffer(uploadBuffer.buffer, m_indexBuffer, uploadBuffer.offset + verticesBytes, 0, indicesBytes);
