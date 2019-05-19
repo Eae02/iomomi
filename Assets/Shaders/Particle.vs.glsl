@@ -25,7 +25,8 @@ void main()
 	vec2 sinCos = in2.xy * (510.0 / 254.0) - 1.0;
 	mat2 rotationMatrixL = mat2(sinCos.y, -sinCos.x, sinCos.x, sinCos.y);
 	mat2x3 rotationMatrixW = mat2x3(left, up);
-	vec3 worldPos = in0.xyz + rotationMatrixW * (rotationMatrixL * ((position_in * 2 - 1) * in0.w));
+	vec2 localPos = (rotationMatrixL * (position_in * 2 - 1)) * in0.w;
+	vec3 worldPos = in0.xyz + left * localPos.x + up * localPos.y;
 	
 	texCoord_out = mix(in1.xy, in1.zw, position_in);
 	opacity_out = in2.z;

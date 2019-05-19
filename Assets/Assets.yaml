@@ -89,7 +89,6 @@ assets:
     format: bc3
 
   - name: Textures/Particles.png
-    mipShift: *MipShift
     mipLevels: 8
     srgb: true
     format: bc3

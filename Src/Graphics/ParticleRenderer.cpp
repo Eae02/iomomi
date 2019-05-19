@@ -19,6 +19,7 @@ ParticleRenderer::ParticleRenderer()
 	
 	const float vertices[] = { 0, 0, 1, 0, 0, 1, 1, 1 };
 	m_vertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer, sizeof(vertices), vertices);
+	m_vertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
 	
 	m_texture = &eg::GetAsset<eg::Texture>("Textures/Particles.png");
 }
@@ -36,5 +37,5 @@ void ParticleRenderer::Draw(const eg::ParticleManager& particleManager, eg::Text
 	eg::DC.BindVertexBuffer(0, m_vertexBuffer, 0);
 	eg::DC.BindVertexBuffer(1, particleManager.ParticlesBuffer(), 0);
 	
-	eg::DC.Draw(0, 6, 0, particleManager.ParticlesToDraw());
+	eg::DC.Draw(0, 4, 0, particleManager.ParticlesToDraw());
 }

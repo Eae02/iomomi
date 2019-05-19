@@ -37,7 +37,7 @@ static float GUN_SCALE = 0.04f;
 static float GUN_BOB_SCALE = 0.3f;
 static float GUN_BOB_SPEED = 4.0f;
 
-static float ORB_SPEED = 10.0f;
+static float ORB_SPEED = 30.0f;
 
 void GravityGun::Update(World& world, eg::ParticleManager& particleManager, const Player& player,
 	const glm::mat4& inverseViewProj, float dt)

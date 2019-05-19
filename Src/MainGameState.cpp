@@ -17,7 +17,7 @@
 MainGameState* mainGameState;
 
 MainGameState::MainGameState(RenderContext& renderCtx)
-	: m_renderCtx(&renderCtx), m_particleManager(&m_particleRenderer.GetTexture())
+	: m_renderCtx(&renderCtx)
 {
 	m_prepareDrawArgs.isEditor = false;
 	m_prepareDrawArgs.meshBatch = &m_renderCtx->meshBatch;
@@ -35,6 +35,8 @@ MainGameState::MainGameState(RenderContext& renderCtx)
 	{
 		m_postProcessor.bloomIntensity = std::stof(std::string(args[0]));
 	});
+	
+	m_particleManager.SetTextureSize(1024, 1024);
 }
 
 void MainGameState::LoadWorld(std::istream& stream, int64_t levelIndex, const eg::Entity* exitEntity)
