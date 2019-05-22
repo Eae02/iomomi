@@ -5,3 +5,6 @@ button_0: button_1
 button_1: button_2
 button_2: button_3
 button_3: gravgun_0
+gravgun_0: gravgun_1
+gravgun_1: gravgun_2
+gravgun_2: gravgun_3
