@@ -8,3 +8,5 @@ button_3: gravgun_0
 gravgun_0: gravgun_1
 gravgun_1: gravgun_2
 gravgun_2: gravgun_3
+gravgun_3: gravgun_4
+gravgun_4: gravgun_5
