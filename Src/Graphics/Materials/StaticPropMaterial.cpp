@@ -7,7 +7,7 @@
 
 #include <fstream>
 
-static const eg::AssetFormat StaticPropMaterialAssetFormat { "StaticPropMaterial", 3 };
+static const eg::AssetFormat StaticPropMaterialAssetFormat { "StaticPropMaterial", 4 };
 
 class StaticPropMaterialGenerator : public eg::AssetGenerator
 {
@@ -29,6 +29,7 @@ public:
 		const float texScaleY = rootYaml["textureScaleY"].as<float>(texScale);
 		const bool backfaceCull = rootYaml["backfaceCull"].as<bool>(true);
 		const bool castShadows = rootYaml["castShadows"].as<bool>(true);
+		const bool reflect = rootYaml["reflect"].as<bool>(true);
 		
 		std::string albedoPath = rootYaml["albedo"].as<std::string>(std::string());
 		std::string normalMapPath = rootYaml["normalMap"].as<std::string>(std::string());
@@ -50,6 +51,7 @@ public:
 		eg::BinWrite(generateContext.outputStream, texScaleY);
 		eg::BinWrite<uint8_t>(generateContext.outputStream, (uint8_t)backfaceCull);
 		eg::BinWrite<uint8_t>(generateContext.outputStream, (uint8_t)castShadows);
+		eg::BinWrite<uint8_t>(generateContext.outputStream, (uint8_t)reflect);
 		
 		generateContext.AddLoadDependency(std::move(albedoPath));
 		generateContext.AddLoadDependency(std::move(normalMapPath));
@@ -185,6 +187,7 @@ bool StaticPropMaterial::AssetLoader(const eg::AssetLoadContext& loadContext)
 	material.m_textureScale.y = 1.0f / eg::BinRead<float>(stream);
 	material.m_backfaceCull = eg::BinRead<uint8_t>(stream);
 	material.m_castShadows = eg::BinRead<uint8_t>(stream);
+	material.m_reflect = eg::BinRead<uint8_t>(stream);
 	
 	return true;
 }
@@ -234,6 +237,8 @@ bool StaticPropMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs
 	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
 	if (mDrawArgs->drawMode == MeshDrawMode::PointLightShadow)
 		return m_castShadows;
+	if (mDrawArgs->drawMode == MeshDrawMode::PlanarReflection && !m_reflect)
+		return false;
 	
 	if (!m_descriptorsInitialized)
 	{

@@ -25,11 +25,11 @@ ECDecal::ECDecal()
 
 void ECDecal::SetMaterialByName(std::string_view materialName)
 {
-	for (int i = 0; i < std::size(decalMaterials); i++)
+	for (size_t i = 0; i < std::size(decalMaterials); i++)
 	{
 		if (decalMaterials[i] == materialName)
 		{
-			m_decalMaterialIndex = i;
+			m_decalMaterialIndex = (int)i;
 			UpdateMaterialPointer();
 			return;
 		}

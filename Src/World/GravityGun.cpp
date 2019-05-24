@@ -27,7 +27,8 @@ GravityGun::GravityGun()
 	
 	std::fill(m_materials.begin(), m_materials.end(), &eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml"));
 	
-	m_materials.at(m_model->GetMaterialIndex("Main")) = &eg::GetAsset<StaticPropMaterial>("Materials/GravityGunMainA.yaml");
+	m_materials.at(m_model->GetMaterialIndex("EnergyCyl")) = &eg::GetAsset<StaticPropMaterial>("Materials/GravityGunMid.yaml");
+	m_materials.at(m_model->GetMaterialIndex("Main")) = &eg::GetAsset<StaticPropMaterial>("Materials/GravityGunMain.yaml");
 }
 
 static glm::vec3 GUN_POSITION(2.44f, -2.16f, -6.5f);

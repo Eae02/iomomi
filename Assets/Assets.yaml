@@ -312,7 +312,10 @@ assets:
   - name: Materials/Cube.yaml
     generator: StaticPropMaterial
     loader: StaticPropMaterial
-  - name: Materials/GravityGunMainA.yaml
+  - name: Materials/GravityGunMain.yaml
+    generator: StaticPropMaterial
+    loader: StaticPropMaterial
+  - name: Materials/GravityGunMid.yaml
     generator: StaticPropMaterial
     loader: StaticPropMaterial
   - name: Materials/GravitySwitch.yaml

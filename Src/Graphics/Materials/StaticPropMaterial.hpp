@@ -26,4 +26,5 @@ private:
 	glm::vec2 m_textureScale;
 	bool m_backfaceCull = true;
 	bool m_castShadows = true;
+	bool m_reflect = true;
 };
