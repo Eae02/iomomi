@@ -2,14 +2,9 @@
 
 struct ClippingArgs
 {
-	//Inputs:
-	eg::AABB aabb;
+	eg::CollisionEllipsoid ellipsoid;
+	eg::CollisionInfo collisionInfo;
 	glm::vec3 move;
-	bool skipPlatforms;
-	
-	//Outputs:
-	glm::vec3 colPlaneNormal;
-	float clipDist;
 };
 
 /***
@@ -19,9 +14,3 @@ struct ClippingArgs
  * @param vertices The points that make up the polygon.
  */
 void CalcPolygonClipping(ClippingArgs& args, eg::Span<const glm::vec3> vertices);
-
-void CalcWorldClipping(const class World& world, ClippingArgs& args);
-
-float CalcCollisionCorrection(const eg::AABB& aabb, const eg::Plane& plane, float maxC = 0.1f);
-
-glm::vec3 CalcWorldCollisionCorrection(const class World& world, const eg::AABB& aabb, float maxC = 0.1f);

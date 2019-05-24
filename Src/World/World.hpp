@@ -88,7 +88,9 @@ public:
 	void SetIsGravityCorner(const glm::ivec3& cornerPos, Dir cornerDir, bool value);
 	bool IsCorner(const glm::ivec3& cornerPos, Dir cornerDir) const;
 	
-	const GravityCorner* FindGravityCorner(const ClippingArgs& args, Dir currentDown) const;
+	const GravityCorner* FindGravityCorner(const eg::AABB& aabb, glm::vec3 move, Dir currentDown) const;
+	
+	void CalcClipping(ClippingArgs& args) const;
 	
 	WallRayIntersectResult RayIntersectWall(const eg::Ray& ray) const;
 	
@@ -137,6 +139,7 @@ private:
 		bool gravityCornersOutOfDate;
 		bool canDraw;
 		std::unique_ptr<RegionData> data;
+		eg::CollisionMesh collisionMesh;
 		
 		bool operator<(const glm::ivec3& c) const
 		{
@@ -148,6 +151,8 @@ private:
 			return operator<(other.coordinate);
 		}
 	};
+	
+	void BuildCollisionMesh();
 	
 	void PrepareRegionMeshes(bool isEditor);
 	

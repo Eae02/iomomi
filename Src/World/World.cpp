@@ -748,9 +748,9 @@ bool World::IsCorner(const glm::ivec3& cornerPos, Dir cornerDir) const
 	return voxelPos.w != -1;
 }
 
-const GravityCorner* World::FindGravityCorner(const ClippingArgs& args, Dir currentDown) const
+const GravityCorner* World::FindGravityCorner(const eg::AABB& aabb, glm::vec3 move, Dir currentDown) const
 {
-	glm::vec3 pos = (args.aabb.min + args.aabb.max) / 2.0f;
+	glm::vec3 pos = (aabb.min + aabb.max) / 2.0f;
 	
 	float minDist = INFINITY;
 	const GravityCorner* ret = nullptr;
@@ -771,7 +771,7 @@ const GravityCorner* World::FindGravityCorner(const ClippingArgs& args, Dir curr
 			return;
 		
 		//Checks that the player is moving towards the corner
-		if (glm::dot(args.move, otherDown) < 0.0001f)
+		if (glm::dot(move, otherDown) < 0.0001f)
 			return;
 		
 		//Checks that the player is positioned correctly along the side of the corner
@@ -782,8 +782,8 @@ const GravityCorner* World::FindGravityCorner(const ClippingArgs& args, Dir curr
 			return;
 		
 		//Checks that the player is positioned at the same height as the corner
-		float h1 = glm::dot(currentDownDir, corner.position - args.aabb.min);
-		float h2 = glm::dot(currentDownDir, corner.position - args.aabb.max);
+		float h1 = glm::dot(currentDownDir, corner.position - aabb.min);
+		float h2 = glm::dot(currentDownDir, corner.position - aabb.max);
 		if (std::abs(h1) > MAX_HEIGHT_DIFF && std::abs(h2) > MAX_HEIGHT_DIFF)
 			return;
 		
@@ -800,8 +800,8 @@ const GravityCorner* World::FindGravityCorner(const ClippingArgs& args, Dir curr
 		}
 	};
 	
-	glm::ivec3 gMin = glm::ivec3(glm::floor(glm::min(args.aabb.min, args.aabb.min + args.move))) - 2;
-	glm::ivec3 gMax = glm::ivec3(glm::ceil(glm::max(args.aabb.max, args.aabb.max + args.move))) + 1;
+	glm::ivec3 gMin = glm::ivec3(glm::floor(glm::min(aabb.min, aabb.min + move))) - 2;
+	glm::ivec3 gMax = glm::ivec3(glm::ceil(glm::max(aabb.max, aabb.max + move))) + 1;
 	
 	glm::ivec3 rMin = std::get<1>(DecomposeGlobalCoordinate(gMin));
 	glm::ivec3 rMax = std::get<1>(DecomposeGlobalCoordinate(gMax));
@@ -888,20 +888,19 @@ RayIntersectResult World::RayIntersect(const eg::Ray& ray) const
 	return result;
 }
 
-void World::InitializeBulletPhysics()
+void World::BuildCollisionMesh()
 {
-	m_bulletBroadphase = std::make_unique<btDbvtBroadphase>();
-	m_bulletWorld = std::make_unique<btDiscreteDynamicsWorld>(bullet::dispatcher, m_bulletBroadphase.get(),
-		bullet::solver, bullet::collisionConfig);
-	m_bulletWorld->setGravity({ 0, -bullet::GRAVITY, 0 });
-	
-	PrepareRegionMeshes(false);
-	
 	m_wallsBulletMesh = std::make_unique<btTriangleMesh>();
-	for (const Region& region : m_regions)
+	for (Region& region : m_regions)
 	{
 		if (!region.canDraw)
+		{
+			region.collisionMesh = { };
 			continue;
+		}
+		
+		region.collisionMesh = eg::CollisionMesh::Create<WallVertex, uint16_t>(region.data->vertices, region.data->indices);
+		region.collisionMesh.FlipWinding();
 		
 		btIndexedMesh mesh;
 		mesh.m_indexType = PHY_SHORT;
@@ -919,6 +918,17 @@ void World::InitializeBulletPhysics()
 	}
 	
 	m_wallsBulletShape = std::make_unique<btBvhTriangleMeshShape>(m_wallsBulletMesh.get(), true);
+}
+
+void World::InitializeBulletPhysics()
+{
+	m_bulletBroadphase = std::make_unique<btDbvtBroadphase>();
+	m_bulletWorld = std::make_unique<btDiscreteDynamicsWorld>(bullet::dispatcher, m_bulletBroadphase.get(),
+		bullet::solver, bullet::collisionConfig);
+	m_bulletWorld->setGravity({ 0, -bullet::GRAVITY, 0 });
+	
+	PrepareRegionMeshes(false);
+	BuildCollisionMesh();
 	
 	//Creates the wall rigid body and adds it to the world
 	btTransform startTransform;
@@ -936,6 +946,22 @@ void World::InitializeBulletPhysics()
 			m_bulletWorld->addRigidBody(rigidBody);
 		}
 	}
+}
+
+void World::CalcClipping(ClippingArgs& args) const
+{
+	for (const Region& region : m_regions)
+	{
+		if (region.canDraw)
+		{
+			eg::CheckEllipsoidMeshCollision(args.collisionInfo, args.ellipsoid, args.move,
+				region.collisionMesh, glm::mat4(1.0f));
+		}
+	}
+	
+	CalculateCollisionMessage message;
+	message.clippingArgs = &args;
+	m_entityManager->SendMessageToAll(message);
 }
 
 bool World::HasCollision(const glm::ivec3& pos, Dir side) const

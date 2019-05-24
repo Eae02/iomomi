@@ -162,9 +162,6 @@ void ECPlatform::HandleMessage(eg::Entity& entity, const RayIntersectMessage& me
 
 void ECPlatform::HandleMessage(eg::Entity& entity, const CalculateCollisionMessage& message)
 {
-	if (message.clippingArgs->skipPlatforms)
-		return;
-	
 	//The platform's floor polygon in local space
 	const glm::vec3 floorLocalCoords[] = { { -1, 0, 0 }, { 1, 0, 0 }, { 1, 0, -2 }, { -1, 0, -2 } };
 	

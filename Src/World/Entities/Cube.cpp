@@ -170,7 +170,7 @@ namespace Cube
 				glm::vec3 desiredPosition = args.player->EyePosition() + args.player->Forward() * DIST_FROM_PLAYER;
 				
 				eg::AABB desiredAABB(desiredPosition - RADIUS * 1.001f, desiredPosition + RADIUS * 1.001f);
-				desiredPosition += CalcWorldCollisionCorrection(*args.world, desiredAABB, RADIUS);
+				//desiredPosition += CalcWorldCollisionCorrection(*args.world, desiredAABB, RADIUS);
 				
 				glm::vec3 deltaPos = desiredPosition - entity.GetComponent<eg::ECPosition3D>().position;
 				

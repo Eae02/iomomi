@@ -232,10 +232,7 @@ void Player::Update(World& world, float dt)
 	//Checks for intersections with gravity corners along the move vector
 	if (m_gravityTransitionMode == TransitionMode::None && m_onGround && !m_isCarrying)
 	{
-		ClippingArgs clippingArgs;
-		clippingArgs.move = move;
-		clippingArgs.aabb = GetAABB();
-		if (const GravityCorner* corner = world.FindGravityCorner(clippingArgs, m_down))
+		if (const GravityCorner* corner = world.FindGravityCorner(GetAABB(), move, m_down))
 		{
 			//A gravity corner was found, this code begins transitioning to another gravity
 			
@@ -363,42 +360,61 @@ void Player::Update(World& world, float dt)
 
 void Player::ClipAndMove(const World& world, glm::vec3 move, bool skipPlatforms)
 {
+	glm::vec3 fromEllipsoidSpace = m_radius;
+	glm::vec3 toEllipsoidSpace = 1.0f / m_radius;
+	glm::vec3 velocityES = m_velocity * toEllipsoidSpace;
+	glm::vec3 moveES = move * toEllipsoidSpace;
+	
 	const glm::vec3 up = -DirectionVector(m_down);
 	constexpr int MAX_CLIP_ITERATIONS = 10;
 	for (int i = 0; i < MAX_CLIP_ITERATIONS; i++)
 	{
-		if (glm::length2(move) < 1E-6f)
+		if (glm::length2(moveES) < 1E-6f)
 			break;
 		
 		ClippingArgs clippingArgs;
-		clippingArgs.move = move;
-		clippingArgs.aabb = GetAABB();
-		clippingArgs.clipDist = 1;
-		clippingArgs.skipPlatforms = skipPlatforms;
-		CalcWorldClipping(world, clippingArgs);
+		clippingArgs.move = moveES * fromEllipsoidSpace;
+		clippingArgs.ellipsoid = eg::CollisionEllipsoid(m_position, m_radius);
+		//clippingArgs.skipPlatforms = skipPlatforms;
+		//CalcWorldClipping(world, clippingArgs);
+		world.CalcClipping(clippingArgs);
 		
-		glm::vec3 clippedMove = move * clippingArgs.clipDist;
-		m_position += clippedMove;
+		glm::vec3 positionES = m_position * toEllipsoidSpace;
+		glm::vec3 newPosition = positionES;
 		
-		const float nDotUp = glm::dot(clippingArgs.colPlaneNormal, up);
-		if (std::abs(nDotUp) > 0.9f)
+		glm::vec3 dstPosition = positionES + moveES;
+		
+		if (!clippingArgs.collisionInfo.collisionFound)
 		{
-			m_velocity -= up * glm::dot(m_velocity, up);
+			m_position = dstPosition * fromEllipsoidSpace;
+			break;
 		}
-		if (nDotUp > 0.75f)
+		
+		const float veryCloseDist = 0.001f;
+		float moveDist = clippingArgs.collisionInfo.distance - veryCloseDist;
+		if (moveDist >= 0.0f)
+		{
+			newPosition = positionES + moveES * moveDist;
+			
+			clippingArgs.collisionInfo.positionES -= veryCloseDist * glm::normalize(moveES);
+		}
+		
+		const eg::Plane slidePlane(clippingArgs.collisionInfo.positionES - newPosition, clippingArgs.collisionInfo.positionES);
+		
+		if (glm::dot(slidePlane.GetNormal(), up) > 0.75f)
 		{
 			m_onGround = true;
 		}
 		
-		if (clippingArgs.clipDist > 0.9999f)
-			break;
+		velocityES -= glm::dot(velocityES, slidePlane.GetNormal()) * slidePlane.GetNormal();
 		
-		move -= clippedMove;
+		glm::vec3 newDstPosition = dstPosition - slidePlane.GetDistanceToPoint(dstPosition) * slidePlane.GetNormal();
 		
-		move -= clippingArgs.colPlaneNormal * glm::dot(move, clippingArgs.colPlaneNormal);
+		m_position = newPosition * fromEllipsoidSpace;
+		moveES = newDstPosition - clippingArgs.collisionInfo.positionES;
 	}
 	
-	m_position += CalcWorldCollisionCorrection(world, GetAABB());
+	m_velocity = velocityES * fromEllipsoidSpace;
 }
 
 void Player::FlipDown()
