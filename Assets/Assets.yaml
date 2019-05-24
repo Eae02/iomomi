@@ -55,6 +55,9 @@ assets:
   - name: Models/GravityCornerConvex.obj
   - name: Models/GravitySwitch.obj
   - name: Models/EnterRoom.obj
+  - name: Models/EnterRoomCol.obj
+    access: cpu
+    flipWinding: true
   - name: Models/EditorExit.obj
   - name: Models/EditorEntrance.obj
   - name: Models/WallLight.obj

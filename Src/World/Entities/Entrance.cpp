@@ -42,6 +42,10 @@ struct
 	const eg::Model* editorExitModel;
 	const eg::IMaterial* editorEntMaterial;
 	const eg::IMaterial* editorExitMaterial;
+	
+	eg::CollisionMesh door1CollisionMesh;
+	eg::CollisionMesh door2CollisionMesh;
+	eg::CollisionMesh roomCollisionMesh;
 } entrance;
 
 void OnInit()
@@ -81,6 +85,18 @@ void OnInit()
 			EG_ASSERT(found);
 		}
 	}
+	
+	const eg::Model& colModel = eg::GetAsset<eg::Model>("Models/EnterRoomCol.obj");
+	auto MakeCollisionMesh = [&] (std::string_view name) -> eg::CollisionMesh
+	{
+		int index = colModel.GetMeshIndex(name);
+		EG_ASSERT(index != -1);
+		auto meshData = colModel.GetMeshData<eg::StdVertex, uint32_t>(index);
+		return eg::CollisionMesh::Create(meshData.vertices, meshData.indices);
+	};
+	entrance.door1CollisionMesh = MakeCollisionMesh("Door1");
+	entrance.door2CollisionMesh = MakeCollisionMesh("Door2");
+	entrance.roomCollisionMesh = MakeCollisionMesh("Room");
 }
 
 EG_ON_INIT(OnInit)
@@ -173,71 +189,19 @@ void ECEntrance::HandleMessage(eg::Entity& entity, const CalculateCollisionMessa
 {
 	glm::mat4 transform = GetTransform(entity);
 	
-	constexpr float COL_SIZE_X = MESH_LENGTH * 0.99f;
-	constexpr float COL_SIZE_Y = 3.0f;
-	constexpr float COL_SIZE_Z = 1.5f;
-	
-	glm::vec3 colMin(-COL_SIZE_X, 0, -COL_SIZE_Z);
-	glm::vec3 colMax(COL_SIZE_X, COL_SIZE_Y, COL_SIZE_Z);
-	
-	glm::vec3 colPolygons[4][4] =
+	auto CheckMesh = [&] (const eg::CollisionMesh& mesh)
 	{
-		{ //Floor
-			glm::vec3(colMin.x, colMin.y, colMin.z),
-			glm::vec3(colMin.x, colMin.y, colMax.z),
-			glm::vec3(colMax.x, colMin.y, colMax.z),
-			glm::vec3(colMax.x, colMin.y, colMin.z)
-		},
-		{ //Ceiling
-			glm::vec3(colMin.x, colMax.y, colMin.z),
-			glm::vec3(colMin.x, colMax.y, colMax.z),
-			glm::vec3(colMax.x, colMax.y, colMax.z),
-			glm::vec3(colMax.x, colMax.y, colMin.z)
-		},
-		{ //Left side
-			glm::vec3(colMin.x, colMin.y, colMin.z),
-			glm::vec3(colMax.x, colMin.y, colMin.z),
-			glm::vec3(colMax.x, colMax.y, colMin.z),
-			glm::vec3(colMin.x, colMax.y, colMin.z)
-		},
-		{ //Right side
-			glm::vec3(colMin.x, colMin.y, colMax.z),
-			glm::vec3(colMax.x, colMin.y, colMax.z),
-			glm::vec3(colMax.x, colMax.y, colMax.z),
-			glm::vec3(colMin.x, colMax.y, colMax.z)
-		}
+		eg::CheckEllipsoidMeshCollision(message.clippingArgs->collisionInfo, message.clippingArgs->ellipsoid,
+			message.clippingArgs->move, mesh, transform);
 	};
 	
-	for (int i = 0; i < 4; i++)
-	{
-		for (int j = 0; j < 4; j++)
-			colPolygons[i][j] = glm::vec3(transform * glm::vec4(colPolygons[i][j], 1));
-		CalcPolygonClipping(*message.clippingArgs, colPolygons[i]);
-	}
+	CheckMesh(entrance.roomCollisionMesh);
 	
-	float doorsX[4] = { MESH_LENGTH, 4.3f, -4.3f, -MESH_LENGTH };
-	for (int i = 0; i < 4; i++)
-	{
-		if (m_doorOpenProgress > 0.1f && (i / 2) == (1 - (int)m_type))
-			continue;
-		
-		glm::vec3 doorMin(doorsX[i], 0, -COL_SIZE_Z);
-		glm::vec3 doorMax(doorsX[i], COL_SIZE_Y, COL_SIZE_Z);
-		
-		glm::vec3 doorPolygon[4] =
-		{
-			glm::vec3(doorMin.x, doorMin.y, doorMin.z),
-			glm::vec3(doorMin.x, doorMin.y, doorMax.z),
-			glm::vec3(doorMin.x, doorMax.y, doorMax.z),
-			glm::vec3(doorMin.x, doorMax.y, doorMin.z)
-		};
-		for (int j = 0; j < 4; j++)
-		{
-			doorPolygon[j] = glm::vec3(transform * glm::vec4(doorPolygon[j], 1));
-		}
-		
-		CalcPolygonClipping(*message.clippingArgs, doorPolygon);
-	}
+	bool doorOpen = m_doorOpenProgress > 0.1f;
+	if (!(doorOpen && m_type == Type::Entrance))
+		CheckMesh(entrance.door2CollisionMesh);
+	if (!(doorOpen && m_type == Type::Exit))
+		CheckMesh(entrance.door1CollisionMesh);
 }
 
 void ECEntrance::HandleMessage(eg::Entity& entity, const DrawMessage& message)

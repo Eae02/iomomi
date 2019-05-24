@@ -130,6 +130,7 @@ private:
 		std::vector<uint16_t> indices;
 		std::vector<WallBorderVertex> borderVertices;
 		std::vector<GravityCorner> gravityCorners;
+		eg::CollisionMesh collisionMesh;
 	};
 	
 	struct Region
@@ -139,7 +140,6 @@ private:
 		bool gravityCornersOutOfDate;
 		bool canDraw;
 		std::unique_ptr<RegionData> data;
-		eg::CollisionMesh collisionMesh;
 		
 		bool operator<(const glm::ivec3& c) const
 		{

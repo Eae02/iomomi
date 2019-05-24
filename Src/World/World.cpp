@@ -512,6 +512,9 @@ void World::BuildRegionMesh(glm::ivec3 coordinate, World::RegionData& region, bo
 	region.vertices.clear();
 	region.indices.clear();
 	
+	std::vector<glm::vec3> collisionVertices;
+	std::vector<uint32_t> collisionIndices;
+	
 	for (uint32_t x = 0; x < REGION_SIZE; x++)
 	{
 		for (uint32_t y = 0; y < REGION_SIZE; y++)
@@ -545,6 +548,9 @@ void World::BuildRegionMesh(glm::ivec3 coordinate, World::RegionData& region, bo
 					for (uint16_t i : indicesRelative)
 						region.indices.push_back(baseIndex + i);
 					
+					uint32_t baseIndexCol = collisionVertices.size();
+					bool hasCollision = true;
+					
 					//Emits vertices
 					const glm::ivec3 tangent = voxel::tangents[s];
 					const glm::ivec3 biTangent = voxel::biTangents[s];
@@ -573,6 +579,11 @@ void World::BuildRegionMesh(glm::ivec3 coordinate, World::RegionData& region, bo
 							vertex.SetNormal(normal);
 							vertex.SetTangent(tangent);
 							
+							if (doorDist < 0.0f)
+								hasCollision = false;
+							if (hasCollision)
+								collisionVertices.push_back(pos);
+							
 							if (!IsAir(globalPos + tDir))
 								vertex.misc[WallVertex::M_AO] |= fy + 1;
 							if (!IsAir(globalPos + bDir))
@@ -581,10 +592,28 @@ void World::BuildRegionMesh(glm::ivec3 coordinate, World::RegionData& region, bo
 								vertex.misc[WallVertex::M_AO] = 1 << (fx + 2 * fy);
 						}
 					}
+					
+					if (hasCollision)
+					{
+						for (uint16_t i : indicesRelative)
+						{
+							collisionIndices.push_back(baseIndexCol + i);
+						}
+					}
+					else
+					{
+						while (collisionVertices.size() > baseIndexCol)
+						{
+							collisionVertices.pop_back();
+						}
+					}
 				}
 			}
 		}
 	}
+	
+	region.collisionMesh = eg::CollisionMesh::CreateV3<uint32_t>(collisionVertices, collisionIndices);
+	region.collisionMesh.FlipWinding();
 }
 
 void World::BuildRegionBorderMesh(glm::ivec3 coordinate, World::RegionData& region)
@@ -888,38 +917,6 @@ RayIntersectResult World::RayIntersect(const eg::Ray& ray) const
 	return result;
 }
 
-void World::BuildCollisionMesh()
-{
-	m_wallsBulletMesh = std::make_unique<btTriangleMesh>();
-	for (Region& region : m_regions)
-	{
-		if (!region.canDraw)
-		{
-			region.collisionMesh = { };
-			continue;
-		}
-		
-		region.collisionMesh = eg::CollisionMesh::Create<WallVertex, uint16_t>(region.data->vertices, region.data->indices);
-		region.collisionMesh.FlipWinding();
-		
-		btIndexedMesh mesh;
-		mesh.m_indexType = PHY_SHORT;
-		mesh.m_vertexType = PHY_FLOAT;
-		
-		mesh.m_numVertices = (int)region.data->vertices.size();
-		mesh.m_vertexStride = sizeof(WallVertex);
-		mesh.m_vertexBase = reinterpret_cast<const uint8_t*>(region.data->vertices.data()) + offsetof(WallVertex, position);
-		
-		mesh.m_numTriangles = (int)region.data->indices.size() / 3;
-		mesh.m_triangleIndexStride = sizeof(uint16_t) * 3;
-		mesh.m_triangleIndexBase = reinterpret_cast<const uint8_t*>(region.data->indices.data());
-		
-		m_wallsBulletMesh->addIndexedMesh(mesh, PHY_SHORT);
-	}
-	
-	m_wallsBulletShape = std::make_unique<btBvhTriangleMeshShape>(m_wallsBulletMesh.get(), true);
-}
-
 void World::InitializeBulletPhysics()
 {
 	m_bulletBroadphase = std::make_unique<btDbvtBroadphase>();
@@ -928,7 +925,29 @@ void World::InitializeBulletPhysics()
 	m_bulletWorld->setGravity({ 0, -bullet::GRAVITY, 0 });
 	
 	PrepareRegionMeshes(false);
-	BuildCollisionMesh();
+	
+	m_wallsBulletMesh = std::make_unique<btTriangleMesh>();
+	for (Region& region : m_regions)
+	{
+		if (!region.canDraw)
+			continue;
+		
+		btIndexedMesh mesh;
+		mesh.m_indexType = PHY_INTEGER;
+		mesh.m_vertexType = PHY_FLOAT;
+		
+		mesh.m_numVertices = region.data->collisionMesh.NumVertices();
+		mesh.m_vertexStride = sizeof(float) * 4;
+		mesh.m_vertexBase = reinterpret_cast<const uint8_t*>(region.data->collisionMesh.Vertices());
+		
+		mesh.m_numTriangles = (int)region.data->collisionMesh.NumIndices() / 3;
+		mesh.m_triangleIndexStride = sizeof(uint32_t) * 3;
+		mesh.m_triangleIndexBase = reinterpret_cast<const uint8_t*>(region.data->collisionMesh.Indices());
+		
+		m_wallsBulletMesh->addIndexedMesh(mesh, PHY_INTEGER);
+	}
+	
+	m_wallsBulletShape = std::make_unique<btBvhTriangleMeshShape>(m_wallsBulletMesh.get(), true);
 	
 	//Creates the wall rigid body and adds it to the world
 	btTransform startTransform;
@@ -955,7 +974,7 @@ void World::CalcClipping(ClippingArgs& args) const
 		if (region.canDraw)
 		{
 			eg::CheckEllipsoidMeshCollision(args.collisionInfo, args.ellipsoid, args.move,
-				region.collisionMesh, glm::mat4(1.0f));
+				region.data->collisionMesh, glm::mat4(1.0f));
 		}
 	}
 	
