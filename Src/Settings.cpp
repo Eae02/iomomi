@@ -56,6 +56,9 @@ void LoadSettings()
 	settings.msaaSamples = settingsNode["msaaSamples"].as<uint32_t>(1);
 	settings.fieldOfViewDeg = settingsNode["fieldOfView"].as<float>(80.0f);
 	settings.exposure = settingsNode["exposure"].as<float>(1.2f);
+	settings.lookSensitivityMS = settingsNode["lookSensitivityMS"].as<float>(0.005f);
+	settings.lookSensitivityGP = settingsNode["lookSensitivityGP"].as<float>(2.0f);
+	settings.lookInvertY = settingsNode["lookInvertY"].as<bool>(false);
 	
 	CheckMSAA();
 }
@@ -149,6 +152,42 @@ void OptCommand(eg::Span<const std::string_view> args)
 		else
 		{
 			settings.exposure = std::stof(std::string(args[1]));
+			SettingsChanged();
+		}
+	}
+	else if (args[0] == "lookSensitivityMS" || args[0] == "lookSensMS")
+	{
+		if (args.size() == 1)
+		{
+			eg::Log(eg::LogLevel::Info, "opt", "Mouse Sensitivity: {0}", settings.lookSensitivityMS);
+		}
+		else
+		{
+			settings.lookSensitivityMS = std::stof(std::string(args[1]));
+			SettingsChanged();
+		}
+	}
+	else if (args[0] == "lookSensitivityGP" || args[0] == "lookSensGP")
+	{
+		if (args.size() == 1)
+		{
+			eg::Log(eg::LogLevel::Info, "opt", "Gamepad Sensitivity: {0}", settings.lookSensitivityGP);
+		}
+		else
+		{
+			settings.lookSensitivityGP = std::stof(std::string(args[1]));
+			SettingsChanged();
+		}
+	}
+	else if (args[0] == "lookInvY")
+	{
+		if (args.size() == 1)
+		{
+			eg::Log(eg::LogLevel::Info, "opt", "Invert Y: {0}", settings.lookInvertY);
+		}
+		else
+		{
+			settings.lookInvertY = args[1] == "true";
 			SettingsChanged();
 		}
 	}

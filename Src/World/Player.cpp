@@ -3,8 +3,9 @@
 #include "Entities/ECFloorButton.hpp"
 #include "Entities/ECActivator.hpp"
 #include "Entities/ECInteractable.hpp"
-#include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
 #include "Entities/ECPlatform.hpp"
+#include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
+#include "../Settings.hpp"
 
 #include <imgui.h>
 
@@ -79,11 +80,12 @@ void Player::Update(World& world, float dt)
 	
 	if (m_gravityTransitionMode == TransitionMode::None && !eg::IsButtonDown(eg::Button::F8))
 	{
-		const float MOUSE_SENSITIVITY = -0.005f;
-		const float GAME_PAD_AXIS_SENSITIVITY = 2.0f;
+		glm::vec2 rotationDelta = glm::vec2(eg::CursorPosDelta()) * -settings.lookSensitivityMS;
 		
-		glm::vec2 rotationDelta = glm::vec2(eg::CursorPosDelta()) * MOUSE_SENSITIVITY;
-		rotationDelta -= eg::InputState::Current().RightAnalogValue() * GAME_PAD_AXIS_SENSITIVITY * dt;
+		rotationDelta -= eg::InputState::Current().RightAnalogValue() * (settings.lookSensitivityGP * dt);
+		
+		if (settings.lookInvertY)
+			rotationDelta.y = -rotationDelta.y;
 		
 		//Updates the camera's rotation
 		m_rotationYaw += rotationDelta.x;

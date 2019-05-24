@@ -13,6 +13,10 @@ struct Settings
 	
 	float exposure = 1.2f;
 	
+	float lookSensitivityMS = 0.005f;
+	float lookSensitivityGP = 2.0f;
+	bool lookInvertY = false;
+	
 	bool HDREnabled() const
 	{
 		return lightingQuality >= QualityLevel::Low;
