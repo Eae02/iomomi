@@ -1,5 +1,5 @@
-# Blender MTL File: 'EnterRoomMirrored.blend'
-# Material Count: 6
+# Blender MTL File: 'EnterRoom.blend'
+# Material Count: 7
 
 newmtl CeilPipe
 Ns 225.000000
@@ -11,7 +11,7 @@ Ni 1.450000
 d 1.000000
 illum 2
 
-newmtl Door
+newmtl Door1
 Ns 225.000000
 Ka 1.000000 1.000000 1.000000
 Kd 1.000000 1.000000 1.000000
@@ -20,7 +20,17 @@ Ke 0.0 0.0 0.0
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd /home/erik/Dev/CPP/Gravity/Assets/Textures/Entrance/Door1A.png
+map_Kd /home/erik/Desktop/AssetsSrc/Textures/Entrance/Door1A.png
+
+newmtl Door2
+Ns 225.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.0 0.0 0.0
+Ni 1.450000
+d 1.000000
+illum 2
 
 newmtl DoorFrame
 Ns 225.000000
@@ -41,9 +51,9 @@ Ke 0.0 0.0 0.0
 Ni 1.450000
 d 1.000000
 illum 3
-map_Bump EntranceFloorN.png
-map_Kd EntranceFloorA.tga
-refl EntranceFloorM.png
+map_Bump /home/erik/Desktop/AssetsSrc/Models/EntranceFloorN.png
+map_Kd /home/erik/Desktop/AssetsSrc/Models/EntranceFloorA.tga
+refl /home/erik/Desktop/AssetsSrc/Models/EntranceFloorM.png
 
 newmtl Material.001
 Ns 225.000000
@@ -64,4 +74,4 @@ Ke 0.0 0.0 0.0
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd PaddingA.png
+map_Kd /home/erik/Desktop/AssetsSrc/Models/PaddingA.png

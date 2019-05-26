@@ -2,6 +2,7 @@
 #include "ECWallMounted.hpp"
 #include "ECEditorVisible.hpp"
 #include "ECActivatable.hpp"
+#include "ECRigidBody.hpp"
 #include "../Player.hpp"
 #include "../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../Graphics/Lighting/PointLight.hpp"
@@ -15,6 +16,7 @@ eg::EntitySignature ECEntrance::EntitySignature = eg::EntitySignature::Create<
     ECWallMounted,
     ECEditorVisible,
     ECActivatable,
+	ECRigidBody,
     eg::ECPosition3D
     >();
 
@@ -46,6 +48,9 @@ struct
 	eg::CollisionMesh door1CollisionMesh;
 	eg::CollisionMesh door2CollisionMesh;
 	eg::CollisionMesh roomCollisionMesh;
+	
+	std::unique_ptr<btTriangleMesh> bulletMesh;
+	std::unique_ptr<btBvhTriangleMeshShape> bulletMeshShape;
 } entrance;
 
 void OnInit()
@@ -59,7 +64,8 @@ void OnInit()
 	entrance.materials.at(entrance.model->GetMaterialIndex("WallPadding")) = &eg::GetAsset<StaticPropMaterial>("Materials/Entrance/Padding.yaml");
 	entrance.materials.at(entrance.model->GetMaterialIndex("WallPadding")) = &eg::GetAsset<StaticPropMaterial>("Materials/Entrance/Padding.yaml");
 	entrance.materials.at(entrance.model->GetMaterialIndex("CeilPipe")) = &eg::GetAsset<StaticPropMaterial>("Materials/Pipe2.yaml");
-	entrance.materials.at(entrance.model->GetMaterialIndex("Door")) = &eg::GetAsset<StaticPropMaterial>("Materials/Entrance/Door1.yaml");
+	entrance.materials.at(entrance.model->GetMaterialIndex("Door1")) = &eg::GetAsset<StaticPropMaterial>("Materials/Entrance/Door1.yaml");
+	entrance.materials.at(entrance.model->GetMaterialIndex("Door2")) = &eg::GetAsset<StaticPropMaterial>("Materials/Entrance/Door2.yaml");
 	entrance.materials.at(entrance.model->GetMaterialIndex("DoorFrame")) = &eg::GetAsset<StaticPropMaterial>("Materials/Entrance/DoorFrame.yaml");
 	
 	entrance.editorEntMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Entrance/EditorEntrance.yaml");
@@ -97,6 +103,12 @@ void OnInit()
 	entrance.door1CollisionMesh = MakeCollisionMesh("Door1");
 	entrance.door2CollisionMesh = MakeCollisionMesh("Door2");
 	entrance.roomCollisionMesh = MakeCollisionMesh("Room");
+	
+	entrance.bulletMesh = std::make_unique<btTriangleMesh>();
+	bullet::AddCollisionMesh(*entrance.bulletMesh, entrance.door1CollisionMesh);
+	bullet::AddCollisionMesh(*entrance.bulletMesh, entrance.door2CollisionMesh);
+	bullet::AddCollisionMesh(*entrance.bulletMesh, entrance.roomCollisionMesh);
+	entrance.bulletMeshShape = std::make_unique<btBvhTriangleMeshShape>(entrance.bulletMesh.get(), true);
 }
 
 EG_ON_INIT(OnInit)
@@ -146,6 +158,12 @@ void ECEntrance::Update(const WorldUpdateArgs& args, eg::Entity** switchEntrance
 			args.player->CurrentDown() == OppositeDir(UP_VECTORS[(int)direction]); //Player has the correct gravity mode
 		
 		entranceEC.m_timeBeforeClose = open ? DOOR_CLOSE_DELAY : std::max(entranceEC.m_timeBeforeClose - args.dt, 0.0f);
+		
+		glm::mat4 transform = GetTransform(entity);
+		
+		btTransform newBtTransform;
+		newBtTransform.setFromOpenGLMatrix(reinterpret_cast<float*>(&transform));
+		entity.GetComponent<ECRigidBody>().SetWorldTransform(newBtTransform);
 		
 		//Updates the door open progress
 		const float oldOpenProgress = entranceEC.m_doorOpenProgress;
@@ -375,6 +393,9 @@ eg::Entity* ECEntrance::CreateEntity(eg::EntityManager& entityManager)
 	
 	eg::Entity& lightChild = entityManager.AddEntity(lightChildSignature, &entity);
 	lightChild.InitComponent<PointLight>(eg::ColorSRGB::FromHex(0xDEEEFD), 20.0f);
+	
+	ECRigidBody& rigidBody = entity.GetComponent<ECRigidBody>();
+	rigidBody.Init(0.0f, *entrance.bulletMeshShape);
 	
 	return &entity;
 }

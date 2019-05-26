@@ -929,22 +929,10 @@ void World::InitializeBulletPhysics()
 	m_wallsBulletMesh = std::make_unique<btTriangleMesh>();
 	for (Region& region : m_regions)
 	{
-		if (!region.canDraw)
-			continue;
-		
-		btIndexedMesh mesh;
-		mesh.m_indexType = PHY_INTEGER;
-		mesh.m_vertexType = PHY_FLOAT;
-		
-		mesh.m_numVertices = region.data->collisionMesh.NumVertices();
-		mesh.m_vertexStride = sizeof(float) * 4;
-		mesh.m_vertexBase = reinterpret_cast<const uint8_t*>(region.data->collisionMesh.Vertices());
-		
-		mesh.m_numTriangles = (int)region.data->collisionMesh.NumIndices() / 3;
-		mesh.m_triangleIndexStride = sizeof(uint32_t) * 3;
-		mesh.m_triangleIndexBase = reinterpret_cast<const uint8_t*>(region.data->collisionMesh.Indices());
-		
-		m_wallsBulletMesh->addIndexedMesh(mesh, PHY_INTEGER);
+		if (region.canDraw)
+		{
+			bullet::AddCollisionMesh(*m_wallsBulletMesh, region.data->collisionMesh);
+		}
 	}
 	
 	m_wallsBulletShape = std::make_unique<btBvhTriangleMeshShape>(m_wallsBulletMesh.get(), true);

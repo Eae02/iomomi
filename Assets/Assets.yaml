@@ -113,11 +113,19 @@ assets:
     mipShift: *MipShift
     srgb: true
     format: bc1
+  - name: Textures/Entrance/Door2A.png
+    mipShift: *MipShift
+    srgb: true
+    format: bc1
   - name: Textures/Entrance/DoorN.png
     mipShift: *MipShift
     srgb: false
     format: bc5
-  - name: Textures/Entrance/DoorM.png
+  - name: Textures/Entrance/Door1M.png
+    mipShift: *MipShift
+    srgb: false
+    format: bc1
+  - name: Textures/Entrance/Door2M.png
     mipShift: *MipShift
     srgb: false
     format: bc1
@@ -328,6 +336,9 @@ assets:
     generator: StaticPropMaterial
     loader: StaticPropMaterial
   - name: Materials/Entrance/Door1.yaml
+    generator: StaticPropMaterial
+    loader: StaticPropMaterial
+  - name: Materials/Entrance/Door2.yaml
     generator: StaticPropMaterial
     loader: StaticPropMaterial
   - name: Materials/Entrance/DoorFrame.yaml

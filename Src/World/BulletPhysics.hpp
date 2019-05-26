@@ -13,6 +13,8 @@ namespace bullet
 	void Init();
 	void Destroy();
 	
+	void AddCollisionMesh(btTriangleMesh& targetMesh, const eg::CollisionMesh& collisionMesh);
+	
 	inline glm::vec3 ToGLM(const btVector3& v3)
 	{
 		return glm::vec3(v3.x(), v3.y(), v3.z());
