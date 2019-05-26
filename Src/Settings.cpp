@@ -2,6 +2,7 @@
 
 #include <yaml-cpp/yaml.h>
 #include <fstream>
+#include <imgui.h>
 
 std::string settingsPath;
 
@@ -32,6 +33,8 @@ inline void CheckMSAA()
 	}
 }
 
+eg::TextureQuality initialTextureQuality;
+
 void LoadSettings()
 {
 	settingsPath = eg::AppDataPath() + "EaeGravity/Settings.yaml";
@@ -49,6 +52,7 @@ void LoadSettings()
 		settings.textureQuality = eg::TextureQuality::Medium;
 	else if (textureQualStr == "high")
 		settings.textureQuality = eg::TextureQuality::High;
+	initialTextureQuality = settings.textureQuality;
 	
 	DecodeQualityLevel(settingsNode["reflectionsQuality"].as<std::string>("medium"), settings.reflectionsQuality);
 	DecodeQualityLevel(settingsNode["shadowQuality"].as<std::string>("medium"), settings.shadowQuality);
@@ -191,4 +195,67 @@ void OptCommand(eg::Span<const std::string_view> args)
 			SettingsChanged();
 		}
 	}
+}
+
+static bool settingsWindowVisible = false;
+
+void OptWndCommand(eg::Span<const std::string_view> args)
+{
+	settingsWindowVisible = true;
+}
+
+void DrawSettingsWindow()
+{
+	if (!settingsWindowVisible)
+		return;
+	
+	static const char* QUALITY_SETTINGS_STR = "Very Low\0Low\0Medium\0High\0Very High\0";
+	static const char* TEXTURE_QUALITY_STR = "Low\0Medium\0High\0";
+	
+	ImGui::SetNextWindowSize(ImVec2(200, 250), ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSizeConstraints(ImVec2(100, 100), ImVec2(INFINITY, INFINITY));
+	if (ImGui::Begin("Options", &settingsWindowVisible))
+	{
+		if (ImGui::CollapsingHeader("Graphics Quality", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ImGui::Combo("Texture Quality", reinterpret_cast<int*>(&settings.textureQuality), TEXTURE_QUALITY_STR);
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetTooltip("Requires restart");
+			}
+			
+			if (ImGui::Combo("Shadow Quality", reinterpret_cast<int*>(&settings.shadowQuality), QUALITY_SETTINGS_STR))
+				SettingsChanged();
+			if (ImGui::Combo("Reflections Quality", reinterpret_cast<int*>(&settings.reflectionsQuality), QUALITY_SETTINGS_STR))
+				SettingsChanged();
+			if (ImGui::Combo("Lighting Quality", reinterpret_cast<int*>(&settings.lightingQuality), QUALITY_SETTINGS_STR))
+				SettingsChanged();
+			/*
+			int curMSAA = (int)std::log2(settings.msaaSamples);
+			const char* MSAAModes[] = { "Off", "2x", "4x", "8x" };
+			if (ImGui::Combo("MSAA", reinterpret_cast<int*>(&curMSAA), MSAAModes, 4))
+			{
+				settings.msaaSamples = 1 << curMSAA;
+				SettingsChanged();
+			}*/
+		}
+		
+		if (ImGui::CollapsingHeader("Graphics", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			if (ImGui::SliderFloat("Field of View", &settings.fieldOfViewDeg, 70.0f, 100.0f))
+				settings.fieldOfViewDeg = glm::clamp(settings.fieldOfViewDeg, 70.0f, 100.0f);
+			if (ImGui::SliderFloat("Exposure", &settings.exposure, 0.5f, 1.5f))
+				settings.exposure = std::max(settings.exposure, 0.5f);
+		}
+		
+		if (ImGui::CollapsingHeader("Input", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			if (ImGui::SliderFloat("Mouse Sensitivity", &settings.lookSensitivityMS, 0.001f, 0.01f))
+				settings.lookSensitivityMS = std::max(settings.lookSensitivityMS, 0.0f);
+			if (ImGui::SliderFloat("Gamepad Sensitivity", &settings.lookSensitivityGP, 0.1f, 4.0f))
+				settings.lookSensitivityGP = std::max(settings.lookSensitivityGP, 0.0f);
+			ImGui::Checkbox("Look Invert Y", &settings.lookInvertY);
+		}
+	}
+	ImGui::End();
 }

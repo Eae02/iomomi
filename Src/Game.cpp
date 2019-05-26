@@ -3,6 +3,7 @@
 #include "MainGameState.hpp"
 #include "Levels.hpp"
 #include "Editor/Editor.hpp"
+#include "Settings.hpp"
 #include "Graphics/WallShader.hpp"
 #include "Graphics/Materials/GravityCornerLightMaterial.hpp"
 
@@ -57,6 +58,8 @@ void Game::RunFrame(float dt)
 	m_imGuiInterface.NewFrame();
 	
 	m_renderCtx.renderer.PollSettingsChanged();
+	
+	DrawSettingsWindow();
 	
 	currentGS->RunFrame(dt);
 	

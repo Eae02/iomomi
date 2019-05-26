@@ -37,3 +37,7 @@ void LoadSettings();
 void SettingsChanged();
 
 void OptCommand(eg::Span<const std::string_view> args);
+
+void OptWndCommand(eg::Span<const std::string_view> args);
+
+void DrawSettingsWindow();

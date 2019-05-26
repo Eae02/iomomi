@@ -34,6 +34,7 @@ int main(int argc, char** argv)
 	runConfig.initialize = []
 	{
 		eg::console::AddCommand("opt", 1, &OptCommand);
+		eg::console::AddCommand("optwnd", 0, &OptWndCommand);
 		InitEntitySerializers();
 		StaticPropMaterial::InitAssetTypes();
 		DecalMaterial::InitAssetTypes();
