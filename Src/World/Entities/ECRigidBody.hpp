@@ -29,6 +29,7 @@ public:
 	}
 	
 	void Init(float mass, btCollisionShape& shape);
+	void InitStatic(btCollisionShape& shape);
 	
 	void SetMass(float mass);
 	

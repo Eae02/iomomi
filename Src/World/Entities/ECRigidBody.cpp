@@ -8,6 +8,11 @@ void ECRigidBody::Init(float mass, btCollisionShape& shape)
 	m_rigidBody = btRigidBody(mass, &m_motionState, &shape, localInertia);
 }
 
+void ECRigidBody::InitStatic(btCollisionShape& shape)
+{
+	m_rigidBody = btRigidBody(0.0f, &m_motionState, &shape);
+}
+
 void ECRigidBody::SetMass(float mass)
 {
 	btVector3 localInertia;

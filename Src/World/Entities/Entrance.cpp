@@ -395,7 +395,7 @@ eg::Entity* ECEntrance::CreateEntity(eg::EntityManager& entityManager)
 	lightChild.InitComponent<PointLight>(eg::ColorSRGB::FromHex(0xDEEEFD), 20.0f);
 	
 	ECRigidBody& rigidBody = entity.GetComponent<ECRigidBody>();
-	rigidBody.Init(0.0f, *entrance.bulletMeshShape);
+	rigidBody.InitStatic(*entrance.bulletMeshShape);
 	
 	return &entity;
 }

@@ -45,7 +45,7 @@ eg::Entity* ECPlatform::CreateEntity(eg::EntityManager& entityManager)
 	eg::Entity& entity = entityManager.AddEntity(EntitySignature, nullptr, EntitySerializer);
 	
 	ECRigidBody& rigidBody = entity.GetComponent<ECRigidBody>();
-	rigidBody.Init(0.0f, *platformCollisionShape);
+	rigidBody.InitStatic(*platformCollisionShape);
 	rigidBody.GetRigidBody()->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
 	rigidBody.GetRigidBody()->setActivationState(DISABLE_DEACTIVATION);
 	rigidBody.GetRigidBody()->setFriction(10.0f);

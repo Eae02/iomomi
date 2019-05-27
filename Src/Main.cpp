@@ -18,7 +18,7 @@ int main(int argc, char** argv)
 	
 	bullet::Init();
 	
-	std::string appDataDirPath = eg::AppDataPath() + "EaeGravity";
+	std::string appDataDirPath = eg::AppDataPath() + "/EaeGravity";
 	if (!eg::FileExists(appDataDirPath.c_str()))
 	{
 		eg::CreateDirectory(appDataDirPath.c_str());
