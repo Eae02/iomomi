@@ -30,8 +30,11 @@ void main()
 	
 	vec3 normal = normalMapToWorld(texture(nmSampler, texCoord).xy, tbn);
 	
-	vec3 albedo = texture(albedoSampler, texCoord).rgb;
+	vec4 albedo = texture(albedoSampler, texCoord);
+	
+	if (albedo.a < 0.5)
+		discard;
 	
 	float roughness = mix(roughnessRange.x, roughnessRange.y, miscMaps.r);
-	DeferredOut(albedo, normal, roughness, miscMaps.g, miscMaps.b);
+	DeferredOut(albedo.rgb / albedo.a, normal, roughness, miscMaps.g, miscMaps.b);
 }

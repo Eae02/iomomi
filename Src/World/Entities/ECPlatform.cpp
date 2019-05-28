@@ -22,7 +22,7 @@ static std::unique_ptr<btCollisionShape> platformCollisionShape;
 static void OnInit()
 {
 	platformModel = &eg::GetAsset<eg::Model>("Models/Platform.obj");
-	platformMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml");
+	platformMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Platform.yaml");
 	
 	platformSliderModel = &eg::GetAsset<eg::Model>("Models/PlatformSlider.obj");
 	platformSliderMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/PlatformSlider.yaml");
@@ -118,7 +118,7 @@ inline void DrawPlatform(const eg::Entity& entity, eg::MeshBatch& meshBatch)
 	const ECPlatform& platform = entity.GetComponent<ECPlatform>();
 	const float slideDist = glm::length(platform.slideOffset);
 	
-	constexpr float SLIDER_MODEL_SCALE = 0.75f;
+	constexpr float SLIDER_MODEL_SCALE = 0.5f;
 	constexpr float SLIDER_MODEL_LENGTH = 0.2f;
 	const int numSliderInstances = std::round(slideDist / (SLIDER_MODEL_LENGTH * SLIDER_MODEL_SCALE));
 	

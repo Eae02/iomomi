@@ -943,6 +943,7 @@ void World::InitializeBulletPhysics()
 	m_wallsMotionState = std::make_unique<btDefaultMotionState>(startTransform);
 	btRigidBody::btRigidBodyConstructionInfo rbInfo(0.0f, m_wallsMotionState.get(), m_wallsBulletShape.get());
 	m_wallsRigidBody = std::make_unique<btRigidBody>(rbInfo);
+	m_wallsRigidBody->setFriction(3.0f);
 	m_bulletWorld->addRigidBody(m_wallsRigidBody.get());
 	
 	static eg::EntitySignature rigidBodySignature = eg::EntitySignature::Create<ECRigidBody>();

@@ -24,8 +24,6 @@ MainGameState::MainGameState(RenderContext& renderCtx)
 	m_projection.SetZNear(0.02f);
 	m_projection.SetZFar(200.0f);
 	
-	//m_particleEmitterInstance = m_particleManager.AddEmitter(eg::GetAsset<eg::ParticleEmitterType>("Particles/BlueOrb.ype"));
-	
 	eg::console::AddCommand("relms", 0, [this] (eg::Span<const std::string_view> args)
 	{
 		m_relativeMouseMode = !m_relativeMouseMode;
@@ -151,7 +149,7 @@ void MainGameState::RunFrame(float dt)
 		inverseViewProjMatrix = inverseViewMatrix * m_projection.InverseMatrix();
 	};
 	
-	if (!eg::console::IsShown())
+	if (!eg::console::IsShown() && !settingsWindowVisible)
 	{
 		auto worldUpdateCPUTimer = eg::StartCPUTimer("World Update");
 		

@@ -45,12 +45,10 @@ private:
 	PointLightShadowMapper m_plShadowMapper;
 	eg::BloomRenderer m_bloomRenderer;
 	PostProcessor m_postProcessor;
-	//LightProbesManager m_lightProbesManager;
 	PlanarReflectionsManager m_planarReflectionsManager;
 	
 	ParticleRenderer m_particleRenderer;
 	eg::ParticleManager m_particleManager;
-	eg::ParticleEmitterInstance m_particleEmitterInstance;
 	
 	QualityLevel m_lightingQuality = QualityLevel::Low;
 	uint32_t m_msaaSamples = 0;

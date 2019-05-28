@@ -44,8 +44,10 @@ void PointLightShadowMapper::SetQuality(QualityLevel quality)
 		m_resolution = 256;
 		break;
 	case QualityLevel::High:
-	case QualityLevel::VeryHigh:
 		m_resolution = 512;
+		break;
+	case QualityLevel::VeryHigh:
+		m_resolution = 1024;
 		break;
 	}
 	

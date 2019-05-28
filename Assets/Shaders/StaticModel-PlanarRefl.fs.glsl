@@ -20,8 +20,11 @@ void main()
 	vec2 texCoord = textureScale * texCoord_in;
 	float ao = texture(mmSampler, texCoord).b;
 	
-	vec3 albedo = texture(albedoSampler, texCoord).rgb;
+	vec4 albedo = texture(albedoSampler, texCoord);
+	
+	if (albedo.a < 0.5)
+		discard;
 	
 	const float AMBIENT_INTENSITY = 0.1;
-	color_out = vec4(albedo * ((1.0 - AMBIENT_INTENSITY) + AMBIENT_INTENSITY * ao), 1.0);
+	color_out = vec4(albedo.rgb * ((1.0 - AMBIENT_INTENSITY) + AMBIENT_INTENSITY * ao), 1.0);
 }

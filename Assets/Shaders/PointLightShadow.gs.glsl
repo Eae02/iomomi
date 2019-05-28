@@ -17,6 +17,9 @@ layout(set=0, binding=0) uniform MatricesUB
 layout(location=0) in vec3 worldPos_in[];
 layout(location=0) out vec3 worldPos_out;
 
+layout(location=1) in vec2 texCoord_in[];
+layout(location=1) out vec2 texCoord_out;
+
 void main()
 {
 	int i = 0;
@@ -29,6 +32,7 @@ void main()
 			gl_Position.y = -gl_Position.y;
 		}
 		worldPos_out = worldPos_in[i];
+		texCoord_out = texCoord_in[i];
 		EmitVertex();
 		i++;
 	}

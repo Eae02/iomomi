@@ -30,6 +30,7 @@ private:
 	
 	float m_opacity;
 	float m_roughness;
+	bool m_inheritNormals;
 	
 	mutable eg::DescriptorSet m_descriptorSet;
 	mutable bool m_descriptorSetInitialized = false;

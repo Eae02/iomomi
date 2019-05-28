@@ -6,6 +6,7 @@
 #include <fstream>
 
 static eg::Pipeline decalsGamePipeline;
+static eg::Pipeline decalsGamePipelineInheritNormals;
 static eg::Pipeline decalsPlanarReflPipeline;
 static eg::Pipeline decalsEditorPipeline;
 
@@ -54,6 +55,9 @@ static void OnInit()
 	pipelineCI.label = "DecalsGame";
 	decalsGamePipeline = eg::Pipeline::Create(pipelineCI);
 	
+	pipelineCI.blendStates[1].colorWriteMask = eg::ColorWriteMask::A | eg::ColorWriteMask::B;
+	decalsGamePipelineInheritNormals = eg::Pipeline::Create(pipelineCI);
+	
 	pipelineCI.fragmentShader = fs.GetVariant("VEditor");
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.blendStates[1] = { };
@@ -73,6 +77,7 @@ static void OnInit()
 static void OnShutdown()
 {
 	decalsGamePipeline.Destroy();
+	decalsGamePipelineInheritNormals.Destroy();
 	decalsEditorPipeline.Destroy();
 	decalsPlanarReflPipeline.Destroy();
 	decalVertexBuffer.Destroy();
@@ -96,6 +101,7 @@ public:
 		
 		const float roughness = rootYaml["roughness"].as<float>(1.0f);
 		const float opacity = rootYaml["opacity"].as<float>(1.0f);
+		const bool inheritNormals = rootYaml["inheritNormals"].as<bool>(false);
 		
 		std::string albedoPath = rootYaml["albedo"].as<std::string>(std::string());
 		std::string normalMapPath = rootYaml["normalMap"].as<std::string>(std::string());
@@ -110,6 +116,7 @@ public:
 		eg::BinWriteString(generateContext.outputStream, normalMapPath);
 		eg::BinWrite(generateContext.outputStream, roughness);
 		eg::BinWrite(generateContext.outputStream, opacity);
+		eg::BinWrite<uint8_t>(generateContext.outputStream, inheritNormals);
 		
 		generateContext.AddLoadDependency(std::move(albedoPath));
 		generateContext.AddLoadDependency(std::move(normalMapPath));
@@ -118,7 +125,7 @@ public:
 	}
 };
 
-static const eg::AssetFormat DecalMaterialAssetFormat { "DecalMaterial", 1 };
+static const eg::AssetFormat DecalMaterialAssetFormat { "DecalMaterial", 2 };
 
 void DecalMaterial::InitAssetTypes()
 {
@@ -144,6 +151,7 @@ bool DecalMaterial::AssetLoader(const eg::AssetLoadContext& loadContext)
 	
 	material.m_roughness = eg::BinRead<float>(stream);
 	material.m_opacity = eg::BinRead<float>(stream);
+	material.m_inheritNormals = eg::BinRead<uint8_t>(stream);
 	
 	return true;
 }
@@ -154,7 +162,7 @@ DecalMaterial::DecalMaterial(const eg::Texture& albedoTexture, const eg::Texture
 
 size_t DecalMaterial::PipelineHash() const
 {
-	return typeid(DecalMaterial).hash_code();
+	return typeid(DecalMaterial).hash_code() + m_inheritNormals;
 }
 
 bool DecalMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const
@@ -163,7 +171,7 @@ bool DecalMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) con
 	
 	if (mDrawArgs->drawMode == MeshDrawMode::Game)
 	{
-		cmdCtx.BindPipeline(decalsGamePipeline);
+		cmdCtx.BindPipeline(m_inheritNormals ? decalsGamePipelineInheritNormals : decalsGamePipeline);
 	}
 	else if (mDrawArgs->drawMode == MeshDrawMode::Editor)
 	{

@@ -123,7 +123,7 @@ static void OnInit()
 	eg::GraphicsPipelineCreateInfo plsPipelineCI;
 	plsPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Common3D-PLShadow.vs.glsl").DefaultVariant();
 	plsPipelineCI.geometryShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLightShadow.gs.glsl").DefaultVariant();
-	plsPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLightShadow.fs.glsl").DefaultVariant();
+	plsPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLightShadow.fs.glsl").GetVariant("VAlbedo");
 	plsPipelineCI.enableDepthWrite = true;
 	plsPipelineCI.enableDepthTest = true;
 	plsPipelineCI.frontFaceCCW = eg::CurrentGraphicsAPI() == eg::GraphicsAPI::Vulkan;
@@ -131,10 +131,11 @@ static void OnInit()
 	plsPipelineCI.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
 	plsPipelineCI.vertexBindings[1] = { sizeof(float) * 16, eg::InputRate::Instance };
 	plsPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(eg::StdVertex, position) };
-	plsPipelineCI.vertexAttributes[1] = { 1, eg::DataType::Float32, 4, 0 * sizeof(float) * 4 };
-	plsPipelineCI.vertexAttributes[2] = { 1, eg::DataType::Float32, 4, 1 * sizeof(float) * 4 };
-	plsPipelineCI.vertexAttributes[3] = { 1, eg::DataType::Float32, 4, 2 * sizeof(float) * 4 };
-	plsPipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
+	plsPipelineCI.vertexAttributes[1] = { 0, eg::DataType::Float32, 2, offsetof(eg::StdVertex, texCoord) };
+	plsPipelineCI.vertexAttributes[2] = { 1, eg::DataType::Float32, 4, 0 * sizeof(float) * 4 };
+	plsPipelineCI.vertexAttributes[3] = { 1, eg::DataType::Float32, 4, 1 * sizeof(float) * 4 };
+	plsPipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 4, 2 * sizeof(float) * 4 };
+	plsPipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
 	plsPipelineCI.label = "StaticPropPLS";
 	staticPropPipelinePLShadow[1] = eg::Pipeline::Create(plsPipelineCI);
 	
@@ -236,7 +237,10 @@ bool StaticPropMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs
 {
 	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
 	if (mDrawArgs->drawMode == MeshDrawMode::PointLightShadow)
+	{
+		cmdCtx.BindTexture(*m_albedoTexture, 0, 1);
 		return m_castShadows;
+	}
 	if (mDrawArgs->drawMode == MeshDrawMode::PlanarReflection && !m_reflect)
 		return false;
 	

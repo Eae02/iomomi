@@ -22,7 +22,7 @@ layout(binding=0, std140) uniform RenderSettingsUB
 
 layout(binding=1, std140) uniform MaterialSettingsUB
 {
-	vec4 matSettings[3]; 
+	vec4 matSettings[4]; 
 };
 
 #ifdef VPlanarRefl

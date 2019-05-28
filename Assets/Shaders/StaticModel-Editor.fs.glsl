@@ -31,7 +31,10 @@ void main()
 	
 	vec3 normal = normalMapToWorld(texture(nmSampler, texCoord).xy, tbn);
 	
-	vec3 albedo = texture(albedoSampler, texCoord).rgb;
+	vec4 albedo = texture(albedoSampler, texCoord);
 	
-	color_out = vec4(albedo * CalcEditorLight(normal, miscMaps.b), 1.0);
+	if (albedo.a < 0.5)
+		discard;
+	
+	color_out = vec4(albedo.rgb * CalcEditorLight(normal, miscMaps.b), 1.0);
 }

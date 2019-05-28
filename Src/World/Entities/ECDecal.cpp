@@ -15,7 +15,10 @@ eg::EntitySignature ECDecal::Signature = eg::EntitySignature::Create<
 
 static const char* decalMaterials[] = 
 {
-	"Stain0"
+	"Stain0",
+	"Stain1",
+	"Stain2",
+	"Arrow"
 };
 
 ECDecal::ECDecal()

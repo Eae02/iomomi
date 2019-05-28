@@ -228,6 +228,8 @@ namespace Cube
 		rigidBody.Init(MASS, *collisionShape);
 		rigidBody.GetRigidBody()->setFlags(BT_DISABLE_WORLD_GRAVITY);
 		rigidBody.GetRigidBody()->setActivationState(DISABLE_DEACTIVATION);
+		rigidBody.GetRigidBody()->setRollingFriction(5);
+		rigidBody.GetRigidBody()->setSpinningFriction(5);
 		
 		return &entity;
 	}

@@ -30,9 +30,12 @@ struct Settings
 
 extern Settings settings;
 
+extern bool settingsWindowVisible;
+
 int SettingsGeneration();
 
 void LoadSettings();
+void SaveSettings();
 
 void SettingsChanged();
 

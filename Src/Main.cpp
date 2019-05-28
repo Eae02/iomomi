@@ -61,4 +61,6 @@ int main(int argc, char** argv)
 	eg::Run<Game>(runConfig);
 	
 	bullet::Destroy();
+	
+	SaveSettings();
 }

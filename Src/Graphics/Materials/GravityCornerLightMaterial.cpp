@@ -61,6 +61,7 @@ static void OnInit()
 static void OnShutdown()
 {
 	gravityCornerPipeline.Destroy();
+	gravityCornerPlanarReflPipeline.Destroy();
 	gravityCornerDescriptorSet.Destroy();
 }
 

@@ -34,7 +34,8 @@ static MaterialSettings materialSettings[] =
 {
 	{ 2.0f, 0.35f, 1.0f },
 	{ 4.0f, 0.1f, 0.3f },
-	{ 2.5f, 0.3f, 0.8f }
+	{ 2.5f, 0.3f, 0.8f },
+	{ 2.0f, 0.6f, 0.8f }
 };
 
 void InitializeWallShader()
@@ -95,7 +96,7 @@ void InitializeWallShader()
 	eg::GraphicsPipelineCreateInfo plsPipelineCI;
 	plsPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall-PLShadow.vs.glsl").DefaultVariant();
 	plsPipelineCI.geometryShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall-PLShadow.gs.glsl").DefaultVariant();
-	plsPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLightShadow.fs.glsl").DefaultVariant();
+	plsPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLightShadow.fs.glsl").GetVariant("VDefault");
 	plsPipelineCI.enableDepthWrite = true;
 	plsPipelineCI.enableDepthTest = true;
 	plsPipelineCI.frontFaceCCW = eg::CurrentGraphicsAPI() == eg::GraphicsAPI::Vulkan;

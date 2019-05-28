@@ -67,6 +67,32 @@ void LoadSettings()
 	CheckMSAA();
 }
 
+void SaveSettings()
+{
+	const char* textureQualityNames[] = { "low", "medium", "high" };
+	const char* qualityNames[] = { "veryLow", "low", "medium", "high", "veryHigh" };
+	
+	YAML::Emitter emitter;
+	emitter << YAML::BeginMap;
+	emitter << YAML::Key << "textureQuality" << YAML::Value << textureQualityNames[(int)settings.textureQuality];
+	emitter << YAML::Key << "reflectionsQuality" << YAML::Value << qualityNames[(int)settings.reflectionsQuality];
+	emitter << YAML::Key << "shadowQuality" << YAML::Value << qualityNames[(int)settings.shadowQuality];
+	emitter << YAML::Key << "lightingQuality" << YAML::Value << qualityNames[(int)settings.lightingQuality];
+	emitter << YAML::Key << "msaaSamples" << YAML::Value << settings.msaaSamples;
+	emitter << YAML::Key << "fieldOfView" << YAML::Value << settings.fieldOfViewDeg;
+	emitter << YAML::Key << "exposure" << YAML::Value << settings.exposure;
+	emitter << YAML::Key << "lookSensitivityMS" << YAML::Value << settings.lookSensitivityMS;
+	emitter << YAML::Key << "lookSensitivityGP" << YAML::Value << settings.lookSensitivityGP;
+	emitter << YAML::Key << "lookInvertY" << YAML::Value << settings.lookInvertY;
+	emitter << YAML::EndMap;
+	
+	std::ofstream settingsStream(settingsPath);
+	if (settingsStream)
+	{
+		settingsStream << emitter.c_str();
+	}
+}
+
 int settingsGeneration = 0;
 
 int SettingsGeneration()
@@ -197,7 +223,7 @@ void OptCommand(eg::Span<const std::string_view> args)
 	}
 }
 
-static bool settingsWindowVisible = false;
+bool settingsWindowVisible = false;
 
 void OptWndCommand(eg::Span<const std::string_view> args)
 {
@@ -243,9 +269,15 @@ void DrawSettingsWindow()
 		if (ImGui::CollapsingHeader("Graphics", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			if (ImGui::SliderFloat("Field of View", &settings.fieldOfViewDeg, 70.0f, 100.0f))
+			{
 				settings.fieldOfViewDeg = glm::clamp(settings.fieldOfViewDeg, 70.0f, 100.0f);
+				SettingsChanged();
+			}
 			if (ImGui::SliderFloat("Exposure", &settings.exposure, 0.5f, 1.5f))
+			{
 				settings.exposure = std::max(settings.exposure, 0.5f);
+				SettingsChanged();
+			}
 		}
 		
 		if (ImGui::CollapsingHeader("Input", ImGuiTreeNodeFlags_DefaultOpen))

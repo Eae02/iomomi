@@ -86,7 +86,19 @@ assets:
     srgb: true
     format: bc1
     
-  - name: Textures/StainDecal0.png
+  - name: Textures/Decals/Stain0.png
+    mipShift: *MipShift
+    srgb: true
+    format: bc3
+  - name: Textures/Decals/Stain1.png
+    mipShift: *MipShift
+    srgb: true
+    format: bc3
+  - name: Textures/Decals/Stain2.png
+    mipShift: *MipShift
+    srgb: true
+    format: bc3
+  - name: Textures/Decals/Arrow.png
     mipShift: *MipShift
     srgb: true
     format: bc3
@@ -264,7 +276,20 @@ assets:
     mipShift: *MipShift
     srgb: false
     format: bc1
-    
+
+  - name: Textures/PlatformA.png
+    mipShift: *MipShift
+    srgb: true
+    format: bc3
+  - name: Textures/PlatformN.png
+    mipShift: *MipShift
+    srgb: false
+    format: bc5
+  - name: Textures/PlatformM.png
+    mipShift: *MipShift
+    srgb: false
+    format: bc1
+
   - name: Textures/Hex.png
     srgb: false
     format: bc4
@@ -290,6 +315,7 @@ assets:
       - Textures/Voxel/TactileGrayA.png
       - Textures/Voxel/Metal1A.png
       - Textures/Voxel/MetalGridA.png
+      - Textures/Voxel/CementA.png
   - name: Textures/Voxel/NormalMap
     generator: Texture2DArray
     loader: Texture2D
@@ -300,6 +326,7 @@ assets:
       - Textures/Voxel/TactileGrayN.png
       - Textures/Voxel/Metal1N.png
       - Textures/Voxel/MetalGridN.png
+      - Textures/Voxel/CementN.png
   - name: Textures/Voxel/MiscMap
     generator: Texture2DArray
     loader: Texture2D
@@ -310,9 +337,19 @@ assets:
       - Textures/Voxel/TactileGrayM.png
       - Textures/Voxel/Metal1M.png
       - Textures/Voxel/MetalGridM.png
+      - Textures/Voxel/CementM.png
 
     #Decal materials
   - name: Materials/Decals/Stain0.yaml
+    generator: DecalMaterial
+    loader: DecalMaterial
+  - name: Materials/Decals/Stain1.yaml
+    generator: DecalMaterial
+    loader: DecalMaterial
+  - name: Materials/Decals/Stain2.yaml
+    generator: DecalMaterial
+    loader: DecalMaterial
+  - name: Materials/Decals/Arrow.yaml
     generator: DecalMaterial
     loader: DecalMaterial
     
@@ -365,6 +402,9 @@ assets:
   - name: Materials/GravityCorner.yaml
     generator: StaticPropMaterial
     loader: StaticPropMaterial
+  - name: Materials/Platform.yaml
+    generator: StaticPropMaterial
+    loader: StaticPropMaterial  
   - name: Materials/PlatformSlider.yaml
     generator: StaticPropMaterial
     loader: StaticPropMaterial  
