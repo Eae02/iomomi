@@ -2,3 +2,4 @@ albedo: ../../Textures/Decals/Stain1.png
 normalMap: ../../Textures/DefaultN.png
 roughness: 0.7
 opacity: 1.0
+inheritNormals: true

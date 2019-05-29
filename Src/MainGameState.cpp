@@ -311,7 +311,10 @@ void MainGameState::RunFrame(float dt)
 		m_postProcessor.Render(m_renderOutputTexture, m_bloomRenderTarget.get());
 	}
 	
-	DrawOverlay(dt);
+	if (eg::DevMode())
+	{
+		DrawOverlay(dt);
+	}
 	
 	m_gameTime += dt;
 }

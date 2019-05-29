@@ -33,6 +33,8 @@ int main(int argc, char** argv)
 	runConfig.defaultDepthStencilFormat = eg::Format::Depth32;
 	runConfig.initialize = []
 	{
+		eg::SpriteFont::LoadDevFont();
+		eg::console::Init();
 		eg::console::AddCommand("opt", 1, &OptCommand);
 		eg::console::AddCommand("optwnd", 0, &OptWndCommand);
 		InitEntitySerializers();
