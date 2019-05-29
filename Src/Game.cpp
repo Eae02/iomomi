@@ -13,7 +13,12 @@ Game::Game()
 {
 	editor = new Editor(m_renderCtx);
 	mainGameState = new MainGameState(m_renderCtx);
+	
+#ifdef NDEBUG
+	currentGS = nullptr;
+#else
 	currentGS = editor;
+#endif
 	
 	eg::console::AddCommand("ed", 0, [&] (eg::Span<const std::string_view> args)
 	{
@@ -35,6 +40,8 @@ Game::Game()
 		
 		currentGS = mainGameState;
 		mainGameState->LoadWorld(levelStream, levelIndex);
+		
+		eg::console::Hide();
 	});
 	
 	InitializeWallShader();
@@ -61,7 +68,18 @@ void Game::RunFrame(float dt)
 	
 	DrawSettingsWindow();
 	
-	currentGS->RunFrame(dt);
+	if (currentGS != nullptr)
+	{
+		currentGS->RunFrame(dt);
+	}
+	else
+	{
+		eg::RenderPassBeginInfo rpBeginInfo;
+		rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
+		rpBeginInfo.colorAttachments[0].clearValue = eg::ColorLin(eg::ColorSRGB(0.1f, 0.1f, 0.2f));
+		eg::DC.BeginRenderPass(rpBeginInfo);
+		eg::DC.EndRenderPass();
+	}
 	
 	m_imGuiInterface.EndFrame();
 	

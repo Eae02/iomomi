@@ -4,10 +4,10 @@
 
 struct Settings
 {
-	eg::TextureQuality textureQuality = eg::TextureQuality::Medium;
+	eg::TextureQuality textureQuality = eg::TextureQuality::High;
 	QualityLevel shadowQuality = QualityLevel::Medium;
 	QualityLevel reflectionsQuality = QualityLevel::Medium;
-	QualityLevel lightingQuality = QualityLevel::High;
+	QualityLevel lightingQuality = QualityLevel::Medium;
 	float fieldOfViewDeg = 80.0f;
 	uint32_t msaaSamples = 1;
 	

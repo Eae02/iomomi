@@ -32,8 +32,12 @@ ImGuiInterface::ImGuiInterface()
 	io.KeyMap[ImGuiKey_Y]          = (int)eg::Button::Y;
 	io.KeyMap[ImGuiKey_Z]          = (int)eg::Button::Z;
 	
+#ifdef NDEBUG
+	io.IniFilename = nullptr;
+#else
 	m_iniFileName = eg::ExeRelPath("ImGui.ini");
 	io.IniFilename = m_iniFileName.c_str();
+#endif
 	
 	ImGui::StyleColorsDark(&ImGui::GetStyle());
 	

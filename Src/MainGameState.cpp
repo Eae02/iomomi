@@ -34,6 +34,20 @@ MainGameState::MainGameState(RenderContext& renderCtx)
 		m_postProcessor.bloomIntensity = std::stof(std::string(args[0]));
 	});
 	
+	eg::console::AddCommand("reload", 0, [this] (eg::Span<const std::string_view> args)
+	{
+		if (m_currentLevelIndex == -1)
+		{
+			eg::Log(eg::LogLevel::Error, "lvl", "No level to reload");
+			return;
+		}
+		
+		std::string levelPath = GetLevelPath(levels[m_currentLevelIndex].name);
+		std::ifstream levelStream(levelPath, std::ios::binary);
+		LoadWorld(levelStream, m_currentLevelIndex);
+		eg::console::Hide();
+	});
+	
 	m_particleManager.SetTextureSize(1024, 1024);
 }
 

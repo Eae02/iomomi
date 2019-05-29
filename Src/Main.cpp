@@ -7,6 +7,10 @@
 
 #include <google/protobuf/stubs/common.h>
 
+#ifdef _WIN32
+#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
+#endif
+
 static_assert(sizeof(int) == 4);
 static_assert(sizeof(float) == 4);
 
@@ -28,8 +32,8 @@ int main(int argc, char** argv)
 	eg::TextureAssetQuality = settings.textureQuality;
 	
 	eg::RunConfig runConfig;
-	runConfig.gameName = "Gravity";
-	runConfig.flags = eg::RunFlags::DevMode | eg::RunFlags::DefaultFramebufferSRGB;
+	runConfig.gameName = "Gravity Game";
+	runConfig.flags = eg::RunFlags::CreateAssetPackage | eg::RunFlags::DefaultFramebufferSRGB;
 	runConfig.defaultDepthStencilFormat = eg::Format::Depth32;
 	runConfig.initialize = []
 	{
@@ -45,7 +49,7 @@ int main(int argc, char** argv)
 		InitLevels();
 	};
 	
-	bool vSync = true;
+	bool vSync = false;
 	for (int i = 1; i < argc; i++)
 	{
 		std::string_view arg = argv[i];
@@ -53,8 +57,8 @@ int main(int argc, char** argv)
 			runConfig.graphicsAPI = eg::GraphicsAPI::OpenGL;
 		else if (arg == "--vk")
 			runConfig.graphicsAPI = eg::GraphicsAPI::Vulkan;
-		else if (arg == "--no-vsync")
-			vSync = false;
+		else if (arg == "--vsync")
+			vSync = true;
 	}
 	
 	if (vSync)
