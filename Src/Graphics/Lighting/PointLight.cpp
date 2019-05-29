@@ -8,5 +8,6 @@ PointLightDrawData PointLight::GetDrawData(const glm::vec3& position) const
 	data.pc.range = Range();
 	data.pc.invRange = 1.0f / data.pc.range;
 	data.instanceID = InstanceID();
+	data.castsShadows = castsShadows;
 	return data;
 }

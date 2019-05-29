@@ -11,7 +11,7 @@ velocity:
 blend: additive
 rotation: [0, 360]
 angularVelocity: [-200, 200]
-size: [0.03, 0.04]
+size: [0.02, 0.03]
 endSize: [0.8, 0.9]
 opacity: 2
 endOpacity: 0

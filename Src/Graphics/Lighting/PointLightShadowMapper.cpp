@@ -78,6 +78,10 @@ void PointLightShadowMapper::UpdateShadowMaps(
 	//Assigns a shadow map to each point light
 	for (PointLightDrawData& pointLight : pointLights)
 	{
+		//TODO: Implement this
+		//if (!pointLight.castsShadows)
+		//	continue;
+		
 		size_t shadowMapIndex = SIZE_MAX;
 		for (size_t i = 0; i < m_shadowMaps.size(); i++)
 		{
@@ -91,6 +95,10 @@ void PointLightShadowMapper::UpdateShadowMaps(
 		if (shadowMapIndex == SIZE_MAX)
 		{
 			shadowMapIndex = AddShadowMap();
+		}
+		else if (glm::distance2(m_shadowMaps[shadowMapIndex].sphere.position, pointLight.pc.position) > 0.01f)
+		{
+			m_shadowMaps[shadowMapIndex].outOfDate = true;
 		}
 		
 		pointLight.shadowMap = m_shadowMaps[shadowMapIndex].texture;

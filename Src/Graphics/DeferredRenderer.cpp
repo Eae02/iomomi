@@ -141,6 +141,7 @@ DeferredRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height, ui
 		resolvedDepthTexCreateInfo.sampleCount = 1;
 		resolvedDepthTexCreateInfo.mipLevels = 1;
 		resolvedDepthTexCreateInfo.format = DeferredRenderer::DEPTH_FORMAT;
+		resolvedDepthTexCreateInfo.defaultSamplerDescription = &s_attachmentSamplerDesc;
 		m_resolvedDepthTexture = eg::Texture::Create2D(resolvedDepthTexCreateInfo);
 		
 		gbFramebufferCI.depthStencilResolveAttachment = m_resolvedDepthTexture.handle;
@@ -222,6 +223,11 @@ void DeferredRenderer::BeginLighting(RenderTarget& target, const LightProbesMana
 	target.m_gbColor1Texture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 	target.m_gbColor2Texture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 	target.m_gbDepthTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
+	
+	if (target.m_samples > 1)
+	{
+		target.m_resolvedDepthTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
+	}
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
 	rpBeginInfo.framebuffer = target.m_lightingFramebuffer.handle;

@@ -15,6 +15,7 @@ struct PointLightDrawData
 #pragma pack(pop)
 	eg::TextureRef shadowMap;
 	uint64_t instanceID;
+	bool castsShadows;
 };
 
 class PointLight : public LightSource
@@ -27,4 +28,6 @@ public:
 		: LightSource(color, intensity) { }
 	
 	PointLightDrawData GetDrawData(const glm::vec3& position) const;
+	
+	bool castsShadows = true;
 };

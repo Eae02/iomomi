@@ -1,7 +1,7 @@
 #version 450 core
 
 #pragma variants VSoftShadows VHardShadows VSoftShadowsMS VHardShadowsMS
-#if defined(VSoftShadowsMS) || defined(VSoftShadowsMS)
+#if defined(VSoftShadowsMS) || defined(VHardShadowsMS)
 #define VMSAA
 #endif
 

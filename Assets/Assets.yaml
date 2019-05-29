@@ -44,6 +44,7 @@ assets:
   - name: Shaders/GravitySwitchLight.fs.glsl
   - name: Shaders/GravitySwitchVolLight.vs.glsl
   - name: Shaders/GravitySwitchVolLight.fs.glsl
+  - name: Shaders/GravityGunMid.fs.glsl
   - name: Shaders/Decal.vs.glsl
   - name: Shaders/Decal.fs.glsl
   - name: Shaders/Particle.vs.glsl
