@@ -16,7 +16,7 @@ eg::EntitySignature ECEntrance::EntitySignature = eg::EntitySignature::Create<
     ECWallMounted,
     ECEditorVisible,
     ECActivatable,
-	ECRigidBody,
+    ECRigidBody,
     eg::ECPosition3D
     >();
 

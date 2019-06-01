@@ -814,6 +814,7 @@ void Editor::DrawWorld()
 	m_primRenderer.Begin(RenderSettings::instance->viewProjection, RenderSettings::instance->cameraPosition);
 	m_spriteBatch.Begin();
 	m_renderCtx->meshBatch.Begin();
+	m_renderCtx->transparentMeshBatch.Begin();
 	
 	m_prepareDrawArgs.spotLights.clear();
 	m_prepareDrawArgs.pointLights.clear();
@@ -832,6 +833,7 @@ void Editor::DrawWorld()
 	drawMessage.spriteBatch = &m_spriteBatch;
 	drawMessage.primitiveRenderer = &m_primRenderer;
 	drawMessage.meshBatch = &m_renderCtx->meshBatch;
+	drawMessage.transparentMeshBatch = &m_renderCtx->transparentMeshBatch;
 	drawMessage.getDrawMode = [this] (const eg::Entity* entity)
 	{
 		if (eg::Contains(m_selectedEntities, eg::EntityHandle(*entity)))
@@ -843,8 +845,9 @@ void Editor::DrawWorld()
 	m_primRenderer.End();
 	
 	m_renderCtx->meshBatch.End(eg::DC);
+	m_renderCtx->transparentMeshBatch.End(eg::DC);
 	
-	m_liquidPlaneRenderer.Prepare(*m_world, RenderSettings::instance->cameraPosition);
+	m_liquidPlaneRenderer.Prepare(*m_world, m_renderCtx->transparentMeshBatch, RenderSettings::instance->cameraPosition);
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
 	rpBeginInfo.framebuffer = nullptr;
@@ -862,6 +865,8 @@ void Editor::DrawWorld()
 	m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
 	
 	m_primRenderer.Draw();
+	
+	m_renderCtx->transparentMeshBatch.Draw(eg::DC, &mDrawArgs);
 	
 	if (m_tool == Tool::Entities)
 	{

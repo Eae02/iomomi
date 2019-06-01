@@ -146,7 +146,7 @@ void GravitySwitchVolLightMaterial::SetQuality(QualityLevel qualityLevel)
 bool GravitySwitchVolLightMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
 	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
-	if (mDrawArgs->drawMode != MeshDrawMode::VolLight || currentQualityLevel < QualityLevel::Medium)
+	if (mDrawArgs->drawMode != MeshDrawMode::Emissive || currentQualityLevel < QualityLevel::Medium)
 		return false;
 	
 	cmdCtx.BindPipeline(gsVolLightPipeline);

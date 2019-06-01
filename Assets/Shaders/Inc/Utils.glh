@@ -1,0 +1,12 @@
+#ifndef COMMON_H
+#define COMMON_H
+
+const float PI = 3.1415927;
+const float TWO_PI = 6.2831853;
+
+float sin01(float x)
+{
+	return sin(x) * 0.5 + 0.5;
+}
+
+#endif

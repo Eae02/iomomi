@@ -10,4 +10,5 @@ struct PrepareDrawArgs
 	std::vector<PointLightDrawData> pointLights;
 	std::vector<struct ReflectionPlane*> reflectionPlanes;
 	eg::MeshBatch* meshBatch;
+	eg::MeshBatchOrdered* transparentMeshBatch;
 };

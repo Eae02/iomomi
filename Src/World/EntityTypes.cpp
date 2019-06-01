@@ -8,6 +8,7 @@
 #include "Entities/WaterPlane.hpp"
 #include "Entities/ECDecal.hpp"
 #include "Entities/ECPlatform.hpp"
+#include "Entities/GravityBarrier.hpp"
 
 std::vector<SpawnableEntityType> spawnableEntityTypes = 
 {
@@ -19,7 +20,8 @@ std::vector<SpawnableEntityType> spawnableEntityTypes =
 	SpawnableEntityType { &GooPlane::CreateEntity, "Goo" },
 	SpawnableEntityType { &WaterPlane::CreateEntity, "Water" },
 	SpawnableEntityType { &ECDecal::CreateEntity, "Decal" },
-	SpawnableEntityType { &ECPlatform::CreateEntity, "Platform" }
+	SpawnableEntityType { &ECPlatform::CreateEntity, "Platform" },
+	SpawnableEntityType { &ECGravityBarrier::CreateEntity, "Barrier" },
 };
 
 std::vector<const eg::IEntitySerializer*> entitySerializers;
@@ -35,4 +37,5 @@ void InitEntitySerializers()
 	entitySerializers.push_back(ECFloorButton::EntitySerializer);
 	entitySerializers.push_back(ECDecal::EntitySerializer);
 	entitySerializers.push_back(ECPlatform::EntitySerializer);
+	entitySerializers.push_back(ECGravityBarrier::EntitySerializer);
 }

@@ -6,5 +6,6 @@
 struct RenderContext
 {
 	eg::MeshBatch meshBatch;
+	eg::MeshBatchOrdered transparentMeshBatch;
 	DeferredRenderer renderer;
 };

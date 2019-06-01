@@ -6,7 +6,6 @@ enum class MeshDrawMode
 {
 	Game,
 	Emissive,
-	VolLight,
 	Editor,
 	PlanarReflection,
 	PointLightShadow

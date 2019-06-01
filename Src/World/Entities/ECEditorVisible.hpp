@@ -13,6 +13,7 @@ struct EditorDrawMessage : eg::Message<EditorDrawMessage>
 {
 	eg::SpriteBatch* spriteBatch;
 	eg::MeshBatch* meshBatch;
+	eg::MeshBatchOrdered* transparentMeshBatch;
 	class PrimitiveRenderer* primitiveRenderer;
 	std::function<EntityEditorDrawMode(const eg::Entity*)> getDrawMode;
 };

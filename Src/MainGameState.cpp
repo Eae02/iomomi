@@ -21,6 +21,7 @@ MainGameState::MainGameState(RenderContext& renderCtx)
 {
 	m_prepareDrawArgs.isEditor = false;
 	m_prepareDrawArgs.meshBatch = &m_renderCtx->meshBatch;
+	m_prepareDrawArgs.transparentMeshBatch = &m_renderCtx->transparentMeshBatch;
 	m_projection.SetZNear(0.02f);
 	m_projection.SetZFar(200.0f);
 	
@@ -107,14 +108,7 @@ void MainGameState::DoDeferredRendering(bool useLightProbes, DeferredRenderer::R
 		
 		mDrawArgs.drawMode = MeshDrawMode::Emissive;
 		m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
-	}
-	
-	{
-		auto gpuTimerVolLight = eg::StartGPUTimer("Volumetric Lighting");
-		auto cpuTimerVolLight = eg::StartCPUTimer("Volumetric Lighting");
-		
-		mDrawArgs.drawMode = MeshDrawMode::VolLight;
-		m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
+		m_renderCtx->transparentMeshBatch.Draw(eg::DC, &mDrawArgs);
 	}
 	
 	{
@@ -269,6 +263,7 @@ void MainGameState::RunFrame(float dt)
 	RenderSettings::instance->UpdateBuffer();
 	
 	m_renderCtx->meshBatch.Begin();
+	m_renderCtx->transparentMeshBatch.Begin();
 	
 	m_prepareDrawArgs.spotLights.clear();
 	m_prepareDrawArgs.pointLights.clear();
@@ -279,6 +274,7 @@ void MainGameState::RunFrame(float dt)
 		m_gravityGun.Draw(m_renderCtx->meshBatch);
 	}
 	
+	m_renderCtx->transparentMeshBatch.End(eg::DC);
 	m_renderCtx->meshBatch.End(eg::DC);
 	
 	cpuTimerPrepare.Stop();
@@ -316,7 +312,7 @@ void MainGameState::RunFrame(float dt)
 	{
 		auto gpuTimerBloom = eg::StartGPUTimer("Bloom");
 		auto cpuTimerBloom = eg::StartCPUTimer("Bloom");
-		m_bloomRenderer.Render(glm::vec3(1.0f), m_renderOutputTexture, *m_bloomRenderTarget);
+		m_bloomRenderer.Render(glm::vec3(1.5f), m_renderOutputTexture, *m_bloomRenderTarget);
 	}
 	
 	{

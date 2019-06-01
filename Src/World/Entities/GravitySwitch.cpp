@@ -6,6 +6,7 @@
 #include "../Player.hpp"
 #include "../Voxel.hpp"
 #include "../../YAMLUtils.hpp"
+#include "../../Graphics/RenderSettings.hpp"
 #include "../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../Graphics/Materials/GravitySwitchMaterial.hpp"
 #include "../../Graphics/Materials/GravitySwitchVolLightMaterial.hpp"
@@ -61,7 +62,8 @@ namespace GravitySwitch
 		
 		volLightMaterial.rotationMatrix = ECWallMounted::GetRotationMatrix(entity);
 		volLightMaterial.switchPosition = eg::GetEntityPosition(entity);
-		message.meshBatch->AddNoData(GravitySwitchVolLightMaterial::GetMesh(), volLightMaterial);
+		message.transparentMeshBatch->AddNoData(GravitySwitchVolLightMaterial::GetMesh(), volLightMaterial,
+			DepthDrawOrder(volLightMaterial.switchPosition));
 	}
 	
 	void ECGravitySwitch::HandleMessage(eg::Entity& entity, const EditorRenderImGuiMessage& message)

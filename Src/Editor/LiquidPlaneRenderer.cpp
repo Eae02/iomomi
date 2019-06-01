@@ -21,7 +21,7 @@ LiquidPlaneRenderer::LiquidPlaneRenderer()
 
 static const eg::EntitySignature liquidPlaneSig = eg::EntitySignature::Create<ECLiquidPlane>();
 
-void LiquidPlaneRenderer::Prepare(const World& world, const glm::vec3& cameraPos)
+void LiquidPlaneRenderer::Prepare(const World& world, eg::MeshBatchOrdered& meshBatch, const glm::vec3& cameraPos)
 {
 	m_planes.clear();
 	
@@ -37,8 +37,6 @@ void LiquidPlaneRenderer::Prepare(const World& world, const glm::vec3& cameraPos
 			m_planes.emplace_back(distToCamera, &entity.GetComponent<ECLiquidPlane>());
 		}
 	}
-	
-	std::sort(m_planes.begin(), m_planes.end());
 }
 
 void LiquidPlaneRenderer::Render() const

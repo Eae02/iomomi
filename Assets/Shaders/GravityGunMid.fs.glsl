@@ -1,6 +1,7 @@
 #version 450 core
 
 #include "Inc/RenderSettings.glh"
+#include "Inc/Utils.glh"
 
 layout(binding=0, std140) uniform RenderSettingsUB
 {
@@ -20,14 +21,12 @@ layout(binding=1) uniform sampler2D hexSampler;
 
 void main()
 {
-	float lDist = texCoord_in.y;
-	
-	float hex = texture(hexSampler, texCoord_in * 4).r;
+	vec2 hex = texture(hexSampler, texCoord_in * 4).rg;
 	float edge = max(max(abs(texCoord_in.x / 1.6 - 0.5), abs(texCoord_in.y - 0.5)) * 4.0 - 1.0, 0.0);
 	
-	float intensity = mix(hex, 1.0, (sin(lDist * 15 + renderSettings.gameTime * 2) * 0.5 + 0.5) * 0.5);
+	float intensity = hex.r * sin01(hex.g * TWO_PI + renderSettings.gameTime * 2);
 	
 	intensity += mix(0.1, 1.0, pow(edge, 3));
 	
-	color_out = vec4(COLOR * mix(0.1, 1.0, intensity), 1.0);
+	color_out = vec4(COLOR * (0.1 + intensity), 1.0);
 }

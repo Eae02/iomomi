@@ -24,3 +24,8 @@ public:
 private:
 	eg::Buffer m_buffer;
 };
+
+inline float DepthDrawOrder(const glm::vec3& pos)
+{
+	return -glm::distance2(RenderSettings::instance->cameraPosition, pos);
+}

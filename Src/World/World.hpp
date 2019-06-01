@@ -90,7 +90,7 @@ public:
 	
 	const GravityCorner* FindGravityCorner(const eg::AABB& aabb, glm::vec3 move, Dir currentDown) const;
 	
-	void CalcClipping(ClippingArgs& args) const;
+	void CalcClipping(ClippingArgs& args, Dir currentDown) const;
 	
 	WallRayIntersectResult RayIntersectWall(const eg::Ray& ray) const;
 	

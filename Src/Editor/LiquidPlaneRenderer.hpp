@@ -5,7 +5,7 @@ class LiquidPlaneRenderer
 public:
 	LiquidPlaneRenderer();
 	
-	void Prepare(const class World& world, const glm::vec3& cameraPos);
+	void Prepare(const class World& world, eg::MeshBatchOrdered& meshBatch, const glm::vec3& cameraPos);
 	
 	void Render() const;
 	

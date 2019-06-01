@@ -1,0 +1,13 @@
+syntax="proto3";
+
+package gravity_pb;
+
+message GravityBarrierEntity {
+	float posX = 1;
+	float posY = 2;
+	float posZ = 3;
+	float sizeX = 4;
+	float sizeY = 5;
+	fixed32 flowDirection = 6;
+	fixed32 upPlane = 7;
+}

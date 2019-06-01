@@ -290,6 +290,7 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 		DrawMessage drawMessage;
 		drawMessage.world = this;
 		drawMessage.meshBatch = args.meshBatch;
+		drawMessage.transparentMeshBatch = args.transparentMeshBatch;
 		drawMessage.reflectionPlanes = &args.reflectionPlanes;
 		m_entityManager->SendMessageToAll(drawMessage);
 	}
@@ -956,7 +957,7 @@ void World::InitializeBulletPhysics()
 	}
 }
 
-void World::CalcClipping(ClippingArgs& args) const
+void World::CalcClipping(ClippingArgs& args, Dir currentDown) const
 {
 	for (const Region& region : m_regions)
 	{
@@ -968,6 +969,7 @@ void World::CalcClipping(ClippingArgs& args) const
 	}
 	
 	CalculateCollisionMessage message;
+	message.currentDown = currentDown;
 	message.clippingArgs = &args;
 	m_entityManager->SendMessageToAll(message);
 }

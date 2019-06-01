@@ -47,6 +47,8 @@ assets:
   - name: Shaders/GravityGunMid.fs.glsl
   - name: Shaders/Decal.vs.glsl
   - name: Shaders/Decal.fs.glsl
+  - name: Shaders/GravityBarrier.vs.glsl
+  - name: Shaders/GravityBarrier.fs.glsl
   - name: Shaders/Particle.vs.glsl
   - name: Shaders/Particle.fs.glsl
   - name: Shaders/GooPlane.vs.glsl
@@ -292,6 +294,9 @@ assets:
     format: bc1
 
   - name: Textures/Hex.png
+    srgb: false
+    format: bc5
+  - name: Textures/LineNoise.png
     srgb: false
     format: bc4
     
