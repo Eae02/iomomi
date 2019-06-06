@@ -66,6 +66,8 @@ private:
 	
 	eg::Ray m_viewRay;
 	
+	WallRayIntersectResult m_spawnEntityPickResult;
+	
 	SelState m_selState = SelState::NoSelection;
 	glm::ivec3 m_selection1;
 	glm::ivec3 m_selection2;

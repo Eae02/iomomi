@@ -598,7 +598,11 @@ void Editor::UpdateToolEntities(float dt)
 	//Opens the spawn entity menu if the right mouse button is clicked
 	if (eg::IsButtonDown(eg::Button::MouseRight) && !eg::WasButtonDown(eg::Button::MouseRight) && AllowMouseInteract())
 	{
-		ImGui::OpenPopup("SpawnEntity");
+		m_spawnEntityPickResult = m_world->RayIntersectWall(m_viewRay);
+		if (m_spawnEntityPickResult.intersected)
+		{
+			ImGui::OpenPopup("SpawnEntity");
+		}
 	}
 	
 	if (ImGui::BeginPopup("SpawnEntity"))
@@ -611,23 +615,18 @@ void Editor::UpdateToolEntities(float dt)
 		{
 			if (ImGui::MenuItem(entityType.name.c_str()))
 			{
-				WallRayIntersectResult pickResult = m_world->RayIntersectWall(m_viewRay);
-				
-				if (pickResult.intersected)
+				if (eg::Entity* entity = entityType.factory(m_world->EntityManager()))
 				{
-					if (eg::Entity* entity = entityType.factory(m_world->EntityManager()))
-					{
-						if (eg::ECPosition3D* positionComp = entity->FindComponent<eg::ECPosition3D>())
-							positionComp->position = pickResult.intersectPosition;
-						if (ECWallMounted* wallMountedComp = entity->FindComponent<ECWallMounted>())
-							wallMountedComp->wallUp = pickResult.normalDir;
-						
-						EditorSpawnedMessage spawnedMessage;
-						spawnedMessage.wallPosition = pickResult.intersectPosition;
-						spawnedMessage.wallNormal = pickResult.normalDir;
-						spawnedMessage.world = m_world.get();
-						entity->HandleMessage(spawnedMessage);
-					}
+					if (eg::ECPosition3D* positionComp = entity->FindComponent<eg::ECPosition3D>())
+						positionComp->position = m_spawnEntityPickResult.intersectPosition;
+					if (ECWallMounted* wallMountedComp = entity->FindComponent<ECWallMounted>())
+						wallMountedComp->wallUp = m_spawnEntityPickResult.normalDir;
+					
+					EditorSpawnedMessage spawnedMessage;
+					spawnedMessage.wallPosition = m_spawnEntityPickResult.intersectPosition;
+					spawnedMessage.wallNormal = m_spawnEntityPickResult.normalDir;
+					spawnedMessage.world = m_world.get();
+					entity->HandleMessage(spawnedMessage);
 				}
 				
 				ImGui::CloseCurrentPopup();
