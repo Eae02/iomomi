@@ -9,7 +9,6 @@
 #include "../World/Entities/ECActivator.hpp"
 #include "../World/Entities/ECActivationLightStrip.hpp"
 
-#include <filesystem>
 #include <fstream>
 
 #include <imgui.h>
@@ -996,7 +995,7 @@ void Editor::DrawToolEntities()
 		
 		//Draws the background sprite
 		m_spriteBatch.Draw(iconsTexture, icon.rectangle, color,
-			CreateSrcRectangle(selected ? 1 : 0), eg::FlipFlags::Normal);
+			CreateSrcRectangle(selected ? 1 : 0), eg::SpriteFlags::None);
 		
 		//Selects which icon to use
 		int iconIndex = 5;
@@ -1010,7 +1009,7 @@ void Editor::DrawToolEntities()
 		}
 		
 		//Draws the icon
-		m_spriteBatch.Draw(iconsTexture, icon.rectangle, color, CreateSrcRectangle(iconIndex), eg::FlipFlags::Normal);
+		m_spriteBatch.Draw(iconsTexture, icon.rectangle, color, CreateSrcRectangle(iconIndex), eg::SpriteFlags::None);
 	}
 }
 

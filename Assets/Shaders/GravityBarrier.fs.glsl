@@ -1,6 +1,7 @@
 #version 450 core
 
 layout(location=0) in vec2 texCoord_in;
+layout(location=1) in float opacity_in;
 
 layout(location=0) out vec4 color_out;
 
@@ -11,8 +12,7 @@ const int DUP_LINES = 6;
 const float PI = 3.141;
 const float OFFSET_SCALE = 0.8;
 const float LINE_SPACING = 0.5;
-const float INTENSITY_SCALE = 0.0004;
-const float LINE_WIDTH = 0.002;
+const float LINE_WIDTH = 0.003;
 const float MAX_INTENSITY = 0.9;
 
 #include "Inc/RenderSettings.glh"
@@ -56,7 +56,7 @@ void main()
 	
 	intensity += lineIntensity(centerLn - 0.5) * DUP_LINES;
 	intensity += lineIntensity(centerLn + 1.5) * DUP_LINES;
-	intensity *= INTENSITY_SCALE;
+	intensity *= opacity_in;
 	
 	color_out = vec4(COLOR * intensity, min(intensity, 1.0));
 }

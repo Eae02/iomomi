@@ -1,6 +1,12 @@
 #include "Levels.hpp"
 
+#ifdef __EMSCRIPTEN__
+#include <experimental/filesystem>
+using namespace std::experimental::filesystem;
+#else
 #include <filesystem>
+using namespace std::filesystem;
+#endif
 #include <yaml-cpp/yaml.h>
 
 std::vector<Level> levels;
@@ -16,9 +22,9 @@ void InitLevels()
 	{
 		levels.clear();
 		
-		for (auto entry : std::filesystem::directory_iterator(levelsPath))
+		for (auto entry : directory_iterator(levelsPath))
 		{
-			if (!entry.is_regular_file() || entry.path().extension() != ".gwd")
+			if (!is_regular_file(entry.status()) || entry.path().extension() != ".gwd")
 				continue;
 			
 			levels.push_back({ entry.path().stem().string() });

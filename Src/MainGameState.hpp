@@ -43,7 +43,7 @@ private:
 	
 	PrepareDrawArgs m_prepareDrawArgs;
 	PointLightShadowMapper m_plShadowMapper;
-	eg::BloomRenderer m_bloomRenderer;
+	std::unique_ptr<eg::BloomRenderer> m_bloomRenderer;
 	PostProcessor m_postProcessor;
 	PlanarReflectionsManager m_planarReflectionsManager;
 	

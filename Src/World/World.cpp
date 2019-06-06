@@ -13,6 +13,7 @@
 #include "../Graphics/RenderSettings.hpp"
 #include "../Graphics/WallShader.hpp"
 #include "Entities/Entrance.hpp"
+#include "Entities/GravityBarrier.hpp"
 
 #include <yaml-cpp/yaml.h>
 
@@ -225,9 +226,11 @@ void World::Update(const WorldUpdateArgs& args)
 	{
 		auto physicsCPUTimer = eg::StartCPUTimer("Physics");
 		
+		ECGravityBarrier::Update(*m_entityManager, args.dt);
+		
 		Cube::UpdatePreSim(args);
 		
-		m_bulletWorld->stepSimulation(args.dt, 10);
+		m_bulletWorld->stepSimulation(args.dt, 10, 1.0f / 120.0f);
 		
 		Cube::UpdatePostSim(args);
 	}

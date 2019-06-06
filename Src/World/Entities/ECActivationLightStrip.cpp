@@ -6,6 +6,7 @@
 #include "../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../Vec3Compare.hpp"
 
+#include <unordered_map>
 #include <tuple>
 
 eg::MessageReceiver ECActivationLightStrip::MessageReceiver =
@@ -253,7 +254,8 @@ void ECActivationLightStrip::Generate(const World& world, eg::Span<const PathPoi
 			QueueEntry curEntry = pq.top();
 			pq.pop();
 			
-			if (curEntry.pos.doublePos == targetPos && curEntry.pos.wallNormal == points[i].wallNormal)
+			if (curEntry.pos.doublePos == targetPos &&
+			    (i == points.size() - 1 || curEntry.pos.wallNormal == points[i].wallNormal))
 			{
 				lastPos = curEntry.pos;
 				break;
@@ -413,7 +415,6 @@ void ECActivationLightStrip::GenerateForActivator(const World& world, eg::Entity
 	points[0].position = eg::GetEntityPosition(activatorEntity);
 	points[0].wallNormal = activatorEntity.GetComponent<ECWallMounted>().wallUp;
 	points[1].position = connectionPoints[std::min<size_t>(activator->targetConnectionIndex, connectionPoints.size() - 1)];
-	points[1].wallNormal = activatableEntity->GetComponent<ECWallMounted>().wallUp;
 	
 	lightStrip->Generate(world, points);
 }

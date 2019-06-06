@@ -11,7 +11,7 @@ message PlatformEntity {
 	Dir dir = 4;
 	float slideOffsetX = 5;
 	float slideOffsetY = 6;
-    fixed32 name = 7;
+	fixed32 name = 7;
 	uint32 reqActivations = 8;
 	float slideTime = 9;
 }

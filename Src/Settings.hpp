@@ -24,7 +24,7 @@ struct Settings
 	
 	bool BloomEnabled() const
 	{
-		return lightingQuality >= QualityLevel::Medium;
+		return (lightingQuality >= QualityLevel::Medium) && eg::GetGraphicsDeviceInfo().computeShader;
 	}
 };
 

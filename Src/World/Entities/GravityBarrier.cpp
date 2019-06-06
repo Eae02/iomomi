@@ -1,6 +1,9 @@
 #include "GravityBarrier.hpp"
 #include "ECEditorVisible.hpp"
 #include "Messages.hpp"
+#include "ECRigidBody.hpp"
+#include "ECActivatable.hpp"
+#include "../BulletPhysics.hpp"
 #include "../Clipping.hpp"
 #include "../../Graphics/Materials/MeshDrawArgs.hpp"
 #include "../../Graphics/RenderSettings.hpp"
@@ -8,9 +11,12 @@
 
 #include <imgui.h>
 
+static constexpr float OPACITY_SCALE = 0.0004;
+
 struct InstanceData
 {
 	glm::vec3 position;
+	float opacity;
 	glm::vec3 tangent;
 	float tangentMag;
 	glm::vec3 bitangent;
@@ -27,7 +33,7 @@ struct GravityBarrierMaterial : eg::IMaterial
 		pipelineCI.vertexBindings[0] = { 2, eg::InputRate::Vertex };
 		pipelineCI.vertexBindings[1] = { sizeof(InstanceData), eg::InputRate::Instance };
 		pipelineCI.vertexAttributes[0] = { 0, eg::DataType::UInt8Norm, 2, 0 };
-		pipelineCI.vertexAttributes[1] = { 1, eg::DataType::Float32, 3, offsetof(InstanceData, position) };
+		pipelineCI.vertexAttributes[1] = { 1, eg::DataType::Float32, 4, offsetof(InstanceData, position) };
 		pipelineCI.vertexAttributes[2] = { 1, eg::DataType::Float32, 4, offsetof(InstanceData, tangent) };
 		pipelineCI.vertexAttributes[3] = { 1, eg::DataType::Float32, 4, offsetof(InstanceData, bitangent) };
 		pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
@@ -103,19 +109,19 @@ static void OnInit()
 	barrierMesh.numElements = 4;
 	barrierMesh.vertexBuffer = vertexBuffer;
 	
-	glm::vec3 colVertices[] = 
+	const glm::vec3 colVertices[] = 
 	{
-		glm::vec3(-0.5f, -0.5f, 0.05f),
-		glm::vec3( 0.5f, -0.5f, 0.05f),
-		glm::vec3(-0.5f,  0.5f, 0.05f),
-		glm::vec3( 0.5f,  0.5f, 0.05f),
+		glm::vec3(-0.5f, -0.5f,  0.05f),
+		glm::vec3( 0.5f, -0.5f,  0.05f),
+		glm::vec3(-0.5f,  0.5f,  0.05f),
+		glm::vec3( 0.5f,  0.5f,  0.05f),
 		glm::vec3(-0.5f, -0.5f, -0.05f),
 		glm::vec3( 0.5f, -0.5f, -0.05f),
 		glm::vec3(-0.5f,  0.5f, -0.05f),
 		glm::vec3( 0.5f,  0.5f, -0.05f)
 	};
 	
-	uint32_t colIndices[] = { 0, 1, 2, 1, 3, 2, 4, 6, 5, 6, 7, 5 };
+	const uint32_t colIndices[] = { 0, 1, 2, 1, 3, 2, 4, 6, 5, 6, 7, 5 };
 	
 	barrierCollisionMesh = eg::CollisionMesh::CreateV3<uint32_t>(colVertices, colIndices);
 }
@@ -130,7 +136,7 @@ EG_ON_INIT(OnInit)
 EG_ON_SHUTDOWN(OnShutdown)
 
 eg::EntitySignature ECGravityBarrier::EntitySignature = eg::EntitySignature::Create<
-    ECGravityBarrier, ECEditorVisible, eg::ECPosition3D>();
+    ECGravityBarrier, ECEditorVisible, ECRigidBody, ECActivatable, eg::ECPosition3D>();
 
 eg::MessageReceiver ECGravityBarrier::MessageReceiver = eg::MessageReceiver::Create<ECGravityBarrier,
     DrawMessage, EditorDrawMessage, EditorRenderImGuiMessage, CalculateCollisionMessage>();
@@ -141,31 +147,116 @@ eg::Entity* ECGravityBarrier::CreateEntity(eg::EntityManager& entityManager)
 	
 	entity.InitComponent<ECEditorVisible>("Gravity Barrier");
 	
+	entity.InitComponent<ECActivatable>([] (const eg::Entity& e)
+	{
+		return e.GetComponent<ECGravityBarrier>().GetActivationPoints(e);
+	});
+	
 	return &entity;
 }
 
-static constexpr float X_SCALE = 0.25f;
+std::vector<glm::vec3> ECGravityBarrier::GetActivationPoints(const eg::Entity& entity) const
+{
+	auto [tangent, bitangent] = GetTangents();
+	
+	glm::vec3 position = entity.GetComponent<eg::ECPosition3D>().position;
+	
+	return {
+		position + bitangent * 0.5f,
+		position - bitangent * 0.5f
+	};
+}
+
+glm::mat4 ECGravityBarrier::GetTransform(const eg::Entity& entity)
+{
+	auto [tangent, bitangent] = entity.GetComponent<ECGravityBarrier>().GetTangents();
+	return glm::mat4(
+		glm::vec4(tangent, 0),
+		glm::vec4(bitangent, 0),
+		glm::vec4(glm::normalize(glm::cross(tangent, bitangent)), 0),
+		glm::vec4(entity.GetComponent<eg::ECPosition3D>().position, 1));
+}
 
 void ECGravityBarrier::Draw(eg::Entity& entity, eg::MeshBatchOrdered& meshBatch) const
 {
 	auto [tangent, bitangent] = GetTangents();
 	
+	constexpr float TIME_SCALE = 0.25f;
+	
 	InstanceData instanceData;
 	instanceData.position = entity.GetComponent<eg::ECPosition3D>().position;
+	instanceData.opacity = OPACITY_SCALE * glm::smoothstep(0.0f, 1.0f, m_opacity);
 	instanceData.tangent = tangent;
 	instanceData.bitangent = bitangent;
 	instanceData.tangentMag = glm::length(tangent);
-	instanceData.bitangentMag = glm::length(bitangent) * X_SCALE;
+	instanceData.bitangentMag = glm::length(bitangent) * TIME_SCALE;
 	
-	float dist = -glm::distance2(RenderSettings::instance->cameraPosition, instanceData.position);
-	meshBatch.Add(barrierMesh, *material, instanceData, dist);
+	meshBatch.Add(barrierMesh, *material, instanceData, DepthDrawOrder(instanceData.position));
+}
+
+int ECGravityBarrier::BlockedAxis() const
+{
+	auto [tangent, bitangent] = GetTangents();
+	if (std::abs(tangent.x) > 0.5f)
+		return 0;
+	if (std::abs(tangent.y) > 0.5f)
+		return 1;
+	return 2;
+}
+
+void ECGravityBarrier::Update(eg::EntityManager& entityManager, float dt)
+{
+	for (eg::Entity& entity : entityManager.GetEntitySet(EntitySignature))
+	{
+		ECRigidBody& rigidBody = entity.GetComponent<ECRigidBody>();
+		ECGravityBarrier& barrier = entity.GetComponent<ECGravityBarrier>();
+		ECActivatable& activatable = entity.GetComponent<ECActivatable>();
+		
+		barrier.m_enabled = true;
+		int newFlowDirectionOffset = 0;
+		
+		if (activatable.EnabledConnections() != 0)
+		{
+			bool activated = activatable.AllSourcesActive();
+			if (activated && barrier.activateAction == ActivateAction::Disable)
+				barrier.m_enabled = false;
+			else if (!activated && barrier.activateAction == ActivateAction::Enable)
+				barrier.m_enabled = false;
+			else if (activated && barrier.activateAction == ActivateAction::Rotate)
+				newFlowDirectionOffset = 1;
+		}
+		
+		btBroadphaseProxy* broadphaseProxy = rigidBody.GetRigidBody()->getBroadphaseProxy();
+		broadphaseProxy->m_collisionFilterMask = barrier.m_enabled ? (2 << barrier.BlockedAxis()) : 0;
+		broadphaseProxy->m_collisionFilterGroup = -1;
+		
+		bool decOpacity = !barrier.m_enabled;
+		
+		if (newFlowDirectionOffset != barrier.m_flowDirectionOffset)
+		{
+			if (barrier.m_opacity < 0.01f)
+			{
+				barrier.m_flowDirectionOffset = newFlowDirectionOffset;
+			}
+			else
+			{
+				decOpacity = true;
+			}
+		}
+		
+		constexpr float OPACITY_ANIMATION_TIME = 0.25f;
+		if (decOpacity)
+			barrier.m_opacity = std::max(barrier.m_opacity - dt / OPACITY_ANIMATION_TIME, 0.0f);
+		else
+			barrier.m_opacity = std::min(barrier.m_opacity + dt / OPACITY_ANIMATION_TIME, 1.0f);
+	}
 }
 
 std::tuple<glm::vec3, glm::vec3> ECGravityBarrier::GetTangents() const
 {
 	glm::vec3 upAxis(0);
 	upAxis[upPlane] = 1;
-	glm::mat3 flowRotation = glm::rotate(glm::mat4(1), flowDirection * eg::HALF_PI, upAxis);
+	glm::mat3 flowRotation = glm::rotate(glm::mat4(1), (flowDirection + m_flowDirectionOffset) * eg::HALF_PI, upAxis);
 	
 	glm::vec3 size3(1);
 	size3[(upPlane + 1) % 3] = size.x;
@@ -199,36 +290,24 @@ void ECGravityBarrier::HandleMessage(eg::Entity& entity, const EditorRenderImGui
 	
 	ImGui::DragFloat2("Size", &size.x, 0.5f);
 	
-	const char* planeNames[] = { "Plane X", "Plane Y", "Plane Z" };
-	for (int i = 0; i < 3; i++)
-	{
-		if (ImGui::RadioButton(planeNames[i], upPlane == i))
-		{
-			upPlane = i;
-		}
-	}
+	ImGui::Combo("Plane", &upPlane, "X\0Y\0Z\0");
 	
 	int flowDir = flowDirection + 1;
 	if (ImGui::SliderInt("Flow Direction", &flowDir, 1, 4))
 	{
 		flowDirection = glm::clamp(flowDir, 1, 4) - 1;
 	}
+	
+	ImGui::Combo("Activate Action", reinterpret_cast<int*>(&activateAction), "Disable\0Enable\0Rotate\0");
 }
 
 void ECGravityBarrier::HandleMessage(eg::Entity& entity, const CalculateCollisionMessage& message)
 {
-	auto [tangent, bitangent] = GetTangents();
-	if (std::abs(glm::dot(tangent, glm::vec3(DirectionVector(message.currentDown)))) < 0.001f)
-		return;
-	
-	glm::mat4 meshTransform = glm::mat4(
-		glm::vec4(tangent, 0),
-		glm::vec4(bitangent, 0),
-		glm::vec4(glm::normalize(glm::cross(tangent, bitangent)), 0),
-		glm::vec4(entity.GetComponent<eg::ECPosition3D>().position, 1));
-	
-	eg::CheckEllipsoidMeshCollision(message.clippingArgs->collisionInfo, message.clippingArgs->ellipsoid,
-		message.clippingArgs->move, barrierCollisionMesh, meshTransform);
+	if (m_enabled && (int)message.currentDown / 2 == BlockedAxis())
+	{
+		eg::CheckEllipsoidMeshCollision(message.clippingArgs->collisionInfo, message.clippingArgs->ellipsoid,
+		                                message.clippingArgs->move, barrierCollisionMesh, GetTransform(entity));
+	}
 }
 
 struct GravityBarrierSerializer : eg::IEntitySerializer
@@ -252,6 +331,11 @@ struct GravityBarrierSerializer : eg::IEntitySerializer
 		gravBarrierPB.set_upplane(barrier.upPlane);
 		gravBarrierPB.set_sizex(barrier.size.x);
 		gravBarrierPB.set_sizey(barrier.size.y);
+		gravBarrierPB.set_activateaction((uint32_t)barrier.activateAction);
+		
+		const ECActivatable& activatable = entity.GetComponent<ECActivatable>();
+		gravBarrierPB.set_name(activatable.Name());
+		gravBarrierPB.set_reqactivations(activatable.EnabledConnections());
 		
 		gravBarrierPB.SerializeToOstream(&stream);
 	}
@@ -265,10 +349,29 @@ struct GravityBarrierSerializer : eg::IEntitySerializer
 		
 		entity.InitComponent<eg::ECPosition3D>(gravBarrierPB.posx(), gravBarrierPB.posy(), gravBarrierPB.posz());
 		
+		ECActivatable& activatable = entity.GetComponent<ECActivatable>();
+		if (gravBarrierPB.name() != 0)
+			activatable.SetName(gravBarrierPB.name());
+		activatable.SetEnabledConnections(gravBarrierPB.reqactivations());
+		
 		ECGravityBarrier& barrier = entity.GetComponent<ECGravityBarrier>();
 		barrier.flowDirection = gravBarrierPB.flowdirection();
 		barrier.upPlane = gravBarrierPB.upplane();
 		barrier.size = glm::vec2(gravBarrierPB.sizex(), gravBarrierPB.sizey());
+		barrier.activateAction = (ECGravityBarrier::ActivateAction)gravBarrierPB.activateaction();
+		
+		glm::vec3 size = glm::abs(ECGravityBarrier::GetTransform(entity) * glm::vec4(0.5, 0.5, 0.1f, 0.0f));
+		barrier.m_collisionShape = btBoxShape(bullet::FromGLM(size));
+		
+		ECRigidBody& rigidBody = entity.GetComponent<ECRigidBody>();
+		rigidBody.InitStatic(barrier.m_collisionShape);
+		rigidBody.GetRigidBody()->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
+		rigidBody.GetRigidBody()->setActivationState(DISABLE_DEACTIVATION);
+		
+		btTransform transform;
+		transform.setIdentity();
+		transform.setOrigin(bullet::FromGLM(entity.GetComponent<eg::ECPosition3D>().position));
+		rigidBody.SetWorldTransform(transform);
 	}
 };
 

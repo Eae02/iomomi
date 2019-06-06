@@ -251,6 +251,11 @@ void MainGameState::RunFrame(float dt)
 		{
 			m_bloomRenderTarget = std::make_unique<eg::BloomRenderer::RenderTarget>(
 				(uint32_t)eg::CurrentResolutionX(), (uint32_t)eg::CurrentResolutionY(), 3);
+			
+			if (m_bloomRenderer == nullptr)
+			{
+				m_bloomRenderer = std::make_unique<eg::BloomRenderer>();
+			}
 		}
 	}
 	
@@ -312,7 +317,7 @@ void MainGameState::RunFrame(float dt)
 	{
 		auto gpuTimerBloom = eg::StartGPUTimer("Bloom");
 		auto cpuTimerBloom = eg::StartCPUTimer("Bloom");
-		m_bloomRenderer.Render(glm::vec3(1.5f), m_renderOutputTexture, *m_bloomRenderTarget);
+		m_bloomRenderer->Render(glm::vec3(1.5f), m_renderOutputTexture, *m_bloomRenderTarget);
 	}
 	
 	{

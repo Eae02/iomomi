@@ -19,6 +19,8 @@ static eg::IMaterial* platformSliderMaterial;
 
 static std::unique_ptr<btCollisionShape> platformCollisionShape;
 
+static constexpr float RIGID_BODY_HEIGHT = 0.2f;
+
 static void OnInit()
 {
 	platformModel = &eg::GetAsset<eg::Model>("Models/Platform.obj");
@@ -27,7 +29,7 @@ static void OnInit()
 	platformSliderModel = &eg::GetAsset<eg::Model>("Models/PlatformSlider.obj");
 	platformSliderMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/PlatformSlider.yaml");
 	
-	platformCollisionShape = std::make_unique<btBoxShape>(btVector3(1.0f, 0.05f, 1.0f));
+	platformCollisionShape = std::make_unique<btBoxShape>(btVector3(1.0f, RIGID_BODY_HEIGHT, 1.0f));
 }
 
 EG_ON_INIT(OnInit)
@@ -48,7 +50,7 @@ eg::Entity* ECPlatform::CreateEntity(eg::EntityManager& entityManager)
 	rigidBody.InitStatic(*platformCollisionShape);
 	rigidBody.GetRigidBody()->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
 	rigidBody.GetRigidBody()->setActivationState(DISABLE_DEACTIVATION);
-	rigidBody.GetRigidBody()->setFriction(10.0f);
+	rigidBody.GetRigidBody()->setFriction(5.0f);
 	
 	entity.InitComponent<ECEditorVisible>("Platform");
 	entity.InitComponent<ECActivatable>(&GetPlatformConnectionPoints);
@@ -201,7 +203,7 @@ void ECPlatform::Update(const WorldUpdateArgs& args)
 			args.invalidateShadows(eg::Sphere::CreateEnclosing(GetAABB(entity)));
 		}
 		
-		static const glm::vec4 RIGID_BODY_OFFSET_LOCAL(0, -0.05f, -1, 1);
+		static const glm::vec4 RIGID_BODY_OFFSET_LOCAL(0, -RIGID_BODY_HEIGHT, -1, 1);
 		
 		ECRigidBody& rigidBody = entity.GetComponent<ECRigidBody>();
 		btTransform rbTransform;

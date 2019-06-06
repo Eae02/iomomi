@@ -16,24 +16,17 @@ static_assert(sizeof(float) == 4);
 
 void InitEntitySerializers();
 
-int main(int argc, char** argv)
+void Start(eg::RunConfig& runConfig)
 {
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
 	
 	bullet::Init();
 	
-	std::string appDataDirPath = eg::AppDataPath() + "/EaeGravity";
-	if (!eg::FileExists(appDataDirPath.c_str()))
-	{
-		eg::CreateDirectory(appDataDirPath.c_str());
-	}
-	
 	LoadSettings();
 	eg::TextureAssetQuality = settings.textureQuality;
 	
-	eg::RunConfig runConfig;
 	runConfig.gameName = "Gravity Game";
-	runConfig.flags = eg::RunFlags::DevMode | eg::RunFlags::DefaultFramebufferSRGB;
+	runConfig.flags |= eg::RunFlags::DevMode | eg::RunFlags::DefaultFramebufferSRGB;
 	runConfig.defaultDepthStencilFormat = eg::Format::Depth32;
 	runConfig.initialize = []
 	{
@@ -49,6 +42,26 @@ int main(int argc, char** argv)
 		InitLevels();
 	};
 	
+	eg::Run<Game>(runConfig);
+}
+
+#ifdef __EMSCRIPTEN__
+extern "C" void WebMain()
+{
+	eg::RunConfig runConfig;
+	runConfig.graphicsAPI = eg::GraphicsAPI::OpenGL;
+	Start(runConfig);
+}
+#else
+int main(int argc, char** argv)
+{
+	std::string appDataDirPath = eg::AppDataPath() + "/EaeGravity";
+	if (!eg::FileExists(appDataDirPath.c_str()))
+	{
+		eg::CreateDirectory(appDataDirPath.c_str());
+	}
+	
+	eg::RunConfig runConfig;
 	bool vSync = false;
 	for (int i = 1; i < argc; i++)
 	{
@@ -60,13 +73,14 @@ int main(int argc, char** argv)
 		else if (arg == "--vsync")
 			vSync = true;
 	}
-	
 	if (vSync)
+	{
 		runConfig.flags |= eg::RunFlags::VSync;
-	
-	eg::Run<Game>(runConfig);
+	}
+	Start(runConfig);
 	
 	bullet::Destroy();
 	
 	SaveSettings();
 }
+#endif

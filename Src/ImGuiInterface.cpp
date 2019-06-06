@@ -1,6 +1,5 @@
 #include "ImGuiInterface.hpp"
 
-#include <filesystem>
 #include <imgui.h>
 
 static std::string clipboardText;
@@ -61,6 +60,9 @@ ImGuiInterface::ImGuiInterface()
 	m_pipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
 	// ** Creates the font texture **
+#ifdef __EMSCRIPTEN__
+	io.Fonts->AddFontDefault();
+#else
 	const char* fontPaths[] = 
 	{
 #if defined(__linux__)
@@ -74,19 +76,20 @@ ImGuiInterface::ImGuiInterface()
 	
 	auto fontIt = std::find_if(std::begin(fontPaths), std::end(fontPaths), [] (const char* path)
 	{
-		return std::filesystem::exists(std::filesystem::u8path(path));
+		return eg::FileExists(path);
 	});
 	
 	if (fontIt != std::end(fontPaths))
 		io.Fonts->AddFontFromFileTTF(*fontIt, 14);
 	else
 		io.Fonts->AddFontDefault();
+#endif
 	
 	unsigned char* fontTexPixels;
 	int fontTexWidth, fontTexHeight;
-	io.Fonts->GetTexDataAsAlpha8(&fontTexPixels, &fontTexWidth, &fontTexHeight);
+	io.Fonts->GetTexDataAsRGBA32(&fontTexPixels, &fontTexWidth, &fontTexHeight);
 	
-	uint64_t fontTexBytes = fontTexWidth * fontTexHeight;
+	uint64_t fontTexBytes = fontTexWidth * fontTexHeight * 4;
 	eg::Buffer fontUploadBuffer(eg::BufferFlags::CopySrc | eg::BufferFlags::HostAllocate | eg::BufferFlags::MapWrite, fontTexBytes, nullptr);
 	void* fontUploadMem = fontUploadBuffer.Map(0, fontTexBytes);
 	std::memcpy(fontUploadMem, fontTexPixels, fontTexBytes);
@@ -100,13 +103,9 @@ ImGuiInterface::ImGuiInterface()
 	fontTexCreateInfo.flags = eg::TextureFlags::CopyDst | eg::TextureFlags::ShaderSample;
 	fontTexCreateInfo.width = fontTexWidth;
 	fontTexCreateInfo.height = fontTexHeight;
-	fontTexCreateInfo.format = eg::Format::R8_UNorm;
+	fontTexCreateInfo.format = eg::Format::R8G8B8A8_UNorm;
 	fontTexCreateInfo.defaultSamplerDescription = &fontTexSampler;
 	fontTexCreateInfo.mipLevels = 1;
-	fontTexCreateInfo.swizzleR = eg::SwizzleMode::One;
-	fontTexCreateInfo.swizzleG = eg::SwizzleMode::One;
-	fontTexCreateInfo.swizzleB = eg::SwizzleMode::One;
-	fontTexCreateInfo.swizzleA = eg::SwizzleMode::R;
 	
 	m_fontTexture = eg::Texture::Create2D(fontTexCreateInfo);
 	eg::DC.SetTextureData(m_fontTexture, { 0, 0, 0, (uint32_t)fontTexWidth, (uint32_t)fontTexHeight, 1, 0 }, fontUploadBuffer, 0);

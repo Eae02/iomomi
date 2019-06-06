@@ -37,6 +37,7 @@ eg::TextureQuality initialTextureQuality;
 
 void LoadSettings()
 {
+#ifndef __EMSCRIPTEN__
 	settingsPath = eg::AppDataPath() + "EaeGravity/Settings.yaml";
 	
 	std::ifstream settingsStream(settingsPath);
@@ -65,10 +66,12 @@ void LoadSettings()
 	settings.lookInvertY = settingsNode["lookInvertY"].as<bool>(false);
 	
 	CheckMSAA();
+#endif
 }
 
 void SaveSettings()
 {
+#ifndef __EMSCRIPTEN__
 	const char* textureQualityNames[] = { "low", "medium", "high" };
 	const char* qualityNames[] = { "veryLow", "low", "medium", "high", "veryHigh" };
 	
@@ -91,6 +94,7 @@ void SaveSettings()
 	{
 		settingsStream << emitter.c_str();
 	}
+#endif
 }
 
 int settingsGeneration = 0;

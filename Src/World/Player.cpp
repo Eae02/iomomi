@@ -377,8 +377,6 @@ void Player::ClipAndMove(const World& world, glm::vec3 move, bool skipPlatforms)
 		ClippingArgs clippingArgs;
 		clippingArgs.move = moveES * fromEllipsoidSpace;
 		clippingArgs.ellipsoid = eg::CollisionEllipsoid(m_position, m_radius);
-		//clippingArgs.skipPlatforms = skipPlatforms;
-		//CalcWorldClipping(world, clippingArgs);
 		world.CalcClipping(clippingArgs, m_down);
 		
 		glm::vec3 positionES = m_position * toEllipsoidSpace;

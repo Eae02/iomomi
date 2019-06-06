@@ -10,4 +10,7 @@ message GravityBarrierEntity {
 	float sizeY = 5;
 	fixed32 flowDirection = 6;
 	fixed32 upPlane = 7;
+	fixed32 name = 8;
+	uint32 reqActivations = 9;
+	uint32 activateAction = 10;
 }

@@ -16,7 +16,7 @@
 
 namespace Cube
 {
-	static constexpr float MASS = 1000.0f;
+	static constexpr float MASS = 1.0f;
 	static constexpr float RADIUS = 0.4f;
 	
 	static std::unique_ptr<btCollisionShape> collisionShape;
@@ -166,23 +166,45 @@ namespace Cube
 			{
 				ECRigidBody::PushTransform(entity);
 				
-				constexpr float DIST_FROM_PLAYER = RADIUS + 0.5f;
+				constexpr float DIST_FROM_PLAYER = RADIUS + 0.7f; //Distance to the cube when carrying
+				constexpr float MAX_DIST_FROM_PLAYER = RADIUS + 0.9f; //Drop the cube if further away than this
+				
 				glm::vec3 desiredPosition = args.player->EyePosition() + args.player->Forward() * DIST_FROM_PLAYER;
 				
 				eg::AABB desiredAABB(desiredPosition - RADIUS * 1.001f, desiredPosition + RADIUS * 1.001f);
-				//desiredPosition += CalcWorldCollisionCorrection(*args.world, desiredAABB, RADIUS);
 				
 				glm::vec3 deltaPos = desiredPosition - entity.GetComponent<eg::ECPosition3D>().position;
 				
-				rigidBody.GetRigidBody()->setGravity(btVector3(0, 0, 0));
-				rigidBody.GetRigidBody()->setLinearVelocity(bullet::FromGLM(deltaPos / std::max(args.dt, 1.0f / 60.0f)));
-				rigidBody.GetRigidBody()->setAngularVelocity(btVector3(0, 0, 0));
-				rigidBody.GetRigidBody()->clearForces();
+				if (glm::length2(deltaPos) > MAX_DIST_FROM_PLAYER * MAX_DIST_FROM_PLAYER)
+				{
+					cube.isPickedUp = false;
+					args.player->SetIsCarrying(false);
+				}
+				else
+				{
+					ClippingArgs clipArgs;
+					clipArgs.ellipsoid.center = entity.GetComponent<eg::ECPosition3D>().position;
+					clipArgs.ellipsoid.radii = glm::vec3(RADIUS * 0.75f);
+					clipArgs.move = deltaPos;
+					args.world->CalcClipping(clipArgs, cube.currentDown);
+					
+					if (clipArgs.collisionInfo.collisionFound)
+						deltaPos *= clipArgs.collisionInfo.distance;
+					
+					rigidBody.GetRigidBody()->setGravity(btVector3(0, 0, 0));
+					rigidBody.GetRigidBody()->setLinearVelocity(
+						bullet::FromGLM(deltaPos / std::max(args.dt, 1.0f / 60.0f)));
+					rigidBody.GetRigidBody()->setAngularVelocity(btVector3(0, 0, 0));
+					rigidBody.GetRigidBody()->clearForces();
+				}
 			}
 			else
 			{
 				glm::vec3 gravity = glm::vec3(DirectionVector(cube.currentDown)) * bullet::GRAVITY;
 				rigidBody.GetRigidBody()->setGravity(bullet::FromGLM(gravity));
+				
+				btBroadphaseProxy* bpProxy = rigidBody.GetRigidBody()->getBroadphaseProxy();
+				bpProxy->m_collisionFilterGroup = 1 | (2 << ((int)cube.currentDown / 2));
 			}
 		}
 	}
@@ -226,10 +248,8 @@ namespace Cube
 		
 		ECRigidBody& rigidBody = entity.GetComponent<ECRigidBody>();
 		rigidBody.Init(MASS, *collisionShape);
-		rigidBody.GetRigidBody()->setFlags(BT_DISABLE_WORLD_GRAVITY);
+		rigidBody.GetRigidBody()->setFlags(rigidBody.GetRigidBody()->getFlags() | BT_DISABLE_WORLD_GRAVITY);
 		rigidBody.GetRigidBody()->setActivationState(DISABLE_DEACTIVATION);
-		rigidBody.GetRigidBody()->setRollingFriction(5);
-		rigidBody.GetRigidBody()->setSpinningFriction(5);
 		
 		return &entity;
 	}
