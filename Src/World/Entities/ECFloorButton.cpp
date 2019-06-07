@@ -67,8 +67,7 @@ struct FloorButtonSerializer : public eg::IEntitySerializer
 		buttonPB.set_posz(pos.z);
 		
 		const ECActivator& activator = entity.GetComponent<ECActivator>();
-		buttonPB.set_targetname(activator.activatableName);
-		buttonPB.set_sourceindex(activator.targetConnectionIndex);
+		buttonPB.set_allocated_activator(activator.SaveProtobuf(nullptr));
 		
 		buttonPB.SerializeToOstream(&stream);
 	}
@@ -85,8 +84,15 @@ struct FloorButtonSerializer : public eg::IEntitySerializer
 		entity.GetComponent<ECWallMounted>().wallUp = (Dir)buttonPB.dir();
 		
 		ECActivator& activator = entity.GetComponent<ECActivator>();
-		activator.targetConnectionIndex = buttonPB.sourceindex();
-		activator.activatableName = buttonPB.targetname();
+		if (buttonPB.has_activator())
+		{
+			activator.LoadProtobuf(buttonPB.activator());
+		}
+		else
+		{
+			activator.targetConnectionIndex = buttonPB.source_index();
+			activator.activatableName = buttonPB.target_name();
+		}
 	}
 };
 

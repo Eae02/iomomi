@@ -175,7 +175,7 @@ static const Dir ORTHO_DIRS[3][4] =
 	{ Dir::PosY, Dir::NegY, Dir::PosX, Dir::NegX },
 };
 
-void ECActivationLightStrip::Generate(const World& world, eg::Span<const PathPoint> points)
+void ECActivationLightStrip::Generate(const World& world, eg::Span<const WayPoint> points)
 {
 	struct NodeData
 	{
@@ -220,9 +220,19 @@ void ECActivationLightStrip::Generate(const World& world, eg::Span<const PathPoi
 	m_maxTransitionProgress = 0;
 	ClearGeneratedMesh();
 	
+	std::vector<NodePos> path;
+	std::vector<size_t> nodesBeforeWayPoint(points.size());
+	nodesBeforeWayPoint[0] = 0;
+	
+	m_path.clear();
+	
+	NodePos nextStart;
+	nextStart.doublePos = GetDoublePos(points[0].position);
+	nextStart.wallNormal = points[0].wallNormal;
+	
 	for (size_t i = 1; i < points.size(); i++)
 	{
-		glm::ivec3 sourcePos = GetDoublePos(points[i - 1].position);
+		glm::ivec3 sourcePos = nextStart.doublePos;
 		glm::ivec3 targetPos = GetDoublePos(points[i].position);
 		
 		auto QueuePush = [&] (int dist, const NodePos& pos)
@@ -235,16 +245,21 @@ void ECActivationLightStrip::Generate(const World& world, eg::Span<const PathPoi
 		nodeData.clear();
 		pq = { };
 		
-		//Inserts the four source nodes into the priority queue and node data map
-		for (Dir orthoDir : ORTHO_DIRS[(int)points[i - 1].wallNormal / 2])
+		if (i == 1)
 		{
-			NodePos nodePos;
-			nodePos.wallNormal = points[i - 1].wallNormal;
-			nodePos.stepDirection = orthoDir;
-			nodePos.doublePos = sourcePos;
-			
-			nodeData.emplace(nodePos, NodeData{ 0 });
-			QueuePush(0, nodePos);
+			//Inserts the four source nodes into the priority queue and node data map
+			for (Dir orthoDir : ORTHO_DIRS[(int)points[i - 1].wallNormal / 2])
+			{
+				NodePos nodePos = nextStart;
+				nodePos.stepDirection = orthoDir;
+				nodeData.emplace(nodePos, NodeData{ 0 });
+				QueuePush(0, nodePos);
+			}
+		}
+		else
+		{
+			nodeData.emplace(nextStart, NodeData{ 0 });
+			QueuePush(0, nextStart);
 		}
 		
 		//A*
@@ -327,72 +342,91 @@ void ECActivationLightStrip::Generate(const World& world, eg::Span<const PathPoi
 			return pos.doublePos != sourcePos || pos.wallNormal != points[i - 1].wallNormal;
 		};
 		
-		//Walks through the found path backwards and constructs the list of mesh instances.
-		int accDistance = 0;
-		for (NodePos pos = lastPos; HasPrev(pos);)
+		//Adds the shortest path to the path list
+		size_t prevPathLen = path.size();
+		for (NodePos pos = lastPos; HasPrev(pos); pos = nodeData.at(pos).prevPos)
 		{
-			NodePos prevPos = nodeData.at(pos).prevPos;
-			
-			LightStripMaterial::InstanceData* instanceData = nullptr;
-			
-			NodePos prev4[4];
-			prev4[0] = pos;
-			prev4[1] = prevPos;
-			int numPrev = 2;
-			while (HasPrev(prev4[numPrev - 1]) && numPrev < 4)
-			{
-				prev4[numPrev] = nodeData.at(prev4[numPrev - 1]).prevPos;
-				numPrev++;
-			}
-			
-			glm::vec3 rotationY = DirectionVector(pos.wallNormal);
-			glm::vec3 rotationZ = DirectionVector(pos.stepDirection);
-			glm::vec3 rotationX, translation;
-			
-			//If a bend mesh is to be inserted, the wall normal for the previous 4 nodes must all be the same and the
-			// step direction must be the same for p0 and p1 and also the same for p2 and p3 (but different from p0 and p1).
-			if (numPrev == 4 && prev4[0].wallNormal == prev4[1].wallNormal &&
-			    prev4[1].wallNormal == prev4[2].wallNormal && prev4[2].wallNormal == prev4[3].wallNormal &&
-			    prev4[0].stepDirection == prev4[1].stepDirection && prev4[2].stepDirection == prev4[3].stepDirection && 
-			    prev4[1].stepDirection != prev4[2].stepDirection)
-			{
-				rotationX = -DirectionVector(prev4[2].stepDirection);
-				
-				//If rotationZ cross rotationX isn't aligned with rotationY, the winding will be wrong.
-				// So swap rotationX and rotationZ in this case.
-				if (glm::dot(glm::cross(rotationZ, rotationX), rotationY) < 0)
-					std::swap(rotationX, rotationZ);
-				
-				translation = glm::vec3(prevPos.doublePos) / 2.0f;
-				instanceData = &m_instances[MV_Bend].emplace_back();
-				pos = prev4[2];
-			}
-			else if (pos.stepDirection == prevPos.stepDirection && pos.wallNormal == prevPos.wallNormal)
-			{
-				rotationX = glm::cross(rotationY, rotationZ);
-				translation = glm::vec3(pos.doublePos + prevPos.doublePos) / 4.0f;
-				instanceData = &m_instances[MV_Straight].emplace_back();
-			}
-			
-			if (instanceData != nullptr)
-			{
-				const float SCALE = 0.25f;
-				glm::mat3 rotationScaleMatrix(rotationX * SCALE, rotationY * SCALE, rotationZ * SCALE);
-				instanceData->transform = glm::translate(glm::mat4(1), translation) * glm::mat4(rotationScaleMatrix);
-				instanceData->lightProgress = accDistance;
-				accDistance++;
-			}
-			
-			pos = nodeData.at(pos).prevPos;
+			path.push_back(pos);
+		}
+		std::reverse(path.begin() + prevPathLen, path.end());
+		
+		nodesBeforeWayPoint[i] = path.size();
+		nextStart = lastPos;
+	}
+	
+	for (size_t i = 0; i < path.size(); i++)
+	{
+		auto wpi = std::lower_bound(nodesBeforeWayPoint.begin(), nodesBeforeWayPoint.end(), i);
+		
+		PathEntry& entry = m_path.emplace_back();
+		entry.position = glm::vec3(path[i].doublePos) / 2.0f;
+		entry.wallNormal = path[i].wallNormal;
+		entry.prevWayPoint = (int)(wpi - nodesBeforeWayPoint.begin()) - 1;
+	}
+	
+	//Builds the path mesh
+	int accDistance = 0;
+	for (int i = path.size() - 1; i >= 1; i--)
+	{
+		LightStripMaterial::InstanceData* instanceData = nullptr;
+		
+		NodePos prev4[4];
+		prev4[0] = path[i];
+		prev4[1] = path[i - 1];
+		int numPrev = 2;
+		while (i - numPrev >= 0 && numPrev < 4)
+		{
+			prev4[numPrev] = path[i - numPrev];
+			numPrev++;
 		}
 		
-		for (int v = 0; v < MV_Count; v++)
+		glm::vec3 rotationY = DirectionVector(path[i].wallNormal);
+		glm::vec3 rotationZ = DirectionVector(path[i].stepDirection);
+		glm::vec3 rotationX, translation;
+		
+		//If a bend mesh is to be inserted, the wall normal for the previous 4 nodes must all be the same and the
+		// step direction must be the same for p0 and p1 and also the same for p2 and p3 (but different from p0 and p1).
+		if (numPrev == 4 && prev4[0].wallNormal == prev4[1].wallNormal &&
+		    prev4[1].wallNormal == prev4[2].wallNormal && prev4[2].wallNormal == prev4[3].wallNormal &&
+		    prev4[0].stepDirection == prev4[1].stepDirection && prev4[2].stepDirection == prev4[3].stepDirection && 
+		    prev4[1].stepDirection != prev4[2].stepDirection)
 		{
-			for (LightStripMaterial::InstanceData& instanceData : m_instances[v])
-				instanceData.lightProgress = m_maxTransitionProgress + accDistance - instanceData.lightProgress;
+			rotationX = -DirectionVector(prev4[2].stepDirection);
+			
+			//If rotationZ cross rotationX isn't aligned with rotationY, the winding will be wrong.
+			// So swap rotationX and rotationZ in this case.
+			if (glm::dot(glm::cross(rotationZ, rotationX), rotationY) < 0)
+				std::swap(rotationX, rotationZ);
+			
+			translation = glm::vec3(path[i - 1].doublePos) / 2.0f;
+			instanceData = &m_instances[MV_Bend].emplace_back();
+			i -= 2;
 		}
-		m_maxTransitionProgress += accDistance + 1;
+		else if (path[i].stepDirection == path[i - 1].stepDirection && path[i].wallNormal == path[i - 1].wallNormal)
+		{
+			rotationX = glm::cross(rotationY, rotationZ);
+			translation = glm::vec3(path[i].doublePos + path[i - 1].doublePos) / 4.0f;
+			instanceData = &m_instances[MV_Straight].emplace_back();
+		}
+		
+		if (instanceData != nullptr)
+		{
+			const float SCALE = 0.25f;
+			glm::mat3 rotationScaleMatrix(rotationX * SCALE, rotationY * SCALE, rotationZ * SCALE);
+			instanceData->transform = glm::translate(glm::mat4(1), translation) * glm::mat4(rotationScaleMatrix);
+			instanceData->lightProgress = accDistance;
+			accDistance++;
+		}
 	}
+	
+	for (int v = 0; v < MV_Count; v++)
+	{
+		for (LightStripMaterial::InstanceData& instanceData : m_instances[v])
+		{
+			instanceData.lightProgress = m_maxTransitionProgress + accDistance - instanceData.lightProgress;
+		}
+	}
+	m_maxTransitionProgress += accDistance + 1;
 }
 
 void ECActivationLightStrip::GenerateForActivator(const World& world, eg::Entity& activatorEntity)
@@ -411,10 +445,12 @@ void ECActivationLightStrip::GenerateForActivator(const World& world, eg::Entity
 	
 	std::vector<glm::vec3> connectionPoints = ECActivatable::GetConnectionPoints(*activatableEntity);
 	
-	PathPoint points[2];
+	std::vector<WayPoint> points(activator->waypoints.size() + 2);
+	
 	points[0].position = eg::GetEntityPosition(activatorEntity);
 	points[0].wallNormal = activatorEntity.GetComponent<ECWallMounted>().wallUp;
-	points[1].position = connectionPoints[std::min<size_t>(activator->targetConnectionIndex, connectionPoints.size() - 1)];
+	std::copy(activator->waypoints.begin(), activator->waypoints.end(), points.begin() + 1);
+	points.back().position = connectionPoints[std::min<size_t>(activator->targetConnectionIndex, connectionPoints.size() - 1)];
 	
 	lightStrip->Generate(world, points);
 }

@@ -84,26 +84,33 @@ private:
 	int m_dragDir;
 	int m_dragAirMode;
 	
+	enum class IconType
+	{
+		Entity,
+		ActTarget,
+		ActPathNewPoint,
+		ActPathExistingPoint
+	};
+	
 	struct EntityIcon
 	{
 		eg::Rectangle rectangle;
 		float depth;
 		eg::EntityHandle entity;
+		IconType type;
 		int actConnectionIndex;
+		int wayPointIndex;
 	};
 	std::vector<EntityIcon> m_entityIcons;
 	std::vector<eg::EntityHandle> m_selectedEntities;
 	
-	struct ActConnection
-	{
-		eg::EntityHandle activator;
-		eg::EntityHandle activatable;
-	};
-	std::vector<ActConnection> m_actConnections;
 	eg::EntityHandle m_connectingActivator;
 	
-	void InitializeActConnections();
-	void RemoveActConnections(eg::EntityHandle entity, int targetConnectionIndex);
+	glm::vec3 m_lightStripInsertPos;
+	Dir m_lightStripInsertNormal;
+	
+	eg::EntityHandle m_editingLightStripEntity;
+	int m_editingWayPointIndex = -1;
 	
 	glm::vec3 m_gizmoPosUnaligned;
 	glm::vec3 m_prevGizmoPos;

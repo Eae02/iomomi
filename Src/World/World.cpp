@@ -78,6 +78,8 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 	
 	world->m_entityManager.reset(eg::EntityManager::Deserialize(stream, entitySerializers));
 	
+	ECActivator::Initialize(*world->m_entityManager);
+	
 	if (!isEditor)
 	{
 		for (const eg::Entity& entranceEntity : world->EntityManager().GetEntitySet(ECEntrance::EntitySignature))

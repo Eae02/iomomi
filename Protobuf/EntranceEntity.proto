@@ -11,5 +11,4 @@ message EntranceEntity {
 	Dir dir = 4;
 	bool isExit = 5;
 	fixed32 name = 6;
-	uint32 reqActivations = 7;
 }

@@ -8,9 +8,8 @@ message GravityBarrierEntity {
 	float posZ = 3;
 	float sizeX = 4;
 	float sizeY = 5;
-	fixed32 flowDirection = 6;
-	fixed32 upPlane = 7;
+	fixed32 flow_direction = 6;
+	fixed32 up_plane = 7;
 	fixed32 name = 8;
-	uint32 reqActivations = 9;
-	uint32 activateAction = 10;
+	uint32 activate_action = 10;
 }

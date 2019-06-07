@@ -12,7 +12,7 @@ public:
 	void HandleMessage(eg::Entity& entity, const DrawMessage& message);
 	void HandleMessage(eg::Entity& entity, const EditorDrawMessage& message);
 	
-	struct PathPoint
+	struct WayPoint
 	{
 		Dir wallNormal;
 		glm::vec3 position;
@@ -23,9 +23,21 @@ public:
 	
 	static void Update(eg::EntityManager& entityManager, float dt);
 	
-	void Generate(const class World& world, eg::Span<const PathPoint> points);
+	void Generate(const class World& world, eg::Span<const WayPoint> points);
 	
 	void ClearGeneratedMesh();
+	
+	struct PathEntry
+	{
+		Dir wallNormal;
+		glm::vec3 position;
+		int prevWayPoint;
+	};
+	
+	const std::vector<PathEntry>& Path() const
+	{
+		return m_path;
+	}
 	
 	static eg::MessageReceiver MessageReceiver;
 	
@@ -46,6 +58,8 @@ private:
 	
 	static const eg::Model* s_models[MV_Count];
 	static const eg::IMaterial* s_materials[MV_Count];
+	
+	std::vector<PathEntry> m_path;
 	
 	std::vector<LightStripMaterial::InstanceData> m_instances[MV_Count];
 	

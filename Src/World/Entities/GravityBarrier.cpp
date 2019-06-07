@@ -163,7 +163,9 @@ std::vector<glm::vec3> ECGravityBarrier::GetActivationPoints(const eg::Entity& e
 	
 	return {
 		position + bitangent * 0.5f,
-		position - bitangent * 0.5f
+		position - bitangent * 0.5f,
+		position + tangent * 0.5f,
+		position - tangent * 0.5f
 	};
 }
 
@@ -327,15 +329,14 @@ struct GravityBarrierSerializer : eg::IEntitySerializer
 		gravBarrierPB.set_posz(pos.z);
 		
 		const ECGravityBarrier& barrier = entity.GetComponent<ECGravityBarrier>();
-		gravBarrierPB.set_flowdirection(barrier.flowDirection);
-		gravBarrierPB.set_upplane(barrier.upPlane);
+		gravBarrierPB.set_flow_direction(barrier.flowDirection);
+		gravBarrierPB.set_up_plane(barrier.upPlane);
 		gravBarrierPB.set_sizex(barrier.size.x);
 		gravBarrierPB.set_sizey(barrier.size.y);
-		gravBarrierPB.set_activateaction((uint32_t)barrier.activateAction);
+		gravBarrierPB.set_activate_action((uint32_t)barrier.activateAction);
 		
 		const ECActivatable& activatable = entity.GetComponent<ECActivatable>();
 		gravBarrierPB.set_name(activatable.Name());
-		gravBarrierPB.set_reqactivations(activatable.EnabledConnections());
 		
 		gravBarrierPB.SerializeToOstream(&stream);
 	}
@@ -352,13 +353,12 @@ struct GravityBarrierSerializer : eg::IEntitySerializer
 		ECActivatable& activatable = entity.GetComponent<ECActivatable>();
 		if (gravBarrierPB.name() != 0)
 			activatable.SetName(gravBarrierPB.name());
-		activatable.SetEnabledConnections(gravBarrierPB.reqactivations());
 		
 		ECGravityBarrier& barrier = entity.GetComponent<ECGravityBarrier>();
-		barrier.flowDirection = gravBarrierPB.flowdirection();
-		barrier.upPlane = gravBarrierPB.upplane();
+		barrier.flowDirection = gravBarrierPB.flow_direction();
+		barrier.upPlane = gravBarrierPB.up_plane();
 		barrier.size = glm::vec2(gravBarrierPB.sizex(), gravBarrierPB.sizey());
-		barrier.activateAction = (ECGravityBarrier::ActivateAction)gravBarrierPB.activateaction();
+		barrier.activateAction = (ECGravityBarrier::ActivateAction)gravBarrierPB.activate_action();
 		
 		glm::vec3 size = glm::abs(ECGravityBarrier::GetTransform(entity) * glm::vec4(0.5, 0.5, 0.1f, 0.0f));
 		barrier.m_collisionShape = btBoxShape(bullet::FromGLM(size));

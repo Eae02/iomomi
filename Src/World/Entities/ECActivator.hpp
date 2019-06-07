@@ -1,5 +1,8 @@
 #pragma once
 
+#include "ECActivationLightStrip.hpp"
+#include "../../../Protobuf/Build/Activator.pb.h"
+
 struct ActivateMessage : eg::Message<ActivateMessage> { };
 
 class ECActivator
@@ -12,6 +15,11 @@ public:
 	
 	static void Update(const struct WorldUpdateArgs& args);
 	
+	static void Initialize(eg::EntityManager& entityManager);
+	
+	void LoadProtobuf(const gravity_pb::Activator& activator);
+	gravity_pb::Activator* SaveProtobuf(google::protobuf::Arena* arena) const;
+	
 	bool IsActivated() const
 	{
 		return m_isActivated;
@@ -20,6 +28,8 @@ public:
 	static eg::MessageReceiver MessageReceiver;
 	
 	static eg::EntitySignature Signature;
+	
+	std::vector<ECActivationLightStrip::WayPoint> waypoints;
 	
 private:
 	uint64_t m_lastActivatedFrame = 0;

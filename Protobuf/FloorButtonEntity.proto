@@ -3,12 +3,14 @@ syntax="proto3";
 package gravity_pb;
 
 import "Dir.proto";
+import "Activator.proto";
 
 message FloorButtonEntity {
 	float posX = 1;
 	float posY = 2;
 	float posZ = 3;
 	Dir dir = 4;
-	fixed32 targetName = 5;
-	fixed32 sourceIndex = 6;
+	fixed32 target_name = 5;
+	fixed32 source_index = 6;
+	Activator activator = 7;
 }

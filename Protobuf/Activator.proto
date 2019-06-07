@@ -1,0 +1,19 @@
+syntax="proto3";
+
+package gravity_pb;
+
+import "Vec.proto";
+import "Dir.proto";
+
+option cc_enable_arenas = true;
+
+message ActWayPoint {
+	Vec3 position = 1;
+	Dir wall_normal = 2;
+}
+
+message Activator {
+	fixed32 target_connection_index = 1;
+	fixed32 target_name = 2;
+	repeated ActWayPoint way_points = 3;
+}

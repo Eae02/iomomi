@@ -39,7 +39,6 @@ const char* TextureNames[] =
 void Editor::InitWorld()
 {
 	m_selectedEntities.clear();
-	InitializeActConnections();
 	ECActivationLightStrip::GenerateAll(*m_world);
 }
 
@@ -196,7 +195,6 @@ void Editor::RunFrame(float dt)
 					if (ImGui::Button("Connect..."))
 					{
 						m_connectingActivator = *entity;
-						RemoveActConnections(m_connectingActivator, -1);
 					}
 				}
 			}
@@ -312,51 +310,6 @@ void Editor::UpdateToolCorners(float dt)
 	}
 }
 
-void Editor::InitializeActConnections()
-{
-	m_actConnections.clear();
-	for (const eg::Entity& activatorEntity : m_world->EntityManager().GetEntitySet(ECActivator::Signature))
-	{
-		uint32_t activatableName = activatorEntity.GetComponent<ECActivator>().activatableName;
-		for (const eg::Entity& activatableEntity : m_world->EntityManager().GetEntitySet(ECActivatable::Signature))
-		{
-			if (activatableEntity.GetComponent<ECActivatable>().Name() == activatableName)
-			{
-				m_actConnections.push_back({ activatorEntity, activatableEntity });
-				break;
-			}
-		}
-	}
-}
-
-void Editor::RemoveActConnections(eg::EntityHandle entity, int targetConnectionIndex)
-{
-	for (int64_t i = (int64_t)m_actConnections.size() - 1; i >= 0; i--)
-	{
-		if (m_actConnections[i].activator == entity || (m_actConnections[i].activatable == entity))
-		{
-			ECActivatable* activatable = m_actConnections[i].activatable.FindComponent<ECActivatable>();
-			ECActivator* activator = m_actConnections[i].activator.FindComponent<ECActivator>();
-			if (activatable && activator)
-			{
-				if (m_actConnections[i].activatable == entity && targetConnectionIndex != -1 &&
-				    activator->targetConnectionIndex != targetConnectionIndex)
-				{
-					continue;
-				}
-				
-				if (auto* lightStrip = m_actConnections[i].activator.FindComponent<ECActivationLightStrip>())
-					lightStrip->ClearGeneratedMesh();
-				
-				activatable->SetDisconnected(activator->targetConnectionIndex);
-			}
-			
-			m_actConnections[i] = m_actConnections.back();
-			m_actConnections.pop_back();
-		}
-	}
-}
-
 void Editor::UpdateToolEntities(float dt)
 {
 	const float ICON_SIZE = 32;
@@ -412,16 +365,24 @@ void Editor::UpdateToolEntities(float dt)
 	const bool mouseClicked = eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft);
 	const bool mouseHeld = eg::IsButtonDown(eg::Button::MouseLeft) && eg::WasButtonDown(eg::Button::MouseLeft);
 	const bool isConnectingActivator = m_connectingActivator.Get();
+	const bool isEditingLightStrip = m_editingLightStripEntity.Get();
 	
 	auto EntityMoved = [&] (eg::Entity& entity)
 	{
-		for (const ActConnection& connection : m_actConnections)
+		if (ECActivatable* activatable = entity.FindComponent<ECActivatable>())
 		{
-			eg::Entity* activatorEntity = connection.activator.Get();
-			if (activatorEntity != nullptr && (&entity == activatorEntity || &entity == connection.activatable.Get()))
+			for (eg::Entity& activator : m_world->EntityManager().GetEntitySet(ECActivator::Signature))
 			{
-				ECActivationLightStrip::GenerateForActivator(*m_world, *activatorEntity);
+				if (activator.GetComponent<ECActivator>().activatableName == activatable->Name())
+				{
+					ECActivationLightStrip::GenerateForActivator(*m_world, activator);
+				}
 			}
+		}
+		
+		if (entity.FindComponent<ECActivator>())
+		{
+			ECActivationLightStrip::GenerateForActivator(*m_world, entity);
 		}
 		
 		EditorMovedMessage message;
@@ -430,7 +391,7 @@ void Editor::UpdateToolEntities(float dt)
 	};
 	
 	//Moves the wall drag entity
-	if (wallMountedEntity && !isConnectingActivator && mouseHeld)
+	if (wallMountedEntity && !isConnectingActivator && !isEditingLightStrip && mouseHeld)
 	{
 		constexpr int DRAG_BEGIN_DELTA = 10;
 		if (m_isDraggingWallEntity)
@@ -462,7 +423,8 @@ void Editor::UpdateToolEntities(float dt)
 	}
 	
 	//Updates the translation gizmo
-	if (!m_selectedEntities.empty() && !ImGui::GetIO().WantCaptureMouse && !wallMountedEntity && !isConnectingActivator)
+	if (!m_selectedEntities.empty() && !ImGui::GetIO().WantCaptureMouse &&
+		!wallMountedEntity && !isConnectingActivator && !isEditingLightStrip)
 	{
 		if (!m_translationGizmo.HasInputFocus())
 		{
@@ -500,25 +462,49 @@ void Editor::UpdateToolEntities(float dt)
 		m_prevGizmoPos = gizmoPosAligned;
 	}
 	
+	if (isEditingLightStrip)
+	{
+		ECActivator* activator = m_editingLightStripEntity.FindComponent<ECActivator>();
+		
+		if (activator != nullptr)
+		{
+			WallRayIntersectResult pickResult = m_world->RayIntersectWall(m_viewRay);
+			if (pickResult.intersected)
+			{
+				activator->waypoints[m_editingWayPointIndex] = { pickResult.normalDir, pickResult.intersectPosition };
+				ECActivationLightStrip::GenerateForActivator(*m_world, *m_editingLightStripEntity.Get());
+			}
+		}
+		
+		if (!eg::IsButtonDown(eg::Button::MouseLeft) || activator == nullptr)
+		{
+			m_editingLightStripEntity = { };
+			m_editingWayPointIndex = -1;
+		}
+	}
+	
 	//Updates entity icons
 	m_entityIcons.clear();
+	auto AddIcon = [&] (const glm::vec3& worldPos, IconType type, eg::EntityHandle entity) -> EntityIcon&
+	{
+		glm::vec4 sp4 = RenderSettings::instance->viewProjection * glm::vec4(worldPos, 1.0f);
+		glm::vec3 sp3 = glm::vec3(sp4) / sp4.w;
+		
+		glm::vec2 screenPos = (glm::vec2(sp3) * 0.5f + 0.5f) *
+			glm::vec2(eg::CurrentResolutionX(), eg::CurrentResolutionY());
+		
+		EntityIcon& icon = m_entityIcons.emplace_back();
+		icon.rectangle = eg::Rectangle::CreateCentered(screenPos, ICON_SIZE, ICON_SIZE);
+		icon.depth = sp3.z;
+		icon.type = type;
+		icon.entity = entity;
+		icon.actConnectionIndex = -1;
+		
+		return icon;
+	};
+	
 	for (const eg::Entity& entity : m_world->EntityManager().GetEntitySet(editorVisibleSignature))
 	{
-		auto AddIcon = [&] (const glm::vec3& worldPos, int actConnectionIndex)
-		{
-			glm::vec4 sp4 = RenderSettings::instance->viewProjection * glm::vec4(worldPos, 1.0f);
-			glm::vec3 sp3 = glm::vec3(sp4) / sp4.w;
-			
-			glm::vec2 screenPos = (glm::vec2(sp3) * 0.5f + 0.5f) *
-				glm::vec2(eg::CurrentResolutionX(), eg::CurrentResolutionY());
-			
-			EntityIcon& icon = m_entityIcons.emplace_back();
-			icon.rectangle = eg::Rectangle::CreateCentered(screenPos, ICON_SIZE, ICON_SIZE);
-			icon.depth = sp3.z;
-			icon.entity = entity;
-			icon.actConnectionIndex = actConnectionIndex;
-		};
-		
 		if (isConnectingActivator)
 		{
 			if (const ECActivatable* activatableComp = entity.FindComponent<ECActivatable>())
@@ -526,34 +512,94 @@ void Editor::UpdateToolEntities(float dt)
 				std::vector<glm::vec3> connectionPoints = activatableComp->GetConnectionPoints(entity);
 				for (int i = 0; i < (int)connectionPoints.size(); i++)
 				{
-					AddIcon(connectionPoints[i], i);
+					EntityIcon& icon = AddIcon(connectionPoints[i], IconType::ActTarget, entity);
+					icon.actConnectionIndex = i;
 				}
 			}
 		}
 		else if (const eg::ECPosition3D* positionComp = entity.FindComponent<eg::ECPosition3D>())
 		{
-			AddIcon(positionComp->position, -1);
+			AddIcon(positionComp->position, IconType::Entity, entity);
+		}
+	}
+	
+	glm::vec2 flippedCursorPos(eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY());
+	
+	if (!isConnectingActivator)
+	{
+		glm::vec3 closestPoint;
+		float closestDist = INFINITY;
+		eg::EntityHandle closestEntity;
+		int nextWayPoint;
+		Dir wallNormal;
+		bool hoveringExistingPoint = false;
+		
+		for (eg::EntityHandle entity : m_selectedEntities)
+		{
+			const ECActivationLightStrip* lightStrip = entity.FindComponent<ECActivationLightStrip>();
+			const ECActivator* activator = entity.FindComponent<ECActivator>();
+			if (lightStrip == nullptr || activator == nullptr)
+				continue;
+			
+			for (size_t i = 1; i < lightStrip->Path().size(); i++)
+			{
+				const auto& a = lightStrip->Path()[i];
+				const auto& b = lightStrip->Path()[i - 1];
+				
+				if (a.prevWayPoint != b.prevWayPoint)
+					continue;
+				
+				eg::Ray lineRay(a.position, b.position - a.position);
+				float closestA = lineRay.GetClosestPoint(m_viewRay);
+				if (!std::isnan(closestA))
+				{
+					glm::vec3 newPoint = lineRay.GetPoint(glm::clamp(closestA, 0.0f, 1.0f));
+					float newDist = m_viewRay.GetDistanceToPoint(newPoint);
+					if (newDist < closestDist)
+					{
+						closestDist = newDist;
+						closestPoint = newPoint;
+						closestEntity = entity;
+						nextWayPoint = a.prevWayPoint;
+						wallNormal = a.wallNormal;
+					}
+				}
+			}
+			
+			for (size_t i = 0; i < activator->waypoints.size(); i++)
+			{
+				EntityIcon& icon = AddIcon(activator->waypoints[i].position, IconType::ActPathExistingPoint, entity);
+				icon.wayPointIndex = i;
+				if (icon.rectangle.Contains(flippedCursorPos))
+					hoveringExistingPoint = true;
+			}
+		}
+		
+		if (closestDist < 0.5f && !isEditingLightStrip && !hoveringExistingPoint)
+		{
+			EntityIcon& icon = AddIcon(closestPoint, IconType::ActPathNewPoint, closestEntity);
+			icon.wayPointIndex = nextWayPoint;
+			m_lightStripInsertPos = closestPoint;
+			m_lightStripInsertNormal = wallNormal;
 		}
 	}
 	
 	std::sort(m_entityIcons.begin(), m_entityIcons.end(), [&] (const EntityIcon& a, const EntityIcon& b)
 	{
-		return a.depth > b.depth;
+		return a.depth < b.depth;
 	});
 	
-	glm::vec2 flippedCursorPos(eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY());
-	
 	//Updates which entities are selected
-	if (mouseClicked && AllowMouseInteract())
+	if (mouseClicked && AllowMouseInteract() && !isEditingLightStrip)
 	{
 		if (!eg::IsButtonDown(eg::Button::LeftControl) && !eg::IsButtonDown(eg::Button::RightControl))
 		{
 			m_selectedEntities.clear();
 		}
 		
-		for (int64_t i = (int64_t)m_entityIcons.size() - 1; i >= 0; i--)
+		for (const EntityIcon& icon : m_entityIcons)
 		{
-			if (m_entityIcons[i].rectangle.Contains(flippedCursorPos))
+			if (icon.rectangle.Contains(flippedCursorPos))
 			{
 				//Connects the activator to the selected entity
 				if (eg::Entity* activatorEntity = m_connectingActivator.Get())
@@ -561,36 +607,79 @@ void Editor::UpdateToolEntities(float dt)
 					ECActivator& activator = activatorEntity->GetComponent<ECActivator>();
 					activator.activatableName = 0;
 					
-					if (ECActivatable* activatable = m_entityIcons[i].entity.FindComponent<ECActivatable>())
+					if (ECActivatable* activatable = icon.entity.FindComponent<ECActivatable>())
 					{
-						int connectionIndex = m_entityIcons[i].actConnectionIndex;
-						RemoveActConnections(m_entityIcons[i].entity, connectionIndex);
+						int connectionIndex = icon.actConnectionIndex;
 						
 						activatable->SetConnected(connectionIndex);
 						
+						activator.waypoints.clear();
 						activator.activatableName = activatable->Name();
 						activator.targetConnectionIndex = connectionIndex;
-						m_actConnections.push_back({ m_connectingActivator, m_entityIcons[i].entity });
 						ECActivationLightStrip::GenerateForActivator(*m_world, *activatorEntity);
 					}
 					
 					m_connectingActivator = { };
-					break;
 				}
-				else
+				else if (icon.type == IconType::ActPathExistingPoint)
 				{
-					m_selectedEntities.push_back(m_entityIcons[i].entity);
+					ECActivationLightStrip* lightStrip = icon.entity.FindComponent<ECActivationLightStrip>();
+					ECActivator* activator = icon.entity.FindComponent<ECActivator>();
+					if (lightStrip != nullptr && activator != nullptr)
+					{
+						m_editingLightStripEntity = icon.entity;
+						m_editingWayPointIndex = icon.wayPointIndex;
+					}
 				}
+				else if (icon.type == IconType::ActPathNewPoint)
+				{
+					ECActivationLightStrip* lightStrip = icon.entity.FindComponent<ECActivationLightStrip>();
+					ECActivator* activator = icon.entity.FindComponent<ECActivator>();
+					if (lightStrip != nullptr && activator != nullptr)
+					{
+						ECActivationLightStrip::WayPoint wp;
+						wp.position = m_lightStripInsertPos;
+						wp.wallNormal = m_lightStripInsertNormal;
+						
+						activator->waypoints.insert(activator->waypoints.begin() + icon.wayPointIndex, wp);
+						
+						m_editingLightStripEntity = icon.entity;
+						m_editingWayPointIndex = icon.wayPointIndex;
+					}
+				}
+				else if (icon.type == IconType::Entity)
+				{
+					m_selectedEntities.push_back(icon.entity);
+				}
+				break;
 			}
+		}
+		
+		if (m_editingLightStripEntity.Get())
+		{
+			m_selectedEntities.clear();
+			m_selectedEntities.push_back(m_editingLightStripEntity);
 		}
 	}
 	
-	//Despawns entities if delete is pressed
+	//Despawns entities or removes light strip way points if delete is pressed
 	if (eg::IsButtonDown(eg::Button::Delete) && !eg::WasButtonDown(eg::Button::Delete))
 	{
-		for (const eg::EntityHandle& entity : m_selectedEntities)
+		if (eg::Entity* lightStripEntity = m_editingLightStripEntity.Get())
 		{
-			entity.Get()->Despawn();
+			ECActivator& activator = lightStripEntity->GetComponent<ECActivator>();
+			activator.waypoints.erase(activator.waypoints.begin() + m_editingWayPointIndex);
+			ECActivationLightStrip::GenerateForActivator(*m_world, *lightStripEntity);
+			
+			m_editingWayPointIndex = -1;
+			m_editingLightStripEntity = { };
+		}
+		else
+		{
+			for (const eg::EntityHandle& entity : m_selectedEntities)
+			{
+				entity.Get()->Despawn();
+			}
 		}
 		m_selectedEntities.clear();
 	}
@@ -957,28 +1046,8 @@ void Editor::DrawToolCorners()
 	}
 }
 
-static constexpr float ACT_CONNECTION_LINE_WIDTH = 0.06f;
-static const eg::ColorSRGB ACT_CONNECTION_COLOR = eg::ColorSRGB::FromRGBAHex(0x0870c8c8);
-
 void Editor::DrawToolEntities()
 {
-	//Draws activation connections
-	for (const ActConnection& connection : m_actConnections)
-	{
-		if (eg::Contains(m_selectedEntities, connection.activator) || eg::Contains(m_selectedEntities, connection.activatable))
-		{
-			const ECActivator* activatorComp = connection.activator.FindComponent<ECActivator>();
-			const ECActivatable* activatableComp = connection.activatable.FindComponent<ECActivatable>();
-			
-			if (activatorComp != nullptr && activatableComp != nullptr)
-			{
-				glm::vec3 a = eg::GetEntityPosition(eg::Deref(connection.activator.Get()));
-				glm::vec3 b = eg::GetEntityPosition(eg::Deref(connection.activatable.Get()));
-				m_primRenderer.AddLine(a, b, ACT_CONNECTION_COLOR, ACT_CONNECTION_LINE_WIDTH);
-			}
-		}
-	}
-	
 	const eg::Texture& iconsTexture = eg::GetAsset<eg::Texture>("Textures/EntityIcons.png");
 	
 	auto CreateSrcRectangle = [&] (int index)
@@ -988,24 +1057,35 @@ void Editor::DrawToolEntities()
 	
 	for (const EntityIcon& icon : m_entityIcons)
 	{
-		const bool selected = eg::Contains(m_selectedEntities, icon.entity);
+		bool selected = eg::Contains(m_selectedEntities, icon.entity);
 		
 		eg::ColorLin color(eg::Color::White);
 		
-		//Draws the background sprite
-		m_spriteBatch.Draw(iconsTexture, icon.rectangle, color,
-			CreateSrcRectangle(selected ? 1 : 0), eg::SpriteFlags::None);
-		
 		//Selects which icon to use
 		int iconIndex = 5;
-		if (icon.actConnectionIndex != -1)
+		if (icon.type == IconType::ActTarget)
 		{
 			iconIndex = 6;
+		}
+		else if (icon.type == IconType::ActPathNewPoint)
+		{
+			iconIndex = 7;
+			color = eg::ColorLin(color.ScaleAlpha(0.8f));
+			selected = false;
+		}
+		else if (icon.type == IconType::ActPathExistingPoint)
+		{
+			iconIndex = 7;
+			selected = (icon.wayPointIndex == m_editingWayPointIndex) && icon.entity == m_editingLightStripEntity;
 		}
 		else if (const ECEditorVisible* edVisible = icon.entity.FindComponent<ECEditorVisible>())
 		{
 			iconIndex = edVisible->iconIndex;
 		}
+		
+		//Draws the background sprite
+		m_spriteBatch.Draw(iconsTexture, icon.rectangle, color,
+			CreateSrcRectangle(selected ? 1 : 0), eg::SpriteFlags::None);
 		
 		//Draws the icon
 		m_spriteBatch.Draw(iconsTexture, icon.rectangle, color, CreateSrcRectangle(iconIndex), eg::SpriteFlags::None);

@@ -232,13 +232,12 @@ struct PlatformSerializer : eg::IEntitySerializer
 		platformPB.set_posz(pos.z);
 		
 		const ECPlatform& platform = entity.GetComponent<ECPlatform>();
-		platformPB.set_slideoffsetx(platform.slideOffset.x);
-		platformPB.set_slideoffsety(platform.slideOffset.y);
-		platformPB.set_slidetime(platform.slideTime);
+		platformPB.set_slide_offset_x(platform.slideOffset.x);
+		platformPB.set_slide_offset_y(platform.slideOffset.y);
+		platformPB.set_slide_time(platform.slideTime);
 		
 		const ECActivatable& activatable = entity.GetComponent<ECActivatable>();
 		platformPB.set_name(activatable.Name());
-		platformPB.set_reqactivations(activatable.EnabledConnections());
 		
 		platformPB.SerializeToOstream(&stream);
 	}
@@ -255,13 +254,12 @@ struct PlatformSerializer : eg::IEntitySerializer
 		entity.GetComponent<ECWallMounted>().wallUp = (Dir)platformPB.dir();
 		
 		ECPlatform& platform = entity.GetComponent<ECPlatform>();
-		platform.slideOffset = glm::vec2(platformPB.slideoffsetx(), platformPB.slideoffsety());
-		platform.slideTime = platformPB.slidetime();
+		platform.slideOffset = glm::vec2(platformPB.slide_offset_x(), platformPB.slide_offset_y());
+		platform.slideTime = platformPB.slide_time();
 		
 		ECActivatable& activatable = entity.GetComponent<ECActivatable>();
 		if (platformPB.name() != 0)
 			activatable.SetName(platformPB.name());
-		activatable.SetEnabledConnections(platformPB.reqactivations());
 	}
 };
 

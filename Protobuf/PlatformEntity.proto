@@ -9,9 +9,8 @@ message PlatformEntity {
 	float posY = 2;
 	float posZ = 3;
 	Dir dir = 4;
-	float slideOffsetX = 5;
-	float slideOffsetY = 6;
+	float slide_offset_x = 5;
+	float slide_offset_y = 6;
 	fixed32 name = 7;
-	uint32 reqActivations = 8;
-	float slideTime = 9;
+	float slide_time = 9;
 }

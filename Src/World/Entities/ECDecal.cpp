@@ -114,7 +114,7 @@ struct DecalSerializer : eg::IEntitySerializer
 		
 		const ECDecal& decal = entity.GetComponent<ECDecal>();
 		
-		decalPB.set_materialname(decal.GetMaterialName());
+		decalPB.set_material_name(decal.GetMaterialName());
 		
 		decalPB.set_dir((gravity_pb::Dir)entity.GetComponent<ECWallMounted>().wallUp);
 		
@@ -138,7 +138,7 @@ struct DecalSerializer : eg::IEntitySerializer
 		decal.rotation = decalPB.rotation();
 		decal.scale = decalPB.scale();
 		
-		decal.SetMaterialByName(decalPB.materialname());
+		decal.SetMaterialByName(decalPB.material_name());
 		
 		entity.InitComponent<eg::ECPosition3D>(decalPB.posx(), decalPB.posy(), decalPB.posz());
 	}
