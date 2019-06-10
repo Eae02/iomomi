@@ -5,6 +5,7 @@
 #include "ECActivator.hpp"
 #include "ECInteractable.hpp"
 #include "Messages.hpp"
+#include "GravityBarrier.hpp"
 #include "../GravityGun.hpp"
 #include "../Clipping.hpp"
 #include "../Player.hpp"
@@ -56,7 +57,7 @@ namespace Cube
 	    RayIntersectMessage, GravityChargeSetMessage, GravityChargeResetMessage>();
 	
 	eg::EntitySignature EntitySignature = eg::EntitySignature::Create<
-	    ECCube, ECEditorVisible, ECRigidBody, ECInteractable, eg::ECPosition3D, eg::ECRotation3D>();
+	    ECCube, ECEditorVisible, ECRigidBody, ECInteractable, ECBarrierInteractable, eg::ECPosition3D, eg::ECRotation3D>();
 	
 	inline eg::Sphere GetSphere(const eg::Entity& entity)
 	{
@@ -206,6 +207,8 @@ namespace Cube
 				btBroadphaseProxy* bpProxy = rigidBody.GetRigidBody()->getBroadphaseProxy();
 				bpProxy->m_collisionFilterGroup = 1 | (2 << ((int)cube.currentDown / 2));
 			}
+			
+			entity.GetComponent<ECBarrierInteractable>().currentDown = cube.currentDown;
 		}
 	}
 	

@@ -175,7 +175,9 @@ void GravityGun::Update(World& world, eg::ParticleManager& particleManager, cons
 		}
 	}
 	
-	if (eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft))
+	if ((eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft)) || 
+		(eg::IsButtonDown(eg::Button::CtrlrRightShoulder) && !eg::WasButtonDown(eg::Button::CtrlrRightShoulder)) ||
+		(eg::IsButtonDown(eg::Button::CtrlrLeftShoulder) && !eg::WasButtonDown(eg::Button::CtrlrLeftShoulder)))
 	{
 		eg::Ray viewRay = eg::Ray::UnprojectNDC(inverseViewProj, glm::vec2(0.0f));
 		RayIntersectResult intersectResult = world.RayIntersect(viewRay);

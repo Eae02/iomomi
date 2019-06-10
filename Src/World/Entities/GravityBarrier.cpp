@@ -3,6 +3,9 @@
 #include "Messages.hpp"
 #include "ECRigidBody.hpp"
 #include "ECActivatable.hpp"
+#include "../Player.hpp"
+#include "../WorldUpdateArgs.hpp"
+#include "../World.hpp"
 #include "../BulletPhysics.hpp"
 #include "../Clipping.hpp"
 #include "../../Graphics/Materials/MeshDrawArgs.hpp"
@@ -12,30 +15,45 @@
 #include <imgui.h>
 
 static constexpr float OPACITY_SCALE = 0.0004;
+static constexpr int NUM_INTERACTABLES = 8;
+
+#pragma pack(push, 1)
+struct BarrierBufferData
+{
+	uint32_t iaDownAxis[NUM_INTERACTABLES];
+	glm::vec4 iaPosition[NUM_INTERACTABLES];
+};
 
 struct InstanceData
 {
 	glm::vec3 position;
-	float opacity;
+	uint8_t opacity;
+	uint8_t blockedAxis;
+	uint8_t _p1;
+	uint8_t _p2;
 	glm::vec3 tangent;
 	float tangentMag;
 	glm::vec3 bitangent;
 	float bitangentMag;
 };
+#pragma pack(pop)
 
 struct GravityBarrierMaterial : eg::IMaterial
 {
 	GravityBarrierMaterial()
 	{
+		const auto& fs = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityBarrier.fs.glsl");
+		
 		eg::GraphicsPipelineCreateInfo pipelineCI;
 		pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityBarrier.vs.glsl").DefaultVariant();
-		pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityBarrier.fs.glsl").DefaultVariant();
+		pipelineCI.fragmentShader = fs.GetVariant("VGame");
 		pipelineCI.vertexBindings[0] = { 2, eg::InputRate::Vertex };
 		pipelineCI.vertexBindings[1] = { sizeof(InstanceData), eg::InputRate::Instance };
 		pipelineCI.vertexAttributes[0] = { 0, eg::DataType::UInt8Norm, 2, 0 };
-		pipelineCI.vertexAttributes[1] = { 1, eg::DataType::Float32, 4, offsetof(InstanceData, position) };
-		pipelineCI.vertexAttributes[2] = { 1, eg::DataType::Float32, 4, offsetof(InstanceData, tangent) };
-		pipelineCI.vertexAttributes[3] = { 1, eg::DataType::Float32, 4, offsetof(InstanceData, bitangent) };
+		pipelineCI.vertexAttributes[1] = { 1, eg::DataType::Float32, 3, offsetof(InstanceData, position) };
+		pipelineCI.vertexAttributes[2] = { 1, eg::DataType::UInt8, 2, offsetof(InstanceData, opacity) };
+		pipelineCI.vertexAttributes[3] = { 1, eg::DataType::Float32, 4, offsetof(InstanceData, tangent) };
+		pipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 4, offsetof(InstanceData, bitangent) };
 		pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 		pipelineCI.topology = eg::Topology::TriangleStrip;
 		pipelineCI.cullMode = eg::CullMode::None;
@@ -44,11 +62,24 @@ struct GravityBarrierMaterial : eg::IMaterial
 		pipelineCI.depthCompare = eg::CompareOp::Less;
 		pipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::OneMinusSrcAlpha);
 		
-		m_pipeline = eg::Pipeline::Create(pipelineCI);
+		m_pipelineGame = eg::Pipeline::Create(pipelineCI);
 		
-		m_descriptorSet = eg::DescriptorSet(m_pipeline, 0);
-		m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
-		m_descriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 1);
+		pipelineCI.fragmentShader = fs.GetVariant("VEditor");
+		m_pipelineEditor = eg::Pipeline::Create(pipelineCI);
+		
+		m_barrierDataBuffer = eg::Buffer(eg::BufferFlags::Update | eg::BufferFlags::UniformBuffer,
+			sizeof(BarrierBufferData), nullptr);
+		
+		const eg::Texture& lineNoiseTex = eg::GetAsset<eg::Texture>("Textures/LineNoise.png");
+		
+		m_descriptorSetGame = eg::DescriptorSet(m_pipelineGame, 0);
+		m_descriptorSetGame.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+		m_descriptorSetGame.BindTexture(lineNoiseTex, 1);
+		m_descriptorSetGame.BindUniformBuffer(m_barrierDataBuffer, 2, 0, sizeof(BarrierBufferData));
+		
+		m_descriptorSetEditor = eg::DescriptorSet(m_pipelineEditor, 0);
+		m_descriptorSetEditor.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+		m_descriptorSetEditor.BindTexture(lineNoiseTex, 1);
 	}
 	
 	size_t PipelineHash() const override
@@ -59,24 +90,21 @@ struct GravityBarrierMaterial : eg::IMaterial
 	bool BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const override
 	{
 		MeshDrawArgs* mDrawArgs = reinterpret_cast<MeshDrawArgs*>(drawArgs);
-		if (mDrawArgs->drawMode != MeshDrawMode::Emissive && mDrawArgs->drawMode != MeshDrawMode::Editor)
-			return false;
 		
-		cmdCtx.BindPipeline(m_pipeline);
-		cmdCtx.BindDescriptorSet(m_descriptorSet, 0);
-		
-		float baseIntensity;
+		if (mDrawArgs->drawMode == MeshDrawMode::Emissive)
+		{
+			cmdCtx.BindPipeline(m_pipelineGame);
+			cmdCtx.BindDescriptorSet(m_descriptorSetGame, 0);
+			return true;
+		}
 		if (mDrawArgs->drawMode == MeshDrawMode::Editor)
 		{
-			baseIntensity = 5.0f;
+			cmdCtx.BindPipeline(m_pipelineEditor);
+			cmdCtx.BindDescriptorSet(m_descriptorSetEditor, 0);
+			return true;
 		}
-		else
-		{
-			baseIntensity = 0.0f;
-		}
-		cmdCtx.PushConstants(0, sizeof(float), &baseIntensity);
 		
-		return true;
+		return false;
 	}
 	
 	bool BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const override
@@ -84,8 +112,12 @@ struct GravityBarrierMaterial : eg::IMaterial
 		return true;
 	}
 	
-	eg::DescriptorSet m_descriptorSet;
-	eg::Pipeline m_pipeline;
+	eg::Pipeline m_pipelineGame;
+	eg::Buffer m_barrierDataBuffer;
+	eg::DescriptorSet m_descriptorSetGame;
+	
+	eg::Pipeline m_pipelineEditor;
+	eg::DescriptorSet m_descriptorSetEditor;
 };
 
 static GravityBarrierMaterial* material;
@@ -134,6 +166,37 @@ static void OnShutdown()
 
 EG_ON_INIT(OnInit)
 EG_ON_SHUTDOWN(OnShutdown)
+
+static const eg::EntitySignature interactableSignature = eg::EntitySignature::Create<ECBarrierInteractable, eg::ECPosition3D>();
+
+void ECGravityBarrier::PrepareForDraw(const Player& player, eg::EntityManager& entityManager)
+{
+	BarrierBufferData bufferData;
+	
+	bufferData.iaDownAxis[0] = (int)player.CurrentDown() / 2;
+	bufferData.iaPosition[0] = glm::vec4(player.Position(), 0.0f);
+	
+	int itemsWritten = 1;
+	for (const eg::Entity& entity : entityManager.GetEntitySet(interactableSignature))
+	{
+		bufferData.iaDownAxis[itemsWritten] = (int)entity.GetComponent<ECBarrierInteractable>().currentDown / 2;
+		bufferData.iaPosition[itemsWritten] = glm::vec4(entity.GetComponent<eg::ECPosition3D>().position, 0.0f);
+		itemsWritten++;
+		
+		if (itemsWritten >= NUM_INTERACTABLES)
+			break;
+	}
+	
+	while (itemsWritten < NUM_INTERACTABLES)
+	{
+		bufferData.iaDownAxis[itemsWritten] = 3;
+		bufferData.iaPosition[itemsWritten] = glm::vec4(0.0f);
+		itemsWritten++;
+	}
+	
+	eg::DC.UpdateBuffer(material->m_barrierDataBuffer, 0, sizeof(BarrierBufferData), &bufferData);
+	material->m_barrierDataBuffer.UsageHint(eg::BufferUsage::UniformBuffer, eg::ShaderAccessFlags::Fragment);
+}
 
 eg::EntitySignature ECGravityBarrier::EntitySignature = eg::EntitySignature::Create<
     ECGravityBarrier, ECEditorVisible, ECRigidBody, ECActivatable, eg::ECPosition3D>();
@@ -187,7 +250,8 @@ void ECGravityBarrier::Draw(eg::Entity& entity, eg::MeshBatchOrdered& meshBatch)
 	
 	InstanceData instanceData;
 	instanceData.position = entity.GetComponent<eg::ECPosition3D>().position;
-	instanceData.opacity = OPACITY_SCALE * glm::smoothstep(0.0f, 1.0f, m_opacity);
+	instanceData.opacity = 255 * glm::smoothstep(0.0f, 1.0f, m_opacity);
+	instanceData.blockedAxis = BlockedAxis();
 	instanceData.tangent = tangent;
 	instanceData.bitangent = bitangent;
 	instanceData.tangentMag = glm::length(tangent);
@@ -206,9 +270,9 @@ int ECGravityBarrier::BlockedAxis() const
 	return 2;
 }
 
-void ECGravityBarrier::Update(eg::EntityManager& entityManager, float dt)
+void ECGravityBarrier::Update(const WorldUpdateArgs& args)
 {
-	for (eg::Entity& entity : entityManager.GetEntitySet(EntitySignature))
+	for (eg::Entity& entity : args.world->EntityManager().GetEntitySet(EntitySignature))
 	{
 		ECRigidBody& rigidBody = entity.GetComponent<ECRigidBody>();
 		ECGravityBarrier& barrier = entity.GetComponent<ECGravityBarrier>();
@@ -248,9 +312,11 @@ void ECGravityBarrier::Update(eg::EntityManager& entityManager, float dt)
 		
 		constexpr float OPACITY_ANIMATION_TIME = 0.25f;
 		if (decOpacity)
-			barrier.m_opacity = std::max(barrier.m_opacity - dt / OPACITY_ANIMATION_TIME, 0.0f);
+			barrier.m_opacity = std::max(barrier.m_opacity - args.dt / OPACITY_ANIMATION_TIME, 0.0f);
 		else
-			barrier.m_opacity = std::min(barrier.m_opacity + dt / OPACITY_ANIMATION_TIME, 1.0f);
+			barrier.m_opacity = std::min(barrier.m_opacity + args.dt / OPACITY_ANIMATION_TIME, 1.0f);
+		
+		barrier.m_interactNegative = barrier.m_enabled && (int)args.player->CurrentDown() / 2 == barrier.BlockedAxis();
 	}
 }
 

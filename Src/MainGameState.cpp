@@ -22,6 +22,7 @@ MainGameState::MainGameState(RenderContext& renderCtx)
 	m_prepareDrawArgs.isEditor = false;
 	m_prepareDrawArgs.meshBatch = &m_renderCtx->meshBatch;
 	m_prepareDrawArgs.transparentMeshBatch = &m_renderCtx->transparentMeshBatch;
+	m_prepareDrawArgs.player = &m_player;
 	m_projection.SetZNear(0.02f);
 	m_projection.SetZFar(200.0f);
 	

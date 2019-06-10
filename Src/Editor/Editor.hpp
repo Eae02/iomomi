@@ -24,6 +24,8 @@ private:
 	
 	void DrawMenuBar();
 	
+	void Save();
+	
 	void UpdateToolWalls(float dt);
 	void UpdateToolCorners(float dt);
 	void UpdateToolEntities(float dt);

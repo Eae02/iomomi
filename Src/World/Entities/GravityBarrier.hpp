@@ -3,6 +3,11 @@
 #include "../Dir.hpp"
 #include "../BulletPhysics.hpp"
 
+struct ECBarrierInteractable
+{
+	Dir currentDown;
+};
+
 class ECGravityBarrier
 {
 public:
@@ -13,6 +18,8 @@ public:
 	static eg::MessageReceiver MessageReceiver;
 	
 	static eg::Entity* CreateEntity(eg::EntityManager& entityManager);
+	
+	static void PrepareForDraw(const class Player& player, eg::EntityManager& entityManager);
 	
 	ECGravityBarrier()
 		: m_collisionShape({}) { }
@@ -26,7 +33,7 @@ public:
 	
 	int BlockedAxis() const;
 	
-	static void Update(eg::EntityManager& entityManager, float dt);
+	static void Update(const struct WorldUpdateArgs& args);
 	
 	static glm::mat4 GetTransform(const eg::Entity& entity);
 	
@@ -51,6 +58,7 @@ private:
 	
 	float m_opacity = 1;
 	bool m_enabled = true;
+	bool m_interactNegative = false;
 	int m_flowDirectionOffset = 0;
 	btBoxShape m_collisionShape;
 };

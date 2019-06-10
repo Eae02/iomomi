@@ -228,7 +228,7 @@ void World::Update(const WorldUpdateArgs& args)
 	{
 		auto physicsCPUTimer = eg::StartCPUTimer("Physics");
 		
-		ECGravityBarrier::Update(*m_entityManager, args.dt);
+		ECGravityBarrier::Update(args);
 		
 		Cube::UpdatePreSim(args);
 		
@@ -292,6 +292,8 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 	
 	if (!args.isEditor)
 	{
+		ECGravityBarrier::PrepareForDraw(*args.player, *m_entityManager);
+		
 		DrawMessage drawMessage;
 		drawMessage.world = this;
 		drawMessage.meshBatch = args.meshBatch;

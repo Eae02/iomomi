@@ -23,6 +23,7 @@ Editor::Editor(RenderContext& renderCtx)
 {
 	m_prepareDrawArgs.isEditor = true;
 	m_prepareDrawArgs.meshBatch = &renderCtx.meshBatch;
+	m_prepareDrawArgs.player = nullptr;
 	
 	m_projection.SetFieldOfViewDeg(75.0f);
 }
@@ -1092,6 +1093,13 @@ void Editor::DrawToolEntities()
 	}
 }
 
+void Editor::Save()
+{
+	std::string savePath = eg::Concat({ eg::ExeDirPath(), "/levels/", m_levelName, ".gwd" });
+	std::ofstream stream(savePath, std::ios::binary);
+	m_world->Save(stream);
+}
+
 void Editor::DrawMenuBar()
 {
 	if (ImGui::BeginMainMenuBar())
@@ -1100,13 +1108,18 @@ void Editor::DrawMenuBar()
 		{
 			if (ImGui::MenuItem("Save"))
 			{
-				std::string savePath = eg::Concat({ eg::ExeDirPath(), "/levels/", m_levelName, ".gwd" });
-				std::ofstream stream(savePath, std::ios::binary);
-				m_world->Save(stream);
+				Save();
 			}
 			
 			if (ImGui::MenuItem("Close"))
 			{
+				m_levelName.clear();
+				m_world = nullptr;
+			}
+			
+			if (ImGui::MenuItem("Save and Close"))
+			{
+				Save();
 				m_levelName.clear();
 				m_world = nullptr;
 			}
