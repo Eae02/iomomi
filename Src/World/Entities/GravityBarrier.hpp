@@ -54,11 +54,11 @@ private:
 	
 	std::tuple<glm::vec3, glm::vec3> GetTangents() const;
 	
-	void Draw(eg::Entity& entity, eg::MeshBatchOrdered& meshBatch) const;
+	void Draw(eg::Entity& entity, eg::MeshBatchOrdered& meshBatchOrdered, eg::MeshBatch& meshBatch) const;
 	
 	float m_opacity = 1;
 	bool m_enabled = true;
-	bool m_interactNegative = false;
+	bool m_blockFalling = false;
 	int m_flowDirectionOffset = 0;
 	btBoxShape m_collisionShape;
 };

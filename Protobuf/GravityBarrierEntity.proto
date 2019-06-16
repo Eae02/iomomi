@@ -12,4 +12,5 @@ message GravityBarrierEntity {
 	fixed32 up_plane = 7;
 	fixed32 name = 8;
 	uint32 activate_action = 10;
+	bool block_falling = 11;
 }

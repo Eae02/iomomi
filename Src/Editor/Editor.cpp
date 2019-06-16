@@ -34,7 +34,9 @@ const char* TextureNames[] =
 	"Tactile Gray",
 	"Clear Metal",
 	"Metal Grid",
-	"Cement"
+	"Cement",
+	"Panels 1",
+	"Panels 2"
 };
 
 void Editor::InitWorld()

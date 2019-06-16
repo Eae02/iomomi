@@ -5,8 +5,9 @@
 layout(location=0) in vec2 texCoord_in;
 layout(location=1) in vec3 worldPos_in;
 layout(location=2) in vec3 tangent_in;
-layout(location=3) in float opacity_in;
-layout(location=4) flat in uint blockedAxis_in;
+layout(location=3) in vec2 ypc_in;
+layout(location=4) in float opacity_in;
+layout(location=5) flat in uint blockedAxis_in;
 
 layout(location=0) out vec4 color_out;
 
@@ -21,6 +22,7 @@ const float OFFSET_SCALE_RED = 1.5;
 const float LINE_SPACING = 0.5;
 const float LINE_WIDTH = 0.003;
 const float MAX_INTENSITY = 0.9;
+const float EDGE_FADE_DIST = 0.2;
 
 #include "Inc/RenderSettings.glh"
 
@@ -55,6 +57,8 @@ void main()
 	float tx = texCoord_in.x;
 	float negScale = 0;
 	
+	float edgeDist = min((ypc_in.y - abs(ypc_in.x)) / EDGE_FADE_DIST, 1.0);
+	
 #ifdef VGame
 	float intensity = 0;
 	float stretch = 0;
@@ -73,7 +77,7 @@ void main()
 		}
 	}
 	
-	tx -= 0.3 * stretch;
+	tx -= 0.3 * stretch * edgeDist;
 	negScale = min(negScale, 1.0);
 #endif
 	
@@ -82,7 +86,7 @@ void main()
 #endif
 	
 	float centerLn = floor(tx / LINE_SPACING);
-	float offScale = mix(OFFSET_SCALE, OFFSET_SCALE_RED, negScale) / DUP_LINES;
+	float offScale = edgeDist * mix(OFFSET_SCALE, OFFSET_SCALE_RED, negScale) / DUP_LINES;
 	
 	for (int d = 0; d < DUP_LINES; d++)
 	{

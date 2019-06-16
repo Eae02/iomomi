@@ -11,6 +11,7 @@
 #include "../../Graphics/Materials/MeshDrawArgs.hpp"
 #include "../../Graphics/RenderSettings.hpp"
 #include "../../../Protobuf/Build/GravityBarrierEntity.pb.h"
+#include "../../Graphics/Materials/StaticPropMaterial.hpp"
 
 #include <imgui.h>
 
@@ -125,6 +126,8 @@ static eg::Buffer vertexBuffer;
 static eg::MeshBatch::Mesh barrierMesh;
 static eg::CollisionMesh barrierCollisionMesh;
 
+static eg::Model* barrierBorderModel;
+
 static void OnInit()
 {
 	material = new GravityBarrierMaterial;
@@ -156,6 +159,8 @@ static void OnInit()
 	const uint32_t colIndices[] = { 0, 1, 2, 1, 3, 2, 4, 6, 5, 6, 7, 5 };
 	
 	barrierCollisionMesh = eg::CollisionMesh::CreateV3<uint32_t>(colVertices, colIndices);
+	
+	barrierBorderModel = &eg::GetAsset<eg::Model>("Models/GravityBarrierBorder.obj");
 }
 
 static void OnShutdown()
@@ -242,9 +247,12 @@ glm::mat4 ECGravityBarrier::GetTransform(const eg::Entity& entity)
 		glm::vec4(entity.GetComponent<eg::ECPosition3D>().position, 1));
 }
 
-void ECGravityBarrier::Draw(eg::Entity& entity, eg::MeshBatchOrdered& meshBatch) const
+void ECGravityBarrier::Draw(eg::Entity& entity, eg::MeshBatchOrdered& meshBatchOrdered, eg::MeshBatch& meshBatch) const
 {
 	auto [tangent, bitangent] = GetTangents();
+	
+	float tangentLen = glm::length(tangent);
+	float bitangentLen = glm::length(bitangent);
 	
 	constexpr float TIME_SCALE = 0.25f;
 	
@@ -254,14 +262,50 @@ void ECGravityBarrier::Draw(eg::Entity& entity, eg::MeshBatchOrdered& meshBatch)
 	instanceData.blockedAxis = BlockedAxis();
 	instanceData.tangent = tangent;
 	instanceData.bitangent = bitangent;
-	instanceData.tangentMag = glm::length(tangent);
-	instanceData.bitangentMag = glm::length(bitangent) * TIME_SCALE;
+	instanceData.tangentMag = glm::length(tangentLen);
+	instanceData.bitangentMag = glm::length(bitangentLen) * TIME_SCALE;
 	
-	meshBatch.Add(barrierMesh, *material, instanceData, DepthDrawOrder(instanceData.position));
+	meshBatchOrdered.Add(barrierMesh, *material, instanceData, DepthDrawOrder(instanceData.position));
+	
+	glm::vec3 tangentNorm = tangent / tangentLen;
+	glm::vec3 bitangentNorm = bitangent / bitangentLen;
+	glm::vec3 tcb = glm::cross(tangentNorm, bitangentNorm);
+	
+	auto AddBorderModelInstance = [&] (const glm::mat4& transform)
+	{
+		eg::IMaterial* borderMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml");
+		for (size_t m = 0; m < barrierBorderModel->NumMeshes(); m++)
+		{
+			meshBatch.AddModelMesh(*barrierBorderModel, m, *borderMaterial, transform);
+		}
+	};
+	
+	int tangentLenI = (int)std::round(tangentLen);
+	int bitangentLenI = (int)std::round(bitangentLen);
+	
+	for (int i = -tangentLenI; i < tangentLenI; i++)
+	{
+		glm::vec3 translation1 = instanceData.position + bitangent * 0.5f + tangentNorm * ((i + 0.5f) * 0.5f);
+		AddBorderModelInstance(glm::mat4x3(tcb, -bitangentNorm, tangentNorm, translation1));
+		
+		glm::vec3 translation2 = instanceData.position - bitangent * 0.5f + tangentNorm * ((i + 0.5f) * 0.5f);
+		AddBorderModelInstance(glm::mat4x3(-tcb, bitangentNorm, tangentNorm, translation2));
+	}
+	
+	for (int i = -bitangentLenI; i < bitangentLenI; i++)
+	{
+		glm::vec3 translation1 = instanceData.position + tangent * 0.5f + bitangentNorm * ((i + 0.5f) * 0.5f);
+		AddBorderModelInstance(glm::mat4x3(-tcb, -tangentNorm, bitangentNorm, translation1));
+		
+		glm::vec3 translation2 = instanceData.position - tangent * 0.5f + bitangentNorm * ((i + 0.5f) * 0.5f);
+		AddBorderModelInstance(glm::mat4x3(tcb, tangentNorm, bitangentNorm, translation2));
+	}
 }
 
 int ECGravityBarrier::BlockedAxis() const
 {
+	if (m_blockFalling)
+		return upPlane;
 	auto [tangent, bitangent] = GetTangents();
 	if (std::abs(tangent.x) > 0.5f)
 		return 0;
@@ -315,8 +359,6 @@ void ECGravityBarrier::Update(const WorldUpdateArgs& args)
 			barrier.m_opacity = std::max(barrier.m_opacity - args.dt / OPACITY_ANIMATION_TIME, 0.0f);
 		else
 			barrier.m_opacity = std::min(barrier.m_opacity + args.dt / OPACITY_ANIMATION_TIME, 1.0f);
-		
-		barrier.m_interactNegative = barrier.m_enabled && (int)args.player->CurrentDown() / 2 == barrier.BlockedAxis();
 	}
 }
 
@@ -344,12 +386,12 @@ std::tuple<glm::vec3, glm::vec3> ECGravityBarrier::GetTangents() const
 
 void ECGravityBarrier::HandleMessage(eg::Entity& entity, const DrawMessage& message)
 {
-	Draw(entity, *message.transparentMeshBatch);
+	Draw(entity, *message.transparentMeshBatch, *message.meshBatch);
 }
 
 void ECGravityBarrier::HandleMessage(eg::Entity& entity, const EditorDrawMessage& message)
 {
-	Draw(entity, *message.transparentMeshBatch);
+	Draw(entity, *message.transparentMeshBatch, *message.meshBatch);
 }
 
 void ECGravityBarrier::HandleMessage(eg::Entity& entity, const EditorRenderImGuiMessage& message)
@@ -359,6 +401,8 @@ void ECGravityBarrier::HandleMessage(eg::Entity& entity, const EditorRenderImGui
 	ImGui::DragFloat2("Size", &size.x, 0.5f);
 	
 	ImGui::Combo("Plane", &upPlane, "X\0Y\0Z\0");
+	
+	ImGui::Checkbox("Block Falling", &m_blockFalling);
 	
 	int flowDir = flowDirection + 1;
 	if (ImGui::SliderInt("Flow Direction", &flowDir, 1, 4))
@@ -400,6 +444,7 @@ struct GravityBarrierSerializer : eg::IEntitySerializer
 		gravBarrierPB.set_sizex(barrier.size.x);
 		gravBarrierPB.set_sizey(barrier.size.y);
 		gravBarrierPB.set_activate_action((uint32_t)barrier.activateAction);
+		gravBarrierPB.set_block_falling(barrier.m_blockFalling);
 		
 		const ECActivatable& activatable = entity.GetComponent<ECActivatable>();
 		gravBarrierPB.set_name(activatable.Name());
@@ -425,6 +470,7 @@ struct GravityBarrierSerializer : eg::IEntitySerializer
 		barrier.upPlane = gravBarrierPB.up_plane();
 		barrier.size = glm::vec2(gravBarrierPB.sizex(), gravBarrierPB.sizey());
 		barrier.activateAction = (ECGravityBarrier::ActivateAction)gravBarrierPB.activate_action();
+		barrier.m_blockFalling = gravBarrierPB.block_falling();
 		
 		glm::vec3 size = glm::abs(ECGravityBarrier::GetTransform(entity) * glm::vec4(0.5, 0.5, 0.1f, 0.0f));
 		barrier.m_collisionShape = btBoxShape(bullet::FromGLM(size));

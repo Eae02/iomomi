@@ -71,6 +71,7 @@ assets:
   - name: Models/GravityGun.obj
   - name: Models/ActivationStripStraight.obj
   - name: Models/ActivationStripBend.obj
+  - name: Models/GravityBarrierBorder.obj
   
   - name: Particles/BlueOrb.ype
   
@@ -322,6 +323,8 @@ assets:
       - Textures/Voxel/Metal1A.png
       - Textures/Voxel/MetalGridA.png
       - Textures/Voxel/CementA.png
+      - Textures/Voxel/Panels1A.png
+      - Textures/Voxel/Panels2A.png
   - name: Textures/Voxel/NormalMap
     generator: Texture2DArray
     loader: Texture2D
@@ -333,6 +336,8 @@ assets:
       - Textures/Voxel/Metal1N.png
       - Textures/Voxel/MetalGridN.png
       - Textures/Voxel/CementN.png
+      - Textures/Voxel/Panels1N.png
+      - Textures/Voxel/Panels2N.png
   - name: Textures/Voxel/MiscMap
     generator: Texture2DArray
     loader: Texture2D
@@ -344,6 +349,8 @@ assets:
       - Textures/Voxel/Metal1M.png
       - Textures/Voxel/MetalGridM.png
       - Textures/Voxel/CementM.png
+      - Textures/Voxel/Panels1M.png
+      - Textures/Voxel/Panels2M.png
 
     #Decal materials
   - name: Materials/Decals/Stain0.yaml
