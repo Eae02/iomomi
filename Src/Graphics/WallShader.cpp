@@ -40,9 +40,11 @@ static MaterialSettings materialSettings[] =
 	{ 1.0f, 0.2f, 0.5f }
 };
 
+static const eg::StencilState stencilState = DeferredRenderer::MakeStencilState(0);
+
 void InitializeWallShader()
 {
-	//Creates the ambient light pipeline
+	//Creates the game pipeline
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall.vs.glsl").GetVariant("VDefault");
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall.fs.glsl").DefaultVariant();
@@ -57,6 +59,10 @@ void InitializeWallShader()
 	pipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallVertex, normal) };
 	pipelineCI.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallVertex, tangent) };
 	pipelineCI.numClipDistances = 1;
+	pipelineCI.enableStencilTest = true;
+	pipelineCI.dynamicStencilReference = true;
+	pipelineCI.frontStencilState = stencilState;
+	pipelineCI.backStencilState = stencilState;
 	wr.pipelineDeferredGeom = eg::Pipeline::Create(pipelineCI);
 	wr.pipelineDeferredGeom.FramebufferFormatHint(DeferredRenderer::GEOMETRY_FB_FORMAT);
 	
@@ -64,6 +70,8 @@ void InitializeWallShader()
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall.vs.glsl").GetVariant("VPlanarRefl");
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall-PlanarRefl.fs.glsl").DefaultVariant();
 	pipelineCI.numColorAttachments = 1;
+	pipelineCI.enableStencilTest = false;
+	pipelineCI.dynamicStencilReference = false;
 	pipelineCI.frontFaceCCW = true;
 	pipelineCI.numClipDistances = 2;
 	wr.pipelinePlanarReflection = eg::Pipeline::Create(pipelineCI);

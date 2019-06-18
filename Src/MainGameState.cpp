@@ -118,6 +118,7 @@ void MainGameState::DoDeferredRendering(bool useLightProbes, DeferredRenderer::R
 		
 		m_renderCtx->renderer.BeginLighting(renderTarget, nullptr);
 		
+		m_renderCtx->renderer.DrawReflectionPlaneLighting(renderTarget, m_prepareDrawArgs.reflectionPlanes);
 		m_renderCtx->renderer.DrawSpotLights(renderTarget, m_prepareDrawArgs.spotLights);
 		m_renderCtx->renderer.DrawPointLights(renderTarget, m_prepareDrawArgs.pointLights);
 		
@@ -363,6 +364,7 @@ void MainGameState::DrawOverlay(float dt)
 	ImGui::Separator();
 	m_player.DebugDraw();
 	ImGui::Text("Particles: %d", m_particleManager.ParticlesToDraw());
+	ImGui::Text("Reflection Planes: %d", (int)m_prepareDrawArgs.reflectionPlanes.size());
 	
 	ImGui::End();
 	ImGui::PopStyleVar();

@@ -2,6 +2,7 @@
 #include "Lighting/LightProbesManager.hpp"
 #include "Lighting/LightMeshes.hpp"
 #include "RenderSettings.hpp"
+#include "PlanarReflectionsManager.hpp"
 #include "../Settings.hpp"
 
 const eg::FramebufferFormatHint DeferredRenderer::GEOMETRY_FB_FORMAT =
@@ -50,20 +51,32 @@ void DeferredRenderer::CreatePipelines()
 	
 	std::string_view variantName = msVariant ? "VMSAA" : "VDefault";
 	
+	eg::StencilState ambientStencilState;
+	ambientStencilState.failOp = eg::StencilOp::Keep;
+	ambientStencilState.passOp = eg::StencilOp::Keep;
+	ambientStencilState.depthFailOp = eg::StencilOp::Keep;
+	ambientStencilState.compareOp = eg::CompareOp::Equal;
+	ambientStencilState.writeMask = 0;
+	ambientStencilState.compareMask = 1;
+	ambientStencilState.reference = 0;
+	
 	eg::GraphicsPipelineCreateInfo constAmbientPipelineCI;
 	constAmbientPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
-	constAmbientPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/ConstantAmbient.fs.glsl").GetVariant(variantName);
+	constAmbientPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/ConstantAmbient.fs.glsl").GetVariant(variantName);
 	constAmbientPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
 	constAmbientPipelineCI.fragmentShader.specConstants = specConstantEntries;
 	constAmbientPipelineCI.fragmentShader.specConstantsData = &m_currentSampleCount;
 	constAmbientPipelineCI.fragmentShader.specConstantsDataSize = sizeof(uint32_t);
+	constAmbientPipelineCI.frontStencilState = ambientStencilState;
+	constAmbientPipelineCI.backStencilState = ambientStencilState;
+	constAmbientPipelineCI.enableStencilTest = true;
 	m_constantAmbientPipeline = eg::Pipeline::Create(constAmbientPipelineCI);
 	m_constantAmbientPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
 	m_constantAmbientPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
 	
 	eg::GraphicsPipelineCreateInfo slPipelineCI;
-	slPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/SpotLight.vs.glsl").DefaultVariant();
-	slPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/SpotLight.fs.glsl").GetVariant(variantName);
+	slPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/SpotLight.vs.glsl").DefaultVariant();
+	slPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/SpotLight.fs.glsl").GetVariant(variantName);
 	slPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
 	slPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
 	slPipelineCI.vertexBindings[0] = { sizeof(float) * 3, eg::InputRate::Vertex };
@@ -75,10 +88,10 @@ void DeferredRenderer::CreatePipelines()
 	m_spotLightPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
 	m_spotLightPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
 	
-	const eg::ShaderModuleAsset& pointLightFS = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLight.fs.glsl");
+	const eg::ShaderModuleAsset& pointLightFS = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/PointLight.fs.glsl");
 	
 	eg::GraphicsPipelineCreateInfo plPipelineCI;
-	plPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLight.vs.glsl").DefaultVariant();
+	plPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/PointLight.vs.glsl").DefaultVariant();
 	plPipelineCI.fragmentShader = pointLightFS.GetVariant(msVariant ? "VSoftShadowsMS" : "VSoftShadows");
 	plPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
 	plPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
@@ -95,6 +108,47 @@ void DeferredRenderer::CreatePipelines()
 	m_pointLightPipelineHardShadows = eg::Pipeline::Create(plPipelineCI);
 	m_pointLightPipelineHardShadows.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
 	m_pointLightPipelineHardShadows.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
+	
+	const eg::ShaderModuleAsset& reflPlaneFS = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/ReflectionPlane.fs.glsl");
+	
+	eg::StencilState reflPlaneStencilState;
+	reflPlaneStencilState.failOp = eg::StencilOp::Keep;
+	reflPlaneStencilState.passOp = eg::StencilOp::Keep;
+	reflPlaneStencilState.depthFailOp = eg::StencilOp::Keep;
+	reflPlaneStencilState.compareOp = eg::CompareOp::Equal;
+	reflPlaneStencilState.writeMask = 0;
+	reflPlaneStencilState.compareMask = 1;
+	reflPlaneStencilState.reference = 1;
+	
+	eg::GraphicsPipelineCreateInfo reflPlanePipelineCI;
+	reflPlanePipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/ReflectionPlane.vs.glsl").DefaultVariant();
+	reflPlanePipelineCI.fragmentShader = reflPlaneFS.DefaultVariant();//pointLightFS.GetVariant(msVariant ? "VSoftShadowsMS" : "VSoftShadows");
+	reflPlanePipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
+	reflPlanePipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 2, 0 };
+	reflPlanePipelineCI.vertexBindings[0] = { sizeof(float) * 2, eg::InputRate::Vertex };
+	reflPlanePipelineCI.cullMode = eg::CullMode::None;
+	reflPlanePipelineCI.topology = eg::Topology::TriangleStrip;
+	reflPlanePipelineCI.fragmentShader.specConstants = specConstantEntries;
+	reflPlanePipelineCI.fragmentShader.specConstantsData = &m_currentSampleCount;
+	reflPlanePipelineCI.fragmentShader.specConstantsDataSize = sizeof(uint32_t);
+	reflPlanePipelineCI.enableStencilTest = true;
+	reflPlanePipelineCI.frontStencilState = reflPlaneStencilState;
+	reflPlanePipelineCI.backStencilState = reflPlaneStencilState;
+	m_reflectionPlanePipeline = eg::Pipeline::Create(reflPlanePipelineCI);
+	m_reflectionPlanePipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
+	m_reflectionPlanePipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
+	
+	constexpr float REFLECTION_PLANE_SIZE = 10000;
+	const float reflectionPlaneVertices[] =
+	{
+		-REFLECTION_PLANE_SIZE, -REFLECTION_PLANE_SIZE,
+		 REFLECTION_PLANE_SIZE, -REFLECTION_PLANE_SIZE,
+		-REFLECTION_PLANE_SIZE,  REFLECTION_PLANE_SIZE,
+		 REFLECTION_PLANE_SIZE,  REFLECTION_PLANE_SIZE,
+	};
+	m_reflectionPlaneVertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer,
+		sizeof(reflectionPlaneVertices), reflectionPlaneVertices);
+	m_reflectionPlaneVertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
 }
 
 DeferredRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height, uint32_t samples,
@@ -153,7 +207,7 @@ DeferredRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height, ui
 	lightFBAttachments[0].texture = outputTexture.handle;
 	lightFBAttachments[0].subresource.firstArrayLayer = outputArrayLayer;
 	lightFBAttachments[0].subresource.numArrayLayers = 1;
-	m_lightingFramebuffer = eg::Framebuffer(lightFBAttachments);
+	m_lightingFramebuffer = eg::Framebuffer(lightFBAttachments, m_gbDepthTexture.handle);
 	
 	eg::FramebufferCreateInfo emissiveFramebufferCI;
 	emissiveFramebufferCI.depthStencilAttachment = m_gbDepthTexture.handle;
@@ -232,6 +286,7 @@ void DeferredRenderer::BeginLighting(RenderTarget& target, const LightProbesMana
 	eg::RenderPassBeginInfo rpBeginInfo;
 	rpBeginInfo.framebuffer = target.m_lightingFramebuffer.handle;
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Load;
+	rpBeginInfo.sampledDepthStencil = true;
 	
 	eg::DC.BeginRenderPass(rpBeginInfo);
 	
@@ -309,5 +364,39 @@ void DeferredRenderer::DrawPointLights(RenderTarget& target, const std::vector<P
 		eg::DC.PushConstants(0, pointLight.pc);
 		
 		eg::DC.DrawIndexed(0, POINT_LIGHT_MESH_INDICES, 0, 0, 1);
+	}
+}
+
+extern eg::BRDFIntegrationMap* brdfIntegrationMap;
+
+void DeferredRenderer::DrawReflectionPlaneLighting(RenderTarget& target, const std::vector<ReflectionPlane*>& planes)
+{
+	if (planes.empty())
+		return;
+	
+	eg::DC.BindPipeline(m_reflectionPlanePipeline);
+	
+	eg::DC.BindVertexBuffer(0, m_reflectionPlaneVertexBuffer, 0);
+	
+	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
+	
+	eg::DC.BindTexture(target.m_gbColor1Texture, 0, 1);
+	eg::DC.BindTexture(target.m_gbColor2Texture, 0, 2);
+	eg::DC.BindTexture(target.m_gbDepthTexture, 0, 3);
+	eg::DC.BindTexture(brdfIntegrationMap->GetTexture(), 0, 4);
+	
+	for (const ReflectionPlane* plane : planes)
+	{
+		eg::DC.BindTexture(plane->texture, 0, 5);
+		
+		float pc[4];
+		pc[0] = plane->plane.GetNormal().x;
+		pc[1] = plane->plane.GetNormal().y;
+		pc[2] = plane->plane.GetNormal().z;
+		pc[3] = plane->plane.GetDistance();
+		
+		eg::DC.PushConstants(0, sizeof(pc), pc);
+		
+		eg::DC.Draw(0, 4, 0, 1);
 	}
 }

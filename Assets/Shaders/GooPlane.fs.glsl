@@ -55,7 +55,7 @@ void main()
 	if (EG_VULKAN)
 		reflSampleSS.y = 1.0 - reflSampleSS.y;
 	
-	vec3 reflColor = texture(reflectionMap, reflSampleSS).rgb * color;
+	vec3 reflColor = textureLod(reflectionMap, reflSampleSS, 0).rgb * color;
 	waterColor = mix(waterColor, reflColor, 0.75);
 #endif
 	

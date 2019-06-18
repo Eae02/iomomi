@@ -18,6 +18,9 @@ public:
 	void SetResolution(int width, int height);
 	
 private:
+	template <typename CallbackTp>
+	void IterateSelection(CallbackTp callback);
+	
 	void InitWorld();
 	
 	void DrawWorld();

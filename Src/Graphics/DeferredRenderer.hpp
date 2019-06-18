@@ -61,6 +61,8 @@ public:
 	
 	void BeginLighting(RenderTarget& target, const class LightProbesManager* lightProbesManager) const;
 	
+	void DrawReflectionPlaneLighting(RenderTarget& target, const std::vector<struct ReflectionPlane*>& planes);
+	
 	void DrawSpotLights(RenderTarget& target, const std::vector<SpotLightDrawData>& spotLights) const;
 	void DrawPointLights(RenderTarget& target, const std::vector<PointLightDrawData>& pointLights) const;
 	
@@ -68,7 +70,12 @@ public:
 	
 	void PollSettingsChanged();
 	
-	static constexpr eg::Format DEPTH_FORMAT = eg::Format::Depth32;
+	static eg::StencilState MakeStencilState(uint32_t reference)
+	{
+		return { eg::StencilOp::Keep, eg::StencilOp::Replace, eg::StencilOp::Keep, eg::CompareOp::Always, 0, 0xFF, reference };
+	}
+	
+	static constexpr eg::Format DEPTH_FORMAT = eg::Format::Depth24Stencil8;
 	static constexpr eg::Format LIGHT_COLOR_FORMAT_LDR = eg::Format::R8G8B8A8_UNorm;
 	static constexpr eg::Format LIGHT_COLOR_FORMAT_HDR = eg::Format::R16G16B16A16_Float;
 	
@@ -81,7 +88,10 @@ private:
 	
 	uint32_t m_currentSampleCount = 0;
 	
+	eg::Buffer m_reflectionPlaneVertexBuffer;
+	
 	eg::Pipeline m_constantAmbientPipeline;
+	eg::Pipeline m_reflectionPlanePipeline;
 	eg::Pipeline m_spotLightPipeline;
 	eg::Pipeline m_pointLightPipelineSoftShadows;
 	eg::Pipeline m_pointLightPipelineHardShadows;

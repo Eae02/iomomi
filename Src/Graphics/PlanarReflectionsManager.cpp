@@ -19,7 +19,7 @@ void PlanarReflectionsManager::RenderPlanarReflections(ReflectionPlane& plane,
 	if (m_depthTexture.handle == nullptr)
 	{
 		eg::Texture2DCreateInfo depthTextureCI;
-		depthTextureCI.format = eg::Format::Depth16;
+		depthTextureCI.format = eg::Format::Depth32;
 		depthTextureCI.width = m_textureWidth;
 		depthTextureCI.height = m_textureHeight;
 		depthTextureCI.mipLevels = 1;
@@ -39,23 +39,44 @@ void PlanarReflectionsManager::RenderPlanarReflections(ReflectionPlane& plane,
 		textureCI.format = m_textureFormat;
 		textureCI.width = m_textureWidth;
 		textureCI.height = m_textureHeight;
-		textureCI.mipLevels = 1;
-		textureCI.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample;
+		textureCI.mipLevels = TEXTURE_LEVELS;
+		textureCI.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample | eg::TextureFlags::ManualBarrier;
 		textureCI.defaultSamplerDescription = &samplerDescription;
 		
-		eg::Texture texture = eg::Texture::Create2D(textureCI);
+		RenderTexture& renderTexture = m_reflectionTextures.emplace_back();
+		renderTexture.texture = eg::Texture::Create2D(textureCI);
 		
-		eg::FramebufferAttachment colorAttachment(texture.handle);
+		eg::FramebufferAttachment colorAttachment(renderTexture.texture.handle);
+		colorAttachment.subresource.mipLevel = 0;
 		eg::FramebufferAttachment depthAttachment(m_depthTexture.handle);
-		eg::Framebuffer framebuffer({ &colorAttachment, 1 }, depthAttachment);
+		renderTexture.framebuffers[0] = eg::Framebuffer({ &colorAttachment, 1 }, depthAttachment);
 		
-		m_reflectionTextures.push_back({ std::move(texture), std::move(framebuffer) });
+		for (uint32_t i = 1; i < TEXTURE_LEVELS; i++)
+		{
+			colorAttachment.subresource.mipLevel = i;
+			renderTexture.framebuffers[i] = eg::Framebuffer({ &colorAttachment, 1 });
+		}
 	}
 	
-	renderCallback(plane, m_reflectionTextures[m_numUsedReflectionTextures].framebuffer);
+	RenderTexture& texture = m_reflectionTextures[m_numUsedReflectionTextures];
 	
-	plane.texture = m_reflectionTextures[m_numUsedReflectionTextures].texture;
-	plane.texture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
+	renderCallback(plane, texture.framebuffers[0]);
+	
+	eg::TextureBarrier barrier;
+	barrier.oldAccess = eg::ShaderAccessFlags::None;
+	barrier.newAccess = eg::ShaderAccessFlags::Fragment;
+	barrier.oldUsage = eg::TextureUsage::FramebufferAttachment;
+	barrier.newUsage = eg::TextureUsage::ShaderSample;
+	barrier.subresource.firstMipLevel = 0;
+	barrier.subresource.numMipLevels = 1;
+	eg::DC.Barrier(texture.texture, barrier);
+	
+	plane.texture = texture.texture;
+	
+	if (plane.blur)
+	{
+		
+	}
 	
 	m_numUsedReflectionTextures++;
 }
@@ -66,6 +87,7 @@ void PlanarReflectionsManager::SetQuality(QualityLevel qualityLevel)
 		return;
 	m_qualityLevel = qualityLevel;
 	m_textureFormat = qualityLevel >= QualityLevel::High ? eg::Format::R16G16B16A16_Float: eg::Format::R8G8B8A8_UNorm;
+	
 	ResolutionChanged();
 }
 

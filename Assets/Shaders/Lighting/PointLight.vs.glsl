@@ -1,6 +1,6 @@
 #version 450 core
 
-#include "Inc/RenderSettings.glh"
+#include "../Inc/RenderSettings.glh"
 
 #include <EGame.glh>
 

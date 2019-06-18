@@ -8,6 +8,8 @@ static eg::Pipeline gravitySwitchPipelineGame;
 static eg::Pipeline gravitySwitchPipelinePlanarRefl;
 static eg::DescriptorSet gravitySwitchDescriptorSet;
 
+static const eg::StencilState stencilState = DeferredRenderer::MakeStencilState(0);
+
 static void OnInit()
 {
 	const eg::ShaderModuleAsset& fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravitySwitchLight.fs.glsl");
@@ -29,12 +31,16 @@ static void OnInit()
 	pipelineCI.vertexAttributes[6] = { 1, eg::DataType::Float32, 4, 2 * sizeof(float) * 4 };
 	pipelineCI.vertexAttributes[7] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
 	pipelineCI.numColorAttachments = 2;
+	pipelineCI.enableStencilTest = true;
+	pipelineCI.frontStencilState = stencilState;
+	pipelineCI.backStencilState = stencilState;
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.label = "GravSwitchGame";
 	gravitySwitchPipelineGame = eg::Pipeline::Create(pipelineCI);
 	gravitySwitchPipelineGame.FramebufferFormatHint(DeferredRenderer::GEOMETRY_FB_FORMAT);
 	
 	pipelineCI.label = "GravSwitchEditor";
+	pipelineCI.enableStencilTest = false;
 	pipelineCI.fragmentShader = fragmentShader.GetVariant("VEditor");
 	pipelineCI.cullMode = eg::CullMode::None;
 	pipelineCI.numColorAttachments = 1;

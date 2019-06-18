@@ -15,6 +15,8 @@ struct LightProbeUB
 };
 #pragma pack(pop)
 
+eg::BRDFIntegrationMap* brdfIntegrationMap;
+
 LightProbesManager::LightProbesManager()
 {
 	eg::GraphicsPipelineCreateInfo ambientPipelineCI;
@@ -31,7 +33,7 @@ LightProbesManager::LightProbesManager()
 	m_descriptorSet = eg::DescriptorSet(m_ambientPipeline, 1);
 	
 	m_descriptorSet.BindUniformBuffer(m_probesUniformBuffer, 0, 0, probesUBSize);
-	m_descriptorSet.BindTexture(m_brdfIntegrationMap.GetTexture(), 1);
+	m_descriptorSet.BindTexture(brdfIntegrationMap->GetTexture(), 1);
 	
 	eg::SamplerDescription envMapSamplerDesc;
 	

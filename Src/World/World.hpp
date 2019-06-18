@@ -8,6 +8,7 @@
 #include "WorldUpdateArgs.hpp"
 #include "Door.hpp"
 #include "../Graphics/Vertex.hpp"
+#include "../Graphics/PlanarReflectionsManager.hpp"
 
 struct WallVertex;
 
@@ -41,6 +42,12 @@ struct GravityCorner
 	glm::mat3 MakeRotationMatrix() const;
 };
 
+struct WallSideMaterial
+{
+	int texture;
+	bool enableReflections;
+};
+
 class World
 {
 public:
@@ -61,17 +68,17 @@ public:
 	
 	bool IsAir(const glm::ivec3& pos) const;
 	
-	void SetTextureSafe(const glm::ivec3& pos, Dir side, uint8_t textureLayer)
+	void SetMaterialSafe(const glm::ivec3& pos, Dir side, WallSideMaterial material)
 	{
 		if (IsAir(pos))
 		{
-			SetTexture(pos, side, textureLayer);
+			SetMaterial(pos, side, material);
 		}
 	}
 	
-	void SetTexture(const glm::ivec3& pos, Dir side, uint8_t textureLayer);
+	void SetMaterial(const glm::ivec3& pos, Dir side, WallSideMaterial material);
 	
-	uint8_t GetTexture(const glm::ivec3& pos, Dir side) const;
+	WallSideMaterial GetMaterial(const glm::ivec3& pos, Dir side) const;
 	
 	bool HasCollision(const glm::ivec3& pos, Dir side) const;
 	
@@ -113,9 +120,20 @@ private:
 	
 	inline static std::tuple<glm::ivec3, glm::ivec3> DecomposeGlobalCoordinate(const glm::ivec3& globalC);
 	
+	struct VoxelReflectionPlane
+	{
+		Dir normalDir;
+		int distance;
+		
+		bool operator==(const VoxelReflectionPlane& other) const
+		{
+			return normalDir == other.normalDir && distance == other.distance;
+		}
+	};
+	
 	/**
 	 * Each voxel is represented by one 64-bit integer where the low 48 bits store which texture is used
-	 * for each side (with 8 bits per side).
+	 * for each side and if reflection is enabled (7 bits for texture and 1 bit for reflection).
 	 * Bits 48-59 store if the sides of this voxel are gravity corners.
 	 * The 60th bit is a 1 if the voxel is air, or 0 otherwise.
 	 * Texture information is stored in the air voxel that the solid voxel faces into.
@@ -128,8 +146,10 @@ private:
 		uint64_t voxels[REGION_SIZE][REGION_SIZE][REGION_SIZE] = { };
 		std::vector<WallVertex> vertices;
 		std::vector<uint16_t> indices;
+		std::vector<uint16_t> indicesReflective;
 		std::vector<WallBorderVertex> borderVertices;
 		std::vector<GravityCorner> gravityCorners;
+		std::vector<VoxelReflectionPlane> reflectionPlanes;
 		eg::CollisionMesh collisionMesh;
 	};
 	
@@ -181,6 +201,8 @@ private:
 	eg::Buffer m_borderVertexBuffer;
 	size_t m_borderVertexBufferCapacity = 0;
 	uint32_t m_numBorderVertices;
+	
+	std::vector<ReflectionPlane> m_wallReflectionPlanes;
 	
 	std::unique_ptr<btTriangleMesh> m_wallsBulletMesh;
 	std::unique_ptr<btDefaultMotionState> m_wallsMotionState;

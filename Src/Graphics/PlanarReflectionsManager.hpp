@@ -9,6 +9,7 @@ struct ReflectionPlane
 {
 	eg::Plane plane;
 	eg::TextureRef texture;
+	bool blur = false;
 };
 
 class PlanarReflectionsManager
@@ -26,6 +27,8 @@ public:
 	
 	void RenderPlanarReflections(ReflectionPlane& plane, const RenderCallback& renderCallback);
 	
+	static constexpr uint32_t TEXTURE_LEVELS = 3;
+	
 private:
 	inline bool LitReflections()
 	{
@@ -35,7 +38,7 @@ private:
 	struct RenderTexture
 	{
 		eg::Texture texture;
-		eg::Framebuffer framebuffer;
+		eg::Framebuffer framebuffers[TEXTURE_LEVELS];
 	};
 	
 	std::vector<RenderTexture> m_reflectionTextures;

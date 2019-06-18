@@ -66,6 +66,8 @@ static eg::Pipeline staticPropPipelineGame[2];
 static eg::Pipeline staticPropPipelinePLShadow[2];
 static eg::Pipeline staticPropPipelinePlanarRefl[2];
 
+static const eg::StencilState stencilState = DeferredRenderer::MakeStencilState(0);
+
 static void OnInit()
 {
 	eg::GraphicsPipelineCreateInfo pipelineCI;
@@ -85,6 +87,9 @@ static void OnInit()
 	pipelineCI.vertexAttributes[6] = { 1, eg::DataType::Float32, 4, 2 * sizeof(float) * 4 };
 	pipelineCI.vertexAttributes[7] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
+	pipelineCI.enableStencilTest = true;
+	pipelineCI.frontStencilState = stencilState;
+	pipelineCI.backStencilState = stencilState;
 	pipelineCI.numColorAttachments = 2;
 	pipelineCI.label = "StaticPropGame";
 	staticPropPipelineGame[1] = eg::Pipeline::Create(pipelineCI);
@@ -95,6 +100,7 @@ static void OnInit()
 	staticPropPipelineGame[0] = eg::Pipeline::Create(pipelineCI);
 	staticPropPipelineGame[0].FramebufferFormatHint(DeferredRenderer::GEOMETRY_FB_FORMAT);
 	
+	pipelineCI.enableStencilTest = false;
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/StaticModel-Editor.fs.glsl").DefaultVariant();
 	pipelineCI.cullMode = eg::CullMode::None;

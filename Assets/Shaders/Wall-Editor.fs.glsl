@@ -15,6 +15,11 @@ layout(binding=3) uniform sampler2DArray normalMapSampler;
 layout(binding=4) uniform sampler2D gridSampler;
 layout(binding=5) uniform sampler2D noDrawSampler;
 
+layout(push_constant) uniform PC
+{
+	bool reflective;
+};
+
 void main()
 {
 	vec3 surfNormal = normalize(normal_in);
@@ -39,6 +44,12 @@ void main()
 	float ao = ao2.x * ao2.y;
 	
 	color *= CalcEditorLight(normal, ao);
+	
+	if (reflective)
+	{
+		float stripeIntensity = (fract((texCoord_in.x + texCoord_in.y) * 2) > 0.6) ? 0.3 : 0.0;
+		color = mix(color, vec3(0.5, 1.0, 0.5), stripeIntensity);
+	}
 	
 	float gridIntensity = texture(gridSampler, texCoord_in.xy * texCoord_in.w).r;
 	color = mix(color, vec3(1.0), gridIntensity);

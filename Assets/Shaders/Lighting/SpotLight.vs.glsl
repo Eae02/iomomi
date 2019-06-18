@@ -1,6 +1,6 @@
 #version 450 core
 
-#include "Inc/RenderSettings.glh"
+#include "../Inc/RenderSettings.glh"
 
 layout(location=0) in vec3 position_in;
 

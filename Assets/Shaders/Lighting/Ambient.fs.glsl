@@ -2,8 +2,8 @@
 
 #pragma variants VDefault VMSAA
 
-#include "Inc/DeferredLight.glh"
-#include "Inc/Light.glh"
+#include "../Inc/DeferredLight.glh"
+#include "../Inc/Light.glh"
 
 struct LightProbe
 {

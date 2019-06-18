@@ -13,6 +13,7 @@ Game::Game()
 {
 	editor = new Editor(m_renderCtx);
 	mainGameState = new MainGameState(m_renderCtx);
+	brdfIntegrationMap = new eg::BRDFIntegrationMap();
 	
 #ifdef NDEBUG
 	currentGS = nullptr;
@@ -52,6 +53,7 @@ Game::~Game()
 	delete editor;
 	delete mainGameState;
 	delete RenderSettings::instance;
+	delete brdfIntegrationMap;
 }
 
 void Game::ResolutionChanged(int newWidth, int newHeight)

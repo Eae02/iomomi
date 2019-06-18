@@ -6,6 +6,7 @@
 #include "../../Graphics/RenderSettings.hpp"
 #include "../../Graphics/Materials/MeshDrawArgs.hpp"
 #include "../../../Protobuf/Build/GooPlaneEntity.pb.h"
+#include "../../Graphics/DeferredRenderer.hpp"
 
 namespace GooPlane
 {
@@ -72,6 +73,8 @@ namespace GooPlane
 	
 	static glm::vec3 waterColor;
 	
+	static const eg::StencilState stencilState = DeferredRenderer::MakeStencilState(0);
+	
 	static void OnInit()
 	{
 		eg::ShaderModuleAsset& fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GooPlane.fs.glsl");
@@ -88,6 +91,9 @@ namespace GooPlane
 		pipelineCI.setBindModes[1] = eg::BindMode::Dynamic;
 		pipelineCI.vertexBindings[0] = { sizeof(glm::vec3), eg::InputRate::Vertex };
 		pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
+		pipelineCI.enableStencilTest = true;
+		pipelineCI.frontStencilState = stencilState;
+		pipelineCI.backStencilState = stencilState;
 		
 		GooPlaneMaterial::s_pipelineReflEnabled = eg::Pipeline::Create(pipelineCI);
 		
@@ -95,6 +101,7 @@ namespace GooPlane
 		GooPlaneMaterial::s_pipelineReflDisabled = eg::Pipeline::Create(pipelineCI);
 		
 		pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GooPlane-Emissive.fs.glsl").DefaultVariant();
+		pipelineCI.enableStencilTest = false;
 		pipelineCI.numColorAttachments = 1;
 		pipelineCI.depthCompare = eg::CompareOp::LessOrEqual;
 		pipelineCI.enableDepthWrite = false;

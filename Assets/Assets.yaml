@@ -33,12 +33,14 @@ assets:
   - name: Shaders/Emissive.fs.glsl
   - name: Shaders/LightStrip.vs.glsl
   - name: Shaders/LightStrip.fs.glsl
-  - name: Shaders/Ambient.fs.glsl
-  - name: Shaders/ConstantAmbient.fs.glsl
-  - name: Shaders/SpotLight.vs.glsl
-  - name: Shaders/SpotLight.fs.glsl
-  - name: Shaders/PointLight.vs.glsl
-  - name: Shaders/PointLight.fs.glsl
+  - name: Shaders/Lighting/Ambient.fs.glsl
+  - name: Shaders/Lighting/ConstantAmbient.fs.glsl
+  - name: Shaders/Lighting/SpotLight.vs.glsl
+  - name: Shaders/Lighting/SpotLight.fs.glsl
+  - name: Shaders/Lighting/PointLight.vs.glsl
+  - name: Shaders/Lighting/PointLight.fs.glsl
+  - name: Shaders/Lighting/ReflectionPlane.vs.glsl
+  - name: Shaders/Lighting/ReflectionPlane.fs.glsl
   - name: Shaders/PointLightShadow.gs.glsl
   - name: Shaders/PointLightShadow.fs.glsl
   - name: Shaders/GravitySwitchLight.fs.glsl

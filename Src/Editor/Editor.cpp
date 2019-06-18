@@ -45,6 +45,27 @@ void Editor::InitWorld()
 	ECActivationLightStrip::GenerateAll(*m_world);
 }
 
+template <typename CallbackTp>
+void Editor::IterateSelection(CallbackTp callback)
+{
+	if (m_selState != SelState::SelectDone)
+		return;
+	glm::ivec3 selMin = glm::min(m_selection1, m_selection2);
+	glm::ivec3 selMax = glm::max(m_selection1, m_selection2);
+	for (int x = selMin.x; x <= selMax.x; x++)
+	{
+		for (int y = selMin.y; y <= selMax.y; y++)
+		{
+			for (int z = selMin.z; z <= selMax.z; z++)
+			{
+				callback(glm::ivec3(x, y, z) + DirectionVector(m_selectionNormal));
+			}
+		}
+	}
+}
+
+static constexpr int NEW_LEVEL_WALL_TEXTURE = 6;
+
 void Editor::RunFrame(float dt)
 {
 	if (m_world == nullptr)
@@ -70,7 +91,7 @@ void Editor::RunFrame(float dt)
 							m_world->SetIsAir({x, y, z}, true);
 							for (int s = 0; s < 6; s++)
 							{
-								m_world->SetTextureSafe({x, y, z}, (Dir)s, 1);
+								m_world->SetMaterialSafe({x, y, z}, (Dir)s, { NEW_LEVEL_WALL_TEXTURE, false });
 							}
 						}
 					}
@@ -147,6 +168,31 @@ void Editor::RunFrame(float dt)
 	}
 	if (m_tool == Tool::Walls)
 	{
+		bool anyReflective = false;
+		bool anyNotReflective = false;
+		if (m_selState == SelState::SelectDone)
+		{
+			IterateSelection([&] (glm::ivec3 pos)
+			{
+				WallSideMaterial material = m_world->GetMaterial(pos, m_selectionNormal);
+				if (material.enableReflections)
+					anyReflective = true;
+				else
+					anyNotReflective = true;
+			});
+		}
+		
+		bool checkboxSet = anyReflective && !anyNotReflective;
+		if (ImGui::Checkbox("Reflective", &checkboxSet))
+		{
+			IterateSelection([&] (glm::ivec3 pos)
+			{
+				WallSideMaterial material = m_world->GetMaterial(pos, m_selectionNormal);
+				material.enableReflections = checkboxSet;
+				m_world->SetMaterialSafe(pos, m_selectionNormal, material);
+			});
+		}
+		
 		if (ImGui::CollapsingHeader("Textures", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			ImGui::BeginChildFrame(ImGui::GetID("TexturesList"), ImVec2(0, 300));
@@ -155,20 +201,12 @@ void Editor::RunFrame(float dt)
 			{
 				if (ImGui::Selectable(TextureNames[i], false) &&  m_selState == SelState::SelectDone)
 				{
-					glm::ivec3 mn = glm::min(m_selection1, m_selection2);
-					glm::ivec3 mx = glm::max(m_selection1, m_selection2);
-					
-					for (int x = mn.x; x <= mx.x; x++)
+					IterateSelection([&] (glm::ivec3 pos)
 					{
-						for (int y = mn.y; y <= mx.y; y++)
-						{
-							for (int z = mn.z; z <= mx.z; z++)
-							{
-								glm::ivec3 pos = glm::ivec3(x, y, z) + DirectionVector(m_selectionNormal);
-								m_world->SetTextureSafe(pos, m_selectionNormal, i);
-							}
-						}
-					}
+						WallSideMaterial material = m_world->GetMaterial(pos, m_selectionNormal);
+						material.texture = i;
+						m_world->SetMaterialSafe(pos, m_selectionNormal, material);
+					});
 				}
 			}
 			
@@ -835,20 +873,20 @@ void Editor::UpdateToolWalls(float dt)
 								for (int z = mn.z; z <= mx.z; z++)
 								{
 									const glm::ivec3 pos(x, y, z);
-									const uint8_t texture = m_world->GetTexture(pos + texSourceOffset, texSourceSide);
-									m_world->SetTextureSafe(pos + texDestOffset, texSourceSide, texture);
+									const WallSideMaterial material = m_world->GetMaterial(pos + texSourceOffset, texSourceSide);
+									m_world->SetMaterialSafe(pos + texDestOffset, texSourceSide, material);
 									for (int s = 0; s < 4; s++)
 									{
 										const int stepDim = (selDim + 1 + s / 2) % 3;
 										const Dir stepDir = (Dir)(stepDim * 2 + s % 2);
 										if (!allAir)
 										{
-											m_world->SetTextureSafe(pos, stepDir, texture);
+											m_world->SetMaterialSafe(pos, stepDir, material);
 										}
 										else
 										{
 											const glm::ivec3 npos = pos + DirectionVector(stepDir);
-											m_world->SetTextureSafe(npos, stepDir, texture);
+											m_world->SetMaterialSafe(npos, stepDir, material);
 										}
 									}
 								}

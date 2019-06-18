@@ -10,6 +10,8 @@ struct LightProbe
 	glm::vec3 influenceFade;
 };
 
+extern eg::BRDFIntegrationMap* brdfIntegrationMap;
+
 class LightProbesManager
 {
 public:
@@ -42,7 +44,6 @@ private:
 	eg::IrradianceMapGenerator m_irradianceMapGenerator;
 	eg::SPFMapGenerator m_spfMapGenerator;
 	
-	eg::BRDFIntegrationMap m_brdfIntegrationMap;
 	eg::Buffer m_probesUniformBuffer;
 	eg::DescriptorSet m_descriptorSet;
 	
