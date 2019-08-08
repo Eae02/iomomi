@@ -82,6 +82,8 @@ void MainGameState::LoadWorld(std::istream& stream, int64_t levelIndex, const eg
 	
 	ECActivationLightStrip::GenerateAll(*m_world);
 	
+	m_waterSimulator.Init(*m_world);
+	
 	m_plShadowMapper.InvalidateAll();
 }
 
@@ -116,15 +118,23 @@ void MainGameState::DoDeferredRendering(bool useLightProbes, DeferredRenderer::R
 		auto gpuTimerLight = eg::StartGPUTimer("Lighting");
 		auto cpuTimerLight = eg::StartCPUTimer("Lighting");
 		
-		m_renderCtx->renderer.BeginLighting(renderTarget, nullptr);
+		m_renderCtx->renderer.BeginLighting(renderTarget);
 		
 		m_renderCtx->renderer.DrawReflectionPlaneLighting(renderTarget, m_prepareDrawArgs.reflectionPlanes);
 		m_renderCtx->renderer.DrawSpotLights(renderTarget, m_prepareDrawArgs.spotLights);
 		m_renderCtx->renderer.DrawPointLights(renderTarget, m_prepareDrawArgs.pointLights);
+		//m_renderCtx->renderer.DrawWaterBasic(m_waterSimulator.GetPositionsBuffer(), m_waterSimulator.NumParticles());
 		
 		m_particleRenderer.Draw(m_particleManager, renderTarget.ResolvedDepthTexture());
 		
 		m_renderCtx->renderer.End(renderTarget);
+	}
+	
+	{
+		auto gpuTimerWater = eg::StartGPUTimer("Draw Water");
+		auto cpuTimerWater = eg::StartCPUTimer("Draw Water");
+		
+		m_renderCtx->renderer.DrawWater(renderTarget, m_waterSimulator.GetPositionsBuffer(), m_waterSimulator.NumParticles());
 	}
 }
 
@@ -235,7 +245,7 @@ void MainGameState::RunFrame(float dt)
 	if (m_renderTarget == nullptr || m_renderTarget->Width() != (uint32_t)eg::CurrentResolutionX() ||
 		m_renderTarget->Height() != (uint32_t)eg::CurrentResolutionY())
 	{
-		eg::Texture2DCreateInfo textureCI;
+		eg::TextureCreateInfo textureCI;
 		if (settings.HDREnabled())
 			textureCI.format = DeferredRenderer::LIGHT_COLOR_FORMAT_HDR;
 		else
@@ -261,12 +271,18 @@ void MainGameState::RunFrame(float dt)
 		}
 	}
 	
+	m_waterSimulator.Update(dt);
+	
 	auto cpuTimerPrepare = eg::StartCPUTimer("Prepare Draw");
 	
 	RenderSettings::instance->gameTime = m_gameTime;
 	RenderSettings::instance->cameraPosition = m_player.EyePosition();
 	RenderSettings::instance->viewProjection = viewProjMatrix;
 	RenderSettings::instance->invViewProjection = inverseViewProjMatrix;
+	RenderSettings::instance->viewMatrix = viewMatrix;
+	RenderSettings::instance->invViewMatrix = inverseViewMatrix;
+	RenderSettings::instance->projectionMatrix = m_projection.Matrix();
+	RenderSettings::instance->invProjectionMatrix = m_projection.InverseMatrix();
 	RenderSettings::instance->UpdateBuffer();
 	
 	m_renderCtx->meshBatch.Begin();
@@ -364,7 +380,9 @@ void MainGameState::DrawOverlay(float dt)
 	ImGui::Separator();
 	m_player.DebugDraw();
 	ImGui::Text("Particles: %d", m_particleManager.ParticlesToDraw());
+	ImGui::Text("Water Spheres: %d", m_waterSimulator.NumParticles());
 	ImGui::Text("Reflection Planes: %d", (int)m_prepareDrawArgs.reflectionPlanes.size());
+	ImGui::Text("Underwater: %f", m_renderCtx->renderer.FragmentsUnderwater());
 	
 	ImGui::End();
 	ImGui::PopStyleVar();

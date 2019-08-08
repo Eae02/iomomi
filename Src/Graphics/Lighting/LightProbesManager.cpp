@@ -37,7 +37,7 @@ LightProbesManager::LightProbesManager()
 	
 	eg::SamplerDescription envMapSamplerDesc;
 	
-	eg::TextureCubeCreateInfo environmentMapCI;
+	eg::TextureCreateInfo environmentMapCI;
 	environmentMapCI.width = RENDER_RESOLUTION;
 	environmentMapCI.format = DeferredRenderer::LIGHT_COLOR_FORMAT_HDR;
 	environmentMapCI.mipLevels = 1;
@@ -63,7 +63,7 @@ void LightProbesManager::PrepareWorld(const std::vector<LightProbe>& lightProbes
 		
 		eg::SamplerDescription mapSamplerDesc;
 		
-		eg::TextureCubeArrayCreateInfo irradianceMapCI;
+		eg::TextureCreateInfo irradianceMapCI;
 		irradianceMapCI.width = IRRADIANCE_MAP_RESOLUTION;
 		irradianceMapCI.arrayLayers = m_maxProbes;
 		irradianceMapCI.format = eg::IrradianceMapGenerator::MAP_FORMAT;
@@ -72,7 +72,7 @@ void LightProbesManager::PrepareWorld(const std::vector<LightProbe>& lightProbes
 		irradianceMapCI.defaultSamplerDescription = &mapSamplerDesc;
 		m_irradianceMaps = eg::Texture::CreateCubeArray(irradianceMapCI);
 		
-		eg::TextureCubeArrayCreateInfo spfMapCI;
+		eg::TextureCreateInfo spfMapCI;
 		spfMapCI.width = SPF_MAP_RESOLUTION;
 		spfMapCI.arrayLayers = m_maxProbes;
 		spfMapCI.format = eg::IrradianceMapGenerator::MAP_FORMAT;

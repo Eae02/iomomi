@@ -6,7 +6,7 @@
 namespace WaterPlane
 {
 	eg::EntitySignature EntitySignature = eg::EntitySignature::Create<
-	    eg::ECPosition3D, ECWallMounted, ECLiquidPlane, ECEditorVisible>();
+	    eg::ECPosition3D, ECWallMounted, ECLiquidPlane, ECEditorVisible, ECWaterPlane>();
 	
 	eg::Entity* CreateEntity(eg::EntityManager& entityManager)
 	{

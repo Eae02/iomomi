@@ -1,14 +1,12 @@
 cmake_minimum_required(VERSION 3.13)
-project(Gravity)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/Deps/cmake-pch/)
+project(Gravity CXX CXXPCH)
 
 set(BUILD_DIR_NAME ${CMAKE_BUILD_TYPE})
 if(${CMAKE_CXX_COMPILER} MATCHES "emcc$")
 	set(TARGET_WEB TRUE)
 	set(BUILD_DIR_NAME ${BUILD_DIR_NAME}Web)
 endif()
-
-option(YAML_CPP_BUILD_TESTS OFF)
-add_subdirectory(Deps/yaml-cpp)
 
 include("${EGAME_CMAKE_DIR}/EGameTargets.cmake")
 
@@ -22,8 +20,7 @@ add_executable(Gravity ${SOURCE_FILES} ${IMGUI_FILES})
 
 #Adds compiler specific options
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-	target_compile_options(Gravity PRIVATE -Wall -Wextra -Wshadow -pedantic -Wno-unused-parameter -Wno-missing-field-initializers
-		$<$<COMPILE_LANGUAGE:CXX>:-include ${CMAKE_CURRENT_SOURCE_DIR}/Inc/Common.hpp>)
+	target_compile_options(Gravity PRIVATE -Wall -Wextra -Wshadow -pedantic --std=c++17 -Wno-unused-parameter -Wno-missing-field-initializers)
 	if (NOT TARGET_WEB)
 		target_link_libraries(Gravity stdc++fs)
 		set_target_properties(Gravity PROPERTIES
@@ -33,11 +30,10 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STRE
 	endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	target_compile_options(Gravity PRIVATE /wd4250 /wd4307 /wd4251 /wd4244 /wd4068 /wd4996 /wd4275 /D_CRT_SECURE_NO_WARNINGS
-		/D_DISABLE_EXTENDED_ALIGNED_STORAGE $<$<COMPILE_LANGUAGE:CXX>:/FI${CMAKE_CURRENT_SOURCE_DIR}/Inc/Common.hpp>)
+		/D_DISABLE_EXTENDED_ALIGNED_STORAGE)
 endif()
 
 set_target_properties(Gravity PROPERTIES
-	CXX_STANDARD 17
 	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Bin/${BUILD_DIR_NAME}
 	OUTPUT_NAME "gravity"
 )
@@ -71,3 +67,5 @@ else()
 	target_link_libraries(Gravity protobuf::libprotobuf ${BULLET_LIBRARIES})
 	target_include_directories(Gravity SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS})
 endif()
+
+target_precompiled_header(Gravity Inc/Common.hpp)

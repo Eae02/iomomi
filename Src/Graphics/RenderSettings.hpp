@@ -14,10 +14,14 @@ public:
 	
 	glm::mat4 viewProjection;
 	glm::mat4 invViewProjection;
+	glm::mat4 viewMatrix;
+	glm::mat4 projectionMatrix;
+	glm::mat4 invViewMatrix;
+	glm::mat4 invProjectionMatrix;
 	glm::vec3 cameraPosition;
 	float gameTime;
 	
-	static constexpr uint32_t BUFFER_SIZE = sizeof(glm::mat4) + sizeof(glm::mat4) + sizeof(float) * 4;
+	static constexpr uint32_t BUFFER_SIZE = sizeof(glm::mat4) * 6 + sizeof(float) * 4;
 	
 	static RenderSettings* instance;
 	

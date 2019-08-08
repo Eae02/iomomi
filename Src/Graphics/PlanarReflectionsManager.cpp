@@ -18,7 +18,7 @@ void PlanarReflectionsManager::RenderPlanarReflections(ReflectionPlane& plane,
 	
 	if (m_depthTexture.handle == nullptr)
 	{
-		eg::Texture2DCreateInfo depthTextureCI;
+		eg::TextureCreateInfo depthTextureCI;
 		depthTextureCI.format = eg::Format::Depth32;
 		depthTextureCI.width = m_textureWidth;
 		depthTextureCI.height = m_textureHeight;
@@ -35,7 +35,7 @@ void PlanarReflectionsManager::RenderPlanarReflections(ReflectionPlane& plane,
 		samplerDescription.wrapV = eg::WrapMode::ClampToEdge;
 		samplerDescription.wrapW = eg::WrapMode::ClampToEdge;
 		
-		eg::Texture2DCreateInfo textureCI;
+		eg::TextureCreateInfo textureCI;
 		textureCI.format = m_textureFormat;
 		textureCI.width = m_textureWidth;
 		textureCI.height = m_textureHeight;
@@ -86,7 +86,7 @@ void PlanarReflectionsManager::SetQuality(QualityLevel qualityLevel)
 	if (m_qualityLevel == qualityLevel)
 		return;
 	m_qualityLevel = qualityLevel;
-	m_textureFormat = qualityLevel >= QualityLevel::High ? eg::Format::R16G16B16A16_Float: eg::Format::R8G8B8A8_UNorm;
+	m_textureFormat = qualityLevel >= QualityLevel::High ? eg::Format::R16G16B16A16_Float : eg::Format::R8G8B8A8_UNorm;
 	
 	ResolutionChanged();
 }

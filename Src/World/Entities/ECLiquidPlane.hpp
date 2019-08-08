@@ -17,6 +17,11 @@ public:
 	
 	bool IsUnderwater(const glm::ivec3& pos);
 	
+	const std::vector<glm::ivec3> UnderwaterCells() const
+	{
+		return m_underwater;
+	}
+	
 	const eg::ColorLin& EditorColor() const
 	{
 		return m_editorColor;

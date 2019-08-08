@@ -110,6 +110,16 @@ public:
 		return *m_entityManager;
 	}
 	
+	const glm::ivec3& GetBoundsMin() const
+	{
+		return m_boundsMin;
+	}
+	
+	const glm::ivec3& GetBoundsMax() const
+	{
+		return m_boundsMax;
+	}
+	
 	bool playerHasGravityGun = false;
 	
 private:
@@ -201,6 +211,9 @@ private:
 	eg::Buffer m_borderVertexBuffer;
 	size_t m_borderVertexBufferCapacity = 0;
 	uint32_t m_numBorderVertices;
+	
+	glm::ivec3 m_boundsMin;
+	glm::ivec3 m_boundsMax;
 	
 	std::vector<ReflectionPlane> m_wallReflectionPlanes;
 	

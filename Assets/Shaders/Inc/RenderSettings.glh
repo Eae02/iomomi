@@ -5,8 +5,19 @@ struct RenderSettings
 {
 	mat4 viewProjection;
 	mat4 invViewProjection;
+	mat4 viewMatrix;
+	mat4 projectionMatrix;
+	mat4 invViewMatrix;
+	mat4 invProjectionMatrix;
 	vec3 cameraPosition;
 	float gameTime;
 };
+
+#ifdef RENDER_SETTINGS_BINDING
+layout(set=0, binding=RENDER_SETTINGS_BINDING, std140) uniform RenderSettingsUB
+{
+	RenderSettings renderSettings;
+};
+#endif
 
 #endif

@@ -24,6 +24,8 @@ std::tuple<glm::ivec3, glm::ivec3> World::DecomposeGlobalCoordinate(const glm::i
 	return std::make_tuple(localCoord, regionCoord);
 }
 
+static constexpr uint64_t IS_AIR_MASK = (uint64_t)1 << (uint64_t)60;
+
 static char MAGIC[] = { (char)0xFF, 'G', 'W', 'D' };
 
 std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
@@ -45,6 +47,8 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 		return nullptr;
 	}
 	
+	world->m_boundsMin = glm::ivec3(INT_MAX);
+	world->m_boundsMax = glm::ivec3(INT_MIN);
 	const uint32_t numRegions = eg::BinRead<uint32_t>(stream);
 	for (uint32_t i = 0; i < numRegions; i++)
 	{
@@ -63,7 +67,25 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 			eg::Log(eg::LogLevel::Error, "wd", "Could not decompress voxels");
 			return nullptr;
 		}
+		
+		glm::ivec3 regionMin = region.coordinate * (int)REGION_SIZE;
+		for (uint32_t x = 0; x < REGION_SIZE; x++)
+		{
+			for (uint32_t y = 0; y < REGION_SIZE; y++)
+			{
+				for (uint32_t z = 0; z < REGION_SIZE; z++)
+				{
+					if (region.data->voxels[x][y][z] & IS_AIR_MASK)
+					{
+						world->m_boundsMin = glm::min(world->m_boundsMin, regionMin + glm::ivec3(x, y, z));
+						world->m_boundsMax = glm::max(world->m_boundsMax, regionMin + glm::ivec3(x, y, z));
+					}
+				}
+			}
+		}
 	}
+	world->m_boundsMin -= 1;
+	world->m_boundsMax += 2;
 	
 	if (!std::is_sorted(world->m_regions.begin(), world->m_regions.end()))
 	{
@@ -115,8 +137,6 @@ void World::Save(std::ostream& outStream) const
 	
 	m_entityManager->Serialize(outStream);
 }
-
-static constexpr uint64_t IS_AIR_MASK = (uint64_t)1 << (uint64_t)60;
 
 const World::Region* World::GetRegion(const glm::ivec3& coordinate) const
 {

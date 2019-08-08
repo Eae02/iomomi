@@ -11,6 +11,7 @@
 #include "Graphics/PlanarReflectionsManager.hpp"
 #include "Graphics/ParticleRenderer.hpp"
 #include "World/GravityGun.hpp"
+#include "Graphics/WaterSimulator.hpp"
 
 #include <EGame/Graphics/BloomRenderer.hpp>
 
@@ -49,6 +50,8 @@ private:
 	
 	ParticleRenderer m_particleRenderer;
 	eg::ParticleManager m_particleManager;
+	
+	WaterSimulator m_waterSimulator;
 	
 	QualityLevel m_lightingQuality = QualityLevel::Low;
 	uint32_t m_msaaSamples = 0;

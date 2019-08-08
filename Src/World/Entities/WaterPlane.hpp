@@ -1,5 +1,7 @@
 #pragma once
 
+struct ECWaterPlane { };
+
 namespace WaterPlane
 {
 	extern eg::EntitySignature EntitySignature;

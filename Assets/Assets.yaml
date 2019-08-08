@@ -56,7 +56,19 @@ assets:
   - name: Shaders/GooPlane.vs.glsl
   - name: Shaders/GooPlane.fs.glsl
   - name: Shaders/GooPlane-Emissive.fs.glsl
-  
+  - name: Shaders/Water/WaterSphere.vs.glsl
+  - name: Shaders/Water/WaterSphereBasic.fs.glsl
+  - name: Shaders/Water/WaterSphereDepth.fs.glsl
+  - name: Shaders/Water/WaterSphereAdd.fs.glsl
+  - name: Shaders/Water/WaterPost.fs.glsl
+  - name: Shaders/Water/DepthBlur.fs.glsl
+  - name: Shaders/Water/Simulation/Water0DetectClose.cs.glsl
+  - name: Shaders/Water/Simulation/Water1DensityComp.cs.glsl
+  - name: Shaders/Water/Simulation/Water2AccelComp.cs.glsl
+  - name: Shaders/Water/Simulation/Water3VelDiffusion.cs.glsl
+  - name: Shaders/Water/Simulation/Water4Collision.cs.glsl
+
+
   - name: Models/GravityCornerConvex.obj
   - name: Models/GravitySwitch.obj
   - name: Models/EnterRoom.obj

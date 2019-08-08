@@ -17,8 +17,12 @@ void RenderSettings::UpdateBuffer()
 	char* uploadMem = reinterpret_cast<char*>(uploadBuffer.Map());
 	reinterpret_cast<glm::mat4*>(uploadMem)[0] = viewProjection;
 	reinterpret_cast<glm::mat4*>(uploadMem)[1] = invViewProjection;
-	*reinterpret_cast<glm::vec3*>(uploadMem + 128) = cameraPosition;
-	*reinterpret_cast<float*>(uploadMem + 140) = gameTime;
+	reinterpret_cast<glm::mat4*>(uploadMem)[2] = viewMatrix;
+	reinterpret_cast<glm::mat4*>(uploadMem)[3] = projectionMatrix;
+	reinterpret_cast<glm::mat4*>(uploadMem)[4] = invViewMatrix;
+	reinterpret_cast<glm::mat4*>(uploadMem)[5] = invProjectionMatrix;
+	*reinterpret_cast<glm::vec3*>(uploadMem + 384) = cameraPosition;
+	*reinterpret_cast<float*>(uploadMem + 396) = gameTime;
 	uploadBuffer.Flush();
 	
 	eg::DC.CopyBuffer(uploadBuffer.buffer, m_buffer, uploadBuffer.offset, 0, BUFFER_SIZE);

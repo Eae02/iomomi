@@ -99,7 +99,7 @@ ImGuiInterface::ImGuiInterface()
 	fontTexSampler.wrapU = eg::WrapMode::ClampToEdge;
 	fontTexSampler.wrapV = eg::WrapMode::ClampToEdge;
 	
-	eg::Texture2DCreateInfo fontTexCreateInfo;
+	eg::TextureCreateInfo fontTexCreateInfo;
 	fontTexCreateInfo.flags = eg::TextureFlags::CopyDst | eg::TextureFlags::ShaderSample;
 	fontTexCreateInfo.width = fontTexWidth;
 	fontTexCreateInfo.height = fontTexHeight;

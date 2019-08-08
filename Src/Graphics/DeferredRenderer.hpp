@@ -2,6 +2,7 @@
 
 #include "Lighting/SpotLight.hpp"
 #include "Lighting/PointLight.hpp"
+#include "WaterRenderer.hpp"
 
 class DeferredRenderer
 {
@@ -48,9 +49,13 @@ public:
 		
 		eg::Texture m_emissiveTexture;
 		
-		eg::TextureRef m_outputTexture;
 		eg::Framebuffer m_lightingFramebuffer;
 		eg::Framebuffer m_emissiveFramebuffer;
+		
+		eg::Texture m_lightingOutputTexture;
+		WaterRenderer::RenderTarget m_waterRT;
+		
+		eg::TextureRef m_waterOutputTexture;
 	};
 	
 	DeferredRenderer();
@@ -59,7 +64,7 @@ public:
 	
 	void BeginEmissive(RenderTarget& target);
 	
-	void BeginLighting(RenderTarget& target, const class LightProbesManager* lightProbesManager) const;
+	void BeginLighting(RenderTarget& target) const;
 	
 	void DrawReflectionPlaneLighting(RenderTarget& target, const std::vector<struct ReflectionPlane*>& planes);
 	
@@ -68,7 +73,16 @@ public:
 	
 	void End(RenderTarget& target) const;
 	
+	void DrawWaterBasic(eg::BufferRef positionsBuffer, uint32_t numParticles) const;
+	
+	void DrawWater(RenderTarget& target, eg::BufferRef positionsBuffer, uint32_t numParticles);
+	
 	void PollSettingsChanged();
+	
+	float FragmentsUnderwater() const
+	{
+		return m_waterRenderer.FragmentsUnderwater();
+	}
 	
 	static eg::StencilState MakeStencilState(uint32_t reference)
 	{
@@ -95,4 +109,6 @@ private:
 	eg::Pipeline m_spotLightPipeline;
 	eg::Pipeline m_pointLightPipelineSoftShadows;
 	eg::Pipeline m_pointLightPipelineHardShadows;
+	
+	WaterRenderer m_waterRenderer;
 };

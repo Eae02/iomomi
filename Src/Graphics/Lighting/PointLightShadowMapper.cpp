@@ -193,7 +193,7 @@ size_t PointLightShadowMapper::AddShadowMap()
 	shadowMap.inUse = false;
 	shadowMap.lastUpdateFrame = 0;
 	
-	eg::TextureCubeCreateInfo textureCI;
+	eg::TextureCreateInfo textureCI;
 	textureCI.format = SHADOW_MAP_FORMAT;
 	textureCI.width = m_resolution;
 	textureCI.flags = eg::TextureFlags::ShaderSample | eg::TextureFlags::FramebufferAttachment;
