@@ -18,8 +18,8 @@ class GravityGun
 public:
 	GravityGun();
 	
-	void Update(class World& world, eg::ParticleManager& particleManager, const class Player& player,
-		const glm::mat4& inverseViewProj, float dt);
+	void Update(class World& world, class WaterSimulator& waterSim, eg::ParticleManager& particleManager,
+		const class Player& player, const glm::mat4& inverseViewProj, float dt);
 	
 	void Draw(eg::MeshBatch& meshBatch);
 	

@@ -218,8 +218,13 @@ DeferredRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height, ui
 	eg::FramebufferAttachment lightFBAttachments[1] = { m_lightingOutputTexture.handle };
 	m_lightingFramebuffer = eg::Framebuffer(lightFBAttachments, m_gbDepthTexture.handle);
 	
+	eg::FramebufferAttachment lightFBAttachmentsNoWater[1] = { outputTexture.handle };
+	m_lightingFramebufferNoWater = eg::Framebuffer(lightFBAttachmentsNoWater, m_gbDepthTexture.handle);
+	
 	eg::FramebufferCreateInfo emissiveFramebufferCI;
+	eg::FramebufferCreateInfo emissiveFramebufferNoWaterCI;
 	emissiveFramebufferCI.depthStencilAttachment = m_gbDepthTexture.handle;
+	emissiveFramebufferNoWaterCI.depthStencilAttachment = m_gbDepthTexture.handle;
 	
 	eg::FramebufferAttachment emissiveColorAttachments[1];
 	if (samples > 1)
@@ -237,13 +242,18 @@ DeferredRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height, ui
 		
 		emissiveFramebufferCI.colorAttachments = emissiveColorAttachments;
 		emissiveFramebufferCI.colorResolveAttachments = lightFBAttachments;
+		
+		emissiveFramebufferNoWaterCI.colorAttachments = emissiveColorAttachments;
+		emissiveFramebufferNoWaterCI.colorResolveAttachments = lightFBAttachmentsNoWater;
 	}
 	else
 	{
 		emissiveFramebufferCI.colorAttachments = lightFBAttachments;
+		emissiveFramebufferNoWaterCI.colorAttachments = lightFBAttachmentsNoWater;
 	}
 	
 	m_emissiveFramebuffer = eg::Framebuffer(emissiveFramebufferCI);
+	m_emissiveFramebufferNoWater = eg::Framebuffer(emissiveFramebufferNoWaterCI);
 	
 	m_waterRT = WaterRenderer::RenderTarget(width, height, m_lightingOutputTexture,
 		ResolvedDepthTexture(), outputTexture, outputArrayLayer);
@@ -269,12 +279,12 @@ void DeferredRenderer::BeginGeometry(RenderTarget& target) const
 	eg::DC.BeginRenderPass(rpBeginInfo);
 }
 
-void DeferredRenderer::BeginEmissive(DeferredRenderer::RenderTarget& target)
+void DeferredRenderer::BeginEmissive(DeferredRenderer::RenderTarget& target, bool hasWater)
 {
 	eg::DC.EndRenderPass();
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = target.m_emissiveFramebuffer.handle;
+	rpBeginInfo.framebuffer = hasWater ? target.m_emissiveFramebuffer.handle : target.m_emissiveFramebufferNoWater.handle;
 	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Load;
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
 	rpBeginInfo.colorAttachments[0].clearValue = eg::ColorLin(eg::Color::Black);
@@ -282,7 +292,7 @@ void DeferredRenderer::BeginEmissive(DeferredRenderer::RenderTarget& target)
 	eg::DC.BeginRenderPass(rpBeginInfo);
 }
 
-void DeferredRenderer::BeginLighting(RenderTarget& target) const
+void DeferredRenderer::BeginLighting(RenderTarget& target, bool hasWater) const
 {
 	eg::DC.EndRenderPass();
 	
@@ -296,7 +306,7 @@ void DeferredRenderer::BeginLighting(RenderTarget& target) const
 	}
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = target.m_lightingFramebuffer.handle;
+	rpBeginInfo.framebuffer = hasWater ? target.m_lightingFramebuffer.handle : target.m_lightingFramebufferNoWater.handle;
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Load;
 	rpBeginInfo.sampledDepthStencil = true;
 	

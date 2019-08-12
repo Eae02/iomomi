@@ -54,18 +54,8 @@ public:
 	
 	void Render(eg::BufferRef positionsBuffer, uint32_t numParticles, RenderTarget& renderTarget);
 	
-	float FragmentsUnderwater() const
-	{
-		return m_fragmentsUnderwater;
-	}
-	
 private:
 	eg::Buffer m_quadVB;
-	
-	eg::Buffer m_fragmentsUnderwaterSSBO;
-	eg::Buffer m_fragmentsUnderwaterDownloadBuffer;
-	uint32_t* m_fragmentsUnderwaterBufferMemory;
-	float m_fragmentsUnderwater;
 	
 	eg::Pipeline m_pipelineBasic;
 	

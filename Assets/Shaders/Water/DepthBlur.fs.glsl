@@ -1,24 +1,19 @@
 #version 450 core
 #pragma variants V1 V2
 
+#include "../Inc/Depth.glh"
+
 layout(location=0) in vec2 texCoord_in;
 
 layout(location=0) out vec2 depth_out;
 
 layout(binding=0) uniform sampler2D depthSampler;
 
-const float ZNear = 0.1;
-const float ZFar = 1000.0;
-
 #ifdef V1
 layout(binding=1) uniform sampler2D travelDepthSampler;
-float linearizeDepth(float hDepth)
-{
-	return 2.0 * ZNear * ZFar / (ZFar + ZNear - (hDepth * (ZFar - ZNear)));
-}
 #endif
 
-const int FILTER_RADIUS = 32;
+const int FILTER_RADIUS = 16;
 
 layout(push_constant) uniform PC
 {
@@ -31,7 +26,7 @@ void main()
 {
 	float centerDepth = texture(depthSampler, texCoord_in).x;
 #ifdef V1
-	centerDepth = linearizeDepth(centerDepth);
+	centerDepth = linearizeDepth(depthTo01(centerDepth));
 #endif
 	
 	float blurDist = 1.0 / centerDepth;
@@ -43,7 +38,7 @@ void main()
 		vec2 tc = texCoord_in + x * blurDir * blurDist;
 		
 #ifdef V1
-		vec2 s = vec2(linearizeDepth(texture(depthSampler, tc).x), texture(travelDepthSampler, tc).x);
+		vec2 s = vec2(linearizeDepth(depthTo01(texture(depthSampler, tc).x)), texture(travelDepthSampler, tc).x);
 #else
 		vec2 s = texture(depthSampler, tc).xy;
 #endif

@@ -20,9 +20,10 @@ add_executable(Gravity ${SOURCE_FILES} ${IMGUI_FILES})
 
 #Adds compiler specific options
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-	target_compile_options(Gravity PRIVATE -Wall -Wextra -Wshadow -pedantic --std=c++17 -Wno-unused-parameter -Wno-missing-field-initializers)
+	target_compile_options(Gravity PRIVATE -Wall -Wextra -Wshadow -pedantic -msse4.1 --std=c++17 -Wno-unused-parameter -Wno-missing-field-initializers)
+	set_source_files_properties(Src/Graphics/WaterSimulator.cpp PROPERTIES COMPILE_FLAGS "-Ofast")
 	if (NOT TARGET_WEB)
-		target_link_libraries(Gravity stdc++fs)
+		target_link_libraries(Gravity stdc++fs tbb)
 		set_target_properties(Gravity PROPERTIES
 			CXX_VISIBILITY_PRESET hidden
 			INSTALL_RPATH "$ORIGIN/rt"

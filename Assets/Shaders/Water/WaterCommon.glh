@@ -1,0 +1,1 @@
+const float PARTICLE_RADIUS = 0.3;

@@ -52,6 +52,9 @@ public:
 		eg::Framebuffer m_lightingFramebuffer;
 		eg::Framebuffer m_emissiveFramebuffer;
 		
+		eg::Framebuffer m_lightingFramebufferNoWater;
+		eg::Framebuffer m_emissiveFramebufferNoWater;
+		
 		eg::Texture m_lightingOutputTexture;
 		WaterRenderer::RenderTarget m_waterRT;
 		
@@ -62,9 +65,9 @@ public:
 	
 	void BeginGeometry(RenderTarget& target) const;
 	
-	void BeginEmissive(RenderTarget& target);
+	void BeginEmissive(RenderTarget& target, bool hasWater);
 	
-	void BeginLighting(RenderTarget& target) const;
+	void BeginLighting(RenderTarget& target, bool hasWater) const;
 	
 	void DrawReflectionPlaneLighting(RenderTarget& target, const std::vector<struct ReflectionPlane*>& planes);
 	
@@ -78,11 +81,6 @@ public:
 	void DrawWater(RenderTarget& target, eg::BufferRef positionsBuffer, uint32_t numParticles);
 	
 	void PollSettingsChanged();
-	
-	float FragmentsUnderwater() const
-	{
-		return m_waterRenderer.FragmentsUnderwater();
-	}
 	
 	static eg::StencilState MakeStencilState(uint32_t reference)
 	{

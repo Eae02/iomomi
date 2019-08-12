@@ -1,6 +1,6 @@
 #version 450 core
 
-#include "Simulation/WaterCommon.glh"
+#include "WaterCommon.glh"
 
 #define RENDER_SETTINGS_BINDING 0
 #include "../Inc/RenderSettings.glh"

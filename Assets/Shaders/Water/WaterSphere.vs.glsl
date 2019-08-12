@@ -1,6 +1,6 @@
 #version 450 core
 
-#include "Simulation/WaterCommon.glh"
+#include "WaterCommon.glh"
 
 #define RENDER_SETTINGS_BINDING 0
 #include "../Inc/RenderSettings.glh"
@@ -14,6 +14,6 @@ layout(location=1) out vec3 eyePos_out;
 void main()
 {
 	spritePos_out = position_in;
-	eyePos_out = (renderSettings.viewMatrix * vec4(transform_in, 1.0)).xyz + vec3(position_in * PARTICLE_RENDER_RADIUS, 0);
+	eyePos_out = (renderSettings.viewMatrix * vec4(transform_in, 1.0)).xyz + vec3(position_in * PARTICLE_RADIUS, 0);
 	gl_Position = renderSettings.projectionMatrix * vec4(eyePos_out, 1.0);
 }

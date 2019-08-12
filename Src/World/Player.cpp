@@ -11,6 +11,8 @@
 
 //Constants related to player physics
 static constexpr float WALK_SPEED = 4.0f;
+static constexpr float SWIM_SPEED = 5.0f;
+static constexpr float SWIM_ACCEL_TIME = 0.5f;
 static constexpr float ACCEL_TIME = 0.1f;
 static constexpr float DEACCEL_TIME = 0.05f;
 static constexpr float GRAVITY = 20;
@@ -20,8 +22,6 @@ static constexpr float MAX_VERTICAL_SPEED = 300;
 
 //Constants which derive from previous
 static const float JUMP_ACCEL = std::sqrt(2.0f * JUMP_HEIGHT * GRAVITY);
-static const float ACCEL_AMOUNT = WALK_SPEED / ACCEL_TIME;
-static constexpr float DEACCEL_AMOUNT = WALK_SPEED / DEACCEL_TIME;
 static constexpr float EYE_OFFSET = Player::EYE_HEIGHT - Player::HEIGHT / 2;
 
 Player::Player()
@@ -50,7 +50,7 @@ inline glm::quat GetRotation(float yaw, float pitch, Dir down)
 	       glm::angleAxis(pitch, glm::vec3(1, 0, 0));
 }
 
-void Player::Update(World& world, float dt)
+void Player::Update(World& world, float dt, bool underwater)
 {
 	const glm::vec3 up = -DirectionVector(m_down);
 	eg::Entity* currentPlatform = m_currentPlatform.Get();
@@ -109,39 +109,70 @@ void Player::Update(World& world, float dt)
 		}
 	}
 	
+	const glm::vec3 forward = m_rotation * glm::vec3(0, 0, -1);
+	const glm::vec3 right = m_rotation * glm::vec3(1, 0, 0);
+	
+	const bool moveForward = eg::IsButtonDown(eg::Button::W) || eg::IsButtonDown(eg::Button::CtrlrDPadUp);
+	const bool moveBack =    eg::IsButtonDown(eg::Button::S) || eg::IsButtonDown(eg::Button::CtrlrDPadDown);
+	const bool moveLeft =    eg::IsButtonDown(eg::Button::A) || eg::IsButtonDown(eg::Button::CtrlrDPadLeft);
+	const bool moveRight =   eg::IsButtonDown(eg::Button::D) || eg::IsButtonDown(eg::Button::CtrlrDPadRight);
+	
+	if (underwater)
+	{
+		m_onGround = false;
+		
+		glm::vec3 accel;
+		if (moveForward)
+			accel += forward;
+		if (moveBack)
+			accel -= forward;
+		if (moveLeft)
+			accel -= right;
+		if (moveRight)
+			accel += right;
+		
+		if (glm::length2(accel) > 0.01f)
+		{
+			accel = glm::normalize(accel) * SWIM_SPEED / SWIM_ACCEL_TIME;
+			m_velocity += accel * dt;
+		}
+		
+		//Caps the local velocity to the walking speed
+		const float speed = glm::length(m_velocity);
+		if (speed > SWIM_SPEED)
+		{
+			m_velocity *= SWIM_SPEED / speed;
+		}
+		
+		m_velocity -= m_velocity * std::min(dt * 3, 1.0f);
+	}
+	
 	//Constructs the forward and right movement vectors.
 	//These, along with up, are the basis vectors for local space.
-	auto GetDirVector = [&] (const glm::vec3& v)
-	{
-		glm::vec3 v1 = m_rotation * v;
-		return glm::normalize(v1 - glm::dot(v1, up) * up);
-	};
-	const glm::vec3 forward = GetDirVector(glm::vec3(0, 0, -1));
-	const glm::vec3 right = GetDirVector(glm::vec3(1, 0, 0));
+	const glm::vec3 forwardPlane = glm::normalize(forward - glm::dot(forward, up) * up);
+	const glm::vec3 rightPlane = glm::normalize(right - glm::dot(right, up) * up);
 	
 	//Finds the velocity vector in local space
 	float localVelVertical = glm::dot(up, m_velocity);
-	glm::vec2 localVelPlane(glm::dot(forward, m_velocity), glm::dot(right, m_velocity));
+	glm::vec2 localVelPlane(glm::dot(forwardPlane, m_velocity), glm::dot(rightPlane, m_velocity));
 	glm::vec2 localAccPlane(-eg::AxisValue(eg::ControllerAxis::LeftY), eg::AxisValue(eg::ControllerAxis::LeftX));
 	
-	if (m_gravityTransitionMode == TransitionMode::None)
+	if (m_gravityTransitionMode == TransitionMode::None && !underwater)
 	{
-		const bool moveForward = eg::IsButtonDown(eg::Button::W) || eg::IsButtonDown(eg::Button::CtrlrDPadUp);
-		const bool moveBack =    eg::IsButtonDown(eg::Button::S) || eg::IsButtonDown(eg::Button::CtrlrDPadDown);
-		const bool moveLeft =    eg::IsButtonDown(eg::Button::A) || eg::IsButtonDown(eg::Button::CtrlrDPadLeft);
-		const bool moveRight =   eg::IsButtonDown(eg::Button::D) || eg::IsButtonDown(eg::Button::CtrlrDPadRight);
+		const float accelAmount = WALK_SPEED / ACCEL_TIME;
+		const float deaccelAmount = WALK_SPEED / DEACCEL_TIME;
 		
 		if (moveForward == moveBack && std::abs(localAccPlane.x) < 1E-4f)
 		{
 			if (localVelPlane.x < 0)
 			{
-				localVelPlane.x += dt * DEACCEL_AMOUNT;
+				localVelPlane.x += dt * deaccelAmount;
 				if (localVelPlane.x > 0)
 					localVelPlane.x = 0.0f;
 			}
 			if (localVelPlane.x > 0)
 			{
-				localVelPlane.x -= dt * DEACCEL_AMOUNT;
+				localVelPlane.x -= dt * deaccelAmount;
 				if (localVelPlane.x < 0)
 					localVelPlane.x = 0.0f;
 			}
@@ -159,13 +190,13 @@ void Player::Update(World& world, float dt)
 		{
 			if (localVelPlane.y < 0)
 			{
-				localVelPlane.y += dt * DEACCEL_AMOUNT;
+				localVelPlane.y += dt * deaccelAmount;
 				if (localVelPlane.y > 0)
 					localVelPlane.y = 0.0f;
 			}
 			if (localVelPlane.y > 0)
 			{
-				localVelPlane.y -= dt * DEACCEL_AMOUNT;
+				localVelPlane.y -= dt * deaccelAmount;
 				if (localVelPlane.y < 0)
 					localVelPlane.y = 0.0f;
 			}
@@ -182,7 +213,7 @@ void Player::Update(World& world, float dt)
 		const float accelMag = glm::length(localAccPlane);
 		if (accelMag > 1E-6f)
 		{
-			localAccPlane *= ACCEL_AMOUNT / accelMag;
+			localAccPlane *= accelAmount / accelMag;
 			
 			//Increases the localAccPlane if the player is being accelerated in the opposite direction of it's current
 			// velocity. This makes direction changes snappier.
@@ -211,12 +242,19 @@ void Player::Update(World& world, float dt)
 	{
 		float gravity = GRAVITY;
 		gravity *= 1.0f + FALLING_GRAVITY_RAMP * glm::clamp(-localVelVertical, 0.0f, 1.0f);
+		if (underwater)
+			gravity *= 0.1f;
 		
 		localVelVertical = std::max(localVelVertical - gravity * dt, -MAX_VERTICAL_SPEED);
 	}
 	
+	if (m_wasUnderwater && !underwater && localVelVertical > 0)
+	{
+		localVelVertical = JUMP_ACCEL;
+	}
+	
 	//Reconstructs the world velocity vector
-	glm::vec3 velocityXZ = localVelPlane.x * forward + localVelPlane.y * right;
+	glm::vec3 velocityXZ = localVelPlane.x * forwardPlane + localVelPlane.y * rightPlane;
 	glm::vec3 velocityY = localVelVertical * up;
 	
 	m_velocity = velocityXZ + velocityY;
@@ -358,6 +396,8 @@ void Player::Update(World& world, float dt)
 	{
 		m_eyePosition = glm::mix(m_oldEyePosition, m_eyePosition, TransitionInterpol());
 	}
+	
+	m_wasUnderwater = underwater;
 }
 
 void Player::ClipAndMove(const World& world, glm::vec3 move, bool skipPlatforms)

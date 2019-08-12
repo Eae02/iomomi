@@ -8,7 +8,7 @@ class Player
 public:
 	Player();
 	
-	void Update(World& world, float dt);
+	void Update(World& world, float dt, bool underwater);
 	
 	void GetViewMatrix(glm::mat4& matrixOut, glm::mat4& inverseMatrixOut) const;
 	
@@ -99,6 +99,7 @@ private:
 	
 	bool m_onGround = false;
 	bool m_isCarrying = false;
+	bool m_wasUnderwater = false;
 	
 	enum class TransitionMode
 	{

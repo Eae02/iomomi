@@ -62,11 +62,6 @@ assets:
   - name: Shaders/Water/WaterSphereAdd.fs.glsl
   - name: Shaders/Water/WaterPost.fs.glsl
   - name: Shaders/Water/DepthBlur.fs.glsl
-  - name: Shaders/Water/Simulation/Water0DetectClose.cs.glsl
-  - name: Shaders/Water/Simulation/Water1DensityComp.cs.glsl
-  - name: Shaders/Water/Simulation/Water2AccelComp.cs.glsl
-  - name: Shaders/Water/Simulation/Water3VelDiffusion.cs.glsl
-  - name: Shaders/Water/Simulation/Water4Collision.cs.glsl
 
 
   - name: Models/GravityCornerConvex.obj
@@ -272,6 +267,11 @@ assets:
     mipShift: *MipShift
     srgb: false
     format: bc1
+
+  - name: Textures/WaterN.png
+    mipShift: *MipShift
+    srgb: false
+    format: bc5
     
   - name: Textures/GravitySwitchA.png
     mipShift: *MipShift

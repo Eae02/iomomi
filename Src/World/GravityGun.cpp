@@ -6,6 +6,7 @@
 #include "../Graphics/Materials/MeshDrawArgs.hpp"
 #include "../Settings.hpp"
 #include "../Graphics/RenderSettings.hpp"
+#include "../Graphics/WaterSimulator.hpp"
 
 #include <imgui.h>
 
@@ -100,8 +101,8 @@ static float ORB_SPEED = 25.0f;
 static eg::ColorSRGB LIGHT_COLOR = eg::ColorSRGB::FromHex(0x19ebd8);
 static float LIGHT_INTENSITY_FALL_SPEED = 30.0f;
 
-void GravityGun::Update(World& world, eg::ParticleManager& particleManager, const Player& player,
-	const glm::mat4& inverseViewProj, float dt)
+void GravityGun::Update(World& world, WaterSimulator& waterSim, eg::ParticleManager& particleManager,
+	const Player& player, const glm::mat4& inverseViewProj, float dt)
 {
 	glm::mat3 rotationMatrix = (glm::mat3_cast(player.Rotation()));
 	
@@ -182,7 +183,9 @@ void GravityGun::Update(World& world, eg::ParticleManager& particleManager, cons
 		eg::Ray viewRay = eg::Ray::UnprojectNDC(inverseViewProj, glm::vec2(0.0f));
 		RayIntersectResult intersectResult = world.RayIntersect(viewRay);
 		
-		if (intersectResult.intersected)
+		auto [waterIntersectDst, waterIntersectParticle] = waterSim.RayIntersect(viewRay);
+		
+		if (intersectResult.intersected || waterIntersectParticle != -1)
 		{
 			eg::Entity& orbEntity = world.EntityManager().AddEntity(gravityOrbSignature);
 			orbEntity.InitComponent<eg::ECParticleSystem>(&particleManager).AddEmitter(
@@ -201,8 +204,15 @@ void GravityGun::Update(World& world, eg::ParticleManager& particleManager, cons
 			orbComp.targetPos = target;
 			orbComp.timeAlive = intersectResult.distance / ORB_SPEED;
 			orbComp.lightIntensity = 15.0f;
-			if (intersectResult.entity != nullptr)
+			
+			if (waterIntersectParticle != -1 && waterIntersectDst < intersectResult.distance)
+			{
+				waterSim.ChangeGravity(waterIntersectParticle, player.CurrentDown());
+			}
+			else if (intersectResult.entity != nullptr)
+			{
 				orbComp.entityToCharge = *intersectResult.entity;
+			}
 			
 			orbEntity.InitComponent<eg::ECPosition3D>(start);
 		}

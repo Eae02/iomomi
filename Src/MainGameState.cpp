@@ -107,7 +107,7 @@ void MainGameState::DoDeferredRendering(bool useLightProbes, DeferredRenderer::R
 		auto gpuTimerEmi = eg::StartGPUTimer("Emissive");
 		auto cpuTimerEmi = eg::StartCPUTimer("Emissive");
 		
-		m_renderCtx->renderer.BeginEmissive(renderTarget);
+		m_renderCtx->renderer.BeginEmissive(renderTarget, m_waterSimulator.NumParticles() > 0);
 		
 		mDrawArgs.drawMode = MeshDrawMode::Emissive;
 		m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
@@ -118,7 +118,7 @@ void MainGameState::DoDeferredRendering(bool useLightProbes, DeferredRenderer::R
 		auto gpuTimerLight = eg::StartGPUTimer("Lighting");
 		auto cpuTimerLight = eg::StartCPUTimer("Lighting");
 		
-		m_renderCtx->renderer.BeginLighting(renderTarget);
+		m_renderCtx->renderer.BeginLighting(renderTarget, m_waterSimulator.NumParticles() > 0);
 		
 		m_renderCtx->renderer.DrawReflectionPlaneLighting(renderTarget, m_prepareDrawArgs.reflectionPlanes);
 		m_renderCtx->renderer.DrawSpotLights(renderTarget, m_prepareDrawArgs.spotLights);
@@ -130,6 +130,7 @@ void MainGameState::DoDeferredRendering(bool useLightProbes, DeferredRenderer::R
 		m_renderCtx->renderer.End(renderTarget);
 	}
 	
+	if (m_waterSimulator.NumParticles() > 0)
 	{
 		auto gpuTimerWater = eg::StartGPUTimer("Draw Water");
 		auto cpuTimerWater = eg::StartCPUTimer("Draw Water");
@@ -161,6 +162,9 @@ void MainGameState::RenderPlanarReflections(const ReflectionPlane& plane, eg::Fr
 
 void MainGameState::RunFrame(float dt)
 {
+	m_waterSimulator.WaitForUpdateCompletion();
+	m_waterSimulator.BeginUpdate(dt, m_player);
+	
 	glm::mat4 viewMatrix, inverseViewMatrix, viewProjMatrix, inverseViewProjMatrix;
 	auto UpdateViewProjMatrices = [&] ()
 	{
@@ -182,12 +186,12 @@ void MainGameState::RunFrame(float dt)
 		ECPlatform::Update(updateArgs);
 		
 		eg::SetRelativeMouseMode(m_relativeMouseMode);
-		m_player.Update(*m_world, dt);
+		m_player.Update(*m_world, dt, m_waterSimulator.NumIntersectingPlayer() > 30);
 		
 		UpdateViewProjMatrices();
 		if (m_world->playerHasGravityGun)
 		{
-			m_gravityGun.Update(*m_world, m_particleManager, m_player, inverseViewProjMatrix, dt);
+			m_gravityGun.Update(*m_world, m_waterSimulator, m_particleManager, m_player, inverseViewProjMatrix, dt);
 		}
 		
 		eg::ECParticleSystem::Update(m_world->EntityManager());
@@ -270,8 +274,6 @@ void MainGameState::RunFrame(float dt)
 			}
 		}
 	}
-	
-	m_waterSimulator.Update(dt);
 	
 	auto cpuTimerPrepare = eg::StartCPUTimer("Prepare Draw");
 	
@@ -381,8 +383,8 @@ void MainGameState::DrawOverlay(float dt)
 	m_player.DebugDraw();
 	ImGui::Text("Particles: %d", m_particleManager.ParticlesToDraw());
 	ImGui::Text("Water Spheres: %d", m_waterSimulator.NumParticles());
+	ImGui::Text("Intersect Water Spheres: %d", m_waterSimulator.NumIntersectingPlayer());
 	ImGui::Text("Reflection Planes: %d", (int)m_prepareDrawArgs.reflectionPlanes.size());
-	ImGui::Text("Underwater: %f", m_renderCtx->renderer.FragmentsUnderwater());
 	
 	ImGui::End();
 	ImGui::PopStyleVar();

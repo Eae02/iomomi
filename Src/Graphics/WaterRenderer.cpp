@@ -5,10 +5,6 @@
 constexpr uint32_t UNDERWATER_DOWNLOAD_BUFFER_SIZE = sizeof(uint32_t) * eg::MAX_CONCURRENT_FRAMES;
 
 WaterRenderer::WaterRenderer()
-	: m_fragmentsUnderwaterSSBO(eg::BufferFlags::StorageBuffer | eg::BufferFlags::CopyDst | eg::BufferFlags::CopySrc, sizeof(uint32_t), nullptr),
-	  m_fragmentsUnderwaterDownloadBuffer(eg::BufferFlags::HostAllocate | eg::BufferFlags::CopyDst | eg::BufferFlags::Download | eg::BufferFlags::MapRead,
-	                                      UNDERWATER_DOWNLOAD_BUFFER_SIZE, nullptr),
-	  m_fragmentsUnderwaterBufferMemory(static_cast<uint32_t*>(m_fragmentsUnderwaterDownloadBuffer.Map(0, UNDERWATER_DOWNLOAD_BUFFER_SIZE)))
 {
 	float quadVBData[] = { -1, -1, -1, 1, 1, -1, 1, 1 };
 	m_quadVB = eg::Buffer(eg::BufferFlags::VertexBuffer, sizeof(quadVBData), quadVBData);
@@ -84,7 +80,7 @@ struct WaterBlurPC
 };
 #pragma pack(pop)
 
-constexpr float BLUR_RADIUS_SCALE = 20.0f;
+constexpr float BLUR_RADIUS_SCALE = 25.0f;
 constexpr float BLUR_SCALE = 0.05f;
 constexpr float BLUR_DEPTH_FALLOFF = 0.01f;
 
@@ -176,9 +172,6 @@ void WaterRenderer::Render(eg::BufferRef positionsBuffer, uint32_t numParticles,
 	
 	// ** Post pass **
 	
-	eg::DC.FillBuffer(m_fragmentsUnderwaterSSBO, 0, sizeof(uint32_t), 0);
-	m_fragmentsUnderwaterSSBO.UsageHint(eg::BufferUsage::StorageBufferReadWrite, eg::ShaderAccessFlags::Fragment);
-	
 	eg::RenderPassBeginInfo rpBeginInfo;
 	rpBeginInfo.framebuffer = renderTarget.m_outputFramebuffer.handle;
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
@@ -191,17 +184,11 @@ void WaterRenderer::Render(eg::BufferRef positionsBuffer, uint32_t numParticles,
 	eg::DC.BindTexture(renderTarget.m_blurredDepthTexture2, 0, 1);
 	eg::DC.BindTexture(renderTarget.m_inputColor, 0, 2);
 	eg::DC.BindTexture(renderTarget.m_inputDepth, 0, 3);
-	eg::DC.BindStorageBuffer(m_fragmentsUnderwaterSSBO, 0, 4, 0, sizeof(uint32_t));
+	eg::DC.BindTexture(eg::GetAsset<eg::Texture>("Textures/WaterN.png"), 0, 4);
 	
 	eg::DC.Draw(0, 3, 0, 1);
 	
 	eg::DC.EndRenderPass();
-	
-	m_fragmentsUnderwater = (float)m_fragmentsUnderwaterBufferMemory[eg::CFrameIdx()] /
-		(float)(renderTarget.m_width * renderTarget.m_height);
-	
-	eg::DC.CopyBuffer(m_fragmentsUnderwaterSSBO, m_fragmentsUnderwaterDownloadBuffer,
-		0, sizeof(uint32_t) * eg::CFrameIdx(), sizeof(uint32_t));
 }
 
 WaterRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height, eg::TextureRef inputColor,

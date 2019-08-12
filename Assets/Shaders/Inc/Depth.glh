@@ -1,0 +1,24 @@
+#ifndef DEPTH_H
+#define DEPTH_H
+
+#include <EGame.glh>
+
+const float ZNear = 0.1;
+const float ZFar = 1000.0;
+
+float depthTo01(float d)
+{
+	return EG_OPENGL ? (d * 0.5 + 0.5) : d;
+}
+
+float linearizeDepth(float hDepth)
+{
+	return ZFar * ZNear / (ZFar - (hDepth * (ZFar - ZNear)));
+}
+
+float hyperDepth(float lDepth)
+{
+	return ((ZNear * ZFar) / lDepth - ZFar) / (ZNear - ZFar);
+}
+
+#endif
