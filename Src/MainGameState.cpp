@@ -82,6 +82,11 @@ void MainGameState::LoadWorld(std::istream& stream, int64_t levelIndex, const eg
 	m_plShadowMapper.InvalidateAll();
 }
 
+void MainGameState::OnDeactivate()
+{
+	m_waterSimulator.Stop();
+}
+
 void MainGameState::DoDeferredRendering(bool useLightProbes, DeferredRenderer::RenderTarget& renderTarget)
 {
 	MeshDrawArgs mDrawArgs;
@@ -157,9 +162,6 @@ void MainGameState::RenderPlanarReflections(const ReflectionPlane& plane, eg::Fr
 
 void MainGameState::RunFrame(float dt)
 {
-	m_waterSimulator.WaitForUpdateCompletion();
-	m_waterSimulator.BeginUpdate(dt, m_player);
-	
 	glm::mat4 viewMatrix, inverseViewMatrix, viewProjMatrix, inverseViewProjMatrix;
 	auto UpdateViewProjMatrices = [&] ()
 	{
@@ -215,6 +217,11 @@ void MainGameState::RunFrame(float dt)
 	{
 		eg::SetRelativeMouseMode(false);
 		UpdateViewProjMatrices();
+	}
+	
+	{
+		auto waterUpdateTimer = eg::StartCPUTimer("Water Update MT");
+		m_waterSimulator.Update(m_player);
 	}
 	
 	eg::Frustum frustum(inverseViewProjMatrix);

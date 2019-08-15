@@ -155,7 +155,7 @@ void Editor::RunFrame(float dt)
 		m_world->Save(stream);
 		stream.seekg(0, std::ios::beg);
 		mainGameState->LoadWorld(stream);
-		currentGS = mainGameState;
+		SetCurrentGS(mainGameState);
 		ImGui::End();
 		return;
 	}

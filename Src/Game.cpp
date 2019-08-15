@@ -15,15 +15,13 @@ Game::Game()
 	mainGameState = new MainGameState(m_renderCtx);
 	brdfIntegrationMap = new eg::BRDFIntegrationMap();
 	
-#ifdef NDEBUG
-	currentGS = nullptr;
-#else
-	currentGS = editor;
+#ifndef NDEBUG
+	SetCurrentGS(editor);
 #endif
 	
 	eg::console::AddCommand("ed", 0, [&] (eg::Span<const std::string_view> args)
 	{
-		currentGS = editor;
+		SetCurrentGS(editor);
 		eg::console::Hide();
 	});
 	
@@ -39,7 +37,7 @@ Game::Game()
 		std::string levelPath = GetLevelPath(levels[levelIndex].name);
 		std::ifstream levelStream(levelPath, std::ios::binary);
 		
-		currentGS = mainGameState;
+		SetCurrentGS(mainGameState);
 		mainGameState->LoadWorld(levelStream, levelIndex);
 		
 		eg::console::Hide();
@@ -76,9 +74,9 @@ void Game::RunFrame(float dt)
 	
 	DrawSettingsWindow();
 	
-	if (currentGS != nullptr)
+	if (CurrentGS() != nullptr)
 	{
-		currentGS->RunFrame(dt);
+		CurrentGS()->RunFrame(dt);
 	}
 	else
 	{

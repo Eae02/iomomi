@@ -26,6 +26,8 @@ public:
 	
 	void LoadWorld(std::istream& stream, int64_t levelIndex = -1, const eg::Entity* exitEntity = nullptr);
 	
+	void OnDeactivate() override;
+	
 private:
 	void DoDeferredRendering(bool useLightProbes, DeferredRenderer::RenderTarget& renderTarget);
 	

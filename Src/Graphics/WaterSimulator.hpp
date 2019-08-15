@@ -2,6 +2,8 @@
 
 #include <memory>
 #include <future>
+#include <thread>
+#include <mutex>
 #include "../World/Dir.hpp"
 
 class WaterSimulator
@@ -9,11 +11,16 @@ class WaterSimulator
 public:
 	WaterSimulator();
 	
+	~WaterSimulator()
+	{
+		Stop();
+	}
+	
 	void Init(const class World& world);
 	
-	void BeginUpdate(float dt, const class Player& player);
+	void Stop();
 	
-	void WaitForUpdateCompletion();
+	void Update(const class Player& player);
 	
 	//Finds an intersection between the given ray and the water.
 	// Returns a pair of distance and particleIndex.
@@ -23,8 +30,8 @@ public:
 	//Changes gravitation for all particles connected to the given particle.
 	void ChangeGravity(int particle, Dir newGravity)
 	{
-		m_changeGravityParticle = particle;
-		m_newGravity = newGravity;
+		m_changeGravityParticleMT = particle;
+		m_newGravityMT = newGravity;
 	}
 	
 	eg::BufferRef GetPositionsBuffer() const;
@@ -42,14 +49,16 @@ public:
 	}
 	
 private:
-	void Update(float dt, int changeGravityParticle, Dir newGravity);
+	void Step(float dt, const eg::AABB& playerAABB, int changeGravityParticle, Dir newGravity);
+	
+	void ThreadTarget();
 	
 	alignas(16) int32_t m_cellProcOffsets[4 * 3 * 3 * 3];
 	
 	std::mt19937 m_rng;
 	
-	bool m_canWait;
-	std::future<void> m_completeFuture;
+	std::mutex m_mutex;
+	bool m_run;
 	
 	eg::AABB m_playerAABB;
 	std::atomic_uint32_t m_numIntersectsPlayer;
@@ -57,8 +66,9 @@ private:
 	
 	uint32_t m_numParticles;
 	
-	int m_changeGravityParticle = -1;
-	Dir m_newGravity;
+	int m_changeGravityParticleMT = -1;
+	Dir m_newGravityMT;
+	std::vector<std::pair<int, Dir>> m_changeGravityParticles;
 	
 	//Memory for particle data
 	std::unique_ptr<void, eg::FreeDel> m_memory;
@@ -71,6 +81,7 @@ private:
 	float* m_particleRadius;
 	uint8_t* m_particleGravity;
 	glm::vec2* m_particleDensity;
+	glm::vec4* m_particlePosMT;
 	
 	//Stores which cell each particle belongs to
 	__m128i* m_particleCells;
@@ -105,5 +116,5 @@ private:
 	std::vector<uint16_t> m_numCloseParticles;
 	std::vector<std::array<uint16_t, MAX_CLOSE>> m_closeParticles;
 	
-	eg::MeshBatch m_meshBatch;
+	std::thread m_thread;
 };

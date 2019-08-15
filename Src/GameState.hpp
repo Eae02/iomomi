@@ -5,6 +5,9 @@ class GameState
 public:
 	virtual ~GameState() = default;
 	virtual void RunFrame(float dt) = 0;
+	virtual void OnDeactivate() { }
 };
 
-extern GameState* currentGS;
+GameState* CurrentGS();
+
+void SetCurrentGS(GameState* gs);

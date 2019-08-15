@@ -47,7 +47,6 @@ void WaterSimulator::Init(const World& world)
 	}
 	m_worldSize = world.GetBoundsMax() - world.GetBoundsMin();
 	m_world = &world;
-	m_canWait = false;
 	
 	//Copies voxel air data to m_isVoxelAir
 	m_isVoxelAir.resize(m_worldSize.x * m_worldSize.y * m_worldSize.z);
@@ -118,9 +117,11 @@ void WaterSimulator::Init(const World& world)
 	}
 	
 	m_numParticles = positions.size();
+	if (m_numParticles == 0)
+		return;
 	
 	//Allocates memory for particle data
-	size_t memoryBytes = positions.size() * (sizeof(__m128) * 5 + sizeof(uint8_t) + sizeof(float) + sizeof(glm::vec2));
+	size_t memoryBytes = positions.size() * (sizeof(__m128) * 6 + sizeof(uint8_t) + sizeof(float) + sizeof(glm::vec2));
 	m_memory.reset(std::aligned_alloc(alignof(__m128), memoryBytes));
 	
 	//Sets up SoA particle data
@@ -128,7 +129,8 @@ void WaterSimulator::Init(const World& world)
 	m_particlePos2    = m_particlePos + m_numParticles;
 	m_particleVel     = m_particlePos2 + m_numParticles;
 	m_particleVel2    = m_particleVel + m_numParticles;
-	m_particleCells   = reinterpret_cast<__m128i*>(m_particleVel2 + m_numParticles);
+	m_particlePosMT   = reinterpret_cast<glm::vec4*>(m_particleVel2 + m_numParticles);
+	m_particleCells   = reinterpret_cast<__m128i*>(m_particlePosMT + m_numParticles);
 	m_particleGravity = reinterpret_cast<uint8_t*>(m_particleCells + m_numParticles);
 	m_particleRadius = reinterpret_cast<float*>(m_particleGravity + m_numParticles);
 	m_particleDensity = reinterpret_cast<glm::vec2*>(m_particleRadius + m_numParticles);
@@ -157,7 +159,24 @@ void WaterSimulator::Init(const World& world)
 	m_numCloseParticles.resize(positions.size());
 	
 	m_positionsBuffer = eg::Buffer(eg::BufferFlags::CopyDst | eg::BufferFlags::VertexBuffer,
-	                               sizeof(float) * 4 * positions.size(), nullptr);
+	                               sizeof(float) * 4 * m_numParticles, nullptr);
+	
+	m_run = true;
+	m_thread = std::thread(&WaterSimulator::ThreadTarget, this);
+}
+
+void WaterSimulator::Stop()
+{
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		if (!m_run)
+			return;
+		m_run = false;
+	}
+	m_thread.join();
+	m_thread = { };
+	m_memory.reset();
+	m_positionsBuffer = { };
 }
 
 int WaterSimulator::CellIdx(__m128i coord4)
@@ -203,7 +222,7 @@ alignas(16) static const float gravities[6][4] =
 	{ 0, 0, -GRAVITY, 0 }
 };
 
-void WaterSimulator::Update(float dt, int changeGravityParticle, Dir newGravity)
+void WaterSimulator::Step(float dt, const eg::AABB& playerAABB, int changeGravityParticle, Dir newGravity)
 {
 	std::memset(m_cellNumParticles.data(), 0, m_cellNumParticles.size() * sizeof(uint16_t));
 	
@@ -491,7 +510,7 @@ void WaterSimulator::Update(float dt, int changeGravityParticle, Dir newGravity)
 		}
 		
 		glm::vec3 pos = *reinterpret_cast<glm::vec3*>(&m_particlePos2[a]);
-		if (m_playerAABB.Intersects(eg::AABB(pos - m_particleRadius[a], pos + m_particleRadius[a])))
+		if (playerAABB.Intersects(eg::AABB(pos - m_particleRadius[a], pos + m_particleRadius[a])))
 		{
 			m_numIntersectsPlayer++;
 		}
@@ -500,49 +519,84 @@ void WaterSimulator::Update(float dt, int changeGravityParticle, Dir newGravity)
 	});
 }
 
+static int* stepsPerSecondVar = eg::TweakVarInt("water_sps", 60, 1);
+
+void WaterSimulator::ThreadTarget()
+{
+	using Clock = std::chrono::high_resolution_clock;
+	
+	bool firstStep = true;
+	Clock::time_point lastStepEnd = Clock::now();
+	while (true)
+	{
+		eg::AABB playerAABB;
+		
+		int changeGravityParticle = -1;
+		Dir newGravity;
+		int stepsPerSecond;
+		
+		{
+			std::lock_guard<std::mutex> lock(m_mutex);
+			if (!m_run)
+				break;
+			if (!firstStep)
+			{
+				std::swap(m_particleVel2, m_particleVel);
+				std::swap(m_particlePos2, m_particlePos);
+				m_numIntersectsPlayerCopy = m_numIntersectsPlayer;
+			}
+			else
+			{
+				firstStep = false;
+			}
+			playerAABB = m_playerAABB;
+			stepsPerSecond = *stepsPerSecondVar;
+			
+			if (!m_changeGravityParticles.empty())
+			{
+				changeGravityParticle = m_changeGravityParticles.back().first;
+				newGravity = m_changeGravityParticles.back().second;
+				m_changeGravityParticles.pop_back();
+			}
+		}
+		
+		playerAABB.min.y = (playerAABB.min.y + playerAABB.max.y) / 2.0f;
+		
+		Step(1.0f / stepsPerSecond, playerAABB, changeGravityParticle, newGravity);
+		
+		std::this_thread::sleep_until(lastStepEnd + std::chrono::nanoseconds(1000000000LL / stepsPerSecond));
+		lastStepEnd = Clock::now();
+	}
+}
+
 eg::BufferRef WaterSimulator::GetPositionsBuffer() const
 {
 	return m_positionsBuffer;
 }
 
-void WaterSimulator::BeginUpdate(float dt, const Player& player)
+void WaterSimulator::Update(const Player& player)
 {
 	if (m_numParticles == 0)
 		return;
 	
-	dt = glm::clamp(dt, 1.0f / 200.0f, 1.0f / 30.0f);
-	m_canWait = true;
-	m_playerAABB = player.GetAABB();
-	m_playerAABB.min.y = (m_playerAABB.min.y + m_playerAABB.max.y) / 2.0f;
-	
-	m_completeFuture = std::async(std::launch::async, [dt, this, cgp = m_changeGravityParticle, newGrav = m_newGravity] 
 	{
-		Update(dt, cgp, newGrav);
-	});
-	
-	m_changeGravityParticle = -1;
-}
-
-void WaterSimulator::WaitForUpdateCompletion()
-{
-	if (m_numParticles == 0)
-		return;
-	
-	auto timer = eg::StartCPUTimer("Water update wait");
-	
-	if (m_canWait)
-	{
-		m_completeFuture.wait();
-		std::swap(m_particleVel2, m_particleVel);
-		std::swap(m_particlePos2, m_particlePos);
+		std::lock_guard<std::mutex> lock(m_mutex);
+		
+		m_playerAABB = player.GetAABB();
+		
+		if (m_changeGravityParticleMT != -1)
+		{
+			m_changeGravityParticles.emplace_back(m_changeGravityParticleMT, m_newGravityMT);
+			m_changeGravityParticleMT = -1;
+		}
+		
+		std::memcpy(reinterpret_cast<void*>(m_particlePosMT), m_particlePos, m_numParticles * sizeof(float) * 4);
 	}
 	
-	m_numIntersectsPlayerCopy = m_numIntersectsPlayer;
+	m_changeGravityParticleMT = -1;
 	
 	eg::UploadBuffer uploadBuffer = eg::GetTemporaryUploadBuffer(sizeof(float) * 4 * m_numParticles);
-	float* positionsOut = static_cast<float*>(uploadBuffer.Map());
-	std::memcpy(positionsOut, m_particlePos, m_numParticles * sizeof(float) * 4);
-	
+	std::memcpy(uploadBuffer.Map(), m_particlePosMT, m_numParticles * sizeof(float) * 4);
 	uploadBuffer.Flush();
 	eg::DC.CopyBuffer(uploadBuffer.buffer, m_positionsBuffer, uploadBuffer.offset, 0, uploadBuffer.range);
 	m_positionsBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
@@ -555,7 +609,7 @@ std::pair<float, int> WaterSimulator::RayIntersect(const eg::Ray& ray) const
 	for (uint32_t i = 0; i < m_numParticles; i++)
 	{
 		float dst;
-		if (ray.Intersects(eg::Sphere(*reinterpret_cast<glm::vec3*>(&m_particlePos[i]), 0.3f), dst))
+		if (ray.Intersects(eg::Sphere(glm::vec3(m_particlePosMT[i]), 0.3f), dst))
 		{
 			if (dst > 0 && dst < minDst)
 			{
