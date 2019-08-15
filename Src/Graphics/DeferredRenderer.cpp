@@ -1,5 +1,4 @@
 #include "DeferredRenderer.hpp"
-#include "Lighting/LightProbesManager.hpp"
 #include "Lighting/LightMeshes.hpp"
 #include "RenderSettings.hpp"
 #include "PlanarReflectionsManager.hpp"
@@ -60,19 +59,19 @@ void DeferredRenderer::CreatePipelines()
 	ambientStencilState.compareMask = 1;
 	ambientStencilState.reference = 0;
 	
-	eg::GraphicsPipelineCreateInfo constAmbientPipelineCI;
-	constAmbientPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
-	constAmbientPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/ConstantAmbient.fs.glsl").GetVariant(variantName);
-	constAmbientPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
-	constAmbientPipelineCI.fragmentShader.specConstants = specConstantEntries;
-	constAmbientPipelineCI.fragmentShader.specConstantsData = &m_currentSampleCount;
-	constAmbientPipelineCI.fragmentShader.specConstantsDataSize = sizeof(uint32_t);
-	constAmbientPipelineCI.frontStencilState = ambientStencilState;
-	constAmbientPipelineCI.backStencilState = ambientStencilState;
-	constAmbientPipelineCI.enableStencilTest = true;
-	m_constantAmbientPipeline = eg::Pipeline::Create(constAmbientPipelineCI);
-	m_constantAmbientPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
-	m_constantAmbientPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
+	eg::GraphicsPipelineCreateInfo ambientPipelineCI;
+	ambientPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
+	ambientPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/Ambient.fs.glsl").GetVariant(variantName);
+	ambientPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
+	ambientPipelineCI.fragmentShader.specConstants = specConstantEntries;
+	ambientPipelineCI.fragmentShader.specConstantsData = &m_currentSampleCount;
+	ambientPipelineCI.fragmentShader.specConstantsDataSize = sizeof(uint32_t);
+	ambientPipelineCI.frontStencilState = ambientStencilState;
+	ambientPipelineCI.backStencilState = ambientStencilState;
+	ambientPipelineCI.enableStencilTest = true;
+	m_ambientPipeline = eg::Pipeline::Create(ambientPipelineCI);
+	m_ambientPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
+	m_ambientPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
 	
 	eg::GraphicsPipelineCreateInfo slPipelineCI;
 	slPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/SpotLight.vs.glsl").DefaultVariant();
@@ -313,7 +312,7 @@ void DeferredRenderer::BeginLighting(RenderTarget& target, bool hasWater) const
 	eg::DC.BeginRenderPass(rpBeginInfo);
 	
 	eg::ColorLin ambientColor = eg::ColorLin(eg::ColorSRGB::FromHex(0xf6f9fc));
-	eg::DC.BindPipeline(m_constantAmbientPipeline);
+	eg::DC.BindPipeline(m_ambientPipeline);
 	eg::DC.BindTexture(target.m_gbColor1Texture, 0, 0);
 	ambientColor = ambientColor.ScaleRGB(0.2f);
 	
@@ -392,8 +391,6 @@ void DeferredRenderer::DrawPointLights(RenderTarget& target, const std::vector<P
 	}
 }
 
-extern eg::BRDFIntegrationMap* brdfIntegrationMap;
-
 void DeferredRenderer::DrawReflectionPlaneLighting(RenderTarget& target, const std::vector<ReflectionPlane*>& planes)
 {
 	if (planes.empty())
@@ -408,7 +405,7 @@ void DeferredRenderer::DrawReflectionPlaneLighting(RenderTarget& target, const s
 	eg::DC.BindTexture(target.m_gbColor1Texture, 0, 1);
 	eg::DC.BindTexture(target.m_gbColor2Texture, 0, 2);
 	eg::DC.BindTexture(target.m_gbDepthTexture, 0, 3);
-	eg::DC.BindTexture(brdfIntegrationMap->GetTexture(), 0, 4);
+	eg::DC.BindTexture(m_brdfIntegMap.GetTexture(), 0, 4);
 	
 	for (const ReflectionPlane* plane : planes)
 	{

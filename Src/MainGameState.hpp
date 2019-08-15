@@ -3,7 +3,6 @@
 #include "GameState.hpp"
 #include "Graphics/RenderContext.hpp"
 #include "Graphics/Lighting/PointLightShadowMapper.hpp"
-#include "Graphics/Lighting/LightProbesManager.hpp"
 #include "World/World.hpp"
 #include "World/Player.hpp"
 #include "World/PrepareDrawArgs.hpp"

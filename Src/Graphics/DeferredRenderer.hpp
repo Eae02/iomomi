@@ -102,11 +102,12 @@ private:
 	
 	eg::Buffer m_reflectionPlaneVertexBuffer;
 	
-	eg::Pipeline m_constantAmbientPipeline;
+	eg::Pipeline m_ambientPipeline;
 	eg::Pipeline m_reflectionPlanePipeline;
 	eg::Pipeline m_spotLightPipeline;
 	eg::Pipeline m_pointLightPipelineSoftShadows;
 	eg::Pipeline m_pointLightPipelineHardShadows;
 	
+	eg::BRDFIntegrationMap m_brdfIntegMap;
 	WaterRenderer m_waterRenderer;
 };
