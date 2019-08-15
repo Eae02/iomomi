@@ -45,6 +45,12 @@ Game::Game()
 		eg::console::Hide();
 	});
 	
+	eg::console::SetCompletionProvider("play", 0, [] (eg::Span<const std::string_view> args, eg::console::CompletionsList& list)
+	{
+		for (const Level& level : levels)
+			list.Add(level.name);
+	});
+	
 	InitializeWallShader();
 }
 

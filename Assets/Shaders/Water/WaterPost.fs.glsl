@@ -166,30 +166,39 @@ void main()
 	
 	vec3 dirToEye = normalize(cameraPos - surfacePos);
 	
-	
-	vec3 refraction = refract(-dirToEye, underwater ? -normal : normal, indexOfRefraction);
-	vec3 refractMoveVec = refraction * min((worldDepthL - depthL) * 0.2, 1.0);
-	vec3 refractPos = surfacePos + refractMoveVec;
-	
-	vec4 screenSpaceRefractCoord = renderSettings.viewProjection * vec4(refractPos, 1.0);
-	screenSpaceRefractCoord.xyz /= screenSpaceRefractCoord.w;
-	
-	vec2 refractTexcoord = (screenSpaceRefractCoord.xy + vec2(1.0)) / 2.0;
-	if (EG_VULKAN)
-		refractTexcoord.y = 1 - refractTexcoord.y;
-	refractTexcoord = clamp(refractTexcoord, vec2(0.0), vec2(1.0));
-	
-	float refractedWorldDepthH = texture(worldDepthSampler, refractTexcoord).r;
 	vec3 targetPos;
-	if (refractedWorldDepthH > depthH && !underwater)
+	if (underwater)
 	{
-		worldColor = texture(worldColorSampler, refractTexcoord).rgb;
-		worldDepthH = refractedWorldDepthH;
-		targetPos = WorldPosFromDepth(worldDepthH, refractTexcoord, renderSettings.invViewProjection);
+		targetPos = WorldPosFromDepth(worldDepthH, texCoord_in, renderSettings.invViewProjection);
 	}
 	else
 	{
-		targetPos = WorldPosFromDepth(worldDepthH, texCoord_in, renderSettings.invViewProjection);
+		vec3 refraction = refract(-dirToEye, underwater ? -normal : normal, indexOfRefraction);
+		vec3 refractMoveVec = refraction * min((worldDepthL - depthL) * 0.2, 1.0);
+		vec3 refractPos = surfacePos + refractMoveVec;
+		
+		vec4 screenSpaceRefractCoord = renderSettings.viewProjection * vec4(refractPos, 1.0);
+		screenSpaceRefractCoord.xyz /= screenSpaceRefractCoord.w;
+		
+		vec2 refractTexcoordTarget = (screenSpaceRefractCoord.xy + vec2(1.0)) / 2.0;
+		if (EG_VULKAN)
+			refractTexcoordTarget.y = 1 - refractTexcoordTarget.y;
+		refractTexcoordTarget = clamp(refractTexcoordTarget, vec2(0.0), vec2(1.0));
+		
+		vec2 refractTexcoord;
+		const int REFRACT_TRIES = 4;
+		for (int i = 0; i <= REFRACT_TRIES; i++)
+		{
+			refractTexcoord = mix(refractTexcoordTarget, texCoord_in, i / float(REFRACT_TRIES));
+			float refractedWorldDepthH = texture(worldDepthSampler, refractTexcoord).r;
+			if (refractedWorldDepthH > depthH)
+			{
+				worldDepthH = refractedWorldDepthH;
+				break;
+			}
+		}
+		worldColor = texture(worldColorSampler, refractTexcoord).rgb;
+		targetPos = WorldPosFromDepth(worldDepthH, refractTexcoord, renderSettings.invViewProjection);
 	}
 	
 	float waterTravelDist = min(depthAndTravelDist.g * 0.25, distance(targetPos, surfacePos));
@@ -222,22 +231,13 @@ void main()
 	else
 	{
 		const float MIN_FADE_DEPTH = 1.0;
-		const float MAX_FADE_DEPTH = 3.0;
+		const float MAX_FADE_DEPTH = 1.5;
 		float shore = clamp((worldDepthL - depthL - MIN_FADE_DEPTH) / (MAX_FADE_DEPTH - MIN_FADE_DEPTH), 0.0, 1.0);
 		
 		float fresnel = fresnelSchlick(max(dot(normal, dirToEye), 0.0), R0, roughness);
 		
-		vec3 lightDir   = normalize(vec3(0, 0, 0) - surfacePos);
-		vec3 viewDir    = normalize(cameraPos - surfacePos);
-		vec3 halfwayDir = normalize(lightDir + viewDir);
+		vec3 light = vec3(0.8, 0.9, 1.0) * abs(dot(normal, normalize(vec3(1, 1, 1)))) * 0.25 + 0.5;
 		
-		const vec3 lightColor = vec3(1, 0.8, 0.8);
-		
-		const float shininess = 20;
-		const float specIntensity = 10;
-		float spec = pow(max(dot(normal, halfwayDir), 0.0), shininess);
-		vec3 light = lightColor * spec * specIntensity + 0.5;
-		
-		color_out = vec4(mix(worldColor, mix(refractColor, reflectColor, fresnel) * light, shore), 1.0);
+		color_out = vec4(mix(vec3(1.0), mix(refractColor, reflectColor, fresnel), shore) * light, 1.0);
 	}
 }

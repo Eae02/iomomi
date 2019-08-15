@@ -61,7 +61,8 @@ assets:
   - name: Shaders/Water/WaterSphereDepth.fs.glsl
   - name: Shaders/Water/WaterSphereAdd.fs.glsl
   - name: Shaders/Water/WaterPost.fs.glsl
-  - name: Shaders/Water/DepthBlur.fs.glsl
+  - name: Shaders/Water/DepthBlur1P.fs.glsl
+  - name: Shaders/Water/DepthBlur2P.fs.glsl
 
 
   - name: Models/GravityCornerConvex.obj

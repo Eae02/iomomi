@@ -9,8 +9,6 @@ public:
 	
 	void Render(eg::TextureRef input, const eg::BloomRenderer::RenderTarget* bloomRenderTarget);
 	
-	float bloomIntensity = 0.5f;
-	
 private:
 	eg::Pipeline m_pipelineNoBloom;
 	eg::Pipeline m_pipelineBloom;

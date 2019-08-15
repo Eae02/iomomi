@@ -9,19 +9,17 @@
 
 #include <imgui.h>
 
-//Constants related to player physics
-static constexpr float WALK_SPEED = 4.0f;
-static constexpr float SWIM_SPEED = 5.0f;
-static constexpr float SWIM_ACCEL_TIME = 0.5f;
-static constexpr float ACCEL_TIME = 0.1f;
-static constexpr float DEACCEL_TIME = 0.05f;
-static constexpr float GRAVITY = 20;
-static constexpr float JUMP_HEIGHT = 1.1f;
-static constexpr float FALLING_GRAVITY_RAMP = 0.1f;
-static constexpr float MAX_VERTICAL_SPEED = 300;
+static float* walkSpeed       = eg::TweakVarFloat("pl_walk_speed",        4.0f,  0.0f);
+static float* swimSpeed       = eg::TweakVarFloat("pl_swim_speed",        4.0f,  0.0f);
+static float* walkAccelTime   = eg::TweakVarFloat("pl_walk_atime",        0.1f,  0.0f);
+static float* swimAccelTime   = eg::TweakVarFloat("pl_swim_atime",        0.4f,  0.0f);
+static float* walkDeaccelTime = eg::TweakVarFloat("pl_walk_datime",       0.05f, 0.0f);
+static float* swimDrag        = eg::TweakVarFloat("pl_swim_drag",         5.0f,  0.0f);
+static float* playerGravity   = eg::TweakVarFloat("pl_gravity",           20,    0.0f);
+static float* jumpHeight      = eg::TweakVarFloat("pl_jump_height",       1.1f,  0.0f);
+static float* fallGravityRamp = eg::TweakVarFloat("pl_fall_gravity_ramp", 0.1f,  0.0f);
+static float* maxYSpeed       = eg::TweakVarFloat("pl_max_yspeed",        300,   0.0f);
 
-//Constants which derive from previous
-static const float JUMP_ACCEL = std::sqrt(2.0f * JUMP_HEIGHT * GRAVITY);
 static constexpr float EYE_OFFSET = Player::EYE_HEIGHT - Player::HEIGHT / 2;
 
 Player::Player()
@@ -133,18 +131,18 @@ void Player::Update(World& world, float dt, bool underwater)
 		
 		if (glm::length2(accel) > 0.01f)
 		{
-			accel = glm::normalize(accel) * SWIM_SPEED / SWIM_ACCEL_TIME;
+			accel = glm::normalize(accel) * *swimSpeed / *swimAccelTime;
 			m_velocity += accel * dt;
 		}
 		
 		//Caps the local velocity to the walking speed
 		const float speed = glm::length(m_velocity);
-		if (speed > SWIM_SPEED)
+		if (speed > *swimSpeed)
 		{
-			m_velocity *= SWIM_SPEED / speed;
+			m_velocity *= *swimSpeed / speed;
 		}
 		
-		m_velocity -= m_velocity * std::min(dt * 3, 1.0f);
+		m_velocity -= m_velocity * std::min(dt * *swimDrag, 1.0f);
 	}
 	
 	//Constructs the forward and right movement vectors.
@@ -159,8 +157,8 @@ void Player::Update(World& world, float dt, bool underwater)
 	
 	if (m_gravityTransitionMode == TransitionMode::None && !underwater)
 	{
-		const float accelAmount = WALK_SPEED / ACCEL_TIME;
-		const float deaccelAmount = WALK_SPEED / DEACCEL_TIME;
+		const float accelAmount = *walkSpeed / *walkAccelTime;
+		const float deaccelAmount = *walkSpeed / *walkDeaccelTime;
 		
 		if (moveForward == moveBack && std::abs(localAccPlane.x) < 1E-4f)
 		{
@@ -225,32 +223,34 @@ void Player::Update(World& world, float dt, bool underwater)
 		
 		//Caps the local velocity to the walking speed
 		const float speed = glm::length(localVelPlane);
-		if (speed > WALK_SPEED)
+		if (speed > *walkSpeed)
 		{
-			localVelPlane *= WALK_SPEED / speed;
+			localVelPlane *= *walkSpeed / speed;
 		}
 	}
+	
+	const float jumpAccel = std::sqrt(2.0f * *jumpHeight * *playerGravity);
 	
 	//Updates vertical velocity
 	if ((eg::IsButtonDown(eg::Button::Space) || eg::IsButtonDown(eg::Button::CtrlrA)) &&
 	    m_gravityTransitionMode == TransitionMode::None && m_onGround)
 	{
-		localVelVertical = JUMP_ACCEL;
+		localVelVertical = jumpAccel;
 		m_onGround = false;
 	}
 	else if (currentPlatform == nullptr)
 	{
-		float gravity = GRAVITY;
-		gravity *= 1.0f + FALLING_GRAVITY_RAMP * glm::clamp(-localVelVertical, 0.0f, 1.0f);
+		float gravity = *playerGravity;
+		gravity *= 1.0f + *fallGravityRamp * glm::clamp(-localVelVertical, 0.0f, 1.0f);
 		if (underwater)
 			gravity *= 0.1f;
 		
-		localVelVertical = std::max(localVelVertical - gravity * dt, -MAX_VERTICAL_SPEED);
+		localVelVertical = std::max(localVelVertical - gravity * dt, -*maxYSpeed);
 	}
 	
 	if (m_wasUnderwater && !underwater && localVelVertical > 0)
 	{
-		localVelVertical = JUMP_ACCEL;
+		localVelVertical = jumpAccel;
 	}
 	
 	//Reconstructs the world velocity vector
@@ -408,7 +408,7 @@ void Player::ClipAndMove(const World& world, glm::vec3 move, bool skipPlatforms)
 	glm::vec3 moveES = move * toEllipsoidSpace;
 	
 	const glm::vec3 up = -DirectionVector(m_down);
-	constexpr int MAX_CLIP_ITERATIONS = 10;
+	constexpr int MAX_CLIP_ITERATIONS = 3;
 	for (int i = 0; i < MAX_CLIP_ITERATIONS; i++)
 	{
 		if (glm::length2(moveES) < 1E-6f)

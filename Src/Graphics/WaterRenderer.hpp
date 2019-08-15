@@ -61,7 +61,8 @@ private:
 	
 	eg::Pipeline m_pipelineDepthOnly;
 	eg::Pipeline m_pipelineAdditive;
-	eg::Pipeline m_pipelineBlur1;
-	eg::Pipeline m_pipelineBlur2;
+	eg::Pipeline m_pipelineBlurPass1;
+	eg::Pipeline m_pipelineBlurPass2;
+	eg::Pipeline m_pipelineBlurSinglePass;
 	eg::Pipeline m_pipelinePost;
 };

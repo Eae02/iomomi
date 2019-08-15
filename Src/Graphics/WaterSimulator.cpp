@@ -49,6 +49,7 @@ void WaterSimulator::Init(const World& world)
 	m_world = &world;
 	m_canWait = false;
 	
+	//Copies voxel air data to m_isVoxelAir
 	m_isVoxelAir.resize(m_worldSize.x * m_worldSize.y * m_worldSize.z);
 	for (int z = 0; z < m_worldSize.z; z++)
 	{
@@ -61,18 +62,20 @@ void WaterSimulator::Init(const World& world)
 		}
 	}
 	
-	m_gridCellsMin = glm::ivec3(glm::floor(glm::vec3(world.GetBoundsMin()) / INFLUENCE_RADIUS)) - 5;
-	glm::ivec3 gridCellsMax = glm::ivec3(glm::ceil(glm::vec3(world.GetBoundsMax()) / INFLUENCE_RADIUS)) + 5;
-	m_numGridCellGroups = (((gridCellsMax - m_gridCellsMin) + (CELL_GROUP_SIZE - 1)) / CELL_GROUP_SIZE);
-	m_numGridCells = m_numGridCellGroups * CELL_GROUP_SIZE;
-	m_cellNumParticles.resize(m_numGridCells.x * m_numGridCells.y * m_numGridCells.z);
+	constexpr int GRID_CELLS_MARGIN = 5;
+	m_partGridMin = glm::ivec3(glm::floor(glm::vec3(world.GetBoundsMin()) / INFLUENCE_RADIUS)) - GRID_CELLS_MARGIN;
+	glm::ivec3 partGridMax = glm::ivec3(glm::ceil(glm::vec3(world.GetBoundsMax()) / INFLUENCE_RADIUS)) + GRID_CELLS_MARGIN;
+	m_partGridNumCellGroups = ((partGridMax - m_partGridMin) + (CELL_GROUP_SIZE - 1)) / CELL_GROUP_SIZE;
+	m_partGridNumCells = m_partGridNumCellGroups * CELL_GROUP_SIZE;
+	m_cellNumParticles.resize(m_partGridNumCells.x * m_partGridNumCells.y * m_partGridNumCells.z);
 	m_cellParticles.resize(m_cellNumParticles.size());
 	
-	//Generates a set of all underwater cells
+	//Generates a vector of all underwater cells
 	std::vector<glm::ivec3> underwaterCells;
 	static eg::EntitySignature waterPlaneSignature = eg::EntitySignature::Create<ECLiquidPlane, ECWaterPlane>();
 	for (eg::Entity& waterPlaneEntity : world.EntityManager().GetEntitySet(waterPlaneSignature))
 	{
+		//Add all cells from this liquid plane to the vector
 		auto& liquidPlane = waterPlaneEntity.GetComponent<ECLiquidPlane>();
 		liquidPlane.MaybeUpdate(waterPlaneEntity, world);
 		for (glm::ivec3 cell : liquidPlane.UnderwaterCells())
@@ -85,13 +88,17 @@ void WaterSimulator::Init(const World& world)
 		m_numParticles = 0;
 		return;
 	}
+	
+	//Removes duplicates from the list of underwater cells
 	std::sort(underwaterCells.begin(), underwaterCells.end(), IVec3Compare());
 	size_t lastCell = std::unique(underwaterCells.begin(), underwaterCells.end()) - underwaterCells.begin();
 	
-	const glm::ivec3 GEN_PER_VOXEL(3, 3, 3);
+	//The number of particles to generate per underwater cell
+	const glm::ivec3 GEN_PER_VOXEL(3, 4, 3);
+	
 	std::uniform_real_distribution<float> offsetDist(0.3f, 0.7f);
 	
-	//Generates positions
+	//Generates particles
 	std::vector<glm::vec3> positions;
 	for (size_t i = 0; i < lastCell; i++)
 	{
@@ -102,7 +109,9 @@ void WaterSimulator::Init(const World& world)
 				for (int z = 0; z < GEN_PER_VOXEL.z; z++)
 				{
 					positions.push_back(
-						glm::vec3(underwaterCells[i]) + glm::vec3(x + offsetDist(m_rng), y + offsetDist(m_rng), z + offsetDist(m_rng)) / glm::vec3(GEN_PER_VOXEL));
+						glm::vec3(underwaterCells[i]) +
+						glm::vec3(x + offsetDist(m_rng), y + offsetDist(m_rng), z + offsetDist(m_rng)) / glm::vec3(GEN_PER_VOXEL)
+					);
 				}
 			}
 		}
@@ -110,27 +119,40 @@ void WaterSimulator::Init(const World& world)
 	
 	m_numParticles = positions.size();
 	
-	m_particlePos = std::make_unique<__m128[]>(positions.size());
-	m_particlePos2 = std::make_unique<__m128[]>(positions.size());
-	m_particleVel = std::make_unique<__m128[]>(positions.size());
-	m_particleVel2 = std::make_unique<__m128[]>(positions.size());
-	m_particleCells = std::make_unique<__m128i[]>(positions.size());
-	m_particleGravity.resize(positions.size());
+	//Allocates memory for particle data
+	size_t memoryBytes = positions.size() * (sizeof(__m128) * 5 + sizeof(uint8_t) + sizeof(float) + sizeof(glm::vec2));
+	m_memory.reset(std::aligned_alloc(alignof(__m128), memoryBytes));
 	
-	m_particleRadius.resize(positions.size());
+	//Sets up SoA particle data
+	m_particlePos     = reinterpret_cast<__m128*>(m_memory.get());
+	m_particlePos2    = m_particlePos + m_numParticles;
+	m_particleVel     = m_particlePos2 + m_numParticles;
+	m_particleVel2    = m_particleVel + m_numParticles;
+	m_particleCells   = reinterpret_cast<__m128i*>(m_particleVel2 + m_numParticles);
+	m_particleGravity = reinterpret_cast<uint8_t*>(m_particleCells + m_numParticles);
+	m_particleRadius = reinterpret_cast<float*>(m_particleGravity + m_numParticles);
+	m_particleDensity = reinterpret_cast<glm::vec2*>(m_particleRadius + m_numParticles);
+	if (reinterpret_cast<char*>(m_particleDensity + m_numParticles) != reinterpret_cast<char*>(m_memory.get()) + memoryBytes)
+		std::abort();
+	
+	//Generates random particle radii
 	std::uniform_real_distribution<float> radiusDist(MIN_PARTICLE_RADIUS, MAX_PARTICLE_RADIUS);
 	for (uint32_t i = 0; i < m_numParticles; i++)
 		m_particleRadius[i] = radiusDist(m_rng);
 	
-	std::fill_n(m_particleGravity.begin(), m_numParticles, (uint8_t)Dir::NegY);
-	std::memset(m_particlePos.get(), 0, sizeof(float) * 4 * positions.size());
-	std::memset(m_particleVel.get(), 0, sizeof(float) * 4 * positions.size());
+	std::fill_n(m_particleGravity, m_numParticles, (uint8_t)Dir::NegY);
+	std::memset(m_particleVel, 0, sizeof(float) * 4 * positions.size());
+	std::memset(m_particlePos, 0, sizeof(float) * 4 * positions.size());
 	
+	//Copies particle positions to m_particlePos
 	for (size_t i = 0; i < positions.size(); i++)
+	{
 		for (int j = 0; j < 3; j++)
-			reinterpret_cast<float*>(m_particlePos.get() + i)[j] = positions[i][j];
+		{
+			reinterpret_cast<float*>(m_particlePos + i)[j] = positions[i][j];
+		}
+	}
 	
-	m_particleDensity.resize(positions.size());
 	m_closeParticles.resize(positions.size());
 	m_numCloseParticles.resize(positions.size());
 	
@@ -140,14 +162,17 @@ void WaterSimulator::Init(const World& world)
 
 int WaterSimulator::CellIdx(__m128i coord4)
 {
-	glm::ivec3 coord = *reinterpret_cast<glm::ivec3*>(&coord4);
+	const int32_t* coord = reinterpret_cast<const int32_t*>(&coord4);
 	
-	if (coord.x < 0 || coord.y < 0 || coord.z < 0 || coord.x >= m_numGridCells.x || coord.y >= m_numGridCells.y || coord.z >= m_numGridCells.z)
+	if (coord[0] < 0 || coord[1] < 0 || coord[2] < 0 ||
+	    coord[0] >= m_partGridNumCells.x || coord[1] >= m_partGridNumCells.y || coord[2] >= m_partGridNumCells.z)
+	{
 		return -1;
+	}
 	
-	glm::ivec3 group = coord / CELL_GROUP_SIZE;
-	glm::ivec3 local = coord - group * CELL_GROUP_SIZE;
-	int groupIdx = group.x + group.y * m_numGridCellGroups.x + group.z * m_numGridCellGroups.x * m_numGridCellGroups.y;
+	glm::ivec3 group = glm::ivec3(coord[0], coord[1], coord[2]) / CELL_GROUP_SIZE;
+	glm::ivec3 local = glm::ivec3(coord[0], coord[1], coord[2]) - group * CELL_GROUP_SIZE;
+	int groupIdx = group.x + group.y * m_partGridNumCellGroups.x + group.z * m_partGridNumCellGroups.x * m_partGridNumCellGroups.y;
 	
 	return groupIdx * CELL_GROUP_SIZE * CELL_GROUP_SIZE * CELL_GROUP_SIZE +
 	       local.x + local.y * CELL_GROUP_SIZE + local.z * CELL_GROUP_SIZE * CELL_GROUP_SIZE;
@@ -183,29 +208,34 @@ void WaterSimulator::Update(float dt, int changeGravityParticle, Dir newGravity)
 	std::memset(m_cellNumParticles.data(), 0, m_cellNumParticles.size() * sizeof(uint16_t));
 	
 	__m128 gridCell4 = _mm_load1_ps(&INFLUENCE_RADIUS);
-	alignas(16) const int32_t gridCellsMin4[] = { m_gridCellsMin.x, m_gridCellsMin.y, m_gridCellsMin.z, 0 };
+	alignas(16) const int32_t gridCellsMin4[] = { m_partGridMin.x, m_partGridMin.y, m_partGridMin.z, 0 };
 	
+	//Partitions particles into grid cells so that detecting close particles will be faster.
 	for (uint32_t i = 0; i < m_numParticles; i++)
 	{
 		m_particleDensity[i] = glm::vec2(1.0f);
 		
-		m_particleCells[i] = _mm_sub_epi32(_mm_cvtps_epi32(_mm_floor_ps(_mm_div_ps(m_particlePos[i], gridCell4))), *reinterpret_cast<const __m128i*>(gridCellsMin4));
+		//Computes the cell to place this particle into based on the floor of the particle's position.
+		m_particleCells[i] = _mm_sub_epi32(_mm_cvtps_epi32(_mm_floor_ps(_mm_div_ps(m_particlePos[i], gridCell4))),
+			*reinterpret_cast<const __m128i*>(gridCellsMin4));
+		
+		//Adds the particle to the cell
 		int cell = CellIdx(m_particleCells[i]);
-		if (cell != -1)
+		if (cell != -1 && m_cellNumParticles[cell] < MAX_PER_PART_CELL)
 		{
-			if (m_cellNumParticles[cell] < MAX_PER_CELL)
-				m_cellParticles[cell][m_cellNumParticles[cell]++] = i;
+			m_cellParticles[cell][m_cellNumParticles[cell]++] = i;
 		}
 	}
 	
-	//Detects close particles
+	//Detects close particles by scanning the surrounding grid cells for each particle.
 	m_closeParticles.clear();
-	std::for_each_n(std::execution::par_unseq, m_particlePos.get(), m_numParticles, [&] (__m128& particlePos)
+	std::for_each_n(std::execution::par_unseq, m_particlePos, m_numParticles, [&] (__m128& particlePos)
 	{
-		uint32_t p = &particlePos - m_particlePos.get();
+		uint32_t p = &particlePos - m_particlePos;
 		__m128i centerCell = m_particleCells[p];
 		uint32_t numClose = 0;
 		
+		//Loop through neighboring cells to the one the current particle belongs to
 		for (size_t o = 0; o < std::size(m_cellProcOffsets); o += 4)
 		{
 			int cell = CellIdx(_mm_add_epi32(centerCell, *reinterpret_cast<const __m128i*>(m_cellProcOffsets + o)));
@@ -216,6 +246,7 @@ void WaterSimulator::Update(float dt, int changeGravityParticle, Dir newGravity)
 				uint16_t b = m_cellParticles[cell][i];
 				if (b != p)
 				{
+					//Check particle b for proximity
 					__m128 sep = _mm_sub_ps(particlePos, m_particlePos[b]);
 					float dist2 = _mm_cvtss_f32(_mm_dp_ps(sep, sep, 0xFF));
 					if (dist2 < INFLUENCE_RADIUS * INFLUENCE_RADIUS)
@@ -228,7 +259,8 @@ void WaterSimulator::Update(float dt, int changeGravityParticle, Dir newGravity)
 		m_numCloseParticles[p] = numClose;
 	});
 	
-	//Changes gravity for particles
+	//Changes gravity for particles.
+	// This is done by running a DFS across the graph of close particles, starting at the changed particle.
 	if (changeGravityParticle != -1)
 	{
 		std::vector<bool> seen(m_numParticles, false);
@@ -278,23 +310,27 @@ void WaterSimulator::Update(float dt, int changeGravityParticle, Dir newGravity)
 	
 	const __m128 dt4 = _mm_load1_ps(&dt);
 	
-	std::for_each_n(std::execution::par_unseq, m_particlePos.get(), m_numParticles, [&] (__m128& aPos)
+	//Accelerates particles
+	std::for_each_n(std::execution::par_unseq, m_particlePos, m_numParticles, [&] (__m128& aPos)
 	{
-		uint32_t a = &aPos - m_particlePos.get();
+		uint32_t a = &aPos - m_particlePos;
 		
+		//Initializes acceleration to the gravitational acceleration
 		const float relativeDensity = (m_particleDensity[a].x - AMBIENT_DENSITY) / m_particleDensity[a].x;
-		__m128 accel = _mm_mul_ps(_mm_load1_ps(&relativeDensity), *reinterpret_cast<const __m128*>(gravities[m_particleGravity[a]]));
+		__m128 accel = _mm_mul_ps(_mm_load1_ps(&relativeDensity),
+			*reinterpret_cast<const __m128*>(gravities[m_particleGravity[a]]));
 		
+		//Applies acceleration due to pressure
 		for (uint16_t bI = 0; bI < m_numCloseParticles[a]; bI++)
 		{
 			uint16_t b = m_closeParticles[a][bI];
 			__m128 sep = _mm_sub_ps(m_particlePos[a], m_particlePos[b]);
 			float dist2 = _mm_cvtss_f32(_mm_dp_ps(sep, sep, 0xFF));
 			
+			//Randomly seperates particles that are very close so that the pressure gradient won't be zero.
 			if (dist2 < CORE_RADIUS * CORE_RADIUS || std::abs(sep[0]) < CORE_RADIUS ||
 			    std::abs(sep[1]) < CORE_RADIUS || std::abs(sep[2]) < CORE_RADIUS)
 			{
-				// Particles too close. Pressure gradient would be zero. Impose a random separation.
 				std::uniform_real_distribution<float> offsetDist(-CORE_RADIUS / 2, CORE_RADIUS);
 				alignas(16) float offset[4] = { offsetDist(m_rng), offsetDist(m_rng), offsetDist(m_rng), 0 };
 				sep = _mm_add_ps(sep, *reinterpret_cast<__m128*>(offset));
@@ -316,6 +352,7 @@ void WaterSimulator::Update(float dt, int changeGravityParticle, Dir newGravity)
 			accel = _mm_add_ps(accel, _mm_mul_ps(sep, _mm_load1_ps(&accelScale)));
 		}
 		
+		//Applies acceleration to the particle's velocity
 		m_particleVel[a] = _mm_add_ps(m_particleVel[a], _mm_mul_ps(accel, dt4));
 	});
 	
@@ -343,11 +380,12 @@ void WaterSimulator::Update(float dt, int changeGravityParticle, Dir newGravity)
 	m_numIntersectsPlayer = 0;
 	
 	//Velocity diffusion & collision
-	std::for_each_n(std::execution::par_unseq, m_particlePos.get(), m_numParticles, [&] (__m128& aPos)
+	std::for_each_n(std::execution::par_unseq, m_particlePos, m_numParticles, [&] (__m128& aPos)
 	{
-		uint32_t a = &aPos - m_particlePos.get();
+		uint32_t a = &aPos - m_particlePos;
 		__m128 vel = m_particleVel[a];
 		
+		//Velocity diffusion
 		for (uint16_t bI = 0; bI < m_numCloseParticles[a]; bI++)
 		{
 			uint16_t b = m_closeParticles[a][bI];
@@ -361,7 +399,6 @@ void WaterSimulator::Update(float dt, int changeGravityParticle, Dir newGravity)
 			float velSep   = _mm_cvtss_f32(_mm_dp_ps(velDiff, sepDir, 0xFF));
 			if (velSep < 0.0f)
 			{
-				// Particles are approaching.
 				const float infl         = std::max(1.0f - dist / INFLUENCE_RADIUS, 0.0f);
 				const float velSepA      = _mm_cvtss_f32(_mm_dp_ps(velA, sepDir, 0xFF));
 				const float velSepB      = _mm_cvtss_f32(_mm_dp_ps(velB, sepDir, 0xFF));
@@ -373,6 +410,7 @@ void WaterSimulator::Update(float dt, int changeGravityParticle, Dir newGravity)
 			}
 		}
 		
+		//Applies the velocity to the particle's position
 		const float VEL_SCALE = 0.998f;
 		vel = _mm_mul_ps(vel, _mm_load1_ps(&VEL_SCALE));
 		m_particlePos2[a] = _mm_add_ps(m_particlePos[a], _mm_mul_ps(vel, dt4));
@@ -380,6 +418,8 @@ void WaterSimulator::Update(float dt, int changeGravityParticle, Dir newGravity)
 		alignas(16) static const float half[] = { 0.5f, 0.5f, 0.5f, 0.5f };
 		const __m128& halfM = *reinterpret_cast<const __m128*>(half);
 		
+		//Collision detection. This works by looping over all voxels close to the particle (within CHECK_RAD), then
+		// checking all faces that face from a solid voxel to an air voxel.
 		for (int tr = 0; tr < 5; tr++)
 		{
 			__m128i centerVx = _mm_cvtps_epi32(_mm_floor_ps(m_particlePos2[a]));
@@ -388,32 +428,36 @@ void WaterSimulator::Update(float dt, int changeGravityParticle, Dir newGravity)
 			__m128 displaceNormal;
 			
 			alignas(16) int32_t offset[4] = { };
-			const int CHECK_RAD = 2;
+			constexpr int CHECK_RAD = 2;
 			for (offset[2] = -CHECK_RAD; offset[2] <= CHECK_RAD; offset[2]++)
 			{
 				for (offset[1] = -CHECK_RAD; offset[1] <= CHECK_RAD; offset[1]++)
 				{
 					for (offset[0] = -CHECK_RAD; offset[0] <= CHECK_RAD; offset[0]++)
 					{
-						__m128i voxelCoord = _mm_add_epi32(centerVx, *reinterpret_cast<__m128i*>(offset));
-						if (IsVoxelAir(voxelCoord))
+						__m128i voxelCoordSolid = _mm_add_epi32(centerVx, *reinterpret_cast<__m128i*>(offset));
+						
+						//This voxel must be solid
+						if (IsVoxelAir(voxelCoordSolid))
 							continue;
 						
 						for (size_t n = 0; n < std::size(voxelNormals); n++)
 						{
 							__m128i normal = *reinterpret_cast<const __m128i*>(voxelNormals[n]);
-							if (!IsVoxelAir(_mm_add_epi32(voxelCoord, normal)))
-								continue;
 							__m128 normalF = _mm_cvtepi32_ps(normal);
 							
-							//planePoint = voxelCoord + 0.5 + normal * 0.5
+							//This voxel cannot be solid
+							if (!IsVoxelAir(_mm_add_epi32(voxelCoordSolid, normal)))
+								continue;
+							
+							//A point on the plane going through this face
 							__m128 planePoint = _mm_add_ps(
-								_mm_add_ps(_mm_cvtepi32_ps(voxelCoord), halfM),
+								_mm_add_ps(_mm_cvtepi32_ps(voxelCoordSolid), halfM),
 								_mm_mul_ps(normalF, halfM)
 							);
 							
 							float distC = _mm_cvtss_f32(_mm_dp_ps(_mm_sub_ps(m_particlePos2[a], planePoint), normalF, 0xFF));
-							float distE = distC - m_particleRadius[a];
+							float distE = distC - m_particleRadius[a] * 0.5f;
 							
 							if (distE < minDist)
 							{
@@ -422,6 +466,7 @@ void WaterSimulator::Update(float dt, int changeGravityParticle, Dir newGravity)
 								float iDotBT = _mm_cvtss_f32(_mm_dp_ps(iPos, *reinterpret_cast<const __m128*>(voxelBitangents[n]), 0xFF));
 								float iDotN = _mm_cvtss_f32(_mm_dp_ps(iPos, normalF, 0xFF));
 								
+								//Checks that the intersection actually happened on the voxel's face
 								if (std::abs(iDotT) <= 0.5f && std::abs(iDotBT) <= 0.5f && std::abs(iDotN) < 0.8f)
 								{
 									minDist = distE;
@@ -433,6 +478,7 @@ void WaterSimulator::Update(float dt, int changeGravityParticle, Dir newGravity)
 				}
 			}
 			
+			//Applies an impulse to the velocity
 			if (minDist < 0.0f)
 			{
 				float impulseScale = _mm_cvtss_f32(_mm_dp_ps(vel, displaceNormal, 0xFF)) * minDist * IMPACT_COEFFICIENT;
@@ -440,6 +486,7 @@ void WaterSimulator::Update(float dt, int changeGravityParticle, Dir newGravity)
 				vel = _mm_add_ps(vel, impulse);
 			}
 			
+			//Applies collision correction
 			m_particlePos2[a] = _mm_sub_ps(m_particlePos2[a], _mm_mul_ps(displaceNormal, _mm_load1_ps(&minDist)));
 		}
 		
@@ -460,7 +507,10 @@ eg::BufferRef WaterSimulator::GetPositionsBuffer() const
 
 void WaterSimulator::BeginUpdate(float dt, const Player& player)
 {
-	dt = 1.0f / 120.0f;
+	if (m_numParticles == 0)
+		return;
+	
+	dt = glm::clamp(dt, 1.0f / 200.0f, 1.0f / 30.0f);
 	m_canWait = true;
 	m_playerAABB = player.GetAABB();
 	m_playerAABB.min.y = (m_playerAABB.min.y + m_playerAABB.max.y) / 2.0f;
@@ -475,20 +525,23 @@ void WaterSimulator::BeginUpdate(float dt, const Player& player)
 
 void WaterSimulator::WaitForUpdateCompletion()
 {
+	if (m_numParticles == 0)
+		return;
+	
 	auto timer = eg::StartCPUTimer("Water update wait");
 	
 	if (m_canWait)
 	{
 		m_completeFuture.wait();
-		m_particleVel2.swap(m_particleVel);
-		m_particlePos2.swap(m_particlePos);
+		std::swap(m_particleVel2, m_particleVel);
+		std::swap(m_particlePos2, m_particlePos);
 	}
 	
 	m_numIntersectsPlayerCopy = m_numIntersectsPlayer;
 	
 	eg::UploadBuffer uploadBuffer = eg::GetTemporaryUploadBuffer(sizeof(float) * 4 * m_numParticles);
 	float* positionsOut = static_cast<float*>(uploadBuffer.Map());
-	std::memcpy(positionsOut, m_particlePos.get(), m_numParticles * sizeof(float) * 4);
+	std::memcpy(positionsOut, m_particlePos, m_numParticles * sizeof(float) * 4);
 	
 	uploadBuffer.Flush();
 	eg::DC.CopyBuffer(uploadBuffer.buffer, m_positionsBuffer, uploadBuffer.offset, 0, uploadBuffer.range);

@@ -1,6 +1,8 @@
 #include "PostProcessor.hpp"
 #include "../Settings.hpp"
 
+static float* bloomIntensity = eg::TweakVarFloat("bloom_intensity", 0.5f, 0);
+
 PostProcessor::PostProcessor()
 {
 	const eg::ShaderModuleAsset& fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.fs.glsl");
@@ -36,7 +38,7 @@ void PostProcessor::Render(eg::TextureRef input, const eg::BloomRenderer::Render
 		eg::DC.BindPipeline(m_pipelineBloom);
 		eg::DC.BindTexture(bloomRenderTarget->OutputTexture(), 0, 1, &m_inputSampler);
 		
-		float pc[] = { settings.exposure, bloomIntensity };
+		float pc[] = { settings.exposure, *bloomIntensity };
 		eg::DC.PushConstants(0, sizeof(pc), pc);
 	}
 	else

@@ -61,7 +61,6 @@ private:
 	eg::Texture m_renderOutputTexture;
 	
 	float m_gameTime = 0;
-	bool m_relativeMouseMode = !eg::DevMode();
 	
 	std::unique_ptr<World> m_world;
 	Player m_player;

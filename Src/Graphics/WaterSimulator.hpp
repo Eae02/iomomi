@@ -15,8 +15,12 @@ public:
 	
 	void WaitForUpdateCompletion();
 	
+	//Finds an intersection between the given ray and the water.
+	// Returns a pair of distance and particleIndex.
+	// particleIndex will be -1 if no intersection was found.
 	std::pair<float, int> RayIntersect(const eg::Ray& ray) const;
 	
+	//Changes gravitation for all particles connected to the given particle.
 	void ChangeGravity(int particle, Dir newGravity)
 	{
 		m_changeGravityParticle = particle;
@@ -30,6 +34,8 @@ public:
 		return m_numParticles;
 	}
 	
+	//Returns the number of particles intersecting the player.
+	// Used to detect when the player is underwater.
 	uint32_t NumIntersectingPlayer() const
 	{
 		return m_numIntersectsPlayerCopy;
@@ -54,22 +60,34 @@ private:
 	int m_changeGravityParticle = -1;
 	Dir m_newGravity;
 	
-	std::unique_ptr<__m128[]> m_particlePos;
-	std::unique_ptr<__m128[]> m_particlePos2;
-	std::unique_ptr<__m128[]> m_particleVel;
-	std::unique_ptr<__m128[]> m_particleVel2;
-	std::unique_ptr<__m128i[]> m_particleCells;
-	std::vector<float> m_particleRadius;
-	std::vector<uint8_t> m_particleGravity;
-	std::vector<glm::vec2> m_particleDensity;
+	//Memory for particle data
+	std::unique_ptr<void, eg::FreeDel> m_memory;
+	
+	//SoA particle data, points into m_memory
+	__m128* m_particlePos;
+	__m128* m_particlePos2;
+	__m128* m_particleVel;
+	__m128* m_particleVel2;
+	float* m_particleRadius;
+	uint8_t* m_particleGravity;
+	glm::vec2* m_particleDensity;
+	
+	//Stores which cell each particle belongs to
+	__m128i* m_particleCells;
 	
 	eg::Buffer m_positionsBuffer;
 	
-	static constexpr uint32_t MAX_PER_CELL = 512;
+	//Maximum number of particles per partition grid cell
+	static constexpr uint32_t MAX_PER_PART_CELL = 512;
+	
+	//Maximum number of close particles
 	static constexpr uint32_t MAX_CLOSE = 512;
 	
+	//For each partition cell, stores how many particles belong to that cell.
 	std::vector<uint16_t> m_cellNumParticles;
-	std::vector<std::array<uint16_t, MAX_PER_CELL>> m_cellParticles;
+	
+	//For each partition cell, stores a list of particle indices that belong to that cell.
+	std::vector<std::array<uint16_t, MAX_PER_PART_CELL>> m_cellParticles;
 	
 	__m128i m_worldMin;
 	glm::ivec3 m_worldSize;
@@ -78,9 +96,9 @@ private:
 	
 	inline bool IsVoxelAir(__m128i voxel) const;
 	
-	glm::ivec3 m_gridCellsMin;
-	glm::ivec3 m_numGridCellGroups;
-	glm::ivec3 m_numGridCells;
+	glm::ivec3 m_partGridMin;
+	glm::ivec3 m_partGridNumCellGroups;
+	glm::ivec3 m_partGridNumCells;
 	
 	inline int CellIdx(__m128i coord);
 	

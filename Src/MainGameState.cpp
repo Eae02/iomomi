@@ -16,25 +16,20 @@
 
 MainGameState* mainGameState;
 
+static int* relativeMouseMode = eg::TweakVarInt("relms", 1, 0, 1);
+
 MainGameState::MainGameState(RenderContext& renderCtx)
 	: m_renderCtx(&renderCtx)
 {
+	if (eg::DevMode())
+		*relativeMouseMode = 0;
+	
 	m_prepareDrawArgs.isEditor = false;
 	m_prepareDrawArgs.meshBatch = &m_renderCtx->meshBatch;
 	m_prepareDrawArgs.transparentMeshBatch = &m_renderCtx->transparentMeshBatch;
 	m_prepareDrawArgs.player = &m_player;
 	m_projection.SetZNear(0.02f);
 	m_projection.SetZFar(200.0f);
-	
-	eg::console::AddCommand("relms", 0, [this] (eg::Span<const std::string_view> args)
-	{
-		m_relativeMouseMode = !m_relativeMouseMode;
-	});
-	
-	eg::console::AddCommand("bloomIntensity", 1, [this] (eg::Span<const std::string_view> args)
-	{
-		m_postProcessor.bloomIntensity = std::stof(std::string(args[0]));
-	});
 	
 	eg::console::AddCommand("reload", 0, [this] (eg::Span<const std::string_view> args)
 	{
@@ -185,7 +180,7 @@ void MainGameState::RunFrame(float dt)
 		
 		ECPlatform::Update(updateArgs);
 		
-		eg::SetRelativeMouseMode(m_relativeMouseMode);
+		eg::SetRelativeMouseMode(*relativeMouseMode);
 		m_player.Update(*m_world, dt, m_waterSimulator.NumIntersectingPlayer() > 30);
 		
 		UpdateViewProjMatrices();
