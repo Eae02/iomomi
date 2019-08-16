@@ -55,6 +55,7 @@ private:
 	WaterSimulator m_waterSimulator;
 	
 	QualityLevel m_lightingQuality = QualityLevel::Low;
+	QualityLevel m_waterQuality = QualityLevel::Low;
 	uint32_t m_msaaSamples = 0;
 	
 	std::unique_ptr<DeferredRenderer::RenderTarget> m_renderTarget;

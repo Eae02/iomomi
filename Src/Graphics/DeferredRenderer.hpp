@@ -11,7 +11,7 @@ public:
 	{
 	public:
 		RenderTarget(uint32_t width, uint32_t height, uint32_t samples,
-			eg::TextureRef outputTexture, uint32_t outputArrayLayer);
+			eg::TextureRef outputTexture, uint32_t outputArrayLayer, QualityLevel waterQuality);
 		
 		uint32_t Width() const
 		{

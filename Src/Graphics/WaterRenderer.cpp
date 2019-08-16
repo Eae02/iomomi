@@ -1,6 +1,7 @@
 #include "WaterRenderer.hpp"
 #include "RenderSettings.hpp"
 #include "DeferredRenderer.hpp"
+#include "../Settings.hpp"
 
 constexpr uint32_t UNDERWATER_DOWNLOAD_BUFFER_SIZE = sizeof(uint32_t) * eg::MAX_CONCURRENT_FRAMES;
 
@@ -45,12 +46,18 @@ WaterRenderer::WaterRenderer()
 	pipelineAddCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
 	m_pipelineAdditive = eg::Pipeline::Create(pipelineAddCI);
 	
+	auto& postFS = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterPost.fs.glsl");
 	eg::GraphicsPipelineCreateInfo pipelinePostCI;
 	pipelinePostCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
-	pipelinePostCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterPost.fs.glsl").DefaultVariant();
-	m_pipelinePost = eg::Pipeline::Create(pipelinePostCI);
+	pipelinePostCI.fragmentShader = postFS.GetVariant("VStdQual");
+	m_pipelinePostStdQual = eg::Pipeline::Create(pipelinePostCI);
 	
-	CreateDepthBlurPipelines(8);
+	pipelinePostCI.fragmentShader = postFS.GetVariant("VLowQual");
+	m_pipelinePostLowQual = eg::Pipeline::Create(pipelinePostCI);
+	
+	m_currentQualityLevel = (QualityLevel)-1;
+	
+	m_normalMapTexture = &eg::GetAsset<eg::Texture>("Textures/WaterN.png");
 }
 
 void WaterRenderer::CreateDepthBlurPipelines(uint32_t samples)
@@ -71,8 +78,6 @@ void WaterRenderer::CreateDepthBlurPipelines(uint32_t samples)
 	
 	pipelineBlurCI.fragmentShader.shaderModule = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/DepthBlur1P.fs.glsl").DefaultVariant();
 	m_pipelineBlurSinglePass = eg::Pipeline::Create(pipelineBlurCI);
-	
-	m_currentBlurSampleCount = samples;
 }
 
 void WaterRenderer::RenderBasic(eg::BufferRef positionsBuffer, uint32_t numParticles) const
@@ -95,20 +100,41 @@ struct WaterBlurPC
 };
 #pragma pack(pop)
 
-static float* blurRadius          = eg::TweakVarFloat("wblur_radius", 400.0f, 0.0f);
-static float* blurDistanceFalloff = eg::TweakVarFloat("wblur_distfall", 0.05f, 0.0f);
+static float* blurRadius          = eg::TweakVarFloat("wblur_radius", 200.0f, 0.0f);
+static float* blurDistanceFalloff = eg::TweakVarFloat("wblur_distfall", 0.8f, 0.0f);
 static float* blurDepthFalloff    = eg::TweakVarFloat("wblur_depthfall", 0.05f, 0.0f);
-static int*   blurSamples         = eg::TweakVarInt("wblur_samples", 8, 0);
-static int*   useSinglePassBlur   = eg::TweakVarInt("wblur_singlepass", 0, 0, 1);
+static int* blurSinglePass        = eg::TweakVarInt("wblur_singlepass", 0, 0, 1);
+
+/*
+Water quality settings:
+vlow:  4 samples, 16-bit, Half-res, LQ-Shader
+low:   8 samples, 16-bit, Half-res, SQ-Shader
+med:   8 samples, 32-bit, Half-res, SQ-Shader
+high:  8 samples, 32-bit, Full-res, SQ-Shader
+vhigh: 12 samples, 32-bit, Full-res, SQ-Shader
+*/
+
+static constexpr QualityLevel highPrecisionMinQL = QualityLevel::Medium;
+static constexpr QualityLevel fullResolutionMinQL = QualityLevel::High;
+
+static const int blurSamplesByQuality[] = { 4, 8, 8, 8, 12 };
 
 void WaterRenderer::Render(eg::BufferRef positionsBuffer, uint32_t numParticles, RenderTarget& renderTarget)
 {
-	if (*blurSamples != m_currentBlurSampleCount)
+	if (m_currentQualityLevel != settings.waterQuality)
 	{
-		CreateDepthBlurPipelines(*blurSamples);
+		m_currentQualityLevel = settings.waterQuality;
+		CreateDepthBlurPipelines(blurSamplesByQuality[(int)m_currentQualityLevel]);
 	}
 	
-	float relBlurRad = *blurRadius / *blurSamples;
+	int blurSamples = blurSamplesByQuality[(int)m_currentQualityLevel];
+	float relBlurRad = *blurRadius / blurSamples;
+	float relDistanceFalloff = *blurDistanceFalloff / blurSamples;
+	
+	if (renderTarget.m_fullResolution)
+	{
+		relBlurRad *= 2;
+	}
 	
 	// ** First pass: Depth only **
 	
@@ -151,7 +177,7 @@ void WaterRenderer::Render(eg::BufferRef positionsBuffer, uint32_t numParticles,
 	
 	renderTarget.m_travelDepthTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 	
-	if (*useSinglePassBlur)
+	if (*blurSinglePass)
 	{
 		// ** Single pass depth blur **
 		eg::RenderPassBeginInfo depthBlurBeginInfo;
@@ -162,7 +188,7 @@ void WaterRenderer::Render(eg::BufferRef positionsBuffer, uint32_t numParticles,
 		WaterBlurPC blurPC;
 		blurPC.blurDir = glm::vec2(relBlurRad / renderTarget.m_width, relBlurRad / renderTarget.m_height);
 		blurPC.blurDepthFalloff = *blurDepthFalloff;
-		blurPC.blurDistanceFalloff = *blurDistanceFalloff;
+		blurPC.blurDistanceFalloff = relDistanceFalloff;
 		
 		eg::DC.BindPipeline(m_pipelineBlurSinglePass);
 		eg::DC.PushConstants(0, blurPC);
@@ -184,7 +210,7 @@ void WaterRenderer::Render(eg::BufferRef positionsBuffer, uint32_t numParticles,
 		WaterBlurPC blurPC;
 		blurPC.blurDir = glm::vec2(0, relBlurRad / renderTarget.m_height);
 		blurPC.blurDepthFalloff = *blurDepthFalloff;
-		blurPC.blurDistanceFalloff = *blurDistanceFalloff;
+		blurPC.blurDistanceFalloff = relDistanceFalloff;
 		
 		eg::DC.BindPipeline(m_pipelineBlurPass1);
 		eg::DC.PushConstants(0, blurPC);
@@ -205,7 +231,7 @@ void WaterRenderer::Render(eg::BufferRef positionsBuffer, uint32_t numParticles,
 		
 		blurPC.blurDir = glm::vec2(relBlurRad / renderTarget.m_width, 0);
 		blurPC.blurDepthFalloff = *blurDepthFalloff;
-		blurPC.blurDistanceFalloff = *blurDistanceFalloff;
+		blurPC.blurDistanceFalloff = relDistanceFalloff;
 		
 		eg::DC.BindPipeline(m_pipelineBlurPass2);
 		eg::DC.PushConstants(0, blurPC);
@@ -220,19 +246,24 @@ void WaterRenderer::Render(eg::BufferRef positionsBuffer, uint32_t numParticles,
 	
 	// ** Post pass **
 	
+	bool useLowQualShader = settings.waterQuality == QualityLevel::VeryLow;
+	
 	eg::RenderPassBeginInfo rpBeginInfo;
 	rpBeginInfo.framebuffer = renderTarget.m_outputFramebuffer.handle;
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
 	rpBeginInfo.colorAttachments[0].clearValue = eg::ColorSRGB::FromHex(0x0c2b46);
 	eg::DC.BeginRenderPass(rpBeginInfo);
 	
-	eg::DC.BindPipeline(m_pipelinePost);
+	eg::DC.BindPipeline(useLowQualShader ? m_pipelinePostLowQual : m_pipelinePostStdQual);
 	
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 	eg::DC.BindTexture(renderTarget.m_blurredDepthTexture2, 0, 1);
 	eg::DC.BindTexture(renderTarget.m_inputColor, 0, 2);
 	eg::DC.BindTexture(renderTarget.m_inputDepth, 0, 3);
-	eg::DC.BindTexture(eg::GetAsset<eg::Texture>("Textures/WaterN.png"), 0, 4);
+	if (!useLowQualShader)
+	{
+		eg::DC.BindTexture(*m_normalMapTexture, 0, 4);
+	}
 	
 	eg::DC.Draw(0, 3, 0, 1);
 	
@@ -240,19 +271,28 @@ void WaterRenderer::Render(eg::BufferRef positionsBuffer, uint32_t numParticles,
 }
 
 WaterRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height, eg::TextureRef inputColor,
-	eg::TextureRef inputDepth, eg::TextureRef outputTexture, uint32_t outputArrayLayer)
-	: m_width(width), m_height(height), m_inputColor(inputColor), m_inputDepth(inputDepth),
-	  m_outputTexture(outputTexture)
+	eg::TextureRef inputDepth, eg::TextureRef outputTexture, uint32_t outputArrayLayer, QualityLevel waterQuality)
+	: m_width(width), m_height(height), m_inputColor(inputColor), m_inputDepth(inputDepth), m_outputTexture(outputTexture)
 {
+	bool highPrecision = waterQuality >= highPrecisionMinQL;
+	m_fullResolution = waterQuality >= fullResolutionMinQL;
+	if (!m_fullResolution)
+	{
+		m_width /= 2;
+		m_height /= 2;
+	}
+	
 	eg::SamplerDescription fbSamplerDesc;
 	fbSamplerDesc.wrapU = eg::WrapMode::ClampToEdge;
 	fbSamplerDesc.wrapV = eg::WrapMode::ClampToEdge;
 	fbSamplerDesc.wrapW = eg::WrapMode::ClampToEdge;
+	fbSamplerDesc.minFilter = eg::TextureFilter::Linear;
+	fbSamplerDesc.magFilter = eg::TextureFilter::Linear;
 	
 	eg::TextureCreateInfo depthTextureCI;
 	depthTextureCI.format = eg::Format::Depth32;
-	depthTextureCI.width = width;
-	depthTextureCI.height = height;
+	depthTextureCI.width = m_width;
+	depthTextureCI.height = m_height;
 	depthTextureCI.mipLevels = 1;
 	depthTextureCI.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample;
 	depthTextureCI.defaultSamplerDescription = &fbSamplerDesc;
@@ -262,9 +302,9 @@ WaterRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height, eg::T
 	
 	
 	eg::TextureCreateInfo travelDepthTextureCI;
-	travelDepthTextureCI.format = eg::Format::R32_Float;
-	travelDepthTextureCI.width = width;
-	travelDepthTextureCI.height = height;
+	travelDepthTextureCI.format = highPrecision ? eg::Format::R32_Float : eg::Format::R16_Float;
+	travelDepthTextureCI.width = m_width;
+	travelDepthTextureCI.height = m_height;
 	travelDepthTextureCI.mipLevels = 1;
 	travelDepthTextureCI.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample;
 	travelDepthTextureCI.defaultSamplerDescription = &fbSamplerDesc;
@@ -275,9 +315,9 @@ WaterRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height, eg::T
 	
 	
 	eg::TextureCreateInfo blurTextureCI;
-	blurTextureCI.format = eg::Format::R32G32_Float;
-	blurTextureCI.width = width;
-	blurTextureCI.height = height;
+	blurTextureCI.format = highPrecision ? eg::Format::R32G32_Float : eg::Format::R16G16_Float;
+	blurTextureCI.width = m_width;
+	blurTextureCI.height = m_height;
 	blurTextureCI.mipLevels = 1;
 	blurTextureCI.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample;
 	blurTextureCI.defaultSamplerDescription = &fbSamplerDesc;

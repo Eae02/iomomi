@@ -58,6 +58,7 @@ void LoadSettings()
 	DecodeQualityLevel(settingsNode["reflectionsQuality"].as<std::string>("medium"), settings.reflectionsQuality);
 	DecodeQualityLevel(settingsNode["shadowQuality"].as<std::string>("medium"), settings.shadowQuality);
 	DecodeQualityLevel(settingsNode["lightingQuality"].as<std::string>("medium"), settings.lightingQuality);
+	DecodeQualityLevel(settingsNode["waterQuality"].as<std::string>("medium"), settings.waterQuality);
 	settings.msaaSamples = settingsNode["msaaSamples"].as<uint32_t>(1);
 	settings.fieldOfViewDeg = settingsNode["fieldOfView"].as<float>(80.0f);
 	settings.exposure = settingsNode["exposure"].as<float>(1.2f);
@@ -69,18 +70,19 @@ void LoadSettings()
 #endif
 }
 
+static const char* textureQualityNames[] = { "low", "medium", "high" };
+static const char* qualityNames[] = { "veryLow", "low", "medium", "high", "veryHigh" };
+
 void SaveSettings()
 {
 #ifndef __EMSCRIPTEN__
-	const char* textureQualityNames[] = { "low", "medium", "high" };
-	const char* qualityNames[] = { "veryLow", "low", "medium", "high", "veryHigh" };
-	
 	YAML::Emitter emitter;
 	emitter << YAML::BeginMap;
 	emitter << YAML::Key << "textureQuality" << YAML::Value << textureQualityNames[(int)settings.textureQuality];
 	emitter << YAML::Key << "reflectionsQuality" << YAML::Value << qualityNames[(int)settings.reflectionsQuality];
 	emitter << YAML::Key << "shadowQuality" << YAML::Value << qualityNames[(int)settings.shadowQuality];
 	emitter << YAML::Key << "lightingQuality" << YAML::Value << qualityNames[(int)settings.lightingQuality];
+	emitter << YAML::Key << "waterQuality" << YAML::Value << qualityNames[(int)settings.waterQuality];
 	emitter << YAML::Key << "msaaSamples" << YAML::Value << settings.msaaSamples;
 	emitter << YAML::Key << "fieldOfView" << YAML::Value << settings.fieldOfViewDeg;
 	emitter << YAML::Key << "exposure" << YAML::Value << settings.exposure;
@@ -149,6 +151,19 @@ void OptCommand(eg::Span<const std::string_view> args)
 		else
 		{
 			DecodeQualityLevel(args[1], settings.lightingQuality);
+			SettingsChanged();
+		}
+	}
+	else if (args[0] == "waterQuality")
+	{
+		if (args.size() == 1)
+		{
+			eg::Log(eg::LogLevel::Info, "opt", "Water Quality: {0}",
+			        qualityLevelStrings[(int)settings.waterQuality]);
+		}
+		else
+		{
+			DecodeQualityLevel(args[1], settings.waterQuality);
 			SettingsChanged();
 		}
 	}
@@ -227,6 +242,32 @@ void OptCommand(eg::Span<const std::string_view> args)
 	}
 }
 
+static const char* commands[] =
+{
+	"reflQuality", "shadowQuality", "lightingQuality", "waterQuality", "fov", "msaa", "exposure", "lookSensitivityMS",
+	"lookSensMS", "lookSensitivityGP", "lookSensGP", "lookInvY"
+};
+
+static const char* qualityCommands[] =
+{
+	"reflQuality", "shadowQuality", "lightingQuality", "waterQuality"
+};
+
+void OptCommandCompleter1(eg::Span<const std::string_view> words, eg::console::CompletionsList& list)
+{
+	for (const char* cmd : commands)
+		list.Add(cmd);
+}
+
+void OptCommandCompleter2(eg::Span<const std::string_view> words, eg::console::CompletionsList& list)
+{
+	if (eg::Contains(qualityCommands, words[1]))
+	{
+		for (const char* quality : qualityNames)
+			list.Add(quality);
+	}
+}
+
 bool settingsWindowVisible = false;
 
 void OptWndCommand(eg::Span<const std::string_view> args)
@@ -259,6 +300,8 @@ void DrawSettingsWindow()
 			if (ImGui::Combo("Reflections Quality", reinterpret_cast<int*>(&settings.reflectionsQuality), QUALITY_SETTINGS_STR))
 				SettingsChanged();
 			if (ImGui::Combo("Lighting Quality", reinterpret_cast<int*>(&settings.lightingQuality), QUALITY_SETTINGS_STR))
+				SettingsChanged();
+			if (ImGui::Combo("Water Quality", reinterpret_cast<int*>(&settings.waterQuality), QUALITY_SETTINGS_STR))
 				SettingsChanged();
 			/*
 			int curMSAA = (int)std::log2(settings.msaaSamples);

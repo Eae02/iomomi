@@ -244,6 +244,12 @@ void MainGameState::RunFrame(float dt)
 			m_renderTarget.reset();
 			m_bloomRenderTarget.reset();
 		}
+		
+		if (m_waterQuality != settings.waterQuality)
+		{
+			m_renderTarget.reset();
+			m_waterQuality = settings.waterQuality;
+		}
 	}
 	
 	GravityCornerLightMaterial::instance.Update(dt);
@@ -263,7 +269,7 @@ void MainGameState::RunFrame(float dt)
 		m_renderOutputTexture = eg::Texture::Create2D(textureCI);
 		
 		m_renderTarget = std::make_unique<DeferredRenderer::RenderTarget>((uint32_t)eg::CurrentResolutionX(),
-			(uint32_t)eg::CurrentResolutionY(), settings.msaaSamples, m_renderOutputTexture, 0);
+			(uint32_t)eg::CurrentResolutionY(), settings.msaaSamples, m_renderOutputTexture, 0, m_waterQuality);
 		
 		if (settings.BloomEnabled())
 		{

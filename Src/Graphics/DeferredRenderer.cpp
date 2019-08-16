@@ -151,7 +151,7 @@ void DeferredRenderer::CreatePipelines()
 }
 
 DeferredRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height, uint32_t samples,
-	eg::TextureRef outputTexture, uint32_t outputArrayLayer)
+	eg::TextureRef outputTexture, uint32_t outputArrayLayer, QualityLevel waterQuality)
 {
 	m_width = width;
 	m_height = height;
@@ -255,7 +255,7 @@ DeferredRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height, ui
 	m_emissiveFramebufferNoWater = eg::Framebuffer(emissiveFramebufferNoWaterCI);
 	
 	m_waterRT = WaterRenderer::RenderTarget(width, height, m_lightingOutputTexture,
-		ResolvedDepthTexture(), outputTexture, outputArrayLayer);
+		ResolvedDepthTexture(), outputTexture, outputArrayLayer, waterQuality);
 }
 
 void DeferredRenderer::PollSettingsChanged()

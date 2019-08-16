@@ -34,7 +34,6 @@ assets:
   - name: Shaders/LightStrip.vs.glsl
   - name: Shaders/LightStrip.fs.glsl
   - name: Shaders/Lighting/Ambient.fs.glsl
-  - name: Shaders/Lighting/ConstantAmbient.fs.glsl
   - name: Shaders/Lighting/SpotLight.vs.glsl
   - name: Shaders/Lighting/SpotLight.fs.glsl
   - name: Shaders/Lighting/PointLight.vs.glsl

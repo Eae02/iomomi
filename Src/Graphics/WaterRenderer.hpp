@@ -2,6 +2,8 @@
 
 #include <EGame/EG.hpp>
 
+#include "QualityLevel.hpp"
+
 class WaterRenderer
 {
 public:
@@ -11,7 +13,7 @@ public:
 		friend class WaterRenderer;
 		
 		RenderTarget(uint32_t width, uint32_t height, eg::TextureRef inputColor, eg::TextureRef inputDepth,
-			eg::TextureRef outputTexture, uint32_t outputArrayLayer);
+			eg::TextureRef outputTexture, uint32_t outputArrayLayer, QualityLevel waterQuality);
 		
 		RenderTarget() = default;
 		
@@ -23,6 +25,8 @@ public:
 	private:
 		uint32_t m_width;
 		uint32_t m_height;
+		
+		bool m_fullResolution;
 		
 		eg::TextureRef m_inputColor;
 		eg::TextureRef m_inputDepth;
@@ -57,7 +61,7 @@ public:
 private:
 	void CreateDepthBlurPipelines(uint32_t samples);
 	
-	uint32_t m_currentBlurSampleCount;
+	QualityLevel m_currentQualityLevel;
 	
 	eg::Buffer m_quadVB;
 	
@@ -68,5 +72,8 @@ private:
 	eg::Pipeline m_pipelineBlurPass1;
 	eg::Pipeline m_pipelineBlurPass2;
 	eg::Pipeline m_pipelineBlurSinglePass;
-	eg::Pipeline m_pipelinePost;
+	eg::Pipeline m_pipelinePostLowQual;
+	eg::Pipeline m_pipelinePostStdQual;
+	
+	eg::Texture* m_normalMapTexture;
 };

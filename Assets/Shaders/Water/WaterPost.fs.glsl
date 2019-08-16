@@ -1,5 +1,7 @@
 #version 450 core
 
+#pragma variants VStdQual VLowQual
+
 #include <EGame.glh>
 #include <Deferred.glh>
 
@@ -15,23 +17,10 @@ layout(location=0) out vec4 color_out;
 layout(binding=1) uniform sampler2D waterDepthSampler;
 layout(binding=2) uniform sampler2D worldColorSampler;
 layout(binding=3) uniform sampler2D worldDepthSampler;
+
+#ifdef VStdQual
 layout(binding=4) uniform sampler2D normalMapSampler;
-
-const float C1 = 0.429043;
-const float C2 = 0.511664;
-const float C3 = 0.743125;
-const float C4 = 0.886227;
-const float C5 = 0.247708;
-
-const vec3 L00  = vec3( 0.7870665,  0.9379944,  0.9799986);
-const vec3 L1m1 = vec3( 0.4376419,  0.5579443,  0.7024107);
-const vec3 L10  = vec3(-0.1020717, -0.1824865, -0.2749662);
-const vec3 L11  = vec3( 0.4543814,  0.3750162,  0.1968642);
-const vec3 L2m2 = vec3( 0.1841687,  0.1396696,  0.0491580);
-const vec3 L2m1 = vec3(-0.1417495, -0.2186370, -0.3132702);
-const vec3 L20  = vec3(-0.3890121, -0.4033574, -0.3639718);
-const vec3 L21  = vec3( 0.0872238,  0.0744587,  0.0353051);
-const vec3 L22  = vec3( 0.6662600,  0.6706794,  0.5246173);
+#endif
 
 const float R0 = 0.03;
 const float roughness = 0.2;
@@ -64,20 +53,6 @@ float fresnelSchlick(float cosT, float F0, float roughness)
 	return F0 + (max(1.0 - roughness, F0) - F0) * pow(1.0 - cosT, 5.0);
 }
 
-vec3 sh(vec3 dir)
-{
-	return C1 * L22 * (dir.x * dir.x - dir.y * dir.y) +
-	                  C3 * L20 * dir.z * dir.z +
-	                  C4 * L00 -
-	                  C5 * L20 +
-	                  2.0 * C1 * L2m2 * dir.x * dir.y +
-	                  2.0 * C1 * L21  * dir.x * dir.z +
-	                  2.0 * C1 * L2m1 * dir.y * dir.z +
-	                  2.0 * C2 * L11  * dir.x +
-	                  2.0 * C2 * L1m1 * dir.y +
-	                  2.0 * C2 * L10  * dir.z;
-}
-
 vec3 getEyePosDepth(vec2 screenCoord, float depthH)
 {
 	vec4 h = vec4(screenCoord * 2.0 - vec2(1.0), EG_OPENGL ? (depthH * 2.0 - 1.0) : depthH, 1.0);
@@ -104,24 +79,22 @@ void main()
 	vec2 pixelSize = 1.0 / vec2(textureSize(waterDepthSampler, 0));
 	
 	vec2 depthAndTravelDist = texture(waterDepthSampler, texCoord_in).rg;
-	float depthL = depthAndTravelDist.r;
 	
-	bool underwater = depthL < 2.0;
+	bool underwater = depthAndTravelDist.r < 2.0;
 	
 	vec3 worldColor = texture(worldColorSampler, texCoord_in).rgb;
 	
-	float depthH = hyperDepth(depthL);
+	float depthH = hyperDepth(depthAndTravelDist.r);
 	float worldDepthH = texture(worldDepthSampler, texCoord_in).r;
 	if (worldDepthH < depthH)
 	{
-		//if (depthH < 0.999)
-		//	color_out = vec4(0.5, 0.5, 1.0, 1.0);
-		//else
-			color_out = vec4(worldColor, 1.0);
+		color_out = vec4(worldColor, 1.0);
 		return;
 	}
 	
+	vec3 oriWorldColor = worldColor;
 	float worldDepthL = linearizeDepth(worldDepthH);
+	float fadeDepth = min(depthAndTravelDist.g * 0.25, worldDepthL - depthAndTravelDist.r);
 	
 	vec3 surfacePos = WorldPosFromDepth(depthH, texCoord_in, renderSettings.invViewProjection);
 	
@@ -143,6 +116,10 @@ void main()
 	}
 	
 	vec3 plainNormal = normalize((renderSettings.invViewMatrix * vec4(cross(ddy, ddx), 0.0)).xyz);
+	
+#ifdef VLowQual
+	vec3 normal = plainNormal;
+#else
 	vec3 plainTangent = normalize((renderSettings.invViewMatrix * vec4(ddy, 0.0)).xyz);
 	mat3 tbnMatrix = mat3(plainTangent, cross(plainTangent, plainNormal), plainNormal);
 	
@@ -161,20 +138,20 @@ void main()
 	const float nmStrength = 0.5;
 	normalTS.xy *= nmStrength;
 	vec3 normal = normalize(tbnMatrix * normalTS);
+#endif
 	
 	vec3 cameraPos = renderSettings.invViewMatrix[3].xyz;
 	
 	vec3 dirToEye = normalize(cameraPos - surfacePos);
 	
-	vec3 targetPos;
-	if (underwater)
-	{
-		targetPos = WorldPosFromDepth(worldDepthH, texCoord_in, renderSettings.invViewProjection);
-	}
-	else
+	vec3 targetPos = WorldPosFromDepth(worldDepthH, texCoord_in, renderSettings.invViewProjection);
+	
+#ifdef VStdQual
+	//Refraction
+	if (!underwater)
 	{
 		vec3 refraction = refract(-dirToEye, underwater ? -normal : normal, indexOfRefraction);
-		vec3 refractMoveVec = refraction * min((worldDepthL - depthL) * 0.2, 1.0);
+		vec3 refractMoveVec = refraction * min((worldDepthL - depthAndTravelDist.r) * 0.2, 1.0);
 		vec3 refractPos = surfacePos + refractMoveVec;
 		
 		vec4 screenSpaceRefractCoord = renderSettings.viewProjection * vec4(refractPos, 1.0);
@@ -199,28 +176,13 @@ void main()
 		}
 		worldColor = texture(worldColorSampler, refractTexcoord).rgb;
 		targetPos = WorldPosFromDepth(worldDepthH, refractTexcoord, renderSettings.invViewProjection);
+		depthAndTravelDist = texture(waterDepthSampler, refractTexcoord).rg;
 	}
+#endif
 	
 	float waterTravelDist = min(depthAndTravelDist.g * 0.25, distance(targetPos, surfacePos));
 	
-	//targetPos = reconstructWorldPos(refractedTDepth_H, refractTexcoord);
-	/*
-	if (!underwater)
-	{
-		waterTravelDist = distance(position_in, targetPos);
-	}*/
-	
-	//vec3 distortMoveVec = waterUp * (1.0 - dot(normal, waterUp));
-	
-	//The vector to move by to get to the reflection coordinate
-	//vec3 reflectMoveVec = distortMoveVec * reflectDistortionFactor;
-	
-	//Finds the reflection coordinate in screen space
-	//vec4 screenSpaceReflectCoord = renderSettings.viewProj * vec4(position_in + reflectMoveVec, 1.0);
-	//screenSpaceReflectCoord.xyz /= screenSpaceReflectCoord.w;
-	
-	//vec3 reflectColor = texture(reflectionMap, (screenSpaceReflectCoord.xy + vec2(1.0)) / 2.0).xyz;
-	vec3 reflectColor = vec3(0.5, 0.7, 0.8); sh(reflect(dirToEye, normal));
+	vec3 reflectColor = vec3(0.5, 0.7, 0.8);
 	
 	vec3 refractColor = doColorExtinction(worldColor, waterTravelDist);
 	
@@ -230,14 +192,21 @@ void main()
 	}
 	else
 	{
-		const float MIN_FADE_DEPTH = 1.0;
-		const float MAX_FADE_DEPTH = 1.5;
-		float shore = clamp((worldDepthL - depthL - MIN_FADE_DEPTH) / (MAX_FADE_DEPTH - MIN_FADE_DEPTH), 0.0, 1.0);
+		const float FOAM_FADE_1 = 0.3;
+		const float FOAM_FADE_0 = 0.5;
+		float foam = clamp((fadeDepth - FOAM_FADE_1) / (FOAM_FADE_0 - FOAM_FADE_1), 0.0, 1.0);
+		
+		const float SHORE_FADE_1 = 0.0;
+		const float SHORE_FADE_0 = 0.2;
+		float shore = clamp((fadeDepth - FOAM_FADE_1) / (FOAM_FADE_0 - FOAM_FADE_1), 0.0, 1.0);
 		
 		float fresnel = fresnelSchlick(max(dot(normal, dirToEye), 0.0), R0, roughness);
 		
 		vec3 light = vec3(0.8, 0.9, 1.0) * abs(dot(normal, normalize(vec3(1, 1, 1)))) * 0.25 + 0.5;
+		vec3 waterColor = mix(refractColor, reflectColor, fresnel) * light;
 		
-		color_out = vec4(mix(vec3(1.0), mix(refractColor, reflectColor, fresnel), shore) * light, 1.0);
+		vec3 foamColor = vec3(1.0);
+		
+		color_out = vec4(mix(oriWorldColor, mix(foamColor, waterColor, foam), shore), 1.0);
 	}
 }
