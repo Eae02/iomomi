@@ -9,7 +9,7 @@ layout(location=0) out vec2 depth_out;
 layout(binding=0) uniform sampler2D depthSampler;
 layout(binding=1) uniform sampler2D travelDepthSampler;
 
-const int FILTER_RADIUS = 16;
+layout(constant_id=0) const int FILTER_RADIUS = 16;
 
 layout(push_constant) uniform PC
 {

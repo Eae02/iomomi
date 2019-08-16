@@ -13,7 +13,7 @@ layout(binding=0) uniform sampler2D depthSampler;
 layout(binding=1) uniform sampler2D travelDepthSampler;
 #endif
 
-const int FILTER_RADIUS = 16;
+layout(constant_id=0) const int FILTER_RADIUS = 16;
 
 layout(push_constant) uniform PC
 {

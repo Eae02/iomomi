@@ -55,6 +55,10 @@ public:
 	void Render(eg::BufferRef positionsBuffer, uint32_t numParticles, RenderTarget& renderTarget);
 	
 private:
+	void CreateDepthBlurPipelines(uint32_t samples);
+	
+	uint32_t m_currentBlurSampleCount;
+	
 	eg::Buffer m_quadVB;
 	
 	eg::Pipeline m_pipelineBasic;

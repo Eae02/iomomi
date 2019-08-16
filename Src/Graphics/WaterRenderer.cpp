@@ -45,22 +45,34 @@ WaterRenderer::WaterRenderer()
 	pipelineAddCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
 	m_pipelineAdditive = eg::Pipeline::Create(pipelineAddCI);
 	
-	const auto& depthBlurTwoPassFS = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/DepthBlur2P.fs.glsl");
-	eg::GraphicsPipelineCreateInfo pipelineBlurCI;
-	pipelineBlurCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
-	pipelineBlurCI.fragmentShader = depthBlurTwoPassFS.GetVariant("V1");
-	m_pipelineBlurPass1 = eg::Pipeline::Create(pipelineBlurCI);
-	
-	pipelineBlurCI.fragmentShader = depthBlurTwoPassFS.GetVariant("V2");
-	m_pipelineBlurPass2 = eg::Pipeline::Create(pipelineBlurCI);
-	
-	pipelineBlurCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/DepthBlur1P.fs.glsl").DefaultVariant();
-	m_pipelineBlurSinglePass = eg::Pipeline::Create(pipelineBlurCI);
-	
 	eg::GraphicsPipelineCreateInfo pipelinePostCI;
 	pipelinePostCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
 	pipelinePostCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterPost.fs.glsl").DefaultVariant();
 	m_pipelinePost = eg::Pipeline::Create(pipelinePostCI);
+	
+	CreateDepthBlurPipelines(8);
+}
+
+void WaterRenderer::CreateDepthBlurPipelines(uint32_t samples)
+{
+	eg::SpecializationConstantEntry specConstants[] = { { 0, 0, sizeof(uint32_t) } };
+	
+	const auto& depthBlurTwoPassFS = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/DepthBlur2P.fs.glsl");
+	eg::GraphicsPipelineCreateInfo pipelineBlurCI;
+	pipelineBlurCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
+	pipelineBlurCI.fragmentShader = depthBlurTwoPassFS.GetVariant("V1");
+	pipelineBlurCI.fragmentShader.specConstants = specConstants;
+	pipelineBlurCI.fragmentShader.specConstantsData = &samples;
+	pipelineBlurCI.fragmentShader.specConstantsDataSize = sizeof(uint32_t);
+	m_pipelineBlurPass1 = eg::Pipeline::Create(pipelineBlurCI);
+	
+	pipelineBlurCI.fragmentShader.shaderModule = depthBlurTwoPassFS.GetVariant("V2");
+	m_pipelineBlurPass2 = eg::Pipeline::Create(pipelineBlurCI);
+	
+	pipelineBlurCI.fragmentShader.shaderModule = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/DepthBlur1P.fs.glsl").DefaultVariant();
+	m_pipelineBlurSinglePass = eg::Pipeline::Create(pipelineBlurCI);
+	
+	m_currentBlurSampleCount = samples;
 }
 
 void WaterRenderer::RenderBasic(eg::BufferRef positionsBuffer, uint32_t numParticles) const
@@ -83,13 +95,21 @@ struct WaterBlurPC
 };
 #pragma pack(pop)
 
-static float* blurRadiusScale     = eg::TweakVarFloat("wblur_radius", 25.0f, 0.0f);
+static float* blurRadius          = eg::TweakVarFloat("wblur_radius", 400.0f, 0.0f);
 static float* blurDistanceFalloff = eg::TweakVarFloat("wblur_distfall", 0.05f, 0.0f);
 static float* blurDepthFalloff    = eg::TweakVarFloat("wblur_depthfall", 0.05f, 0.0f);
+static int*   blurSamples         = eg::TweakVarInt("wblur_samples", 8, 0);
 static int*   useSinglePassBlur   = eg::TweakVarInt("wblur_singlepass", 0, 0, 1);
 
 void WaterRenderer::Render(eg::BufferRef positionsBuffer, uint32_t numParticles, RenderTarget& renderTarget)
 {
+	if (*blurSamples != m_currentBlurSampleCount)
+	{
+		CreateDepthBlurPipelines(*blurSamples);
+	}
+	
+	float relBlurRad = *blurRadius / *blurSamples;
+	
 	// ** First pass: Depth only **
 	
 	eg::RenderPassBeginInfo depthOnlyRPBeginInfo;
@@ -140,7 +160,7 @@ void WaterRenderer::Render(eg::BufferRef positionsBuffer, uint32_t numParticles,
 		eg::DC.BeginRenderPass(depthBlurBeginInfo);
 		
 		WaterBlurPC blurPC;
-		blurPC.blurDir = glm::vec2(*blurRadiusScale / renderTarget.m_width, *blurRadiusScale / renderTarget.m_height);
+		blurPC.blurDir = glm::vec2(relBlurRad / renderTarget.m_width, relBlurRad / renderTarget.m_height);
 		blurPC.blurDepthFalloff = *blurDepthFalloff;
 		blurPC.blurDistanceFalloff = *blurDistanceFalloff;
 		
@@ -162,7 +182,7 @@ void WaterRenderer::Render(eg::BufferRef positionsBuffer, uint32_t numParticles,
 		eg::DC.BeginRenderPass(depthBlur1RPBeginInfo);
 		
 		WaterBlurPC blurPC;
-		blurPC.blurDir = glm::vec2(0, *blurRadiusScale / renderTarget.m_height);
+		blurPC.blurDir = glm::vec2(0, relBlurRad / renderTarget.m_height);
 		blurPC.blurDepthFalloff = *blurDepthFalloff;
 		blurPC.blurDistanceFalloff = *blurDistanceFalloff;
 		
@@ -183,7 +203,7 @@ void WaterRenderer::Render(eg::BufferRef positionsBuffer, uint32_t numParticles,
 		depthBlurBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Discard;
 		eg::DC.BeginRenderPass(depthBlurBeginInfo);
 		
-		blurPC.blurDir = glm::vec2(*blurRadiusScale / renderTarget.m_width, 0);
+		blurPC.blurDir = glm::vec2(relBlurRad / renderTarget.m_width, 0);
 		blurPC.blurDepthFalloff = *blurDepthFalloff;
 		blurPC.blurDistanceFalloff = *blurDistanceFalloff;
 		
