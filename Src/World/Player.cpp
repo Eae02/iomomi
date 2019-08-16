@@ -10,7 +10,7 @@
 #include <imgui.h>
 
 static float* walkSpeed       = eg::TweakVarFloat("pl_walk_speed",        4.0f,  0.0f);
-static float* swimSpeed       = eg::TweakVarFloat("pl_swim_speed",        4.0f,  0.0f);
+static float* swimSpeed       = eg::TweakVarFloat("pl_swim_speed",        5.0f,  0.0f);
 static float* walkAccelTime   = eg::TweakVarFloat("pl_walk_atime",        0.1f,  0.0f);
 static float* swimAccelTime   = eg::TweakVarFloat("pl_swim_atime",        0.4f,  0.0f);
 static float* walkDeaccelTime = eg::TweakVarFloat("pl_walk_datime",       0.05f, 0.0f);
@@ -114,6 +114,7 @@ void Player::Update(World& world, float dt, bool underwater)
 	const bool moveBack =    eg::IsButtonDown(eg::Button::S) || eg::IsButtonDown(eg::Button::CtrlrDPadDown);
 	const bool moveLeft =    eg::IsButtonDown(eg::Button::A) || eg::IsButtonDown(eg::Button::CtrlrDPadLeft);
 	const bool moveRight =   eg::IsButtonDown(eg::Button::D) || eg::IsButtonDown(eg::Button::CtrlrDPadRight);
+	const bool moveUp =      eg::IsButtonDown(eg::Button::Space) || eg::IsButtonDown(eg::Button::CtrlrA);
 	
 	if (underwater)
 	{
@@ -128,6 +129,8 @@ void Player::Update(World& world, float dt, bool underwater)
 			accel -= right;
 		if (moveRight)
 			accel += right;
+		if (moveUp)
+			accel += up;
 		
 		if (glm::length2(accel) > 0.01f)
 		{
@@ -232,8 +235,7 @@ void Player::Update(World& world, float dt, bool underwater)
 	const float jumpAccel = std::sqrt(2.0f * *jumpHeight * *playerGravity);
 	
 	//Updates vertical velocity
-	if ((eg::IsButtonDown(eg::Button::Space) || eg::IsButtonDown(eg::Button::CtrlrA)) &&
-	    m_gravityTransitionMode == TransitionMode::None && m_onGround)
+	if (moveUp && m_gravityTransitionMode == TransitionMode::None && m_onGround)
 	{
 		localVelVertical = jumpAccel;
 		m_onGround = false;

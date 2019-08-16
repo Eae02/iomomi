@@ -109,23 +109,24 @@ struct WaterBlurPC
 };
 #pragma pack(pop)
 
-static float* blurRadius          = eg::TweakVarFloat("wblur_radius", 150.0f, 0.0f);
+static float* blurRadius          = eg::TweakVarFloat("wblur_radius", 1.0f, 0.0f);
 static float* blurDistanceFalloff = eg::TweakVarFloat("wblur_distfall", 0.5f, 0.0f);
 static float* blurDepthFalloff    = eg::TweakVarFloat("wblur_depthfall", 0.01f, 0.0f);
+static int* blurSinglePass        = eg::TweakVarInt("wblur_singlepass", 0, 0, 1);
 
 /*
 Water quality settings:
-vlow:  4 samples, 16-bit, Half-res, LQ-Shader
-low:   8 samples, 16-bit, Half-res, SQ-Shader
-med:   8 samples, 32-bit, Half-res, SQ-Shader
-high:  16 samples, 32-bit, Half-res, HQ-Shader
-vhigh: 16 samples, 32-bit, Half-res, HQ-Shader
+vlow:  4 samples, 16-bit, LQ-Shader
+low:   8 samples, 16-bit, SQ-Shader
+med:   16 samples, 32-bit, SQ-Shader
+high:  32 samples, 32-bit, HQ-Shader
+vhigh: 48 samples, 32-bit, HQ-Shader
 */
 
 static constexpr QualityLevel highPrecisionMinQL = QualityLevel::Medium;
-static constexpr QualityLevel fullResolutionMinQL = QualityLevel::High;
 
-static const int blurSamplesByQuality[] = { 4, 8, 8, 16, 16 };
+static const int blurSamplesByQuality[] = { 4, 8, 16, 24, 32 };
+static const float baseBlurRadius[] = { 70.0f, 100.0f, 125.0f, 150.0f, 150.0f };
 
 void WaterRenderer::Render(eg::BufferRef positionsBuffer, uint32_t numParticles, RenderTarget& renderTarget)
 {
@@ -136,16 +137,13 @@ void WaterRenderer::Render(eg::BufferRef positionsBuffer, uint32_t numParticles,
 	}
 	
 	int blurSamples = blurSamplesByQuality[(int)m_currentQualityLevel];
-	float relBlurRad = *blurRadius / blurSamples;
+	float relBlurRad = (*blurRadius * baseBlurRadius[(int)m_currentQualityLevel]) / blurSamples;
 	float relDistanceFalloff = *blurDistanceFalloff / blurSamples;
 	
-	if (settings.waterQuality == QualityLevel::VeryHigh)
-	{
-		//We can increase blur radius since we use single pass blurring
-		relBlurRad *= 1.4f;
-	}
-	
 	// ** First pass: Depth only **
+	
+	eg::MultiStageGPUTimer timer;
+	timer.StartStage("Depth");
 	
 	eg::RenderPassBeginInfo depthOnlyRPBeginInfo;
 	depthOnlyRPBeginInfo.framebuffer = renderTarget.m_depthPassFramebuffer.handle;
@@ -168,6 +166,8 @@ void WaterRenderer::Render(eg::BufferRef positionsBuffer, uint32_t numParticles,
 	
 	// ** Travel depth additive pass **
 	
+	timer.StartStage("Additive Depth");
+	
 	eg::RenderPassBeginInfo additiveRPBeginInfo;
 	additiveRPBeginInfo.framebuffer = renderTarget.m_travelDepthPassFramebuffer.handle;
 	additiveRPBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
@@ -186,7 +186,9 @@ void WaterRenderer::Render(eg::BufferRef positionsBuffer, uint32_t numParticles,
 	
 	renderTarget.m_travelDepthTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 	
-	if (settings.waterQuality == QualityLevel::VeryHigh)
+	timer.StartStage("Blur");
+	
+	if (*blurSinglePass)
 	{
 		// ** Single pass depth blur **
 		eg::RenderPassBeginInfo depthBlurBeginInfo;
@@ -254,6 +256,8 @@ void WaterRenderer::Render(eg::BufferRef positionsBuffer, uint32_t numParticles,
 	renderTarget.m_blurredDepthTexture2.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 	
 	// ** Post pass **
+	
+	timer.StartStage("Post");
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
 	rpBeginInfo.framebuffer = renderTarget.m_outputFramebuffer.handle;

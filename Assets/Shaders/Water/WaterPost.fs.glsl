@@ -69,7 +69,7 @@ vec3 getEyePos(vec2 screenCoord)
 
 vec3 calcReflection(vec3 surfacePos, vec3 dirToEye, vec3 normal)
 {
-	const vec3 DEFAULT_REFLECT_COLOR = vec3(0.5, 0.6, 0.6);
+	const vec3 DEFAULT_REFLECT_COLOR = vec3(0.5, 0.6, 0.7);
 	
 #ifdef VHighQual
 	vec3 rayDir = normalize(reflect(-dirToEye, normal));
@@ -78,7 +78,6 @@ vec3 calcReflection(vec3 surfacePos, vec3 dirToEye, vec3 normal)
 	const float FADE_BEGIN = 0.75;
 	const int STEPS = 32;
 	
-	vec2 prevTC = vec2(0.0);
 	for (uint i = 0; i <= STEPS; i++)
 	{
 		vec3 sampleWPos = surfacePos + rayDir * (i * (MAX_DIST / STEPS));
@@ -88,16 +87,15 @@ vec3 calcReflection(vec3 surfacePos, vec3 dirToEye, vec3 normal)
 			break;
 		
 		vec2 sampleTC = sampleNDC.xy * 0.5 + 0.5;
-		sampleTC.y = 1 - sampleTC.y;
+		if (!EG_OPENGL)
+			sampleTC.y = 1 - sampleTC.y;
 		
-		if (i != 0 && sampleNDC.z > depthTo01(texture(worldDepthSampler, sampleTC).r))
+		if (depthTo01(sampleNDC.z) > texture(worldDepthSampler, sampleTC).r)
 		{
 			float fade01 = max(abs(sampleNDC.x), abs(sampleNDC.y));
 			float fade = clamp((fade01 - 1) / (1 - FADE_BEGIN) + 1, 0, 1);
 			return mix(texture(worldColorSampler, sampleTC).rgb, DEFAULT_REFLECT_COLOR, fade);
 		}
-		
-		prevTC = sampleTC;
 	}
 #endif
 	

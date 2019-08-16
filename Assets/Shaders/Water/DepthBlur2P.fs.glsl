@@ -22,14 +22,24 @@ layout(push_constant) uniform PC
 	float blurDepthFalloff;
 };
 
+const float BLUR_RAMP_BEGIN = 5;
+const float BLUR_RAMP_SIZE = 3;
+const float MAX_BLUR_RAMP = 3.0;
+
 void main()
 {
-	float centerDepth = texture(depthSampler, texCoord_in).x;
+	vec2 centerSample = texture(depthSampler, texCoord_in).rg;
+	
 #ifdef V1
-	centerDepth = linearizeDepth(depthTo01(centerDepth));
+	float centerDepth = linearizeDepth(depthTo01(centerSample.x));
+	float centerTravelDepth = texture(travelDepthSampler, texCoord_in).x;
+#else
+	float centerDepth = centerSample.x;
+	float centerTravelDepth = centerSample.y;
 #endif
 	
-	float blurDist = 1.0 / centerDepth;
+	float blurRamp = clamp((centerTravelDepth - BLUR_RAMP_BEGIN) / BLUR_RAMP_SIZE, 0, 1);
+	float blurDist = (blurRamp * (MAX_BLUR_RAMP - 1) + 1) / centerDepth;
 	
 	vec2 sum = vec2(0);
 	float wsum = 0;
