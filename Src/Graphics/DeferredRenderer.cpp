@@ -307,6 +307,7 @@ void DeferredRenderer::BeginLighting(RenderTarget& target, bool hasWater) const
 	eg::RenderPassBeginInfo rpBeginInfo;
 	rpBeginInfo.framebuffer = hasWater ? target.m_lightingFramebuffer.handle : target.m_lightingFramebufferNoWater.handle;
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Load;
+	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Load;
 	rpBeginInfo.sampledDepthStencil = true;
 	
 	eg::DC.BeginRenderPass(rpBeginInfo);
