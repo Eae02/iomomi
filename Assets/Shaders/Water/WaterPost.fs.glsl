@@ -193,7 +193,7 @@ void main()
 	else
 	{
 		const float FOAM_FADE_1 = 0.3;
-		const float FOAM_FADE_0 = 0.5;
+		const float FOAM_FADE_0 = 0.4;
 		float foam = clamp((fadeDepth - FOAM_FADE_1) / (FOAM_FADE_0 - FOAM_FADE_1), 0.0, 1.0);
 		
 		const float SHORE_FADE_1 = 0.0;

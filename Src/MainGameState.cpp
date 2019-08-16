@@ -183,7 +183,11 @@ void MainGameState::RunFrame(float dt)
 		ECPlatform::Update(updateArgs);
 		
 		eg::SetRelativeMouseMode(*relativeMouseMode);
-		m_player.Update(*m_world, dt, m_waterSimulator.NumIntersectingPlayer() > 30);
+		
+		{
+			auto playerUpdateCPUTimer = eg::StartCPUTimer("Player Update");
+			m_player.Update(*m_world, dt, m_waterSimulator.NumIntersectingPlayer() > 30);
+		}
 		
 		UpdateViewProjMatrices();
 		if (m_world->playerHasGravityGun)
@@ -191,7 +195,10 @@ void MainGameState::RunFrame(float dt)
 			m_gravityGun.Update(*m_world, m_waterSimulator, m_particleManager, m_player, inverseViewProjMatrix, dt);
 		}
 		
-		eg::ECParticleSystem::Update(m_world->EntityManager());
+		{
+			auto particleUpdateCPUTimer = eg::StartCPUTimer("Particle Update");
+			eg::ECParticleSystem::Update(m_world->EntityManager());
+		}
 		
 		eg::Entity* currentExit = nullptr;
 		ECEntrance::Update(updateArgs, &currentExit);
