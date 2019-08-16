@@ -1,6 +1,6 @@
 #version 450 core
 
-#pragma variants VStdQual VLowQual
+#pragma variants VLowQual VStdQual VHighQual
 
 #include <EGame.glh>
 #include <Deferred.glh>
@@ -18,7 +18,7 @@ layout(binding=1) uniform sampler2D waterDepthSampler;
 layout(binding=2) uniform sampler2D worldColorSampler;
 layout(binding=3) uniform sampler2D worldDepthSampler;
 
-#ifdef VStdQual
+#ifndef VLowQual
 layout(binding=4) uniform sampler2D normalMapSampler;
 #endif
 
@@ -67,6 +67,43 @@ vec3 getEyePos(vec2 screenCoord)
 	return getEyePosDepth(screenCoord, hyperDepth(texture(waterDepthSampler, screenCoord).r));
 }
 
+vec3 calcReflection(vec3 surfacePos, vec3 dirToEye, vec3 normal)
+{
+	const vec3 DEFAULT_REFLECT_COLOR = vec3(0.5, 0.6, 0.6);
+	
+#ifdef VHighQual
+	vec3 rayDir = normalize(reflect(-dirToEye, normal));
+	
+	const float MAX_DIST = 15;
+	const float FADE_BEGIN = 0.75;
+	const int STEPS = 32;
+	
+	vec2 prevTC = vec2(0.0);
+	for (uint i = 0; i <= STEPS; i++)
+	{
+		vec3 sampleWPos = surfacePos + rayDir * (i * (MAX_DIST / STEPS));
+		vec4 sampleNDC4 = renderSettings.viewProjection * vec4(sampleWPos, 1);
+		vec3 sampleNDC = sampleNDC4.xyz / sampleNDC4.w;
+		if (sampleNDC.x < -1 || sampleNDC.y < -1 || sampleNDC.x > 1 || sampleNDC.y > 1)
+			break;
+		
+		vec2 sampleTC = sampleNDC.xy * 0.5 + 0.5;
+		sampleTC.y = 1 - sampleTC.y;
+		
+		if (i != 0 && sampleNDC.z > depthTo01(texture(worldDepthSampler, sampleTC).r))
+		{
+			float fade01 = max(abs(sampleNDC.x), abs(sampleNDC.y));
+			float fade = clamp((fade01 - 1) / (1 - FADE_BEGIN) + 1, 0, 1);
+			return mix(texture(worldColorSampler, sampleTC).rgb, DEFAULT_REFLECT_COLOR, fade);
+		}
+		
+		prevTC = sampleTC;
+	}
+#endif
+	
+	return DEFAULT_REFLECT_COLOR;
+}
+
 const vec2 normalMapMoveDirs[] = vec2[] (
 	vec2(1, 1),
 	vec2(0.5, -0.5),
@@ -74,10 +111,13 @@ const vec2 normalMapMoveDirs[] = vec2[] (
 	vec2(-1.0, -1.0)
 );
 
+layout(push_constant) uniform PC
+{
+	vec2 pixelSize;
+};
+
 void main()
 {
-	vec2 pixelSize = 1.0 / vec2(textureSize(waterDepthSampler, 0));
-	
 	vec2 depthAndTravelDist = texture(waterDepthSampler, texCoord_in).rg;
 	
 	bool underwater = depthAndTravelDist.r < 2.0;
@@ -94,7 +134,7 @@ void main()
 	
 	vec3 oriWorldColor = worldColor;
 	float worldDepthL = linearizeDepth(worldDepthH);
-	float fadeDepth = min(depthAndTravelDist.g * 0.25, worldDepthL - depthAndTravelDist.r);
+	float fadeDepth = worldDepthL - depthAndTravelDist.r;
 	
 	vec3 surfacePos = WorldPosFromDepth(depthH, texCoord_in, renderSettings.invViewProjection);
 	
@@ -135,7 +175,7 @@ void main()
 			normalTS += vec3(nmVal, sqrt(1 - (nmVal.x * nmVal.x + nmVal.y * nmVal.y))) * abs(plainNormal[d]);
 		}
 	}
-	const float nmStrength = 0.5;
+	const float nmStrength = 0.25;
 	normalTS.xy *= nmStrength;
 	vec3 normal = normalize(tbnMatrix * normalTS);
 #endif
@@ -146,12 +186,12 @@ void main()
 	
 	vec3 targetPos = WorldPosFromDepth(worldDepthH, texCoord_in, renderSettings.invViewProjection);
 	
-#ifdef VStdQual
+#ifndef VLowQual
 	//Refraction
 	if (!underwater)
 	{
 		vec3 refraction = refract(-dirToEye, underwater ? -normal : normal, indexOfRefraction);
-		vec3 refractMoveVec = refraction * min((worldDepthL - depthAndTravelDist.r) * 0.2, 1.0);
+		vec3 refractMoveVec = refraction * min((worldDepthL - depthAndTravelDist.r) * 0.4, 2.0);
 		vec3 refractPos = surfacePos + refractMoveVec;
 		
 		vec4 screenSpaceRefractCoord = renderSettings.viewProjection * vec4(refractPos, 1.0);
@@ -182,7 +222,7 @@ void main()
 	
 	float waterTravelDist = min(depthAndTravelDist.g * 0.25, distance(targetPos, surfacePos));
 	
-	vec3 reflectColor = vec3(0.5, 0.7, 0.8);
+	vec3 reflectColor = calcReflection(surfacePos, dirToEye, normal);
 	
 	vec3 refractColor = doColorExtinction(worldColor, waterTravelDist);
 	
@@ -192,13 +232,17 @@ void main()
 	}
 	else
 	{
-		const float FOAM_FADE_1 = 0.3;
-		const float FOAM_FADE_0 = 0.4;
-		float foam = clamp((fadeDepth - FOAM_FADE_1) / (FOAM_FADE_0 - FOAM_FADE_1), 0.0, 1.0);
+		const float FOAM_FADE_MAX = 0.7;
+		const float FOAM_FADE_BEGIN = 1.5;
+		float foam = clamp((fadeDepth - FOAM_FADE_MAX) / (FOAM_FADE_BEGIN - FOAM_FADE_MAX), 0.0, 1.0);
 		
-		const float SHORE_FADE_1 = 0.0;
-		const float SHORE_FADE_0 = 0.2;
-		float shore = clamp((fadeDepth - FOAM_FADE_1) / (FOAM_FADE_0 - FOAM_FADE_1), 0.0, 1.0);
+#ifdef VLowQual
+		float shore = 1;
+#else
+		const float SHORE_FADE_MAX = 0.4;
+		const float SHORE_FADE_BEGIN = 0.6;
+		float shore = clamp((fadeDepth - SHORE_FADE_MAX) / (SHORE_FADE_BEGIN - SHORE_FADE_MAX), 0.0, 1.0);
+#endif
 		
 		float fresnel = fresnelSchlick(max(dot(normal, dirToEye), 0.0), R0, roughness);
 		

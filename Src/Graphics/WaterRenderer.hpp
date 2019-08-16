@@ -26,8 +26,6 @@ public:
 		uint32_t m_width;
 		uint32_t m_height;
 		
-		bool m_fullResolution;
-		
 		eg::TextureRef m_inputColor;
 		eg::TextureRef m_inputDepth;
 		
@@ -74,6 +72,8 @@ private:
 	eg::Pipeline m_pipelineBlurSinglePass;
 	eg::Pipeline m_pipelinePostLowQual;
 	eg::Pipeline m_pipelinePostStdQual;
+	eg::Pipeline m_pipelinePostHighQual;
+	eg::PipelineRef m_pipelinesRefPost[5];
 	
 	eg::Texture* m_normalMapTexture;
 };
