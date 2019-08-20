@@ -34,8 +34,12 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 		/D_DISABLE_EXTENDED_ALIGNED_STORAGE)
 endif()
 
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+	target_link_options(Gravity PRIVATE "-Wl,-subsystem,windows")
+endif()
+
 set_target_properties(Gravity PROPERTIES
-	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Bin/${BUILD_DIR_NAME}
+	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Bin/${BUILD_DIR_NAME}-${CMAKE_SYSTEM_NAME}
 	OUTPUT_NAME "gravity"
 )
 
@@ -52,6 +56,12 @@ target_include_directories(Gravity SYSTEM PRIVATE
 
 target_link_libraries(Gravity EGame yaml-cpp)
 
+function (fixIncludes TARGET)
+	get_target_property(INC ${TARGET} INTERFACE_INCLUDE_DIRECTORIES)
+	list(REMOVE_ITEM INC "/usr/x86_64-w64-mingw32/include")
+	set_target_properties(${TARGET} PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${INC}")
+endfunction()
+
 if (TARGET_WEB)
 	set(EMCC_FLAGS "-s ALLOW_MEMORY_GROWTH=1 -s WASM=1 -s USE_BULLET=1 -s USE_ZLIB=1 -s USE_WEBGL2=1 -s FULL_ES3=1 -s FORCE_FILESYSTEM=1 -s FETCH=1")
 	set_target_properties(Gravity PROPERTIES LINK_FLAGS "-s EXTRA_EXPORTED_RUNTIME_METHODS=['cwrap'] -s EXPORTED_FUNCTIONS=['_WebMain'] ${EMCC_FLAGS}")
@@ -64,6 +74,10 @@ else()
 	
 	find_package(Bullet REQUIRED)
 	find_package(Protobuf REQUIRED)
+	
+	fixIncludes(protobuf::libprotobuf)
+	
+	list(REMOVE_ITEM ${BULLET_INCLUDE_DIRS} "/usr/x86_64-w64-mingw32/include")
 	
 	target_link_libraries(Gravity protobuf::libprotobuf ${BULLET_LIBRARIES})
 	target_include_directories(Gravity SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS})
