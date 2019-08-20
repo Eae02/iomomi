@@ -23,7 +23,6 @@ layout(binding=4) uniform sampler2D normalMapSampler;
 #endif
 
 const float R0 = 0.03;
-const float roughness = 0.2;
 
 const vec3 color = pow(vec3(13, 184, 250) / 255.0, vec3(2.2));
 
@@ -46,11 +45,6 @@ vec3 doColorExtinction(vec3 inputColor, float waterTravelDist)
 {
 	vec3 step1Res = mix(inputColor, colorSurface, clamp(waterTravelDist / visibility, 0.0, 1.0));
 	return mix(step1Res, colorDeep, clamp(min(waterTravelDist, 10) / (colorExtinction), vec3(0.0), vec3(1.0)));
-}
-
-float fresnelSchlick(float cosT, float F0, float roughness)
-{
-	return F0 + (max(1.0 - roughness, F0) - F0) * pow(1.0 - cosT, 5.0);
 }
 
 vec3 viewPosFromDepth(vec2 screenCoord, float depthH)
@@ -183,7 +177,7 @@ void main()
 			normalTS += vec3(nmVal, sqrt(1 - (nmVal.x * nmVal.x + nmVal.y * nmVal.y))) * abs(plainNormal[d]);
 		}
 	}
-	const float nmStrength = 0.25;
+	const float nmStrength = 0.3;
 	normalTS.xy *= nmStrength;
 	vec3 normal = normalize(tbnMatrix * normalTS);
 #endif
@@ -200,7 +194,7 @@ void main()
 		// along the refraction vector in world space and reprojecting.
 		
 		vec3 refraction = refract(-dirToEye, underwater ? -normal : normal, indexOfRefraction);
-		vec3 refractMoveVec = refraction * min((worldDepthL - depthAndTravelDist.r) * 0.4, 2.0);
+		vec3 refractMoveVec = refraction * min((worldDepthL - depthAndTravelDist.r) * 0.2, 2.0);
 		vec4 screenSpaceRefractCoord = renderSettings.viewProjection * vec4(surfacePos + refractMoveVec, 1.0);
 		screenSpaceRefractCoord.xyz /= screenSpaceRefractCoord.w;
 		
@@ -256,7 +250,7 @@ void main()
 		float shore = clamp((fadeDepth - SHORE_FADE_MAX) / (SHORE_FADE_BEGIN - SHORE_FADE_MAX), 0.0, 1.0);
 #endif
 		
-		float fresnel = fresnelSchlick(max(dot(normal, dirToEye), 0.0), R0, roughness);
+		float fresnel = R0 + (1.0 - R0) * pow(1.0 - max(dot(normal, dirToEye), 0.0), 5.0);
 		
 		vec3 light = vec3(0.8, 0.9, 1.0) * abs(dot(normal, normalize(vec3(1, 1, 1)))) * 0.25 + 0.5;
 		vec3 waterColor = mix(refractColor, reflectColor, fresnel) * light;

@@ -7,5 +7,6 @@ struct WorldUpdateArgs
 	float dt;
 	class World* world;
 	class Player* player;
+	class WaterSimulator* waterSim;
 	std::function<void(const eg::Sphere&)> invalidateShadows;
 };

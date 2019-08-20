@@ -21,9 +21,6 @@ static int* relativeMouseMode = eg::TweakVarInt("relms", 1, 0, 1);
 MainGameState::MainGameState(RenderContext& renderCtx)
 	: m_renderCtx(&renderCtx)
 {
-	if (eg::DevMode())
-		*relativeMouseMode = 0;
-	
 	m_prepareDrawArgs.isEditor = false;
 	m_prepareDrawArgs.meshBatch = &m_renderCtx->meshBatch;
 	m_prepareDrawArgs.transparentMeshBatch = &m_renderCtx->transparentMeshBatch;
@@ -46,6 +43,9 @@ MainGameState::MainGameState(RenderContext& renderCtx)
 	});
 	
 	m_particleManager.SetTextureSize(1024, 1024);
+	
+	m_playerWaterAABB = std::make_shared<WaterSimulator::QueryAABB>();
+	m_waterSimulator.AddQueryAABB(m_playerWaterAABB);
 }
 
 void MainGameState::LoadWorld(std::istream& stream, int64_t levelIndex, const eg::Entity* exitEntity)
@@ -178,6 +178,7 @@ void MainGameState::RunFrame(float dt)
 		updateArgs.dt = dt;
 		updateArgs.player = &m_player;
 		updateArgs.world = m_world.get();
+		updateArgs.waterSim = &m_waterSimulator;
 		updateArgs.invalidateShadows = [this] (const eg::Sphere& sphere) { m_plShadowMapper.Invalidate(sphere); };
 		
 		ECPlatform::Update(updateArgs);
@@ -186,7 +187,8 @@ void MainGameState::RunFrame(float dt)
 		
 		{
 			auto playerUpdateCPUTimer = eg::StartCPUTimer("Player Update");
-			m_player.Update(*m_world, dt, m_waterSimulator.NumIntersectingPlayer() > 30);
+			bool underwater = m_playerWaterAABB->GetResults().numIntersecting > 30;
+			m_player.Update(*m_world, dt, underwater);
 		}
 		
 		UpdateViewProjMatrices();
@@ -228,7 +230,10 @@ void MainGameState::RunFrame(float dt)
 	
 	{
 		auto waterUpdateTimer = eg::StartCPUTimer("Water Update MT");
-		m_waterSimulator.Update(m_player);
+		
+		m_playerWaterAABB->SetAABB(m_player.GetAABB());
+		
+		m_waterSimulator.Update();
 	}
 	
 	eg::Frustum frustum(inverseViewProjMatrix);
@@ -398,7 +403,7 @@ void MainGameState::DrawOverlay(float dt)
 	m_player.DebugDraw();
 	ImGui::Text("Particles: %d", m_particleManager.ParticlesToDraw());
 	ImGui::Text("Water Spheres: %d", m_waterSimulator.NumParticles());
-	ImGui::Text("Intersect Water Spheres: %d", m_waterSimulator.NumIntersectingPlayer());
+	ImGui::Text("Water Update Time: %.2fms", m_waterSimulator.LastUpdateTime() / 1E6);
 	ImGui::Text("Reflection Planes: %d", (int)m_prepareDrawArgs.reflectionPlanes.size());
 	
 	ImGui::End();

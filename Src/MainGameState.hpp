@@ -53,6 +53,7 @@ private:
 	eg::ParticleManager m_particleManager;
 	
 	WaterSimulator m_waterSimulator;
+	std::shared_ptr<WaterSimulator::QueryAABB> m_playerWaterAABB;
 	
 	QualityLevel m_lightingQuality = QualityLevel::Low;
 	QualityLevel m_waterQuality = QualityLevel::Low;

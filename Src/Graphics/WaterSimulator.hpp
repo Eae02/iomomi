@@ -9,6 +9,41 @@
 class WaterSimulator
 {
 public:
+	struct QueryResults
+	{
+		int numIntersecting;
+		glm::vec3 waterVelocity;
+		glm::vec3 buoyancy;
+	};
+	
+	class QueryAABB
+	{
+	public:
+		friend class WaterSimulator;
+		
+		void SetAABB(const eg::AABB& aabb)
+		{
+			m_aabbMT = aabb;
+		}
+		
+		QueryResults GetResults()
+		{
+			std::lock_guard<std::mutex> lock(m_mutex);
+			return m_results;
+		}
+		
+	private:
+		static constexpr uint32_t MAX_PARTICLE_INFO = 128;
+		
+		bool m_wantsParticleInfo;
+		
+		std::mutex m_mutex;
+		QueryResults m_results;
+		
+		eg::AABB m_aabbMT;
+		eg::AABB m_aabbBT;
+	};
+	
 	WaterSimulator();
 	
 	~WaterSimulator()
@@ -20,7 +55,7 @@ public:
 	
 	void Stop();
 	
-	void Update(const class Player& player);
+	void Update();
 	
 	//Finds an intersection between the given ray and the water.
 	// Returns a pair of distance and particleIndex.
@@ -41,11 +76,15 @@ public:
 		return m_numParticles;
 	}
 	
-	//Returns the number of particles intersecting the player.
-	// Used to detect when the player is underwater.
-	uint32_t NumIntersectingPlayer() const
+	void AddQueryAABB(std::weak_ptr<QueryAABB> queryAABB)
 	{
-		return m_numIntersectsPlayerCopy;
+		m_queryAABBs.push_back(std::move(queryAABB));
+	}
+	
+	//Returns the number of nanoseconds for the last update
+	uint64_t LastUpdateTime() const
+	{
+		return m_lastUpdateTime;
 	}
 	
 private:
@@ -60,9 +99,10 @@ private:
 	std::mutex m_mutex;
 	bool m_run;
 	
-	eg::AABB m_playerAABB;
-	std::atomic_uint32_t m_numIntersectsPlayer;
-	uint32_t m_numIntersectsPlayerCopy = 0;
+	std::atomic_uint64_t m_lastUpdateTime { 0 };
+	
+	std::vector<std::weak_ptr<QueryAABB>> m_queryAABBs;
+	std::vector<std::shared_ptr<QueryAABB>> m_queryAABBsBT;
 	
 	uint32_t m_numParticles;
 	

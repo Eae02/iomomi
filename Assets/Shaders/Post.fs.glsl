@@ -29,4 +29,7 @@ void main()
 #endif
 	
 	color_out = vec4(vec3(1.0) - exp(-exposure * color), 1.0);
+	
+	float vignette = pow(length(texCoord_in - 0.5) / length(vec2(0.55)), 2.0);
+	color_out *= 1.0 - vignette;
 }

@@ -11,9 +11,12 @@
 #include "../Player.hpp"
 #include "../WorldUpdateArgs.hpp"
 #include "../World.hpp"
+#include "../../Graphics/WaterSimulator.hpp"
 #include "../../Graphics/RenderSettings.hpp"
 #include "../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../Protobuf/Build/CubeEntity.pb.h"
+
+#include <imgui.h>
 
 namespace Cube
 {
@@ -50,6 +53,9 @@ namespace Cube
 		
 		bool isPickedUp = false;
 		Dir currentDown = Dir::NegY;
+		
+		bool canFloat = false;
+		std::shared_ptr<WaterSimulator::QueryAABB> waterQueryAABB;
 	};
 	
 	eg::MessageReceiver ECCube::MessageReceiver = eg::MessageReceiver::Create<
@@ -79,6 +85,8 @@ namespace Cube
 	void ECCube::HandleMessage(eg::Entity& entity, const EditorRenderImGuiMessage& message)
 	{
 		ECEditorVisible::RenderDefaultSettings(entity);
+		
+		ImGui::Checkbox("Float", &entity.GetComponent<ECCube>().canFloat);
 	}
 	
 	void ECCube::HandleMessage(eg::Entity& entity, const DrawMessage& message)
@@ -156,6 +164,9 @@ namespace Cube
 		return 0;
 	}
 	
+	float* cubeBuoyancy = eg::TweakVarFloat("cube_buoyancy", 0.25f, 0.0f);
+	float* cubeWaterDrag = eg::TweakVarFloat("cube_water_drag", 0.05f, 0.0f);
+	
 	void UpdatePreSim(const WorldUpdateArgs& args)
 	{
 		for (eg::Entity& entity : args.world->EntityManager().GetEntitySet(EntitySignature))
@@ -204,6 +215,16 @@ namespace Cube
 				glm::vec3 gravity = glm::vec3(DirectionVector(cube.currentDown)) * bullet::GRAVITY;
 				rigidBody.GetRigidBody()->setGravity(bullet::FromGLM(gravity));
 				
+				if (cube.canFloat && cube.waterQueryAABB != nullptr)
+				{
+					WaterSimulator::QueryResults waterQueryRes = cube.waterQueryAABB->GetResults();
+					
+					glm::vec3 buoyancy = waterQueryRes.buoyancy * *cubeBuoyancy;
+					rigidBody.GetRigidBody()->applyCentralForce(bullet::FromGLM(buoyancy));
+					float damping = std::min(waterQueryRes.numIntersecting * *cubeWaterDrag, 0.5f);
+					rigidBody.GetRigidBody()->setDamping(damping, damping);
+				}
+				
 				btBroadphaseProxy* bpProxy = rigidBody.GetRigidBody()->getBroadphaseProxy();
 				bpProxy->m_collisionFilterGroup = 1 | (2 << ((int)cube.currentDown / 2));
 			}
@@ -221,13 +242,15 @@ namespace Cube
 			ECRigidBody& rigidBody = entity.GetComponent<ECRigidBody>();
 			ECRigidBody::PushTransform(entity);
 			
+			ECCube& cube = entity.GetComponent<ECCube>();
+			
 			if (rigidBody.GetRigidBody()->getLinearVelocity().length2() > 1E-4f ||
 			    rigidBody.GetRigidBody()->getAngularVelocity().length2() > 1E-4f)
 			{
 				args.invalidateShadows(GetSphere(entity));
 			}
 			
-			const glm::vec3 down(DirectionVector(entity.GetComponent<ECCube>().currentDown));
+			const glm::vec3 down(DirectionVector(cube.currentDown));
 			const eg::AABB cubeAABB(position - RADIUS, position + RADIUS);
 			
 			for (eg::Entity& buttonEntity : args.world->EntityManager().GetEntitySet(ECFloorButton::EntitySignature))
@@ -237,6 +260,17 @@ namespace Cube
 				{
 					buttonEntity.HandleMessage(ActivateMessage());
 				}
+			}
+			
+			if (cube.canFloat)
+			{
+				if (cube.waterQueryAABB == nullptr)
+				{
+					cube.waterQueryAABB = std::make_shared<WaterSimulator::QueryAABB>();
+					args.waterSim->AddQueryAABB(cube.waterQueryAABB);
+				}
+				
+				cube.waterQueryAABB->SetAABB(cubeAABB);
 			}
 		}
 	}
@@ -279,6 +313,8 @@ namespace Cube
 			cubePB.set_rotationz(rotation.z);
 			cubePB.set_rotationw(rotation.w);
 			
+			cubePB.set_can_float(entity.GetComponent<ECCube>().canFloat);
+			
 			cubePB.SerializeToOstream(&stream);
 		}
 		
@@ -292,6 +328,8 @@ namespace Cube
 			entity.InitComponent<eg::ECPosition3D>(cubePB.posx(), cubePB.posy(), cubePB.posz());
 			entity.InitComponent<eg::ECRotation3D>(glm::quat(
 				cubePB.rotationw(), cubePB.rotationx(), cubePB.rotationy(), cubePB.rotationz()));
+			
+			entity.GetComponent<ECCube>().canFloat = cubePB.can_float();
 			
 			ECRigidBody::PullTransform(entity);
 		}

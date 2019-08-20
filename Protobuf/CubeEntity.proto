@@ -10,4 +10,5 @@ message CubeEntity {
 	float rotationY = 5;
 	float rotationZ = 6;
 	float rotationW = 7;
+	bool can_float = 8;
 }

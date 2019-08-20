@@ -5,7 +5,15 @@
 #include "../World/Entities/ECLiquidPlane.hpp"
 #include "../Vec3Compare.hpp"
 
+#include <cstdlib>
 #include <execution>
+
+#ifdef _WIN32
+inline static void* aligned_alloc(size_t alignment, size_t size)
+{
+	return _aligned_malloc(size, alignment);
+}
+#endif
 
 static constexpr float ELASTICITY = 0.2;
 static constexpr float IMPACT_COEFFICIENT = 1.0 + ELASTICITY;
@@ -122,7 +130,7 @@ void WaterSimulator::Init(const World& world)
 	
 	//Allocates memory for particle data
 	size_t memoryBytes = positions.size() * (sizeof(__m128) * 6 + sizeof(uint8_t) + sizeof(float) + sizeof(glm::vec2));
-	m_memory.reset(std::aligned_alloc(alignof(__m128), memoryBytes));
+	m_memory.reset(aligned_alloc(alignof(__m128), memoryBytes));
 	
 	//Sets up SoA particle data
 	m_particlePos     = reinterpret_cast<__m128*>(m_memory.get());
@@ -396,8 +404,6 @@ void WaterSimulator::Step(float dt, const eg::AABB& playerAABB, int changeGravit
 		{ 1, 0, 0, 0 }, { 1, 0, 0, 0 }
 	};
 	
-	m_numIntersectsPlayer = 0;
-	
 	//Velocity diffusion & collision
 	std::for_each_n(std::execution::par_unseq, m_particlePos, m_numParticles, [&] (__m128& aPos)
 	{
@@ -509,14 +515,33 @@ void WaterSimulator::Step(float dt, const eg::AABB& playerAABB, int changeGravit
 			m_particlePos2[a] = _mm_sub_ps(m_particlePos2[a], _mm_mul_ps(displaceNormal, _mm_load1_ps(&minDist)));
 		}
 		
-		glm::vec3 pos = *reinterpret_cast<glm::vec3*>(&m_particlePos2[a]);
-		if (playerAABB.Intersects(eg::AABB(pos - m_particleRadius[a], pos + m_particleRadius[a])))
-		{
-			m_numIntersectsPlayer++;
-		}
-		
 		m_particleVel2[a] = vel;
 	});
+	
+	for (const std::shared_ptr<QueryAABB>& qaabb : m_queryAABBsBT)
+	{
+		int numIntersecting = 0;
+		glm::vec3 waterVelocity;
+		glm::vec3 buoyancy;
+		
+		for (uint32_t p = 0; p < m_numParticles; p++)
+		{
+			glm::vec3 pos = *reinterpret_cast<glm::vec3*>(&m_particlePos2[p]);
+			eg::AABB particleAABB(pos - m_particleRadius[p], pos + m_particleRadius[p]);
+			
+			if (qaabb->m_aabbBT.Intersects(particleAABB))
+			{
+				numIntersecting++;
+				waterVelocity += *reinterpret_cast<glm::vec3*>(&m_particleVel2[p]);
+				buoyancy -= DirectionVector((Dir)m_particleGravity[p]);
+			}
+		}
+		
+		std::lock_guard<std::mutex> lock(qaabb->m_mutex);
+		qaabb->m_results.numIntersecting = numIntersecting;
+		qaabb->m_results.waterVelocity = waterVelocity;
+		qaabb->m_results.buoyancy = buoyancy;
+	}
 }
 
 static int* stepsPerSecondVar = eg::TweakVarInt("water_sps", 60, 1);
@@ -543,13 +568,11 @@ void WaterSimulator::ThreadTarget()
 			{
 				std::swap(m_particleVel2, m_particleVel);
 				std::swap(m_particlePos2, m_particlePos);
-				m_numIntersectsPlayerCopy = m_numIntersectsPlayer;
 			}
 			else
 			{
 				firstStep = false;
 			}
-			playerAABB = m_playerAABB;
 			stepsPerSecond = *stepsPerSecondVar;
 			
 			if (!m_changeGravityParticles.empty())
@@ -564,6 +587,8 @@ void WaterSimulator::ThreadTarget()
 		
 		Step(1.0f / stepsPerSecond, playerAABB, changeGravityParticle, newGravity);
 		
+		m_lastUpdateTime = std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - lastStepEnd).count();
+		
 		std::this_thread::sleep_until(lastStepEnd + std::chrono::nanoseconds(1000000000LL / stepsPerSecond));
 		lastStepEnd = Clock::now();
 	}
@@ -574,7 +599,7 @@ eg::BufferRef WaterSimulator::GetPositionsBuffer() const
 	return m_positionsBuffer;
 }
 
-void WaterSimulator::Update(const Player& player)
+void WaterSimulator::Update()
 {
 	if (m_numParticles == 0)
 		return;
@@ -582,7 +607,21 @@ void WaterSimulator::Update(const Player& player)
 	{
 		std::lock_guard<std::mutex> lock(m_mutex);
 		
-		m_playerAABB = player.GetAABB();
+		//Copies AABB data for the background thread
+		m_queryAABBsBT.clear();
+		for (int64_t i = (int64_t)m_queryAABBs.size() - 1 ; i >= 0; i--)
+		{
+			if (std::shared_ptr<QueryAABB> aabb = m_queryAABBs[i].lock())
+			{
+				aabb->m_aabbBT = aabb->m_aabbMT;
+				m_queryAABBsBT.push_back(std::move(aabb));
+			}
+			else
+			{
+				m_queryAABBs[i].swap(m_queryAABBs.back());
+				m_queryAABBs.pop_back();
+			}
+		}
 		
 		if (m_changeGravityParticleMT != -1)
 		{
