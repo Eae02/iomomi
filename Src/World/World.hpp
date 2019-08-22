@@ -105,6 +105,10 @@ public:
 	
 	void InitializeBulletPhysics();
 	
+	//Adds the rigid body belonging to the given entity to the world.
+	//This needs to be called for all entities with an ECRigidBody created after world loading.
+	void InitRigidBodyEntity(eg::Entity& entity);
+	
 	eg::EntityManager& EntityManager() const
 	{
 		return *m_entityManager;
@@ -196,6 +200,9 @@ private:
 	
 	std::vector<Region> m_regions;
 	
+	std::unique_ptr<btDbvtBroadphase> m_bulletBroadphase;
+	std::unique_ptr<btDiscreteDynamicsWorld> m_bulletWorld;
+	
 	eg::EntityManagerUP m_entityManager;
 	
 	std::vector<Door> m_doors;
@@ -221,7 +228,4 @@ private:
 	std::unique_ptr<btDefaultMotionState> m_wallsMotionState;
 	std::unique_ptr<btBvhTriangleMeshShape> m_wallsBulletShape;
 	std::unique_ptr<btRigidBody> m_wallsRigidBody;
-	
-	std::unique_ptr<btDbvtBroadphase> m_bulletBroadphase;
-	std::unique_ptr<btDiscreteDynamicsWorld> m_bulletWorld;
 };

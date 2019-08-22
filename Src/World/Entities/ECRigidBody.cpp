@@ -1,5 +1,13 @@
 #include "ECRigidBody.hpp"
 
+ECRigidBody::~ECRigidBody()
+{
+	if (m_physicsWorld != nullptr)
+	{
+		m_physicsWorld->removeRigidBody(&m_rigidBody.value());
+	}
+}
+
 void ECRigidBody::Init(float mass, btCollisionShape& shape)
 {
 	btVector3 localInertia;

@@ -8,12 +8,13 @@
 #include "Entities/ECActivator.hpp"
 #include "Entities/Cube.hpp"
 #include "Entities/ECActivationLightStrip.hpp"
+#include "Entities/Entrance.hpp"
+#include "Entities/GravityBarrier.hpp"
+#include "Entities/CubeSpawner.hpp"
 #include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
 #include "../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../Graphics/RenderSettings.hpp"
 #include "../Graphics/WallShader.hpp"
-#include "Entities/Entrance.hpp"
-#include "Entities/GravityBarrier.hpp"
 
 #include <yaml-cpp/yaml.h>
 
@@ -254,6 +255,8 @@ void World::Update(const WorldUpdateArgs& args)
 		auto physicsCPUTimer = eg::StartCPUTimer("Physics");
 		
 		ECGravityBarrier::Update(args);
+		
+		CubeSpawner::Update(args);
 		
 		Cube::UpdatePreSim(args);
 		
@@ -1063,13 +1066,22 @@ void World::InitializeBulletPhysics()
 	m_wallsRigidBody->setFriction(1.0f);
 	m_bulletWorld->addRigidBody(m_wallsRigidBody.get());
 	
+	//Adds rigid bodies to the world
 	static eg::EntitySignature rigidBodySignature = eg::EntitySignature::Create<ECRigidBody>();
 	for (eg::Entity& entity : m_entityManager->GetEntitySet(rigidBodySignature))
 	{
-		if (btRigidBody* rigidBody = entity.GetComponent<ECRigidBody>().GetRigidBody())
-		{
-			m_bulletWorld->addRigidBody(rigidBody);
-		}
+		InitRigidBodyEntity(entity);
+	}
+}
+
+void World::InitRigidBodyEntity(eg::Entity& entity)
+{
+	ECRigidBody& ecRigidBody = entity.GetComponent<ECRigidBody>();
+	
+	if (ecRigidBody.m_rigidBody.has_value() && ecRigidBody.m_physicsWorld == nullptr)
+	{
+		m_bulletWorld->addRigidBody(&*ecRigidBody.m_rigidBody);
+		ecRigidBody.m_physicsWorld = m_bulletWorld.get();
 	}
 }
 

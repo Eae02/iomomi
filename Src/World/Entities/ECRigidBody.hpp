@@ -5,6 +5,16 @@
 struct ECRigidBody
 {
 public:
+	friend class World;
+	
+	~ECRigidBody();
+	
+	ECRigidBody() = default;
+	ECRigidBody(const ECRigidBody& other) = delete;
+	ECRigidBody(ECRigidBody&& other) = delete;
+	ECRigidBody& operator=(const ECRigidBody& other) = delete;
+	ECRigidBody& operator=(ECRigidBody&& other) = delete;
+	
 	const btRigidBody* GetRigidBody() const
 	{
 		return m_rigidBody.has_value() ? &m_rigidBody.value() : nullptr;
@@ -42,4 +52,5 @@ public:
 private:
 	btDefaultMotionState m_motionState;
 	std::optional<btRigidBody> m_rigidBody;
+	btDiscreteDynamicsWorld* m_physicsWorld = nullptr;
 };

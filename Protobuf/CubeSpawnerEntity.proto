@@ -1,0 +1,14 @@
+syntax="proto3";
+
+package gravity_pb;
+
+import "Dir.proto";
+
+message CubeSpawnerEntity {
+	float posX = 1;
+	float posY = 2;
+	float posZ = 3;
+	Dir dir = 4;
+	bool cube_can_float = 5;
+	fixed32 name = 6;
+}

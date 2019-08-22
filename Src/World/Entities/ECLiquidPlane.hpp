@@ -15,7 +15,11 @@ public:
 	
 	void MaybeUpdate(const eg::Entity& entity, const class World& world);
 	
-	bool IsUnderwater(const glm::ivec3& pos);
+	bool IsUnderwater(const glm::ivec3& pos) const;
+	
+	static bool IsUnderwater(const eg::Entity& entity, const glm::vec3& pos);
+	
+	static bool IsUnderwater(const eg::Entity& entity, const eg::Sphere& sphere);
 	
 	const std::vector<glm::ivec3> UnderwaterCells() const
 	{

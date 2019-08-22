@@ -24,10 +24,22 @@ void ECLiquidPlane::HandleMessage(eg::Entity& entity, const EditorMovedMessage& 
 	m_outOfDate = true;
 }
 
-bool ECLiquidPlane::IsUnderwater(const glm::ivec3& pos)
+bool ECLiquidPlane::IsUnderwater(const glm::ivec3& pos) const
 {
 	auto it = std::lower_bound(m_underwater.begin(), m_underwater.end(), pos, Vec3Compare());
 	return it != m_underwater.end() && *it == pos;
+}
+
+bool ECLiquidPlane::IsUnderwater(const eg::Entity& entity, const glm::vec3& pos)
+{
+	return entity.GetComponent<ECLiquidPlane>().IsUnderwater(glm::ivec3(pos)) &&
+	       pos.y < entity.GetComponent<eg::ECPosition3D>().position.y;
+}
+
+bool ECLiquidPlane::IsUnderwater(const eg::Entity& entity, const eg::Sphere& sphere)
+{
+	return ECLiquidPlane::IsUnderwater(entity, sphere.position) &&
+	       sphere.position.y + sphere.radius < entity.GetComponent<eg::ECPosition3D>().position.y;
 }
 
 void ECLiquidPlane::MaybeUpdate(const eg::Entity& entity, const World& world)

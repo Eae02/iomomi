@@ -4,6 +4,8 @@
 #include "ECFloorButton.hpp"
 #include "ECActivator.hpp"
 #include "ECInteractable.hpp"
+#include "ECLiquidPlane.hpp"
+#include "GooPlane.hpp"
 #include "Messages.hpp"
 #include "GravityBarrier.hpp"
 #include "../GravityGun.hpp"
@@ -21,7 +23,6 @@
 namespace Cube
 {
 	static constexpr float MASS = 1.0f;
-	static constexpr float RADIUS = 0.4f;
 	
 	static std::unique_ptr<btCollisionShape> collisionShape;
 	
@@ -86,7 +87,7 @@ namespace Cube
 	{
 		ECEditorVisible::RenderDefaultSettings(entity);
 		
-		ImGui::Checkbox("Float", &entity.GetComponent<ECCube>().canFloat);
+		ImGui::Checkbox("Float", &canFloat);
 	}
 	
 	void ECCube::HandleMessage(eg::Entity& entity, const DrawMessage& message)
@@ -174,6 +175,24 @@ namespace Cube
 			ECRigidBody& rigidBody = entity.GetComponent<ECRigidBody>();
 			ECCube& cube = entity.GetComponent<ECCube>();
 			
+			eg::Sphere sphere(entity.GetComponent<eg::ECPosition3D>().position, RADIUS);
+			
+			bool inGoo = false;
+			for (eg::Entity& goo : args.world->EntityManager().GetEntitySet(GooPlane::EntitySignature))
+			{
+				if (ECLiquidPlane::IsUnderwater(goo, sphere))
+				{
+					inGoo = true;
+					break;
+				}
+			}
+			
+			if (inGoo)
+			{
+				entity.Despawn();
+				continue;
+			}
+			
 			if (cube.isPickedUp)
 			{
 				ECRigidBody::PushTransform(entity);
@@ -212,9 +231,11 @@ namespace Cube
 			}
 			else
 			{
+				//Updates the gravity vector
 				glm::vec3 gravity = glm::vec3(DirectionVector(cube.currentDown)) * bullet::GRAVITY;
 				rigidBody.GetRigidBody()->setGravity(bullet::FromGLM(gravity));
 				
+				//Water interaction
 				if (cube.canFloat && cube.waterQueryAABB != nullptr)
 				{
 					WaterSimulator::QueryResults waterQueryRes = cube.waterQueryAABB->GetResults();
@@ -289,6 +310,19 @@ namespace Cube
 		rigidBody.GetRigidBody()->setActivationState(DISABLE_DEACTIVATION);
 		
 		return &entity;
+	}
+	
+	eg::Entity* Spawn(eg::EntityManager& entityManager, const glm::vec3& position, bool canFloat)
+	{
+		eg::Entity* entity = CreateEntity(entityManager);
+		
+		entity->InitComponent<eg::ECPosition3D>(position);
+		
+		entity->GetComponent<ECCube>().canFloat = canFloat;
+		
+		ECRigidBody::PullTransform(*entity);
+		
+		return entity;
 	}
 	
 	struct Serializer : eg::IEntitySerializer
