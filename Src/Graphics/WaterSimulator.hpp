@@ -97,7 +97,7 @@ private:
 	std::mt19937 m_rng;
 	
 	std::mutex m_mutex;
-	bool m_run;
+	bool m_run = false;
 	
 	std::atomic_uint64_t m_lastUpdateTime { 0 };
 	

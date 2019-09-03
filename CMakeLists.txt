@@ -22,30 +22,28 @@ add_executable(Gravity ${SOURCE_FILES} ${IMGUI_FILES})
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 	target_compile_options(Gravity PRIVATE -Wall -Wextra -Wshadow -pedantic -msse4.1 --std=c++17 -Wno-unused-parameter -Wno-missing-field-initializers)
 	set_source_files_properties(Src/Graphics/WaterSimulator.cpp PROPERTIES COMPILE_FLAGS "-Ofast")
-	if (NOT TARGET_WEB)
-		target_link_libraries(Gravity stdc++fs tbb)
-		set_target_properties(Gravity PROPERTIES
-			CXX_VISIBILITY_PRESET hidden
-			INSTALL_RPATH "$ORIGIN/rt"
-			BUILD_WITH_INSTALL_RPATH TRUE)
-	endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	target_compile_options(Gravity PRIVATE /wd4250 /wd4307 /wd4251 /wd4244 /wd4068 /wd4996 /wd4275 /D_CRT_SECURE_NO_WARNINGS
 		/D_DISABLE_EXTENDED_ALIGNED_STORAGE)
 endif()
 
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+	target_link_libraries(Gravity stdc++fs tbb)
+	set_target_properties(Gravity PROPERTIES
+		CXX_VISIBILITY_PRESET hidden
+		INSTALL_RPATH "$ORIGIN/rt"
+		BUILD_WITH_INSTALL_RPATH TRUE)
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+	target_link_libraries(Gravity stdc++fs tbb)
 	target_link_options(Gravity PRIVATE "-Wl,-subsystem,windows")
 endif()
 
 set_target_properties(Gravity PROPERTIES
-	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Bin/${BUILD_DIR_NAME}-${CMAKE_SYSTEM_NAME}
+	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Bin/${CMAKE_BUILD_TYPE}-${CMAKE_SYSTEM_NAME}
 	OUTPUT_NAME "gravity"
 )
 
-target_compile_options(Gravity PRIVATE
-	-DGLM_FORCE_RADIANS -DGLM_FORCE_CTOR_INIT -DGLM_ENABLE_EXPERIMENTAL
-	-DIMGUI_USER_CONFIG="../../Inc/ImGuiConfig.hpp")
+target_compile_options(Gravity PRIVATE -DIMGUI_USER_CONFIG="../../Inc/ImGuiConfig.hpp")
 
 target_include_directories(Gravity SYSTEM PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/Inc
@@ -62,7 +60,7 @@ function (fixIncludes TARGET)
 	set_target_properties(${TARGET} PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${INC}")
 endfunction()
 
-if (TARGET_WEB)
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
 	set(EMCC_FLAGS "-s ALLOW_MEMORY_GROWTH=1 -s WASM=1 -s USE_BULLET=1 -s USE_ZLIB=1 -s USE_WEBGL2=1 -s FULL_ES3=1 -s FORCE_FILESYSTEM=1 -s FETCH=1")
 	set_target_properties(Gravity PROPERTIES LINK_FLAGS "-s EXTRA_EXPORTED_RUNTIME_METHODS=['cwrap'] -s EXPORTED_FUNCTIONS=['_WebMain'] ${EMCC_FLAGS}")
 	target_compile_options(Gravity PRIVATE -s USE_BULLET=1)

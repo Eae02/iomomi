@@ -4,8 +4,6 @@
 
 layout(location=0) in vec3 worldPos_in;
 layout(location=1) in vec2 texCoord_in;
-layout(location=2) in vec3 normal_in;
-layout(location=3) in vec3 tangent_in;
 
 layout(location=0) out vec4 color0_out;
 
@@ -22,7 +20,13 @@ layout(location=1) out vec4 color1_out;
 #include "Inc/NormalMap.glh"
 
 layout(binding=1) uniform sampler2D albedoSampler;
+
+#ifndef VPlanarRefl
 layout(binding=2) uniform sampler2D normalMapSampler;
+
+layout(location=2) in vec3 normal_in;
+layout(location=3) in vec3 tangent_in;
+#endif
 
 layout(push_constant) uniform PC
 {
@@ -33,12 +37,14 @@ layout(push_constant) uniform PC
 
 void main()
 {
+#ifndef VPlanarRefl
 	vec3 sNormal = normalize(normal_in);
 	vec3 sTangent = normalize(tangent_in);
 	sTangent = normalize(sTangent - dot(sNormal, sTangent) * sNormal);
 	mat3 tbn = mat3(sTangent, cross(sTangent, sNormal), sNormal);
 	
 	vec3 normal = normalMapToWorld(texture(normalMapSampler, texCoord_in).xy, tbn);
+#endif
 	
 	vec4 albedo = texture(albedoSampler, texCoord_in);
 	float opacity = albedo.a * globalAlpha;

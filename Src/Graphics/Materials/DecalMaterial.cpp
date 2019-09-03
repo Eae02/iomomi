@@ -208,9 +208,22 @@ bool DecalMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) con
 		m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
 		m_descriptorSet.BindTexture(m_albedoTexture, 1, &GetCommonTextureSampler());
 		m_descriptorSet.BindTexture(m_normalMapTexture, 2, &GetCommonTextureSampler());
+		
+		m_descriptorSetPlanarRefl = eg::DescriptorSet(decalsPlanarReflPipeline, 0);
+		m_descriptorSetPlanarRefl.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+		m_descriptorSetPlanarRefl.BindTexture(m_albedoTexture, 1, &GetCommonTextureSampler());
+		
+		m_descriptorSetInitialized = true;
 	}
 	
-	cmdCtx.BindDescriptorSet(m_descriptorSet, 0);
+	if (reinterpret_cast<MeshDrawArgs*>(drawArgs)->drawMode == MeshDrawMode::PlanarReflection)
+	{
+		cmdCtx.BindDescriptorSet(m_descriptorSetPlanarRefl, 0);
+	}
+	else
+	{
+		cmdCtx.BindDescriptorSet(m_descriptorSet, 0);
+	}
 	
 	return true;
 }

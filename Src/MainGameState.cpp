@@ -347,8 +347,6 @@ void MainGameState::RunFrame(float dt)
 		RenderPointLightShadows(args);
 	}, true);
 	
-	//m_lightProbesManager.PrepareForDraw(m_player.EyePosition());
-	
 	DoDeferredRendering(true, *m_renderTarget);
 	
 	m_renderOutputTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
