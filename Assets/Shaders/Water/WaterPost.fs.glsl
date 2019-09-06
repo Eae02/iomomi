@@ -5,6 +5,8 @@
 #include <EGame.glh>
 #include <Deferred.glh>
 
+#include "WaterCommon.glh"
+
 #define RENDER_SETTINGS_BINDING 0
 #include "../Inc/RenderSettings.glh"
 
@@ -47,9 +49,11 @@ vec3 doColorExtinction(vec3 inputColor, float waterTravelDist)
 	return mix(step1Res, colorDeep, clamp(min(waterTravelDist, 10) / (colorExtinction), vec3(0.0), vec3(1.0)));
 }
 
-vec3 viewPosFromDepth(vec2 screenCoord, float depthH)
+bool underwater;
+
+vec3 viewPosFromDepth(vec2 screenCoord, float waterDepthH)
 {
-	vec4 h = vec4(screenCoord * 2.0 - vec2(1.0), EG_OPENGL ? (depthH * 2.0 - 1.0) : depthH, 1.0);
+	vec4 h = vec4(screenCoord * 2.0 - vec2(1.0), EG_OPENGL ? (waterDepthH * 2.0 - 1.0) : waterDepthH, 1.0);
 	if (!EG_OPENGL)
 		h.y = -h.y;
 	vec4 d = renderSettings.invProjectionMatrix * h;
@@ -58,14 +62,18 @@ vec3 viewPosFromDepth(vec2 screenCoord, float depthH)
 
 vec3 viewPosSampleDepth(vec2 screenCoord)
 {
-	return viewPosFromDepth(screenCoord, hyperDepth(texture(waterDepthSampler, screenCoord).r));
+	vec4 depthSample = texture(waterDepthSampler, screenCoord);
+	return viewPosFromDepth(screenCoord, hyperDepth(underwater ? depthSample.b : depthSample.r));
 }
+
+const vec3 DEFAULT_REFLECT_COLOR = vec3(0.5, 0.6, 0.7);
 
 vec3 calcReflection(vec3 surfacePos, vec3 dirToEye, vec3 normal)
 {
-	const vec3 DEFAULT_REFLECT_COLOR = vec3(0.5, 0.6, 0.7);
-	
 #ifdef VHighQual
+	if (underwater)
+		return DEFAULT_REFLECT_COLOR;
+	
 	// ** Screen space reflections **
 	
 	vec3 rayDir = normalize(reflect(-dirToEye, normal));
@@ -113,17 +121,18 @@ layout(push_constant) uniform PC
 
 void main()
 {
-	vec2 depthAndTravelDist = texture(waterDepthSampler, texCoord_in).rg;
+	vec3 waterDepth3 = texture(waterDepthSampler, texCoord_in).rgb;
 	
-	bool underwater = depthAndTravelDist.r < 2.0;
+	underwater = waterDepth3.r < UNDERWATER_DEPTH;
 	
 	vec3 worldColor = texture(worldColorSampler, texCoord_in).rgb;
 	
-	float depthH = hyperDepth(depthAndTravelDist.r);
+	float waterDepthL = underwater ? waterDepth3.b : waterDepth3.r;
+	float waterDepthH = hyperDepth(waterDepthL);
 	float worldDepthH = texture(worldDepthSampler, texCoord_in).r;
 	
 	//If the world is closer than the water, don't render water
-	if (worldDepthH < depthH)
+	if (worldDepthH < waterDepthH && !underwater)
 	{
 		color_out = vec4(worldColor, 1.0);
 		return;
@@ -132,11 +141,12 @@ void main()
 	//Stores values without refraction applied for fading later
 	vec3 oriWorldColor = worldColor;
 	float worldDepthL = linearizeDepth(worldDepthH);
-	float fadeDepth = worldDepthL - depthAndTravelDist.r;
+	bool waterSurface = worldDepthL > waterDepthL + 1.0;
+	float fadeDepth = worldDepthL - waterDepthL;
 	
-	vec3 surfacePos = WorldPosFromDepth(depthH, texCoord_in, renderSettings.invViewProjection);
+	vec3 surfacePos = WorldPosFromDepth(waterDepthH, texCoord_in, renderSettings.invViewProjection);
 	
-	vec3 posEye = viewPosFromDepth(texCoord_in, depthH);
+	vec3 posEye = viewPosFromDepth(texCoord_in, waterDepthH);
 	
 	//Finds the difference in view space position along the x-axis
 	vec3 ddx = viewPosSampleDepth(texCoord_in + vec2(pixelSize.x, 0)) - posEye;
@@ -188,13 +198,16 @@ void main()
 	
 #ifndef VLowQual
 	//Refraction
-	if (!underwater)
+	
+	vec2 refractTexcoord = texCoord_in;
+	
+	if (!underwater || waterSurface)
 	{
 		//The refracted texture coordinate is found by moving slightly
 		// along the refraction vector in world space and reprojecting.
 		
-		vec3 refraction = refract(-dirToEye, underwater ? -normal : normal, indexOfRefraction);
-		vec3 refractMoveVec = refraction * min((worldDepthL - depthAndTravelDist.r) * 0.2, 2.0);
+		vec3 refraction = refract(-dirToEye, normal, indexOfRefraction);
+		vec3 refractMoveVec = refraction * clamp((worldDepthL - waterDepthL) * 0.2, 0.0, 1.5);
 		vec4 screenSpaceRefractCoord = renderSettings.viewProjection * vec4(surfacePos + refractMoveVec, 1.0);
 		screenSpaceRefractCoord.xyz /= screenSpaceRefractCoord.w;
 		
@@ -206,31 +219,52 @@ void main()
 		//Steps between the refracted and not refracted texture coordinates
 		// to minimize the jump from pixels where the refracted texture coordinate
 		// is valid (not above water) and those where it is not.
-		vec2 refractTexcoord;
 		const int REFRACT_TRIES = 4;
 		for (int i = 0; i <= REFRACT_TRIES; i++)
 		{
 			refractTexcoord = mix(refractTexcoordTarget, texCoord_in, i / float(REFRACT_TRIES));
 			float refractedWorldDepthH = texture(worldDepthSampler, refractTexcoord).r;
-			if (refractedWorldDepthH > depthH)
+			if (refractedWorldDepthH > waterDepthH)
 			{
 				worldDepthH = refractedWorldDepthH;
 				break;
 			}
 		}
-		
-		//Updates variables with the new texture coordinate
-		worldColor = texture(worldColorSampler, refractTexcoord).rgb;
-		targetPos = WorldPosFromDepth(worldDepthH, refractTexcoord, renderSettings.invViewProjection);
-		depthAndTravelDist = texture(waterDepthSampler, refractTexcoord).rg;
 	}
+	
+	if (underwater)
+	{
+		vec2 screenNmSample = refractTexcoord / pixelSize;
+		for (int i = 0; i < normalMapPanDirs.length(); i++)
+		{
+			vec2 nmMoveOrtho = vec2(normalMapPanDirs[i].y, -normalMapPanDirs[i].x);
+			vec2 samplePos = vec2(dot(screenNmSample, normalMapPanDirs[i]), dot(screenNmSample, nmMoveOrtho) + renderSettings.gameTime * 50.0);
+			vec2 nmVal = texture(normalMapSampler, samplePos * 0.0001).xy * (255.0 / 128.0) - 1.0;
+			refractTexcoord += (nmVal * min(worldDepthL * 0.5, 3.0)) * pixelSize;
+		}
+	}
+	
+	//Updates variables with the new texture coordinate
+	worldColor = texture(worldColorSampler, refractTexcoord).rgb;
+	targetPos = WorldPosFromDepth(worldDepthH, refractTexcoord, renderSettings.invViewProjection);
+	waterDepth3 = texture(waterDepthSampler, refractTexcoord).rgb;
 #endif
 	
-	float waterTravelDist = min(depthAndTravelDist.g * 0.5, distance(targetPos, surfacePos));
+	float waterTravelDist;
+	if (underwater)
+		waterTravelDist = min(distance(renderSettings.cameraPosition, targetPos), distance(renderSettings.cameraPosition, surfacePos));
+	else
+		waterTravelDist = distance(targetPos, surfacePos);
+	waterTravelDist = min(waterTravelDist, waterDepth3.g);
 	
 	vec3 reflectColor = calcReflection(surfacePos, dirToEye, normal);
 	
-	vec3 refractColor = doColorExtinction(worldColor, waterTravelDist);
+	vec3 light = vec3(0.8, 0.9, 1.0) * abs(dot(underwater ? -normal : normal, normalize(vec3(1, 1, 1)))) * 0.25 + 0.5;
+	
+	vec3 refractColor = worldColor;
+	if (underwater && waterSurface)
+		refractColor *= light;
+	refractColor = doColorExtinction(refractColor, waterTravelDist);
 	
 	if (underwater)
 	{
@@ -250,13 +284,10 @@ void main()
 		float shore = clamp((fadeDepth - SHORE_FADE_MAX) / (SHORE_FADE_BEGIN - SHORE_FADE_MAX), 0.0, 1.0);
 #endif
 		
-		float fresnel = R0 + (1.0 - R0) * pow(1.0 - max(dot(normal, dirToEye), 0.0), 5.0);
-		
-		vec3 light = vec3(0.8, 0.9, 1.0) * abs(dot(normal, normalize(vec3(1, 1, 1)))) * 0.25 + 0.5;
-		vec3 waterColor = mix(refractColor, reflectColor, fresnel) * light;
-		
 		vec3 foamColor = vec3(1.0);
 		
+		float fresnel = R0 + (1.0 - R0) * pow(1.0 - max(dot(normal, dirToEye), 0.0), 5.0);
+		vec3 waterColor = mix(refractColor, reflectColor, fresnel) * light;
 		color_out = vec4(mix(oriWorldColor, mix(foamColor, waterColor, foam), shore), 1.0);
 	}
 }

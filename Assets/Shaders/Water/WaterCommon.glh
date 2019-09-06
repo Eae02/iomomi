@@ -1,1 +1,3 @@
 const float PARTICLE_RADIUS = 0.3;
+const float TRAVEL_DIST_SCALE = 0.5;
+const float UNDERWATER_DEPTH = 2.0;

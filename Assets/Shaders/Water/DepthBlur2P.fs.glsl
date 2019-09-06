@@ -1,16 +1,18 @@
 #version 450 core
 #pragma variants V1 V2
 
+#include "WaterCommon.glh"
 #include "../Inc/Depth.glh"
 
 layout(location=0) in vec2 texCoord_in;
 
-layout(location=0) out vec2 depth_out;
+layout(location=0) out vec3 depth_out;
 
 layout(binding=0) uniform sampler2D depthSampler;
 
 #ifdef V1
 layout(binding=1) uniform sampler2D travelDepthSampler;
+layout(binding=2) uniform sampler2D depthMaxSampler;
 #endif
 
 layout(constant_id=0) const int FILTER_RADIUS = 16;
@@ -28,43 +30,52 @@ const float MAX_BLUR_RAMP = 3.0;
 
 void main()
 {
-	vec2 centerSample = texture(depthSampler, texCoord_in).rg;
+	vec3 centerSample = texture(depthSampler, texCoord_in).rgb;
 	
 #ifdef V1
-	float centerDepth = linearizeDepth(depthTo01(centerSample.x));
+	float centerDepth       = linearizeDepth(depthTo01(centerSample.x));
 	float centerTravelDepth = texture(travelDepthSampler, texCoord_in).x;
+	float centerDepthMax    = linearizeDepth(depthTo01(texture(depthMaxSampler, texCoord_in).r));
 #else
-	float centerDepth = centerSample.x;
+	float centerDepth       = centerSample.x;
 	float centerTravelDepth = centerSample.y;
+	float centerDepthMax    = centerSample.z;
 #endif
 	
 	float blurRamp = clamp((centerTravelDepth - BLUR_RAMP_BEGIN) / BLUR_RAMP_SIZE, 0, 1);
-	float blurDist = (blurRamp * (MAX_BLUR_RAMP - 1) + 1) / centerDepth;
+	float blurDist = (blurRamp * (MAX_BLUR_RAMP - 1) + 1) / (centerDepth < UNDERWATER_DEPTH ? centerDepthMax : centerDepth);
 	
-	vec2 sum = vec2(0);
-	float wsum = 0;
+	vec3 sum = vec3(0);
+	vec3 wsum = vec3(0);
 	for (int x = -FILTER_RADIUS; x <= FILTER_RADIUS; x++)
 	{
 		vec2 tc = texCoord_in + x * blurDir * blurDist;
 		
 #ifdef V1
-		vec2 s = vec2(linearizeDepth(depthTo01(texture(depthSampler, tc).x)), texture(travelDepthSampler, tc).x);
+		vec3 s = vec3(
+			linearizeDepth(depthTo01(texture(depthSampler, tc).x)),
+			texture(travelDepthSampler, tc).x,
+			linearizeDepth(depthTo01(texture(depthMaxSampler, tc).x))
+		);
 #else
-		vec2 s = texture(depthSampler, tc).xy;
+		vec3 s = texture(depthSampler, tc).xyz;
 #endif
 		
 		float r = x * blurScale;
-		float w = exp(-r * r);
+		float wDist = exp(-r * r);
 		
-		float r2 = abs(s.x - centerDepth) * blurDepthFalloff;
-		float g = exp(-r2 * r2);
+		float rMin = abs(s.x - centerDepth) * blurDepthFalloff;
+		float gMin = exp(-rMin * rMin);
 		
-		sum += s * w * g;
-		wsum += w * g;
+		float rMax = abs(s.z - centerDepthMax) * blurDepthFalloff;
+		float gMax = exp(-rMax * rMax);
+		
+		vec3 weight = wDist * vec3(gMin, gMin, gMax);
+		sum += s * weight;
+		wsum += weight;
 	}
 	
-	if (wsum > 0.0)
-		sum /= wsum;
+	sum /= max(wsum, vec3(0.001));
 	
 	depth_out = sum;
 }

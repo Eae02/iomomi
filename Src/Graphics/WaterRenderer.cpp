@@ -11,38 +11,37 @@ WaterRenderer::WaterRenderer()
 	m_quadVB = eg::Buffer(eg::BufferFlags::VertexBuffer, sizeof(quadVBData), quadVBData);
 	m_quadVB.UsageHint(eg::BufferUsage::VertexBuffer);
 	
-	eg::GraphicsPipelineCreateInfo pipelineBasicCI;
-	pipelineBasicCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterSphere.vs.glsl").DefaultVariant();
+	eg::GraphicsPipelineCreateInfo pipelineCITemplate;
+	pipelineCITemplate.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterSphere.vs.glsl").DefaultVariant();
+	pipelineCITemplate.topology = eg::Topology::TriangleStrip;
+	pipelineCITemplate.vertexAttributes[0] = { 0, eg::DataType::Float32, 2, 0 };
+	pipelineCITemplate.vertexAttributes[1] = { 1, eg::DataType::Float32, 3, 0 };
+	pipelineCITemplate.vertexBindings[0] = { sizeof(float) * 2, eg::InputRate::Vertex };
+	pipelineCITemplate.vertexBindings[1] = { sizeof(float) * 4, eg::InputRate::Instance };
+	
+	eg::GraphicsPipelineCreateInfo pipelineBasicCI = pipelineCITemplate;
 	pipelineBasicCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterSphereBasic.fs.glsl").DefaultVariant();
 	pipelineBasicCI.enableDepthTest = true;
 	pipelineBasicCI.enableDepthWrite = true;
-	pipelineBasicCI.topology = eg::Topology::TriangleStrip;
-	pipelineBasicCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 2, 0 };
-	pipelineBasicCI.vertexAttributes[1] = { 1, eg::DataType::Float32, 3, 0 };
-	pipelineBasicCI.vertexBindings[0] = { sizeof(float) * 2, eg::InputRate::Vertex };
-	pipelineBasicCI.vertexBindings[1] = { sizeof(float) * 4, eg::InputRate::Instance };
 	m_pipelineBasic = eg::Pipeline::Create(pipelineBasicCI);
 	
-	eg::GraphicsPipelineCreateInfo pipelineDepthOnlyCI;
-	pipelineDepthOnlyCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterSphere.vs.glsl").DefaultVariant();
-	pipelineDepthOnlyCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterSphereDepth.fs.glsl").DefaultVariant();
-	pipelineDepthOnlyCI.enableDepthTest = true;
-	pipelineDepthOnlyCI.enableDepthWrite = true;
-	pipelineDepthOnlyCI.topology = eg::Topology::TriangleStrip;
-	pipelineDepthOnlyCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 2, 0 };
-	pipelineDepthOnlyCI.vertexAttributes[1] = { 1, eg::DataType::Float32, 3, 0 };
-	pipelineDepthOnlyCI.vertexBindings[0] = { sizeof(float) * 2, eg::InputRate::Vertex };
-	pipelineDepthOnlyCI.vertexBindings[1] = { sizeof(float) * 4, eg::InputRate::Instance };
-	m_pipelineDepthOnly = eg::Pipeline::Create(pipelineDepthOnlyCI);
+	auto& sphereDepthFS = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterSphereDepth.fs.glsl");
 	
-	eg::GraphicsPipelineCreateInfo pipelineAddCI;
-	pipelineAddCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterSphere.vs.glsl").DefaultVariant();
+	eg::GraphicsPipelineCreateInfo pipelineDepthMinCI = pipelineCITemplate;
+	pipelineDepthMinCI.fragmentShader = sphereDepthFS.GetVariant("VDepthMin");
+	pipelineDepthMinCI.enableDepthTest = true;
+	pipelineDepthMinCI.enableDepthWrite = true;
+	m_pipelineDepthMin = eg::Pipeline::Create(pipelineDepthMinCI);
+	
+	eg::GraphicsPipelineCreateInfo pipelineDepthMaxCI = pipelineCITemplate;
+	pipelineDepthMaxCI.fragmentShader = sphereDepthFS.GetVariant("VDepthMax");
+	pipelineDepthMaxCI.enableDepthTest = true;
+	pipelineDepthMaxCI.enableDepthWrite = true;
+	pipelineDepthMaxCI.depthCompare = eg::CompareOp::Greater;
+	m_pipelineDepthMax = eg::Pipeline::Create(pipelineDepthMaxCI);
+	
+	eg::GraphicsPipelineCreateInfo pipelineAddCI = pipelineCITemplate;
 	pipelineAddCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterSphereAdd.fs.glsl").DefaultVariant();
-	pipelineAddCI.topology = eg::Topology::TriangleStrip;
-	pipelineAddCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 2, 0 };
-	pipelineAddCI.vertexAttributes[1] = { 1, eg::DataType::Float32, 3, 0 };
-	pipelineAddCI.vertexBindings[0] = { sizeof(float) * 2, eg::InputRate::Vertex };
-	pipelineAddCI.vertexBindings[1] = { sizeof(float) * 4, eg::InputRate::Instance };
 	pipelineAddCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
 	m_pipelineAdditive = eg::Pipeline::Create(pipelineAddCI);
 	
@@ -81,9 +80,13 @@ void WaterRenderer::CreateDepthBlurPipelines(uint32_t samples)
 	pipelineBlurCI.fragmentShader.specConstantsData = &samples;
 	pipelineBlurCI.fragmentShader.specConstantsDataSize = sizeof(uint32_t);
 	m_pipelineBlurPass1 = eg::Pipeline::Create(pipelineBlurCI);
+	m_pipelineBlurPass1.FramebufferFormatHint(eg::Format::R32G32B32A32_Float);
+	m_pipelineBlurPass1.FramebufferFormatHint(eg::Format::R16G16B16A16_Float);
 	
 	pipelineBlurCI.fragmentShader.shaderModule = depthBlurTwoPassFS.GetVariant("V2");
 	m_pipelineBlurPass2 = eg::Pipeline::Create(pipelineBlurCI);
+	m_pipelineBlurPass2.FramebufferFormatHint(eg::Format::R32G32B32A32_Float);
+	m_pipelineBlurPass2.FramebufferFormatHint(eg::Format::R16G16B16A16_Float);
 	
 	pipelineBlurCI.fragmentShader.shaderModule = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/DepthBlur1P.fs.glsl").DefaultVariant();
 	m_pipelineBlurSinglePass = eg::Pipeline::Create(pipelineBlurCI);
@@ -140,18 +143,20 @@ void WaterRenderer::Render(eg::BufferRef positionsBuffer, uint32_t numParticles,
 	float relBlurRad = (*blurRadius * baseBlurRadius[(int)m_currentQualityLevel]) / blurSamples;
 	float relDistanceFalloff = *blurDistanceFalloff / blurSamples;
 	
-	// ** First pass: Depth only **
+	// ** Depth min pass **
+	//This pass renders all water particles to a depth buffer
+	// using less compare mode to get the minimum depth bounds.
 	
 	eg::MultiStageGPUTimer timer;
 	timer.StartStage("Depth");
 	
-	eg::RenderPassBeginInfo depthOnlyRPBeginInfo;
-	depthOnlyRPBeginInfo.framebuffer = renderTarget.m_depthPassFramebuffer.handle;
-	depthOnlyRPBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Clear;
-	depthOnlyRPBeginInfo.depthClearValue = 1;
-	eg::DC.BeginRenderPass(depthOnlyRPBeginInfo);
+	eg::RenderPassBeginInfo depthMinRPBeginInfo;
+	depthMinRPBeginInfo.framebuffer = renderTarget.m_depthPassFramebuffer.handle;
+	depthMinRPBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Clear;
+	depthMinRPBeginInfo.depthClearValue = 1;
+	eg::DC.BeginRenderPass(depthMinRPBeginInfo);
 	
-	eg::DC.BindPipeline(m_pipelineDepthOnly);
+	eg::DC.BindPipeline(m_pipelineDepthMin);
 	
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 	
@@ -165,6 +170,8 @@ void WaterRenderer::Render(eg::BufferRef positionsBuffer, uint32_t numParticles,
 	
 	
 	// ** Travel depth additive pass **
+	//This pass renders all water particles additively to get the
+	// water travel depth.
 	
 	timer.StartStage("Additive Depth");
 	
@@ -185,6 +192,32 @@ void WaterRenderer::Render(eg::BufferRef positionsBuffer, uint32_t numParticles,
 	eg::DC.EndRenderPass();
 	
 	renderTarget.m_travelDepthTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
+	
+	// ** Depth max pass **
+	//This pass renders all water particles that are closer to the camera than the the travel depth
+	// to a depth buffer. Greater compare mode is used to get the maximum depth bounds.
+	// This is used to render the water surface from below.
+	timer.StartStage("Depth Max");
+	
+	eg::RenderPassBeginInfo depthMaxRPBeginInfo;
+	depthMaxRPBeginInfo.framebuffer = renderTarget.m_maxDepthPassFramebuffer.handle;
+	depthMaxRPBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Clear;
+	depthMaxRPBeginInfo.depthClearValue = 0;
+	eg::DC.BeginRenderPass(depthMaxRPBeginInfo);
+	
+	eg::DC.BindPipeline(m_pipelineDepthMax);
+	
+	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
+	eg::DC.BindTexture(renderTarget.m_inputDepth, 0, 1);
+	
+	eg::DC.BindVertexBuffer(0, m_quadVB, 0);
+	eg::DC.BindVertexBuffer(1, positionsBuffer, 0);
+	eg::DC.Draw(0, 4, 0, numParticles);
+	
+	eg::DC.EndRenderPass();
+	
+	renderTarget.m_maxDepthTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
+	
 	
 	timer.StartStage("Blur");
 	
@@ -228,6 +261,7 @@ void WaterRenderer::Render(eg::BufferRef positionsBuffer, uint32_t numParticles,
 		
 		eg::DC.BindTexture(renderTarget.m_depthTexture, 0, 0);
 		eg::DC.BindTexture(renderTarget.m_travelDepthTexture, 0, 1);
+		eg::DC.BindTexture(renderTarget.m_maxDepthTexture, 0, 2);
 		eg::DC.Draw(0, 3, 0, 1);
 		
 		eg::DC.EndRenderPass();
@@ -305,9 +339,10 @@ WaterRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height, eg::T
 	depthTextureCI.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample;
 	depthTextureCI.defaultSamplerDescription = &fbSamplerDesc;
 	m_depthTexture = eg::Texture::Create2D(depthTextureCI);
+	m_maxDepthTexture = eg::Texture::Create2D(depthTextureCI);
 	
 	m_depthPassFramebuffer = eg::Framebuffer({}, m_depthTexture.handle);
-	
+	m_maxDepthPassFramebuffer = eg::Framebuffer({}, m_maxDepthTexture.handle);
 	
 	eg::TextureCreateInfo travelDepthTextureCI;
 	travelDepthTextureCI.format = highPrecision ? eg::Format::R32_Float : eg::Format::R16_Float;
@@ -323,7 +358,7 @@ WaterRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height, eg::T
 	
 	
 	eg::TextureCreateInfo blurTextureCI;
-	blurTextureCI.format = highPrecision ? eg::Format::R32G32_Float : eg::Format::R16G16_Float;
+	blurTextureCI.format = highPrecision ? eg::Format::R32G32B32A32_Float : eg::Format::R16G16B16A16_Float;
 	blurTextureCI.width = m_width;
 	blurTextureCI.height = m_height;
 	blurTextureCI.mipLevels = 1;

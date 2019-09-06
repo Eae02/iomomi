@@ -35,6 +35,9 @@ public:
 		eg::Texture m_travelDepthTexture;
 		eg::Framebuffer m_travelDepthPassFramebuffer;
 		
+		eg::Texture m_maxDepthTexture;
+		eg::Framebuffer m_maxDepthPassFramebuffer;
+		
 		eg::Texture m_blurredDepthTexture1;
 		eg::Framebuffer m_blurredDepthFramebuffer1;
 		eg::Texture m_blurredDepthTexture2;
@@ -65,7 +68,8 @@ private:
 	
 	eg::Pipeline m_pipelineBasic;
 	
-	eg::Pipeline m_pipelineDepthOnly;
+	eg::Pipeline m_pipelineDepthMin;
+	eg::Pipeline m_pipelineDepthMax;
 	eg::Pipeline m_pipelineAdditive;
 	eg::Pipeline m_pipelineBlurPass1;
 	eg::Pipeline m_pipelineBlurPass2;
