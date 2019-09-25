@@ -1,5 +1,4 @@
 #include "World.hpp"
-#include "Voxel.hpp"
 #include "PrepareDrawArgs.hpp"
 #include "Entities/ECRigidBody.hpp"
 #include "Entities/WallLight.hpp"

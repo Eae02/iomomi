@@ -1,0 +1,15 @@
+syntax="proto3";
+
+package gravity_pb;
+
+import "Dir.proto";
+
+message ForceFieldEntity {
+	float posX = 1;
+	float posY = 2;
+	float posZ = 3;
+	float radX = 4;
+	float radY = 5;
+	float radZ = 6;
+	Dir new_gravity = 7;
+}

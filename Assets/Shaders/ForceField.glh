@@ -1,0 +1,7 @@
+#define MODE_BOX 0
+
+#define MB_SCALE_VIN vin1
+#define MB_POS_VIN vin2.xyz
+
+#define MB_REL_POS io1
+#define MB_SCALE io2

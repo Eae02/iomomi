@@ -50,6 +50,8 @@ assets:
   - name: Shaders/Decal.fs.glsl
   - name: Shaders/GravityBarrier.vs.glsl
   - name: Shaders/GravityBarrier.fs.glsl
+  - name: Shaders/ForceField.vs.glsl
+  - name: Shaders/ForceField.fs.glsl
   - name: Shaders/Particle.vs.glsl
   - name: Shaders/Particle.fs.glsl
   - name: Shaders/GooPlane.vs.glsl

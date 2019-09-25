@@ -1,5 +1,4 @@
 #include "ECWallMounted.hpp"
-#include "../Voxel.hpp"
 
 glm::mat4 ECWallMounted::GetTransform(const eg::Entity& entity, float scale)
 {

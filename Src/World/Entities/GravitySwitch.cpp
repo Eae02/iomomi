@@ -4,7 +4,6 @@
 #include "Messages.hpp"
 #include "ECInteractable.hpp"
 #include "../Player.hpp"
-#include "../Voxel.hpp"
 #include "../../YAMLUtils.hpp"
 #include "../../Graphics/RenderSettings.hpp"
 #include "../../Graphics/Materials/StaticPropMaterial.hpp"

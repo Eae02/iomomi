@@ -14,3 +14,23 @@ std::optional<Dir> ParseDirection(std::string_view directionName)
 	}
 	return { };
 }
+
+const glm::ivec3 voxel::tangents[6] =
+{
+	{ 0, 1, 0 },
+	{ 0, 1, 0 },
+	{ 1, 0, 0 },
+	{ 1, 0, 0 },
+	{ 0, 1, 0 },
+	{ 0, 1, 0 }
+};
+
+const glm::ivec3 voxel::biTangents[6] =
+{
+	{ 0, 0, -1 },
+	{ 0, 0, 1 },
+	{ 0, 0, 1 },
+	{ 0, 0, -1 },
+	{ 1, 0, 0 },
+	{ -1, 0, 0 }
+};

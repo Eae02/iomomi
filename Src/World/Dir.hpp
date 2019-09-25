@@ -31,3 +31,10 @@ inline Dir OppositeDir(Dir d)
 	int id = (int)d;
 	return (Dir)(id - 2 * (id % 2) + 1);
 }
+
+namespace voxel
+{
+	extern const glm::ivec3 tangents[6];
+	
+	extern const glm::ivec3 biTangents[6];
+}
