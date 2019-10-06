@@ -122,6 +122,8 @@ assets:
     mipLevels: 8
     srgb: true
     format: bc3
+  - name: Textures/ForceFieldParticle.png
+    format: bc4
     
   - name: Textures/Entrance/FloorA.png
     mipShift: *MipShift

@@ -94,7 +94,7 @@ std::vector<glm::vec3> GetPlatformConnectionPoints(const eg::Entity& entity)
 
 glm::vec3 ECPlatform::GetPosition(const eg::Entity& entity)
 {
-	return glm::vec3(GetPlatformTransform(entity)[3]);
+	return glm::vec3(GetPlatformTransform(entity) * glm::vec4(0, RIGID_BODY_HEIGHT / 2, 0, 1));
 }
 
 eg::AABB ECPlatform::GetAABB(const eg::Entity& entity)

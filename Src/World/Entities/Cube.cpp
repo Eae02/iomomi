@@ -8,6 +8,7 @@
 #include "GooPlane.hpp"
 #include "Messages.hpp"
 #include "GravityBarrier.hpp"
+#include "ForceField.hpp"
 #include "../GravityGun.hpp"
 #include "../Clipping.hpp"
 #include "../Player.hpp"
@@ -144,12 +145,15 @@ namespace Cube
 	
 	static int CheckInteraction(const eg::Entity& entity, const Player& player)
 	{
+		if (!player.OnGround())
+			return 0;
+		
 		//Very high so that dropping the cube has higher priority than other interactions.
 		static constexpr int DROP_INTERACT_PRIORITY = 1000;
 		if (entity.GetComponent<ECCube>().isPickedUp)
 			return DROP_INTERACT_PRIORITY;
 		
-		if (player.IsCarrying() || !player.OnGround())
+		if (player.IsCarrying())
 			return 0;
 		
 		static constexpr int PICK_UP_INTERACT_PRIORITY = 2;
@@ -191,6 +195,18 @@ namespace Cube
 			{
 				entity.Despawn();
 				continue;
+			}
+			
+			std::optional<Dir> forceFieldGravity = ECForceField::CheckIntersection(args.world->EntityManager(),
+				eg::AABB(sphere.position - RADIUS, sphere.position + RADIUS));
+			if (forceFieldGravity.has_value() && cube.currentDown != *forceFieldGravity)
+			{
+				cube.currentDown = *forceFieldGravity;
+				if (cube.isPickedUp)
+				{
+					cube.isPickedUp = false;
+					args.player->SetIsCarrying(false);
+				}
 			}
 			
 			if (cube.isPickedUp)

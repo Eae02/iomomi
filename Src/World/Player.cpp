@@ -4,6 +4,7 @@
 #include "Entities/ECActivator.hpp"
 #include "Entities/ECInteractable.hpp"
 #include "Entities/ECPlatform.hpp"
+#include "Entities/ForceField.hpp"
 #include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
 #include "../Settings.hpp"
 
@@ -358,6 +359,22 @@ void Player::Update(World& world, float dt, bool underwater)
 		}
 	}
 	
+	//Checks for force fields
+	eg::AABB forceFieldAABB = GetAABB();
+	forceFieldAABB.min += forceFieldAABB.Size() * 0.2f;
+	forceFieldAABB.max -= forceFieldAABB.Size() * 0.2f;
+	std::optional<Dir> forceFieldGravity = ECForceField::CheckIntersection(world.EntityManager(), forceFieldAABB);
+	if (m_gravityTransitionMode == TransitionMode::None && forceFieldGravity.has_value() && m_down != *forceFieldGravity)
+	{
+		m_down = *forceFieldGravity;
+		m_gravityTransitionMode = TransitionMode::Fall;
+		m_transitionTime = 0;
+		m_velocity = glm::vec3(0);
+		m_oldEyePosition = m_eyePosition;
+		m_oldRotation = m_rotation;
+		m_newRotation = GetRotation(m_rotationYaw, m_rotationPitch, m_down);
+	}
+	
 	m_onGround = false;
 	
 	const int downDim = (int)m_down / 2;
@@ -370,9 +387,17 @@ void Player::Update(World& world, float dt, bool underwater)
 		
 		//The player's position should be slightly above the platform (PLAYER_PLATFORM_MARGIN)
 		// at all times to prevent the player from falling through the platform when it moves up.
-		constexpr float PLAYER_PLATFORM_MARGIN = 0.05f;
-		const float fromPlatformY = m_position[downDim] - ECPlatform::GetPosition(*currentPlatform)[downDim];
-		platformMove -= std::min(fromPlatformY - (HEIGHT * 0.5f) - PLAYER_PLATFORM_MARGIN, 0.0f) * up;
+		float PLAYER_PLATFORM_MARGIN = (up[downDim] < 0) ? 0.3f : 0.1f;
+		
+		float correction =
+			-m_position[downDim] +
+			ECPlatform::GetPosition(*currentPlatform)[downDim] +
+			((HEIGHT * 0.5f) + PLAYER_PLATFORM_MARGIN) * up[downDim];
+		
+		if (correction * up[downDim] < 0)
+			correction = 0;
+		
+		platformMove[downDim] += correction;
 		
 		ClipAndMove(world, platformMove, true);
 		m_onGround = true; //Always on ground if on a platform
@@ -382,10 +407,12 @@ void Player::Update(World& world, float dt, bool underwater)
 	
 	//Searches for a platform under the player's feet
 	const glm::vec3 feetPos = m_position + glm::vec3(DirectionVector(m_down)) * (HEIGHT * 0.5f);
-	glm::vec3 platformSearchMax = feetPos + 0.05f;
-	glm::vec3 platformSearchMin = feetPos - 0.05f;
-	platformSearchMax[downDim] = feetPos[downDim];
-	platformSearchMin[downDim] = feetPos[downDim] + std::max(move[downDim] * downSign, 0.2f) * downSign;
+	glm::vec3 platformSearchMax = feetPos + 0.1f;
+	glm::vec3 platformSearchMin = feetPos - 0.1f;
+	float platformSearchDown1 = feetPos[downDim];
+	float platformSearchDown2 = feetPos[downDim] + std::max(move[downDim] * downSign, 0.3f) * downSign;
+	platformSearchMax[downDim] = std::max(platformSearchDown1, platformSearchDown2);
+	platformSearchMin[downDim] = std::min(platformSearchDown1, platformSearchDown2);
 	currentPlatform = ECPlatform::FindPlatform(eg::AABB(platformSearchMin, platformSearchMax), world.EntityManager());
 	if (currentPlatform == nullptr)
 		m_currentPlatform = { };
@@ -468,7 +495,6 @@ void Player::FlipDown()
 	m_oldRotation = m_rotation;
 	m_newRotation = GetRotation(m_rotationYaw, m_rotationPitch, newDown);
 	
-	m_newPosition = m_position;
 	m_velocity = glm::vec3(0);
 	m_down = newDown;
 	m_oldEyePosition = m_eyePosition;
@@ -503,6 +529,8 @@ void Player::DebugDraw()
 	
 	const char* dirNames = "XYZ";
 	ImGui::Text("Facing: %c%c", forward[maxDir] < 0 ? '-' : '+', dirNames[maxDir]);
+	
+	ImGui::Text("Platform: %p", (void*)m_currentPlatform.Get());
 }
 
 void Player::Reset()

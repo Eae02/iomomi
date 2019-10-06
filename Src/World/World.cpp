@@ -10,6 +10,7 @@
 #include "Entities/Entrance.hpp"
 #include "Entities/GravityBarrier.hpp"
 #include "Entities/CubeSpawner.hpp"
+#include "Entities/ForceField.hpp"
 #include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
 #include "../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../Graphics/RenderSettings.hpp"
@@ -254,6 +255,8 @@ void World::Update(const WorldUpdateArgs& args)
 		auto physicsCPUTimer = eg::StartCPUTimer("Physics");
 		
 		ECGravityBarrier::Update(args);
+		
+		ECForceField::Update(args.dt, *m_entityManager);
 		
 		CubeSpawner::Update(args);
 		
