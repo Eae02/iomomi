@@ -30,7 +30,7 @@ const vec3 color = pow(vec3(13, 184, 250) / 255.0, vec3(2.2));
 
 const vec3 colorSurface = vec3(0.04, 0.59, 0.77);
 const vec3 colorDeep = vec3(0.01, 0.03, 0.35);
-const float visibility = 20;
+const float visibility = 10;
 const vec3 colorExtinction = vec3(0.7, 3.0, 4.0) * 10;
 
 const float indexOfRefraction = 0.6;

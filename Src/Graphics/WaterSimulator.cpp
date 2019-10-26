@@ -453,7 +453,7 @@ void WaterSimulator::Step(float dt, const eg::AABB& playerAABB, int changeGravit
 			__m128 displaceNormal;
 			
 			alignas(16) int32_t offset[4] = { };
-			constexpr int CHECK_RAD = 2;
+			constexpr int CHECK_RAD = 1;
 			for (offset[2] = -CHECK_RAD; offset[2] <= CHECK_RAD; offset[2]++)
 			{
 				for (offset[1] = -CHECK_RAD; offset[1] <= CHECK_RAD; offset[1]++)
