@@ -8,7 +8,7 @@ class ActivationLightStripEnt : public Ent
 public:
 	ActivationLightStripEnt();
 	
-	static constexpr EntTypeID TypeID = EntTypeID::Decal;
+	static constexpr EntTypeID TypeID = EntTypeID::ActivationLightStrip;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::EditorInvisible;
 	
 	void Serialize(std::ostream& stream) override;
@@ -28,7 +28,7 @@ public:
 	static void GenerateForActivator(World& world, Ent& activatorEntity);
 	static void GenerateAll(World& world);
 	
-	void Update(float dt);
+	void Update(const struct WorldUpdateArgs& args) override;
 	
 	void Generate(const class World& world, eg::Span<const WayPoint> points);
 	

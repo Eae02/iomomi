@@ -102,6 +102,27 @@ static void OnInit()
 
 EG_ON_INIT(OnInit)
 
+std::vector<glm::vec3> EntranceExitEnt::GetConnectionPoints(const Ent& entity)
+{
+	const glm::mat4 transform = static_cast<const EntranceExitEnt&>(entity).GetTransform();
+	const glm::vec3 connectionPointsLocal[] = 
+	{
+		glm::vec3(MESH_LENGTH, 1.0f, -1.5f),
+		glm::vec3(MESH_LENGTH, 1.0f, 1.5f),
+		glm::vec3(MESH_LENGTH, 2.5f, 0.0f)
+	};
+	
+	std::vector<glm::vec3> connectionPoints;
+	for (const glm::vec3& connectionPointLocal : connectionPointsLocal)
+	{
+		connectionPoints.emplace_back(transform * glm::vec4(connectionPointLocal, 1.0f));
+	}
+	return connectionPoints;
+}
+
+EntranceExitEnt::EntranceExitEnt()
+	: m_activatable(&EntranceExitEnt::GetConnectionPoints) { }
+
 const Dir UP_VECTORS[] =
 {
 	Dir::PosY, Dir::PosY, Dir::PosX, Dir::PosX, Dir::PosY, Dir::PosY

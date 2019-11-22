@@ -5,6 +5,15 @@ void EntityManager::AddEntity(std::shared_ptr<Ent> entity)
 	for (FlagTracker& tracker : m_trackers)
 		tracker.MaybeAdd(entity);
 	
+	for (size_t i = 0; i < NUM_UPDATABLE_ENTITY_TYPES; i++)
+	{
+		if (entUpdateOrder[i] == entity->TypeID())
+		{
+			m_updatableEntities[i].emplace_back(entity);
+			break;
+		}
+	}
+	
 	uint32_t name = entity->Name();
 	m_entities.emplace(name, std::move(entity));
 }
@@ -15,11 +24,31 @@ EntityManager::EntityManager()
 	m_trackers[1].flags = EntTypeFlags::EditorDrawable;
 	m_trackers[2].flags = EntTypeFlags::HasCollision;
 	m_trackers[3].flags = EntTypeFlags::Interactable;
+	m_trackers[4].flags = EntTypeFlags::Activatable;
 }
 
 void EntityManager::RemoveEntity(uint32_t name)
 {
 	m_entities.erase(name);
+}
+
+void EntityManager::Update(const struct WorldUpdateArgs& args)
+{
+	for (size_t t = 0; t < NUM_UPDATABLE_ENTITY_TYPES; t++)
+	{
+		for (int64_t i = m_updatableEntities[t].size() - 1; i >= 0; i--)
+		{
+			if (std::shared_ptr<Ent> ent = m_updatableEntities[t][i].lock())
+			{
+				ent->Update(args);
+			}
+			else
+			{
+				m_updatableEntities[t][i].swap(m_updatableEntities[t].back());
+				m_updatableEntities[t].pop_back();
+			}
+		}
+	}
 }
 
 void EntityManager::FlagTracker::MaybeAdd(const std::shared_ptr<Ent>& entity)

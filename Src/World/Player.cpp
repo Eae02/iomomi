@@ -2,6 +2,7 @@
 #include "Entities/EntInteractable.hpp"
 #include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
 #include "../Settings.hpp"
+#include "Entities/EntTypes/FloorButtonEnt.hpp"
 
 #include <imgui.h>
 
@@ -343,16 +344,16 @@ void Player::Update(World& world, float dt, bool underwater)
 	}
 	
 	//Activates floor buttons which the player is moving into
-	/*for (eg::Entity& floorButtonEntity : world.EntityManager().GetEntitySet(ECFloorButton::EntitySignature))
+	world.entManager.ForEachOfType<FloorButtonEnt>([&] (FloorButtonEnt& floorButtonEntity) 
 	{
-		glm::vec3 toButton = glm::normalize(eg::GetEntityPosition(floorButtonEntity) - m_position);
+		glm::vec3 toButton = glm::normalize(floorButtonEntity.Pos() - m_position);
 		if (glm::dot(toButton, glm::normalize(move)) > 0.1f &&
-		    ECFloorButton::GetAABB(floorButtonEntity).Intersects(GetAABB()))
+		    floorButtonEntity.GetAABB().Intersects(GetAABB()))
 		{
-			floorButtonEntity.HandleMessage(ActivateMessage());
+			floorButtonEntity.Activate();
 		}
-	}
-	
+	});
+	/*
 	//Checks for force fields
 	eg::AABB forceFieldAABB = GetAABB();
 	forceFieldAABB.min += forceFieldAABB.Size() * 0.2f;

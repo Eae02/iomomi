@@ -236,13 +236,13 @@ void Editor::RunFrame(float dt)
 			{
 				entity->RenderSettings();
 				
-				//if (entity->FindComponent<ECActivator>())
-				//{
-				//	if (ImGui::Button("Connect..."))
-				//	{
-				//		m_connectingActivator = *entity;
-				//	}
-				//}
+				if (entity->GetComponent<ActivatorComp>())
+				{
+					if (ImGui::Button("Connect..."))
+					{
+						m_connectingActivator = entity;
+					}
+				}
 			}
 			ImGui::PopID();
 		}

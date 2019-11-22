@@ -7,6 +7,14 @@
 #include "EntTypes/GooPlaneEnt.hpp"
 #include "EntTypes/WaterPlaneEnt.hpp"
 #include "EntTypes/GravitySwitchEnt.hpp"
+#include "EntTypes/FloorButtonEnt.hpp"
+#include "EntTypes/ActivationLightStripEnt.hpp"
+
+const EntTypeID entUpdateOrder[NUM_UPDATABLE_ENTITY_TYPES] =
+{
+	EntTypeID::ActivationLightStrip,
+	EntTypeID::FloorButton
+};
 
 template <typename T>
 void DefineEntityType(std::string name, std::string prettyName)
@@ -31,4 +39,6 @@ void InitEntityTypes()
 	DefineEntityType<GooPlaneEnt>("GooPlane", "Goo Plane");
 	DefineEntityType<WaterPlaneEnt>("WaterPlane", "Water Plane");
 	DefineEntityType<GravitySwitchEnt>("GravitySwitch", "Gravity Switch");
+	DefineEntityType<FloorButtonEnt>("FloorButton", "Floor Button");
+	DefineEntityType<ActivationLightStripEnt>("ActivationLightStripEnt", "Activation Light Strip");
 }

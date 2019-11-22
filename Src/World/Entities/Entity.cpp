@@ -53,3 +53,5 @@ EntTypeFlags Ent::TypeFlags() const
 {
 	return entTypeMap.at(m_typeID).flags;
 }
+
+void Ent::Update(const struct WorldUpdateArgs& args) { }

@@ -7,6 +7,7 @@
 #include "Entities/EntTypes/EntranceExitEnt.hpp"
 #include "Entities/Components/RigidBodyComp.hpp"
 #include "Entities/EntCollidable.hpp"
+#include "Entities/Components/ActivatorComp.hpp"
 
 #include <yaml-cpp/yaml.h>
 
@@ -93,7 +94,7 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 	
 	world->entManager = EntityManager::Deserialize(stream);
 	
-	//ECActivator::Initialize(*world->m_entityManager);
+	ActivatorComp::Initialize(world->entManager);
 	
 	if (!isEditor)
 	{
@@ -242,6 +243,8 @@ glm::mat3 GravityCorner::MakeRotationMatrix() const
 
 void World::Update(const WorldUpdateArgs& args)
 {
+	entManager.Update(args);
+	
 	if (m_bulletWorld)
 	{
 		auto physicsCPUTimer = eg::StartCPUTimer("Physics");
@@ -258,8 +261,6 @@ void World::Update(const WorldUpdateArgs& args)
 		
 		//Cube::UpdatePostSim(args);
 	}
-	
-	//ECActivationLightStrip::Update(*m_entityManager, args.dt);
 	
 	//ECActivator::Update(args);
 	

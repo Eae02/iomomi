@@ -22,12 +22,16 @@ public:
 	template <typename CallbackTp>
 	void ForEach(CallbackTp callback);
 	
+	void Update(const struct WorldUpdateArgs& args);
+	
 	static EntityManager Deserialize(std::istream& stream);
 	
 	void Serialize(std::ostream& stream) const;
 	
 private:
 	std::unordered_map<uint32_t, std::shared_ptr<Ent>> m_entities;
+	
+	std::vector<std::weak_ptr<Ent>> m_updatableEntities[NUM_UPDATABLE_ENTITY_TYPES];
 	
 	struct FlagTracker
 	{
@@ -40,7 +44,7 @@ private:
 		void ForEach(CallbackTp callback);
 	};
 	
-	std::array<FlagTracker, 4> m_trackers;
+	std::array<FlagTracker, 5> m_trackers;
 };
 
 #include "EntityManager.inl"

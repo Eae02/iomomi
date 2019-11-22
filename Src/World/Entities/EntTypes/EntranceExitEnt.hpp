@@ -17,9 +17,9 @@ public:
 	
 	static constexpr EntTypeID TypeID = EntTypeID::EntranceExit;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
-		EntTypeFlags::HasCollision | EntTypeFlags::EditorWallMove | EntTypeFlags::HasCollision; 
+		EntTypeFlags::HasCollision | EntTypeFlags::EditorWallMove | EntTypeFlags::HasCollision | EntTypeFlags::Activatable;
 	
-	EntranceExitEnt() = default;
+	EntranceExitEnt();
 	
 	void Serialize(std::ostream& stream) override;
 	void Deserialize(std::istream& stream) override;
@@ -60,6 +60,8 @@ public:
 private:
 	std::tuple<glm::mat3, glm::vec3> GetTransformParts() const;
 	glm::mat4 GetTransform() const;
+	
+	static std::vector<glm::vec3> GetConnectionPoints(const Ent& entity);
 	
 	ActivatableComp m_activatable;
 	

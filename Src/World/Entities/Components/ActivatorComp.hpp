@@ -11,7 +11,7 @@ public:
 	
 	std::weak_ptr<ActivationLightStripEnt> lightStripEntity;
 	
-	//void HandleMessage(eg::Entity& entity, const ActivateMessage& message);
+	void Activate();
 	
 	void Update(const struct WorldUpdateArgs& args);
 	

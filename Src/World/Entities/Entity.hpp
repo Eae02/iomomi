@@ -55,6 +55,8 @@ public:
 	virtual void Draw(const EntDrawArgs& args);
 	virtual void EditorDraw(const EntEditorDrawArgs& args);
 	
+	virtual void Update(const struct WorldUpdateArgs& args);
+	
 	glm::mat4 GetTransform(float scale) const;
 	glm::mat3 GetRotationMatrix() const;
 	eg::AABB GetAABB(float scale, float upDist) const;

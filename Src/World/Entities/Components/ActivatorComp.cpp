@@ -3,12 +3,12 @@
 #include "../../World.hpp"
 #include "../../../ProtobufUtils.hpp"
 
-/*void ActivatorComp::HandleMessage(eg::Entity& entity, const ActivateMessage& message)
+constexpr uint64_t ACTIVATED_FRAMES = 5;
+
+void ActivatorComp::Activate()
 {
 	m_lastActivatedFrame = eg::FrameIdx();
-}*/
-
-constexpr uint64_t ACTIVATED_FRAMES = 5;
+}
 
 void ActivatorComp::Update(const WorldUpdateArgs& args)
 {

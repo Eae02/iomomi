@@ -79,7 +79,7 @@ void ActivationLightStripEnt::EditorDraw(const EntEditorDrawArgs& args)
 	Draw(*args.meshBatch);
 }
 
-void ActivationLightStripEnt::Update(float dt)
+void ActivationLightStripEnt::Update(const WorldUpdateArgs& args)
 {
 	const float TRANSITION_SPEED = 100;
 	const float TRANSITION_MARGIN = 0.5f;
@@ -96,7 +96,7 @@ void ActivationLightStripEnt::Update(float dt)
 		m_transitionDirection = (activated ? 1 : -1);
 	}
 	
-	m_transitionProgress += m_transitionDirection * dt * TRANSITION_SPEED;
+	m_transitionProgress += m_transitionDirection * args.dt * TRANSITION_SPEED;
 	const float maxTransitionProgress = m_maxTransitionProgress + TRANSITION_MARGIN;
 	
 	if (m_transitionDirection == 1 && m_transitionProgress > maxTransitionProgress)
