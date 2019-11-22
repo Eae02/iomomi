@@ -51,7 +51,7 @@ public:
 		Stop();
 	}
 	
-	void Init(const class World& world);
+	void Init(class World& world);
 	
 	void Stop();
 	

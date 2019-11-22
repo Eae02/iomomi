@@ -1,10 +1,5 @@
 #include "Player.hpp"
-#include "Entities/ECWallMounted.hpp"
-#include "Entities/ECFloorButton.hpp"
-#include "Entities/ECActivator.hpp"
-#include "Entities/ECInteractable.hpp"
-#include "Entities/ECPlatform.hpp"
-#include "Entities/ForceField.hpp"
+#include "Entities/EntInteractable.hpp"
 #include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
 #include "../Settings.hpp"
 
@@ -320,26 +315,25 @@ void Player::Update(World& world, float dt, bool underwater)
 	//Checks for interactable entities
 	if (m_gravityTransitionMode == TransitionMode::None)
 	{
-		static eg::EntitySignature interactableSig = eg::EntitySignature::Create<ECInteractable>();
-		eg::Entity* interactableEntity = nullptr;
+		EntInteractable* interactableEntity = nullptr;
 		int bestInteractPriority = 0;
-		for (eg::Entity& entity : world.EntityManager().GetEntitySet(interactableSig))
+		world.entManager.ForEachWithFlag(EntTypeFlags::Interactable, [&] (Ent& entity)
 		{
-			int thisPriority = entity.GetComponent<ECInteractable>().checkInteraction(entity, *this);
+			EntInteractable& interactable = dynamic_cast<EntInteractable&>(entity);
+			int thisPriority = interactable.CheckInteraction(*this);
 			if (thisPriority > bestInteractPriority)
 			{
-				interactableEntity = &entity;
+				interactableEntity = &interactable;
 				bestInteractPriority = thisPriority;
 			}
-		}
+		});
 		
 		if (interactableEntity != nullptr)
 		{
-			ECInteractable& interactable = interactableEntity->GetComponent<ECInteractable>();
 			if ((eg::IsButtonDown(eg::Button::E) && !eg::WasButtonDown(eg::Button::E)) ||
 				(eg::IsButtonDown(eg::Button::CtrlrX) && !eg::WasButtonDown(eg::Button::CtrlrX)))
 			{
-				interactable.interact(*interactableEntity, *this);
+				interactableEntity->Interact(*this);
 			}
 			else
 			{
@@ -349,7 +343,7 @@ void Player::Update(World& world, float dt, bool underwater)
 	}
 	
 	//Activates floor buttons which the player is moving into
-	for (eg::Entity& floorButtonEntity : world.EntityManager().GetEntitySet(ECFloorButton::EntitySignature))
+	/*for (eg::Entity& floorButtonEntity : world.EntityManager().GetEntitySet(ECFloorButton::EntitySignature))
 	{
 		glm::vec3 toButton = glm::normalize(eg::GetEntityPosition(floorButtonEntity) - m_position);
 		if (glm::dot(toButton, glm::normalize(move)) > 0.1f &&
@@ -373,13 +367,13 @@ void Player::Update(World& world, float dt, bool underwater)
 		m_oldEyePosition = m_eyePosition;
 		m_oldRotation = m_rotation;
 		m_newRotation = GetRotation(m_rotationYaw, m_rotationPitch, m_down);
-	}
+	}*/
 	
 	m_onGround = false;
 	
 	const int downDim = (int)m_down / 2;
 	const int downSign = ((int)m_down % 2) ? -1 : 1;
-	
+	/*
 	//Moves the player with the current platform, if one is set 
 	if (currentPlatform != nullptr)
 	{
@@ -402,7 +396,7 @@ void Player::Update(World& world, float dt, bool underwater)
 		ClipAndMove(world, platformMove, true);
 		m_onGround = true; //Always on ground if on a platform
 	}
-	
+	*/
 	ClipAndMove(world, move, false);
 	
 	//Searches for a platform under the player's feet
@@ -413,7 +407,7 @@ void Player::Update(World& world, float dt, bool underwater)
 	float platformSearchDown2 = feetPos[downDim] + std::max(move[downDim] * downSign, 0.3f) * downSign;
 	platformSearchMax[downDim] = std::max(platformSearchDown1, platformSearchDown2);
 	platformSearchMin[downDim] = std::min(platformSearchDown1, platformSearchDown2);
-	currentPlatform = ECPlatform::FindPlatform(eg::AABB(platformSearchMin, platformSearchMax), world.EntityManager());
+	currentPlatform = nullptr;//ECPlatform::FindPlatform(eg::AABB(platformSearchMin, platformSearchMax), world.EntityManager());
 	if (currentPlatform == nullptr)
 		m_currentPlatform = { };
 	else
@@ -535,6 +529,8 @@ void Player::DebugDraw()
 
 void Player::Reset()
 {
+	m_position = glm::vec3(0.0f);
+	m_velocity = glm::vec3(0.0f);
 	m_down = Dir::NegY;
 	m_onGround = false;
 	m_isCarrying = false;

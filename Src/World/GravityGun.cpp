@@ -137,8 +137,8 @@ void GravityGun::Update(World& world, WaterSimulator& waterSim, eg::ParticleMana
 	m_gunTransform = glm::rotate(m_gunTransform, eg::PI * GUN_ROTATION_X, glm::vec3(1, 0, 0));
 	m_gunTransform = glm::rotate(m_gunTransform, eg::PI * GUN_ROTATION_Y, glm::vec3(0, 1, 0));
 	m_gunTransform = glm::scale(m_gunTransform, glm::vec3(GUN_SCALE));
-	
-	for (eg::Entity& orbEntity : world.EntityManager().GetEntitySet(gravityOrbSignature))
+	/*
+	for (eg::Entity& orbEntity : world.entManager.GetEntitySet(gravityOrbSignature))
 	{
 		ECGravityOrb& orbComp = orbEntity.GetComponent<ECGravityOrb>();
 		
@@ -216,7 +216,7 @@ void GravityGun::Update(World& world, WaterSimulator& waterSim, eg::ParticleMana
 			
 			orbEntity.InitComponent<eg::ECPosition3D>(start);
 		}
-	}
+	}*/
 }
 
 void GravityGun::Draw(eg::MeshBatch& meshBatch)

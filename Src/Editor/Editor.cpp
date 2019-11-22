@@ -2,19 +2,13 @@
 #include "../Levels.hpp"
 #include "../MainGameState.hpp"
 #include "../Graphics/Materials/MeshDrawArgs.hpp"
-#include "../World/Entities/ECEditorVisible.hpp"
-#include "../World/Entities/ECWallMounted.hpp"
-#include "../World/EntityTypes.hpp"
-#include "../World/Entities/ECActivatable.hpp"
-#include "../World/Entities/ECActivator.hpp"
-#include "../World/Entities/ECActivationLightStrip.hpp"
+#include "../World/Entities/Components/ActivatorComp.hpp"
+#include "../World/Entities/Components/ActivatableComp.hpp"
 
 #include <fstream>
 
 #include <imgui.h>
 #include <misc/cpp/imgui_stdlib.h>
-
-static eg::EntitySignature editorVisibleSignature = eg::EntitySignature::Create<ECEditorVisible>();
 
 Editor* editor;
 
@@ -26,6 +20,18 @@ Editor::Editor(RenderContext& renderCtx)
 	m_prepareDrawArgs.player = nullptr;
 	
 	m_projection.SetFieldOfViewDeg(75.0f);
+	
+	for (const auto& entType : entTypeMap)
+	{
+		if (!eg::HasFlag(entType.second.flags, EntTypeFlags::EditorInvisible))
+		{
+			m_spawnEntityList.push_back(&entType.second);
+		}
+	}
+	sort(m_spawnEntityList.begin(), m_spawnEntityList.end(), [&] (const EntType* a, const EntType* b)
+	{
+		return a->prettyName < b->prettyName;
+	});
 }
 
 const char* TextureNames[] =
@@ -42,7 +48,7 @@ const char* TextureNames[] =
 void Editor::InitWorld()
 {
 	m_selectedEntities.clear();
-	ECActivationLightStrip::GenerateAll(*m_world);
+	ActivationLightStripEnt::GenerateAll(*m_world);
 }
 
 template <typename CallbackTp>
@@ -215,36 +221,33 @@ void Editor::RunFrame(float dt)
 	}
 	else if (m_tool == Tool::Entities)
 	{
-		for (const eg::EntityHandle& entityHandle : m_selectedEntities)
+		for (const std::weak_ptr<Ent>& entityHandle : m_selectedEntities)
 		{
-			eg::Entity* entity = entityHandle.Get();
+			std::shared_ptr<Ent> entity = entityHandle.lock();
 			if (entity == nullptr)
 				continue;
 			
-			ECEditorVisible* edVisible = entity->FindComponent<ECEditorVisible>();
-			if (edVisible == nullptr)
+			const EntType& entType = entTypeMap.at(entity->TypeID());
+			if (eg::HasFlag(entType.flags, EntTypeFlags::EditorInvisible))
 				continue;
 			
-			ImGui::PushID(entityHandle.Id());
-			if (ImGui::CollapsingHeader(edVisible->displayName, ImGuiTreeNodeFlags_DefaultOpen))
+			ImGui::PushID(entity->Name());
+			if (ImGui::CollapsingHeader(entType.prettyName.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
 			{
-				EditorRenderImGuiMessage message;
-				entity->HandleMessage(message);
+				entity->RenderSettings();
 				
-				if (entity->FindComponent<ECActivator>())
-				{
-					if (ImGui::Button("Connect..."))
-					{
-						m_connectingActivator = *entity;
-					}
-				}
+				//if (entity->FindComponent<ECActivator>())
+				//{
+				//	if (ImGui::Button("Connect..."))
+				//	{
+				//		m_connectingActivator = *entity;
+				//	}
+				//}
 			}
 			ImGui::PopID();
 		}
 	}
 	ImGui::End();
-	
-	m_world->EntityManager().EndFrame();
 	
 	glm::mat4 viewMatrix, inverseViewMatrix;
 	m_camera.GetViewMatrix(viewMatrix, inverseViewMatrix);
@@ -392,47 +395,42 @@ void Editor::UpdateToolEntities(float dt)
 	if (!eg::IsButtonDown(eg::Button::LeftShift))
 		m_entitiesCloned = false;
 	
-	ECWallMounted* wallMountedEntity = nullptr;
-	auto UpdateWallDragEntity = [&]
-	{
-		if (eg::Entity* entity = m_selectedEntities[0].Get())
-		{
-			wallMountedEntity = entity->FindComponent<ECWallMounted>();
-		}
-	};
-	if (m_selectedEntities.size() == 1)
-		UpdateWallDragEntity();
-	
 	const bool mouseClicked = eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft);
 	const bool mouseHeld = eg::IsButtonDown(eg::Button::MouseLeft) && eg::WasButtonDown(eg::Button::MouseLeft);
-	const bool isConnectingActivator = m_connectingActivator.Get();
-	const bool isEditingLightStrip = m_editingLightStripEntity.Get();
+	std::shared_ptr<Ent> connectingActivatorEnt = m_connectingActivator.lock();
+	std::shared_ptr<ActivationLightStripEnt> editingLightStripEnt = m_editingLightStripEntity.lock();
 	
-	auto EntityMoved = [&] (eg::Entity& entity)
+	auto EntityMoved = [&] (Ent& entity)
 	{
-		if (ECActivatable* activatable = entity.FindComponent<ECActivatable>())
+		if (ActivatableComp* activatable = entity.GetComponentMut<ActivatableComp>())
 		{
-			for (eg::Entity& activator : m_world->EntityManager().GetEntitySet(ECActivator::Signature))
+			m_world->entManager.ForEach([&] (Ent& activatorEntity)
 			{
-				if (activator.GetComponent<ECActivator>().activatableName == activatable->Name())
+				ActivatorComp* activator = activatorEntity.GetComponentMut<ActivatorComp>();
+				if (activator && activator->activatableName == activatable->m_name)
 				{
-					ECActivationLightStrip::GenerateForActivator(*m_world, activator);
+					ActivationLightStripEnt::GenerateForActivator(*m_world, activatorEntity);
 				}
-			}
+			});
 		}
 		
-		if (entity.FindComponent<ECActivator>())
-		{
-			ECActivationLightStrip::GenerateForActivator(*m_world, entity);
-		}
-		
-		EditorMovedMessage message;
-		message.world = m_world.get();
-		m_selectedEntities[0].Get()->HandleMessage(message);
+		ActivationLightStripEnt::GenerateForActivator(*m_world, entity);
 	};
 	
+	std::shared_ptr<Ent> wallDragEntity;
+	auto UpdateWallDragEntity = [&] ()
+	{
+		if (m_selectedEntities.size() == 1)
+		{
+			wallDragEntity = m_selectedEntities[0].lock();
+			if (!eg::HasFlag(wallDragEntity->TypeFlags(), EntTypeFlags::EditorWallMove))
+				wallDragEntity = nullptr;
+		}
+	};
+	UpdateWallDragEntity();
+	
 	//Moves the wall drag entity
-	if (wallMountedEntity && !isConnectingActivator && !isEditingLightStrip && mouseHeld)
+	if (wallDragEntity != nullptr && !connectingActivatorEnt && !editingLightStripEnt && mouseHeld)
 	{
 		constexpr int DRAG_BEGIN_DELTA = 10;
 		if (m_isDraggingWallEntity)
@@ -443,13 +441,8 @@ void Editor::UpdateToolEntities(float dt)
 				if (MaybeClone())
 					UpdateWallDragEntity();
 				
-				wallMountedEntity->wallUp = pickResult.normalDir;
-				
-				if (eg::ECPosition3D* positionComp = m_selectedEntities[0].Get()->FindComponent<eg::ECPosition3D>())
-				{
-					positionComp->position = SnapToGrid(pickResult.intersectPosition);
-					EntityMoved(*m_selectedEntities[0].Get());
-				}
+				wallDragEntity->EditorMoved(SnapToGrid(pickResult.intersectPosition), pickResult.normalDir);
+				EntityMoved(*wallDragEntity);
 			}
 		}
 		else if (std::abs(m_mouseDownPos.x - eg::CursorX()) > DRAG_BEGIN_DELTA ||
@@ -465,21 +458,22 @@ void Editor::UpdateToolEntities(float dt)
 	
 	//Updates the translation gizmo
 	if (!m_selectedEntities.empty() && !ImGui::GetIO().WantCaptureMouse &&
-		!wallMountedEntity && !isConnectingActivator && !isEditingLightStrip)
+		wallDragEntity == nullptr && !connectingActivatorEnt && !editingLightStripEnt)
 	{
 		if (!m_translationGizmo.HasInputFocus())
 		{
 			m_gizmoPosUnaligned = glm::vec3(0.0f);
 			for (int64_t i = m_selectedEntities.size() - 1; i >= 0; i--)
 			{
-				if (m_selectedEntities[i].FindComponent<ECWallMounted>())
+				std::shared_ptr<Ent> selectedEntitySP = m_selectedEntities[i].lock();
+				if (!selectedEntitySP || eg::HasFlag(selectedEntitySP->TypeFlags(), EntTypeFlags::EditorWallMove))
 				{
-					m_selectedEntities[i] = m_selectedEntities.back();
+					m_selectedEntities[i].swap(m_selectedEntities.back());
 					m_selectedEntities.pop_back();
 				}
 				else
 				{
-					m_gizmoPosUnaligned += m_selectedEntities[i].Get()->GetComponent<eg::ECPosition3D>().position;
+					m_gizmoPosUnaligned += selectedEntitySP->Pos();
 				}
 			}
 			m_gizmoPosUnaligned /= (float)m_selectedEntities.size();
@@ -494,18 +488,22 @@ void Editor::UpdateToolEntities(float dt)
 		if (glm::length2(dragDelta) > 1E-6f)
 		{
 			MaybeClone();
-			for (const eg::EntityHandle& selectedEntity : m_selectedEntities)
+			for (const std::weak_ptr<Ent>& selectedEntity : m_selectedEntities)
 			{
-				selectedEntity.Get()->GetComponent<eg::ECPosition3D>().position += dragDelta;
-				EntityMoved(*selectedEntity.Get());
+				if (std::shared_ptr<Ent> selectedEntitySP = selectedEntity.lock())
+				{
+					selectedEntitySP->EditorMoved(selectedEntitySP->Pos() + dragDelta, {});
+					EntityMoved(*selectedEntitySP);
+				}
 			}
 		}
 		m_prevGizmoPos = gizmoPosAligned;
 	}
 	
-	if (isEditingLightStrip)
+	if (editingLightStripEnt)
 	{
-		ECActivator* activator = m_editingLightStripEntity.FindComponent<ECActivator>();
+		std::shared_ptr<Ent> activatorEnt = editingLightStripEnt->ActivatorEntity().lock();
+		ActivatorComp* activator = activatorEnt ? activatorEnt->GetComponentMut<ActivatorComp>() : nullptr;
 		
 		if (activator != nullptr)
 		{
@@ -513,7 +511,7 @@ void Editor::UpdateToolEntities(float dt)
 			if (pickResult.intersected)
 			{
 				activator->waypoints[m_editingWayPointIndex] = { pickResult.normalDir, pickResult.intersectPosition };
-				ECActivationLightStrip::GenerateForActivator(*m_world, *m_editingLightStripEntity.Get());
+				ActivationLightStripEnt::GenerateForActivator(*m_world, *activatorEnt);
 			}
 		}
 		
@@ -526,7 +524,7 @@ void Editor::UpdateToolEntities(float dt)
 	
 	//Updates entity icons
 	m_entityIcons.clear();
-	auto AddIcon = [&] (const glm::vec3& worldPos, IconType type, eg::EntityHandle entity) -> EntityIcon&
+	auto AddIcon = [&] (const glm::vec3& worldPos, IconType type, std::weak_ptr<Ent> entity) -> EntityIcon&
 	{
 		glm::vec4 sp4 = RenderSettings::instance->viewProjection * glm::vec4(worldPos, 1.0f);
 		glm::vec3 sp3 = glm::vec3(sp4) / sp4.w;
@@ -538,48 +536,56 @@ void Editor::UpdateToolEntities(float dt)
 		icon.rectangle = eg::Rectangle::CreateCentered(screenPos, ICON_SIZE, ICON_SIZE);
 		icon.depth = sp3.z;
 		icon.type = type;
-		icon.entity = entity;
+		icon.entity = std::move(entity);
 		icon.actConnectionIndex = -1;
 		
 		return icon;
 	};
 	
-	for (const eg::Entity& entity : m_world->EntityManager().GetEntitySet(editorVisibleSignature))
+	m_world->entManager.ForEach([&] (Ent& entity)
 	{
-		if (isConnectingActivator)
+		if (eg::HasFlag(entity.TypeFlags(), EntTypeFlags::EditorInvisible))
+			return;
+		if (!connectingActivatorEnt)
 		{
-			if (const ECActivatable* activatableComp = entity.FindComponent<ECActivatable>())
+			AddIcon(entity.Pos(), IconType::Entity, entity.shared_from_this());
+			return;
+		}
+		if (const auto* activatableComp = entity.GetComponent<ActivatableComp>())
+		{
+			std::vector<glm::vec3> connectionPoints = activatableComp->GetConnectionPoints(entity);
+			for (int i = 0; i < (int)connectionPoints.size(); i++)
 			{
-				std::vector<glm::vec3> connectionPoints = activatableComp->GetConnectionPoints(entity);
-				for (int i = 0; i < (int)connectionPoints.size(); i++)
-				{
-					EntityIcon& icon = AddIcon(connectionPoints[i], IconType::ActTarget, entity);
-					icon.actConnectionIndex = i;
-				}
+				EntityIcon& icon = AddIcon(connectionPoints[i], IconType::ActTarget, entity.shared_from_this());
+				icon.actConnectionIndex = i;
 			}
 		}
-		else if (const eg::ECPosition3D* positionComp = entity.FindComponent<eg::ECPosition3D>())
-		{
-			AddIcon(positionComp->position, IconType::Entity, entity);
-		}
-	}
+	});
 	
 	glm::vec2 flippedCursorPos(eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY());
 	
-	if (!isConnectingActivator)
+	if (!connectingActivatorEnt)
 	{
 		glm::vec3 closestPoint;
 		float closestDist = INFINITY;
-		eg::EntityHandle closestEntity;
+		std::weak_ptr<Ent> closestEntity;
 		int nextWayPoint;
 		Dir wallNormal;
 		bool hoveringExistingPoint = false;
 		
-		for (eg::EntityHandle entity : m_selectedEntities)
+		for (const std::weak_ptr<Ent>& entity : m_selectedEntities)
 		{
-			const ECActivationLightStrip* lightStrip = entity.FindComponent<ECActivationLightStrip>();
-			const ECActivator* activator = entity.FindComponent<ECActivator>();
-			if (lightStrip == nullptr || activator == nullptr)
+			std::shared_ptr<Ent> entitySP = entity.lock();
+			if (entitySP == nullptr)
+				continue;
+			
+			auto* lightStrip = dynamic_cast<ActivationLightStripEnt*>(entitySP.get());
+			if (lightStrip == nullptr)
+				continue;
+			
+			std::shared_ptr<Ent> activatorEnt = lightStrip->ActivatorEntity().lock();
+			const ActivatorComp* activator = activatorEnt ? activatorEnt->GetComponent<ActivatorComp>() : nullptr;
+			if (activator == nullptr)
 				continue;
 			
 			for (size_t i = 1; i < lightStrip->Path().size(); i++)
@@ -616,7 +622,7 @@ void Editor::UpdateToolEntities(float dt)
 			}
 		}
 		
-		if (closestDist < 0.5f && !isEditingLightStrip && !hoveringExistingPoint)
+		if (closestDist < 0.5f && !editingLightStripEnt && !hoveringExistingPoint)
 		{
 			EntityIcon& icon = AddIcon(closestPoint, IconType::ActPathNewPoint, closestEntity);
 			icon.wayPointIndex = nextWayPoint;
@@ -631,7 +637,7 @@ void Editor::UpdateToolEntities(float dt)
 	});
 	
 	//Updates which entities are selected
-	if (mouseClicked && AllowMouseInteract() && !isEditingLightStrip)
+	if (mouseClicked && AllowMouseInteract() && !editingLightStripEnt)
 	{
 		if (!eg::IsButtonDown(eg::Button::LeftControl) && !eg::IsButtonDown(eg::Button::RightControl))
 		{
@@ -640,51 +646,52 @@ void Editor::UpdateToolEntities(float dt)
 		
 		for (const EntityIcon& icon : m_entityIcons)
 		{
+			std::shared_ptr<Ent> iconEntity = icon.entity.lock();
+			if (iconEntity == nullptr)
+				continue;
+			
 			if (icon.rectangle.Contains(flippedCursorPos))
 			{
 				//Connects the activator to the selected entity
-				if (eg::Entity* activatorEntity = m_connectingActivator.Get())
+				if (connectingActivatorEnt != nullptr)
 				{
-					ECActivator& activator = activatorEntity->GetComponent<ECActivator>();
+					ActivatorComp& activator = *connectingActivatorEnt->GetComponentMut<ActivatorComp>();
 					activator.activatableName = 0;
 					
-					if (ECActivatable* activatable = icon.entity.FindComponent<ECActivatable>())
+					if (ActivatableComp* activatable = iconEntity->GetComponentMut<ActivatableComp>())
 					{
 						int connectionIndex = icon.actConnectionIndex;
 						
 						activatable->SetConnected(connectionIndex);
 						
 						activator.waypoints.clear();
-						activator.activatableName = activatable->Name();
+						activator.activatableName = activatable->m_name;
 						activator.targetConnectionIndex = connectionIndex;
-						ECActivationLightStrip::GenerateForActivator(*m_world, *activatorEntity);
+						ActivationLightStripEnt::GenerateForActivator(*m_world, *connectingActivatorEnt);
 					}
 					
 					m_connectingActivator = { };
 				}
 				else if (icon.type == IconType::ActPathExistingPoint)
 				{
-					ECActivationLightStrip* lightStrip = icon.entity.FindComponent<ECActivationLightStrip>();
-					ECActivator* activator = icon.entity.FindComponent<ECActivator>();
-					if (lightStrip != nullptr && activator != nullptr)
+					const ActivatorComp* activator = iconEntity->GetComponent<ActivatorComp>();
+					if (activator != nullptr)
 					{
-						m_editingLightStripEntity = icon.entity;
+						m_editingLightStripEntity = activator->lightStripEntity;
 						m_editingWayPointIndex = icon.wayPointIndex;
 					}
 				}
 				else if (icon.type == IconType::ActPathNewPoint)
 				{
-					ECActivationLightStrip* lightStrip = icon.entity.FindComponent<ECActivationLightStrip>();
-					ECActivator* activator = icon.entity.FindComponent<ECActivator>();
-					if (lightStrip != nullptr && activator != nullptr)
+					ActivatorComp* activator = iconEntity->GetComponentMut<ActivatorComp>();
+					if (activator != nullptr)
 					{
-						ECActivationLightStrip::WayPoint wp;
+						ActivationLightStripEnt::WayPoint wp;
 						wp.position = m_lightStripInsertPos;
 						wp.wallNormal = m_lightStripInsertNormal;
-						
 						activator->waypoints.insert(activator->waypoints.begin() + icon.wayPointIndex, wp);
 						
-						m_editingLightStripEntity = icon.entity;
+						m_editingLightStripEntity = activator->lightStripEntity;
 						m_editingWayPointIndex = icon.wayPointIndex;
 					}
 				}
@@ -696,7 +703,7 @@ void Editor::UpdateToolEntities(float dt)
 			}
 		}
 		
-		if (m_editingLightStripEntity.Get())
+		if (m_editingLightStripEntity.lock())
 		{
 			m_selectedEntities.clear();
 			m_selectedEntities.push_back(m_editingLightStripEntity);
@@ -706,20 +713,29 @@ void Editor::UpdateToolEntities(float dt)
 	//Despawns entities or removes light strip way points if delete is pressed
 	if (eg::IsButtonDown(eg::Button::Delete) && !eg::WasButtonDown(eg::Button::Delete))
 	{
-		if (eg::Entity* lightStripEntity = m_editingLightStripEntity.Get())
+		if (std::shared_ptr<ActivationLightStripEnt> lightStripEntity = m_editingLightStripEntity.lock())
 		{
-			ECActivator& activator = lightStripEntity->GetComponent<ECActivator>();
-			activator.waypoints.erase(activator.waypoints.begin() + m_editingWayPointIndex);
-			ECActivationLightStrip::GenerateForActivator(*m_world, *lightStripEntity);
+			std::shared_ptr<Ent> activatorEnt = lightStripEntity->ActivatorEntity().lock();
+			ActivatorComp* activator = activatorEnt ? activatorEnt->GetComponentMut<ActivatorComp>() : nullptr;
 			
-			m_editingWayPointIndex = -1;
-			m_editingLightStripEntity = { };
+			if (activator != nullptr)
+			{
+				activator->waypoints.erase(activator->waypoints.begin() + m_editingWayPointIndex);
+				ActivationLightStripEnt::GenerateForActivator(*m_world, *activatorEnt);
+				
+				m_editingWayPointIndex = -1;
+				m_editingLightStripEntity = { };
+			}
 		}
 		else
 		{
-			for (const eg::EntityHandle& entity : m_selectedEntities)
+			for (const std::weak_ptr<Ent>& entity : m_selectedEntities)
 			{
-				entity.Get()->Despawn();
+				std::shared_ptr<Ent> entitySP = entity.lock();
+				if (entitySP)
+				{
+					m_world->entManager.RemoveEntity(entitySP->Name());
+				}
 			}
 		}
 		m_selectedEntities.clear();
@@ -741,23 +757,14 @@ void Editor::UpdateToolEntities(float dt)
 		ImGui::Separator();
 		
 		ImGui::BeginChild("EntityTypes", ImVec2(180, 250));
-		for (const SpawnableEntityType& entityType : spawnableEntityTypes)
+		for (const EntType* entityType : m_spawnEntityList)
 		{
-			if (ImGui::MenuItem(entityType.name.c_str()))
+			if (ImGui::MenuItem(entityType->prettyName.c_str()))
 			{
-				if (eg::Entity* entity = entityType.factory(m_world->EntityManager()))
-				{
-					if (eg::ECPosition3D* positionComp = entity->FindComponent<eg::ECPosition3D>())
-						positionComp->position = m_spawnEntityPickResult.intersectPosition;
-					if (ECWallMounted* wallMountedComp = entity->FindComponent<ECWallMounted>())
-						wallMountedComp->wallUp = m_spawnEntityPickResult.normalDir;
-					
-					EditorSpawnedMessage spawnedMessage;
-					spawnedMessage.wallPosition = m_spawnEntityPickResult.intersectPosition;
-					spawnedMessage.wallNormal = m_spawnEntityPickResult.normalDir;
-					spawnedMessage.world = m_world.get();
-					entity->HandleMessage(spawnedMessage);
-				}
+				std::shared_ptr<Ent> entity = entityType->create();
+				
+				entity->EditorMoved(m_spawnEntityPickResult.intersectPosition, m_spawnEntityPickResult.normalDir);
+				m_world->entManager.AddEntity(std::move(entity));
 				
 				ImGui::CloseCurrentPopup();
 			}
@@ -957,18 +964,24 @@ void Editor::DrawWorld()
 		DrawToolEntities();
 	
 	//Sends the editor draw message to entities
-	EditorDrawMessage drawMessage;
-	drawMessage.spriteBatch = &m_spriteBatch;
-	drawMessage.primitiveRenderer = &m_primRenderer;
-	drawMessage.meshBatch = &m_renderCtx->meshBatch;
-	drawMessage.transparentMeshBatch = &m_renderCtx->transparentMeshBatch;
-	drawMessage.getDrawMode = [this] (const eg::Entity* entity)
+	EntEditorDrawArgs drawArgs;
+	drawArgs.spriteBatch = &m_spriteBatch;
+	drawArgs.primitiveRenderer = &m_primRenderer;
+	drawArgs.meshBatch = &m_renderCtx->meshBatch;
+	drawArgs.transparentMeshBatch = &m_renderCtx->transparentMeshBatch;
+	drawArgs.getDrawMode = [this] (const Ent* entity) -> EntEditorDrawMode
 	{
-		if (eg::Contains(m_selectedEntities, eg::EntityHandle(*entity)))
-			return EntityEditorDrawMode::Selected;
-		return EntityEditorDrawMode::Default;
+		for (const std::weak_ptr<Ent>& selEnt : m_selectedEntities)
+		{
+			if (selEnt.lock().get() == entity)
+				return EntEditorDrawMode::Selected;
+		}
+		return EntEditorDrawMode::Default;
 	};
-	m_world->EntityManager().SendMessageToAll(drawMessage);
+	m_world->entManager.ForEachWithFlag(EntTypeFlags::EditorDrawable, [&] (Ent& entity)
+	{
+		entity.EditorDraw(drawArgs);
+	});
 	
 	m_primRenderer.End();
 	
@@ -998,9 +1011,10 @@ void Editor::DrawWorld()
 	
 	if (m_tool == Tool::Entities)
 	{
-		for (const eg::EntityHandle& entity : m_selectedEntities)
+		for (const std::weak_ptr<Ent>& entity : m_selectedEntities)
 		{
-			if (!entity.FindComponent<ECWallMounted>())
+			std::shared_ptr<Ent> entitySP = entity.lock();
+			if (entitySP && !eg::HasFlag(entitySP->TypeFlags(), EntTypeFlags::EditorWallMove))
 			{
 				m_translationGizmo.Draw(RenderSettings::instance->viewProjection);
 				break;
@@ -1098,7 +1112,12 @@ void Editor::DrawToolEntities()
 	
 	for (const EntityIcon& icon : m_entityIcons)
 	{
-		bool selected = eg::Contains(m_selectedEntities, icon.entity);
+		std::shared_ptr<Ent> entitySP = icon.entity.lock();
+		if (!entitySP)
+			continue;
+		
+		bool selected = std::any_of(m_selectedEntities.begin(), m_selectedEntities.end(),
+			[&] (const std::weak_ptr<Ent>& e) { return e.lock() == entitySP; });
 		
 		eg::ColorLin color(eg::Color::White);
 		
@@ -1117,12 +1136,12 @@ void Editor::DrawToolEntities()
 		else if (icon.type == IconType::ActPathExistingPoint)
 		{
 			iconIndex = 7;
-			selected = (icon.wayPointIndex == m_editingWayPointIndex) && icon.entity == m_editingLightStripEntity;
+			selected = false;//selected = (icon.wayPointIndex == m_editingWayPointIndex) && icon.entity == m_editingLightStripEntity;
 		}
-		else if (const ECEditorVisible* edVisible = icon.entity.FindComponent<ECEditorVisible>())
-		{
-			iconIndex = edVisible->iconIndex;
-		}
+		//else if (const ECEditorVisible* edVisible = icon.entity.GetComponent<ECEditorVisible>())
+		//{
+		//	iconIndex = edVisible->iconIndex;
+		//}
 		
 		//Draws the background sprite
 		m_spriteBatch.Draw(iconsTexture, icon.rectangle, color,

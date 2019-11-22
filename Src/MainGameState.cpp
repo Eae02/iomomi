@@ -2,14 +2,13 @@
 #include "World/PrepareDrawArgs.hpp"
 #include "Graphics/Materials/MeshDrawArgs.hpp"
 #include "Graphics/RenderSettings.hpp"
-#include "World/Entities/Entrance.hpp"
-#include "World/Entities/ECActivationLightStrip.hpp"
-#include "World/Entities/ECPlatform.hpp"
 #include "Graphics/PlanarReflectionsManager.hpp"
 #include "Graphics/Materials/GravityCornerLightMaterial.hpp"
 #include "Graphics/Materials/GravitySwitchVolLightMaterial.hpp"
 #include "Settings.hpp"
 #include "Levels.hpp"
+#include "World/Entities/EntTypes/EntranceExitEnt.hpp"
+#include "World/Entities/EntTypes/ActivationLightStripEnt.hpp"
 
 #include <fstream>
 #include <imgui.h>
@@ -48,34 +47,33 @@ MainGameState::MainGameState(RenderContext& renderCtx)
 	m_waterSimulator.AddQueryAABB(m_playerWaterAABB);
 }
 
-void MainGameState::LoadWorld(std::istream& stream, int64_t levelIndex, const eg::Entity* exitEntity)
+void MainGameState::LoadWorld(std::istream& stream, int64_t levelIndex, const EntranceExitEnt* exitEntity)
 {
 	auto newWorld = World::Load(stream, false);
 	m_player.Reset();
 	m_gameTime = 0;
 	m_currentLevelIndex = levelIndex;
 	
-	for (eg::Entity& entity : newWorld->EntityManager().GetEntitySet(ECEntrance::EntitySignature))
+	newWorld->entManager.ForEachOfType<EntranceExitEnt>([&] (EntranceExitEnt& entity)
 	{
-		if (entity.GetComponent<ECEntrance>().GetType() == ECEntrance::Type::Entrance)
+		if (entity.m_type == EntranceExitEnt::Type::Entrance)
 		{
 			if (exitEntity != nullptr)
 			{
-				ECEntrance::MovePlayer(*exitEntity, entity, m_player);
+				EntranceExitEnt::MovePlayer(*exitEntity, entity, m_player);
 			}
 			else
 			{
-				ECEntrance::InitPlayer(entity, m_player);
+				entity.InitPlayer(m_player);
 			}
-			break;
 		}
-	}
+	});
 	
 	m_world = std::move(newWorld);
 	
 	m_world->InitializeBulletPhysics();
 	
-	ECActivationLightStrip::GenerateAll(*m_world);
+	ActivationLightStripEnt::GenerateAll(*m_world);
 	
 	m_waterSimulator.Init(*m_world);
 	
@@ -181,7 +179,7 @@ void MainGameState::RunFrame(float dt)
 		updateArgs.waterSim = &m_waterSimulator;
 		updateArgs.invalidateShadows = [this] (const eg::Sphere& sphere) { m_plShadowMapper.Invalidate(sphere); };
 		
-		ECPlatform::Update(updateArgs);
+		//ECPlatform::Update(updateArgs);
 		
 		eg::SetRelativeMouseMode(*relativeMouseMode);
 		
@@ -197,17 +195,23 @@ void MainGameState::RunFrame(float dt)
 			m_gravityGun.Update(*m_world, m_waterSimulator, m_particleManager, m_player, inverseViewProjMatrix, dt);
 		}
 		
-		{
-			auto particleUpdateCPUTimer = eg::StartCPUTimer("Particle Update");
-			eg::ECParticleSystem::Update(m_world->EntityManager());
-		}
+		//{
+		//	auto particleUpdateCPUTimer = eg::StartCPUTimer("Particle Update");
+		//	eg::ECParticleSystem::Update(m_world->EntityManager());
+		//}
 		
-		eg::Entity* currentExit = nullptr;
-		ECEntrance::Update(updateArgs, &currentExit);
+		EntranceExitEnt* currentExit = nullptr;
+		
+		m_world->entManager.ForEachOfType<EntranceExitEnt>([&] (EntranceExitEnt& entity)
+		{
+			entity.Update(updateArgs);
+			if (entity.ShouldSwitchEntrance())
+				currentExit = &entity;
+		});
 		
 		if (currentExit != nullptr && m_currentLevelIndex != -1)
 		{
-			const std::string& exitName = currentExit->GetComponent<ECEntrance>().ExitName();
+			const std::string& exitName = currentExit->GetName();
 			int64_t nextLevelIndex = GetNextLevelIndex(m_currentLevelIndex, exitName);
 			if (nextLevelIndex != -1)
 			{

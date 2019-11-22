@@ -23,7 +23,7 @@ public:
 	
 	void SetResolution(int width, int height);
 	
-	void LoadWorld(std::istream& stream, int64_t levelIndex = -1, const eg::Entity* exitEntity = nullptr);
+	void LoadWorld(std::istream& stream, int64_t levelIndex = -1, const class EntranceExitEnt* exitEntity = nullptr);
 	
 	void OnDeactivate() override;
 	

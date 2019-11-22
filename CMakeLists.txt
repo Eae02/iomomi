@@ -10,7 +10,7 @@ endif()
 
 include("${EGAME_CMAKE_DIR}/EGameTargets.cmake")
 
-file(GLOB_RECURSE SOURCE_FILES Src/*.cpp Src/*.hpp Protobuf/Build/*.cc)
+file(GLOB_RECURSE SOURCE_FILES Src/*.cpp Src/*.hpp Src/*.inl Protobuf/Build/*.cc)
 
 set(IMGUI_FILES Deps/imgui/imconfig.h Deps/imgui/imgui.h Deps/imgui/imgui.cpp Deps/imgui/imgui_demo.cpp Deps/imgui/imgui_draw.cpp
 	Deps/imgui/imgui_internal.h Deps/imgui/imgui_widgets.cpp Deps/imgui/imstb_rectpack.h Deps/imgui/imstb_textedit.h

@@ -7,6 +7,7 @@
 #include "BulletPhysics.hpp"
 #include "WorldUpdateArgs.hpp"
 #include "Door.hpp"
+#include "Entities/EntityManager.hpp"
 #include "../Graphics/Vertex.hpp"
 #include "../Graphics/PlanarReflectionsManager.hpp"
 
@@ -23,7 +24,7 @@ struct WallRayIntersectResult
 struct RayIntersectResult
 {
 	bool intersected;
-	eg::Entity* entity;
+	Ent* entity;
 	float distance;
 };
 
@@ -51,8 +52,7 @@ struct WallSideMaterial
 class World
 {
 public:
-	World()
-		: World(eg::EntityManager::New()) { }
+	World() = default;
 	
 	//Move breaks bullet
 	World(World&&) = delete;
@@ -107,12 +107,9 @@ public:
 	
 	//Adds the rigid body belonging to the given entity to the world.
 	//This needs to be called for all entities with an ECRigidBody created after world loading.
-	void InitRigidBodyEntity(eg::Entity& entity);
+	void InitRigidBodyEntity(Ent& entity);
 	
-	eg::EntityManager& EntityManager() const
-	{
-		return *m_entityManager;
-	}
+	EntityManager entManager;
 	
 	const glm::ivec3& GetBoundsMin() const
 	{
@@ -127,9 +124,6 @@ public:
 	bool playerHasGravityGun = false;
 	
 private:
-	explicit World(eg::EntityManager* entityManager)
-		: m_entityManager(entityManager) { }
-	
 	static constexpr uint32_t REGION_SIZE = 16;
 	
 	inline static std::tuple<glm::ivec3, glm::ivec3> DecomposeGlobalCoordinate(const glm::ivec3& globalC);
@@ -202,8 +196,6 @@ private:
 	
 	std::unique_ptr<btDbvtBroadphase> m_bulletBroadphase;
 	std::unique_ptr<btDiscreteDynamicsWorld> m_bulletWorld;
-	
-	eg::EntityManagerUP m_entityManager;
 	
 	std::vector<Door> m_doors;
 	

@@ -1,20 +1,12 @@
 #include "World.hpp"
 #include "PrepareDrawArgs.hpp"
-#include "Entities/ECRigidBody.hpp"
-#include "Entities/WallLight.hpp"
-#include "Entities/GravitySwitch.hpp"
-#include "EntityTypes.hpp"
-#include "Entities/ECActivator.hpp"
-#include "Entities/Cube.hpp"
-#include "Entities/ECActivationLightStrip.hpp"
-#include "Entities/Entrance.hpp"
-#include "Entities/GravityBarrier.hpp"
-#include "Entities/CubeSpawner.hpp"
-#include "Entities/ForceField.hpp"
 #include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
 #include "../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../Graphics/RenderSettings.hpp"
 #include "../Graphics/WallShader.hpp"
+#include "Entities/EntTypes/EntranceExitEnt.hpp"
+#include "Entities/Components/RigidBodyComp.hpp"
+#include "Entities/EntCollidable.hpp"
 
 #include <yaml-cpp/yaml.h>
 
@@ -39,7 +31,7 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 		return nullptr;
 	}
 	
-	std::unique_ptr<World> world(new World(nullptr));
+	std::unique_ptr<World> world = std::make_unique<World>();
 	
 	const uint32_t version = eg::BinRead<uint32_t>(stream);
 	if (version != 1 && version != 2)
@@ -99,16 +91,16 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 		world->playerHasGravityGun = eg::BinRead<uint8_t>(stream);
 	}
 	
-	world->m_entityManager.reset(eg::EntityManager::Deserialize(stream, entitySerializers));
+	world->entManager = EntityManager::Deserialize(stream);
 	
-	ECActivator::Initialize(*world->m_entityManager);
+	//ECActivator::Initialize(*world->m_entityManager);
 	
 	if (!isEditor)
 	{
-		for (const eg::Entity& entranceEntity : world->EntityManager().GetEntitySet(ECEntrance::EntitySignature))
+		world->entManager.ForEachOfType<EntranceExitEnt>([&] (EntranceExitEnt& ent)
 		{
-			world->m_doors.push_back(ECEntrance::GetDoorDescription(entranceEntity));
-		}
+			world->m_doors.push_back(ent.GetDoorDescription());
+		});
 	}
 	
 	world->m_anyOutOfDate = true;
@@ -136,7 +128,7 @@ void World::Save(std::ostream& outStream) const
 	
 	eg::BinWrite<uint8_t>(outStream, playerHasGravityGun);
 	
-	m_entityManager->Serialize(outStream);
+	entManager.Serialize(outStream);
 }
 
 const World::Region* World::GetRegion(const glm::ivec3& coordinate) const
@@ -254,24 +246,24 @@ void World::Update(const WorldUpdateArgs& args)
 	{
 		auto physicsCPUTimer = eg::StartCPUTimer("Physics");
 		
-		ECGravityBarrier::Update(args);
+		//ECGravityBarrier::Update(args);
 		
-		ECForceField::Update(args.dt, *m_entityManager);
+		//ECForceField::Update(args.dt, *m_entityManager);
 		
-		CubeSpawner::Update(args);
+		//CubeSpawner::Update(args);
 		
-		Cube::UpdatePreSim(args);
+		//Cube::UpdatePreSim(args);
 		
 		m_bulletWorld->stepSimulation(args.dt, 10, 1.0f / 120.0f);
 		
-		Cube::UpdatePostSim(args);
+		//Cube::UpdatePostSim(args);
 	}
 	
-	ECActivationLightStrip::Update(*m_entityManager, args.dt);
+	//ECActivationLightStrip::Update(*m_entityManager, args.dt);
 	
-	ECActivator::Update(args);
+	//ECActivator::Update(args);
 	
-	m_entityManager->EndFrame();
+	//m_entityManager->EndFrame();
 }
 
 void World::PrepareForDraw(PrepareDrawArgs& args)
@@ -327,20 +319,15 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 			args.reflectionPlanes.push_back(&plane);
 		}
 		
-		ECGravityBarrier::PrepareForDraw(*args.player, *m_entityManager);
+		//ECGravityBarrier::PrepareForDraw(*args.player, *m_entityManager);
 		
-		DrawMessage drawMessage;
-		drawMessage.world = this;
-		drawMessage.meshBatch = args.meshBatch;
-		drawMessage.transparentMeshBatch = args.transparentMeshBatch;
-		drawMessage.reflectionPlanes = &args.reflectionPlanes;
-		m_entityManager->SendMessageToAll(drawMessage);
-	}
-	
-	static eg::EntitySignature pointLightSignature = eg::EntitySignature::Create<PointLight>();
-	for (const eg::Entity& entity : m_entityManager->GetEntitySet(pointLightSignature))
-	{
-		args.pointLights.push_back(entity.GetComponent<PointLight>().GetDrawData(eg::GetEntityPosition(entity)));
+		EntDrawArgs entDrawArgs;
+		entDrawArgs.world = this;
+		entDrawArgs.meshBatch = args.meshBatch;
+		entDrawArgs.transparentMeshBatch = args.transparentMeshBatch;
+		entDrawArgs.reflectionPlanes = &args.reflectionPlanes;
+		entDrawArgs.pointLights = &args.pointLights;
+		entManager.ForEachWithFlag(EntTypeFlags::Drawable, [&] (Ent& entity) { entity.Draw(entDrawArgs); });
 	}
 }
 
@@ -1016,10 +1003,7 @@ WallRayIntersectResult World::RayIntersectWall(const eg::Ray& ray) const
 
 RayIntersectResult World::RayIntersect(const eg::Ray& ray) const
 {
-	RayIntersectArgs intersectArgs;
-	RayIntersectMessage message;
-	message.rayIntersectArgs = &intersectArgs;
-	
+	EntRayIntersectArgs intersectArgs;
 	intersectArgs.entity = nullptr;
 	intersectArgs.distance = INFINITY;
 	intersectArgs.ray = ray;
@@ -1030,7 +1014,10 @@ RayIntersectResult World::RayIntersect(const eg::Ray& ray) const
 		intersectArgs.distance = glm::dot(wallResult.intersectPosition - ray.GetStart(), ray.GetDirection());
 	}
 	
-	m_entityManager->SendMessageToAll(message);
+	const_cast<EntityManager&>(entManager).ForEachWithFlag(EntTypeFlags::HasCollision, [&] (const Ent& ent)
+	{
+		dynamic_cast<const EntCollidable&>(ent).RayIntersect(intersectArgs);
+	});
 	
 	RayIntersectResult result;
 	result.entity = intersectArgs.entity;
@@ -1068,22 +1055,19 @@ void World::InitializeBulletPhysics()
 	m_wallsRigidBody->setFriction(1.0f);
 	m_bulletWorld->addRigidBody(m_wallsRigidBody.get());
 	
-	//Adds rigid bodies to the world
-	static eg::EntitySignature rigidBodySignature = eg::EntitySignature::Create<ECRigidBody>();
-	for (eg::Entity& entity : m_entityManager->GetEntitySet(rigidBodySignature))
-	{
-		InitRigidBodyEntity(entity);
-	}
+	entManager.ForEach([&] (Ent& entity) { InitRigidBodyEntity(entity); });
 }
 
-void World::InitRigidBodyEntity(eg::Entity& entity)
+void World::InitRigidBodyEntity(Ent& entity)
 {
-	ECRigidBody& ecRigidBody = entity.GetComponent<ECRigidBody>();
+	RigidBodyComp* rigidBodyComp = entity.GetComponentMut<RigidBodyComp>();
+	if (rigidBodyComp == nullptr)
+		return;
 	
-	if (ecRigidBody.m_rigidBody.has_value() && ecRigidBody.m_physicsWorld == nullptr)
+	if (rigidBodyComp->m_rigidBody.has_value() && rigidBodyComp->m_physicsWorld == nullptr)
 	{
-		m_bulletWorld->addRigidBody(&*ecRigidBody.m_rigidBody);
-		ecRigidBody.m_physicsWorld = m_bulletWorld.get();
+		m_bulletWorld->addRigidBody(&*rigidBodyComp->m_rigidBody);
+		rigidBodyComp->m_physicsWorld = m_bulletWorld.get();
 	}
 }
 
@@ -1098,10 +1082,10 @@ void World::CalcClipping(ClippingArgs& args, Dir currentDown) const
 		}
 	}
 	
-	CalculateCollisionMessage message;
-	message.currentDown = currentDown;
-	message.clippingArgs = &args;
-	m_entityManager->SendMessageToAll(message);
+	const_cast<EntityManager&>(entManager).ForEachWithFlag(EntTypeFlags::HasCollision, [&] (const Ent& entity)
+	{
+		dynamic_cast<const EntCollidable&>(entity).CalculateCollision(currentDown, args);
+	});
 }
 
 bool World::HasCollision(const glm::ivec3& pos, Dir side) const

@@ -1,6 +1,5 @@
 #include "Clipping.hpp"
 #include "World.hpp"
-#include "Entities/Messages.hpp"
 
 void CalcPolygonClipping(ClippingArgs& args, eg::Span<const glm::vec3> vertices)
 {

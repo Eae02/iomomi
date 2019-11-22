@@ -14,8 +14,6 @@
 static_assert(sizeof(int) == 4);
 static_assert(sizeof(float) == 4);
 
-void InitEntitySerializers();
-
 void Start(eg::RunConfig& runConfig)
 {
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -36,7 +34,7 @@ void Start(eg::RunConfig& runConfig)
 		eg::console::SetCompletionProvider("opt", 0, &OptCommandCompleter1);
 		eg::console::SetCompletionProvider("opt", 1, &OptCommandCompleter2);
 		eg::console::AddCommand("optwnd", 0, &OptWndCommand);
-		InitEntitySerializers();
+		InitEntityTypes();
 		StaticPropMaterial::InitAssetTypes();
 		DecalMaterial::InitAssetTypes();
 		eg::LoadAssets("assets", "/");

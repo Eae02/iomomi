@@ -1,7 +1,7 @@
 #include "LiquidPlaneRenderer.hpp"
 #include "../World/World.hpp"
-#include "../World/Entities/ECLiquidPlane.hpp"
 #include "../Graphics/RenderSettings.hpp"
+#include "../World/Entities/Components/LiquidPlaneComp.hpp"
 
 LiquidPlaneRenderer::LiquidPlaneRenderer()
 {
@@ -19,24 +19,25 @@ LiquidPlaneRenderer::LiquidPlaneRenderer()
 	m_pipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 }
 
-static const eg::EntitySignature liquidPlaneSig = eg::EntitySignature::Create<ECLiquidPlane>();
-
-void LiquidPlaneRenderer::Prepare(const World& world, eg::MeshBatchOrdered& meshBatch, const glm::vec3& cameraPos)
+void LiquidPlaneRenderer::Prepare(World& world, eg::MeshBatchOrdered& meshBatch, const glm::vec3& cameraPos)
 {
 	m_planes.clear();
 	
-	for (eg::Entity& entity : world.EntityManager().GetEntitySet(liquidPlaneSig))
+	world.entManager.ForEach([&] (Ent& entity)
 	{
-		ECLiquidPlane& plane = entity.GetComponent<ECLiquidPlane>();
-		plane.SetShouldGenerateMesh(true);
-		plane.MaybeUpdate(entity, world);
+		LiquidPlaneComp* plane = entity.GetComponentMut<LiquidPlaneComp>();
+		if (plane == nullptr)
+			return;
 		
-		if (plane.NumIndices() != 0)
+		plane->SetShouldGenerateMesh(true);
+		plane->MaybeUpdate(entity, world);
+		
+		if (plane->NumIndices() != 0)
 		{
-			float distToCamera = std::abs(entity.GetComponent<eg::ECPosition3D>().position.y - cameraPos.y);
-			m_planes.emplace_back(distToCamera, &entity.GetComponent<ECLiquidPlane>());
+			float distToCamera = std::abs(entity.Pos().y - cameraPos.y);
+			m_planes.emplace_back(distToCamera, plane);
 		}
-	}
+	});
 }
 
 void LiquidPlaneRenderer::Render() const
@@ -50,7 +51,7 @@ void LiquidPlaneRenderer::Render() const
 	
 	for (int64_t i = (int64_t)m_planes.size() - 1; i >= 0; i--)
 	{
-		const ECLiquidPlane& plane = *m_planes[i].second;
+		const LiquidPlaneComp& plane = *m_planes[i].second;
 		
 		eg::DC.BindVertexBuffer(0, plane.VertexBuffer(), 0);
 		eg::DC.BindIndexBuffer(eg::IndexType::UInt16, plane.IndexBuffer(), 0);

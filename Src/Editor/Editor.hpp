@@ -7,6 +7,7 @@
 #include "EditorCamera.hpp"
 #include "PrimitiveRenderer.hpp"
 #include "LiquidPlaneRenderer.hpp"
+#include "../World/Entities/EntTypes/ActivationLightStripEnt.hpp"
 
 class Editor : public GameState
 {
@@ -52,6 +53,8 @@ private:
 	
 	PrimitiveRenderer m_primRenderer;
 	eg::SpriteBatch m_spriteBatch;
+	
+	std::vector<const EntType*> m_spawnEntityList;
 	
 	enum class Tool
 	{
@@ -101,20 +104,20 @@ private:
 	{
 		eg::Rectangle rectangle;
 		float depth;
-		eg::EntityHandle entity;
+		std::weak_ptr<Ent> entity;
 		IconType type;
 		int actConnectionIndex;
 		int wayPointIndex;
 	};
 	std::vector<EntityIcon> m_entityIcons;
-	std::vector<eg::EntityHandle> m_selectedEntities;
+	std::vector<std::weak_ptr<Ent>> m_selectedEntities;
 	
-	eg::EntityHandle m_connectingActivator;
+	std::weak_ptr<Ent> m_connectingActivator;
 	
 	glm::vec3 m_lightStripInsertPos;
 	Dir m_lightStripInsertNormal;
 	
-	eg::EntityHandle m_editingLightStripEntity;
+	std::weak_ptr<ActivationLightStripEnt> m_editingLightStripEntity;
 	int m_editingWayPointIndex = -1;
 	
 	glm::vec3 m_gizmoPosUnaligned;

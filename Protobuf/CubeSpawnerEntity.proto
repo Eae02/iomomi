@@ -11,4 +11,5 @@ message CubeSpawnerEntity {
 	Dir dir = 4;
 	bool cube_can_float = 5;
 	fixed32 name = 6;
+	bool spawn_if_none = 7;
 }

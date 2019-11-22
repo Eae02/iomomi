@@ -1,8 +1,7 @@
 #include "WaterSimulator.hpp"
 #include "../World/World.hpp"
 #include "../World/Player.hpp"
-#include "../World/Entities/WaterPlane.hpp"
-#include "../World/Entities/ECLiquidPlane.hpp"
+#include "../World/Entities/EntTypes/WaterPlaneEnt.hpp"
 #include "../Vec3Compare.hpp"
 
 #include <cstdlib>
@@ -47,7 +46,7 @@ WaterSimulator::WaterSimulator()
 	}
 }
 
-void WaterSimulator::Init(const World& world)
+void WaterSimulator::Init(World& world)
 {
 	for (int i = 0; i < 3; i++)
 	{
@@ -79,17 +78,15 @@ void WaterSimulator::Init(const World& world)
 	
 	//Generates a vector of all underwater cells
 	std::vector<glm::ivec3> underwaterCells;
-	static eg::EntitySignature waterPlaneSignature = eg::EntitySignature::Create<ECLiquidPlane, ECWaterPlane>();
-	for (eg::Entity& waterPlaneEntity : world.EntityManager().GetEntitySet(waterPlaneSignature))
+	world.entManager.ForEachOfType<WaterPlaneEnt>([&] (WaterPlaneEnt& waterPlaneEntity)
 	{
 		//Add all cells from this liquid plane to the vector
-		auto& liquidPlane = waterPlaneEntity.GetComponent<ECLiquidPlane>();
-		liquidPlane.MaybeUpdate(waterPlaneEntity, world);
-		for (glm::ivec3 cell : liquidPlane.UnderwaterCells())
+		waterPlaneEntity.m_liquidPlane.MaybeUpdate(waterPlaneEntity, world);
+		for (glm::ivec3 cell : waterPlaneEntity.m_liquidPlane.UnderwaterCells())
 		{
 			underwaterCells.push_back(cell);
 		}
-	}
+	});
 	if (underwaterCells.empty())
 	{
 		m_numParticles = 0;
