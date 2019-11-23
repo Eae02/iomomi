@@ -39,7 +39,7 @@ public:
 	
 	const void* GetComponent(const std::type_info& type) const override;
 	
-	void RayIntersect(EntRayIntersectArgs& args) const override;
+	std::pair<bool, float> RayIntersect(const eg::Ray& ray) const override;
 	
 	void CalculateCollision(Dir currentDown, struct ClippingArgs& args) const override;
 	

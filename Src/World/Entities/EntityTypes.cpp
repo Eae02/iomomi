@@ -9,11 +9,13 @@
 #include "EntTypes/GravitySwitchEnt.hpp"
 #include "EntTypes/FloorButtonEnt.hpp"
 #include "EntTypes/ActivationLightStripEnt.hpp"
+#include "EntTypes/CubeEnt.hpp"
 
 const EntTypeID entUpdateOrder[NUM_UPDATABLE_ENTITY_TYPES] =
 {
 	EntTypeID::ActivationLightStrip,
-	EntTypeID::FloorButton
+	EntTypeID::FloorButton,
+	EntTypeID::Cube
 };
 
 template <typename T>
@@ -40,5 +42,6 @@ void InitEntityTypes()
 	DefineEntityType<WaterPlaneEnt>("WaterPlane", "Water Plane");
 	DefineEntityType<GravitySwitchEnt>("GravitySwitch", "Gravity Switch");
 	DefineEntityType<FloorButtonEnt>("FloorButton", "Floor Button");
-	DefineEntityType<ActivationLightStripEnt>("ActivationLightStripEnt", "Activation Light Strip");
+	DefineEntityType<ActivationLightStripEnt>("ActivationLightStrip", "Activation Light Strip");
+	DefineEntityType<CubeEnt>("Cube", "Cube");
 }

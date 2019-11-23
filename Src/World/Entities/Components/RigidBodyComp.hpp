@@ -43,11 +43,9 @@ public:
 	
 	void SetMass(float mass);
 	
-	//Copies the transform from the given entity's transform components to the rigid body
-	static void PullTransform(eg::Entity& entity, bool clearVelocity = true);
+	void SetTransform(const glm::vec3& pos, const glm::quat& rot, bool clearVelocity = true);
 	
-	//Copies the transform from the given entity's rigid body to its transform components
-	static void PushTransform(eg::Entity& entity);
+	std::pair<glm::vec3, glm::quat> GetTransform() const;
 	
 private:
 	btDefaultMotionState m_motionState;

@@ -326,11 +326,6 @@ void EntranceExitEnt::Deserialize(std::istream& stream)
 		m_activatable.m_name = entrancePB.name();
 }
 
-void EntranceExitEnt::RayIntersect(EntRayIntersectArgs& args) const
-{
-	
-}
-
 void EntranceExitEnt::CalculateCollision(Dir currentDown, ClippingArgs& args) const
 {
 	glm::mat4 transform = GetTransform();
@@ -347,4 +342,9 @@ void EntranceExitEnt::CalculateCollision(Dir currentDown, ClippingArgs& args) co
 		CheckMesh(entrance.door2CollisionMesh);
 	if (!(doorOpen && m_type == Type::Exit))
 		CheckMesh(entrance.door1CollisionMesh);
+}
+
+std::pair<bool, float> EntranceExitEnt::RayIntersect(const eg::Ray& ray) const
+{
+	return std::make_pair(false, 0.0f);
 }

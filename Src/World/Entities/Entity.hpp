@@ -52,6 +52,8 @@ public:
 	
 	virtual void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection);
 	
+	virtual void EditorSpawned();
+	
 	virtual void Draw(const EntDrawArgs& args);
 	virtual void EditorDraw(const EntEditorDrawArgs& args);
 	

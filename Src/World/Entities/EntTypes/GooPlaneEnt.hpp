@@ -23,6 +23,11 @@ public:
 	
 	const void* GetComponent(const std::type_info& type) const override;
 	
+	bool IsUnderwater(const eg::Sphere& sphere) const
+	{
+		return m_liquidPlane.IsUnderwater(*this, sphere);
+	}
+	
 private:
 	LiquidPlaneComp m_liquidPlane;
 	GooPlaneMaterial m_material;

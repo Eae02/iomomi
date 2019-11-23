@@ -8,6 +8,7 @@
 #include "Entities/Components/RigidBodyComp.hpp"
 #include "Entities/EntCollidable.hpp"
 #include "Entities/Components/ActivatorComp.hpp"
+#include "Entities/EntTypes/CubeEnt.hpp"
 
 #include <yaml-cpp/yaml.h>
 
@@ -249,22 +250,10 @@ void World::Update(const WorldUpdateArgs& args)
 	{
 		auto physicsCPUTimer = eg::StartCPUTimer("Physics");
 		
-		//ECGravityBarrier::Update(args);
-		
-		//ECForceField::Update(args.dt, *m_entityManager);
-		
-		//CubeSpawner::Update(args);
-		
-		//Cube::UpdatePreSim(args);
-		
 		m_bulletWorld->stepSimulation(args.dt, 10, 1.0f / 120.0f);
 		
-		//Cube::UpdatePostSim(args);
+		entManager.ForEachOfType<CubeEnt>([&] (CubeEnt& cube) { cube.UpdatePostSim(args); });
 	}
-	
-	//ECActivator::Update(args);
-	
-	//m_entityManager->EndFrame();
 }
 
 void World::PrepareForDraw(PrepareDrawArgs& args)
@@ -1015,9 +1004,14 @@ RayIntersectResult World::RayIntersect(const eg::Ray& ray) const
 		intersectArgs.distance = glm::dot(wallResult.intersectPosition - ray.GetStart(), ray.GetDirection());
 	}
 	
-	const_cast<EntityManager&>(entManager).ForEachWithFlag(EntTypeFlags::HasCollision, [&] (const Ent& ent)
+	const_cast<EntityManager&>(entManager).ForEachWithFlag(EntTypeFlags::HasCollision, [&] (Ent& ent)
 	{
-		dynamic_cast<const EntCollidable&>(ent).RayIntersect(intersectArgs);
+		auto [intersected, dist] = dynamic_cast<const EntCollidable&>(ent).RayIntersect(ray);
+		if (intersected && dist < intersectArgs.distance)
+		{
+			intersectArgs.entity = &ent;
+			intersectArgs.distance = dist;
+		}
 	});
 	
 	RayIntersectResult result;

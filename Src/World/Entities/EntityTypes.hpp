@@ -9,10 +9,11 @@ enum class EntTypeID
 	WaterPlane           = 4,
 	GravitySwitch        = 5,
 	FloorButton          = 6,
-	ActivationLightStrip = 7
+	ActivationLightStrip = 7,
+	Cube                 = 8
 };
 
-constexpr size_t NUM_UPDATABLE_ENTITY_TYPES = 2;
+constexpr size_t NUM_UPDATABLE_ENTITY_TYPES = 3;
 
 extern const EntTypeID entUpdateOrder[NUM_UPDATABLE_ENTITY_TYPES];
 

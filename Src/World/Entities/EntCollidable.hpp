@@ -12,6 +12,6 @@ struct EntRayIntersectArgs
 class EntCollidable
 {
 public:
-	virtual void RayIntersect(EntRayIntersectArgs& args) const = 0;
+	virtual std::pair<bool, float> RayIntersect(const eg::Ray& ray) const = 0;
 	virtual void CalculateCollision(Dir currentDown, struct ClippingArgs& args) const = 0;
 };

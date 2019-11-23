@@ -1,0 +1,61 @@
+#pragma once
+
+#include "../Entity.hpp"
+#include "../EntCollidable.hpp"
+#include "../EntInteractable.hpp"
+#include "../Components/RigidBodyComp.hpp"
+#include "../../Dir.hpp"
+#include "../../../Graphics/WaterSimulator.hpp"
+
+class CubeEnt : public Ent, public EntCollidable, public EntInteractable
+{
+public:
+	static constexpr EntTypeID TypeID = EntTypeID::Cube;
+	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
+		EntTypeFlags::Interactable | EntTypeFlags::HasCollision;
+	
+	CubeEnt() : CubeEnt(glm::vec3(0.0f), false) { }
+	CubeEnt(const glm::vec3& position, bool canFloat);
+	
+	void Serialize(std::ostream& stream) override;
+	
+	void Deserialize(std::istream& stream) override;
+	
+	void EditorSpawned() override;
+	
+	void RenderSettings() override;
+	
+	void Draw(const EntDrawArgs& args) override;
+	void EditorDraw(const EntEditorDrawArgs& args) override;
+	
+	void Update(const struct WorldUpdateArgs& args) override;
+	void UpdatePostSim(const struct WorldUpdateArgs& args);
+	
+	const void* GetComponent(const std::type_info& type) const override;
+	
+	std::pair<bool, float> RayIntersect(const eg::Ray& ray) const override;
+	void CalculateCollision(Dir currentDown, struct ClippingArgs& args) const override;
+	
+	void Interact(class Player& player) override;
+	int CheckInteraction(const class Player& player) const override;
+	
+	std::string_view GetInteractDescription() const override;
+	
+	static constexpr float RADIUS = 0.4f;
+	
+	eg::Sphere GetSphere() const
+	{
+		return eg::Sphere(m_position, RADIUS * std::sqrt(3.0f));
+	}
+	
+private:
+	RigidBodyComp m_rigidBody;
+	
+	bool m_isPickedUp = false;
+	Dir m_currentDown = Dir::NegY;
+	
+	bool m_canFloat = false;
+	std::shared_ptr<WaterSimulator::QueryAABB> m_waterQueryAABB;
+	
+	glm::quat m_rotation;
+};

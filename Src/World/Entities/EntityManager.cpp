@@ -104,7 +104,6 @@ void EntityManager::Serialize(std::ostream& stream) const
 	for (const auto& entity : m_entities)
 	{
 		const EntType& entType = entTypeMap.at(entity.second->TypeID());
-		eg::Log(eg::LogLevel::Info, "ecs", "Serializing {0}", (uint32_t)eg::HashFNV1a32(entType.name));
 		eg::BinWrite(stream, (uint32_t)eg::HashFNV1a32(entType.name));
 		
 		std::ostringstream serializeStream;

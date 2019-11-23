@@ -28,48 +28,28 @@ void RigidBodyComp::SetMass(float mass)
 	m_rigidBody->setMassProps(mass, localInertia);
 }
 
-void RigidBodyComp::PullTransform(eg::Entity& entity, bool clearVelocity)
+void RigidBodyComp::SetTransform(const glm::vec3& pos, const glm::quat& rot, bool clearVelocity)
 {
-	RigidBodyComp& rigidBody = entity.GetComponent<RigidBodyComp>();
-	
 	btTransform transform;
 	transform.setIdentity();
+	transform.setOrigin(bullet::FromGLM(pos));
+	transform.setRotation(bullet::FromGLM(rot));
 	
-	if (eg::ECPosition3D* positionEC = entity.FindComponent<eg::ECPosition3D>())
-	{
-		transform.setOrigin(bullet::FromGLM(positionEC->position));
-	}
-	
-	if (eg::ECRotation3D* rotationEC = entity.FindComponent<eg::ECRotation3D>())
-	{
-		transform.setRotation(bullet::FromGLM(rotationEC->rotation));
-	}
-	
-	rigidBody.m_motionState.setWorldTransform(transform);
-	rigidBody.m_rigidBody->setWorldTransform(transform);
+	m_motionState.setWorldTransform(transform);
+	m_rigidBody->setWorldTransform(transform);
 	
 	if (clearVelocity)
 	{
-		rigidBody.m_rigidBody->setLinearVelocity(btVector3(0.0f, 0.0f, 0.0f));
-		rigidBody.m_rigidBody->setAngularVelocity(btVector3(0.0f, 0.0f, 0.0f));
-		rigidBody.m_rigidBody->clearForces();
+		m_rigidBody->setLinearVelocity(btVector3(0.0f, 0.0f, 0.0f));
+		m_rigidBody->setAngularVelocity(btVector3(0.0f, 0.0f, 0.0f));
+		m_rigidBody->clearForces();
 	}
 }
 
-void RigidBodyComp::PushTransform(eg::Entity& entity)
+std::pair<glm::vec3, glm::quat> RigidBodyComp::GetTransform() const
 {
-	RigidBodyComp& rigidBody = entity.GetComponent<RigidBodyComp>();
-	
 	btTransform transform;
-	rigidBody.m_motionState.getWorldTransform(transform);
+	m_motionState.getWorldTransform(transform);
 	
-	if (eg::ECPosition3D* positionEC = entity.FindComponent<eg::ECPosition3D>())
-	{
-		positionEC->position = bullet::ToGLM(transform.getOrigin());
-	}
-	
-	if (eg::ECRotation3D* rotationEC = entity.FindComponent<eg::ECRotation3D>())
-	{
-		rotationEC->rotation = bullet::ToGLM(transform.getRotation());
-	}
+	return std::make_pair(bullet::ToGLM(transform.getOrigin()), bullet::ToGLM(transform.getRotation()));
 }
