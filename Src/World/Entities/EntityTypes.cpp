@@ -10,11 +10,13 @@
 #include "EntTypes/FloorButtonEnt.hpp"
 #include "EntTypes/ActivationLightStripEnt.hpp"
 #include "EntTypes/CubeEnt.hpp"
+#include "EntTypes/CubeSpawnerEnt.hpp"
 
 const EntTypeID entUpdateOrder[NUM_UPDATABLE_ENTITY_TYPES] =
 {
 	EntTypeID::ActivationLightStrip,
 	EntTypeID::FloorButton,
+	EntTypeID::CubeSpawner,
 	EntTypeID::Cube
 };
 
@@ -44,4 +46,5 @@ void InitEntityTypes()
 	DefineEntityType<FloorButtonEnt>("FloorButton", "Floor Button");
 	DefineEntityType<ActivationLightStripEnt>("ActivationLightStrip", "Activation Light Strip");
 	DefineEntityType<CubeEnt>("Cube", "Cube");
+	DefineEntityType<CubeSpawnerEnt>("CubeSpawner", "Cube Spawner");
 }

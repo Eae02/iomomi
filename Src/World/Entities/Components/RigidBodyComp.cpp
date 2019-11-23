@@ -2,9 +2,9 @@
 
 RigidBodyComp::~RigidBodyComp()
 {
-	if (m_physicsWorld != nullptr)
+	if (std::shared_ptr<btDiscreteDynamicsWorld> physicsWorld = m_physicsWorld.lock())
 	{
-		m_physicsWorld->removeRigidBody(&m_rigidBody.value());
+		physicsWorld->removeRigidBody(&m_rigidBody.value());
 	}
 }
 

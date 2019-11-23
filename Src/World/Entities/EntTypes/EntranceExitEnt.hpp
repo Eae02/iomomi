@@ -21,7 +21,7 @@ public:
 	
 	EntranceExitEnt();
 	
-	void Serialize(std::ostream& stream) override;
+	void Serialize(std::ostream& stream) const override;
 	void Deserialize(std::istream& stream) override;
 	
 	void RenderSettings() override;

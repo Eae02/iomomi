@@ -469,5 +469,5 @@ void ActivationLightStripEnt::ClearGeneratedMesh()
 		instance.clear();
 }
 
-void ActivationLightStripEnt::Serialize(std::ostream& stream) { }
+void ActivationLightStripEnt::Serialize(std::ostream& stream) const { }
 void ActivationLightStripEnt::Deserialize(std::istream& stream) { }

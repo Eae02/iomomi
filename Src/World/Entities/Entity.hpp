@@ -45,7 +45,7 @@ class Ent : public std::enable_shared_from_this<Ent>
 public:
 	Ent();
 	
-	virtual void Serialize(std::ostream& stream) = 0;
+	virtual void Serialize(std::ostream& stream) const = 0;
 	virtual void Deserialize(std::istream& stream) = 0;
 	
 	virtual void RenderSettings();
@@ -82,10 +82,10 @@ public:
 		return const_cast<void*>(GetComponent(type));
 	}
 	
-	template <typename T>
-	static std::shared_ptr<T> Create()
+	template <typename T, typename... Args>
+	static std::shared_ptr<T> Create(Args&&... args)
 	{
-		std::shared_ptr<T> ent = std::make_shared<T>();
+		std::shared_ptr<T> ent = std::make_shared<T>(std::forward<Args>(args)...);
 		ent->m_typeID = T::TypeID;
 		return ent;
 	}
@@ -126,7 +126,7 @@ protected:
 	
 private:
 	uint32_t m_name;
-	EntTypeID m_typeID;
+	EntTypeID m_typeID = (EntTypeID)-1;
 	bool m_shouldSerialize = true;
 };
 

@@ -11,7 +11,7 @@ public:
 	static constexpr EntTypeID TypeID = EntTypeID::WaterPlane;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::EditorWallMove;
 	
-	void Serialize(std::ostream& stream) override;
+	void Serialize(std::ostream& stream) const override;
 	void Deserialize(std::istream& stream) override;
 	
 	const void* GetComponent(const std::type_info& type) const override;

@@ -18,7 +18,7 @@ public:
 	void Draw(const EntDrawArgs& args) override;
 	void EditorDraw(const EntEditorDrawArgs& args) override;
 	
-	void Serialize(std::ostream& stream) override;
+	void Serialize(std::ostream& stream) const override;
 	
 	void Deserialize(std::istream& stream) override;
 	

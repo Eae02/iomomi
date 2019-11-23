@@ -73,7 +73,7 @@ void DecalEnt::EditorDraw(const EntEditorDrawArgs& args)
 	args.meshBatch->Add(DecalMaterial::GetMesh(), *m_material, GetDecalTransform(), 1);
 }
 
-void DecalEnt::Serialize(std::ostream& stream)
+void DecalEnt::Serialize(std::ostream& stream) const
 {
 	gravity_pb::DecalEntity decalPB;
 	

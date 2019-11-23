@@ -1024,7 +1024,7 @@ RayIntersectResult World::RayIntersect(const eg::Ray& ray) const
 void World::InitializeBulletPhysics()
 {
 	m_bulletBroadphase = std::make_unique<btDbvtBroadphase>();
-	m_bulletWorld = std::make_unique<btDiscreteDynamicsWorld>(bullet::dispatcher, m_bulletBroadphase.get(),
+	m_bulletWorld = std::make_shared<btDiscreteDynamicsWorld>(bullet::dispatcher, m_bulletBroadphase.get(),
 		bullet::solver, bullet::collisionConfig);
 	m_bulletWorld->setGravity({ 0, -bullet::GRAVITY, 0 });
 	
@@ -1056,13 +1056,12 @@ void World::InitializeBulletPhysics()
 void World::InitRigidBodyEntity(Ent& entity)
 {
 	RigidBodyComp* rigidBodyComp = entity.GetComponentMut<RigidBodyComp>();
-	if (rigidBodyComp == nullptr)
-		return;
-	
-	if (rigidBodyComp->m_rigidBody.has_value() && rigidBodyComp->m_physicsWorld == nullptr)
+	if (rigidBodyComp && m_bulletWorld && rigidBodyComp->m_rigidBody.has_value() &&
+		!rigidBodyComp->m_worldAssigned)
 	{
 		m_bulletWorld->addRigidBody(&*rigidBodyComp->m_rigidBody);
-		rigidBodyComp->m_physicsWorld = m_bulletWorld.get();
+		rigidBodyComp->m_physicsWorld = m_bulletWorld;
+		rigidBodyComp->m_worldAssigned = true;
 	}
 }
 

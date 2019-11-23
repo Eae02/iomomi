@@ -147,7 +147,7 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 	
 	if (inGoo)
 	{
-		args.world->entManager.RemoveEntity(Name());
+		args.world->entManager.RemoveEntity(*this);
 		return;
 	}
 	
@@ -259,7 +259,7 @@ void CubeEnt::UpdatePostSim(const WorldUpdateArgs& args)
 	}
 }
 
-void CubeEnt::Serialize(std::ostream& stream)
+void CubeEnt::Serialize(std::ostream& stream) const
 {
 	gravity_pb::CubeEntity cubePB;
 	

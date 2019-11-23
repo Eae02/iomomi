@@ -50,7 +50,7 @@ void WallLightEnt::EditorDraw(const EntEditorDrawArgs& args)
 	args.meshBatch->AddModel(GetModel(), EmissiveMaterial::instance, GetInstanceData(1.0f));
 }
 
-void WallLightEnt::Serialize(std::ostream& stream)
+void WallLightEnt::Serialize(std::ostream& stream) const
 {
 	gravity_pb::WallLightEntity wallLightPB;
 	

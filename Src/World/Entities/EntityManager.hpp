@@ -3,6 +3,7 @@
 #include "Entity.hpp"
 
 #include <unordered_map>
+#include <unordered_set>
 
 class EntityManager
 {
@@ -11,7 +12,10 @@ public:
 	
 	void AddEntity(std::shared_ptr<Ent> entity);
 	
-	void RemoveEntity(uint32_t name);
+	void RemoveEntity(const Ent& entity)
+	{
+		m_entitiesToRemove.emplace_back(entity.TypeID(), entity.Name());
+	}
 	
 	template <typename T, typename CallbackTp>
 	void ForEachOfType(CallbackTp callback);
@@ -29,9 +33,9 @@ public:
 	void Serialize(std::ostream& stream) const;
 	
 private:
-	std::unordered_map<uint32_t, std::shared_ptr<Ent>> m_entities;
+	std::unordered_map<uint32_t, std::shared_ptr<Ent>> m_entities[(size_t)EntTypeID::MAX];
 	
-	std::vector<std::weak_ptr<Ent>> m_updatableEntities[NUM_UPDATABLE_ENTITY_TYPES];
+	std::vector<std::pair<EntTypeID, uint32_t>> m_entitiesToRemove;
 	
 	struct FlagTracker
 	{

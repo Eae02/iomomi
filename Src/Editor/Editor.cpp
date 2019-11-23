@@ -734,7 +734,7 @@ void Editor::UpdateToolEntities(float dt)
 				std::shared_ptr<Ent> entitySP = entity.lock();
 				if (entitySP)
 				{
-					m_world->entManager.RemoveEntity(entitySP->Name());
+					m_world->entManager.RemoveEntity(*entitySP);
 				}
 			}
 		}

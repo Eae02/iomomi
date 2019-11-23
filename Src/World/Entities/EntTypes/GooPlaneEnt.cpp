@@ -38,7 +38,7 @@ const void* GooPlaneEnt::GetComponent(const std::type_info& type) const
 	return Ent::GetComponent(type);
 }
 
-void GooPlaneEnt::Serialize(std::ostream& stream)
+void GooPlaneEnt::Serialize(std::ostream& stream) const
 {
 	gravity_pb::GooPlaneEntity gooPlanePB;
 	

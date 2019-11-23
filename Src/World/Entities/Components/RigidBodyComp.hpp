@@ -50,5 +50,7 @@ public:
 private:
 	btDefaultMotionState m_motionState;
 	std::optional<btRigidBody> m_rigidBody;
-	btDiscreteDynamicsWorld* m_physicsWorld = nullptr;
+	
+	bool m_worldAssigned = false;
+	std::weak_ptr<btDiscreteDynamicsWorld> m_physicsWorld;
 };

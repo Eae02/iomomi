@@ -30,7 +30,7 @@ const void* FloorButtonEnt::GetComponent(const std::type_info& type) const
 	return Ent::GetComponent(type);
 }
 
-void FloorButtonEnt::Serialize(std::ostream& stream)
+void FloorButtonEnt::Serialize(std::ostream& stream) const
 {
 	gravity_pb::FloorButtonEntity buttonPB;
 	

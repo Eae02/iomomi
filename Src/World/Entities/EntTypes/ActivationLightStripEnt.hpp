@@ -11,7 +11,7 @@ public:
 	static constexpr EntTypeID TypeID = EntTypeID::ActivationLightStrip;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::EditorInvisible;
 	
-	void Serialize(std::ostream& stream) override;
+	void Serialize(std::ostream& stream) const override;
 	void Deserialize(std::istream& stream) override;
 	
 	void RenderSettings() override;

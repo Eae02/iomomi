@@ -195,7 +195,7 @@ private:
 	std::vector<Region> m_regions;
 	
 	std::unique_ptr<btDbvtBroadphase> m_bulletBroadphase;
-	std::unique_ptr<btDiscreteDynamicsWorld> m_bulletWorld;
+	std::shared_ptr<btDiscreteDynamicsWorld> m_bulletWorld;
 	
 	std::vector<Door> m_doors;
 	

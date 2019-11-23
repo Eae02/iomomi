@@ -297,7 +297,7 @@ const void* EntranceExitEnt::GetComponent(const std::type_info& type) const
 	return Ent::GetComponent(type);
 }
 
-void EntranceExitEnt::Serialize(std::ostream& stream)
+void EntranceExitEnt::Serialize(std::ostream& stream) const
 {
 	gravity_pb::EntranceEntity entrancePB;
 	

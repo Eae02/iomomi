@@ -14,7 +14,7 @@ const void* WaterPlaneEnt::GetComponent(const std::type_info& type) const
 	return Ent::GetComponent(type);
 }
 
-void WaterPlaneEnt::Serialize(std::ostream& stream)
+void WaterPlaneEnt::Serialize(std::ostream& stream) const
 {
 	gravity_pb::WaterPlaneEntity waterPlanePB;
 	SerializePos(waterPlanePB);

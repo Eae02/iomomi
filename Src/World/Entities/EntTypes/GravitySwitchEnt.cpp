@@ -59,7 +59,7 @@ std::string_view GravitySwitchEnt::GetInteractDescription() const
 	return "Flip Gravity";
 }
 
-void GravitySwitchEnt::Serialize(std::ostream& stream)
+void GravitySwitchEnt::Serialize(std::ostream& stream) const
 {
 	gravity_pb::GravitySwitchEntity switchPB;
 	

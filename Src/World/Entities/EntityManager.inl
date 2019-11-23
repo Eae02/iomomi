@@ -1,10 +1,9 @@
 template <typename T, typename CallbackTp>
 void EntityManager::ForEachOfType(CallbackTp callback)
 {
-	for (const auto& entity : m_entities)
+	for (const auto& entity : m_entities[(int)T::TypeID])
 	{
-		if (entity.second->TypeID() == T::TypeID)
-			callback(static_cast<T&>(*entity.second));
+		callback(static_cast<T&>(*entity.second));
 	}
 }
 
@@ -25,8 +24,9 @@ void EntityManager::ForEachWithFlag(EntTypeFlags flags, CallbackTp callback)
 template <typename CallbackTp>
 void EntityManager::ForEach(CallbackTp callback)
 {
-	for (const auto& entity : m_entities)
-		callback(*entity.second);
+	for (const auto& entityList : m_entities)
+		for (const auto& entity : entityList)
+			callback(*entity.second);
 }
 
 template <typename CallbackTp>
