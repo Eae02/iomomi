@@ -1,10 +1,12 @@
 #include "CubeEnt.hpp"
 #include "GooPlaneEnt.hpp"
 #include "FloorButtonEnt.hpp"
+#include "PlatformEnt.hpp"
 #include "../../Player.hpp"
 #include "../../BulletPhysics.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../../Protobuf/Build/CubeEntity.pb.h"
+#include "ForceFieldEnt.hpp"
 #include <imgui.h>
 
 static constexpr float MASS = 1.0f;
@@ -33,6 +35,11 @@ CubeEnt::CubeEnt(const glm::vec3& position, bool canFloat)
 	m_rigidBody.GetRigidBody()->setFlags(m_rigidBody.GetRigidBody()->getFlags() | BT_DISABLE_WORLD_GRAVITY);
 	m_rigidBody.GetRigidBody()->setActivationState(DISABLE_DEACTIVATION);
 	m_rigidBody.SetTransform(position, m_rotation);
+	
+	m_rigidBody.GetRigidBody()->setFriction(1.f);
+	m_rigidBody.GetRigidBody()->setRollingFriction(.1);
+	m_rigidBody.GetRigidBody()->setSpinningFriction(0.1);
+	m_rigidBody.GetRigidBody()->setAnisotropicFriction(collisionShape->getAnisotropicRollingFrictionDirection(), btCollisionObject::CF_ANISOTROPIC_ROLLING_FRICTION);
 }
 
 void CubeEnt::RenderSettings()
@@ -42,9 +49,12 @@ void CubeEnt::RenderSettings()
 	ImGui::Checkbox("Float", &m_canFloat);
 }
 
-void CubeEnt::EditorSpawned()
+void CubeEnt::Spawned(bool isEditor)
 {
-	m_position += glm::vec3(DirectionVector(m_direction)) * (RADIUS + 0.01f);
+	if (isEditor)
+	{
+		m_position += glm::vec3(DirectionVector(m_direction)) * (RADIUS + 0.01f);
+	}
 }
 
 void CubeEnt::Draw(const EntDrawArgs& args)
@@ -72,6 +82,8 @@ const void* CubeEnt::GetComponent(const std::type_info& type) const
 {
 	if (type == typeid(RigidBodyComp))
 		return &m_rigidBody;
+	if (type == typeid(GravityBarrierInteractableComp))
+		return &m_barrierInteractableComp;
 	return Ent::GetComponent(type);
 }
 
@@ -131,6 +143,14 @@ std::string_view CubeEnt::GetInteractDescription() const
 static float* cubeBuoyancy = eg::TweakVarFloat("cube_buoyancy", 0.25f, 0.0f);
 static float* cubeWaterDrag = eg::TweakVarFloat("cube_water_drag", 0.05f, 0.0f);
 
+bool CubeEnt::SetGravity(Dir newGravity)
+{
+	if (m_isPickedUp)
+		return false;
+	m_currentDown = newGravity;
+	return true;
+}
+
 void CubeEnt::Update(const WorldUpdateArgs& args)
 {
 	if (!args.player)
@@ -151,17 +171,19 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 		return;
 	}
 	
-	/*std::optional<Dir> forceFieldGravity = ECForceField::CheckIntersection(args.world->EntityManager(),
+	std::optional<Dir> forceFieldGravity = ForceFieldEnt::CheckIntersection(args.world->entManager,
 		eg::AABB(sphere.position - RADIUS, sphere.position + RADIUS));
-	if (forceFieldGravity.has_value() && cube.m_currentDown != *forceFieldGravity)
+	if (forceFieldGravity.has_value() && m_currentDown != *forceFieldGravity)
 	{
-		cube.m_currentDown = *forceFieldGravity;
-		if (cube.m_isPickedUp)
+		m_currentDown = *forceFieldGravity;
+		if (m_isPickedUp)
 		{
-			cube.m_isPickedUp = false;
+			m_isPickedUp = false;
 			args.player->SetIsCarrying(false);
 		}
-	}*/
+	}
+	
+	const float impulseFactor = 1.0f / std::max(args.dt, 1.0f / 60.0f);
 	
 	if (m_isPickedUp)
 	{
@@ -195,8 +217,7 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 				deltaPos *= clipArgs.collisionInfo.distance;
 			
 			m_rigidBody.GetRigidBody()->setGravity(btVector3(0, 0, 0));
-			m_rigidBody.GetRigidBody()->setLinearVelocity(
-				bullet::FromGLM(deltaPos / std::max(args.dt, 1.0f / 60.0f)));
+			m_rigidBody.GetRigidBody()->setLinearVelocity(bullet::FromGLM(deltaPos * impulseFactor));
 			m_rigidBody.GetRigidBody()->setAngularVelocity(btVector3(0, 0, 0));
 			m_rigidBody.GetRigidBody()->clearForces();
 		}
@@ -204,8 +225,18 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 	else
 	{
 		//Updates the gravity vector
-		glm::vec3 gravity = glm::vec3(DirectionVector(m_currentDown)) * bullet::GRAVITY;
-		m_rigidBody.GetRigidBody()->setGravity(bullet::FromGLM(gravity));
+		glm::vec3 gravityUnit = glm::vec3(DirectionVector(m_currentDown));
+		m_rigidBody.GetRigidBody()->setGravity(bullet::FromGLM(gravityUnit * bullet::GRAVITY));
+		
+		//Interaction with platforms
+		glm::vec3 platformSearchCenter = m_position + gravityUnit * RADIUS;
+		constexpr float PLATFORM_SEARCH_RAD = 0.2f;
+		eg::AABB platformSearchAABB(platformSearchCenter - PLATFORM_SEARCH_RAD, platformSearchCenter + PLATFORM_SEARCH_RAD);
+		if (const PlatformEnt* platform = PlatformEnt::FindPlatform(platformSearchAABB, args.world->entManager))
+		{
+			//auto [rbPos, rbRot] = m_rigidBody.GetTransform();
+			//m_rigidBody.SetTransform(rbPos + platform->MoveDelta(), rbRot, false);
+		}
 		
 		//Water interaction
 		if (m_canFloat && m_waterQueryAABB != nullptr)
@@ -222,7 +253,7 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 		bpProxy->m_collisionFilterGroup = 1 | (2 << ((int)m_currentDown / 2));
 	}
 	
-	//entity.GetComponent<ECBarrierInteractable>().m_currentDown = m_currentDown;
+	m_barrierInteractableComp.currentDown = m_currentDown;
 }
 
 void CubeEnt::UpdatePostSim(const WorldUpdateArgs& args)

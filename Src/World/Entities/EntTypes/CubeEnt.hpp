@@ -1,13 +1,15 @@
 #pragma once
 
+#include "GravityBarrierEnt.hpp"
 #include "../Entity.hpp"
 #include "../EntCollidable.hpp"
 #include "../EntInteractable.hpp"
+#include "../EntGravityChargeable.hpp"
 #include "../Components/RigidBodyComp.hpp"
 #include "../../Dir.hpp"
 #include "../../../Graphics/WaterSimulator.hpp"
 
-class CubeEnt : public Ent, public EntCollidable, public EntInteractable
+class CubeEnt : public Ent, public EntCollidable, public EntInteractable, public EntGravityChargeable
 {
 public:
 	static constexpr EntTypeID TypeID = EntTypeID::Cube;
@@ -21,7 +23,7 @@ public:
 	
 	void Deserialize(std::istream& stream) override;
 	
-	void EditorSpawned() override;
+	void Spawned(bool isEditor) override;
 	
 	void RenderSettings() override;
 	
@@ -39,6 +41,8 @@ public:
 	void Interact(class Player& player) override;
 	int CheckInteraction(const class Player& player) const override;
 	
+	bool SetGravity(Dir newGravity) override;
+	
 	std::string_view GetInteractDescription() const override;
 	
 	static constexpr float RADIUS = 0.4f;
@@ -50,6 +54,7 @@ public:
 	
 private:
 	RigidBodyComp m_rigidBody;
+	GravityBarrierInteractableComp m_barrierInteractableComp;
 	
 	bool m_isPickedUp = false;
 	Dir m_currentDown = Dir::NegY;

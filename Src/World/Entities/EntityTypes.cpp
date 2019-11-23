@@ -11,13 +11,19 @@
 #include "EntTypes/ActivationLightStripEnt.hpp"
 #include "EntTypes/CubeEnt.hpp"
 #include "EntTypes/CubeSpawnerEnt.hpp"
+#include "EntTypes/PlatformEnt.hpp"
+#include "EntTypes/ForceFieldEnt.hpp"
+#include "EntTypes/GravityBarrierEnt.hpp"
 
 const EntTypeID entUpdateOrder[NUM_UPDATABLE_ENTITY_TYPES] =
 {
 	EntTypeID::ActivationLightStrip,
 	EntTypeID::FloorButton,
+	EntTypeID::ForceField,
+	EntTypeID::GravityBarrier,
 	EntTypeID::CubeSpawner,
-	EntTypeID::Cube
+	EntTypeID::Cube,
+	EntTypeID::Platform
 };
 
 template <typename T>
@@ -47,4 +53,7 @@ void InitEntityTypes()
 	DefineEntityType<ActivationLightStripEnt>("ActivationLightStrip", "Activation Light Strip");
 	DefineEntityType<CubeEnt>("Cube", "Cube");
 	DefineEntityType<CubeSpawnerEnt>("CubeSpawner", "Cube Spawner");
+	DefineEntityType<PlatformEnt>("Platform", "Platform");
+	DefineEntityType<ForceFieldEnt>("ForceField", "Force Field");
+	DefineEntityType<GravityBarrierEnt>("GravityBarrier", "Gravity Barrier");
 }

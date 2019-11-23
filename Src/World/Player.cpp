@@ -1,8 +1,10 @@
 #include "Player.hpp"
 #include "Entities/EntInteractable.hpp"
+#include "Entities/EntTypes/FloorButtonEnt.hpp"
+#include "Entities/EntTypes/PlatformEnt.hpp"
 #include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
 #include "../Settings.hpp"
-#include "Entities/EntTypes/FloorButtonEnt.hpp"
+#include "Entities/EntTypes/ForceFieldEnt.hpp"
 
 #include <imgui.h>
 
@@ -48,7 +50,7 @@ inline glm::quat GetRotation(float yaw, float pitch, Dir down)
 void Player::Update(World& world, float dt, bool underwater)
 {
 	const glm::vec3 up = -DirectionVector(m_down);
-	eg::Entity* currentPlatform = m_currentPlatform.Get();
+	std::shared_ptr<PlatformEnt> currentPlatform = m_currentPlatform.lock();
 	
 	auto TransitionInterpol = [&] { return glm::smoothstep(0.0f, 1.0f, m_transitionTime); };
 	
@@ -353,32 +355,31 @@ void Player::Update(World& world, float dt, bool underwater)
 			floorButtonEntity.Activate();
 		}
 	});
-	/*
+	
 	//Checks for force fields
 	eg::AABB forceFieldAABB = GetAABB();
 	forceFieldAABB.min += forceFieldAABB.Size() * 0.2f;
 	forceFieldAABB.max -= forceFieldAABB.Size() * 0.2f;
-	std::optional<Dir> forceFieldGravity = ECForceField::CheckIntersection(world.EntityManager(), forceFieldAABB);
+	std::optional<Dir> forceFieldGravity = ForceFieldEnt::CheckIntersection(world.entManager, forceFieldAABB);
 	if (m_gravityTransitionMode == TransitionMode::None && forceFieldGravity.has_value() && m_down != *forceFieldGravity)
 	{
 		m_down = *forceFieldGravity;
 		m_gravityTransitionMode = TransitionMode::Fall;
 		m_transitionTime = 0;
-		m_velocity = glm::vec3(0);
 		m_oldEyePosition = m_eyePosition;
 		m_oldRotation = m_rotation;
 		m_newRotation = GetRotation(m_rotationYaw, m_rotationPitch, m_down);
-	}*/
+	}
 	
 	m_onGround = false;
 	
 	const int downDim = (int)m_down / 2;
 	const int downSign = ((int)m_down % 2) ? -1 : 1;
-	/*
+	
 	//Moves the player with the current platform, if one is set 
 	if (currentPlatform != nullptr)
 	{
-		glm::vec3 platformMove = currentPlatform->GetComponent<ECPlatform>().moveDelta;
+		glm::vec3 platformMove = currentPlatform->MoveDelta();
 		
 		//The player's position should be slightly above the platform (PLAYER_PLATFORM_MARGIN)
 		// at all times to prevent the player from falling through the platform when it moves up.
@@ -386,7 +387,7 @@ void Player::Update(World& world, float dt, bool underwater)
 		
 		float correction =
 			-m_position[downDim] +
-			ECPlatform::GetPosition(*currentPlatform)[downDim] +
+			currentPlatform->GetPlatformPosition()[downDim] +
 			((HEIGHT * 0.5f) + PLAYER_PLATFORM_MARGIN) * up[downDim];
 		
 		if (correction * up[downDim] < 0)
@@ -397,7 +398,7 @@ void Player::Update(World& world, float dt, bool underwater)
 		ClipAndMove(world, platformMove, true);
 		m_onGround = true; //Always on ground if on a platform
 	}
-	*/
+	
 	ClipAndMove(world, move, false);
 	
 	//Searches for a platform under the player's feet
@@ -408,11 +409,11 @@ void Player::Update(World& world, float dt, bool underwater)
 	float platformSearchDown2 = feetPos[downDim] + std::max(move[downDim] * downSign, 0.3f) * downSign;
 	platformSearchMax[downDim] = std::max(platformSearchDown1, platformSearchDown2);
 	platformSearchMin[downDim] = std::min(platformSearchDown1, platformSearchDown2);
-	currentPlatform = nullptr;//ECPlatform::FindPlatform(eg::AABB(platformSearchMin, platformSearchMax), world.EntityManager());
-	if (currentPlatform == nullptr)
+	PlatformEnt* newPlatform = PlatformEnt::FindPlatform(eg::AABB(platformSearchMin, platformSearchMax), world.entManager);
+	if (newPlatform == nullptr)
 		m_currentPlatform = { };
 	else
-		m_currentPlatform = *currentPlatform;
+		m_currentPlatform = std::static_pointer_cast<PlatformEnt>(newPlatform->shared_from_this());
 	
 	//Updates the eye position
 	m_eyePosition = m_position + up * EYE_OFFSET;
@@ -525,7 +526,7 @@ void Player::DebugDraw()
 	const char* dirNames = "XYZ";
 	ImGui::Text("Facing: %c%c", forward[maxDir] < 0 ? '-' : '+', dirNames[maxDir]);
 	
-	ImGui::Text("Platform: %p", (void*)m_currentPlatform.Get());
+	ImGui::Text("Platform: %p", (void*)m_currentPlatform.lock().get());
 }
 
 void Player::Reset()

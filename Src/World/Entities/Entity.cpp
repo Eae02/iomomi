@@ -56,4 +56,4 @@ EntTypeFlags Ent::TypeFlags() const
 
 void Ent::Update(const struct WorldUpdateArgs& args) { }
 
-void Ent::EditorSpawned() { }
+void Ent::Spawned(bool isEditor) { }

@@ -12,10 +12,13 @@ enum class EntTypeID
 	ActivationLightStrip = 7,
 	Cube                 = 8,
 	CubeSpawner          = 9,
+	Platform             = 10,
+	ForceField           = 11,
+	GravityBarrier       = 12,
 	MAX
 };
  
-constexpr size_t NUM_UPDATABLE_ENTITY_TYPES = 4;
+constexpr size_t NUM_UPDATABLE_ENTITY_TYPES = 7;
 
 extern const EntTypeID entUpdateOrder[NUM_UPDATABLE_ENTITY_TYPES];
 

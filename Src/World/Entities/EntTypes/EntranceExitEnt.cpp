@@ -224,6 +224,8 @@ void EntranceExitEnt::Draw(const EntDrawArgs& args)
 		const size_t materialIndex = entrance.model->GetMesh(i).materialIndex;
 		args.meshBatch->AddModelMesh(*entrance.model, i, *entrance.materials[materialIndex], transforms[i]);
 	}
+	
+	//args.pointLights->emplace_back()
 }
 
 void EntranceExitEnt::EditorDraw(const EntEditorDrawArgs& args)

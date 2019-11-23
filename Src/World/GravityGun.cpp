@@ -137,86 +137,72 @@ void GravityGun::Update(World& world, WaterSimulator& waterSim, eg::ParticleMana
 	m_gunTransform = glm::rotate(m_gunTransform, eg::PI * GUN_ROTATION_X, glm::vec3(1, 0, 0));
 	m_gunTransform = glm::rotate(m_gunTransform, eg::PI * GUN_ROTATION_Y, glm::vec3(0, 1, 0));
 	m_gunTransform = glm::scale(m_gunTransform, glm::vec3(GUN_SCALE));
-	/*
-	for (eg::Entity& orbEntity : world.entManager.GetEntitySet(gravityOrbSignature))
+	
+	if (m_beamTimeRemaining > 0)
 	{
-		ECGravityOrb& orbComp = orbEntity.GetComponent<ECGravityOrb>();
-		
-		orbComp.timeAlive -= dt;
-		
-		if (orbComp.timeAlive < 0)
+		m_beamTimeRemaining -= dt;
+		if (m_beamTimeRemaining < 0)
 		{
-			orbEntity.GetComponent<eg::ECPosition3D>().position = orbComp.targetPos;
-			if (eg::Entity* targetEntity = orbComp.entityToCharge.Get())
+			m_beamPos = m_beamTargetPos;
+			if (std::shared_ptr<EntGravityChargeable> targetEntity = m_entityToCharge.lock())
 			{
-				bool set = false;
-				
-				GravityChargeSetMessage chargeSetMessage;
-				chargeSetMessage.newDown = orbComp.newDown;
-				chargeSetMessage.set = &set;
-				
-				targetEntity->HandleMessage(chargeSetMessage);
-				
-				orbComp.entityToCharge = { };
-				
-				orbEntity.GetComponent<eg::ECParticleSystem>().ClearEmitters();
+				targetEntity->SetGravity(m_newDown);
+				m_orbParticleEmitter.Kill();
 			}
 			
-			orbEntity.GetComponent<PointLight>().SetRadiance(LIGHT_COLOR, orbComp.lightIntensity);
-			orbComp.lightIntensity -= LIGHT_INTENSITY_FALL_SPEED * dt;
+			//orbEntity.GetComponent<PointLight>().SetRadiance(LIGHT_COLOR, orbComp.lightIntensity);
+			//orbComp.lightIntensity -= LIGHT_INTENSITY_FALL_SPEED * dt;
 			
-			if (orbComp.lightIntensity < 0)
-			{
-				orbEntity.Despawn();
-			}
+			//if (orbComp.lightIntensity < 0)
+			//{
+			//	orbEntity.Despawn();
+			//}
 		}
 		else
 		{
-			orbEntity.GetComponent<eg::ECPosition3D>().position += orbComp.direction * dt;
+			m_beamPos += m_beamDirection * dt;
+			m_orbParticleEmitter.SetTransform(glm::translate(glm::mat4(1), m_beamPos));
 		}
 	}
 	
-	if ((eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft)) || 
+	if ((eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft)) ||
 		(eg::IsButtonDown(eg::Button::CtrlrRightShoulder) && !eg::WasButtonDown(eg::Button::CtrlrRightShoulder)) ||
 		(eg::IsButtonDown(eg::Button::CtrlrLeftShoulder) && !eg::WasButtonDown(eg::Button::CtrlrLeftShoulder)))
 	{
 		eg::Ray viewRay = eg::Ray::UnprojectNDC(inverseViewProj, glm::vec2(0.0f));
 		RayIntersectResult intersectResult = world.RayIntersect(viewRay);
 		
-		auto [waterIntersectDst, waterIntersectParticle] = waterSim.RayIntersect(viewRay);
+		auto[waterIntersectDst, waterIntersectParticle] = waterSim.RayIntersect(viewRay);
 		
 		if (intersectResult.intersected || waterIntersectParticle != -1)
 		{
-			eg::Entity& orbEntity = world.EntityManager().AddEntity(gravityOrbSignature);
-			orbEntity.InitComponent<eg::ECParticleSystem>(&particleManager).AddEmitter(
-				eg::GetAsset<eg::ParticleEmitterType>("Particles/BlueOrb.ype"));
+			m_orbParticleEmitter = particleManager.AddEmitter(eg::GetAsset<eg::ParticleEmitterType>("Particles/BlueOrb.ype"));
 			
 			glm::vec3 start = m_gunTransform * glm::vec4(0, 0, 0, 1);
 			glm::vec3 target = viewRay.GetPoint(intersectResult.distance * 0.99f);
 			
-			PointLight& light = orbEntity.GetComponent<PointLight>();
-			light.SetRadiance(LIGHT_COLOR, 15.0f);
-			light.castsShadows = settings.shadowQuality >= QualityLevel::Medium;
+			//PointLight& light = orbEntity.GetComponent<PointLight>();
+			//light.SetRadiance(LIGHT_COLOR, 15.0f);
+			//light.castsShadows = settings.shadowQuality >= QualityLevel::Medium;
 			
-			ECGravityOrb& orbComp = orbEntity.GetComponent<ECGravityOrb>();
-			orbComp.newDown = player.CurrentDown();
-			orbComp.direction = glm::normalize(target - start) * ORB_SPEED;
-			orbComp.targetPos = target;
-			orbComp.timeAlive = intersectResult.distance / ORB_SPEED;
-			orbComp.lightIntensity = 15.0f;
+			m_newDown = player.CurrentDown();
+			m_beamDirection = glm::normalize(target - start) * ORB_SPEED;
+			m_beamTargetPos = target;
+			m_beamTimeRemaining = intersectResult.distance / ORB_SPEED;
+			m_beamPos = start;
+			//orbComp.lightIntensity = 15.0f;
 			
+			m_entityToCharge = { };
 			if (waterIntersectParticle != -1 && waterIntersectDst < intersectResult.distance)
 			{
 				waterSim.ChangeGravity(waterIntersectParticle, player.CurrentDown());
 			}
 			else if (intersectResult.entity != nullptr)
 			{
-				orbComp.entityToCharge = *intersectResult.entity;
+				m_entityToCharge = std::dynamic_pointer_cast<EntGravityChargeable>(intersectResult.entity->shared_from_this());
 			}
-			
-			orbEntity.InitComponent<eg::ECPosition3D>(start);
 		}
-	}*/
+	}
 }
 
 void GravityGun::Draw(eg::MeshBatch& meshBatch)

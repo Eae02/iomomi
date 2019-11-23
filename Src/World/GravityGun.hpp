@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Dir.hpp"
+#include "Entities/EntGravityChargeable.hpp"
 
 struct GravityChargeSetMessage : eg::Message<GravityChargeSetMessage>
 {
@@ -45,4 +46,13 @@ private:
 	
 	const eg::Model* m_model;
 	std::array<const eg::IMaterial*, 2> m_materials;
+	
+	eg::ParticleEmitterInstance m_orbParticleEmitter;
+	
+	glm::vec3 m_beamDirection;
+	glm::vec3 m_beamTargetPos;
+	glm::vec3 m_beamPos;
+	float m_beamTimeRemaining = 0;
+	Dir m_newDown;
+	std::weak_ptr<EntGravityChargeable> m_entityToCharge;
 };

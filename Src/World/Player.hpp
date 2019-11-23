@@ -125,5 +125,5 @@ private:
 	float m_rotationYaw = 0;
 	float m_rotationPitch = 0;
 	
-	eg::EntityHandle m_currentPlatform;
+	std::weak_ptr<class PlatformEnt> m_currentPlatform;
 };

@@ -5,6 +5,8 @@ void EntityManager::AddEntity(std::shared_ptr<Ent> entity)
 	for (FlagTracker& tracker : m_trackers)
 		tracker.MaybeAdd(entity);
 	
+	entity->Spawned(isEditor);
+	
 	uint32_t name = entity->Name();
 	m_entities[(int)entity->TypeID()].emplace(name, std::move(entity));
 }

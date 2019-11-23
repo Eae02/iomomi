@@ -47,6 +47,7 @@ const char* TextureNames[] =
 
 void Editor::InitWorld()
 {
+	m_world->entManager.isEditor = true;
 	m_selectedEntities.clear();
 	ActivationLightStripEnt::GenerateAll(*m_world);
 }

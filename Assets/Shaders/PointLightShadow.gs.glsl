@@ -28,9 +28,7 @@ void main()
 		gl_Layer = gl_InvocationID;
 		gl_Position = lightMatrices[gl_InvocationID] * vec4(worldPos_in[i], 1.0);
 		if (EG_VULKAN)
-		{
 			gl_Position.y = -gl_Position.y;
-		}
 		worldPos_out = worldPos_in[i];
 		texCoord_out = texCoord_in[i];
 		EmitVertex();

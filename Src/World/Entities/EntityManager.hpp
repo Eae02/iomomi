@@ -32,6 +32,8 @@ public:
 	
 	void Serialize(std::ostream& stream) const;
 	
+	bool isEditor = false;
+	
 private:
 	std::unordered_map<uint32_t, std::shared_ptr<Ent>> m_entities[(size_t)EntTypeID::MAX];
 	
