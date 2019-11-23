@@ -2,11 +2,12 @@
 
 #include "../Entity.hpp"
 #include "../Components/ActivatorComp.hpp"
+#include "../Components/RigidBodyComp.hpp"
 
 class FloorButtonEnt : public Ent
 {
 public:
-	FloorButtonEnt() = default;
+	FloorButtonEnt();
 	
 	static constexpr EntTypeID TypeID = EntTypeID::FloorButton;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
@@ -26,10 +27,7 @@ public:
 	
 	static constexpr float SCALE = 1.0f;
 	
-	inline eg::AABB GetAABB() const
-	{
-		return Ent::GetAABB(SCALE, 0.2f);
-	}
+	eg::AABB GetAABB() const;
 	
 	inline void Activate()
 	{
@@ -38,4 +36,7 @@ public:
 	
 private:
 	ActivatorComp m_activator;
+	RigidBodyComp m_rigidBody;
+	
+	float m_padPushDist = 0;
 };

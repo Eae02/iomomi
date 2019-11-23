@@ -77,6 +77,7 @@ assets:
   - name: Models/WallLight.obj
   - name: Models/Cube.obj 
   - name: Models/Button.obj
+    access: all
   - name: Models/Platform.obj
   - name: Models/PlatformSlider.obj
   - name: Models/GravityGun.obj

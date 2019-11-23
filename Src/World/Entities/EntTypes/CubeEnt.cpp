@@ -228,16 +228,6 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 		glm::vec3 gravityUnit = glm::vec3(DirectionVector(m_currentDown));
 		m_rigidBody.GetRigidBody()->setGravity(bullet::FromGLM(gravityUnit * bullet::GRAVITY));
 		
-		//Interaction with platforms
-		glm::vec3 platformSearchCenter = m_position + gravityUnit * RADIUS;
-		constexpr float PLATFORM_SEARCH_RAD = 0.2f;
-		eg::AABB platformSearchAABB(platformSearchCenter - PLATFORM_SEARCH_RAD, platformSearchCenter + PLATFORM_SEARCH_RAD);
-		if (const PlatformEnt* platform = PlatformEnt::FindPlatform(platformSearchAABB, args.world->entManager))
-		{
-			//auto [rbPos, rbRot] = m_rigidBody.GetTransform();
-			//m_rigidBody.SetTransform(rbPos + platform->MoveDelta(), rbRot, false);
-		}
-		
 		//Water interaction
 		if (m_canFloat && m_waterQueryAABB != nullptr)
 		{
