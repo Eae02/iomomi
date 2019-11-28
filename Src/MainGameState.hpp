@@ -64,6 +64,7 @@ private:
 	eg::Texture m_renderOutputTexture;
 	
 	float m_gameTime = 0;
+	float m_delayedGameUpdateTime = 0;
 	
 	std::unique_ptr<World> m_world;
 	Player m_player;

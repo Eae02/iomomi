@@ -250,7 +250,7 @@ void World::Update(const WorldUpdateArgs& args)
 	{
 		auto physicsCPUTimer = eg::StartCPUTimer("Physics");
 		
-		m_bulletWorld->stepSimulation(args.dt, 10, 1.0f / 120.0f);
+		m_bulletWorld->stepSimulation(args.dt, 10);
 		
 		entManager.ForEachOfType<CubeEnt>([&] (CubeEnt& cube) { cube.UpdatePostSim(args); });
 	}

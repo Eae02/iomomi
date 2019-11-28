@@ -363,12 +363,20 @@ void Player::Update(World& world, float dt, bool underwater)
 	std::optional<Dir> forceFieldGravity = ForceFieldEnt::CheckIntersection(world.entManager, forceFieldAABB);
 	if (m_gravityTransitionMode == TransitionMode::None && forceFieldGravity.has_value() && m_down != *forceFieldGravity)
 	{
-		m_down = *forceFieldGravity;
-		m_gravityTransitionMode = TransitionMode::Fall;
-		m_transitionTime = 0;
-		m_oldEyePosition = m_eyePosition;
-		m_oldRotation = m_rotation;
-		m_newRotation = GetRotation(m_rotationYaw, m_rotationPitch, m_down);
+		m_velocity = glm::vec3(0);
+		if (*forceFieldGravity == OppositeDir(m_down))
+		{
+			FlipDown();
+		}
+		else
+		{
+			m_down = *forceFieldGravity;
+			m_gravityTransitionMode = TransitionMode::Fall;
+			m_transitionTime = 0;
+			m_oldEyePosition = m_eyePosition;
+			m_oldRotation = m_rotation;
+			m_newRotation = GetRotation(m_rotationYaw, m_rotationPitch, m_down);
+		}
 	}
 	
 	m_onGround = false;
