@@ -52,6 +52,8 @@ public:
 		return eg::Sphere(m_position, RADIUS * std::sqrt(3.0f));
 	}
 	
+	bool canFloat = false;
+	
 private:
 	RigidBodyComp m_rigidBody;
 	GravityBarrierInteractableComp m_barrierInteractableComp;
@@ -59,8 +61,10 @@ private:
 	bool m_isPickedUp = false;
 	Dir m_currentDown = Dir::NegY;
 	
-	bool m_canFloat = false;
 	std::shared_ptr<WaterSimulator::QueryAABB> m_waterQueryAABB;
 	
 	glm::quat m_rotation;
 };
+
+template <>
+std::shared_ptr<Ent> CloneEntity<CubeEnt>(const Ent& entity);

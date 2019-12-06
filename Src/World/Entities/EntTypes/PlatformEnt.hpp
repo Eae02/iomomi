@@ -10,7 +10,7 @@ class PlatformEnt : public Ent, public EntCollidable
 public:
 	static constexpr EntTypeID TypeID = EntTypeID::Platform;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
-		EntTypeFlags::EditorWallMove | EntTypeFlags::HasCollision | EntTypeFlags::Activatable;
+		EntTypeFlags::EditorWallMove | EntTypeFlags::HasCollision | EntTypeFlags::Activatable | EntTypeFlags::DisableClone;
 	
 	PlatformEnt();
 	

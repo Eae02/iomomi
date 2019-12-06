@@ -12,4 +12,5 @@ message CubeSpawnerEntity {
 	bool cube_can_float = 5;
 	fixed32 name = 6;
 	bool spawn_if_none = 7;
+	bool activation_resets = 8;
 }

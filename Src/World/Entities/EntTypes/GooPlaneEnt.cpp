@@ -53,3 +53,12 @@ void GooPlaneEnt::Deserialize(std::istream& stream)
 	gooPlanePB.ParseFromIstream(&stream);
 	DeserializePos(gooPlanePB);
 }
+
+template <>
+std::shared_ptr<Ent> CloneEntity<GooPlaneEnt>(const Ent& entity)
+{
+	std::shared_ptr<GooPlaneEnt> newEntity = Ent::Create<GooPlaneEnt>();
+	newEntity->m_position = entity.Pos();
+	newEntity->m_direction = entity.Direction();
+	return newEntity;
+}

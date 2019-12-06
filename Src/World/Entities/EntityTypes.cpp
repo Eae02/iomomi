@@ -33,7 +33,8 @@ void DefineEntityType(std::string name, std::string prettyName)
 		T::EntFlags,
 		std::move(name),
 		std::move(prettyName),
-		&Ent::CreateCallback<T>
+		&Ent::CreateCallback<T>,
+		&CloneEntity<T>
 	}).second;
 	if (!ok)
 	{

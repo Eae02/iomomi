@@ -26,5 +26,6 @@ private:
 	std::weak_ptr<Ent> m_cube;
 	bool m_wasActivated = false;
 	bool m_cubeCanFloat = false;
-	bool m_spawnIfNoCube = true;
+	bool m_requireActivation = false;
+	bool m_activationResets = false;
 };

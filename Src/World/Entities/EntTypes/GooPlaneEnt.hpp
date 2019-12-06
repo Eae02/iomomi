@@ -32,3 +32,6 @@ private:
 	LiquidPlaneComp m_liquidPlane;
 	GooPlaneMaterial m_material;
 };
+
+template <>
+std::shared_ptr<Ent> CloneEntity<GooPlaneEnt>(const Ent& entity);

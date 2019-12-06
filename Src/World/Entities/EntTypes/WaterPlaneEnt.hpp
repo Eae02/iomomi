@@ -18,3 +18,6 @@ public:
 	
 	LiquidPlaneComp m_liquidPlane;
 };
+
+template <>
+std::shared_ptr<Ent> CloneEntity<WaterPlaneEnt>(const Ent& entity);

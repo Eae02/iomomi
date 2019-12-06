@@ -11,7 +11,7 @@ public:
 	
 	static constexpr EntTypeID TypeID = EntTypeID::FloorButton;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
-		EntTypeFlags::EditorWallMove;
+		EntTypeFlags::EditorWallMove | EntTypeFlags::DisableClone;
 	
 	void Draw(const EntDrawArgs& args) override;
 	

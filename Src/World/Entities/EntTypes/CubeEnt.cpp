@@ -26,8 +26,8 @@ static void OnInit()
 
 EG_ON_INIT(OnInit)
 
-CubeEnt::CubeEnt(const glm::vec3& position, bool canFloat)
-	: m_canFloat(canFloat)
+CubeEnt::CubeEnt(const glm::vec3& position, bool _canFloat)
+	: canFloat(_canFloat)
 {
 	m_position = position;
 	
@@ -39,14 +39,14 @@ CubeEnt::CubeEnt(const glm::vec3& position, bool canFloat)
 	m_rigidBody.GetRigidBody()->setFriction(1.f);
 	m_rigidBody.GetRigidBody()->setRollingFriction(.1);
 	m_rigidBody.GetRigidBody()->setSpinningFriction(0.1);
-	m_rigidBody.GetRigidBody()->setAnisotropicFriction(collisionShape->getAnisotropicRollingFrictionDirection(), btCollisionObject::CF_ANISOTROPIC_ROLLING_FRICTION);
+	//m_rigidBody.GetRigidBody()->setAnisotropicFriction(collisionShape->getAnisotropicRollingFrictionDirection(), btCollisionObject::CF_ANISOTROPIC_ROLLING_FRICTION);
 }
 
 void CubeEnt::RenderSettings()
 {
 	Ent::RenderSettings();
 	
-	ImGui::Checkbox("Float", &m_canFloat);
+	ImGui::Checkbox("Float", &canFloat);
 }
 
 void CubeEnt::Spawned(bool isEditor)
@@ -229,7 +229,7 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 		m_rigidBody.GetRigidBody()->setGravity(bullet::FromGLM(gravityUnit * bullet::GRAVITY));
 		
 		//Water interaction
-		if (m_canFloat && m_waterQueryAABB != nullptr)
+		if (canFloat && m_waterQueryAABB != nullptr)
 		{
 			WaterSimulator::QueryResults waterQueryRes = m_waterQueryAABB->GetResults();
 			
@@ -268,7 +268,7 @@ void CubeEnt::UpdatePostSim(const WorldUpdateArgs& args)
 			buttonEntity.Activate();
 	});
 	
-	if (m_canFloat)
+	if (canFloat)
 	{
 		if (m_waterQueryAABB == nullptr)
 		{
@@ -291,7 +291,7 @@ void CubeEnt::Serialize(std::ostream& stream) const
 	cubePB.set_rotationz(m_rotation.z);
 	cubePB.set_rotationw(m_rotation.w);
 	
-	cubePB.set_can_float(m_canFloat);
+	cubePB.set_can_float(canFloat);
 	
 	cubePB.SerializeToOstream(&stream);
 }
@@ -304,7 +304,13 @@ void CubeEnt::Deserialize(std::istream& stream)
 	DeserializePos(cubePB);
 	
 	m_rotation = glm::quat(cubePB.rotationw(), cubePB.rotationx(), cubePB.rotationy(), cubePB.rotationz());
-	m_canFloat = cubePB.can_float();
+	canFloat = cubePB.can_float();
 	
 	m_rigidBody.SetTransform(m_position, m_rotation);
+}
+
+template <>
+std::shared_ptr<Ent> CloneEntity<CubeEnt>(const Ent& entity)
+{
+	return Ent::Create<CubeEnt>(entity.Pos(), static_cast<const CubeEnt&>(entity).canFloat);
 }

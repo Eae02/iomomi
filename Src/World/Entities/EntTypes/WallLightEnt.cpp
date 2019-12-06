@@ -14,6 +14,11 @@ void WallLightEnt::RenderSettings()
 	ImGui::Separator();
 	
 	m_pointLight.RenderRadianceSettings();
+	
+	if (ImGui::Button("Set Color Light Blue"))
+		m_pointLight.SetRadiance(eg::ColorSRGB::FromHex(0xD1F8FE), m_pointLight.Intensity());
+	if (ImGui::Button("Set Color Orange"))
+		m_pointLight.SetRadiance(eg::ColorSRGB::FromHex(0xEED8BA), m_pointLight.Intensity());
 }
 
 EmissiveMaterial::InstanceData WallLightEnt::GetInstanceData(float colorScale) const

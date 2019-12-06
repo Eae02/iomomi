@@ -27,3 +27,12 @@ void WaterPlaneEnt::Deserialize(std::istream& stream)
 	waterPlanePB.ParseFromIstream(&stream);
 	DeserializePos(waterPlanePB);
 }
+
+template <>
+std::shared_ptr<Ent> CloneEntity<WaterPlaneEnt>(const Ent& entity)
+{
+	std::shared_ptr<WaterPlaneEnt> newEntity = Ent::Create<WaterPlaneEnt>();
+	newEntity->m_position = entity.Pos();
+	newEntity->m_direction = entity.Direction();
+	return newEntity;
+}

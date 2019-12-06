@@ -10,7 +10,9 @@ void CubeSpawnerEnt::RenderSettings()
 	Ent::RenderSettings();
 	
 	ImGui::Checkbox("Float", &m_cubeCanFloat);
-	ImGui::Checkbox("Autospawn", &m_spawnIfNoCube);
+	
+	ImGui::Checkbox("Require Activation", &m_requireActivation);
+	ImGui::Checkbox("Reset on Activation", &m_activationResets);
 }
 
 void CubeSpawnerEnt::Update(const WorldUpdateArgs& args)
@@ -23,14 +25,17 @@ void CubeSpawnerEnt::Update(const WorldUpdateArgs& args)
 	std::shared_ptr<Ent> cube = m_cube.lock();
 	
 	bool spawnNew = false;
-	if (cube == nullptr && m_spawnIfNoCube)
+	if (cube == nullptr && (!m_requireActivation || m_activatable.m_enabledConnections == 0))
 	{
 		spawnNew = true;
 	}
-	else if (activated && !m_wasActivated)
+	else if (activated && !m_wasActivated && (!cube || m_activationResets))
 	{
 		if (cube)
+		{
 			args.world->entManager.RemoveEntity(*cube);
+			cube = nullptr;
+		}
 		spawnNew = true;
 	}
 	
@@ -63,7 +68,8 @@ void CubeSpawnerEnt::Serialize(std::ostream& stream) const
 	cubeSpawnerPB.set_dir((gravity_pb::Dir)m_direction);
 	
 	cubeSpawnerPB.set_cube_can_float(m_cubeCanFloat);
-	cubeSpawnerPB.set_spawn_if_none(m_spawnIfNoCube);
+	cubeSpawnerPB.set_spawn_if_none(!m_requireActivation);
+	cubeSpawnerPB.set_activation_resets(m_activationResets);
 	
 	cubeSpawnerPB.set_name(m_activatable.m_name);
 	
@@ -78,7 +84,8 @@ void CubeSpawnerEnt::Deserialize(std::istream& stream)
 	DeserializePos(cubeSpawnerPB);
 	m_direction = (Dir)cubeSpawnerPB.dir();
 	m_cubeCanFloat = cubeSpawnerPB.cube_can_float();
-	m_spawnIfNoCube = cubeSpawnerPB.spawn_if_none();
+	m_requireActivation = !cubeSpawnerPB.spawn_if_none();
+	m_activationResets = cubeSpawnerPB.activation_resets();
 	
 	if (cubeSpawnerPB.name() != 0)
 		m_activatable.m_name = cubeSpawnerPB.name();

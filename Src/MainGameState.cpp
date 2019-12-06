@@ -220,17 +220,10 @@ void MainGameState::RunFrame(float dt)
 			}
 		}
 		
-		const float GAME_UPDATE_DT = 1.0f / 120.0f;
-		m_delayedGameUpdateTime += dt;
-		while (m_delayedGameUpdateTime > GAME_UPDATE_DT * 0.95f)
-		{
-			updateArgs.dt = std::min(m_delayedGameUpdateTime, GAME_UPDATE_DT);
-			updateArgs.player = &m_player;
-			updateArgs.world = m_world.get();
-			m_world->Update(updateArgs);
-			
-			m_delayedGameUpdateTime = std::max(m_delayedGameUpdateTime - GAME_UPDATE_DT, 0.0f);
-		}
+		updateArgs.dt = dt;
+		updateArgs.player = &m_player;
+		updateArgs.world = m_world.get();
+		m_world->Update(updateArgs);
 	}
 	else
 	{

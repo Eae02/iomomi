@@ -371,12 +371,8 @@ void Editor::UpdateToolEntities(float dt)
 	
 	auto SnapToGrid = [&] (const glm::vec3& pos) -> glm::vec3
 	{
-		if (!eg::IsButtonDown(eg::Button::LeftAlt))
-		{
-			const float STEP = 0.1f;
-			return glm::round(pos / STEP) * STEP;
-		}
-		return pos;
+		const float STEP = eg::IsButtonDown(eg::Button::LeftAlt) ? 0.5f : 0.1f;
+		return glm::round(pos / STEP) * STEP;
 	};
 	
 	auto MaybeClone = [&] ()
@@ -384,10 +380,16 @@ void Editor::UpdateToolEntities(float dt)
 		if (!eg::IsButtonDown(eg::Button::LeftShift) || m_entitiesCloned)
 			return false;
 		
-		for (size_t i = 0; i < m_selectedEntities.size(); i++)
+		for (std::weak_ptr<Ent>& entityWeak : m_selectedEntities)
 		{
-			//m_selectedEntities[i] = m_selectedEntities[i]->Clone();
-			//m_world->EntityManager().AddEntity(m_selectedEntities[i]);
+			if (std::shared_ptr<Ent> entity = entityWeak.lock())
+			{
+				if ((entity = entity->Clone()))
+				{
+					entityWeak = entity;
+					m_world->entManager.AddEntity(std::move(entity));
+				}
+			}
 		}
 		m_entitiesCloned = true;
 		return true;

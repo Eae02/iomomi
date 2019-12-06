@@ -37,13 +37,14 @@ enum class EntTypeFlags
 	EditorDrawable  = 0x8,
 	HasCollision    = 0x10,
 	Interactable    = 0x20,
-	Activatable     = 0x40
+	Activatable     = 0x40,
+	DisableClone    = 0x80
 };
 
 class Ent : public std::enable_shared_from_this<Ent>
 {
 public:
-	Ent();
+	Ent() = default;
 	
 	virtual void Serialize(std::ostream& stream) const = 0;
 	virtual void Deserialize(std::istream& stream) = 0;
@@ -72,6 +73,8 @@ public:
 	
 	virtual const void* GetComponent(const std::type_info& type) const;
 	
+	std::shared_ptr<Ent> Clone() const;
+	
 	//Utility functions for getting components
 	template <typename T>
 	const T* GetComponent() const { return static_cast<const T*>(GetComponent(typeid(T))); }
@@ -87,6 +90,7 @@ public:
 	{
 		std::shared_ptr<T> ent = std::make_shared<T>(std::forward<Args>(args)...);
 		ent->m_typeID = T::TypeID;
+		ent->Ent::m_name = static_cast<uint32_t>(s_nameGen());
 		return ent;
 	}
 	
@@ -105,6 +109,9 @@ public:
 	{
 		return m_shouldSerialize;
 	}
+	
+	template <typename T>
+	friend std::shared_ptr<Ent> CloneEntity(const Ent& entity);
 	
 protected:
 	Dir m_direction = Dir::PosX;
@@ -125,10 +132,21 @@ protected:
 	}
 	
 private:
-	uint32_t m_name;
+	static std::mt19937 s_nameGen;
+	
+	uint32_t m_name = 0;
 	EntTypeID m_typeID = (EntTypeID)-1;
 	bool m_shouldSerialize = true;
 };
+
+template <typename T>
+std::shared_ptr<Ent> CloneEntity(const Ent& entity)
+{
+	if constexpr ((int)T::EntFlags & (int)EntTypeFlags::DisableClone)
+		return nullptr;
+	else
+		return Ent::Create<T>(static_cast<const T&>(entity));
+}
 
 EG_BIT_FIELD(EntTypeFlags)
 
@@ -138,6 +156,7 @@ struct EntType
 	std::string name;
 	std::string prettyName;
 	std::shared_ptr<Ent> (*create)();
+	std::shared_ptr<Ent> (*clone)(const Ent& ent);
 };
 
 extern std::unordered_map<EntTypeID, EntType> entTypeMap;

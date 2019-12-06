@@ -3,10 +3,7 @@
 
 std::unordered_map<EntTypeID, EntType> entTypeMap;
 
-static std::mt19937 nameGen;
-
-Ent::Ent()
-	: m_name(static_cast<uint32_t>(nameGen())) { }
+std::mt19937 Ent::s_nameGen;
 
 void Ent::RenderSettings()
 {
@@ -57,3 +54,8 @@ EntTypeFlags Ent::TypeFlags() const
 void Ent::Update(const struct WorldUpdateArgs& args) { }
 
 void Ent::Spawned(bool isEditor) { }
+
+std::shared_ptr<Ent> Ent::Clone() const
+{
+	return entTypeMap.at(m_typeID).clone(*this);
+}
