@@ -109,6 +109,8 @@ public:
 	//This needs to be called for all entities with an ECRigidBody created after world loading.
 	void InitRigidBodyEntity(Ent& entity);
 	
+	void AddRigidBody(btRigidBody* rigidBody);
+	
 	EntityManager entManager;
 	
 	const glm::ivec3& GetBoundsMin() const

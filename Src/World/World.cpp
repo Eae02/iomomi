@@ -250,7 +250,7 @@ void World::Update(const WorldUpdateArgs& args)
 	{
 		auto physicsCPUTimer = eg::StartCPUTimer("Physics");
 		
-		m_bulletWorld->stepSimulation(args.dt, 0);
+		m_bulletWorld->stepSimulation(args.dt, 10);
 		
 		entManager.ForEachOfType<CubeEnt>([&] (CubeEnt& cube) { cube.UpdatePostSim(args); });
 	}
@@ -1027,6 +1027,11 @@ void World::InitializeBulletPhysics()
 	m_bulletWorld = std::make_shared<btDiscreteDynamicsWorld>(bullet::dispatcher, m_bulletBroadphase.get(),
 		bullet::solver, bullet::collisionConfig);
 	m_bulletWorld->setGravity({ 0, -bullet::GRAVITY, 0 });
+	m_bulletWorld->getSolverInfo().m_erp2 = 0.f;
+	m_bulletWorld->getSolverInfo().m_globalCfm = 0.f;
+	m_bulletWorld->getSolverInfo().m_numIterations = 3;
+	m_bulletWorld->getSolverInfo().m_solverMode = SOLVER_SIMD;  // | SOLVER_RANDMIZE_ORDER;
+	m_bulletWorld->getSolverInfo().m_splitImpulse = false;
 	
 	PrepareRegionMeshes(false);
 	
@@ -1062,6 +1067,14 @@ void World::InitRigidBodyEntity(Ent& entity)
 		m_bulletWorld->addRigidBody(&*rigidBodyComp->m_rigidBody);
 		rigidBodyComp->m_physicsWorld = m_bulletWorld;
 		rigidBodyComp->m_worldAssigned = true;
+	}
+}
+
+void World::AddRigidBody(btRigidBody* rigidBody)
+{
+	if (m_bulletWorld)
+	{
+		m_bulletWorld->addRigidBody(rigidBody);
 	}
 }
 

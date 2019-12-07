@@ -88,9 +88,15 @@ private:
 	
 	glm::vec3 m_eyePosition;
 	glm::vec3 m_velocity;
+	glm::vec3 m_prevVelocity;
 	glm::quat m_rotation;
 	
+	glm::vec3 displacement;
+	
 	glm::vec3 m_radius;
+	
+	std::unique_ptr<btRigidBody> m_rigidBody;
+	std::unique_ptr<btDefaultMotionState> m_motionState;
 	
 	std::weak_ptr<class PlatformEnt> m_currentPlatform;
 };

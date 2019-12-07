@@ -94,8 +94,8 @@ static void OnInit()
 	entrance.roomCollisionMesh = MakeCollisionMesh("Room");
 	
 	entrance.bulletMesh = std::make_unique<btTriangleMesh>();
-	bullet::AddCollisionMesh(*entrance.bulletMesh, entrance.door1CollisionMesh);
-	bullet::AddCollisionMesh(*entrance.bulletMesh, entrance.door2CollisionMesh);
+	//bullet::AddCollisionMesh(*entrance.bulletMesh, entrance.door1CollisionMesh);
+	//bullet::AddCollisionMesh(*entrance.bulletMesh, entrance.door2CollisionMesh);
 	bullet::AddCollisionMesh(*entrance.bulletMesh, entrance.roomCollisionMesh);
 	entrance.bulletMeshShape = std::make_unique<btBvhTriangleMeshShape>(entrance.bulletMesh.get(), true);
 }
@@ -121,7 +121,10 @@ std::vector<glm::vec3> EntranceExitEnt::GetConnectionPoints(const Ent& entity)
 }
 
 EntranceExitEnt::EntranceExitEnt()
-	: m_activatable(&EntranceExitEnt::GetConnectionPoints) { }
+	: m_activatable(&EntranceExitEnt::GetConnectionPoints)
+{
+	m_rigidBody.InitStatic(*entrance.bulletMeshShape);
+}
 
 const Dir UP_VECTORS[] =
 {
@@ -296,6 +299,8 @@ const void* EntranceExitEnt::GetComponent(const std::type_info& type) const
 {
 	if (type == typeid(ActivatableComp))
 		return &m_activatable;
+	if (type == typeid(RigidBodyComp))
+		return &m_rigidBody;
 	return Ent::GetComponent(type);
 }
 
@@ -326,6 +331,11 @@ void EntranceExitEnt::Deserialize(std::istream& stream)
 	
 	if (entrancePB.name() != 0)
 		m_activatable.m_name = entrancePB.name();
+	
+	glm::mat4 transform = GetTransform();
+	btTransform bTransform;
+	bTransform.setFromOpenGLMatrix(reinterpret_cast<float*>(&transform));
+	m_rigidBody.SetWorldTransform(bTransform);
 }
 
 void EntranceExitEnt::CalculateCollision(Dir currentDown, ClippingArgs& args) const

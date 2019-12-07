@@ -47,8 +47,52 @@ inline glm::quat GetRotation(float yaw, float pitch, Dir down)
 	       glm::angleAxis(pitch, glm::vec3(1, 0, 0));
 }
 
+static btCapsuleShapeZ playerPhysicsShape(Player::WIDTH / 2, Player::HEIGHT / 2);
+
 void Player::Update(World& world, float dt, bool underwater)
 {
+	btTransform rigidBodyTransform;
+	
+	if (m_rigidBody == nullptr)
+	{
+		constexpr float MASS = 1;
+		
+		m_motionState = std::make_unique<btDefaultMotionState>();
+		
+		btVector3 localInertia;
+		playerPhysicsShape.calculateLocalInertia(MASS, localInertia);
+		m_rigidBody = std::make_unique<btRigidBody>(MASS, m_motionState.get(), &playerPhysicsShape, localInertia);
+		m_rigidBody->setFlags(m_rigidBody->getFlags() | BT_DISABLE_WORLD_GRAVITY);
+		m_rigidBody->setCollisionFlags(m_rigidBody->getCollisionFlags() | btCollisionObject::CF_CHARACTER_OBJECT);
+		m_rigidBody->setActivationState(DISABLE_DEACTIVATION);
+		m_rigidBody->setGravity(btVector3(0, 0, 0));
+		m_rigidBody->setFriction(0);
+		m_rigidBody->setRollingFriction(0);
+		m_rigidBody->setAnisotropicFriction(btVector3(0, 0, 0));
+		m_rigidBody->setHitFraction(0);
+		
+		world.AddRigidBody(m_rigidBody.get());
+		
+		rigidBodyTransform.setIdentity();
+		rigidBodyTransform.setOrigin(bullet::FromGLM(m_position));
+		
+		m_motionState->setWorldTransform(rigidBodyTransform);
+		m_rigidBody->setWorldTransform(rigidBodyTransform);
+	}
+	else
+	{
+		glm::vec3 oldPos = m_position;
+		
+		m_motionState->getWorldTransform(rigidBodyTransform);
+		m_position = bullet::ToGLM(rigidBodyTransform.getOrigin());
+		m_velocity = bullet::ToGLM(m_rigidBody->getLinearVelocity());
+		
+		displacement = (m_position - oldPos) / dt;
+	}
+	
+	RayIntersectResult rayIntersect = world.RayIntersect(eg::Ray(m_position, glm::vec3(DirectionVector(m_down))));
+	m_onGround = rayIntersect.intersected && rayIntersect.distance < (HEIGHT / 2 + 0.01f);
+	
 	const glm::vec3 up = -DirectionVector(m_down);
 	std::shared_ptr<PlatformEnt> currentPlatform = m_currentPlatform.lock();
 	
@@ -239,15 +283,15 @@ void Player::Update(World& world, float dt, bool underwater)
 		localVelVertical = jumpAccel;
 		m_onGround = false;
 	}
-	else if (currentPlatform == nullptr)
-	{
-		float gravity = *playerGravity;
-		gravity *= 1.0f + *fallGravityRamp * glm::clamp(-localVelVertical, 0.0f, 1.0f);
-		if (underwater)
-			gravity *= 0.1f;
-		
-		localVelVertical = std::max(localVelVertical - gravity * dt, -*maxYSpeed);
-	}
+	//else if (currentPlatform == nullptr)
+	//{
+	//	float gravity = *playerGravity;
+	//	gravity *= 1.0f + *fallGravityRamp * glm::clamp(-localVelVertical, 0.0f, 1.0f);
+	//	if (underwater)
+	//		gravity *= 0.1f;
+	//	
+	//	localVelVertical = std::max(localVelVertical - gravity * dt, -*maxYSpeed);
+	//}
 	
 	if (m_wasUnderwater && !underwater && localVelVertical > 0)
 	{
@@ -407,7 +451,16 @@ void Player::Update(World& world, float dt, bool underwater)
 		m_onGround = true; //Always on ground if on a platform
 	}
 	
-	ClipAndMove(world, move, false);
+	m_prevVelocity = m_velocity;
+	m_rigidBody->setLinearVelocity(bullet::FromGLM(m_velocity));
+	m_rigidBody->setGravity(bullet::FromGLM(-up * *playerGravity));
+	
+	glm::mat3 rigidBodyRotationMatrix(leftDirs[(int)m_down], glm::cross(glm::abs(up), leftDirs[(int)m_down]), glm::abs(up));
+	rigidBodyTransform.setRotation(bullet::FromGLM(glm::quat_cast(rigidBodyRotationMatrix)));
+	rigidBodyTransform.setOrigin(bullet::FromGLM(m_position));
+	m_rigidBody->setWorldTransform(rigidBodyTransform);
+	
+	//ClipAndMove(world, move, false);
 	
 	//Searches for a platform under the player's feet
 	const glm::vec3 feetPos = m_position + glm::vec3(DirectionVector(m_down)) * (HEIGHT * 0.5f);
@@ -521,7 +574,10 @@ glm::vec3 Player::Forward() const
 #ifndef NDEBUG
 void Player::DrawDebugOverlay()
 {
-	ImGui::Text("Position: %.2f, %.2f, %.2f", m_eyePosition.x, m_eyePosition.y, m_eyePosition.z);
+	ImGui::Text("Pos: %.2f, %.2f, %.2f", m_eyePosition.x, m_eyePosition.y, m_eyePosition.z);
+	ImGui::Text("Vel: %.2f, %.2f, %.2f", m_velocity.x, m_velocity.y, m_velocity.z);
+	ImGui::Text("Disp: %.2f, %.2f, %.2f", displacement.x, displacement.y, displacement.z);
+	ImGui::Text("Speed: %.2f %.2f", glm::length(m_velocity), glm::length(displacement));
 	
 	const glm::vec3 forward = m_rotation * glm::vec3(0, 0, -1);
 	const glm::vec3 absForward = glm::abs(forward);
@@ -543,11 +599,14 @@ void Player::Reset()
 {
 	m_position = glm::vec3(0.0f);
 	m_velocity = glm::vec3(0.0f);
+	m_prevVelocity = glm::vec3(0.0f);
 	m_down = Dir::NegY;
 	m_onGround = false;
 	m_isCarrying = false;
 	m_gravityTransitionMode = TransitionMode::None;
 	m_currentPlatform = { };
+	m_rigidBody = nullptr;
+	m_motionState = nullptr;
 }
 
 glm::vec3 Player::FeetPosition() const

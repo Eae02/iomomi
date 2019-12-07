@@ -2,6 +2,7 @@
 
 #include "../Entity.hpp"
 #include "../EntCollidable.hpp"
+#include "../Components/RigidBodyComp.hpp"
 #include "../Components/ActivatableComp.hpp"
 #include "../../WorldUpdateArgs.hpp"
 #include "../../Door.hpp"
@@ -16,7 +17,7 @@ public:
 	};
 	
 	static constexpr EntTypeID TypeID = EntTypeID::EntranceExit;
-	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
+	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::DisableClone |
 		EntTypeFlags::HasCollision | EntTypeFlags::EditorWallMove | EntTypeFlags::HasCollision | EntTypeFlags::Activatable;
 	
 	EntranceExitEnt();
@@ -62,6 +63,8 @@ private:
 	glm::mat4 GetTransform() const;
 	
 	static std::vector<glm::vec3> GetConnectionPoints(const Ent& entity);
+	
+	RigidBodyComp m_rigidBody;
 	
 	ActivatableComp m_activatable;
 	
