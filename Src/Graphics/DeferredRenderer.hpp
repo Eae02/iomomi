@@ -99,6 +99,7 @@ private:
 	eg::Sampler m_shadowMapSampler;
 	
 	uint32_t m_currentSampleCount = 0;
+	QualityLevel m_currentReflectionQualityLevel = (QualityLevel)-1;
 	
 	eg::Buffer m_reflectionPlaneVertexBuffer;
 	

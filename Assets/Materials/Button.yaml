@@ -1,6 +1,6 @@
 albedo: ../Textures/ButtonA.png
 normalMap: ../Textures/DefaultN.png
 miscMap: ../Textures/DefaultM.png
-roughnessMin: 0.6
+roughnessMin: 0.8
 roughnessMax: 1.0
 castShadows: false

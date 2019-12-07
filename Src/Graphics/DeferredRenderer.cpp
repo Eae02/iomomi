@@ -39,6 +39,17 @@ DeferredRenderer::DeferredRenderer()
 	m_shadowMapSampler = eg::Sampler(shadowMapSamplerDesc);
 }
 
+//Stores a pair of two SSR sample counts (for the linear search and the binary search respectively)
+// for each each reflection quality level. 0 means SSR is disabled
+std::pair<uint32_t, uint32_t> SSR_SAMPLES[] = 
+{
+	/* VeryLow  */ { 0, 0 },
+	/* Low      */ { 0, 0 },
+	/* Medium   */ { 2, 4 },
+	/* High     */ { 4, 6 },
+	/* VeryHigh */ { 6, 6 }
+};
+
 void DeferredRenderer::CreatePipelines()
 {
 	eg::SpecializationConstantEntry specConstantEntries[1];
@@ -59,13 +70,21 @@ void DeferredRenderer::CreatePipelines()
 	ambientStencilState.compareMask = 1;
 	ambientStencilState.reference = 0;
 	
+	eg::SpecializationConstantEntry ambientSpecConstEntries[2];
+	specConstantEntries[0].constantID = 0;
+	specConstantEntries[0].size = sizeof(uint32_t);
+	specConstantEntries[0].offset = offsetof(std::decay_t<decltype(SSR_SAMPLES[0])>, first);
+	specConstantEntries[1].constantID = 1;
+	specConstantEntries[1].size = sizeof(uint32_t);
+	specConstantEntries[1].offset = offsetof(std::decay_t<decltype(SSR_SAMPLES[0])>, second);
+	
 	eg::GraphicsPipelineCreateInfo ambientPipelineCI;
 	ambientPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
-	ambientPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/Ambient.fs.glsl").GetVariant(variantName);
+	ambientPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/Ambient.fs.glsl").DefaultVariant();
 	ambientPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
 	ambientPipelineCI.fragmentShader.specConstants = specConstantEntries;
-	ambientPipelineCI.fragmentShader.specConstantsData = &m_currentSampleCount;
-	ambientPipelineCI.fragmentShader.specConstantsDataSize = sizeof(uint32_t);
+	ambientPipelineCI.fragmentShader.specConstantsData = &SSR_SAMPLES[(int)settings.reflectionsQuality];
+	ambientPipelineCI.fragmentShader.specConstantsDataSize = sizeof(SSR_SAMPLES[0]);
 	ambientPipelineCI.frontStencilState = ambientStencilState;
 	ambientPipelineCI.backStencilState = ambientStencilState;
 	ambientPipelineCI.enableStencilTest = true;
@@ -260,9 +279,10 @@ DeferredRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height, ui
 
 void DeferredRenderer::PollSettingsChanged()
 {
-	if (settings.msaaSamples != m_currentSampleCount)
+	if (settings.msaaSamples != m_currentSampleCount || settings.reflectionsQuality != m_currentReflectionQualityLevel)
 	{
 		m_currentSampleCount = settings.msaaSamples;
+		m_currentReflectionQualityLevel = settings.reflectionsQuality;
 		CreatePipelines();
 	}
 }
@@ -314,7 +334,10 @@ void DeferredRenderer::BeginLighting(RenderTarget& target, bool hasWater) const
 	
 	eg::ColorLin ambientColor = eg::ColorLin(eg::ColorSRGB::FromHex(0xf6f9fc));
 	eg::DC.BindPipeline(m_ambientPipeline);
-	eg::DC.BindTexture(target.m_gbColor1Texture, 0, 0);
+	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
+	eg::DC.BindTexture(target.m_gbColor1Texture, 0, 1);
+	eg::DC.BindTexture(target.m_gbColor2Texture, 0, 2);
+	eg::DC.BindTexture(target.m_gbDepthTexture, 0, 3);
 	ambientColor = ambientColor.ScaleRGB(0.2f);
 	
 	eg::DC.PushConstants(0, sizeof(float) * 3, &ambientColor.r);

@@ -1,31 +1,79 @@
 #version 450 core
 
-#pragma variants VDefault VMSAA
-
-layout(location=0) out vec4 color_out;
-
-layout(constant_id=100) const int numSamples = 1;
-
-#ifdef VMSAA
-layout(binding=0) uniform sampler2DMS gbColor1Sampler;
-#else
-layout(binding=0) uniform sampler2D gbColor1Sampler;
-#endif
+#include "../Inc/DeferredLight.glh"
+#include "../Inc/Depth.glh"
+#include "../Inc/Light.glh"
 
 layout(push_constant) uniform PC
 {
 	vec3 ambient;
 };
 
-void main()
+layout(constant_id=0) const int ssrLinearSamples = 8;
+layout(constant_id=1) const int ssrBinarySamples = 8;
+
+vec3 ndc;
+vec2 sampleTC;
+bool behindDepthBuffer(vec3 worldPos)
 {
-	color_out = vec4(0, 0, 0, 1);
+	vec4 ndc3 = renderSettings.viewProjection * vec4(worldPos, 1.0);
+	ndc = ndc3.xyz / ndc3.w;
+	if (ndc.x < -1 || ndc.y < -1 || ndc.x > 1 || ndc.y > 1)
+		return true;
 	
-	for (int i = 0; i < numSamples; i++)
+	sampleTC = ndc.xy * 0.5 + 0.5;
+	if (!EG_OPENGL)
+		sampleTC.y = 1 - sampleTC.y;
+	
+	return depthTo01(ndc.z) > texture(gbDepthSampler, sampleTC).r;
+}
+
+vec3 calcReflection(vec3 surfacePos, vec3 dirToEye, vec3 normal)
+{
+	if (ssrLinearSamples == 0)
+		return ambient;
+	
+	surfacePos += normal * 0.01;
+	
+	const float MAX_DIST   = 20;   //Maximum distance to reflection
+	const float FADE_BEGIN = 0.75; //Percentage of screen radius to begin fading out at
+	
+	vec3 rayDir = normalize(reflect(-dirToEye, normal)) * (MAX_DIST / ssrLinearSamples);
+	
+	for (uint i = 1; i <= ssrLinearSamples; i++)
 	{
-		vec4 c1 = texelFetch(gbColor1Sampler, ivec2(gl_FragCoord.xy), i);
-		color_out.rgb += c1.xyz * (c1.w > 0.99 ? vec3(1.0) : (ambient * c1.w));
+		vec3 sampleWorldPos = surfacePos + rayDir * i;
+		if (behindDepthBuffer(sampleWorldPos))
+		{
+			float lo = i - 1;
+			float hi = i;
+			for (int i = 0; i < ssrBinarySamples; i++)
+			{
+				float mid = (lo + hi) / 2.0;
+				if (behindDepthBuffer(surfacePos + rayDir * mid))
+					hi = mid;
+				else
+					lo = mid;
+			}
+			
+			float fade01 = max(abs(ndc.x), abs(ndc.y));
+			float fade = clamp((fade01 - 1) / (1 - FADE_BEGIN) + 1, 0, 1);
+			return mix(texture(gbColor1Sampler, sampleTC).rgb, ambient, fade);
+		}
 	}
 	
-	color_out.rgb /= float(numSamples);
+	return ambient;
+}
+
+vec3 CalculateLighting(GBData gbData)
+{
+	if (gbData.ao > 0.99)
+		return gbData.albedo;
+	
+	vec3 toEye = normalize(renderSettings.cameraPosition - gbData.worldPos);
+	vec3 fresnel = calcFresnel(gbData, toEye);
+	vec3 kd = (1.0 - fresnel) * (1.0 - gbData.metallic);
+	
+	vec3 reflection = calcReflection(gbData.worldPos, toEye, gbData.normal) * 0.5;
+	return (gbData.albedo * kd * ambient + reflection * fresnel) * gbData.ao;
 }
