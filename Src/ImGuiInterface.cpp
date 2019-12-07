@@ -166,17 +166,6 @@ void ImGuiInterface::NewFrame()
 	}
 	
 	m_lastFrameBegin = time;
-	/*
-	ImGuiMouseCursor cursor = ImGui::GetMouseCursor();
-	if (io.MouseDrawCursor || cursor == ImGuiMouseCursor_None)
-	{
-		SDL_ShowCursor(SDL_FALSE);
-	}
-	else
-	{
-		SDL_SetCursor(m_cursors[m_cursors[cursor] ? cursor : ImGuiMouseCursor_Arrow].get());
-		SDL_ShowCursor(SDL_TRUE);
-	}*/
 	
 	ImGui::NewFrame();
 }

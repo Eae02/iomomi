@@ -308,12 +308,18 @@ void GravityBarrierEnt::Update(const WorldUpdateArgs& args)
 		if (m_activatable.m_enabledConnections != 0)
 		{
 			bool activated = m_activatable.AllSourcesActive();
-			if (activated && activateAction == ActivateAction::Disable)
-				m_enabled = false;
-			else if (!activated && activateAction == ActivateAction::Enable)
-				m_enabled = false;
-			else if (activated && activateAction == ActivateAction::Rotate)
-				newFlowDirectionOffset = 1;
+			switch (activateAction)
+			{
+			case ActivateAction::Disable:
+				m_enabled = !activated;
+				break;
+			case ActivateAction::Enable:
+				m_enabled = activated;
+				break;
+			case ActivateAction::Rotate:
+				newFlowDirectionOffset += (int)activated;
+				break;
+			}
 		}
 		
 		bool decOpacity = !m_enabled;
@@ -337,7 +343,7 @@ void GravityBarrierEnt::Update(const WorldUpdateArgs& args)
 			m_opacity = std::min(m_opacity + args.dt / OPACITY_ANIMATION_TIME, 1.0f);
 		
 		btBroadphaseProxy* broadphaseProxy = m_rigidBody.GetRigidBody()->getBroadphaseProxy();
-		broadphaseProxy->m_collisionFilterMask = m_enabled ? (2 << BlockedAxis()) : 0;
+		broadphaseProxy->m_collisionFilterMask = m_enabled ? (2U << BlockedAxis()) : 0;
 		broadphaseProxy->m_collisionFilterGroup = -1;
 	}
 	
@@ -346,15 +352,14 @@ void GravityBarrierEnt::Update(const WorldUpdateArgs& args)
 	
 	if (args.player != nullptr)
 	{
-		bufferData.iaDownAxis[0] = (int)args.player->CurrentDown() / 2;
-		bufferData.iaPosition[0] = glm::vec4(args.player->Position(), 0.0f);
+		bufferData.iaDownAxis[itemsWritten] = (int)args.player->CurrentDown() / 2;
+		bufferData.iaPosition[itemsWritten] = glm::vec4(args.player->m_position, 0.0f);
 		itemsWritten++;
 	}
 	
 	args.world->entManager.ForEachWithFlag(EntTypeFlags::Interactable, [&](const Ent& entity)
 	{
 		auto* comp = entity.GetComponent<GravityBarrierInteractableComp>();
-		
 		if (comp != nullptr && itemsWritten < NUM_INTERACTABLES)
 		{
 			bufferData.iaDownAxis[itemsWritten] = (int)comp->currentDown / 2;
@@ -378,7 +383,7 @@ std::tuple<glm::vec3, glm::vec3> GravityBarrierEnt::GetTangents() const
 {
 	glm::vec3 upAxis(0);
 	upAxis[upPlane] = 1;
-	glm::mat3 flowRotation = glm::rotate(glm::mat4(1), (flowDirection + m_flowDirectionOffset) * eg::HALF_PI, upAxis);
+	glm::mat3 flowRotation = glm::rotate(glm::mat4(1), (float)(flowDirection + m_flowDirectionOffset) * eg::HALF_PI, upAxis);
 	
 	glm::vec3 size3(1);
 	size3[(upPlane + 1) % 3] = size.x;
@@ -405,8 +410,8 @@ void GravityBarrierEnt::CalculateCollision(Dir currentDown, struct ClippingArgs&
 {
 	if (m_enabled && (int)currentDown / 2 == BlockedAxis())
 	{
-		eg::CheckEllipsoidMeshCollision(args.collisionInfo, args.ellipsoid,
-		                                args.move, barrierCollisionMesh, GetTransform());
+		eg::CheckEllipsoidMeshCollision(
+			args.collisionInfo, args.ellipsoid, args.move, barrierCollisionMesh, GetTransform());
 	}
 }
 

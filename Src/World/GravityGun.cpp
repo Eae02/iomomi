@@ -106,6 +106,7 @@ void GravityGun::Update(World& world, WaterSimulator& waterSim, eg::ParticleMana
 {
 	glm::mat3 rotationMatrix = (glm::mat3_cast(player.Rotation()));
 	
+	//Uncomment this to add an imgui window for customizing weapon location
 	/*
 	if (ImGui::Begin("Weapon"))
 	{

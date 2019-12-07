@@ -17,6 +17,7 @@ struct Level
 extern std::vector<Level> levels;
 
 void InitLevels();
+void InitLevelsGraph();
 
 std::string GetLevelPath(std::string_view name);
 

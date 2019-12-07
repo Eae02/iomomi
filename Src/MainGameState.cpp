@@ -54,6 +54,7 @@ void MainGameState::LoadWorld(std::istream& stream, int64_t levelIndex, const En
 	m_gameTime = 0;
 	m_currentLevelIndex = levelIndex;
 	
+	//Moves the player to the entrance entity for this level
 	newWorld->entManager.ForEachOfType<EntranceExitEnt>([&] (EntranceExitEnt& entity)
 	{
 		if (entity.m_type == EntranceExitEnt::Type::Entrance)
@@ -70,7 +71,6 @@ void MainGameState::LoadWorld(std::istream& stream, int64_t levelIndex, const En
 	});
 	
 	m_world = std::move(newWorld);
-	
 	m_world->InitializeBulletPhysics();
 	
 	ActivationLightStripEnt::GenerateAll(*m_world);
@@ -121,7 +121,6 @@ void MainGameState::DoDeferredRendering(bool useLightProbes, DeferredRenderer::R
 		m_renderCtx->renderer.DrawReflectionPlaneLighting(renderTarget, m_prepareDrawArgs.reflectionPlanes);
 		m_renderCtx->renderer.DrawSpotLights(renderTarget, m_prepareDrawArgs.spotLights);
 		m_renderCtx->renderer.DrawPointLights(renderTarget, m_prepareDrawArgs.pointLights);
-		//m_renderCtx->renderer.DrawWaterBasic(m_waterSimulator.GetPositionsBuffer(), m_waterSimulator.NumParticles());
 		
 		m_particleRenderer.Draw(m_particleManager, renderTarget.ResolvedDepthTexture());
 		
@@ -367,10 +366,12 @@ void MainGameState::RunFrame(float dt)
 		m_postProcessor.Render(m_renderOutputTexture, m_bloomRenderTarget.get());
 	}
 	
+#ifndef NDEBUG
 	if (eg::DevMode())
 	{
 		DrawOverlay(dt);
 	}
+#endif
 	
 	m_gameTime += dt;
 }
@@ -385,6 +386,7 @@ void MainGameState::RenderPointLightShadows(const PointLightShadowRenderArgs& ar
 	m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
 }
 
+#ifndef NDEBUG
 void MainGameState::DrawOverlay(float dt)
 {
 	ImGui::SetNextWindowPos(ImVec2(5, 5), ImGuiCond_Always);
@@ -401,7 +403,7 @@ void MainGameState::DrawOverlay(float dt)
 	ImGui::Text("FPS: %dHz | %.2fms", (int)(1.0f / dt), dt * 1000.0f);
 	ImGui::Text("Graphics API: %s", graphicsAPIName);
 	ImGui::Separator();
-	m_player.DebugDraw();
+	m_player.DrawDebugOverlay();
 	ImGui::Text("Particles: %d", m_particleManager.ParticlesToDraw());
 	ImGui::Text("Water Spheres: %d", m_waterSimulator.NumParticles());
 	ImGui::Text("Water Update Time: %.2fms", m_waterSimulator.LastUpdateTime() / 1E6);
@@ -410,6 +412,7 @@ void MainGameState::DrawOverlay(float dt)
 	ImGui::End();
 	ImGui::PopStyleVar();
 }
+#endif
 
 void MainGameState::SetResolution(int width, int height)
 {

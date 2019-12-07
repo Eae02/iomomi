@@ -3,17 +3,6 @@
 #include "Dir.hpp"
 #include "Entities/EntGravityChargeable.hpp"
 
-struct GravityChargeSetMessage : eg::Message<GravityChargeSetMessage>
-{
-	Dir newDown;
-	bool* set;
-};
-
-struct GravityChargeResetMessage : eg::Message<GravityChargeResetMessage>
-{
-	
-};
-
 class GravityGun
 {
 public:

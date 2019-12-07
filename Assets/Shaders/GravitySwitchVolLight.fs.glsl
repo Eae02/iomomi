@@ -27,7 +27,7 @@ layout(binding=2, std140) uniform LightSettingsUB
 {
 	float tMax;
 	float inverseMaxY;
-	float distScale;
+	float oneOverRaySteps;
 	int quarterRaySteps;
 	vec4 samplePoints[10];
 };
@@ -81,7 +81,7 @@ void main()
 	toEye /= distToEye;
 	
 	float rayDist = min(distToEye, MAX_RAY_DIST);
-	float ds = rayDist * distScale;
+	float ds = rayDist * oneOverRaySteps;
 	
 	vec3 color = vec3(0.0);
 	for (int i = 0; i < quarterRaySteps; i++)

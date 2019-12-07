@@ -2,7 +2,6 @@
 #include "../../Player.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../Graphics/Materials/GravitySwitchMaterial.hpp"
-#include "../../../Graphics/RenderSettings.hpp"
 #include "../../../../Protobuf/Build/GravitySwitchEntity.pb.h"
 
 static eg::Model* s_model;
@@ -48,7 +47,7 @@ void GravitySwitchEnt::Interact(Player& player)
 int GravitySwitchEnt::CheckInteraction(const Player& player) const
 {
 	bool canInteract = player.CurrentDown() == OppositeDir(m_direction) && player.OnGround() &&
-		GetAABB().Contains(player.FeetPosition()) && !player.IsCarrying();
+		GetAABB().Contains(player.FeetPosition()) && !player.m_isCarrying;
 	
 	constexpr int INTERACT_PRIORITY = 1;
 	return canInteract ? INTERACT_PRIORITY : 0;

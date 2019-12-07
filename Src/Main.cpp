@@ -40,6 +40,7 @@ void Start(eg::RunConfig& runConfig)
 		eg::LoadAssets("assets", "/");
 		RenderSettings::instance = new RenderSettings;
 		InitLevels();
+		InitLevelsGraph();
 	};
 	
 	eg::Run<Game>(runConfig);

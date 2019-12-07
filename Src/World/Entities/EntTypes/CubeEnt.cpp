@@ -100,7 +100,7 @@ void CubeEnt::CalculateCollision(Dir currentDown, struct ClippingArgs& args) con
 void CubeEnt::Interact(Player& player)
 {
 	m_isPickedUp = !m_isPickedUp;
-	player.SetIsCarrying(m_isPickedUp);
+	player.m_isCarrying = m_isPickedUp;
 	
 	if (!m_isPickedUp)
 	{
@@ -120,12 +120,12 @@ int CubeEnt::CheckInteraction(const Player& player) const
 	if (m_isPickedUp)
 		return DROP_INTERACT_PRIORITY;
 	
-	if (player.IsCarrying())
+	if (player.m_isCarrying)
 		return 0;
 	
 	static constexpr int PICK_UP_INTERACT_PRIORITY = 2;
 	static constexpr float MAX_INTERACT_DIST = 1.5f;
-	eg::Ray ray(player.Position(), player.Forward());
+	eg::Ray ray(player.m_position, player.Forward());
 	float intersectDist;
 	if (ray.Intersects(GetSphere(), intersectDist) && intersectDist > 0.0f && intersectDist < MAX_INTERACT_DIST)
 	{
@@ -179,7 +179,7 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 		if (m_isPickedUp)
 		{
 			m_isPickedUp = false;
-			args.player->SetIsCarrying(false);
+			args.player->m_isCarrying = false;
 		}
 	}
 	
@@ -202,8 +202,9 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 		
 		if (glm::length2(deltaPos) > MAX_DIST_FROM_PLAYER * MAX_DIST_FROM_PLAYER)
 		{
+			//The cube has moved to far away from the player, so it should be dropped.
 			m_isPickedUp = false;
-			args.player->SetIsCarrying(false);
+			args.player->m_isCarrying = false;
 		}
 		else
 		{
@@ -240,7 +241,7 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 		}
 		
 		btBroadphaseProxy* bpProxy = m_rigidBody.GetRigidBody()->getBroadphaseProxy();
-		bpProxy->m_collisionFilterGroup = 1 | (2 << ((int)m_currentDown / 2));
+		bpProxy->m_collisionFilterGroup = 1U | (2U << ((int)m_currentDown / 2));
 	}
 	
 	m_barrierInteractableComp.currentDown = m_currentDown;

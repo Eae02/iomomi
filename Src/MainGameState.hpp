@@ -32,7 +32,9 @@ private:
 	
 	void RenderPlanarReflections(const ReflectionPlane& plane, eg::FramebufferRef framebuffer);
 	
+#ifndef NDEBUG
 	void DrawOverlay(float dt);
+#endif
 	
 	void RenderPointLightShadows(const PointLightShadowRenderArgs& args);
 	

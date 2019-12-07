@@ -5,7 +5,6 @@
 #include "Editor/Editor.hpp"
 #include "Settings.hpp"
 #include "Graphics/WallShader.hpp"
-#include "Graphics/Materials/GravityCornerLightMaterial.hpp"
 
 #include <fstream>
 

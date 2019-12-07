@@ -518,7 +518,8 @@ glm::vec3 Player::Forward() const
 	return m_rotation * glm::vec3(0, 0, -1);
 }
 
-void Player::DebugDraw()
+#ifndef NDEBUG
+void Player::DrawDebugOverlay()
 {
 	ImGui::Text("Position: %.2f, %.2f, %.2f", m_eyePosition.x, m_eyePosition.y, m_eyePosition.z);
 	
@@ -536,6 +537,7 @@ void Player::DebugDraw()
 	
 	ImGui::Text("Platform: %p", (void*)m_currentPlatform.lock().get());
 }
+#endif
 
 void Player::Reset()
 {

@@ -12,16 +12,13 @@ public:
 	
 	void GetViewMatrix(glm::mat4& matrixOut, glm::mat4& inverseMatrixOut) const;
 	
-	void DebugDraw();
+#ifndef NDEBUG
+	void DrawDebugOverlay();
+#endif
 	
 	const glm::vec3& EyePosition() const
 	{
 		return m_eyePosition;
-	}
-	
-	const glm::vec3& Position() const
-	{
-		return m_position;
 	}
 	
 	const glm::quat& Rotation() const
@@ -35,27 +32,6 @@ public:
 	}
 	
 	glm::vec3 Forward() const;
-	
-	void SetPosition(const glm::vec3& position)
-	{
-		m_position = position;
-	}
-	
-	void SetRotation(float yaw, float pitch)
-	{
-		m_rotationYaw = yaw;
-		m_rotationPitch = pitch;
-	}
-	
-	float RotationYaw() const
-	{
-		return m_rotationYaw;
-	}
-	
-	float RotationPitch() const
-	{
-		return m_rotationPitch;
-	}
 	
 	Dir CurrentDown() const
 	{
@@ -76,21 +52,17 @@ public:
 		return m_onGround;
 	}
 	
-	void SetIsCarrying(bool isCarrying)
-	{
-		m_isCarrying = isCarrying;
-	}
-	
-	bool IsCarrying() const
-	{
-		return m_isCarrying;
-	}
-	
 	void Reset();
 	
 	static constexpr float HEIGHT = 1.65f;
 	static constexpr float WIDTH = 0.8f;
 	static constexpr float EYE_HEIGHT = HEIGHT * 0.75f;
+	
+	float m_rotationYaw = 0;
+	float m_rotationPitch = 0;
+	
+	bool m_isCarrying = false;
+	glm::vec3 m_position;
 	
 private:
 	void ClipAndMove(const World& world, glm::vec3 move, bool skipPlatforms);
@@ -98,7 +70,6 @@ private:
 	Dir m_down = Dir::NegY;
 	
 	bool m_onGround = false;
-	bool m_isCarrying = false;
 	bool m_wasUnderwater = false;
 	
 	enum class TransitionMode
@@ -115,15 +86,11 @@ private:
 	glm::quat m_oldRotation;
 	glm::quat m_newRotation;
 	
-	glm::vec3 m_position;
 	glm::vec3 m_eyePosition;
 	glm::vec3 m_velocity;
 	glm::quat m_rotation;
 	
 	glm::vec3 m_radius;
-	
-	float m_rotationYaw = 0;
-	float m_rotationPitch = 0;
 	
 	std::weak_ptr<class PlatformEnt> m_currentPlatform;
 };

@@ -9,9 +9,12 @@
 
 static eg::Pipeline gsVolLightPipeline;
 
-const float YMIN = 0.1f;
-const float YMAX = 2.0f;
-const float SIZE = 1.0f;
+//These values define the bounds of the AABB through which the ray will be traced. YMIN/YMAX define the bounds in the
+// dimension that is normal to the gravity switch. SIZE defines the radius of the AABB in the other two dimensions.
+static constexpr float YMIN = 0.1f;
+static constexpr float YMAX = 2.0f;
+static constexpr float SIZE = 1.0f;
+
 static const float cubeVertices[] =
 {
 	-SIZE, YMAX,  SIZE,
@@ -35,10 +38,15 @@ static constexpr float MAX_ANGLE = 30.0f;
 #pragma pack(push, 1)
 struct LightDataBuffer
 {
+	//These two values derive from the previous constants
 	float tMax;
 	float inverseMaxY;
-	float distScale;
+	
+	float oneOverRaySteps;
 	int quarterRaySteps;
+	
+	//Stores raySteps points along the ray (in parameter form) where samples should be made. These values are randomly
+	// distributed along the ray and are recalculated if the number of steps changes (as a result of a quality change).
 	float samplePoints[48];
 };
 #pragma pack(pop)
@@ -129,14 +137,15 @@ void GravitySwitchVolLightMaterial::SetQuality(QualityLevel qualityLevel)
 	else if (settings.lightingQuality == QualityLevel::VeryHigh)
 		raySteps = 40;
 	
-	lightDataBufferStruct.distScale = 1.0f / raySteps;
+	lightDataBufferStruct.oneOverRaySteps = 1.0f / raySteps;
 	lightDataBufferStruct.quarterRaySteps = raySteps / 4;
 	
-	std::mt19937 rand(std::time(nullptr));
+	//Generates sample points
+	std::mt19937 rng(std::time(nullptr));
 	std::uniform_real_distribution<float> offDist(0.0f, 1.0f);
 	for (int i = 0; i < raySteps; i++)
 	{
-		lightDataBufferStruct.samplePoints[i] = (i + offDist(rand)) / (float)raySteps;
+		lightDataBufferStruct.samplePoints[i] = ((float)i + offDist(rng)) / (float)raySteps;
 	}
 	
 	eg::DC.UpdateBuffer(lightDataBuffer, 0, sizeof(LightDataBuffer), &lightDataBufferStruct);
@@ -146,11 +155,12 @@ void GravitySwitchVolLightMaterial::SetQuality(QualityLevel qualityLevel)
 bool GravitySwitchVolLightMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
 	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
+	
+	//Volumetric lighting should be rendered in emissive mode, and only if the quality level is high enough. 
 	if (mDrawArgs->drawMode != MeshDrawMode::Emissive || currentQualityLevel < QualityLevel::Medium)
 		return false;
 	
 	cmdCtx.BindPipeline(gsVolLightPipeline);
-	
 	cmdCtx.BindDescriptorSet(lightVolDescriptorSet, 0);
 	
 	if (mDrawArgs->drawMode == MeshDrawMode::PlanarReflection)

@@ -1,8 +1,7 @@
 #pragma once
 
-class GameState
+struct GameState
 {
-public:
 	virtual ~GameState() = default;
 	virtual void RunFrame(float dt) = 0;
 	virtual void OnDeactivate() { }
