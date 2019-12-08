@@ -25,8 +25,6 @@ public:
 	
 	const void* GetComponent(const std::type_info& type) const override;
 	
-	static constexpr float SCALE = 1.0f;
-	
 	eg::AABB GetAABB() const;
 	
 	inline void Activate()
@@ -37,6 +35,11 @@ public:
 private:
 	ActivatorComp m_activator;
 	RigidBodyComp m_rigidBody;
+	
+	btRigidBody* m_frameRigidBody;
+	btRigidBody* m_buttonRigidBody;
+	
+	std::unique_ptr<btGeneric6DofSpring2Constraint> m_springConstraint;
 	
 	float m_padPushDist = 0;
 };

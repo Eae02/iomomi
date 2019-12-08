@@ -1,5 +1,4 @@
 #include "EntranceExitEnt.hpp"
-#include "../../Clipping.hpp"
 #include "../../BulletPhysics.hpp"
 #include "../../Player.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
@@ -29,12 +28,8 @@ struct
 	const eg::IMaterial* editorEntMaterial;
 	const eg::IMaterial* editorExitMaterial;
 	
-	eg::CollisionMesh door1CollisionMesh;
-	eg::CollisionMesh door2CollisionMesh;
-	eg::CollisionMesh roomCollisionMesh;
-	
-	std::unique_ptr<btTriangleMesh> bulletMesh;
-	std::unique_ptr<btBvhTriangleMeshShape> bulletMeshShape;
+	btTriangleMesh roomCollisionMesh, door1CollisionMesh, door2CollisionMesh;
+	std::unique_ptr<btBvhTriangleMeshShape> roomCollisionMeshShape, door1CollisionMeshShape, door2CollisionMeshShape;
 } entrance;
 
 static void OnInit()
@@ -82,22 +77,28 @@ static void OnInit()
 	}
 	
 	const eg::Model& colModel = eg::GetAsset<eg::Model>("Models/EnterRoomCol.obj");
-	auto MakeCollisionMesh = [&] (std::string_view name) -> eg::CollisionMesh
+	auto MakeCollisionMesh = [&] (std::string_view name, btTriangleMesh& mesh)
 	{
 		int index = colModel.GetMeshIndex(name);
 		EG_ASSERT(index != -1);
 		auto meshData = colModel.GetMeshData<eg::StdVertex, uint32_t>(index);
-		return eg::CollisionMesh::Create(meshData.vertices, meshData.indices);
+		
+		btIndexedMesh indexedMesh;
+		indexedMesh.m_indexType = PHY_INTEGER;
+		indexedMesh.m_vertexType = PHY_FLOAT;
+		indexedMesh.m_numVertices = meshData.vertices.size();
+		indexedMesh.m_vertexStride = sizeof(eg::StdVertex);
+		indexedMesh.m_vertexBase = reinterpret_cast<const uint8_t*>(&meshData.vertices[0].position);
+		indexedMesh.m_numTriangles = (int)meshData.indices.size() / 3;
+		indexedMesh.m_triangleIndexStride = sizeof(uint32_t) * 3;
+		indexedMesh.m_triangleIndexBase = reinterpret_cast<const uint8_t*>(meshData.indices.data());
+		mesh.addIndexedMesh(indexedMesh, PHY_INTEGER);
+		
+		return std::make_unique<btBvhTriangleMeshShape>(&mesh, true);
 	};
-	entrance.door1CollisionMesh = MakeCollisionMesh("Door1");
-	entrance.door2CollisionMesh = MakeCollisionMesh("Door2");
-	entrance.roomCollisionMesh = MakeCollisionMesh("Room");
-	
-	entrance.bulletMesh = std::make_unique<btTriangleMesh>();
-	//bullet::AddCollisionMesh(*entrance.bulletMesh, entrance.door1CollisionMesh);
-	//bullet::AddCollisionMesh(*entrance.bulletMesh, entrance.door2CollisionMesh);
-	bullet::AddCollisionMesh(*entrance.bulletMesh, entrance.roomCollisionMesh);
-	entrance.bulletMeshShape = std::make_unique<btBvhTriangleMeshShape>(entrance.bulletMesh.get(), true);
+	entrance.door1CollisionMeshShape = MakeCollisionMesh("Door1", entrance.door1CollisionMesh);
+	entrance.door2CollisionMeshShape = MakeCollisionMesh("Door2", entrance.door2CollisionMesh);
+	entrance.roomCollisionMeshShape = MakeCollisionMesh("Room", entrance.roomCollisionMesh);
 }
 
 EG_ON_INIT(OnInit)
@@ -121,9 +122,11 @@ std::vector<glm::vec3> EntranceExitEnt::GetConnectionPoints(const Ent& entity)
 }
 
 EntranceExitEnt::EntranceExitEnt()
-	: m_activatable(&EntranceExitEnt::GetConnectionPoints)
+	: m_activatable(&EntranceExitEnt::GetConnectionPoints), m_pointLight(eg::ColorSRGB::FromHex(0xD1F8FE), 10.0f)
 {
-	m_rigidBody.InitStatic(*entrance.bulletMeshShape);
+	m_rigidBody.InitStatic(this, *entrance.roomCollisionMeshShape);
+	m_door1RigidBody = &m_rigidBody.InitStatic(this, *entrance.door1CollisionMeshShape);
+	m_door2RigidBody = &m_rigidBody.InitStatic(this, *entrance.door2CollisionMeshShape);
 }
 
 const Dir UP_VECTORS[] =
@@ -167,12 +170,6 @@ void EntranceExitEnt::Update(const WorldUpdateArgs& args)
 	
 	m_timeBeforeClose = open ? DOOR_CLOSE_DELAY : std::max(m_timeBeforeClose - args.dt, 0.0f);
 	
-	glm::mat4 transform = EntranceExitEnt::GetTransform();
-	
-	btTransform newBtTransform;
-	newBtTransform.setFromOpenGLMatrix(reinterpret_cast<float*>(&transform));
-	//entity.GetComponent<ECRigidBody>().SetWorldTransform(newBtTransform);
-	
 	//Updates the door open progress
 	const float oldOpenProgress = m_doorOpenProgress;
 	if (m_timeBeforeClose > 0)
@@ -206,6 +203,12 @@ void EntranceExitEnt::Update(const WorldUpdateArgs& args)
 		if (targetAABB.Intersects(args.player->GetAABB()))
 			m_shouldSwitchEntrance = true;
 	}
+	
+	bool doorOpen = m_doorOpenProgress > 0.1f;
+	bool door1Open = !(doorOpen && m_type == Type::Exit);
+	bool door2Open = !(doorOpen && m_type == Type::Entrance);
+	m_door1RigidBody->getBroadphaseProxy()->m_collisionFilterGroup = door1Open ? 1 : 0;
+	m_door2RigidBody->getBroadphaseProxy()->m_collisionFilterGroup = door2Open ? 1 : 0;
 }
 
 void EntranceExitEnt::Draw(const EntDrawArgs& args)
@@ -228,7 +231,7 @@ void EntranceExitEnt::Draw(const EntDrawArgs& args)
 		args.meshBatch->AddModelMesh(*entrance.model, i, *entrance.materials[materialIndex], transforms[i]);
 	}
 	
-	//args.pointLights->emplace_back()
+	args.pointLights->emplace_back(m_pointLight.GetDrawData(glm::vec3(GetTransform() * glm::vec4(0, 2.0f, 1.0f, 1.0f))));
 }
 
 void EntranceExitEnt::EditorDraw(const EntEditorDrawArgs& args)
@@ -326,9 +329,6 @@ void EntranceExitEnt::Deserialize(std::istream& stream)
 	m_type = entrancePB.isexit() ? Type::Exit : Type::Entrance;
 	m_direction = OppositeDir((Dir)entrancePB.dir());
 	
-	//eg::Entity& lightChild = eg::Deref(entity.FindChildBySignature(lightChildSignature));
-	//lightChild.InitComponent<eg::ECPosition3D>(glm::vec3(GetTransform(entity) * glm::vec4(0, 2.0f, 1.0f, 1.0f)) - position);
-	
 	if (entrancePB.name() != 0)
 		m_activatable.m_name = entrancePB.name();
 	
@@ -336,27 +336,4 @@ void EntranceExitEnt::Deserialize(std::istream& stream)
 	btTransform bTransform;
 	bTransform.setFromOpenGLMatrix(reinterpret_cast<float*>(&transform));
 	m_rigidBody.SetWorldTransform(bTransform);
-}
-
-void EntranceExitEnt::CalculateCollision(Dir currentDown, ClippingArgs& args) const
-{
-	glm::mat4 transform = GetTransform();
-	
-	auto CheckMesh = [&] (const eg::CollisionMesh& mesh)
-	{
-		eg::CheckEllipsoidMeshCollision(args.collisionInfo, args.ellipsoid, args.move, mesh, transform);
-	};
-	
-	CheckMesh(entrance.roomCollisionMesh);
-	
-	bool doorOpen = m_doorOpenProgress > 0.1f;
-	if (!(doorOpen && m_type == Type::Entrance))
-		CheckMesh(entrance.door2CollisionMesh);
-	if (!(doorOpen && m_type == Type::Exit))
-		CheckMesh(entrance.door1CollisionMesh);
-}
-
-std::pair<bool, float> EntranceExitEnt::RayIntersect(const eg::Ray& ray) const
-{
-	return std::make_pair(false, 0.0f);
 }

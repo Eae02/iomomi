@@ -1,16 +1,15 @@
 #pragma once
 
 #include "../Entity.hpp"
-#include "../EntCollidable.hpp"
 #include "../Components/RigidBodyComp.hpp"
 #include "../Components/ActivatableComp.hpp"
 
-class PlatformEnt : public Ent, public EntCollidable
+class PlatformEnt : public Ent
 {
 public:
 	static constexpr EntTypeID TypeID = EntTypeID::Platform;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
-		EntTypeFlags::EditorWallMove | EntTypeFlags::HasCollision | EntTypeFlags::Activatable | EntTypeFlags::DisableClone;
+		EntTypeFlags::EditorWallMove | EntTypeFlags::Activatable | EntTypeFlags::DisableClone;
 	
 	PlatformEnt();
 	
@@ -23,9 +22,6 @@ public:
 	void EditorDraw(const EntEditorDrawArgs& args) override;
 	
 	void Update(const struct WorldUpdateArgs& args) override;
-	
-	std::pair<bool, float> RayIntersect(const eg::Ray& ray) const override;
-	void CalculateCollision(Dir currentDown, struct ClippingArgs& args) const override;
 	
 	const void* GetComponent(const std::type_info& type) const override;
 	

@@ -401,27 +401,13 @@ std::tuple<glm::vec3, glm::vec3> GravityBarrierEnt::GetTangents() const
 	return std::make_tuple(tangent, bitangent);
 }
 
-std::pair<bool, float> GravityBarrierEnt::RayIntersect(const eg::Ray& ray) const
-{
-	return std::make_pair(false, 0.0f);
-}
-
-void GravityBarrierEnt::CalculateCollision(Dir currentDown, struct ClippingArgs& args) const
-{
-	if (m_enabled && (int)currentDown / 2 == BlockedAxis())
-	{
-		eg::CheckEllipsoidMeshCollision(
-			args.collisionInfo, args.ellipsoid, args.move, barrierCollisionMesh, GetTransform());
-	}
-}
-
 void GravityBarrierEnt::Spawned(bool isEditor)
 {
 	if (!isEditor)
 	{
 		m_collisionShape = btBoxShape(bullet::FromGLM(glm::abs(GetTransform() * glm::vec4(0.5, 0.5, 0.1f, 0.0f))));
 		
-		m_rigidBody.InitStatic(m_collisionShape);
+		m_rigidBody.InitStatic(this, m_collisionShape);
 		m_rigidBody.GetRigidBody()->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
 		m_rigidBody.GetRigidBody()->setActivationState(DISABLE_DEACTIVATION);
 		

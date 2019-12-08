@@ -3,7 +3,6 @@
 #include <cstddef>
 
 #include "Dir.hpp"
-#include "Clipping.hpp"
 #include "BulletPhysics.hpp"
 #include "WorldUpdateArgs.hpp"
 #include "Door.hpp"
@@ -97,8 +96,6 @@ public:
 	
 	const GravityCorner* FindGravityCorner(const eg::AABB& aabb, glm::vec3 move, Dir currentDown) const;
 	
-	void CalcClipping(ClippingArgs& args, Dir currentDown) const;
-	
 	WallRayIntersectResult RayIntersectWall(const eg::Ray& ray) const;
 	
 	RayIntersectResult RayIntersect(const eg::Ray& ray) const;
@@ -109,7 +106,10 @@ public:
 	//This needs to be called for all entities with an ECRigidBody created after world loading.
 	void InitRigidBodyEntity(Ent& entity);
 	
-	void AddRigidBody(btRigidBody* rigidBody);
+	btDiscreteDynamicsWorld* PhysicsWorld()
+	{
+		return m_bulletWorld.get();
+	}
 	
 	EntityManager entManager;
 	
@@ -212,6 +212,8 @@ private:
 	eg::Buffer m_borderVertexBuffer;
 	size_t m_borderVertexBufferCapacity = 0;
 	uint32_t m_numBorderVertices;
+	
+	float m_accumulatedPhysicsTime;
 	
 	glm::ivec3 m_boundsMin;
 	glm::ivec3 m_boundsMax;

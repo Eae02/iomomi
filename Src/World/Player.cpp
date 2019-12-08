@@ -1,10 +1,9 @@
 #include "Player.hpp"
 #include "Entities/EntInteractable.hpp"
-#include "Entities/EntTypes/FloorButtonEnt.hpp"
 #include "Entities/EntTypes/PlatformEnt.hpp"
+#include "Entities/EntTypes/ForceFieldEnt.hpp"
 #include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
 #include "../Settings.hpp"
-#include "Entities/EntTypes/ForceFieldEnt.hpp"
 
 #include <imgui.h>
 
@@ -66,12 +65,9 @@ void Player::Update(World& world, float dt, bool underwater)
 		m_rigidBody->setCollisionFlags(m_rigidBody->getCollisionFlags() | btCollisionObject::CF_CHARACTER_OBJECT);
 		m_rigidBody->setActivationState(DISABLE_DEACTIVATION);
 		m_rigidBody->setGravity(btVector3(0, 0, 0));
-		m_rigidBody->setFriction(0);
-		m_rigidBody->setRollingFriction(0);
-		m_rigidBody->setAnisotropicFriction(btVector3(0, 0, 0));
-		m_rigidBody->setHitFraction(0);
+		m_rigidBody->setFriction(0.0f);
 		
-		world.AddRigidBody(m_rigidBody.get());
+		world.PhysicsWorld()->addRigidBody(m_rigidBody.get());
 		
 		rigidBodyTransform.setIdentity();
 		rigidBodyTransform.setOrigin(bullet::FromGLM(m_position));
@@ -81,20 +77,15 @@ void Player::Update(World& world, float dt, bool underwater)
 	}
 	else
 	{
-		glm::vec3 oldPos = m_position;
-		
 		m_motionState->getWorldTransform(rigidBodyTransform);
 		m_position = bullet::ToGLM(rigidBodyTransform.getOrigin());
 		m_velocity = bullet::ToGLM(m_rigidBody->getLinearVelocity());
-		
-		displacement = (m_position - oldPos) / dt;
 	}
 	
 	RayIntersectResult rayIntersect = world.RayIntersect(eg::Ray(m_position, glm::vec3(DirectionVector(m_down))));
 	m_onGround = rayIntersect.intersected && rayIntersect.distance < (HEIGHT / 2 + 0.01f);
 	
 	const glm::vec3 up = -DirectionVector(m_down);
-	std::shared_ptr<PlatformEnt> currentPlatform = m_currentPlatform.lock();
 	
 	auto TransitionInterpol = [&] { return glm::smoothstep(0.0f, 1.0f, m_transitionTime); };
 	
@@ -283,15 +274,6 @@ void Player::Update(World& world, float dt, bool underwater)
 		localVelVertical = jumpAccel;
 		m_onGround = false;
 	}
-	//else if (currentPlatform == nullptr)
-	//{
-	//	float gravity = *playerGravity;
-	//	gravity *= 1.0f + *fallGravityRamp * glm::clamp(-localVelVertical, 0.0f, 1.0f);
-	//	if (underwater)
-	//		gravity *= 0.1f;
-	//	
-	//	localVelVertical = std::max(localVelVertical - gravity * dt, -*maxYSpeed);
-	//}
 	
 	if (m_wasUnderwater && !underwater && localVelVertical > 0)
 	{
@@ -308,11 +290,6 @@ void Player::Update(World& world, float dt, bool underwater)
 	m_radius[(int)m_down / 2] = HEIGHT / 2;
 	
 	glm::vec3 move = m_velocity * dt;
-	
-	//Without this, onGround can turn off at high frame rates because
-	// the player is not being pushed into the ground hard enough.
-	if (m_onGround && currentPlatform == nullptr)
-		move -= up * 0.001f;
 	
 	//Checks for intersections with gravity corners along the move vector
 	if (m_gravityTransitionMode == TransitionMode::None && m_onGround && !m_isCarrying)
@@ -389,17 +366,6 @@ void Player::Update(World& world, float dt, bool underwater)
 		}
 	}
 	
-	//Activates floor buttons which the player is moving into
-	world.entManager.ForEachOfType<FloorButtonEnt>([&] (FloorButtonEnt& floorButtonEntity) 
-	{
-		glm::vec3 toButton = glm::normalize(floorButtonEntity.Pos() - m_position);
-		if (glm::dot(toButton, glm::normalize(move)) > 0.1f &&
-		    floorButtonEntity.GetAABB().Intersects(GetAABB()))
-		{
-			floorButtonEntity.Activate();
-		}
-	});
-	
 	//Checks for force fields
 	eg::AABB forceFieldAABB = GetAABB();
 	forceFieldAABB.min += forceFieldAABB.Size() * 0.2f;
@@ -423,58 +389,23 @@ void Player::Update(World& world, float dt, bool underwater)
 		}
 	}
 	
-	m_onGround = false;
-	
-	const int downDim = (int)m_down / 2;
-	const int downSign = ((int)m_down % 2) ? -1 : 1;
-	
-	//Moves the player with the current platform, if one is set 
-	if (currentPlatform != nullptr)
+	//Moves the player with the current platform, if there is one below
+	if (m_onGround && rayIntersect.entity != nullptr && rayIntersect.entity->TypeID() == EntTypeID::Platform)
 	{
-		glm::vec3 platformMove = currentPlatform->MoveDelta();
-		
-		//The player's position should be slightly above the platform (PLAYER_PLATFORM_MARGIN)
-		// at all times to prevent the player from falling through the platform when it moves up.
-		float PLAYER_PLATFORM_MARGIN = (up[downDim] < 0) ? 0.3f : 0.1f;
-		
-		float correction =
-			-m_position[downDim] +
-			currentPlatform->GetPlatformPosition()[downDim] +
-			((HEIGHT * 0.5f) + PLAYER_PLATFORM_MARGIN) * up[downDim];
-		
-		if (correction * up[downDim] < 0)
-			correction = 0;
-		
-		platformMove[downDim] += correction;
-		
-		ClipAndMove(world, platformMove, true);
-		m_onGround = true; //Always on ground if on a platform
+		m_velocity += static_cast<PlatformEnt*>(rayIntersect.entity)->MoveDelta() / dt;
 	}
 	
-	m_prevVelocity = m_velocity;
 	m_rigidBody->setLinearVelocity(bullet::FromGLM(m_velocity));
 	m_rigidBody->setGravity(bullet::FromGLM(-up * *playerGravity));
 	
+	//Updates the transform of the rigid body
 	glm::mat3 rigidBodyRotationMatrix(leftDirs[(int)m_down], glm::cross(glm::abs(up), leftDirs[(int)m_down]), glm::abs(up));
 	rigidBodyTransform.setRotation(bullet::FromGLM(glm::quat_cast(rigidBodyRotationMatrix)));
 	rigidBodyTransform.setOrigin(bullet::FromGLM(m_position));
 	m_rigidBody->setWorldTransform(rigidBodyTransform);
 	
-	//ClipAndMove(world, move, false);
-	
-	//Searches for a platform under the player's feet
-	const glm::vec3 feetPos = m_position + glm::vec3(DirectionVector(m_down)) * (HEIGHT * 0.5f);
-	glm::vec3 platformSearchMax = feetPos + 0.1f;
-	glm::vec3 platformSearchMin = feetPos - 0.1f;
-	float platformSearchDown1 = feetPos[downDim];
-	float platformSearchDown2 = feetPos[downDim] + std::max(move[downDim] * downSign, 0.3f) * downSign;
-	platformSearchMax[downDim] = std::max(platformSearchDown1, platformSearchDown2);
-	platformSearchMin[downDim] = std::min(platformSearchDown1, platformSearchDown2);
-	PlatformEnt* newPlatform = PlatformEnt::FindPlatform(eg::AABB(platformSearchMin, platformSearchMax), world.entManager);
-	if (newPlatform == nullptr)
-		m_currentPlatform = { };
-	else
-		m_currentPlatform = std::static_pointer_cast<PlatformEnt>(newPlatform->shared_from_this());
+	btBroadphaseProxy* bpProxy = m_rigidBody->getBroadphaseProxy();
+	bpProxy->m_collisionFilterGroup = 1U | (2U << ((int)m_down / 2));
 	
 	//Updates the eye position
 	m_eyePosition = m_position + up * EYE_OFFSET;
@@ -484,63 +415,6 @@ void Player::Update(World& world, float dt, bool underwater)
 	}
 	
 	m_wasUnderwater = underwater;
-}
-
-void Player::ClipAndMove(const World& world, glm::vec3 move, bool skipPlatforms)
-{
-	glm::vec3 fromEllipsoidSpace = m_radius;
-	glm::vec3 toEllipsoidSpace = 1.0f / m_radius;
-	glm::vec3 velocityES = m_velocity * toEllipsoidSpace;
-	glm::vec3 moveES = move * toEllipsoidSpace;
-	
-	const glm::vec3 up = -DirectionVector(m_down);
-	constexpr int MAX_CLIP_ITERATIONS = 3;
-	for (int i = 0; i < MAX_CLIP_ITERATIONS; i++)
-	{
-		if (glm::length2(moveES) < 1E-6f)
-			break;
-		
-		ClippingArgs clippingArgs;
-		clippingArgs.move = moveES * fromEllipsoidSpace;
-		clippingArgs.ellipsoid = eg::CollisionEllipsoid(m_position, m_radius);
-		world.CalcClipping(clippingArgs, m_down);
-		
-		glm::vec3 positionES = m_position * toEllipsoidSpace;
-		glm::vec3 newPosition = positionES;
-		
-		glm::vec3 dstPosition = positionES + moveES;
-		
-		if (!clippingArgs.collisionInfo.collisionFound)
-		{
-			m_position = dstPosition * fromEllipsoidSpace;
-			break;
-		}
-		
-		const float veryCloseDist = 0.001f;
-		float moveDist = clippingArgs.collisionInfo.distance - veryCloseDist;
-		if (moveDist >= 0.0f)
-		{
-			newPosition = positionES + moveES * moveDist;
-			
-			clippingArgs.collisionInfo.positionES -= veryCloseDist * glm::normalize(moveES);
-		}
-		
-		const eg::Plane slidePlane(clippingArgs.collisionInfo.positionES - newPosition, clippingArgs.collisionInfo.positionES);
-		
-		if (glm::dot(slidePlane.GetNormal(), up) > 0.75f)
-		{
-			m_onGround = true;
-		}
-		
-		velocityES -= glm::dot(velocityES, slidePlane.GetNormal()) * slidePlane.GetNormal();
-		
-		glm::vec3 newDstPosition = dstPosition - slidePlane.GetDistanceToPoint(dstPosition) * slidePlane.GetNormal();
-		
-		m_position = newPosition * fromEllipsoidSpace;
-		moveES = newDstPosition - clippingArgs.collisionInfo.positionES;
-	}
-	
-	m_velocity = velocityES * fromEllipsoidSpace;
 }
 
 void Player::FlipDown()
@@ -574,10 +448,9 @@ glm::vec3 Player::Forward() const
 #ifndef NDEBUG
 void Player::DrawDebugOverlay()
 {
-	ImGui::Text("Pos: %.2f, %.2f, %.2f", m_eyePosition.x, m_eyePosition.y, m_eyePosition.z);
-	ImGui::Text("Vel: %.2f, %.2f, %.2f", m_velocity.x, m_velocity.y, m_velocity.z);
-	ImGui::Text("Disp: %.2f, %.2f, %.2f", displacement.x, displacement.y, displacement.z);
-	ImGui::Text("Speed: %.2f %.2f", glm::length(m_velocity), glm::length(displacement));
+	ImGui::Text("Pos: %.2f, %.2f, %.2f", m_position.x, m_position.y, m_position.z);
+	ImGui::Text("Vel: %.2f, %.2f, %.2f, Speed: %.2f)", m_velocity.x, m_velocity.y, m_velocity.z, glm::length(m_velocity));
+	ImGui::Text("Eye Pos: %.2f, %.2f, %.2f", m_eyePosition.x, m_eyePosition.y, m_eyePosition.z);
 	
 	const glm::vec3 forward = m_rotation * glm::vec3(0, 0, -1);
 	const glm::vec3 absForward = glm::abs(forward);
@@ -590,8 +463,6 @@ void Player::DrawDebugOverlay()
 	
 	const char* dirNames = "XYZ";
 	ImGui::Text("Facing: %c%c", forward[maxDir] < 0 ? '-' : '+', dirNames[maxDir]);
-	
-	ImGui::Text("Platform: %p", (void*)m_currentPlatform.lock().get());
 }
 #endif
 
@@ -599,17 +470,15 @@ void Player::Reset()
 {
 	m_position = glm::vec3(0.0f);
 	m_velocity = glm::vec3(0.0f);
-	m_prevVelocity = glm::vec3(0.0f);
 	m_down = Dir::NegY;
 	m_onGround = false;
 	m_isCarrying = false;
 	m_gravityTransitionMode = TransitionMode::None;
-	m_currentPlatform = { };
 	m_rigidBody = nullptr;
 	m_motionState = nullptr;
 }
 
 glm::vec3 Player::FeetPosition() const
 {
-	return m_position + glm::vec3(DirectionVector(m_down)) * (HEIGHT * 0.5f * 0.95f);
+	return m_position + glm::vec3(DirectionVector(m_down)) * (HEIGHT * 0.45f);
 }

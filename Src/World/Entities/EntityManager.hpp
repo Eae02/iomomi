@@ -50,7 +50,7 @@ private:
 		void ForEach(CallbackTp callback);
 	};
 	
-	std::array<FlagTracker, 5> m_trackers;
+	std::array<FlagTracker, 4> m_trackers;
 };
 
 #include "EntityManager.inl"

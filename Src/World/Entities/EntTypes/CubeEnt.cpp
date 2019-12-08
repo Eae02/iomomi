@@ -1,6 +1,5 @@
 #include "CubeEnt.hpp"
 #include "GooPlaneEnt.hpp"
-#include "FloorButtonEnt.hpp"
 #include "PlatformEnt.hpp"
 #include "../../Player.hpp"
 #include "../../BulletPhysics.hpp"
@@ -31,7 +30,7 @@ CubeEnt::CubeEnt(const glm::vec3& position, bool _canFloat)
 {
 	m_position = position;
 	
-	m_rigidBody.Init(MASS, *collisionShape);
+	m_rigidBody.Init(this, MASS, *collisionShape);
 	m_rigidBody.GetRigidBody()->setFlags(m_rigidBody.GetRigidBody()->getFlags() | BT_DISABLE_WORLD_GRAVITY);
 	m_rigidBody.GetRigidBody()->setActivationState(DISABLE_DEACTIVATION);
 	m_rigidBody.SetTransform(position, m_rotation);
@@ -86,16 +85,6 @@ const void* CubeEnt::GetComponent(const std::type_info& type) const
 		return &m_barrierInteractableComp;
 	return Ent::GetComponent(type);
 }
-
-std::pair<bool, float> CubeEnt::RayIntersect(const eg::Ray& ray) const
-{
-	float distance;
-	if (ray.Intersects(GetSphere(), distance) && distance > 0)
-		return std::make_pair(true, distance);
-	return std::make_pair(false, 0.0f);
-}
-
-void CubeEnt::CalculateCollision(Dir currentDown, struct ClippingArgs& args) const { }
 
 void CubeEnt::Interact(Player& player)
 {
@@ -208,14 +197,14 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 		}
 		else
 		{
-			ClippingArgs clipArgs;
-			clipArgs.ellipsoid.center = m_position;
-			clipArgs.ellipsoid.radii = glm::vec3(RADIUS * 0.75f);
-			clipArgs.move = deltaPos;
-			args.world->CalcClipping(clipArgs, m_currentDown);
-			
-			if (clipArgs.collisionInfo.collisionFound)
-				deltaPos *= clipArgs.collisionInfo.distance;
+			//ClippingArgs clipArgs;
+			//clipArgs.ellipsoid.center = m_position;
+			//clipArgs.ellipsoid.radii = glm::vec3(RADIUS * 0.75f);
+			//clipArgs.move = deltaPos;
+			//args.world->CalcClipping(clipArgs, m_currentDown);
+			//
+			//if (clipArgs.collisionInfo.collisionFound)
+			//	deltaPos *= clipArgs.collisionInfo.distance;
 			
 			m_rigidBody.GetRigidBody()->setGravity(btVector3(0, 0, 0));
 			m_rigidBody.GetRigidBody()->setLinearVelocity(bullet::FromGLM(deltaPos * impulseFactor));
@@ -261,13 +250,6 @@ void CubeEnt::UpdatePostSim(const WorldUpdateArgs& args)
 	
 	const glm::vec3 down(DirectionVector(m_currentDown));
 	const eg::AABB cubeAABB(m_position - RADIUS, m_position + RADIUS);
-	
-	args.world->entManager.ForEachOfType<FloorButtonEnt>([&] (FloorButtonEnt& buttonEntity)
-	{
-		glm::vec3 toButton = glm::normalize(buttonEntity.Pos() - m_position);
-		if (glm::dot(toButton, down) > 0.1f && buttonEntity.GetAABB().Intersects(cubeAABB))
-			buttonEntity.Activate();
-	});
 	
 	if (canFloat)
 	{

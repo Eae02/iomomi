@@ -2,19 +2,18 @@
 
 #include "GravityBarrierEnt.hpp"
 #include "../Entity.hpp"
-#include "../EntCollidable.hpp"
 #include "../EntInteractable.hpp"
 #include "../EntGravityChargeable.hpp"
 #include "../Components/RigidBodyComp.hpp"
 #include "../../Dir.hpp"
 #include "../../../Graphics/WaterSimulator.hpp"
 
-class CubeEnt : public Ent, public EntCollidable, public EntInteractable, public EntGravityChargeable
+class CubeEnt : public Ent, public EntInteractable, public EntGravityChargeable
 {
 public:
 	static constexpr EntTypeID TypeID = EntTypeID::Cube;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
-		EntTypeFlags::Interactable | EntTypeFlags::HasCollision;
+		EntTypeFlags::Interactable;
 	
 	CubeEnt() : CubeEnt(glm::vec3(0.0f), false) { }
 	CubeEnt(const glm::vec3& position, bool canFloat);
@@ -34,9 +33,6 @@ public:
 	void UpdatePostSim(const struct WorldUpdateArgs& args);
 	
 	const void* GetComponent(const std::type_info& type) const override;
-	
-	std::pair<bool, float> RayIntersect(const eg::Ray& ray) const override;
-	void CalculateCollision(Dir currentDown, struct ClippingArgs& args) const override;
 	
 	void Interact(class Player& player) override;
 	int CheckInteraction(const class Player& player) const override;

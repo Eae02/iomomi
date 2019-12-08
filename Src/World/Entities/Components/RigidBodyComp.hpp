@@ -2,6 +2,8 @@
 
 #include "../../BulletPhysics.hpp"
 
+#include <list>
+
 struct RigidBodyComp
 {
 public:
@@ -17,29 +19,25 @@ public:
 	
 	const btRigidBody* GetRigidBody() const
 	{
-		return m_rigidBody.has_value() ? &m_rigidBody.value() : nullptr;
+		return !m_rigidBodies.empty() ? &m_rigidBodies.front() : nullptr;
 	}
 	
 	btRigidBody* GetRigidBody()
 	{
-		return m_rigidBody.has_value() ? &m_rigidBody.value() : nullptr;
+		return !m_rigidBodies.empty() ? &m_rigidBodies.front() : nullptr;
 	}
 	
 	btTransform GetBulletTransform() const
 	{
 		btTransform transform;
-		m_motionState.getWorldTransform(transform);
+		m_motionStates.front().getWorldTransform(transform);
 		return transform;
 	}
 	
-	void SetWorldTransform(const btTransform& transform)
-	{
-		m_motionState.setWorldTransform(transform);
-		m_rigidBody->setWorldTransform(transform);
-	}
+	void SetWorldTransform(const btTransform& transform);
 	
-	void Init(float mass, btCollisionShape& shape);
-	void InitStatic(btCollisionShape& shape);
+	btRigidBody& Init(class Ent* entity, float mass, btCollisionShape& shape);
+	btRigidBody& InitStatic(class Ent* entity, btCollisionShape& shape);
 	
 	void SetMass(float mass);
 	
@@ -48,8 +46,8 @@ public:
 	std::pair<glm::vec3, glm::quat> GetTransform() const;
 	
 private:
-	btDefaultMotionState m_motionState;
-	std::optional<btRigidBody> m_rigidBody;
+	std::list<btDefaultMotionState> m_motionStates;
+	std::list<btRigidBody> m_rigidBodies;
 	
 	bool m_worldAssigned = false;
 	std::weak_ptr<btDiscreteDynamicsWorld> m_physicsWorld;

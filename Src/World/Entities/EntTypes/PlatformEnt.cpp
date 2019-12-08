@@ -2,7 +2,6 @@
 #include "../../BulletPhysics.hpp"
 #include "../../Entities/EntityManager.hpp"
 #include "../../WorldUpdateArgs.hpp"
-#include "../../Clipping.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../../Protobuf/Build/PlatformEntity.pb.h"
 
@@ -34,7 +33,7 @@ EG_ON_INIT(OnInit)
 PlatformEnt::PlatformEnt()
 	: m_activatable(&PlatformEnt::GetConnectionPoints)
 {
-	m_rigidBody.InitStatic(*platformCollisionShape);
+	m_rigidBody.InitStatic(this, *platformCollisionShape);
 	m_rigidBody.GetRigidBody()->setCollisionFlags(m_rigidBody.GetRigidBody()->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
 	m_rigidBody.GetRigidBody()->setActivationState(DISABLE_DEACTIVATION);
 	m_rigidBody.GetRigidBody()->setFriction(0.5f);
@@ -167,27 +166,6 @@ eg::AABB PlatformEnt::GetPlatformAABB() const
 	const glm::vec3 world1 = transform * glm::vec4(-1.0f, -0.1f, -2.0f, 1.0f);
 	const glm::vec3 world2 = transform * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
 	return eg::AABB(world1, world2);
-}
-
-std::pair<bool, float> PlatformEnt::RayIntersect(const eg::Ray& ray) const
-{
-	return std::make_pair(false, 0.0f);
-}
-
-void PlatformEnt::CalculateCollision(Dir currentDown, ClippingArgs& args) const
-{
-	//The platform's floor polygon in local space
-	const glm::vec3 floorLocalCoords[] = { { -1, 0, 0 }, { 1, 0, 0 }, { 1, 0, -2 }, { -1, 0, -2 } };
-	
-	//Transforms the floor polygon to world space
-	const glm::mat4 transform = GetPlatformTransform();
-	glm::vec3 floorWorldCoords[4];
-	for (int i = 0; i < 4; i++)
-	{
-		floorWorldCoords[i] = transform * glm::vec4(floorLocalCoords[i], 1.0f);
-	}
-	
-	CalcPolygonClipping(args, floorWorldCoords);
 }
 
 const void* PlatformEnt::GetComponent(const std::type_info& type) const

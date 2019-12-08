@@ -54,9 +54,9 @@ public:
 	
 	void Reset();
 	
-	static constexpr float HEIGHT = 1.65f;
+	static constexpr float HEIGHT = 1.9f;
 	static constexpr float WIDTH = 0.8f;
-	static constexpr float EYE_HEIGHT = HEIGHT * 0.75f;
+	static constexpr float EYE_HEIGHT = HEIGHT * 0.8f;
 	
 	float m_rotationYaw = 0;
 	float m_rotationPitch = 0;
@@ -65,8 +65,6 @@ public:
 	glm::vec3 m_position;
 	
 private:
-	void ClipAndMove(const World& world, glm::vec3 move, bool skipPlatforms);
-	
 	Dir m_down = Dir::NegY;
 	
 	bool m_onGround = false;
@@ -88,15 +86,10 @@ private:
 	
 	glm::vec3 m_eyePosition;
 	glm::vec3 m_velocity;
-	glm::vec3 m_prevVelocity;
 	glm::quat m_rotation;
-	
-	glm::vec3 displacement;
 	
 	glm::vec3 m_radius;
 	
 	std::unique_ptr<btRigidBody> m_rigidBody;
 	std::unique_ptr<btDefaultMotionState> m_motionState;
-	
-	std::weak_ptr<class PlatformEnt> m_currentPlatform;
 };

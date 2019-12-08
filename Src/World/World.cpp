@@ -6,7 +6,6 @@
 #include "../Graphics/WallShader.hpp"
 #include "Entities/EntTypes/EntranceExitEnt.hpp"
 #include "Entities/Components/RigidBodyComp.hpp"
-#include "Entities/EntCollidable.hpp"
 #include "Entities/Components/ActivatorComp.hpp"
 #include "Entities/EntTypes/CubeEnt.hpp"
 
@@ -242,6 +241,8 @@ glm::mat3 GravityCorner::MakeRotationMatrix() const
 	return glm::mat3(r1, r2, glm::cross(r1, r2));
 }
 
+static float* physicsUpdateRate = eg::TweakVarFloat("phys_update_rate", 60, 0);
+
 void World::Update(const WorldUpdateArgs& args)
 {
 	entManager.Update(args);
@@ -250,7 +251,14 @@ void World::Update(const WorldUpdateArgs& args)
 	{
 		auto physicsCPUTimer = eg::StartCPUTimer("Physics");
 		
-		m_bulletWorld->stepSimulation(args.dt, 10);
+		constexpr float PHYSICS_UPDATE_TIME_MARGIN = 0.95f;
+		
+		m_accumulatedPhysicsTime = std::min(m_accumulatedPhysicsTime + args.dt * *physicsUpdateRate, 10.0f);
+		while (m_accumulatedPhysicsTime > PHYSICS_UPDATE_TIME_MARGIN)
+		{
+			m_bulletWorld->stepSimulation(1.0f / *physicsUpdateRate, 0);
+			m_accumulatedPhysicsTime = std::max(m_accumulatedPhysicsTime - 1.0f, 0.0f);
+		}
 		
 		entManager.ForEachOfType<CubeEnt>([&] (CubeEnt& cube) { cube.UpdatePostSim(args); });
 	}
@@ -993,31 +1001,20 @@ WallRayIntersectResult World::RayIntersectWall(const eg::Ray& ray) const
 
 RayIntersectResult World::RayIntersect(const eg::Ray& ray) const
 {
-	EntRayIntersectArgs intersectArgs;
-	intersectArgs.entity = nullptr;
-	intersectArgs.distance = INFINITY;
-	intersectArgs.ray = ray;
+	btCollisionWorld::ClosestRayResultCallback resultCB(bullet::FromGLM(ray.GetStart()), bullet::FromGLM(ray.GetPoint(1000)));
+	m_bulletWorld->rayTest(resultCB.m_rayFromWorld, resultCB.m_rayToWorld, resultCB);
 	
-	WallRayIntersectResult wallResult = RayIntersectWall(ray);
-	if (wallResult.intersected)
+	RayIntersectResult result = { };
+	//result.entity = intersectArgs.entity;
+	
+	result.intersected = resultCB.hasHit();
+	
+	if (resultCB.hasHit())
 	{
-		intersectArgs.distance = glm::dot(wallResult.intersectPosition - ray.GetStart(), ray.GetDirection());
+		result.distance = glm::dot(bullet::ToGLM(resultCB.m_hitPointWorld) - ray.GetStart(), ray.GetDirection());
+		result.entity = static_cast<Ent*>(resultCB.m_collisionObject->getUserPointer());
 	}
 	
-	const_cast<EntityManager&>(entManager).ForEachWithFlag(EntTypeFlags::HasCollision, [&] (Ent& ent)
-	{
-		auto [intersected, dist] = dynamic_cast<const EntCollidable&>(ent).RayIntersect(ray);
-		if (intersected && dist < intersectArgs.distance)
-		{
-			intersectArgs.entity = &ent;
-			intersectArgs.distance = dist;
-		}
-	});
-	
-	RayIntersectResult result;
-	result.entity = intersectArgs.entity;
-	result.distance = intersectArgs.distance;
-	result.intersected = intersectArgs.distance != INFINITY;
 	return result;
 }
 
@@ -1027,11 +1024,6 @@ void World::InitializeBulletPhysics()
 	m_bulletWorld = std::make_shared<btDiscreteDynamicsWorld>(bullet::dispatcher, m_bulletBroadphase.get(),
 		bullet::solver, bullet::collisionConfig);
 	m_bulletWorld->setGravity({ 0, -bullet::GRAVITY, 0 });
-	m_bulletWorld->getSolverInfo().m_erp2 = 0.f;
-	m_bulletWorld->getSolverInfo().m_globalCfm = 0.f;
-	m_bulletWorld->getSolverInfo().m_numIterations = 3;
-	m_bulletWorld->getSolverInfo().m_solverMode = SOLVER_SIMD;  // | SOLVER_RANDMIZE_ORDER;
-	m_bulletWorld->getSolverInfo().m_splitImpulse = false;
 	
 	PrepareRegionMeshes(false);
 	
@@ -1051,8 +1043,10 @@ void World::InitializeBulletPhysics()
 	startTransform.setIdentity();
 	m_wallsMotionState = std::make_unique<btDefaultMotionState>(startTransform);
 	btRigidBody::btRigidBodyConstructionInfo rbInfo(0.0f, m_wallsMotionState.get(), m_wallsBulletShape.get());
+	rbInfo.m_friction = 0.5f;
+	rbInfo.m_rollingFriction = 0;
+	rbInfo.m_spinningFriction = 0;
 	m_wallsRigidBody = std::make_unique<btRigidBody>(rbInfo);
-	m_wallsRigidBody->setFriction(1.0f);
 	m_bulletWorld->addRigidBody(m_wallsRigidBody.get());
 	
 	entManager.ForEach([&] (Ent& entity) { InitRigidBodyEntity(entity); });
@@ -1061,38 +1055,16 @@ void World::InitializeBulletPhysics()
 void World::InitRigidBodyEntity(Ent& entity)
 {
 	RigidBodyComp* rigidBodyComp = entity.GetComponentMut<RigidBodyComp>();
-	if (rigidBodyComp && m_bulletWorld && rigidBodyComp->m_rigidBody.has_value() &&
+	if (rigidBodyComp && m_bulletWorld && !rigidBodyComp->m_rigidBodies.empty() &&
 		!rigidBodyComp->m_worldAssigned)
 	{
-		m_bulletWorld->addRigidBody(&*rigidBodyComp->m_rigidBody);
+		for (btRigidBody& body : rigidBodyComp->m_rigidBodies)
+		{
+			m_bulletWorld->addRigidBody(&body);
+		}
 		rigidBodyComp->m_physicsWorld = m_bulletWorld;
 		rigidBodyComp->m_worldAssigned = true;
 	}
-}
-
-void World::AddRigidBody(btRigidBody* rigidBody)
-{
-	if (m_bulletWorld)
-	{
-		m_bulletWorld->addRigidBody(rigidBody);
-	}
-}
-
-void World::CalcClipping(ClippingArgs& args, Dir currentDown) const
-{
-	for (const Region& region : m_regions)
-	{
-		if (region.canDraw)
-		{
-			eg::CheckEllipsoidMeshCollision(args.collisionInfo, args.ellipsoid, args.move,
-				region.data->collisionMesh, glm::mat4(1.0f));
-		}
-	}
-	
-	const_cast<EntityManager&>(entManager).ForEachWithFlag(EntTypeFlags::HasCollision, [&] (const Ent& entity)
-	{
-		dynamic_cast<const EntCollidable&>(entity).CalculateCollision(currentDown, args);
-	});
 }
 
 bool World::HasCollision(const glm::ivec3& pos, Dir side) const

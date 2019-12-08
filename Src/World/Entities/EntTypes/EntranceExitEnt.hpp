@@ -1,13 +1,12 @@
 #pragma once
 
 #include "../Entity.hpp"
-#include "../EntCollidable.hpp"
 #include "../Components/RigidBodyComp.hpp"
 #include "../Components/ActivatableComp.hpp"
 #include "../../WorldUpdateArgs.hpp"
 #include "../../Door.hpp"
 
-class EntranceExitEnt : public Ent, public EntCollidable
+class EntranceExitEnt : public Ent
 {
 public:
 	enum class Type
@@ -18,7 +17,7 @@ public:
 	
 	static constexpr EntTypeID TypeID = EntTypeID::EntranceExit;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::DisableClone |
-		EntTypeFlags::HasCollision | EntTypeFlags::EditorWallMove | EntTypeFlags::HasCollision | EntTypeFlags::Activatable;
+		EntTypeFlags::EditorWallMove | EntTypeFlags::Activatable;
 	
 	EntranceExitEnt();
 	
@@ -39,10 +38,6 @@ public:
 	void EditorDraw(const EntEditorDrawArgs& args) override;
 	
 	const void* GetComponent(const std::type_info& type) const override;
-	
-	std::pair<bool, float> RayIntersect(const eg::Ray& ray) const override;
-	
-	void CalculateCollision(Dir currentDown, struct ClippingArgs& args) const override;
 	
 	Door GetDoorDescription() const;
 	
@@ -65,8 +60,12 @@ private:
 	static std::vector<glm::vec3> GetConnectionPoints(const Ent& entity);
 	
 	RigidBodyComp m_rigidBody;
+	btRigidBody* m_door1RigidBody;
+	btRigidBody* m_door2RigidBody;
 	
 	ActivatableComp m_activatable;
+	
+	PointLight m_pointLight;
 	
 	std::string m_name = "main";
 	float m_doorOpenProgress = 0;

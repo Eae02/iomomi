@@ -3,19 +3,18 @@
 #include "../Entity.hpp"
 #include "../Components/ActivatableComp.hpp"
 #include "../Components/RigidBodyComp.hpp"
-#include "../EntCollidable.hpp"
 
 struct GravityBarrierInteractableComp
 {
 	Dir currentDown;
 };
 
-class GravityBarrierEnt : public Ent, public EntCollidable
+class GravityBarrierEnt : public Ent
 {
 public:
 	static constexpr EntTypeID TypeID = EntTypeID::GravityBarrier;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
-		EntTypeFlags::HasCollision | EntTypeFlags::Activatable | EntTypeFlags::DisableClone;
+		EntTypeFlags::Activatable | EntTypeFlags::DisableClone;
 	
 	GravityBarrierEnt();
 	
@@ -31,10 +30,6 @@ public:
 	void Update(const WorldUpdateArgs& args) override;
 	
 	void Spawned(bool isEditor) override;
-	
-	std::pair<bool, float> RayIntersect(const eg::Ray& ray) const override;
-	
-	void CalculateCollision(Dir currentDown, struct ClippingArgs& args) const override;
 	
 	const void* GetComponent(const std::type_info& type) const override;
 	

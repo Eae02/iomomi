@@ -35,16 +35,20 @@ enum class EntTypeFlags
 	EditorWallMove  = 0x2,
 	Drawable        = 0x4,
 	EditorDrawable  = 0x8,
-	HasCollision    = 0x10,
-	Interactable    = 0x20,
-	Activatable     = 0x40,
-	DisableClone    = 0x80
+	Interactable    = 0x10,
+	Activatable     = 0x20,
+	DisableClone    = 0x40
 };
 
 class Ent : public std::enable_shared_from_this<Ent>
 {
 public:
 	Ent() = default;
+	
+	Ent(Ent&& other) = delete;
+	Ent(const Ent& other) = default;
+	Ent& operator=(Ent&& other) = delete;
+	Ent& operator=(const Ent& other) = default;
 	
 	virtual void Serialize(std::ostream& stream) const = 0;
 	virtual void Deserialize(std::istream& stream) = 0;
