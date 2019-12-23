@@ -101,8 +101,8 @@ void CubeEnt::Interact(Player& player)
 
 int CubeEnt::CheckInteraction(const Player& player) const
 {
-	if (!player.OnGround())
-			return 0;
+	if (!player.OnGround() && !player.Underwater())
+		return 0;
 	
 	//Very high so that dropping the cube has higher priority than other interactions.
 	static constexpr int DROP_INTERACT_PRIORITY = 1000;

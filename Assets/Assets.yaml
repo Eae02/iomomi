@@ -83,6 +83,7 @@ assets:
   - name: Models/GravityGun.obj
   - name: Models/ActivationStripStraight.obj
   - name: Models/ActivationStripBend.obj
+  - name: Models/ActivationStripCorner.obj
   - name: Models/GravityBarrierBorder.obj
   
   - name: Particles/BlueOrb.ype
@@ -135,6 +136,15 @@ assets:
     srgb: false
     format: bc5
   - name: Textures/Entrance/FloorM.png
+    mipShift: *MipShift
+    srgb: false
+    format: bc1
+    
+  - name: Textures/ActivationStripA.png
+    mipShift: *MipShift
+    srgb: true
+    format: bc1
+  - name: Textures/ActivationStripM.png
     mipShift: *MipShift
     srgb: false
     format: bc1
@@ -390,6 +400,9 @@ assets:
     generator: StaticPropMaterial
     loader: StaticPropMaterial
   - name: Materials/Cube.yaml
+    generator: StaticPropMaterial
+    loader: StaticPropMaterial
+  - name: Materials/ActivationStrip.yaml
     generator: StaticPropMaterial
     loader: StaticPropMaterial
   - name: Materials/GravityGunMain.yaml

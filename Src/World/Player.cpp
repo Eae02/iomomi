@@ -396,7 +396,7 @@ void Player::Update(World& world, float dt, bool underwater)
 	}
 	
 	m_rigidBody->setLinearVelocity(bullet::FromGLM(m_velocity));
-	m_rigidBody->setGravity(bullet::FromGLM(-up * *playerGravity));
+	m_rigidBody->setGravity(bullet::FromGLM(-up * ((underwater ? 0.2f : 1.0f) * *playerGravity)));
 	
 	//Updates the transform of the rigid body
 	glm::mat3 rigidBodyRotationMatrix(leftDirs[(int)m_down], glm::cross(glm::abs(up), leftDirs[(int)m_down]), glm::abs(up));
