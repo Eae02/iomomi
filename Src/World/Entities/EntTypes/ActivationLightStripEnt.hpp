@@ -64,6 +64,7 @@ private:
 	{
 		MV_Straight,
 		MV_Bend,
+		MV_Corner,
 		MV_Count
 	};
 	

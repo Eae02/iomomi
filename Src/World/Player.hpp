@@ -52,6 +52,11 @@ public:
 		return m_onGround;
 	}
 	
+	bool Underwater() const
+	{
+		return m_wasUnderwater;
+	}
+	
 	void Reset();
 	
 	static constexpr float HEIGHT = 1.9f;

@@ -22,9 +22,11 @@ ActivationLightStripEnt::ActivationLightStripEnt()
 void ActivationLightStripEnt::OnInit()
 {
 	s_models[MV_Straight] = &eg::GetAsset<eg::Model>("Models/ActivationStripStraight.obj");
-	s_materials[MV_Straight] = &eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml");
+	s_materials[MV_Straight] = &eg::GetAsset<StaticPropMaterial>("Materials/ActivationStrip.yaml");
 	s_models[MV_Bend] = &eg::GetAsset<eg::Model>("Models/ActivationStripBend.obj");
-	s_materials[MV_Bend] = &eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml");
+	s_materials[MV_Bend] = &eg::GetAsset<StaticPropMaterial>("Materials/ActivationStrip.yaml");
+	s_models[MV_Corner] = &eg::GetAsset<eg::Model>("Models/ActivationStripCorner.obj");
+	s_materials[MV_Corner] = &eg::GetAsset<StaticPropMaterial>("Materials/ActivationStrip.yaml");
 }
 
 EG_ON_INIT(ActivationLightStripEnt::OnInit)
@@ -393,11 +395,18 @@ void ActivationLightStripEnt::Generate(const World& world, eg::Span<const WayPoi
 			instanceData = &m_instances[MV_Bend].emplace_back();
 			i -= 2;
 		}
+		//If the step direction and normals match, insert a straight segment.
 		else if (path[i].stepDirection == path[i - 1].stepDirection && path[i].wallNormal == path[i - 1].wallNormal)
 		{
 			rotationX = glm::cross(rotationY, rotationZ);
 			translation = glm::vec3(path[i].doublePos + path[i - 1].doublePos) / 4.0f;
 			instanceData = &m_instances[MV_Straight].emplace_back();
+		}
+		else if (path[i - 1].stepDirection == path[i].wallNormal)
+		{
+			rotationX = glm::cross(rotationY, rotationZ);
+			translation = glm::vec3(path[i].doublePos) / 2.0f;
+			instanceData = &m_instances[MV_Corner].emplace_back();
 		}
 		
 		if (instanceData != nullptr)

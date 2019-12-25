@@ -105,7 +105,11 @@ EG_ON_INIT(OnInit)
 
 std::vector<glm::vec3> EntranceExitEnt::GetConnectionPoints(const Ent& entity)
 {
-	const glm::mat4 transform = static_cast<const EntranceExitEnt&>(entity).GetTransform();
+	const EntranceExitEnt& eeent = static_cast<const EntranceExitEnt&>(entity);
+	if (eeent.m_type == Type::Entrance)
+		return { };
+	
+	const glm::mat4 transform = eeent.GetTransform();
 	const glm::vec3 connectionPointsLocal[] = 
 	{
 		glm::vec3(MESH_LENGTH, 1.0f, -1.5f),
