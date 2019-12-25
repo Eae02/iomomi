@@ -1,13 +1,13 @@
 #include "World.hpp"
 #include "PrepareDrawArgs.hpp"
-#include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
-#include "../Graphics/Materials/StaticPropMaterial.hpp"
-#include "../Graphics/RenderSettings.hpp"
-#include "../Graphics/WallShader.hpp"
 #include "Entities/EntTypes/EntranceExitEnt.hpp"
 #include "Entities/Components/RigidBodyComp.hpp"
 #include "Entities/Components/ActivatorComp.hpp"
 #include "Entities/EntTypes/CubeEnt.hpp"
+#include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
+#include "../Graphics/Materials/StaticPropMaterial.hpp"
+#include "../Graphics/RenderSettings.hpp"
+#include "../Graphics/WallShader.hpp"
 
 #include <yaml-cpp/yaml.h>
 
