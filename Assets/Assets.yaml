@@ -223,6 +223,14 @@ assets:
     mipShift: *MipShift
     srgb: true
     format: bc1
+  - name: Textures/ButtonN.png
+    mipShift: *MipShift
+    srgb: false
+    format: bc5
+  - name: Textures/ButtonM.png
+    mipShift: *MipShift
+    srgb: false
+    format: bc1
 
   - name: Textures/GravityCornerA.png
     mipShift:

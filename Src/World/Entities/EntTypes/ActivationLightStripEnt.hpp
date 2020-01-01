@@ -57,6 +57,9 @@ public:
 	
 	static void OnInit();
 	
+	static const eg::ColorLin ACTIVATED_COLOR;
+	static const eg::ColorLin DEACTIVATED_COLOR;
+	
 private:
 	void Draw(eg::MeshBatch& meshBatch);
 	

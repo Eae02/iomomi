@@ -11,8 +11,8 @@
 const eg::Model* ActivationLightStripEnt::s_models[MV_Count];
 const eg::IMaterial* ActivationLightStripEnt::s_materials[MV_Count];
 
-const eg::ColorLin ACTIVATED_COLOR = eg::ColorLin(eg::ColorSRGB::FromHex(0x4bf863)).ScaleRGB(4);
-const eg::ColorLin DEACTIVATED_COLOR = eg::ColorLin(eg::ColorSRGB::FromHex(0xf84b5e)).ScaleRGB(4);
+const eg::ColorLin ActivationLightStripEnt::ACTIVATED_COLOR = eg::ColorLin(eg::ColorSRGB::FromHex(0x4bf863)).ScaleRGB(4);
+const eg::ColorLin ActivationLightStripEnt::DEACTIVATED_COLOR = eg::ColorLin(eg::ColorSRGB::FromHex(0xf84b5e)).ScaleRGB(4);
 
 ActivationLightStripEnt::ActivationLightStripEnt()
 {

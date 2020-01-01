@@ -17,7 +17,7 @@ static void OnInit()
 
 EG_ON_INIT(OnInit)
 
-inline void Draw(const Ent& entity, eg::MeshBatch& meshBatch)
+static inline void Draw(const Ent& entity, eg::MeshBatch& meshBatch)
 {
 	for (size_t m = 0; m < s_model->NumMeshes(); m++)
 	{
@@ -27,6 +27,11 @@ inline void Draw(const Ent& entity, eg::MeshBatch& meshBatch)
 		
 		meshBatch.AddModelMesh(*s_model, m, *material, entity.GetTransform(GravitySwitchEnt::SCALE));
 	}
+}
+
+void GravitySwitchEnt::EditorDraw(const EntEditorDrawArgs& args)
+{
+	::Draw(*this, *args.meshBatch);
 }
 
 void GravitySwitchEnt::Draw(const EntDrawArgs& args)

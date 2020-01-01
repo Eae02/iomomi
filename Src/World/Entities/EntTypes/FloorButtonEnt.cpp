@@ -2,12 +2,14 @@
 #include "../../WorldUpdateArgs.hpp"
 #include "../../World.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
+#include "../../../Graphics/Materials/EmissiveMaterial.hpp"
 #include "../../../../Protobuf/Build/FloorButtonEntity.pb.h"
 #include <iomanip>
 
 static eg::Model* s_model;
 static eg::IMaterial* s_material;
 static size_t s_padMeshIndex;
+static size_t s_lightsMeshIndex;
 
 static eg::CollisionMesh frameCollisionMeshEG;
 static btTriangleMesh frameCollisionMesh;
@@ -40,10 +42,17 @@ static void OnInit()
 			bullet::AddCollisionMesh(frameCollisionMesh, frameCollisionMeshEG);
 			frameCollisionShape = std::make_unique<btBvhTriangleMeshShape>(&frameCollisionMesh, true);
 		}
+		else if (s_model->GetMesh(i).name.find("Lights") != std::string::npos)
+		{
+			s_lightsMeshIndex = i;
+		}
 	}
 }
 
 EG_ON_INIT(OnInit)
+
+constexpr float MAX_PUSH_DST = 0.07f;
+constexpr float ACTIVATE_PUSH_DST = MAX_PUSH_DST * 0.8f;
 
 FloorButtonEnt::FloorButtonEnt()
 {
@@ -53,27 +62,55 @@ FloorButtonEnt::FloorButtonEnt()
 	m_buttonRigidBody->setFlags(m_buttonRigidBody->getFlags() | BT_DISABLE_WORLD_GRAVITY);
 }
 
-void FloorButtonEnt::Draw(const EntDrawArgs& args)
+void FloorButtonEnt::CommonDraw(eg::MeshBatch& meshBatch, float padPushDist) const
 {
 	for (size_t i = 0; i < s_model->NumMeshes(); i++)
 	{
 		glm::mat4 transform = GetTransform(1);
 		if (i == s_padMeshIndex)
 		{
-			transform = transform * glm::translate(glm::mat4(1), glm::vec3(0, -m_padPushDist, 0));
+			transform = transform * glm::translate(glm::mat4(1), glm::vec3(0, -padPushDist, 0));
 		}
-		args.meshBatch->AddModelMesh(*s_model, i, *s_material, transform);
+		
+		if (i == s_lightsMeshIndex)
+		{
+			float a = glm::clamp(padPushDist / ACTIVATE_PUSH_DST, 0.0f, 1.0f);
+			
+			glm::vec3 colorD = {
+				ActivationLightStripEnt::DEACTIVATED_COLOR.r,
+				ActivationLightStripEnt::DEACTIVATED_COLOR.g,
+				ActivationLightStripEnt::DEACTIVATED_COLOR.b
+			};
+			glm::vec3 colorA = {
+				ActivationLightStripEnt::ACTIVATED_COLOR.r,
+				ActivationLightStripEnt::ACTIVATED_COLOR.g,
+				ActivationLightStripEnt::ACTIVATED_COLOR.b
+			};
+			
+			EmissiveMaterial::InstanceData instanceData;
+			instanceData.transform = transform;
+			instanceData.color = glm::vec4(glm::mix(colorD, colorA, a), 1.0f);
+			meshBatch.AddModelMesh(*s_model, i, EmissiveMaterial::instance, instanceData);
+		}
+		else
+		{
+			meshBatch.AddModelMesh(*s_model, i, *s_material, transform);
+		}
 	}
+}
+
+void FloorButtonEnt::Draw(const EntDrawArgs& args)
+{
+	CommonDraw(*args.meshBatch, m_padPushDist);
 }
 
 void FloorButtonEnt::EditorDraw(const EntEditorDrawArgs& args)
 {
-	args.meshBatch->AddModel(*s_model, *s_material, GetTransform(1));
+	CommonDraw(*args.meshBatch, 0);
 }
 
 void FloorButtonEnt::Update(const WorldUpdateArgs& args)
 {
-	constexpr float MAX_PUSH_DST = 0.06f;
 	constexpr int PUSH_AXIS = 1;
 	
 	if (args.world->PhysicsWorld() && !m_springConstraint)
@@ -96,21 +133,11 @@ void FloorButtonEnt::Update(const WorldUpdateArgs& args)
 		m_springConstraint->calculateTransforms();
 		m_padPushDist = glm::clamp(glm::distance(bullet::ToGLM(m_springConstraint->getCalculatedTransformB().getOrigin()), m_position), 0.0f, MAX_PUSH_DST);
 		
-		if (m_padPushDist > MAX_PUSH_DST * 0.8f)
+		if (m_padPushDist > ACTIVATE_PUSH_DST)
 			m_activator.Activate();
 	}
 	
 	m_activator.Update(args);
-	/*
-	constexpr float PAD_PUSH_TIME = 0.2f;
-	if (m_activator.IsActivated())
-	{
-		m_padPushDist = std::min(m_padPushDist + args.dt / PAD_PUSH_TIME, 1.0f);
-	}
-	else
-	{
-		m_padPushDist = std::max(m_padPushDist - args.dt / PAD_PUSH_TIME, 0.0f);
-	}*/
 }
 
 const void* FloorButtonEnt::GetComponent(const std::type_info& type) const

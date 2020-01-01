@@ -10,11 +10,14 @@ public:
 	GravitySwitchEnt() = default;
 	
 	static constexpr EntTypeID TypeID = EntTypeID::GravitySwitch;
-	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::Interactable | EntTypeFlags::EditorWallMove;
+	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
+		EntTypeFlags::Interactable | EntTypeFlags::EditorWallMove;
 	
 	void Serialize(std::ostream& stream) const override;
 	
 	void Deserialize(std::istream& stream) override;
+	
+	void EditorDraw(const EntEditorDrawArgs& args) override;
 	
 	void Draw(const EntDrawArgs& args) override;
 	

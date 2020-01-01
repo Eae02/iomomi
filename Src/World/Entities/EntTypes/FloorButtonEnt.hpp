@@ -33,6 +33,8 @@ public:
 	}
 	
 private:
+	void CommonDraw(eg::MeshBatch& meshBatch, float padPushDist) const;
+	
 	ActivatorComp m_activator;
 	RigidBodyComp m_rigidBody;
 	
