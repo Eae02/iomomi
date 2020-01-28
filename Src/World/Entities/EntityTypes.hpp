@@ -15,6 +15,7 @@ enum class EntTypeID
 	Platform             = 10,
 	ForceField           = 11,
 	GravityBarrier       = 12,
+	Ramp                 = 13,
 	MAX
 };
  

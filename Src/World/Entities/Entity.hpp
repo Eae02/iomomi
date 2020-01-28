@@ -50,6 +50,8 @@ public:
 	Ent& operator=(Ent&& other) = delete;
 	Ent& operator=(const Ent& other) = default;
 	
+	static constexpr int EditorIconIndex = 5;
+	
 	virtual void Serialize(std::ostream& stream) const = 0;
 	virtual void Deserialize(std::istream& stream) = 0;
 	
@@ -159,6 +161,7 @@ struct EntType
 	EntTypeFlags flags;
 	std::string name;
 	std::string prettyName;
+	int editorIconIndex;
 	std::shared_ptr<Ent> (*create)();
 	std::shared_ptr<Ent> (*clone)(const Ent& ent);
 };

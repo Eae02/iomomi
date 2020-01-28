@@ -65,7 +65,6 @@ assets:
   - name: Shaders/Water/DepthBlur1P.fs.glsl
   - name: Shaders/Water/DepthBlur2P.fs.glsl
 
-
   - name: Models/GravityCornerConvex.obj
   - name: Models/GravitySwitch.obj
   - name: Models/EnterRoom.obj
@@ -87,6 +86,9 @@ assets:
   - name: Models/GravityBarrierBorder.obj
   
   - name: Particles/BlueOrb.ype
+  
+  - name: UIFont.ttf
+    size: 24
   
   #Textures:
   - name: Textures/EntityIcons.png

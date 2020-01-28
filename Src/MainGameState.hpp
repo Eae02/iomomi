@@ -11,6 +11,7 @@
 #include "Graphics/ParticleRenderer.hpp"
 #include "World/GravityGun.hpp"
 #include "Graphics/WaterSimulator.hpp"
+#include "Gui/PausedMenu.hpp"
 
 #include <EGame/Graphics/BloomRenderer.hpp>
 
@@ -37,6 +38,8 @@ private:
 #endif
 	
 	void RenderPointLightShadows(const PointLightShadowRenderArgs& args);
+	
+	bool ReloadLevel();
 	
 	int m_lastSettingsGeneration = -1;
 	
@@ -71,6 +74,8 @@ private:
 	std::unique_ptr<World> m_world;
 	Player m_player;
 	GravityGun m_gravityGun;
+	
+	PausedMenu m_pausedMenu;
 };
 
 extern MainGameState* mainGameState;

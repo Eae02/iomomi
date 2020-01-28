@@ -14,6 +14,7 @@ public:
 private:
 	std::vector<const EntType*> m_spawnEntityList;
 	WallRayIntersectResult m_spawnEntityPickResult;
+	bool m_open = false;
 };
 
 

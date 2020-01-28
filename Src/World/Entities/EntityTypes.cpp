@@ -14,6 +14,7 @@
 #include "EntTypes/PlatformEnt.hpp"
 #include "EntTypes/ForceFieldEnt.hpp"
 #include "EntTypes/GravityBarrierEnt.hpp"
+#include "EntTypes/RampEnt.hpp"
 
 const EntTypeID entUpdateOrder[NUM_UPDATABLE_ENTITY_TYPES] =
 {
@@ -33,6 +34,7 @@ void DefineEntityType(std::string name, std::string prettyName)
 		T::EntFlags,
 		std::move(name),
 		std::move(prettyName),
+		T::EditorIconIndex,
 		&Ent::CreateCallback<T>,
 		&CloneEntity<T>
 	}).second;
@@ -57,4 +59,5 @@ void InitEntityTypes()
 	DefineEntityType<PlatformEnt>("Platform", "Platform");
 	DefineEntityType<ForceFieldEnt>("ForceField", "Force Field");
 	DefineEntityType<GravityBarrierEnt>("GravityBarrier", "Gravity Barrier");
+	DefineEntityType<RampEnt>("Ramp", "Ramp");
 }

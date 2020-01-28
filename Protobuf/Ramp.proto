@@ -1,0 +1,14 @@
+syntax="proto3";
+
+package gravity_pb;
+
+message RampEntity {
+	float posX = 1;
+	float posY = 2;
+	float posZ = 3;
+	fixed32 yaw = 4;
+	bool flipped = 5;
+	float scaleX = 6;
+	float scaleY = 7;
+	float scaleZ = 8;
+}

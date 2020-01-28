@@ -4,6 +4,10 @@
 
 struct Settings
 {
+	bool fullscreen = false;
+	int fullscreenResX = -1;
+	int fullscreenResY = -1;
+	
 	eg::TextureQuality textureQuality = eg::TextureQuality::High;
 	QualityLevel shadowQuality        = QualityLevel::Medium;
 	QualityLevel reflectionsQuality   = QualityLevel::Medium;

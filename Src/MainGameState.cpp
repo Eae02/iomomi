@@ -29,16 +29,14 @@ MainGameState::MainGameState(RenderContext& renderCtx)
 	
 	eg::console::AddCommand("reload", 0, [this] (eg::Span<const std::string_view> args)
 	{
-		if (m_currentLevelIndex == -1)
+		if (!ReloadLevel())
 		{
 			eg::Log(eg::LogLevel::Error, "lvl", "No level to reload");
-			return;
 		}
-		
-		std::string levelPath = GetLevelPath(levels[m_currentLevelIndex].name);
-		std::ifstream levelStream(levelPath, std::ios::binary);
-		LoadWorld(levelStream, m_currentLevelIndex);
-		eg::console::Hide();
+		else
+		{
+			eg::console::Hide();
+		}
 	});
 	
 	m_particleManager.SetTextureSize(1024, 1024);
@@ -168,7 +166,11 @@ void MainGameState::RunFrame(float dt)
 		inverseViewProjMatrix = inverseViewMatrix * m_projection.InverseMatrix();
 	};
 	
-	if (!eg::console::IsShown() && !settingsWindowVisible)
+	m_pausedMenu.Update(dt);
+	if (m_world == nullptr)
+		return;
+	
+	if (!eg::console::IsShown() && !settingsWindowVisible && !m_pausedMenu.isPaused)
 	{
 		auto worldUpdateCPUTimer = eg::StartCPUTimer("World Update");
 		
@@ -367,6 +369,12 @@ void MainGameState::RunFrame(float dt)
 		m_postProcessor.Render(m_renderOutputTexture, m_bloomRenderTarget.get());
 	}
 	
+	m_pausedMenu.Draw(eg::SpriteBatch::overlay);
+	if (m_pausedMenu.shouldRestartLevel)
+	{
+		ReloadLevel();
+	}
+	
 #ifndef NDEBUG
 	if (eg::DevMode())
 	{
@@ -374,7 +382,10 @@ void MainGameState::RunFrame(float dt)
 	}
 #endif
 	
-	m_gameTime += dt;
+	if (!m_pausedMenu.isPaused)
+	{
+		m_gameTime += dt;
+	}
 }
 
 void MainGameState::RenderPointLightShadows(const PointLightShadowRenderArgs& args)
@@ -419,4 +430,16 @@ void MainGameState::SetResolution(int width, int height)
 {
 	m_projection.SetResolution(width, height);
 	m_planarReflectionsManager.ResolutionChanged();
+}
+
+bool MainGameState::ReloadLevel()
+{
+	if (m_currentLevelIndex == -1)
+		return false;
+	
+	std::string levelPath = GetLevelPath(levels[m_currentLevelIndex].name);
+	std::ifstream levelStream(levelPath, std::ios::binary);
+	LoadWorld(levelStream, m_currentLevelIndex);
+	
+	return true;
 }

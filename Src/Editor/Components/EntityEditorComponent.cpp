@@ -198,7 +198,7 @@ bool EntityEditorComponent::CollectIcons(const EditorState& editorState, std::ve
 		{
 			selected->push_back(move(entityWP));
 		});
-		icon.iconIndex = 5;
+		icon.iconIndex = entTypeMap.at(entity.TypeID()).editorIconIndex;
 		icon.selected = editorState.IsEntitySelected(entity);
 	});
 	

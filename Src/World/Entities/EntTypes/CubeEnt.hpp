@@ -14,6 +14,7 @@ public:
 	static constexpr EntTypeID TypeID = EntTypeID::Cube;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
 		EntTypeFlags::Interactable;
+	static constexpr int EditorIconIndex = 4;
 	
 	CubeEnt() : CubeEnt(glm::vec3(0.0f), false) { }
 	CubeEnt(const glm::vec3& position, bool canFloat);

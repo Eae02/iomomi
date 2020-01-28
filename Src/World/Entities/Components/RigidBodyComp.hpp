@@ -45,6 +45,11 @@ public:
 	
 	std::pair<glm::vec3, glm::quat> GetTransform() const;
 	
+	bool IsAssignedToWorld() const
+	{
+		return m_worldAssigned;
+	}
+	
 private:
 	std::list<btDefaultMotionState> m_motionStates;
 	std::list<btRigidBody> m_rigidBodies;

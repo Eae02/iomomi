@@ -19,6 +19,12 @@ SpawnEntityEditorComponent::SpawnEntityEditorComponent()
 
 void SpawnEntityEditorComponent::Update(float dt, const EditorState& editorState)
 {
+	if (m_open)
+	{
+		ImGui::OpenPopup("SpawnEntity");
+		m_open = false;
+	}
+	
 	if (ImGui::BeginPopup("SpawnEntity"))
 	{
 		ImGui::Text("Spawn Entity");
@@ -51,7 +57,7 @@ bool SpawnEntityEditorComponent::UpdateInput(float dt, const EditorState& editor
 		m_spawnEntityPickResult = editorState.world->RayIntersectWall(editorState.viewRay);
 		if (m_spawnEntityPickResult.intersected)
 		{
-			ImGui::OpenPopup("SpawnEntity");
+			m_open = true;
 			return true;
 		}
 	}
