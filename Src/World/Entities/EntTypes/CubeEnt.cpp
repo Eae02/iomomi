@@ -15,12 +15,17 @@ static std::unique_ptr<btCollisionShape> collisionShape;
 static eg::Model* cubeModel;
 static eg::IMaterial* cubeMaterial;
 
+static eg::Model* woodCubeModel;
+static eg::IMaterial* woodCubeMaterial;
+
 static void OnInit()
 {
 	collisionShape = std::make_unique<btBoxShape>(btVector3(CubeEnt::RADIUS, CubeEnt::RADIUS, CubeEnt::RADIUS));
 	
 	cubeModel = &eg::GetAsset<eg::Model>("Models/Cube.obj");
 	cubeMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Cube.yaml");
+	woodCubeModel = &eg::GetAsset<eg::Model>("Models/WoodCube.obj");
+	woodCubeMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/WoodCube.yaml");
 }
 
 EG_ON_INIT(OnInit)
@@ -64,7 +69,9 @@ void CubeEnt::Draw(const EntDrawArgs& args)
 	transform.getOpenGLMatrix(reinterpret_cast<float*>(&worldMatrix));
 	worldMatrix *= glm::scale(glm::mat4(1), glm::vec3(RADIUS));
 	
-	args.meshBatch->AddModel(*cubeModel, *cubeMaterial, worldMatrix);
+	args.meshBatch->AddModel(
+		*(canFloat ? woodCubeModel : cubeModel),
+		*(canFloat ? woodCubeMaterial : cubeMaterial), worldMatrix);
 }
 
 void CubeEnt::EditorDraw(const EntEditorDrawArgs& args)
@@ -74,7 +81,9 @@ void CubeEnt::EditorDraw(const EntEditorDrawArgs& args)
 		glm::mat4_cast(m_rotation) *
 		glm::scale(glm::mat4(1), glm::vec3(RADIUS));
 	
-	args.meshBatch->AddModel(*cubeModel, *cubeMaterial, worldMatrix);
+	args.meshBatch->AddModel(
+		*(canFloat ? woodCubeModel : cubeModel),
+		*(canFloat ? woodCubeMaterial : cubeMaterial), worldMatrix);
 }
 
 const void* CubeEnt::GetComponent(const std::type_info& type) const
@@ -114,7 +123,7 @@ int CubeEnt::CheckInteraction(const Player& player) const
 	
 	static constexpr int PICK_UP_INTERACT_PRIORITY = 2;
 	static constexpr float MAX_INTERACT_DIST = 1.5f;
-	eg::Ray ray(player.m_position, player.Forward());
+	eg::Ray ray(player.Position(), player.Forward());
 	float intersectDist;
 	if (ray.Intersects(GetSphere(), intersectDist) && intersectDist > 0.0f && intersectDist < MAX_INTERACT_DIST)
 	{

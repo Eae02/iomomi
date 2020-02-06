@@ -49,7 +49,6 @@ void MainGameState::LoadWorld(std::istream& stream, int64_t levelIndex, const En
 {
 	auto newWorld = World::Load(stream, false);
 	m_player.Reset();
-	m_player.m_position = glm::vec3(1.5f, 2.0f, 1.5f);
 	m_gameTime = 0;
 	m_currentLevelIndex = levelIndex;
 	

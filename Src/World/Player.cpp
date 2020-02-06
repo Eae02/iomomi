@@ -468,14 +468,19 @@ void Player::DrawDebugOverlay()
 
 void Player::Reset()
 {
-	m_position = glm::vec3(0.0f);
 	m_velocity = glm::vec3(0.0f);
-	m_down = Dir::NegY;
 	m_onGround = false;
+	m_down = Dir::NegY;
 	m_isCarrying = false;
 	m_gravityTransitionMode = TransitionMode::None;
 	m_rigidBody = nullptr;
 	m_motionState = nullptr;
+}
+
+void Player::SetPosition(const glm::vec3& position)
+{
+	m_rigidBody = nullptr;
+	m_position = position;
 }
 
 glm::vec3 Player::FeetPosition() const

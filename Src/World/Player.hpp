@@ -59,6 +59,9 @@ public:
 	
 	void Reset();
 	
+	glm::vec3 Position() const { return m_position; }
+	void SetPosition(const glm::vec3& position);
+	
 	static constexpr float HEIGHT = 1.9f;
 	static constexpr float WIDTH = 0.8f;
 	static constexpr float EYE_HEIGHT = HEIGHT * 0.8f;
@@ -67,7 +70,6 @@ public:
 	float m_rotationPitch = 0;
 	
 	bool m_isCarrying = false;
-	glm::vec3 m_position;
 	
 private:
 	Dir m_down = Dir::NegY;
@@ -89,6 +91,7 @@ private:
 	glm::quat m_oldRotation;
 	glm::quat m_newRotation;
 	
+	glm::vec3 m_position;
 	glm::vec3 m_eyePosition;
 	glm::vec3 m_velocity;
 	glm::quat m_rotation;

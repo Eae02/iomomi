@@ -74,6 +74,6 @@ vec3 CalculateLighting(GBData gbData)
 	vec3 fresnel = calcFresnel(gbData, toEye);
 	vec3 kd = (1.0 - fresnel) * (1.0 - gbData.metallic);
 	
-	vec3 reflection = calcReflection(gbData.worldPos, toEye, gbData.normal) * 0.5;
+	vec3 reflection = calcReflection(gbData.worldPos, toEye, gbData.normal) * (1 - gbData.roughness);
 	return (gbData.albedo * kd * ambient + reflection * fresnel) * gbData.ao;
 }

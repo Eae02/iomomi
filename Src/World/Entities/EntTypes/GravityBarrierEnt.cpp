@@ -353,7 +353,7 @@ void GravityBarrierEnt::Update(const WorldUpdateArgs& args)
 	if (args.player != nullptr)
 	{
 		bufferData.iaDownAxis[itemsWritten] = (int)args.player->CurrentDown() / 2;
-		bufferData.iaPosition[itemsWritten] = glm::vec4(args.player->m_position, 0.0f);
+		bufferData.iaPosition[itemsWritten] = glm::vec4(args.player->Position(), 0.0f);
 		itemsWritten++;
 	}
 	

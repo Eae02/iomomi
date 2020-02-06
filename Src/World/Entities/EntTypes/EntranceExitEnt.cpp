@@ -46,7 +46,6 @@ static void OnInit()
 	};
 	AssignMaterial("Floor",       "Materials/Entrance/Floor.yaml");
 	AssignMaterial("WallPadding", "Materials/Entrance/Padding.yaml");
-	AssignMaterial("WallPadding", "Materials/Entrance/Padding.yaml");
 	AssignMaterial("CeilPipe",    "Materials/Pipe2.yaml");
 	AssignMaterial("Door1",       "Materials/Entrance/Door1.yaml");
 	AssignMaterial("Door2",       "Materials/Entrance/Door2.yaml");
@@ -162,7 +161,7 @@ void EntranceExitEnt::Update(const WorldUpdateArgs& args)
 {
 	Dir direction = OppositeDir(m_direction);
 	
-	glm::vec3 toPlayer = args.player->m_position - m_position;
+	glm::vec3 toPlayer = args.player->Position() - m_position;
 	glm::vec3 openDirToPlayer = DirectionVector(direction) * (m_type == Type::Entrance ? 1 : -1);
 	
 	float minDist = (m_doorOpenProgress > 1E-4f) ? -1.0f : 0.0f;
@@ -266,7 +265,7 @@ static const float forwardRotations[6] = { eg::PI * 0.5f, eg::PI * 1.5f, 0, 0, e
 void EntranceExitEnt::InitPlayer(Player& player)
 {
 	Dir direction = OppositeDir(m_direction);
-	player.m_position = m_position + glm::vec3(DirectionVector(direction)) * MESH_LENGTH;
+	player.SetPosition(m_position + glm::vec3(DirectionVector(direction)) * MESH_LENGTH);
 	player.m_rotationPitch = 0.0f;
 	player.m_rotationYaw = forwardRotations[(int)direction];
 }
@@ -276,8 +275,8 @@ void EntranceExitEnt::MovePlayer(const EntranceExitEnt& oldExit, const EntranceE
 	auto [oldRotation, oldTranslation] = oldExit.GetTransformParts();
 	auto [newRotation, newTranslation] = newEntrance.GetTransformParts();
 	
-	glm::vec3 posLocal = glm::transpose(oldRotation) * (player.m_position - oldTranslation);
-	player.m_position = newRotation * posLocal + newTranslation + glm::vec3(0, 0.001f, 0);
+	glm::vec3 posLocal = glm::transpose(oldRotation) * (player.Position() - oldTranslation);
+	player.SetPosition(newRotation * posLocal + newTranslation + glm::vec3(0, 0.001f, 0));
 	
 	Dir oldDir = OppositeDir(oldExit.m_direction);
 	Dir newDir = OppositeDir(newEntrance.m_direction);
