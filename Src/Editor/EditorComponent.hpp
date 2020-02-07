@@ -33,6 +33,7 @@ public:
 	
 	int iconIndex = 5;
 	bool selected = false;
+	bool shouldClearSelection = true;
 	
 	const eg::Rectangle& Rectangle() const { return m_rectangle; }
 	
@@ -47,12 +48,17 @@ class EditorComponent
 public:
 	EditorComponent() = default;
 	
-	virtual void Update(float dt, const EditorState& editorState) = 0;
-	virtual bool UpdateInput(float dt, const EditorState& editorState) = 0;
+	virtual void Update(float dt, const EditorState& editorState) { };
+	virtual bool UpdateInput(float dt, const EditorState& editorState) { return false; };
 	virtual void EarlyDraw(class PrimitiveRenderer& primitiveRenderer) const { }
 	virtual void LateDraw() const { }
 	virtual void RenderSettings(const EditorState& editorState) { }
 	virtual bool CollectIcons(const EditorState& editorState, std::vector<EditorIcon>& icons) { return false; }
 	
-	static glm::vec3 SnapToGrid(const glm::vec3& pos);
+	template <typename T>
+	static T SnapToGrid(const T& pos)
+	{
+		const float STEP = eg::IsButtonDown(eg::Button::LeftAlt) ? 0.5f : 0.1f;
+		return glm::round(pos / STEP) * STEP;
+	}
 };

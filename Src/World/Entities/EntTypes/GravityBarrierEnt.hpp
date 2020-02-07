@@ -3,6 +3,7 @@
 #include "../Entity.hpp"
 #include "../Components/ActivatableComp.hpp"
 #include "../Components/RigidBodyComp.hpp"
+#include "../Components/AxisAlignedQuadComp.hpp"
 
 struct GravityBarrierInteractableComp
 {
@@ -45,9 +46,7 @@ public:
 	};
 	
 	int flowDirection = 0;
-	int upPlane = 0;
 	ActivateAction activateAction = ActivateAction::Disable;
-	glm::vec2 size { 2.0f };
 	
 private:
 	static std::vector<glm::vec3> GetConnectionPoints(const Ent& entity);
@@ -57,6 +56,7 @@ private:
 	void Draw(eg::MeshBatchOrdered& meshBatchOrdered, eg::MeshBatch& meshBatch) const;
 	
 	ActivatableComp m_activatable;
+	AxisAlignedQuadComp m_aaQuad;
 	
 	float m_opacity = 1;
 	bool m_enabled = true;

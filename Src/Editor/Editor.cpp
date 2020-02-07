@@ -9,6 +9,7 @@
 #include "Components/LightStripEditorComponent.hpp"
 #include "Components/GravityCornerEditorComponent.hpp"
 #include "Components/WallDragEditorComponent.hpp"
+#include "Components/AAQuadDragEditorComponent.hpp"
 
 #include <fstream>
 
@@ -24,6 +25,7 @@ struct EditorComponentsSet
 	LightStripEditorComponent lightStrip;
 	GravityCornerEditorComponent gravityCorner;
 	WallDragEditorComponent wallDrag;
+	AAQuadDragEditorComponent aaQuadDrag;
 };
 
 void EditorComponentDeleter(EditorComponentsSet* s)
@@ -41,6 +43,7 @@ Editor::Editor(RenderContext& renderCtx)
 	m_projection.SetFieldOfViewDeg(75.0f);
 	
 	m_componentsForTool[(int)EditorTool::Entities].push_back(&m_components->lightStrip);
+	m_componentsForTool[(int)EditorTool::Entities].push_back(&m_components->aaQuadDrag);
 	m_componentsForTool[(int)EditorTool::Entities].push_back(&m_components->spawnEntity);
 	m_componentsForTool[(int)EditorTool::Entities].push_back(&m_components->entity);
 	
@@ -217,20 +220,23 @@ void Editor::RunFrame(float dt)
 	
 	if (canUpdateInput && eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft))
 	{
-		if (!eg::IsButtonDown(eg::Button::LeftControl) && !eg::IsButtonDown(eg::Button::RightControl))
-		{
-			m_selectedEntities.clear();
-		}
+		bool shouldClearSelected = !eg::IsButtonDown(eg::Button::LeftControl) && !eg::IsButtonDown(eg::Button::RightControl);
 		
 		glm::vec2 flippedCursorPos(eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY());
 		for (const EditorIcon& icon : m_icons)
 		{
 			if (icon.m_rectangle.Contains(flippedCursorPos))
 			{
+				if (icon.shouldClearSelection && shouldClearSelected)
+					m_selectedEntities.clear();
+				shouldClearSelected = false;
 				icon.m_callback();
 				break;
 			}
 		}
+		
+		if (shouldClearSelected)
+			m_selectedEntities.clear();
 	}
 	
 	DrawWorld();

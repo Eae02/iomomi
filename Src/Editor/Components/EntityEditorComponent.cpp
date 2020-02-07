@@ -40,7 +40,6 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 	if (!eg::IsButtonDown(eg::Button::LeftShift))
 		m_entitiesCloned = false;
 	
-	const bool mouseClicked = eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft);
 	const bool mouseHeld = eg::IsButtonDown(eg::Button::MouseLeft) && eg::WasButtonDown(eg::Button::MouseLeft);
 	
 	auto EntityMoved = [&] (Ent& entity)

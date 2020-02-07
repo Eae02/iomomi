@@ -261,7 +261,7 @@ void GravityBarrierEnt::Draw(eg::MeshBatchOrdered& meshBatchOrdered, eg::MeshBat
 int GravityBarrierEnt::BlockedAxis() const
 {
 	if (m_blockFalling)
-		return upPlane;
+		return m_aaQuad.upPlane;
 	auto [tangent, bitangent] = GetTangents();
 	if (std::abs(tangent.x) > 0.5f)
 		return 0;
@@ -274,9 +274,9 @@ void GravityBarrierEnt::RenderSettings()
 {
 	Ent::RenderSettings();
 	
-	ImGui::DragFloat2("Size", &size.x, 0.5f);
+	ImGui::DragFloat2("Size", &m_aaQuad.size.x, 0.5f);
 	
-	ImGui::Combo("Plane", &upPlane, "X\0Y\0Z\0");
+	ImGui::Combo("Plane", &m_aaQuad.upPlane, "X\0Y\0Z\0");
 	
 	ImGui::Checkbox("Block Falling", &m_blockFalling);
 	
@@ -295,6 +295,8 @@ const void* GravityBarrierEnt::GetComponent(const std::type_info& type) const
 		return &m_activatable;
 	if (type == typeid(RigidBodyComp))
 		return &m_rigidBody;
+	if (type == typeid(AxisAlignedQuadComp))
+		return &m_aaQuad;
 	return Ent::GetComponent(type);
 }
 
@@ -381,24 +383,7 @@ void GravityBarrierEnt::Update(const WorldUpdateArgs& args)
 
 std::tuple<glm::vec3, glm::vec3> GravityBarrierEnt::GetTangents() const
 {
-	glm::vec3 upAxis(0);
-	upAxis[upPlane] = 1;
-	glm::mat3 flowRotation = glm::rotate(glm::mat4(1), (float)(flowDirection + m_flowDirectionOffset) * eg::HALF_PI, upAxis);
-	
-	glm::vec3 size3(1);
-	size3[(upPlane + 1) % 3] = size.x;
-	size3[(upPlane + 2) % 3] = size.y;
-	
-	glm::vec3 tangent(0);
-	glm::vec3 bitangent(0);
-	
-	tangent[(upPlane + 1) % 3] = 1;
-	bitangent[(upPlane + 2) % 3] = 1;
-	
-	tangent = (flowRotation * tangent) * size3;
-	bitangent = (flowRotation * bitangent) * size3;
-	
-	return std::make_tuple(tangent, bitangent);
+	return m_aaQuad.GetTangents((float)(flowDirection + m_flowDirectionOffset) * eg::HALF_PI);
 }
 
 void GravityBarrierEnt::Spawned(bool isEditor)
@@ -425,9 +410,9 @@ void GravityBarrierEnt::Serialize(std::ostream& stream) const
 	SerializePos(gravBarrierPB);
 	
 	gravBarrierPB.set_flow_direction(flowDirection);
-	gravBarrierPB.set_up_plane(upPlane);
-	gravBarrierPB.set_sizex(size.x);
-	gravBarrierPB.set_sizey(size.y);
+	gravBarrierPB.set_up_plane(m_aaQuad.upPlane);
+	gravBarrierPB.set_sizex(m_aaQuad.size.x);
+	gravBarrierPB.set_sizey(m_aaQuad.size.y);
 	gravBarrierPB.set_activate_action((uint32_t)activateAction);
 	gravBarrierPB.set_block_falling(m_blockFalling);
 	
@@ -447,8 +432,8 @@ void GravityBarrierEnt::Deserialize(std::istream& stream)
 		m_activatable.m_name = gravBarrierPB.name();
 	
 	flowDirection = gravBarrierPB.flow_direction();
-	upPlane = gravBarrierPB.up_plane();
-	size = glm::vec2(gravBarrierPB.sizex(), gravBarrierPB.sizey());
+	m_aaQuad.upPlane = gravBarrierPB.up_plane();
+	m_aaQuad.size = glm::vec2(gravBarrierPB.sizex(), gravBarrierPB.sizey());
 	activateAction = (ActivateAction)gravBarrierPB.activate_action();
 	m_blockFalling = gravBarrierPB.block_falling();
 }

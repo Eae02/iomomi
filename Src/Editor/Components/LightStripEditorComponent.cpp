@@ -54,8 +54,8 @@ bool LightStripEditorComponent::CollectIcons(const EditorState& editorState, std
 				{
 					m_editingLightStripEntity = activator->lightStripEntity;
 					m_editingWayPointIndex = i;
-					selectedEntities->push_back(activatorEntity);
 				});
+				icon.shouldClearSelection = false;
 				icon.iconIndex = 7;
 				if (icon.Rectangle().Contains({ eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY() }))
 					hoveringExistingPoint = true;
@@ -86,6 +86,7 @@ bool LightStripEditorComponent::CollectIcons(const EditorState& editorState, std
 					});
 					
 					icon.iconIndex = 6;
+					icon.shouldClearSelection = false;
 					if (activator->activatableName == activatableComp->m_name && activator->targetConnectionIndex == i)
 						icon.selected = true;
 				}

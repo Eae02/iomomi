@@ -1,11 +1,5 @@
 #include "EditorComponent.hpp"
 
-glm::vec3 EditorComponent::SnapToGrid(const glm::vec3& pos)
-{
-	const float STEP = eg::IsButtonDown(eg::Button::LeftAlt) ? 0.5f : 0.1f;
-	return glm::round(pos / STEP) * STEP;
-}
-
 static constexpr float ICON_SIZE = 32;
 
 EditorIcon::EditorIcon(const glm::vec3& worldPos, std::function<void()> callback)
