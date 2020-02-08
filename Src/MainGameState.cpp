@@ -349,7 +349,7 @@ void MainGameState::RunFrame(float dt)
 	m_plShadowMapper.UpdateShadowMaps(m_prepareDrawArgs.pointLights, [this] (const PointLightShadowRenderArgs& args)
 	{
 		RenderPointLightShadows(args);
-	}, true);
+	});
 	
 	DoDeferredRendering(true, *m_renderTarget);
 	

@@ -94,7 +94,7 @@ void FloorButtonEnt::CommonDraw(eg::MeshBatch& meshBatch, float padPushDist) con
 		}
 		else
 		{
-			meshBatch.AddModelMesh(*s_model, i, *s_material, transform);
+			meshBatch.AddModelMesh(*s_model, i, *s_material, StaticPropMaterial::InstanceData(transform));
 		}
 	}
 }

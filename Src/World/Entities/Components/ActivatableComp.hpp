@@ -24,8 +24,6 @@ public:
 	
 	static Ent* FindByName(class EntityManager& entityManager, uint32_t name);
 	
-	static eg::EntitySignature Signature;
-	
 private:
 	uint32_t m_activations = 0;
 	GetConnectionPointsCallback m_getConnectionPoints;

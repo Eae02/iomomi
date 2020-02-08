@@ -22,8 +22,7 @@ public:
 	
 	void InvalidateAll();
 	
-	void UpdateShadowMaps(std::vector<PointLightDrawData>& pointLights,
-		const RenderCallback& renderCallback, bool limitUpdates);
+	void UpdateShadowMaps(std::vector<PointLightDrawData>& pointLights, const RenderCallback& renderCallback);
 	
 	static constexpr eg::Format SHADOW_MAP_FORMAT = eg::Format::Depth16;
 	static constexpr uint32_t BUFFER_SIZE = sizeof(glm::mat4) * 6 + sizeof(float) * 4;
@@ -48,8 +47,6 @@ private:
 	};
 	
 	std::vector<ShadowMap> m_shadowMaps;
-	
-	std::vector<size_t> m_updateCandidates;
 	
 	eg::Buffer m_matricesBuffer;
 };

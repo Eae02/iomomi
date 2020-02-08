@@ -51,10 +51,6 @@ public:
 		return m_activator;
 	}
 	
-	static eg::MessageReceiver MessageReceiver;
-	
-	static eg::EntitySignature EntitySignature;
-	
 	static void OnInit();
 	
 	static const eg::ColorLin ACTIVATED_COLOR;

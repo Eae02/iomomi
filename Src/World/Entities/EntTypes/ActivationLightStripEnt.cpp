@@ -59,7 +59,8 @@ void ActivationLightStripEnt::Draw(eg::MeshBatch& meshBatch)
 				}
 				else
 				{
-					meshBatch.AddModelMesh(*s_models[v], i, *s_materials[v], instanceData.transform);
+					meshBatch.AddModelMesh(*s_models[v], i, *s_materials[v],
+						StaticPropMaterial::InstanceData(instanceData.transform));
 				}
 			}
 		}

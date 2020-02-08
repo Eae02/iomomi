@@ -232,7 +232,7 @@ void GravityBarrierEnt::Draw(eg::MeshBatchOrdered& meshBatchOrdered, eg::MeshBat
 		eg::IMaterial* borderMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml");
 		for (size_t m = 0; m < barrierBorderModel->NumMeshes(); m++)
 		{
-			meshBatch.AddModelMesh(*barrierBorderModel, m, *borderMaterial, transform);
+			meshBatch.AddModelMesh(*barrierBorderModel, m, *borderMaterial, StaticPropMaterial::InstanceData(transform));
 		}
 	};
 	

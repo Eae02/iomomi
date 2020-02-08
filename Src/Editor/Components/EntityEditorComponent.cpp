@@ -5,11 +5,6 @@
 
 #include <imgui.h>
 
-void EntityEditorComponent::Update(float dt, const EditorState& editorState)
-{
-	
-}
-
 bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState)
 {
 	if (eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft))

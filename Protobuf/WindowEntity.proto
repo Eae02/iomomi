@@ -1,0 +1,13 @@
+syntax="proto3";
+
+package gravity_pb;
+
+message WindowEntity {
+	float posX = 1;
+	float posY = 2;
+	float posZ = 3;
+	float sizeX = 4;
+	float sizeY = 5;
+	fixed32 up_plane = 6;
+	float texture_scale = 7;
+}

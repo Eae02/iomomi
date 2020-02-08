@@ -5,8 +5,6 @@
 class EntityEditorComponent : public EditorComponent
 {
 public:
-	void Update(float dt, const EditorState& editorState) override;
-	
 	bool UpdateInput(float dt, const EditorState& editorState) override;
 	
 	void RenderSettings(const EditorState& editorState) override;

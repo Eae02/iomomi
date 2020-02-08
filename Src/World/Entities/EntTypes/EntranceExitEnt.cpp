@@ -231,7 +231,8 @@ void EntranceExitEnt::Draw(const EntDrawArgs& args)
 	for (size_t i = 0; i < entrance.model->NumMeshes(); i++)
 	{
 		const size_t materialIndex = entrance.model->GetMesh(i).materialIndex;
-		args.meshBatch->AddModelMesh(*entrance.model, i, *entrance.materials[materialIndex], transforms[i]);
+		args.meshBatch->AddModelMesh(*entrance.model, i, *entrance.materials[materialIndex],
+		                             StaticPropMaterial::InstanceData(transforms[i]));
 	}
 	
 	args.pointLights->emplace_back(m_pointLight.GetDrawData(glm::vec3(GetTransform() * glm::vec4(0, 2.0f, 1.0f, 1.0f))));
@@ -250,7 +251,7 @@ void EntranceExitEnt::EditorDraw(const EntEditorDrawArgs& args)
 	auto model = m_type == Type::Entrance ? entrance.editorEntModel : entrance.editorExitModel;
 	auto material = m_type == Type::Entrance ? entrance.editorEntMaterial : entrance.editorExitMaterial;
 	
-	args.meshBatch->AddModel(*model, *material, transform);
+	args.meshBatch->AddModel(*model, *material, StaticPropMaterial::InstanceData(transform));
 }
 
 void EntranceExitEnt::RenderSettings()

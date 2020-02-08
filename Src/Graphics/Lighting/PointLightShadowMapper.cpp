@@ -54,8 +54,8 @@ void PointLightShadowMapper::SetQuality(QualityLevel quality)
 	m_shadowMaps.clear();
 }
 
-void PointLightShadowMapper::UpdateShadowMaps(
-	std::vector<PointLightDrawData>& pointLights, const RenderCallback& renderCallback, bool limitUpdates)
+void PointLightShadowMapper::UpdateShadowMaps(std::vector<PointLightDrawData>& pointLights,
+	const RenderCallback& renderCallback)
 {
 	auto gpuTimer = eg::StartGPUTimer("PL Shadows");
 	auto cpuTimer = eg::StartCPUTimer("PL Shadows");
@@ -72,8 +72,6 @@ void PointLightShadowMapper::UpdateShadowMaps(
 			return pointLight.instanceID == shadowMap.currentLightID;
 		});
 	}
-	
-	m_updateCandidates.clear();
 	
 	//Assigns a shadow map to each point light
 	for (PointLightDrawData& pointLight : pointLights)
@@ -106,33 +104,8 @@ void PointLightShadowMapper::UpdateShadowMaps(
 		m_shadowMaps[shadowMapIndex].currentLightID = pointLight.instanceID; //Problematic
 		if (m_shadowMaps[shadowMapIndex].outOfDate)
 		{
-			m_updateCandidates.push_back(shadowMapIndex);
+			UpdateShadowMap(shadowMapIndex, renderCallback);
 		}
-	}
-	
-	//Sorts update candidates, first by whether they are in use or not and secondly by how long since they were last updated.
-	std::sort(m_updateCandidates.begin(), m_updateCandidates.end(), [&] (size_t a, size_t b)
-	{
-		if (m_shadowMaps[a].inUse != m_shadowMaps[b].inUse)
-			return m_shadowMaps[a].inUse < m_shadowMaps[b].inUse;
-		return m_shadowMaps[a].lastUpdateFrame < m_shadowMaps[b].lastUpdateFrame;
-	});
-	
-	uint32_t numToUpdate = UINT32_MAX;
-	if (limitUpdates)
-	{
-		numToUpdate = (int)m_qualityLevel + 1;
-	}
-	
-	//Updates shadow maps
-	for (size_t shadowMapIdx : m_updateCandidates)
-	{
-		if (numToUpdate > 0)
-			numToUpdate--;
-		else if (m_shadowMaps[shadowMapIdx].inUse)
-			break;
-		
-		UpdateShadowMap(shadowMapIdx, renderCallback);
 	}
 }
 

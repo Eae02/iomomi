@@ -100,11 +100,11 @@ void PlatformEnt::DrawGeneral(eg::MeshBatch& meshBatch) const
 	
 	for (int i = 1; i <= numSliderInstances; i++)
 	{
-		meshBatch.AddModel(*platformSliderModel, *platformSliderMaterial,
-			glm::translate(sliderTransform, glm::vec3(0, 0, SLIDER_MODEL_LENGTH * (float)i)));
+		glm::mat4 transform = glm::translate(sliderTransform, glm::vec3(0, 0, SLIDER_MODEL_LENGTH * (float)i));
+		meshBatch.AddModel(*platformSliderModel, *platformSliderMaterial, StaticPropMaterial::InstanceData(transform));
 	}
 	
-	meshBatch.AddModel(*platformModel, *platformMaterial, GetPlatformTransform());
+	meshBatch.AddModel(*platformModel, *platformMaterial, StaticPropMaterial::InstanceData(GetPlatformTransform()));
 }
 
 void PlatformEnt::Draw(const EntDrawArgs& args)

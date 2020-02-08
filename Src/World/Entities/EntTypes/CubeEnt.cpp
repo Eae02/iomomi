@@ -71,7 +71,7 @@ void CubeEnt::Draw(const EntDrawArgs& args)
 	
 	args.meshBatch->AddModel(
 		*(canFloat ? woodCubeModel : cubeModel),
-		*(canFloat ? woodCubeMaterial : cubeMaterial), worldMatrix);
+		*(canFloat ? woodCubeMaterial : cubeMaterial), StaticPropMaterial::InstanceData(worldMatrix));
 }
 
 void CubeEnt::EditorDraw(const EntEditorDrawArgs& args)
@@ -83,7 +83,7 @@ void CubeEnt::EditorDraw(const EntEditorDrawArgs& args)
 	
 	args.meshBatch->AddModel(
 		*(canFloat ? woodCubeModel : cubeModel),
-		*(canFloat ? woodCubeMaterial : cubeMaterial), worldMatrix);
+		*(canFloat ? woodCubeMaterial : cubeMaterial), StaticPropMaterial::InstanceData(worldMatrix));
 }
 
 const void* CubeEnt::GetComponent(const std::type_info& type) const

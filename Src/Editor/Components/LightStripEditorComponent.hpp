@@ -6,8 +6,6 @@
 class LightStripEditorComponent : public EditorComponent
 {
 public:
-	void Update(float dt, const EditorState& editorState) override;
-	
 	bool UpdateInput(float dt, const EditorState& editorState) override;
 	
 	bool CollectIcons(const EditorState& editorState, std::vector<EditorIcon>& icons) override;

@@ -25,7 +25,8 @@ static inline void Draw(const Ent& entity, eg::MeshBatch& meshBatch)
 		if (s_model->GetMesh(m).materialIndex == s_centerMaterialIndex)
 			material = &GravitySwitchMaterial::instance;
 		
-		meshBatch.AddModelMesh(*s_model, m, *material, entity.GetTransform(GravitySwitchEnt::SCALE));
+		meshBatch.AddModelMesh(*s_model, m, *material,
+			StaticPropMaterial::InstanceData(entity.GetTransform(GravitySwitchEnt::SCALE)));
 	}
 }
 

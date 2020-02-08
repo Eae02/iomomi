@@ -85,6 +85,7 @@ assets:
   - name: Models/ActivationStripBend.obj
   - name: Models/ActivationStripCorner.obj
   - name: Models/GravityBarrierBorder.obj
+  - name: Models/Window.obj
   
   - name: Particles/BlueOrb.ype
   

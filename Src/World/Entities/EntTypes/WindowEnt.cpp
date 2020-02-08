@@ -1,30 +1,98 @@
 #include "WindowEnt.hpp"
+#include "../../../../Protobuf/Build/WindowEntity.pb.h"
+#include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 
-static const glm::vec3 untransformedPositions[] = 
+#include <imgui.h>
+
+static constexpr float BOX_SHAPE_RADIUS = 0.025;
+
+static eg::Model* windowModel;
+
+static void OnInit()
 {
-	{ -1, -1, -1 }, { 1, -1, -1 }, { -1, 1, 1 },
-	{ 1, -1, -1 }, { 1, 1, 1 }, { -1, 1, 1 }
-};
-static const glm::vec2 uvs[] = { { 0, 0 }, { 1, 0 }, { 0, 1 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
+	windowModel = &eg::GetAsset<eg::Model>("Models/Window.obj");
+}
+
+EG_ON_INIT(OnInit)
+
+WindowEnt::WindowEnt()
+{
+	m_material = &eg::GetAsset<StaticPropMaterial>("Materials/Platform.yaml");
+}
 
 void WindowEnt::RenderSettings()
 {
 	Ent::RenderSettings();
+	
+	ImGui::DragFloat2("Size", &m_aaQuad.size.x, 0.5f);
+	
+	ImGui::Combo("Plane", &m_aaQuad.upPlane, "X\0Y\0Z\0");
+	
+	ImGui::DragFloat("Texture Scale", &m_textureScale, 0.5f, 0.0f, INFINITY);
+}
+
+void WindowEnt::Draw(eg::MeshBatch& meshBatch, eg::MeshBatchOrdered& transparentMeshBatch) const
+{
+	auto [tangent, bitangent] = m_aaQuad.GetTangents(0);
+	glm::vec3 normal = glm::normalize(glm::cross(bitangent, tangent));
+	glm::mat4 transform = glm::mat4(
+		glm::vec4(tangent * 0.5f, 0),
+		glm::vec4(normal, 0),
+		glm::vec4(bitangent * 0.5f, 0),
+		glm::vec4(Pos() + normal * 0.01f, 1)
+	);
+	glm::vec2 textureScale = m_aaQuad.size / m_textureScale;
+	meshBatch.AddModel(*windowModel, *m_material, StaticPropMaterial::InstanceData(transform, textureScale));
 }
 
 void WindowEnt::Draw(const EntDrawArgs& args)
 {
-	Ent::Draw(args);
+	Draw(*args.meshBatch, *args.transparentMeshBatch);
 }
 
 void WindowEnt::EditorDraw(const EntEditorDrawArgs& args)
 {
-	Ent::EditorDraw(args);
+	Draw(*args.meshBatch, *args.transparentMeshBatch);
 }
 
 const void* WindowEnt::GetComponent(const std::type_info& type) const
 {
 	if (type == typeid(AxisAlignedQuadComp))
 		return &m_aaQuad;
+	if (type == typeid(RigidBodyComp))
+		return &m_rigidBodyComp;
 	return nullptr;
+}
+
+void WindowEnt::Serialize(std::ostream& stream) const
+{
+	gravity_pb::WindowEntity windowPB;
+	
+	SerializePos(windowPB);
+	
+	windowPB.set_up_plane(m_aaQuad.upPlane);
+	windowPB.set_sizex(m_aaQuad.size.x);
+	windowPB.set_sizey(m_aaQuad.size.y);
+	windowPB.set_texture_scale(m_textureScale);
+	
+	windowPB.SerializeToOstream(&stream);
+}
+
+void WindowEnt::Deserialize(std::istream& stream)
+{
+	gravity_pb::WindowEntity windowPB;
+	windowPB.ParseFromIstream(&stream);
+	
+	DeserializePos(windowPB);
+	
+	m_aaQuad.upPlane = windowPB.up_plane();
+	m_aaQuad.size = glm::vec2(windowPB.sizex(), windowPB.sizey());
+	m_textureScale = windowPB.texture_scale();
+	
+	auto [tangent, bitangent] = m_aaQuad.GetTangents(0);
+	glm::vec3 normal = m_aaQuad.GetNormal() * BOX_SHAPE_RADIUS;
+	glm::vec3 boxSize = (tangent + bitangent) * 0.5f + normal;
+	m_bulletShape = std::make_unique<btBoxShape>(bullet::FromGLM(boxSize));
+	m_rigidBodyComp.InitStatic(this, *m_bulletShape);
+	m_rigidBodyComp.SetTransform(Pos() - normal, glm::quat());
 }

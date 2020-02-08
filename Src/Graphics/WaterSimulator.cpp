@@ -554,7 +554,7 @@ void WaterSimulator::ThreadTarget()
 		eg::AABB playerAABB;
 		
 		int changeGravityParticle = -1;
-		Dir newGravity;
+		Dir newGravity = Dir::PosX; 
 		int stepsPerSecond;
 		
 		{

@@ -2,11 +2,6 @@
 #include "../../World/Entities/Components/ActivatableComp.hpp"
 #include "../../World/Entities/Components/ActivatorComp.hpp"
 
-void LightStripEditorComponent::Update(float dt, const EditorState& editorState)
-{
-	
-}
-
 bool LightStripEditorComponent::UpdateInput(float dt, const EditorState& editorState)
 {
 	if (std::shared_ptr<ActivationLightStripEnt> editingLightStripEnt = m_editingLightStripEntity.lock())
