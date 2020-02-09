@@ -4,7 +4,7 @@
 
 #include <imgui.h>
 
-static constexpr float BOX_SHAPE_RADIUS = 0.025;
+static constexpr float BOX_SHAPE_RADIUS = 0.03;
 
 static eg::Model* windowModel;
 
@@ -34,12 +34,12 @@ void WindowEnt::RenderSettings()
 void WindowEnt::Draw(eg::MeshBatch& meshBatch, eg::MeshBatchOrdered& transparentMeshBatch) const
 {
 	auto [tangent, bitangent] = m_aaQuad.GetTangents(0);
-	glm::vec3 normal = glm::normalize(glm::cross(bitangent, tangent));
-	glm::mat4 transform = glm::mat4(
+	glm::vec3 normal = glm::normalize(glm::cross(tangent, bitangent));
+	glm::mat4 transform = glm::translate(glm::mat4(1), Pos()) * glm::mat4(
 		glm::vec4(tangent * 0.5f, 0),
 		glm::vec4(normal, 0),
 		glm::vec4(bitangent * 0.5f, 0),
-		glm::vec4(Pos() + normal * 0.01f, 1)
+		glm::vec4(0, 0, 0, 1)
 	);
 	glm::vec2 textureScale = m_aaQuad.size / m_textureScale;
 	meshBatch.AddModel(*windowModel, *m_material, StaticPropMaterial::InstanceData(transform, textureScale));

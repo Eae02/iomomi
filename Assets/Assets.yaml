@@ -86,6 +86,7 @@ assets:
   - name: Models/ActivationStripCorner.obj
   - name: Models/GravityBarrierBorder.obj
   - name: Models/Window.obj
+    flipWinding: true
   
   - name: Particles/BlueOrb.ype
   
