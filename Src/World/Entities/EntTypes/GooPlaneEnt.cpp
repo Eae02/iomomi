@@ -27,7 +27,7 @@ void GooPlaneEnt::Draw(const EntDrawArgs& args)
 	if (m_liquidPlane.NumIndices() != 0)
 	{
 		args.reflectionPlanes->push_back(&m_material.m_reflectionPlane);
-		args.meshBatch->AddNoData(m_liquidPlane.GetMesh(), m_material);
+		args.meshBatch->AddNoData(m_liquidPlane.GetMesh(), m_material, DepthDrawOrder(m_position));
 	}
 }
 

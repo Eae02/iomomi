@@ -22,7 +22,6 @@ public:
 private:
 	static eg::Pipeline s_pipelineReflEnabled;
 	static eg::Pipeline s_pipelineReflDisabled;
-	static eg::Pipeline s_emissivePipeline;
 	static eg::Buffer s_textureTransformsBuffer;
 	static eg::DescriptorSet s_descriptorSet;
 };

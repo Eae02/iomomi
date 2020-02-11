@@ -35,7 +35,7 @@ vec3 calcReflection(vec3 surfacePos, vec3 dirToEye, vec3 normal)
 	
 	surfacePos += normal * 0.01;
 	
-	const float MAX_DIST   = 20;   //Maximum distance to reflection
+	const float MAX_DIST   = 5;   //Maximum distance to reflection
 	const float FADE_BEGIN = 0.75; //Percentage of screen radius to begin fading out at
 	
 	vec3 rayDir = normalize(reflect(-dirToEye, normal)) * (MAX_DIST / ssrLinearSamples);
@@ -57,7 +57,7 @@ vec3 calcReflection(vec3 surfacePos, vec3 dirToEye, vec3 normal)
 			}
 			
 			float fade01 = max(abs(ndc.x), abs(ndc.y));
-			float fade = clamp((fade01 - 1) / (1 - FADE_BEGIN) + 1, 0, 1);
+			float fade = clamp((fade01 - 1) / (1 - FADE_BEGIN) + 1, 0, 1) * (length(rayDir * lo) / MAX_DIST);
 			return mix(texture(gbColor1Sampler, sampleTC).rgb, ambient, fade);
 		}
 	}

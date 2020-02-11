@@ -86,6 +86,7 @@ void MainGameState::OnDeactivate()
 void MainGameState::DoDeferredRendering(bool useLightProbes, DeferredRenderer::RenderTarget& renderTarget)
 {
 	MeshDrawArgs mDrawArgs;
+	mDrawArgs.renderTarget = m_renderTarget.get();
 	
 	{
 		auto gpuTimerGeom = eg::StartGPUTimer("Geometry");
@@ -119,6 +120,10 @@ void MainGameState::DoDeferredRendering(bool useLightProbes, DeferredRenderer::R
 		m_renderCtx->renderer.DrawReflectionPlaneLighting(renderTarget, m_prepareDrawArgs.reflectionPlanes);
 		m_renderCtx->renderer.DrawSpotLights(renderTarget, m_prepareDrawArgs.spotLights);
 		m_renderCtx->renderer.DrawPointLights(renderTarget, m_prepareDrawArgs.pointLights);
+		
+		mDrawArgs.drawMode = MeshDrawMode::Transparent;
+		m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
+		m_renderCtx->transparentMeshBatch.Draw(eg::DC, &mDrawArgs);
 		
 		m_particleRenderer.Draw(m_particleManager, renderTarget.ResolvedDepthTexture());
 		
