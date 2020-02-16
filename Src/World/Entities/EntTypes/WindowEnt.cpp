@@ -31,7 +31,7 @@ void WindowEnt::RenderSettings()
 	ImGui::DragFloat("Texture Scale", &m_textureScale, 0.5f, 0.0f, INFINITY);
 }
 
-void WindowEnt::Draw(eg::MeshBatch& meshBatch, eg::MeshBatchOrdered& transparentMeshBatch) const
+void WindowEnt::CommonDraw(const EntDrawArgs& args)
 {
 	auto [tangent, bitangent] = m_aaQuad.GetTangents(0);
 	glm::vec3 normal = glm::normalize(glm::cross(tangent, bitangent));
@@ -42,17 +42,7 @@ void WindowEnt::Draw(eg::MeshBatch& meshBatch, eg::MeshBatchOrdered& transparent
 		glm::vec4(0, 0, 0, 1)
 	);
 	glm::vec2 textureScale = m_aaQuad.size / m_textureScale;
-	meshBatch.AddModel(*windowModel, *m_material, StaticPropMaterial::InstanceData(transform, textureScale));
-}
-
-void WindowEnt::Draw(const EntDrawArgs& args)
-{
-	Draw(*args.meshBatch, *args.transparentMeshBatch);
-}
-
-void WindowEnt::EditorDraw(const EntEditorDrawArgs& args)
-{
-	Draw(*args.meshBatch, *args.transparentMeshBatch);
+	args.meshBatch->AddModel(*windowModel, *m_material, StaticPropMaterial::InstanceData(transform, textureScale));
 }
 
 const void* WindowEnt::GetComponent(const std::type_info& type) const

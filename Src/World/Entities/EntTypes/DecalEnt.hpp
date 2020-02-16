@@ -15,8 +15,7 @@ public:
 	
 	void RenderSettings() override;
 	
-	void Draw(const EntDrawArgs& args) override;
-	void EditorDraw(const EntEditorDrawArgs& args) override;
+	void CommonDraw(const EntDrawArgs& args) override;
 	
 	void Serialize(std::ostream& stream) const override;
 	

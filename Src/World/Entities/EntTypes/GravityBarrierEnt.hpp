@@ -25,8 +25,7 @@ public:
 	
 	void RenderSettings() override;
 	
-	void Draw(const EntDrawArgs& args) override;
-	void EditorDraw(const EntEditorDrawArgs& args) override;
+	void CommonDraw(const EntDrawArgs& args) override;
 	
 	void Update(const WorldUpdateArgs& args) override;
 	
@@ -52,8 +51,6 @@ private:
 	static std::vector<glm::vec3> GetConnectionPoints(const Ent& entity);
 	
 	std::tuple<glm::vec3, glm::vec3> GetTangents() const;
-	
-	void Draw(eg::MeshBatchOrdered& meshBatchOrdered, eg::MeshBatch& meshBatch) const;
 	
 	ActivatableComp m_activatable;
 	AxisAlignedQuadComp m_aaQuad;

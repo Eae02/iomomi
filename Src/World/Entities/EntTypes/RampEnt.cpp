@@ -36,20 +36,7 @@ void RampEnt::Spawned(bool isEditor)
 	}
 }
 
-void RampEnt::Draw(const EntDrawArgs& args)
-{
-	InitializeVertexBuffer();
-	
-	eg::MeshBatch::Mesh mesh;
-	mesh.firstIndex = 0;
-	mesh.firstVertex = 0;
-	mesh.numElements = 6;
-	mesh.vertexBuffer = m_vertexBuffer;
-	args.meshBatch->Add(mesh, eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml"),
-		StaticPropMaterial::InstanceData(glm::translate(glm::mat4(1), Pos())));
-}
-
-void RampEnt::EditorDraw(const EntEditorDrawArgs& args)
+void RampEnt::CommonDraw(const EntDrawArgs& args)
 {
 	InitializeVertexBuffer();
 	

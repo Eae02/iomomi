@@ -62,19 +62,19 @@ FloorButtonEnt::FloorButtonEnt()
 	m_buttonRigidBody->setFlags(m_buttonRigidBody->getFlags() | BT_DISABLE_WORLD_GRAVITY);
 }
 
-void FloorButtonEnt::CommonDraw(eg::MeshBatch& meshBatch, float padPushDist) const
+void FloorButtonEnt::CommonDraw(const EntDrawArgs& args)
 {
 	for (size_t i = 0; i < s_model->NumMeshes(); i++)
 	{
 		glm::mat4 transform = GetTransform(1);
 		if (i == s_padMeshIndex)
 		{
-			transform = transform * glm::translate(glm::mat4(1), glm::vec3(0, -padPushDist, 0));
+			transform = transform * glm::translate(glm::mat4(1), glm::vec3(0, -m_padPushDist, 0));
 		}
 		
 		if (i == s_lightsMeshIndex)
 		{
-			float a = glm::clamp(padPushDist / ACTIVATE_PUSH_DST, 0.0f, 1.0f);
+			float a = glm::clamp(m_padPushDist / ACTIVATE_PUSH_DST, 0.0f, 1.0f);
 			
 			glm::vec3 colorD = {
 				ActivationLightStripEnt::DEACTIVATED_COLOR.r,
@@ -90,23 +90,13 @@ void FloorButtonEnt::CommonDraw(eg::MeshBatch& meshBatch, float padPushDist) con
 			EmissiveMaterial::InstanceData instanceData;
 			instanceData.transform = transform;
 			instanceData.color = glm::vec4(glm::mix(colorD, colorA, a), 1.0f);
-			meshBatch.AddModelMesh(*s_model, i, EmissiveMaterial::instance, instanceData);
+			args.meshBatch->AddModelMesh(*s_model, i, EmissiveMaterial::instance, instanceData);
 		}
 		else
 		{
-			meshBatch.AddModelMesh(*s_model, i, *s_material, StaticPropMaterial::InstanceData(transform));
+			args.meshBatch->AddModelMesh(*s_model, i, *s_material, StaticPropMaterial::InstanceData(transform));
 		}
 	}
-}
-
-void FloorButtonEnt::Draw(const EntDrawArgs& args)
-{
-	CommonDraw(*args.meshBatch, m_padPushDist);
-}
-
-void FloorButtonEnt::EditorDraw(const EntEditorDrawArgs& args)
-{
-	CommonDraw(*args.meshBatch, 0);
 }
 
 void FloorButtonEnt::Update(const WorldUpdateArgs& args)

@@ -284,6 +284,7 @@ void Editor::DrawWorld()
 	drawArgs.primitiveRenderer = &m_primRenderer;
 	drawArgs.meshBatch = &m_renderCtx->meshBatch;
 	drawArgs.transparentMeshBatch = &m_renderCtx->transparentMeshBatch;
+	drawArgs.world = m_world.get();
 	drawArgs.getDrawMode = [this] (const Ent* entity) -> EntEditorDrawMode
 	{
 		for (const std::weak_ptr<Ent>& selEnt : m_selectedEntities)

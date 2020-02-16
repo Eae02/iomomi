@@ -18,7 +18,7 @@ void GooPlaneEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> f
 	Ent::EditorMoved(newPosition, faceDirection);
 }
 
-void GooPlaneEnt::Draw(const EntDrawArgs& args)
+void GooPlaneEnt::GameDraw(const EntGameDrawArgs& args)
 {
 	m_liquidPlane.MaybeUpdate(*this, *args.world);
 	m_material.m_reflectionPlane.plane = eg::Plane(glm::vec3(0, 1, 0), m_position);

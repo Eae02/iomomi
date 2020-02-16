@@ -51,7 +51,7 @@ static inline glm::vec4 MakeTransformVectorWithLen(const glm::vec3& v)
 	return glm::vec4(v, glm::length(v));
 }
 
-void ForceFieldEnt::Draw(const EntDrawArgs& args)
+void ForceFieldEnt::GameDraw(const EntGameDrawArgs& args)
 {
 	eg::MeshBatch::Mesh mesh = { };
 	mesh.vertexBuffer = *forceFieldQuadBuffer;
@@ -92,6 +92,66 @@ void ForceFieldEnt::Draw(const EntDrawArgs& args)
 		instance.transformY = MakeTransformVectorWithLen(pos2 - center);
 		
 		args.transparentMeshBatch->Add(mesh, *forceFieldMaterial, instance, DepthDrawOrder(instance.offset));
+	}
+}
+
+const glm::ivec3 cubeVertices[] =
+{
+	{ -1, -1, -1 },
+	{ -1,  1, -1 },
+	{ -1, -1,  1 },
+	{ -1,  1,  1 },
+	{  1, -1, -1 },
+	{  1,  1, -1 },
+	{  1, -1,  1 },
+	{  1,  1,  1 },
+};
+
+const int cubeFaces[6][4] =
+{
+	{ 0, 1, 2, 3 },
+	{ 4, 5, 6, 7 },
+	{ 0, 2, 4, 6 },
+	{ 1, 3, 5, 7 },
+	{ 0, 1, 4, 5 },
+	{ 2, 3, 6, 7 }
+};
+
+const std::pair<int, int> cubeEdges[] =
+{
+	{ 0, 4 },
+	{ 1, 5 },
+	{ 2, 6 },
+	{ 3, 7 },
+	{ 0, 1 },
+	{ 0, 2 },
+	{ 1, 3 },
+	{ 2, 3 },
+	{ 4, 5 },
+	{ 4, 6 },
+	{ 5, 7 },
+	{ 6, 7 }
+};
+
+void ForceFieldEnt::EditorDraw(const EntEditorDrawArgs& args)
+{
+	glm::vec3 realVertices[8];
+	for (int i = 0; i < 8; i++)
+	{
+		realVertices[i] = m_position + radius * glm::vec3(cubeVertices[i]);
+	}
+	
+	for (int f = 0; f < 6; f++)
+	{
+		glm::vec3 positions[4];
+		for (int i = 0; i < 4; i++)
+			positions[i] = realVertices[cubeFaces[f][i]];
+		args.primitiveRenderer->AddQuad(positions, eg::ColorSRGB::FromRGBAHex(0x2390c333));
+	}
+	
+	for (std::pair<int, int> edge : cubeEdges)
+	{
+		args.primitiveRenderer->AddLine(realVertices[edge.first], realVertices[edge.second], eg::ColorSRGB::FromRGBAHex(0x2390c3BB));
 	}
 }
 
@@ -142,66 +202,6 @@ void ForceFieldEnt::Update(const WorldUpdateArgs& args)
 		}
 		
 		timeSinceEmission -= PARTICLE_EMIT_DELAY;
-	}
-}
-
-const glm::ivec3 cubeVertices[] = 
-{
-	{ -1, -1, -1 },
-	{ -1,  1, -1 },
-	{ -1, -1,  1 },
-	{ -1,  1,  1 },
-	{  1, -1, -1 },
-	{  1,  1, -1 },
-	{  1, -1,  1 },
-	{  1,  1,  1 },
-};
-
-const int cubeFaces[6][4] =
-{
-	{ 0, 1, 2, 3 },
-	{ 4, 5, 6, 7 },
-	{ 0, 2, 4, 6 },
-	{ 1, 3, 5, 7 },
-	{ 0, 1, 4, 5 },
-	{ 2, 3, 6, 7 }
-};
-
-const std::pair<int, int> cubeEdges[] = 
-{
-	{ 0, 4 },
-	{ 1, 5 },
-	{ 2, 6 },
-	{ 3, 7 },
-	{ 0, 1 },
-	{ 0, 2 },
-	{ 1, 3 },
-	{ 2, 3 },
-	{ 4, 5 },
-	{ 4, 6 },
-	{ 5, 7 },
-	{ 6, 7 }
-};
-
-void ForceFieldEnt::EditorDraw(const EntEditorDrawArgs& args)
-{
-	glm::vec3 realVertices[8];
-	for (int i = 0; i < 8; i++)
-	{
-		realVertices[i] = m_position + radius * glm::vec3(cubeVertices[i]);
-	}
-	
-	for (int f = 0; f < 6; f++)
-	{
-		glm::vec3 positions[4];
-		for (int i = 0; i < 4; i++)
-			positions[i] = realVertices[cubeFaces[f][i]];
-		args.primitiveRenderer->AddQuad(positions, eg::ColorSRGB::FromRGBAHex(0x2390c333));
-	}
-	
-	for (std::pair<int, int> edge : cubeEdges)
-	{
-		args.primitiveRenderer->AddLine(realVertices[edge.first], realVertices[edge.second], eg::ColorSRGB::FromRGBAHex(0x2390c3BB));
 	}
 }
 

@@ -63,12 +63,7 @@ void DecalEnt::RenderSettings()
 	ImGui::SliderAngle("Rotation", &rotation);
 }
 
-void DecalEnt::Draw(const EntDrawArgs& args)
-{
-	args.meshBatch->Add(DecalMaterial::GetMesh(), *m_material, GetDecalTransform(), 1);
-}
-
-void DecalEnt::EditorDraw(const EntEditorDrawArgs& args)
+void DecalEnt::CommonDraw(const EntDrawArgs& args)
 {
 	args.meshBatch->Add(DecalMaterial::GetMesh(), *m_material, GetDecalTransform(), 1);
 }

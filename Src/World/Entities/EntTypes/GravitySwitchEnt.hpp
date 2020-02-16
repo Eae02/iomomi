@@ -17,9 +17,8 @@ public:
 	
 	void Deserialize(std::istream& stream) override;
 	
+	void GameDraw(const EntGameDrawArgs& args) override;
 	void EditorDraw(const EntEditorDrawArgs& args) override;
-	
-	void Draw(const EntDrawArgs& args) override;
 	
 	void Interact(class Player& player) override;
 	

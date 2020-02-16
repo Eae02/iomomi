@@ -2,19 +2,25 @@
 
 #include "LightSource.hpp"
 
-#pragma pack(push, 1)
 struct SpotLightDrawData
 {
-	glm::vec3 position;
-	float range;
-	glm::vec3 direction;
-	float penumbraBias;
-	glm::vec3 directionL;
-	float penumbraScale;
-	glm::vec3 radiance;
-	float width;
-};
+#pragma pack(push, 1)
+	struct
+	{
+		glm::vec3 position;
+		float range;
+		glm::vec3 direction;
+		float penumbraBias;
+		glm::vec3 directionL;
+		float penumbraScale;
+		glm::vec3 radiance;
+		float width;
+	} pc;
 #pragma pack(pop)
+	eg::TextureRef shadowMap;
+	uint64_t instanceID;
+	bool castsShadows;
+};
 
 class SpotLight : public LightSource
 {
@@ -57,6 +63,8 @@ public:
 	{
 		return m_width;
 	}
+	
+	bool castsShadows = true;
 	
 private:
 	float m_width = 0.0f;

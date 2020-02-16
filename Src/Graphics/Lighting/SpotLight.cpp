@@ -44,14 +44,16 @@ void SpotLight::SetCutoff(float cutoffAngle, float penumbraAngle)
 SpotLightDrawData SpotLight::GetDrawData(const glm::vec3& position) const
 {
 	SpotLightDrawData data;
-	data.position = position;
-	data.range = Range();
-	data.width = m_width;
-	data.direction = Direction();
-	data.directionL = DirectionL();
-	data.penumbraBias = m_penumbraBias;
-	data.penumbraScale = m_penumbraScale;
-	data.radiance = Radiance();
+	data.pc.position = position;
+	data.pc.range = Range();
+	data.pc.width = m_width;
+	data.pc.direction = Direction();
+	data.pc.directionL = DirectionL();
+	data.pc.penumbraBias = m_penumbraBias;
+	data.pc.penumbraScale = m_penumbraScale;
+	data.pc.radiance = Radiance();
+	data.instanceID = InstanceID();
+	data.castsShadows = castsShadows;
 	return data;
 }
 

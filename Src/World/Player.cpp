@@ -4,6 +4,7 @@
 #include "Entities/EntTypes/ForceFieldEnt.hpp"
 #include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
 #include "../Settings.hpp"
+#include "Entities/EntTypes/GooPlaneEnt.hpp"
 
 #include <imgui.h>
 
@@ -272,6 +273,7 @@ void Player::Update(World& world, float dt, bool underwater)
 	if (moveUp && m_gravityTransitionMode == TransitionMode::None && m_onGround)
 	{
 		localVelVertical = jumpAccel;
+		m_onGroundRingBufferSize = std::min(m_onGroundRingBufferSize, 1U);
 		m_onGround = false;
 	}
 	
@@ -389,6 +391,47 @@ void Player::Update(World& world, float dt, bool underwater)
 		}
 	}
 	
+	eg::Sphere gooPlaneTestSphere(m_position, 0.1f);
+	bool isInGoo = false;
+	world.entManager.ForEachOfType<GooPlaneEnt>([&] (const GooPlaneEnt& gooPlane)
+	{
+		if (gooPlane.IsUnderwater(gooPlaneTestSphere))
+			isInGoo = true;
+	});
+	
+	if (isInGoo && m_onGroundRingBufferSize != 0)
+	{
+		world.PhysicsWorld()->removeRigidBody(m_rigidBody.get());
+		Reset();
+		uint32_t ringBufferPos = (m_onGroundRingBufferFront + m_onGroundRingBuffer.size() - m_onGroundRingBufferSize) % m_onGroundRingBuffer.size();
+		m_position = m_onGroundRingBuffer[ringBufferPos].first;
+		m_rotation = m_onGroundRingBuffer[ringBufferPos].second;
+		return;
+	}
+	
+	if (m_onGround)
+	{
+		if (!m_wasOnGround)
+		{
+			m_onGroundRingBufferSize = 0;
+			m_onGroundRingBufferFront = 0;
+			m_onGroundPushDelay = 0;
+		}
+		
+		m_onGroundPushDelay -= dt;
+		while (m_onGroundPushDelay <= 0)
+		{
+			m_onGroundRingBuffer[m_onGroundRingBufferFront] = { m_position, m_rotation };
+			
+			m_onGroundRingBufferFront++;
+			m_onGroundRingBufferFront %= m_onGroundRingBuffer.size();
+			if (m_onGroundRingBufferSize < m_onGroundRingBuffer.size())
+				m_onGroundRingBufferSize++;
+			
+			m_onGroundPushDelay += 0.2f / m_onGroundRingBuffer.size();
+		}
+	}
+	
 	//Moves the player with the current platform, if there is one below
 	if (m_onGround && rayIntersect.entity != nullptr && rayIntersect.entity->TypeID() == EntTypeID::Platform)
 	{
@@ -415,6 +458,7 @@ void Player::Update(World& world, float dt, bool underwater)
 	}
 	
 	m_wasUnderwater = underwater;
+	m_wasOnGround = m_onGround;
 }
 
 void Player::FlipDown()
@@ -470,6 +514,7 @@ void Player::Reset()
 {
 	m_velocity = glm::vec3(0.0f);
 	m_onGround = false;
+	m_wasOnGround = false;
 	m_down = Dir::NegY;
 	m_isCarrying = false;
 	m_gravityTransitionMode = TransitionMode::None;

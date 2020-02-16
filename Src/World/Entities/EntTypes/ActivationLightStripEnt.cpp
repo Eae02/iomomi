@@ -31,7 +31,12 @@ void ActivationLightStripEnt::OnInit()
 
 EG_ON_INIT(ActivationLightStripEnt::OnInit)
 
-void ActivationLightStripEnt::Draw(eg::MeshBatch& meshBatch)
+void ActivationLightStripEnt::RenderSettings()
+{
+	Ent::RenderSettings();
+}
+
+void ActivationLightStripEnt::CommonDraw(const EntDrawArgs& args)
 {
 	if (m_transitionDirection == -1)
 	{
@@ -55,31 +60,16 @@ void ActivationLightStripEnt::Draw(eg::MeshBatch& meshBatch)
 			{
 				if (s_models[v]->GetMesh(i).materialIndex == lightMaterialIndex)
 				{
-					meshBatch.AddModelMesh(*s_models[v], i, m_material, instanceData);
+					args.meshBatch->AddModelMesh(*s_models[v], i, m_material, instanceData);
 				}
 				else
 				{
-					meshBatch.AddModelMesh(*s_models[v], i, *s_materials[v],
+					args.meshBatch->AddModelMesh(*s_models[v], i, *s_materials[v],
 						StaticPropMaterial::InstanceData(instanceData.transform));
 				}
 			}
 		}
 	}
-}
-
-void ActivationLightStripEnt::RenderSettings()
-{
-	Ent::RenderSettings();
-}
-
-void ActivationLightStripEnt::Draw(const EntDrawArgs& args)
-{
-	Draw(*args.meshBatch);
-}
-
-void ActivationLightStripEnt::EditorDraw(const EntEditorDrawArgs& args)
-{
-	Draw(*args.meshBatch);
 }
 
 void ActivationLightStripEnt::Update(const WorldUpdateArgs& args)

@@ -10,7 +10,14 @@ gravgun_1: gravgun_2
 gravgun_2: gravgun_3
 gravgun_3: gravgun_4
 gravgun_4: gravgun_5
+gravgun_5: gravgun_6
+gravgun_6: gravbarrier_0
+gravbarrier_0: gravbarrier_1
+gravbarrier_1: gravbarrier_2
+gravbarrier_2: water_0
 water_0: water_1
 water_1: water_2
-water_2: water_3
-water_3: water_4
+water_2: water_4
+water_4: forcefield_1
+forcefield_1: forcefield_2
+forcefield_2: forcefield_3

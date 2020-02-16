@@ -17,6 +17,7 @@ enum class EntTypeID
 	GravityBarrier       = 12,
 	Ramp                 = 13,
 	Window               = 14,
+	Mesh                 = 15,
 	MAX
 };
  

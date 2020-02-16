@@ -27,7 +27,7 @@ public:
 	
 	void RenderSettings() override;
 	
-	void Draw(const EntDrawArgs& args) override;
+	void GameDraw(const EntGameDrawArgs& args) override;
 	void EditorDraw(const EntEditorDrawArgs& args) override;
 	
 	void Update(const struct WorldUpdateArgs& args) override;
@@ -52,6 +52,8 @@ public:
 	bool canFloat = false;
 	
 private:
+	void Draw(eg::MeshBatch& meshBatch, const glm::mat4& transform) const;
+	
 	RigidBodyComp m_rigidBody;
 	GravityBarrierInteractableComp m_barrierInteractableComp;
 	

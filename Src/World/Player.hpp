@@ -75,6 +75,7 @@ private:
 	Dir m_down = Dir::NegY;
 	
 	bool m_onGround = false;
+	bool m_wasOnGround = false;
 	bool m_wasUnderwater = false;
 	
 	enum class TransitionMode
@@ -95,6 +96,11 @@ private:
 	glm::vec3 m_eyePosition;
 	glm::vec3 m_velocity;
 	glm::quat m_rotation;
+	
+	std::array<std::pair<glm::vec3, glm::quat>, 20> m_onGroundRingBuffer;
+	float m_onGroundPushDelay = 0;
+	uint32_t m_onGroundRingBufferSize = 0;
+	uint32_t m_onGroundRingBufferFront = 0;
 	
 	glm::vec3 m_radius;
 	

@@ -61,17 +61,20 @@ void CubeEnt::Spawned(bool isEditor)
 	}
 }
 
-void CubeEnt::Draw(const EntDrawArgs& args)
+void CubeEnt::Draw(eg::MeshBatch& meshBatch, const glm::mat4& transform) const
+{
+	meshBatch.AddModel(
+		*(canFloat ? woodCubeModel : cubeModel),
+		*(canFloat ? woodCubeMaterial : cubeMaterial), StaticPropMaterial::InstanceData(transform));
+}
+
+void CubeEnt::GameDraw(const EntGameDrawArgs& args)
 {
 	btTransform transform = m_rigidBody.GetBulletTransform();
-	
 	glm::mat4 worldMatrix;
 	transform.getOpenGLMatrix(reinterpret_cast<float*>(&worldMatrix));
 	worldMatrix *= glm::scale(glm::mat4(1), glm::vec3(RADIUS));
-	
-	args.meshBatch->AddModel(
-		*(canFloat ? woodCubeModel : cubeModel),
-		*(canFloat ? woodCubeMaterial : cubeMaterial), StaticPropMaterial::InstanceData(worldMatrix));
+	Draw(*args.meshBatch, worldMatrix);
 }
 
 void CubeEnt::EditorDraw(const EntEditorDrawArgs& args)
@@ -80,10 +83,7 @@ void CubeEnt::EditorDraw(const EntEditorDrawArgs& args)
 		glm::translate(glm::mat4(1), m_position) *
 		glm::mat4_cast(m_rotation) *
 		glm::scale(glm::mat4(1), glm::vec3(RADIUS));
-	
-	args.meshBatch->AddModel(
-		*(canFloat ? woodCubeModel : cubeModel),
-		*(canFloat ? woodCubeMaterial : cubeMaterial), StaticPropMaterial::InstanceData(worldMatrix));
+	Draw(*args.meshBatch, worldMatrix);
 }
 
 const void* CubeEnt::GetComponent(const std::type_info& type) const

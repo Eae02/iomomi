@@ -193,17 +193,7 @@ glm::mat4 GravityBarrierEnt::GetTransform() const
 		glm::vec4(m_position, 1));
 }
 
-void GravityBarrierEnt::Draw(const EntDrawArgs& args)
-{
-	Draw(*args.transparentMeshBatch, *args.meshBatch);
-}
-
-void GravityBarrierEnt::EditorDraw(const EntEditorDrawArgs& args)
-{
-	Draw(*args.transparentMeshBatch, *args.meshBatch);
-}
-
-void GravityBarrierEnt::Draw(eg::MeshBatchOrdered& meshBatchOrdered, eg::MeshBatch& meshBatch) const
+void GravityBarrierEnt::CommonDraw(const EntDrawArgs& args)
 {
 	auto [tangent, bitangent] = GetTangents();
 	
@@ -221,7 +211,7 @@ void GravityBarrierEnt::Draw(eg::MeshBatchOrdered& meshBatchOrdered, eg::MeshBat
 	instanceData.tangentMag = glm::length(tangentLen);
 	instanceData.bitangentMag = glm::length(bitangentLen) * TIME_SCALE;
 	
-	meshBatchOrdered.Add(barrierMesh, *material, instanceData, DepthDrawOrder(instanceData.position));
+	args.transparentMeshBatch->Add(barrierMesh, *material, instanceData, DepthDrawOrder(instanceData.position));
 	
 	glm::vec3 tangentNorm = tangent / tangentLen;
 	glm::vec3 bitangentNorm = bitangent / bitangentLen;
@@ -232,7 +222,7 @@ void GravityBarrierEnt::Draw(eg::MeshBatchOrdered& meshBatchOrdered, eg::MeshBat
 		eg::IMaterial* borderMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml");
 		for (size_t m = 0; m < barrierBorderModel->NumMeshes(); m++)
 		{
-			meshBatch.AddModelMesh(*barrierBorderModel, m, *borderMaterial, StaticPropMaterial::InstanceData(transform));
+			args.meshBatch->AddModelMesh(*barrierBorderModel, m, *borderMaterial, StaticPropMaterial::InstanceData(transform));
 		}
 	};
 	

@@ -48,6 +48,8 @@ WaterSimulator::WaterSimulator()
 
 void WaterSimulator::Init(World& world)
 {
+	Stop();
+	
 	for (int i = 0; i < 3; i++)
 	{
 		reinterpret_cast<int32_t*>(&m_worldMin)[i] = world.GetBoundsMin()[i];

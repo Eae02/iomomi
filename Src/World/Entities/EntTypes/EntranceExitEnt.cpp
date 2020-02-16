@@ -214,7 +214,7 @@ void EntranceExitEnt::Update(const WorldUpdateArgs& args)
 	m_door2RigidBody->getBroadphaseProxy()->m_collisionFilterGroup = door2Open ? 1 : 0;
 }
 
-void EntranceExitEnt::Draw(const EntDrawArgs& args)
+void EntranceExitEnt::GameDraw(const EntGameDrawArgs& args)
 {
 	std::vector<glm::mat4> transforms(entrance.model->NumMeshes(), GetTransform());
 	

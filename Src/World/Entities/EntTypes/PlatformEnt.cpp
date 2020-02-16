@@ -85,7 +85,7 @@ void PlatformEnt::RenderSettings()
 	ImGui::DragFloat("Slide Time", &m_slideTime);
 }
 
-void PlatformEnt::DrawGeneral(eg::MeshBatch& meshBatch) const
+void PlatformEnt::CommonDraw(const EntDrawArgs& args)
 {
 	const float slideDist = glm::length(m_slideOffset);
 	
@@ -101,20 +101,10 @@ void PlatformEnt::DrawGeneral(eg::MeshBatch& meshBatch) const
 	for (int i = 1; i <= numSliderInstances; i++)
 	{
 		glm::mat4 transform = glm::translate(sliderTransform, glm::vec3(0, 0, SLIDER_MODEL_LENGTH * (float)i));
-		meshBatch.AddModel(*platformSliderModel, *platformSliderMaterial, StaticPropMaterial::InstanceData(transform));
+		args.meshBatch->AddModel(*platformSliderModel, *platformSliderMaterial, StaticPropMaterial::InstanceData(transform));
 	}
 	
-	meshBatch.AddModel(*platformModel, *platformMaterial, StaticPropMaterial::InstanceData(GetPlatformTransform()));
-}
-
-void PlatformEnt::Draw(const EntDrawArgs& args)
-{
-	DrawGeneral(*args.meshBatch);
-}
-
-void PlatformEnt::EditorDraw(const EntEditorDrawArgs& args)
-{
-	DrawGeneral(*args.meshBatch);
+	args.meshBatch->AddModel(*platformModel, *platformMaterial, StaticPropMaterial::InstanceData(GetPlatformTransform()));
 }
 
 void PlatformEnt::Update(const WorldUpdateArgs& args)

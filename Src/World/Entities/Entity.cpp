@@ -10,8 +10,9 @@ void Ent::RenderSettings()
 	ImGui::DragFloat3("Position", &m_position.x, 0.1f);
 }
 
-void Ent::Draw(const EntDrawArgs& args) { }
-void Ent::EditorDraw(const EntEditorDrawArgs& args) { }
+void Ent::CommonDraw(const EntDrawArgs& args) { }
+void Ent::GameDraw(const EntGameDrawArgs& args) { CommonDraw(args); }
+void Ent::EditorDraw(const EntEditorDrawArgs& args) { CommonDraw(args); }
 
 const void* Ent::GetComponent(const std::type_info& type) const
 {

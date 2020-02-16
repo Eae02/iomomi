@@ -13,9 +13,7 @@ public:
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
 		EntTypeFlags::EditorWallMove | EntTypeFlags::DisableClone;
 	
-	void Draw(const EntDrawArgs& args) override;
-	
-	void EditorDraw(const EntEditorDrawArgs& args) override;
+	void CommonDraw(const EntDrawArgs& args) override;
 	
 	void Serialize(std::ostream& stream) const override;
 	
@@ -33,8 +31,6 @@ public:
 	}
 	
 private:
-	void CommonDraw(eg::MeshBatch& meshBatch, float padPushDist) const;
-	
 	ActivatorComp m_activator;
 	RigidBodyComp m_rigidBody;
 	

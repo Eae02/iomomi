@@ -35,7 +35,7 @@ void GravitySwitchEnt::EditorDraw(const EntEditorDrawArgs& args)
 	::Draw(*this, *args.meshBatch);
 }
 
-void GravitySwitchEnt::Draw(const EntDrawArgs& args)
+void GravitySwitchEnt::GameDraw(const EntGameDrawArgs& args)
 {
 	::Draw(*this, *args.meshBatch);
 	

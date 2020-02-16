@@ -10,7 +10,8 @@ enum class MeshDrawMode
 	Transparent,
 	Editor,
 	PlanarReflection,
-	PointLightShadow
+	PointLightShadow,
+	SpotLightShadow
 };
 
 struct MeshDrawArgs

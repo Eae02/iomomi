@@ -8,9 +8,13 @@ struct EntDrawArgs
 {
 	eg::MeshBatch* meshBatch;
 	eg::MeshBatchOrdered* transparentMeshBatch;
+	class World* world;
+};
+
+struct EntGameDrawArgs : EntDrawArgs
+{
 	std::vector<struct ReflectionPlane*>* reflectionPlanes;
 	std::vector<PointLightDrawData>* pointLights;
-	class World* world;
 };
 
 enum class EntEditorDrawMode
@@ -20,11 +24,9 @@ enum class EntEditorDrawMode
 	Targeted
 };
 
-struct EntEditorDrawArgs
+struct EntEditorDrawArgs : EntDrawArgs
 {
 	eg::SpriteBatch* spriteBatch;
-	eg::MeshBatch* meshBatch;
-	eg::MeshBatchOrdered* transparentMeshBatch;
 	class PrimitiveRenderer* primitiveRenderer;
 	std::function<EntEditorDrawMode(const class Ent*)> getDrawMode;
 };
@@ -61,7 +63,8 @@ public:
 	
 	virtual void Spawned(bool isEditor);
 	
-	virtual void Draw(const EntDrawArgs& args);
+	virtual void CommonDraw(const EntDrawArgs& args);
+	virtual void GameDraw(const EntGameDrawArgs& args);
 	virtual void EditorDraw(const EntEditorDrawArgs& args);
 	
 	virtual void Update(const struct WorldUpdateArgs& args);

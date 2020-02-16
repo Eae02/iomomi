@@ -19,7 +19,7 @@ public:
 	
 	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
-	void Draw(const EntDrawArgs& args) override;
+	void GameDraw(const EntGameDrawArgs& args) override;
 	
 	const void* GetComponent(const std::type_info& type) const override;
 	

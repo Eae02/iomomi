@@ -44,7 +44,7 @@ static eg::Model& GetModel()
 	return *model;
 }
 
-void WallLightEnt::Draw(const EntDrawArgs& args)
+void WallLightEnt::GameDraw(const EntGameDrawArgs& args)
 {
 	glm::vec3 lightPos = m_position + glm::vec3(DirectionVector(m_direction)) * LIGHT_DIST;
 	args.pointLights->emplace_back(m_pointLight.GetDrawData(lightPos));

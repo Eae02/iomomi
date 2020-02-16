@@ -19,8 +19,7 @@ public:
 	
 	void RenderSettings() override;
 	
-	void Draw(const EntDrawArgs& args) override;
-	
+	void GameDraw(const EntGameDrawArgs& args) override;
 	void EditorDraw(const EntEditorDrawArgs& args) override;
 	
 private:

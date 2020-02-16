@@ -18,8 +18,7 @@ public:
 	
 	void RenderSettings() override;
 	
-	void Draw(const EntDrawArgs& args) override;
-	void EditorDraw(const EntEditorDrawArgs& args) override;
+	void CommonDraw(const EntDrawArgs& args) override;
 	
 	void Update(const struct WorldUpdateArgs& args) override;
 	
@@ -36,8 +35,6 @@ public:
 private:
 	glm::mat4 GetPlatformTransform() const;
 	static std::vector<glm::vec3> GetConnectionPoints(const Ent& entity);
-	
-	void DrawGeneral(eg::MeshBatch& meshBatch) const;
 	
 	RigidBodyComp m_rigidBody;
 	ActivatableComp m_activatable;

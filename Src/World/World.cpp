@@ -321,13 +321,13 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 		
 		//ECGravityBarrier::PrepareForDraw(*args.player, *m_entityManager);
 		
-		EntDrawArgs entDrawArgs;
+		EntGameDrawArgs entDrawArgs;
 		entDrawArgs.world = this;
 		entDrawArgs.meshBatch = args.meshBatch;
 		entDrawArgs.transparentMeshBatch = args.transparentMeshBatch;
 		entDrawArgs.reflectionPlanes = &args.reflectionPlanes;
 		entDrawArgs.pointLights = &args.pointLights;
-		entManager.ForEachWithFlag(EntTypeFlags::Drawable, [&] (Ent& entity) { entity.Draw(entDrawArgs); });
+		entManager.ForEachWithFlag(EntTypeFlags::Drawable, [&] (Ent& entity) { entity.GameDraw(entDrawArgs); });
 	}
 }
 

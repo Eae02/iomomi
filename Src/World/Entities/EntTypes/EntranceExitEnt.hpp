@@ -34,7 +34,7 @@ public:
 	
 	void Update(const WorldUpdateArgs& args);
 	
-	void Draw(const EntDrawArgs& args) override;
+	void GameDraw(const EntGameDrawArgs& args) override;
 	void EditorDraw(const EntEditorDrawArgs& args) override;
 	
 	const void* GetComponent(const std::type_info& type) const override;
