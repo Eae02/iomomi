@@ -8,6 +8,10 @@ namespace bullet
 	extern btCollisionDispatcher* dispatcher;
 	extern btSequentialImpulseConstraintSolver* solver;
 	
+	constexpr int PICKED_OBJECT_COLLISION_MASK = 64;
+	constexpr int BASIC_COLLISION_FILTER = 63 | PICKED_OBJECT_COLLISION_MASK;
+	constexpr int GRAVITY_BARRIER_COLLISION_MASK0 = 128;
+	
 	constexpr float GRAVITY = 10;
 	
 	void Init();

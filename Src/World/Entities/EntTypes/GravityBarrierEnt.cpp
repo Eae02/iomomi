@@ -335,7 +335,7 @@ void GravityBarrierEnt::Update(const WorldUpdateArgs& args)
 			m_opacity = std::min(m_opacity + args.dt / OPACITY_ANIMATION_TIME, 1.0f);
 		
 		btBroadphaseProxy* broadphaseProxy = m_rigidBody.GetRigidBody()->getBroadphaseProxy();
-		broadphaseProxy->m_collisionFilterMask = m_enabled ? (2U << BlockedAxis()) : 0;
+		broadphaseProxy->m_collisionFilterMask = m_enabled ? (bullet::GRAVITY_BARRIER_COLLISION_MASK0 << BlockedAxis()) : 0;
 		broadphaseProxy->m_collisionFilterGroup = -1;
 	}
 	

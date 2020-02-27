@@ -37,7 +37,10 @@ void Start(eg::RunConfig& runConfig)
 		InitEntityTypes();
 		StaticPropMaterial::InitAssetTypes();
 		DecalMaterial::InitAssetTypes();
-		eg::LoadAssets("assets", "/");
+		if (!eg::LoadAssets("assets", "/"))
+		{
+			EG_PANIC("Failed to load assets, make sure assets.eap exists.");
+		}
 		RenderSettings::instance = new RenderSettings;
 		InitLevels();
 		InitLevelsGraph();

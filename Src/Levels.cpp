@@ -17,32 +17,39 @@ void InitLevels()
 	std::string levelsPath = eg::ExeRelPath("levels");
 	if (!eg::FileExists(levelsPath.c_str()))
 	{
-		eg::CreateDirectory(levelsPath.c_str());
+		eg::ReleasePanic("Missing directory \"levels\".");
 	}
-	else
+	
+	levels.clear();
+	
+	//Adds all gwd files in the levels directory to the levels list
+	for (const auto& entry : directory_iterator(levelsPath))
 	{
-		levels.clear();
-		
-		//Adds all gwd files in the levels directory to the levels list
-		for (const auto& entry : directory_iterator(levelsPath))
+		if (is_regular_file(entry.status()) && entry.path().extension() == ".gwd")
 		{
-			if (is_regular_file(entry.status()) && entry.path().extension() == ".gwd")
-			{
-				levels.push_back({entry.path().stem().string()});
-			}
+			levels.push_back({entry.path().stem().string()});
 		}
-		
-		//Sorts levels by name so that these can be binary searched over later
-		std::sort(levels.begin(), levels.end(), [&] (const Level& a, const Level& b)
-		{
-			return a.name < b.name;
-		});
 	}
+	
+	//Sorts levels by name so that these can be binary searched over later
+	std::sort(levels.begin(), levels.end(), [&] (const Level& a, const Level& b)
+	{
+		return a.name < b.name;
+	});
 }
 
 void InitLevelsGraph()
 {
-	YAML::Node graphRoot = YAML::LoadFile(eg::ExeRelPath("levels/graph.yaml"));
+	YAML::Node graphRoot;
+	try
+	{
+		graphRoot = YAML::LoadFile(eg::ExeRelPath("levels/graph.yaml"));
+	}
+	catch (...)
+	{
+		eg::ReleasePanic("Cannot open file \"levels/graph.yaml\" for reading.");
+	}
+	
 	for (auto levelIt = graphRoot.begin(); levelIt != graphRoot.end(); ++levelIt)
 	{
 		std::string srcLevelName = levelIt->first.as<std::string>();
