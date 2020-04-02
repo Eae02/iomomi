@@ -24,7 +24,7 @@ static void OnInit()
 	//meshTypes.emplace_back("");
 }
 
-EG_ON_INIT(OnInit);
+EG_ON_INIT(OnInit)
 
 MeshEnt::MeshEnt()
 {

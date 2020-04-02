@@ -1,8 +1,10 @@
 #include "WindowEnt.hpp"
 #include "../../../../Protobuf/Build/WindowEntity.pb.h"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
+#include "../../Collision.hpp"
 
 #include <imgui.h>
+#include <glm/glm.hpp>
 
 static constexpr float BOX_SHAPE_RADIUS = 0.03;
 
@@ -82,7 +84,33 @@ void WindowEnt::Deserialize(std::istream& stream)
 	auto [tangent, bitangent] = m_aaQuad.GetTangents(0);
 	glm::vec3 normal = m_aaQuad.GetNormal() * BOX_SHAPE_RADIUS;
 	glm::vec3 boxSize = (tangent + bitangent) * 0.5f + normal;
+	glm::vec3 boxCenter = Pos() - normal;
 	m_bulletShape = std::make_unique<btBoxShape>(bullet::FromGLM(boxSize));
 	m_rigidBodyComp.InitStatic(this, *m_bulletShape);
-	m_rigidBodyComp.SetTransform(Pos() - normal, glm::quat());
+	m_rigidBodyComp.SetTransform(boxCenter, glm::quat());
+	
+	for (int f = 0; f < 6; f++)
+	{
+		glm::vec3 faceCenter = boxCenter + glm::vec3(DirectionVector((Dir)f)) * boxSize;
+		for (int a = 0; a < 2; a++)
+		{
+			for (int b = 0; b < 2; b++)
+			{
+				m_vertices[f][a * 2 + b] = faceCenter +
+					glm::vec3(voxel::tangents[f] * (a * 2 - 1) + voxel::biTangents[f] * (b * 2 - 1)) * boxSize;
+			}
+		}
+	}
+}
+
+std::optional<glm::vec3> WindowEnt::CheckCollision(const eg::AABB& aabb, const glm::vec3& moveDir) const
+{
+	CollisionResponseCombiner combiner;
+	
+	for (int f = 0; f < 6; f++)
+	{
+		combiner.Update(CheckCollisionAABBPolygon(aabb, m_vertices[f], moveDir));
+	}
+	
+	return combiner.GetCorrection();
 }

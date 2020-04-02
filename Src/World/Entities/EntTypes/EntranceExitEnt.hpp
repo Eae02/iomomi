@@ -5,6 +5,7 @@
 #include "../Components/ActivatableComp.hpp"
 #include "../../WorldUpdateArgs.hpp"
 #include "../../Door.hpp"
+#include "../../../Graphics/Materials/ScreenMaterial.hpp"
 
 class EntranceExitEnt : public Ent
 {
@@ -17,7 +18,7 @@ public:
 	
 	static constexpr EntTypeID TypeID = EntTypeID::EntranceExit;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::DisableClone |
-		EntTypeFlags::EditorWallMove | EntTypeFlags::Activatable;
+		EntTypeFlags::EditorWallMove | EntTypeFlags::Activatable | EntTypeFlags::HasCollision;
 	
 	EntranceExitEnt();
 	
@@ -38,6 +39,8 @@ public:
 	void EditorDraw(const EntEditorDrawArgs& args) override;
 	
 	const void* GetComponent(const std::type_info& type) const override;
+	
+	std::optional<glm::vec3> CheckCollision(const eg::AABB& aabb, const glm::vec3& moveDir) const override;
 	
 	Door GetDoorDescription() const;
 	
@@ -67,9 +70,15 @@ private:
 	
 	PointLight m_pointLight;
 	
+	mutable ScreenMaterial m_screenMaterial;
+	
 	std::string m_name = "main";
 	float m_doorOpenProgress = 0;
 	float m_timeBeforeClose = 0;
 	
 	bool m_shouldSwitchEntrance = false;
+	bool m_door1Open = false;
+	bool m_door2Open = false;
+	
+	std::string_view m_levelTitle;
 };

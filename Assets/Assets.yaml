@@ -12,6 +12,7 @@ assets:
   - name: Shaders/GravityCornerLight.fs.glsl
   - name: Shaders/Primitive.vs.glsl
   - name: Shaders/Primitive.fs.glsl
+  - name: Shaders/Screen.fs.glsl
   - name: Shaders/Post.vs.glsl
   - name: Shaders/Post.fs.glsl
   - name: Shaders/StaticModel.fs.glsl
@@ -92,6 +93,8 @@ assets:
   
   - name: UIFont.ttf
     size: 24
+  - name: GameFont.ttf
+    size: 64
   
   #Textures:
   - name: Textures/EntityIcons.png
@@ -379,6 +382,7 @@ assets:
       - Textures/Voxel/CementA.png
       - Textures/Voxel/Panels1A.png
       - Textures/Voxel/Panels2A.png
+      - Textures/Voxel/Panels1StripedA.png
   - name: Textures/Voxel/NormalMap
     generator: Texture2DArray
     loader: Texture2D
@@ -392,6 +396,7 @@ assets:
       - Textures/Voxel/CementN.png
       - Textures/Voxel/Panels1N.png
       - Textures/Voxel/Panels2N.png
+      - Textures/Voxel/Panels1N.png
   - name: Textures/Voxel/MiscMap
     generator: Texture2DArray
     loader: Texture2D
@@ -405,6 +410,7 @@ assets:
       - Textures/Voxel/CementM.png
       - Textures/Voxel/Panels1M.png
       - Textures/Voxel/Panels2M.png
+      - Textures/Voxel/Panels1M.png
 
     #Decal materials
   - name: Materials/Decals/Stain0.yaml

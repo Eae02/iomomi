@@ -239,7 +239,8 @@ static const char* WALL_TEXTURE_NAMES[] =
 	"Metal Grid",
 	"Cement",
 	"Panels 1",
-	"Panels 2"
+	"Panels 2",
+	"Panels 1 (Striped)",
 };
 
 void WallDragEditorComponent::RenderSettings(const EditorState& editorState)

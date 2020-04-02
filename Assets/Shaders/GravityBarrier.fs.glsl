@@ -48,7 +48,7 @@ const int NUM_INTERACTABLES = 8;
 layout(binding=2, std140) uniform BarrierSettingsUB
 {
 	uvec4 iaDownAxis[NUM_INTERACTABLES / 4];
-	vec3 iaPosition[NUM_INTERACTABLES];
+	vec4 iaPosition[NUM_INTERACTABLES];
 };
 #endif
 
@@ -64,12 +64,14 @@ void main()
 	float stretch = 0;
 	for (int i = 0; i < NUM_INTERACTABLES; i++)
 	{
-		vec3 toObject = worldPos_in - iaPosition[i];
+		vec3 toObject = worldPos_in - iaPosition[i].xyz;
 		float d = length(toObject);
 		uint da = iaDownAxis[i / 4][i % 4];
 		
 		if (da == blockedAxis_in)
+		{
 			negScale += 1.0 - smoothstep(1.0, 1.5, d);
+		}
 		else if (da != 3)
 		{
 			float ns = exp(-d * d) * dot(toObject, tangent_in);

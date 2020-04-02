@@ -39,7 +39,8 @@ enum class EntTypeFlags
 	EditorDrawable  = 0x8,
 	Interactable    = 0x10,
 	Activatable     = 0x20,
-	DisableClone    = 0x40
+	DisableClone    = 0x40,
+	HasCollision    = 0x80
 };
 
 class Ent : public std::enable_shared_from_this<Ent>
@@ -68,6 +69,8 @@ public:
 	virtual void EditorDraw(const EntEditorDrawArgs& args);
 	
 	virtual void Update(const struct WorldUpdateArgs& args);
+	
+	virtual std::optional<glm::vec3> CheckCollision(const eg::AABB& aabb, const glm::vec3& moveDir) const;
 	
 	glm::mat4 GetTransform(float scale) const;
 	glm::mat3 GetRotationMatrix() const;

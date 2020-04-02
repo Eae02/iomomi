@@ -9,6 +9,7 @@
 #include "Entities/EntityManager.hpp"
 #include "../Graphics/Vertex.hpp"
 #include "../Graphics/PlanarReflectionsManager.hpp"
+#include "Collision.hpp"
 
 struct WallVertex;
 
@@ -106,6 +107,8 @@ public:
 	//This needs to be called for all entities with an ECRigidBody created after world loading.
 	void InitRigidBodyEntity(Ent& entity);
 	
+	std::optional<glm::vec3> CheckCollision(const eg::AABB& aabb, const glm::vec3& moveDir) const;
+	
 	btDiscreteDynamicsWorld* PhysicsWorld()
 	{
 		return m_bulletWorld.get();
@@ -124,6 +127,7 @@ public:
 	}
 	
 	bool playerHasGravityGun = false;
+	std::string title;
 	
 private:
 	static constexpr uint32_t REGION_SIZE = 16;
@@ -181,8 +185,6 @@ private:
 			return operator<(other.coordinate);
 		}
 	};
-	
-	void BuildCollisionMesh();
 	
 	void PrepareRegionMeshes(bool isEditor);
 	

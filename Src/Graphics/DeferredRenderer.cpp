@@ -293,8 +293,10 @@ void DeferredRenderer::BeginGeometry(RenderTarget& target) const
 	rpBeginInfo.framebuffer = target.m_gbFramebuffer.handle;
 	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Clear;
 	rpBeginInfo.depthClearValue = 1.0f;
-	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
-	rpBeginInfo.colorAttachments[1].loadOp = eg::AttachmentLoadOp::Discard;
+	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
+	rpBeginInfo.colorAttachments[1].loadOp = eg::AttachmentLoadOp::Clear;
+	rpBeginInfo.colorAttachments[0].clearValue = eg::ColorSRGB(0.3f, 0.1f, 0.1f, 1);
+	rpBeginInfo.colorAttachments[1].clearValue = eg::ColorLin(0, 0, 1, 1);
 	eg::DC.BeginRenderPass(rpBeginInfo);
 }
 

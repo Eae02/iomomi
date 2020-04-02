@@ -1,20 +1,17 @@
 #include "RampEnt.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../../Protobuf/Build/Ramp.pb.h"
+#include "../../Collision.hpp"
 
 #include <imgui.h>
+#include <glm/glm.hpp>
 
-static const glm::vec3 untransformedPositions[] = 
+static const glm::vec3 untransformedPositions[4] = 
 {
-	{ -1, -1, -1 }, { 1, -1, -1 }, { -1, 1, 1 },
-	{ 1, -1, -1 }, { 1, 1, 1 }, { -1, 1, 1 }
+	{ -1, -1, -1 }, { 1, -1, -1 }, { -1, 1, 1 }, { 1, 1, 1 }
 };
-static const glm::vec2 uvs[] = { { 0, 0 }, { 1, 0 }, { 0, 1 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
-
-RampEnt::RampEnt()
-{
-	
-}
+static const int indices[6] = { 0, 1, 2, 1, 3, 2 };
+static const glm::vec2 uvs[4] = { { 0, 0 }, { 1, 0 }, { 0, 1 }, { 1, 1 } };
 
 void RampEnt::RenderSettings()
 {
@@ -61,7 +58,7 @@ void RampEnt::InitializeVertexBuffer()
 			sizeof(eg::StdVertex) * 6, nullptr);
 	}
 	
-	std::array<glm::vec3, 6> transformedPos = GetTransformedVertices();
+	std::array<glm::vec3, 4> transformedPos = GetTransformedVertices();
 	
 	glm::vec3 tangent = glm::normalize(transformedPos[1] - transformedPos[0]);
 	glm::vec3 normal = glm::normalize(glm::cross(tangent, transformedPos[2] - transformedPos[0]));
@@ -71,21 +68,21 @@ void RampEnt::InitializeVertexBuffer()
 	eg::StdVertex vertices[6] = { };
 	for (int i = 0; i < 6; i++)
 	{
-		*reinterpret_cast<glm::vec3*>(vertices[i].position) = transformedPos[i];
+		*reinterpret_cast<glm::vec3*>(vertices[i].position) = transformedPos[indices[i]];
 		for (int j = 0; j < 3; j++)
 		{
 			vertices[i].normal[j] = eg::FloatToSNorm(normal[j]);
 			vertices[i].tangent[j] = eg::FloatToSNorm(tangent[j]);
 		}
-		vertices[i].texCoord[0] = uvs[i].x * m_size.x;
-		vertices[i].texCoord[1] = uvs[i].y * uvScaleV;
+		vertices[i].texCoord[0] = uvs[indices[i]].x * m_size.x;
+		vertices[i].texCoord[1] = uvs[indices[i]].y * uvScaleV;
 	}
 	
 	eg::DC.UpdateBuffer(m_vertexBuffer, 0, sizeof(vertices), vertices);
 	m_vertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
 }
 
-std::array<glm::vec3, 6> RampEnt::GetTransformedVertices() const
+std::array<glm::vec3, 4> RampEnt::GetTransformedVertices() const
 {
 	glm::vec3 size = 0.5f * m_size;
 	if (m_flipped)
@@ -95,8 +92,8 @@ std::array<glm::vec3, 6> RampEnt::GetTransformedVertices() const
 		glm::rotate(glm::mat4(1), (float)m_yaw * eg::HALF_PI, glm::vec3(0, 1, 0)) *
 		glm::scale(glm::mat4(1), size);
 	
-	std::array<glm::vec3, 6> transformedPos;
-	for (int i = 0; i < 6; i++)
+	std::array<glm::vec3, 4> transformedPos;
+	for (int i = 0; i < 4; i++)
 	{
 		transformedPos[i] = transformMatrix * glm::vec4(untransformedPositions[i], 1.0f);
 	}
@@ -131,10 +128,16 @@ void RampEnt::Deserialize(std::istream& stream)
 	DeserializePos(rampPB);
 	
 	m_vertexBufferOutOfDate = true;
-	std::array<glm::vec3, 6> vertices = GetTransformedVertices();
+	std::array<glm::vec3, 4> vertices = GetTransformedVertices();
 	
-	m_collisionMesh.addTriangle(bullet::FromGLM(vertices[0]), bullet::FromGLM(vertices[1]), bullet::FromGLM(vertices[2]));
-	m_collisionMesh.addTriangle(bullet::FromGLM(vertices[3]), bullet::FromGLM(vertices[4]), bullet::FromGLM(vertices[5]));
+	m_collisionMesh.addTriangle(
+		bullet::FromGLM(vertices[indices[0]]),
+		bullet::FromGLM(vertices[indices[1]]),
+		bullet::FromGLM(vertices[indices[2]]));
+	m_collisionMesh.addTriangle(
+		bullet::FromGLM(vertices[indices[3]]),
+		bullet::FromGLM(vertices[indices[4]]),
+		bullet::FromGLM(vertices[indices[5]]));
 	m_collisionShape = std::make_unique<btBvhTriangleMeshShape>(&m_collisionMesh, true);
 	
 	m_rigidBody.InitStatic(this, *m_collisionShape);
@@ -147,6 +150,12 @@ const void* RampEnt::GetComponent(const std::type_info& type) const
 	if (type == typeid(RigidBodyComp))
 		return &m_rigidBody;
 	return Ent::GetComponent(type);
+}
+
+std::optional<glm::vec3> RampEnt::CheckCollision(const eg::AABB& aabb, const glm::vec3& moveDir) const
+{
+	std::array<glm::vec3, 4> vertices = GetTransformedVertices();
+	return CheckCollisionAABBPolygon(aabb, vertices, {}, 0);
 }
 
 template <>

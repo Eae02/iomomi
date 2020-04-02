@@ -1,6 +1,7 @@
 #include "CubeEnt.hpp"
 #include "GooPlaneEnt.hpp"
 #include "PlatformEnt.hpp"
+#include "FloorButtonEnt.hpp"
 #include "../../Player.hpp"
 #include "../../BulletPhysics.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
@@ -140,6 +141,9 @@ std::string_view CubeEnt::GetInteractDescription() const
 
 static float* cubeBuoyancy = eg::TweakVarFloat("cube_buoyancy", 0.25f, 0.0f);
 static float* cubeWaterDrag = eg::TweakVarFloat("cube_water_drag", 0.05f, 0.0f);
+static float* cubeButtonMinAttractDist = eg::TweakVarFloat("cube_ba_min_dist", 1E-3f, 0.0f);
+static float* cubeButtonMaxAttractDist = eg::TweakVarFloat("cube_ba_dist", 0.8f, 0.0f);
+static float* cubeButtonAttractForce = eg::TweakVarFloat("cube_ba_force", 1.5f, 0.0f);
 
 bool CubeEnt::SetGravity(Dir newGravity)
 {
@@ -236,6 +240,34 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 			m_rigidBody.GetRigidBody()->applyCentralForce(bullet::FromGLM(buoyancy));
 			float damping = std::min(waterQueryRes.numIntersecting * *cubeWaterDrag, 0.5f);
 			m_rigidBody.GetRigidBody()->setDamping(damping, damping);
+		}
+		else
+		{
+			const float maxDist2 = *cubeButtonMaxAttractDist * *cubeButtonMaxAttractDist;
+			
+			const FloorButtonEnt* currentButton = nullptr;
+			args.world->entManager.ForEachOfType<FloorButtonEnt>([&] (const FloorButtonEnt& floorButton)
+			{
+				if (floorButton.Direction() == OppositeDir(m_currentDown) &&
+				    glm::distance2(floorButton.Pos(), Pos()) < maxDist2)
+				{
+					currentButton = &floorButton;
+				}
+			});
+			
+			if (currentButton != nullptr)
+			{
+				const float minDist2 = *cubeButtonMinAttractDist * *cubeButtonMinAttractDist;
+				
+				glm::vec3 toCenter = currentButton->Pos() - Pos();
+				glm::vec3 buttonDir(DirectionVector(currentButton->Direction()));
+				toCenter -= buttonDir * glm::dot(toCenter, buttonDir);
+				if (glm::length2(toCenter) > minDist2)
+				{
+					toCenter = glm::normalize(toCenter) * *cubeButtonAttractForce;
+					m_rigidBody.GetRigidBody()->applyCentralForce(bullet::FromGLM(toCenter));
+				}
+			}
 		}
 		
 		btBroadphaseProxy* bpProxy = m_rigidBody.GetRigidBody()->getBroadphaseProxy();

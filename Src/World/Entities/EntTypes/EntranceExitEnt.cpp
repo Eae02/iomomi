@@ -2,6 +2,7 @@
 #include "../../BulletPhysics.hpp"
 #include "../../Player.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
+#include "../../../Graphics/Materials/EmissiveMaterial.hpp"
 #include "../../../Graphics/Lighting/PointLight.hpp"
 #include "../../../YAMLUtils.hpp"
 #include "../../../../Protobuf/Build/EntranceEntity.pb.h"
@@ -21,6 +22,10 @@ struct
 	const eg::Model* model;
 	std::vector<const eg::IMaterial*> materials;
 	
+	int floorLightMaterialIdx;
+	int ceilLightMaterialIdx;
+	int screenMaterialIdx;
+	
 	size_t doorMeshIndices[2][2];
 	
 	const eg::Model* editorEntModel;
@@ -30,7 +35,17 @@ struct
 	
 	btTriangleMesh roomCollisionMesh, door1CollisionMesh, door2CollisionMesh;
 	std::unique_ptr<btBvhTriangleMeshShape> roomCollisionMeshShape, door1CollisionMeshShape, door2CollisionMeshShape;
+	eg::CollisionMesh roomCollisionMeshEG, door1CollisionMeshEG, door2CollisionMeshEG;
 } entrance;
+
+inline static void AssignMaterial(std::string_view materialName, std::string_view assetName)
+{
+	int materialIndex = entrance.model->GetMaterialIndex(materialName);
+	if (materialIndex == -1) {
+		EG_PANIC("Material not found: " << materialName);
+	}
+	entrance.materials[materialIndex] = &eg::GetAsset<StaticPropMaterial>(assetName);
+}
 
 static void OnInit()
 {
@@ -39,17 +54,17 @@ static void OnInit()
 	entrance.editorExitModel = &eg::GetAsset<eg::Model>("Models/EditorExit.obj");
 	
 	entrance.materials.resize(entrance.model->NumMaterials(), &eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml"));
-	auto AssignMaterial = [&] (std::string_view materialName, std::string_view assetName)
-	{
-		int materialIndex = entrance.model->GetMaterialIndex(materialName);
-		entrance.materials.at(materialIndex) = &eg::GetAsset<StaticPropMaterial>(assetName);
-	};
 	AssignMaterial("Floor",       "Materials/Entrance/Floor.yaml");
 	AssignMaterial("WallPadding", "Materials/Entrance/Padding.yaml");
 	AssignMaterial("CeilPipe",    "Materials/Pipe2.yaml");
+	AssignMaterial("SidePipe",    "Materials/Pipe1.yaml");
 	AssignMaterial("Door1",       "Materials/Entrance/Door1.yaml");
 	AssignMaterial("Door2",       "Materials/Entrance/Door2.yaml");
 	AssignMaterial("DoorFrame",   "Materials/Entrance/DoorFrame.yaml");
+	
+	entrance.floorLightMaterialIdx = entrance.model->GetMaterialIndex("FloorLight");
+	entrance.ceilLightMaterialIdx = entrance.model->GetMaterialIndex("Light");
+	entrance.screenMaterialIdx = entrance.model->GetMaterialIndex("Screen");
 	
 	entrance.editorEntMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Entrance/EditorEntrance.yaml");
 	entrance.editorExitMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Entrance/EditorExit.yaml");
@@ -76,7 +91,8 @@ static void OnInit()
 	}
 	
 	const eg::Model& colModel = eg::GetAsset<eg::Model>("Models/EnterRoomCol.obj");
-	auto MakeCollisionMesh = [&] (std::string_view name, btTriangleMesh& mesh)
+	auto MakeCollisionMesh = [&] (std::string_view name, btTriangleMesh& mesh,
+		std::unique_ptr<btBvhTriangleMeshShape>& btMesh, eg::CollisionMesh& egMesh)
 	{
 		int index = colModel.GetMeshIndex(name);
 		EG_ASSERT(index != -1);
@@ -93,11 +109,12 @@ static void OnInit()
 		indexedMesh.m_triangleIndexBase = reinterpret_cast<const uint8_t*>(meshData.indices.data());
 		mesh.addIndexedMesh(indexedMesh, PHY_INTEGER);
 		
-		return std::make_unique<btBvhTriangleMeshShape>(&mesh, true);
+		btMesh = std::make_unique<btBvhTriangleMeshShape>(&mesh, true);
+		egMesh = eg::CollisionMesh::Create(meshData.vertices, meshData.indices);
 	};
-	entrance.door1CollisionMeshShape = MakeCollisionMesh("Door1", entrance.door1CollisionMesh);
-	entrance.door2CollisionMeshShape = MakeCollisionMesh("Door2", entrance.door2CollisionMesh);
-	entrance.roomCollisionMeshShape = MakeCollisionMesh("Room", entrance.roomCollisionMesh);
+	MakeCollisionMesh("Door1", entrance.door1CollisionMesh, entrance.door1CollisionMeshShape, entrance.door1CollisionMeshEG);
+	MakeCollisionMesh("Door2", entrance.door2CollisionMesh, entrance.door2CollisionMeshShape, entrance.door2CollisionMeshEG);
+	MakeCollisionMesh("Room", entrance.roomCollisionMesh, entrance.roomCollisionMeshShape, entrance.roomCollisionMeshEG);
 }
 
 EG_ON_INIT(OnInit)
@@ -124,12 +141,25 @@ std::vector<glm::vec3> EntranceExitEnt::GetConnectionPoints(const Ent& entity)
 	return connectionPoints;
 }
 
+static const eg::ColorLin ScreenTextColor(eg::ColorSRGB::FromHex(0x0b1a21));
+static const eg::ColorLin ScreenBackColor(eg::ColorSRGB::FromHex(0xd8f3ff));
+
 EntranceExitEnt::EntranceExitEnt()
-	: m_activatable(&EntranceExitEnt::GetConnectionPoints), m_pointLight(eg::ColorSRGB::FromHex(0xD1F8FE), 10.0f)
+	: m_activatable(&EntranceExitEnt::GetConnectionPoints),
+	  m_pointLight(eg::ColorSRGB::FromHex(0xD1F8FE), 25.0f),
+	  m_screenMaterial(500, 200)
 {
 	m_rigidBody.InitStatic(this, *entrance.roomCollisionMeshShape);
 	m_door1RigidBody = &m_rigidBody.InitStatic(this, *entrance.door1CollisionMeshShape);
 	m_door2RigidBody = &m_rigidBody.InitStatic(this, *entrance.door2CollisionMeshShape);
+	
+	m_screenMaterial.render = [this] (eg::SpriteBatch& spriteBatch)
+	{
+		if (m_type == Type::Exit)
+			return;
+		auto& font = eg::GetAsset<eg::SpriteFont>("GameFont.ttf");
+		spriteBatch.DrawText(font, m_levelTitle, glm::vec2(10, 10), ScreenTextColor);
+	};
 }
 
 const Dir UP_VECTORS[] =
@@ -208,10 +238,10 @@ void EntranceExitEnt::Update(const WorldUpdateArgs& args)
 	}
 	
 	bool doorOpen = m_doorOpenProgress > 0.1f;
-	bool door1Open = !(doorOpen && m_type == Type::Exit);
-	bool door2Open = !(doorOpen && m_type == Type::Entrance);
-	m_door1RigidBody->getBroadphaseProxy()->m_collisionFilterGroup = door1Open ? 1 : 0;
-	m_door2RigidBody->getBroadphaseProxy()->m_collisionFilterGroup = door2Open ? 1 : 0;
+	m_door1Open = doorOpen && m_type == Type::Exit;
+	m_door2Open = doorOpen && m_type == Type::Entrance;
+	m_door1RigidBody->getBroadphaseProxy()->m_collisionFilterGroup = m_door1Open ? 0 : 1;
+	m_door2RigidBody->getBroadphaseProxy()->m_collisionFilterGroup = m_door2Open ? 0 : 1;
 }
 
 void EntranceExitEnt::GameDraw(const EntGameDrawArgs& args)
@@ -228,14 +258,40 @@ void EntranceExitEnt::GameDraw(const EntGameDrawArgs& args)
 		transforms[meshIndex] = transforms[meshIndex] * glm::translate(glm::mat4(1.0f), tVec);
 	}
 	
+	static const eg::ColorLin FloorLightColor(eg::ColorSRGB::FromHex(0x16aa63));
+	static const glm::vec4 FloorLightColorV = 5.0f * glm::vec4(FloorLightColor.r, FloorLightColor.g, FloorLightColor.b, 1);
+	
+	const eg::ColorLin CeilLightColor(m_pointLight.GetColor());
+	const glm::vec4 CeilLightColorV = 5.0f * glm::vec4(CeilLightColor.r, CeilLightColor.g, CeilLightColor.b, 1);
+	
 	for (size_t i = 0; i < entrance.model->NumMeshes(); i++)
 	{
-		const size_t materialIndex = entrance.model->GetMesh(i).materialIndex;
-		args.meshBatch->AddModelMesh(*entrance.model, i, *entrance.materials[materialIndex],
-		                             StaticPropMaterial::InstanceData(transforms[i]));
+		int materialIndex = entrance.model->GetMesh(i).materialIndex;
+		if (materialIndex == entrance.floorLightMaterialIdx)
+		{
+			args.meshBatch->AddModelMesh(*entrance.model, i, EmissiveMaterial::instance,
+				EmissiveMaterial::InstanceData { transforms[i], FloorLightColorV });
+		}
+		else if (materialIndex == entrance.ceilLightMaterialIdx)
+		{
+			args.meshBatch->AddModelMesh(*entrance.model, i, EmissiveMaterial::instance,
+				EmissiveMaterial::InstanceData { transforms[i], CeilLightColorV });
+		}
+		else
+		{
+			const eg::IMaterial* mat = entrance.materials[materialIndex];
+			if (materialIndex == entrance.screenMaterialIdx)
+				mat = &m_screenMaterial;
+			
+			StaticPropMaterial::InstanceData instanceData(transforms[i]);
+			args.meshBatch->AddModelMesh(*entrance.model, i, *mat, instanceData);
+		}
 	}
 	
 	args.pointLights->emplace_back(m_pointLight.GetDrawData(glm::vec3(GetTransform() * glm::vec4(0, 2.0f, 1.0f, 1.0f))));
+	
+	m_levelTitle = args.world->title;
+	m_screenMaterial.RenderTexture(ScreenBackColor);
 }
 
 void EntranceExitEnt::EditorDraw(const EntEditorDrawArgs& args)
@@ -340,4 +396,18 @@ void EntranceExitEnt::Deserialize(std::istream& stream)
 	btTransform bTransform;
 	bTransform.setFromOpenGLMatrix(reinterpret_cast<float*>(&transform));
 	m_rigidBody.SetWorldTransform(bTransform);
+}
+
+std::optional<glm::vec3> EntranceExitEnt::CheckCollision(const eg::AABB& aabb, const glm::vec3& moveDir) const
+{
+	CollisionResponseCombiner combiner;
+	
+	glm::mat4 transform = GetTransform();
+	combiner.Update(CheckCollisionAABBTriangleMesh(aabb, moveDir, entrance.roomCollisionMeshEG, transform));
+	if (!m_door1Open)
+		combiner.Update(CheckCollisionAABBTriangleMesh(aabb, moveDir, entrance.door1CollisionMeshEG, transform));
+	if (!m_door2Open)
+		combiner.Update(CheckCollisionAABBTriangleMesh(aabb, moveDir, entrance.door2CollisionMeshEG, transform));
+	
+	return combiner.GetCorrection();
 }

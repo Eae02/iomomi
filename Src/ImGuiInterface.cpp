@@ -160,6 +160,10 @@ void ImGuiInterface::NewFrame()
 		}
 	});
 	
+	if (ImGui::GetIO().WantTextInput)
+	{
+		eg::TextInputActive();
+	}
 	if (!eg::InputtedText().empty())
 	{
 		ImGui::GetIO().AddInputCharactersUTF8(eg::InputtedText().c_str());

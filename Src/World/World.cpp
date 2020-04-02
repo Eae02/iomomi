@@ -35,7 +35,7 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 	std::unique_ptr<World> world = std::make_unique<World>();
 	
 	const uint32_t version = eg::BinRead<uint32_t>(stream);
-	if (version != 1 && version != 2)
+	if (version != 1 && version != 2 && version != 3)
 	{
 		eg::Log(eg::LogLevel::Error, "wd", "Unsupported world format");
 		return nullptr;
@@ -87,9 +87,18 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 		return nullptr;
 	}
 	
-	if (version == 2)
+	if (version >= 2)
 	{
 		world->playerHasGravityGun = eg::BinRead<uint8_t>(stream);
+	}
+	
+	if (version >= 3)
+	{
+		world->title = eg::BinReadString(stream);
+	}
+	else
+	{
+		world->title = "Untitled";
 	}
 	
 	world->entManager = EntityManager::Deserialize(stream);
@@ -111,7 +120,7 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 
 void World::Save(std::ostream& outStream) const
 {
-	static const uint32_t CURRENT_VERSION = 2;
+	static const uint32_t CURRENT_VERSION = 3;
 	
 	outStream.write(MAGIC, sizeof(MAGIC));
 	eg::BinWrite(outStream, CURRENT_VERSION);
@@ -128,6 +137,8 @@ void World::Save(std::ostream& outStream) const
 	}
 	
 	eg::BinWrite<uint8_t>(outStream, playerHasGravityGun);
+	
+	eg::BinWriteString(outStream, title);
 	
 	entManager.Serialize(outStream);
 }
@@ -1052,6 +1063,25 @@ void World::InitializeBulletPhysics()
 	m_bulletWorld->addRigidBody(m_wallsRigidBody.get());
 	
 	entManager.ForEach([&] (Ent& entity) { InitRigidBodyEntity(entity); });
+}
+
+std::optional<glm::vec3> World::CheckCollision(const eg::AABB& aabb, const glm::vec3& moveDir) const
+{
+	CollisionResponseCombiner combiner;
+	for (const Region& reg : m_regions)
+	{
+		if (!reg.data)
+			continue;
+		combiner.Update(CheckCollisionAABBTriangleMesh(aabb, moveDir, reg.data->collisionMesh, glm::mat4(1)));
+	}
+	
+	//OK to const_cast since ent is const
+	const_cast<EntityManager&>(entManager).ForEachWithFlag(EntTypeFlags::HasCollision, [&] (const Ent& ent)
+	{
+		combiner.Update(ent.CheckCollision(aabb, moveDir));
+	});
+	
+	return combiner.GetCorrection();
 }
 
 void World::InitRigidBodyEntity(Ent& entity)

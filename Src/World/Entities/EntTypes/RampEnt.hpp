@@ -1,15 +1,17 @@
 #pragma once
 
+#include <optional>
+#include <EGame/AABB.hpp>
 #include "../Entity.hpp"
 #include "../Components/RigidBodyComp.hpp"
 
 class RampEnt : public Ent
 {
 public:
-	RampEnt();
+	RampEnt() = default;
 	
 	static constexpr EntTypeID TypeID = EntTypeID::Ramp;
-	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable;
+	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::HasCollision;
 	
 	void Spawned(bool isEditor) override;
 	
@@ -23,6 +25,8 @@ public:
 	
 	const void* GetComponent(const std::type_info& type) const override;
 	
+	std::optional<glm::vec3> CheckCollision(const eg::AABB& aabb, const glm::vec3& moveDir) const override;
+	
 	int m_yaw = 0;
 	bool m_flipped = false;
 	
@@ -31,7 +35,7 @@ public:
 private:
 	void InitializeVertexBuffer();
 	
-	std::array<glm::vec3, 6> GetTransformedVertices() const;
+	std::array<glm::vec3, 4> GetTransformedVertices() const;
 	
 	bool m_vertexBufferOutOfDate = false;
 	eg::Buffer m_vertexBuffer;

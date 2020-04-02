@@ -60,3 +60,8 @@ std::shared_ptr<Ent> Ent::Clone() const
 {
 	return entTypeMap.at(m_typeID).clone(*this);
 }
+
+std::optional<glm::vec3> Ent::CheckCollision(const eg::AABB& aabb, const glm::vec3& moveDir) const
+{
+	return { };
+}

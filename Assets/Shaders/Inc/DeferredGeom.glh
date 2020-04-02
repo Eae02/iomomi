@@ -10,7 +10,7 @@ layout(location=1) out vec4 color1_out;
 
 void DeferredOut(vec3 albedo, vec3 normal, float roughness, float metallic, float ao)
 {
-	color0_out = vec4(albedo, ao * 0.99);
+	color0_out = vec4(albedo, clamp(ao * 0.99, 0.0, 1.0));
 	color1_out = vec4(SMEncode(normal), roughness, metallic);
 }
 

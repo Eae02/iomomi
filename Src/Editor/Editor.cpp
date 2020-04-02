@@ -130,6 +130,8 @@ void Editor::RunFrame(float dt)
 		if (ImGui::Begin("Level Settings", &m_levelSettingsOpen))
 		{
 			ImGui::Checkbox("Has Gravity Gun", &m_world->playerHasGravityGun);
+			
+			ImGui::InputText("Title", &m_world->title);
 		}
 		ImGui::End();
 	}
