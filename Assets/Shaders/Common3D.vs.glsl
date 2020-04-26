@@ -12,12 +12,8 @@ layout(location=1) out vec2 texCoord_out;
 layout(location=2) out vec3 normal_out;
 layout(location=3) out vec3 tangent_out;
 
+#define RENDER_SETTINGS_BINDING 0
 #include "Inc/RenderSettings.glh"
-
-layout(binding=0, std140) uniform RenderSettingsUB
-{
-	RenderSettings renderSettings;
-};
 
 void main()
 {

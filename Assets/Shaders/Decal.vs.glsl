@@ -13,12 +13,8 @@ layout(location=2) out vec3 normal_out;
 layout(location=3) out vec3 tangent_out;
 #endif
 
+#define RENDER_SETTINGS_BINDING 0
 #include "Inc/RenderSettings.glh"
-
-layout(binding=0, std140) uniform RenderSettingsUB
-{
-	RenderSettings renderSettings;
-};
 
 layout(push_constant) uniform PC
 {

@@ -65,8 +65,8 @@ void Editor::RunFrame(float dt)
 {
 	if (m_world == nullptr)
 	{
-		ImGui::SetNextWindowSize(ImVec2(400, 500), ImGuiCond_Always);
-		if (ImGui::Begin("Select Level", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse))
+		ImGui::SetNextWindowSize(ImVec2(400, 500), ImGuiCond_Once);
+		if (ImGui::Begin("Select Level", nullptr, ImGuiWindowFlags_NoCollapse))
 		{
 			ImGui::Text("New Level");
 			ImGui::InputText("Name", &m_newLevelName);
@@ -163,10 +163,10 @@ void Editor::RunFrame(float dt)
 	editorState.viewRay = eg::Ray::UnprojectScreen(RenderSettings::instance->invViewProjection, eg::CursorPos());
 	
 	
-	ImGui::SetNextWindowPos(ImVec2(0, eg::CurrentResolutionY() * 0.5f), ImGuiCond_Always, ImVec2(0.0f, 0.5f));
-	ImGui::SetNextWindowSize(ImVec2(200, eg::CurrentResolutionY() * 0.5f), ImGuiCond_Always);
+	ImGui::SetNextWindowPos(ImVec2(0, eg::CurrentResolutionY() / 2.0f), ImGuiCond_Always, ImVec2(0, 0.5f));
+	ImGui::SetNextWindowSize(ImVec2(250, eg::CurrentResolutionY() * 0.5f), ImGuiCond_Once);
 	ImGui::Begin("Editor", nullptr, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoCollapse |
-	             ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
+	             ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove);
 	if (ImGui::Button("Test Level (F5)", ImVec2(ImGui::GetContentRegionAvail().x, 0)))
 	{
 		std::stringstream stream;

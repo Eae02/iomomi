@@ -51,6 +51,7 @@ static void OnInit()
 
 EG_ON_INIT(OnInit)
 
+constexpr float PUSH_ANIMATION_TIME = 0.5f;
 constexpr float MAX_PUSH_DST = 0.07f;
 constexpr float ACTIVATE_PUSH_DST = MAX_PUSH_DST * 0.8f;
 
@@ -60,6 +61,10 @@ FloorButtonEnt::FloorButtonEnt()
 	m_buttonRigidBody = &m_rigidBody.Init(this, 0.01f, *buttonCollisionShape);
 	m_buttonRigidBody->setIgnoreCollisionCheck(m_frameRigidBody, true);
 	m_buttonRigidBody->setFlags(m_buttonRigidBody->getFlags() | BT_DISABLE_WORLD_GRAVITY);
+	
+	m_physicsObject.canBePushed = false;
+	m_physicsObject.owner = this;
+	m_physicsObject.shape = frameCollisionMeshEG.BoundingBox();
 }
 
 void FloorButtonEnt::CommonDraw(const EntDrawArgs& args)
@@ -101,31 +106,27 @@ void FloorButtonEnt::CommonDraw(const EntDrawArgs& args)
 
 void FloorButtonEnt::Update(const WorldUpdateArgs& args)
 {
-	constexpr int PUSH_AXIS = 1;
-	
-	if (args.world->PhysicsWorld() && !m_springConstraint)
+	if (glm::dot(m_physicsObject.pushForce, glm::vec3(DirectionVector(m_direction))) < 0)
 	{
-		btTransform localTransform;
-		localTransform.setIdentity();
-		
-		m_springConstraint = std::make_unique<btGeneric6DofSpring2Constraint>(
-			*m_frameRigidBody, *m_buttonRigidBody, localTransform, localTransform);
-		m_springConstraint->setLimit(PUSH_AXIS, -MAX_PUSH_DST, 0.0f);
-		m_springConstraint->enableSpring(PUSH_AXIS, true);
-		m_springConstraint->setStiffness(PUSH_AXIS, 50);
-		m_springConstraint->setDamping(PUSH_AXIS, 0);
-		m_springConstraint->setEquilibriumPoint(PUSH_AXIS);
-		args.world->PhysicsWorld()->addConstraint(m_springConstraint.get());
+		m_timeSincePushed = 0.05f;
+	}
+	else
+	{
+		m_timeSincePushed = std::max(m_timeSincePushed - args.dt, 0.0f);
 	}
 	
-	if (m_springConstraint)
+	if (m_timeSincePushed > 0)
 	{
-		m_springConstraint->calculateTransforms();
-		m_padPushDist = glm::clamp(glm::distance(bullet::ToGLM(m_springConstraint->getCalculatedTransformB().getOrigin()), m_position), 0.0f, MAX_PUSH_DST);
-		
-		if (m_padPushDist > ACTIVATE_PUSH_DST)
-			m_activator.Activate();
+		m_activator.Activate();
+		m_padPushDist += args.dt * (MAX_PUSH_DST / PUSH_ANIMATION_TIME);
 	}
+	else
+	{
+		m_padPushDist -= args.dt * (MAX_PUSH_DST / PUSH_ANIMATION_TIME);
+	}
+	m_padPushDist = glm::clamp(m_padPushDist, 0.0f, MAX_PUSH_DST);
+	
+	args.world->physicsEngine.RegisterObject(&m_physicsObject);
 	
 	m_activator.Update(args);
 }
@@ -159,6 +160,8 @@ void FloorButtonEnt::Deserialize(std::istream& stream)
 	m_direction = (Dir)buttonPB.dir();
 	DeserializePos(buttonPB);
 	
+	m_physicsObject.position = m_position;
+	m_physicsObject.rotation = glm::quat_cast(GetRotationMatrix());
 	m_rigidBody.SetTransform(m_position, glm::quat_cast(GetRotationMatrix()));
 	
 	if (buttonPB.has_activator())

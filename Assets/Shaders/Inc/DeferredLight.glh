@@ -1,14 +1,10 @@
 #ifndef DEFERRED_LIGHT_GLH
 #define DEFERRED_LIGHT_GLH
 
+#define RENDER_SETTINGS_BINDING 0
 #include "GBData.glh"
 #include "RenderSettings.glh"
 #include <Deferred.glh>
-
-layout(binding=0, std140) uniform RenderSettingsUB
-{
-	RenderSettings renderSettings;
-};
 
 layout(constant_id=100) const int numSamples = 1;
 

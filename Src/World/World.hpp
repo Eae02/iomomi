@@ -10,6 +10,7 @@
 #include "../Graphics/Vertex.hpp"
 #include "../Graphics/PlanarReflectionsManager.hpp"
 #include "Collision.hpp"
+#include "PhysicsEngine.hpp"
 
 struct WallVertex;
 
@@ -114,6 +115,7 @@ public:
 		return m_bulletWorld.get();
 	}
 	
+	PhysicsEngine physicsEngine;
 	EntityManager entManager;
 	
 	const glm::ivec3& GetBoundsMin() const
@@ -165,6 +167,7 @@ private:
 		std::vector<GravityCorner> gravityCorners;
 		std::vector<VoxelReflectionPlane> reflectionPlanes;
 		eg::CollisionMesh collisionMesh;
+		PhysicsObject physicsObject;
 	};
 	
 	struct Region

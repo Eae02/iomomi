@@ -13,12 +13,8 @@ layout(location=3) out vec2 ypc_out;
 layout(location=4) out float opacity_out;
 layout(location=5) flat out uint blockedAxis_out;
 
+#define RENDER_SETTINGS_BINDING 0
 #include "Inc/RenderSettings.glh"
-
-layout(binding=0, std140) uniform RenderSettingsUB
-{
-	RenderSettings renderSettings;
-};
 
 const float OPACITY_SCALE = 0.0004 / 255.0;
 

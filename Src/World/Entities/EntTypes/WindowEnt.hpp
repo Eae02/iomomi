@@ -31,9 +31,8 @@ private:
 	const eg::IMaterial* m_material;
 	float m_textureScale = 1;
 	AxisAlignedQuadComp m_aaQuad;
+	AxisAlignedQuadComp::CollisionGeometry m_collisionGeometry;
 	RigidBodyComp m_rigidBodyComp;
-	
-	glm::vec3 m_vertices[6][4];
 	
 	std::unique_ptr<btBoxShape> m_bulletShape;
 };

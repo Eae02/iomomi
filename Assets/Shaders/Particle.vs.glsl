@@ -9,12 +9,8 @@ layout(location=0) out vec2 texCoord_out;
 layout(location=1) out float opacity_out;
 layout(location=2) flat out int additive_out;
 
+#define RENDER_SETTINGS_BINDING 0
 #include "Inc/RenderSettings.glh"
-
-layout(binding=0, std140) uniform RenderSettingsUB
-{
-	RenderSettings renderSettings;
-};
 
 void main()
 {

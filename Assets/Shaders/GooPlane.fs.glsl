@@ -2,6 +2,7 @@
 
 #pragma variants VDefault VNoRefl
 
+#define RENDER_SETTINGS_BINDING 0
 #include "Inc/RenderSettings.glh"
 #include "Inc/Fresnel.glh"
 #include <Deferred.glh>
@@ -11,11 +12,6 @@
 layout(location=0) in vec3 worldPos_in;
 
 layout(location=0) out vec4 color_out;
-
-layout(set=0, binding=0, std140) uniform RenderSettingsUB
-{
-	RenderSettings renderSettings;
-};
 
 const int NM_SAMPLES = 3;
 

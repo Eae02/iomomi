@@ -13,12 +13,8 @@ layout(location=2) out vec3 tangent_out;
 layout(location=3) out vec4 ao_out;
 layout(location=4) out vec2 roughnessRange_out;
 
+#define RENDER_SETTINGS_BINDING 0
 #include "Inc/RenderSettings.glh"
-
-layout(binding=0, std140) uniform RenderSettingsUB
-{
-	RenderSettings renderSettings;
-};
 
 layout(binding=1, std140) uniform MaterialSettingsUB
 {

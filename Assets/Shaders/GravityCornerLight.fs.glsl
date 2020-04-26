@@ -1,11 +1,7 @@
 #version 450 core
 
+#define RENDER_SETTINGS_BINDING 0
 #include "Inc/RenderSettings.glh"
-
-layout(binding=0, std140) uniform RenderSettingsUB
-{
-	RenderSettings renderSettings;
-};
 
 layout(push_constant) uniform PC
 {

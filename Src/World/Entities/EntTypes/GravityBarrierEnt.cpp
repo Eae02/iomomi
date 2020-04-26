@@ -16,6 +16,7 @@ struct BarrierBufferData
 {
 	uint32_t iaDownAxis[NUM_INTERACTABLES];
 	glm::vec4 iaPosition[NUM_INTERACTABLES];
+	float gameTime;
 };
 
 struct InstanceData
@@ -264,7 +265,7 @@ void GravityBarrierEnt::RenderSettings()
 {
 	Ent::RenderSettings();
 	
-	ImGui::DragFloat2("Size", &m_aaQuad.size.x, 0.5f);
+	ImGui::DragFloat2("Size", &m_aaQuad.radius.x, 0.5f);
 	
 	ImGui::Combo("Plane", &m_aaQuad.upPlane, "X\0Y\0Z\0");
 	
@@ -340,6 +341,7 @@ void GravityBarrierEnt::Update(const WorldUpdateArgs& args)
 	}
 	
 	BarrierBufferData bufferData;
+	bufferData.gameTime = RenderSettings::instance->gameTime;
 	int itemsWritten = 0;
 	
 	if (args.player != nullptr)
@@ -401,8 +403,8 @@ void GravityBarrierEnt::Serialize(std::ostream& stream) const
 	
 	gravBarrierPB.set_flow_direction(flowDirection);
 	gravBarrierPB.set_up_plane(m_aaQuad.upPlane);
-	gravBarrierPB.set_sizex(m_aaQuad.size.x);
-	gravBarrierPB.set_sizey(m_aaQuad.size.y);
+	gravBarrierPB.set_sizex(m_aaQuad.radius.x);
+	gravBarrierPB.set_sizey(m_aaQuad.radius.y);
 	gravBarrierPB.set_activate_action((uint32_t)activateAction);
 	gravBarrierPB.set_block_falling(m_blockFalling);
 	
@@ -423,7 +425,7 @@ void GravityBarrierEnt::Deserialize(std::istream& stream)
 	
 	flowDirection = gravBarrierPB.flow_direction();
 	m_aaQuad.upPlane = gravBarrierPB.up_plane();
-	m_aaQuad.size = glm::vec2(gravBarrierPB.sizex(), gravBarrierPB.sizey());
+	m_aaQuad.radius = glm::vec2(gravBarrierPB.sizex(), gravBarrierPB.sizey());
 	activateAction = (ActivateAction)gravBarrierPB.activate_action();
 	m_blockFalling = gravBarrierPB.block_falling();
 }

@@ -75,6 +75,7 @@ private:
 	Dir m_down = Dir::NegY;
 	
 	bool m_onGround = false;
+	float m_onGroundLinger = 0;
 	bool m_wasOnGround = false;
 	bool m_wasUnderwater = false;
 	
@@ -95,6 +96,7 @@ private:
 	glm::vec3 m_position;
 	glm::vec3 m_eyePosition;
 	glm::vec3 m_velocity;
+	glm::vec2 m_extraPlanarVelocity;
 	glm::quat m_rotation;
 	
 	std::array<std::pair<glm::vec3, glm::quat>, 20> m_onGroundRingBuffer;
@@ -104,6 +106,5 @@ private:
 	
 	glm::vec3 m_radius;
 	
-	std::unique_ptr<btRigidBody> m_rigidBody;
-	std::unique_ptr<btDefaultMotionState> m_motionState;
+	PhysicsObject m_physicsObject;
 };

@@ -13,4 +13,5 @@ message PlatformEntity {
 	float slide_offset_y = 6;
 	fixed32 name = 7;
 	float slide_time = 9;
+	float launch_speed = 10;
 }

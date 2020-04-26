@@ -8,12 +8,8 @@ layout(location=5) in vec2 textureScale_in;
 layout(location=0) out vec3 worldPos_out;
 layout(location=1) out vec2 texCoord_out;
 
+#define RENDER_SETTINGS_BINDING 0
 #include "Inc/RenderSettings.glh"
-
-layout(binding=0, std140) uniform RenderSettingsUB
-{
-	RenderSettings renderSettings;
-};
 
 layout(push_constant) uniform PC
 {

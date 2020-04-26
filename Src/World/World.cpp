@@ -258,6 +258,19 @@ void World::Update(const WorldUpdateArgs& args)
 {
 	entManager.Update(args);
 	
+	if (args.player)
+	{
+		for (const Region& region : m_regions)
+		{
+			if (region.data)
+			{
+				physicsEngine.RegisterObject(&region.data->physicsObject);
+			}
+		}
+		
+		physicsEngine.Simulate(args.dt);
+	}
+	
 	if (m_bulletWorld)
 	{
 		auto physicsCPUTimer = eg::StartCPUTimer("Physics");
@@ -734,6 +747,9 @@ void World::BuildRegionMesh(glm::ivec3 coordinate, World::RegionData& region, bo
 	
 	region.collisionMesh = eg::CollisionMesh::CreateV3<uint32_t>(collisionVertices, collisionIndices);
 	region.collisionMesh.FlipWinding();
+	
+	region.physicsObject.canBePushed = false;
+	region.physicsObject.shape = &region.collisionMesh;
 }
 
 void World::BuildRegionBorderMesh(glm::ivec3 coordinate, World::RegionData& region)

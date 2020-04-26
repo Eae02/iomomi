@@ -1,4 +1,5 @@
 #include "Collision.hpp"
+#include "Dir.hpp"
 
 #pragma GCC optimize("Ofast")
 
@@ -85,12 +86,40 @@ std::optional<glm::vec3> CheckCollisionAABBTriangleMesh(const eg::AABB& aabb, co
 	return combiner.GetCorrection();
 }
 
-void CollisionResponseCombiner::Update(const glm::vec3& correction)
+std::optional<glm::vec3> CheckCollisionAABBOrientedBox(const eg::AABB& aabb, const OrientedBox& orientedBox,
+	const glm::vec3& moveDir, float shiftAmount)
+{
+	CollisionResponseCombiner combiner;
+	
+	for (int f = 0; f < 6; f++)
+	{
+		glm::vec3 tangent = orientedBox.rotation * (glm::vec3(voxel::tangents[f]) * orientedBox.radius);
+		glm::vec3 bitangent = orientedBox.rotation * (glm::vec3(voxel::biTangents[f]) * orientedBox.radius);
+		glm::vec3 normal = orientedBox.rotation * (glm::vec3(DirectionVector((Dir)f)) * orientedBox.radius);
+		glm::vec3 faceCenter = orientedBox.center + normal;
+		
+		glm::vec3 positions[] = 
+		{
+			faceCenter - tangent - bitangent,
+			faceCenter - tangent + bitangent,
+			faceCenter + tangent - bitangent,
+			faceCenter + tangent + bitangent
+		};
+		
+		combiner.Update(CheckCollisionAABBPolygon(aabb, positions, moveDir, shiftAmount));
+	}
+	
+	return combiner.GetCorrection();
+}
+
+bool CollisionResponseCombiner::Update(const glm::vec3& correction)
 {
 	float mag2 = glm::length2(correction);
 	if (mag2 > 1E-5f && mag2 < m_correctionMag2)
 	{
 		m_correctionMag2 = mag2;
 		m_correction = correction;
+		return true;
 	}
+	return false;
 }

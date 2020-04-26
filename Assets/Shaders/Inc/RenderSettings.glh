@@ -1,7 +1,8 @@
 #ifndef RENDER_SETTINGS_H
 #define RENDER_SETTINGS_H
 
-struct RenderSettings
+#ifdef RENDER_SETTINGS_BINDING
+layout(set=0, binding=RENDER_SETTINGS_BINDING) uniform RenderSettingsUB
 {
 	mat4 viewProjection;
 	mat4 invViewProjection;
@@ -11,13 +12,7 @@ struct RenderSettings
 	mat4 invProjectionMatrix;
 	vec3 cameraPosition;
 	float gameTime;
-};
-
-#ifdef RENDER_SETTINGS_BINDING
-layout(set=0, binding=RENDER_SETTINGS_BINDING, std140) uniform RenderSettingsUB
-{
-	RenderSettings renderSettings;
-};
+} renderSettings;
 #endif
 
 #endif

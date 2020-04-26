@@ -8,12 +8,8 @@
 layout(location=0) out vec4 color_out;
 #endif
 
+#define RENDER_SETTINGS_BINDING 0
 #include "Inc/RenderSettings.glh"
-
-layout(set=0, binding=0, std140) uniform RenderSettingsUB
-{
-	RenderSettings renderSettings;
-};
 
 layout(binding=1) uniform sampler2D hexSampler;
 

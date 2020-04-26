@@ -9,9 +9,7 @@
 #include "ForceFieldEnt.hpp"
 #include <imgui.h>
 
-static constexpr float MASS = 1.0f;
-
-static std::unique_ptr<btCollisionShape> collisionShape;
+static constexpr float MASS = 50.0f;
 
 static eg::Model* cubeModel;
 static eg::IMaterial* cubeMaterial;
@@ -21,8 +19,6 @@ static eg::IMaterial* woodCubeMaterial;
 
 static void OnInit()
 {
-	collisionShape = std::make_unique<btBoxShape>(btVector3(CubeEnt::RADIUS, CubeEnt::RADIUS, CubeEnt::RADIUS));
-	
 	cubeModel = &eg::GetAsset<eg::Model>("Models/Cube.obj");
 	cubeMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Cube.yaml");
 	woodCubeModel = &eg::GetAsset<eg::Model>("Models/WoodCube.obj");
@@ -34,17 +30,20 @@ EG_ON_INIT(OnInit)
 CubeEnt::CubeEnt(const glm::vec3& position, bool _canFloat)
 	: canFloat(_canFloat)
 {
-	m_position = position;
-	
-	m_rigidBody.Init(this, MASS, *collisionShape);
-	m_rigidBody.GetRigidBody()->setFlags(m_rigidBody.GetRigidBody()->getFlags() | BT_DISABLE_WORLD_GRAVITY);
-	m_rigidBody.GetRigidBody()->setActivationState(DISABLE_DEACTIVATION);
-	m_rigidBody.SetTransform(position, m_rotation);
-	
-	m_rigidBody.GetRigidBody()->setFriction(1.f);
-	m_rigidBody.GetRigidBody()->setRollingFriction(.1);
-	m_rigidBody.GetRigidBody()->setSpinningFriction(0.1);
-	//m_rigidBody.GetRigidBody()->setAnisotropicFriction(collisionShape->getAnisotropicRollingFrictionDirection(), btCollisionObject::CF_ANISOTROPIC_ROLLING_FRICTION);
+	m_physicsObject.position = position;
+	m_physicsObject.mass = MASS;
+	m_physicsObject.shape = eg::AABB(-glm::vec3(RADIUS), glm::vec3(RADIUS));
+	m_physicsObject.owner = this;
+	m_physicsObject.canCarry = true;
+	m_physicsObject.shouldCollide = ShouldCollide;
+}
+
+bool CubeEnt::ShouldCollide(const PhysicsObject& self, const PhysicsObject& other)
+{
+	CubeEnt* cube = (CubeEnt*)std::get<Ent*>(self.owner);
+	if (cube->m_isPickedUp && std::holds_alternative<Player*>(other.owner))
+		return false;
+	return true;
 }
 
 void CubeEnt::RenderSettings()
@@ -58,7 +57,8 @@ void CubeEnt::Spawned(bool isEditor)
 {
 	if (isEditor)
 	{
-		m_position += glm::vec3(DirectionVector(m_direction)) * (RADIUS + 0.01f);
+		m_physicsObject.position += glm::vec3(DirectionVector(m_direction)) * (RADIUS + 0.01f);
+		m_physicsObject.position = m_physicsObject.position;
 	}
 }
 
@@ -71,9 +71,7 @@ void CubeEnt::Draw(eg::MeshBatch& meshBatch, const glm::mat4& transform) const
 
 void CubeEnt::GameDraw(const EntGameDrawArgs& args)
 {
-	btTransform transform = m_rigidBody.GetBulletTransform();
-	glm::mat4 worldMatrix;
-	transform.getOpenGLMatrix(reinterpret_cast<float*>(&worldMatrix));
+	glm::mat4 worldMatrix = glm::translate(glm::mat4(1), m_physicsObject.displayPosition);
 	worldMatrix *= glm::scale(glm::mat4(1), glm::vec3(RADIUS));
 	Draw(*args.meshBatch, worldMatrix);
 }
@@ -81,16 +79,14 @@ void CubeEnt::GameDraw(const EntGameDrawArgs& args)
 void CubeEnt::EditorDraw(const EntEditorDrawArgs& args)
 {
 	const glm::mat4 worldMatrix =
-		glm::translate(glm::mat4(1), m_position) *
-		glm::mat4_cast(m_rotation) *
+		glm::translate(glm::mat4(1), m_physicsObject.displayPosition) *
+		glm::mat4_cast(m_physicsObject.rotation) *
 		glm::scale(glm::mat4(1), glm::vec3(RADIUS));
 	Draw(*args.meshBatch, worldMatrix);
 }
 
 const void* CubeEnt::GetComponent(const std::type_info& type) const
 {
-	if (type == typeid(RigidBodyComp))
-		return &m_rigidBody;
 	if (type == typeid(GravityBarrierInteractableComp))
 		return &m_barrierInteractableComp;
 	return Ent::GetComponent(type);
@@ -104,8 +100,7 @@ void CubeEnt::Interact(Player& player)
 	if (!m_isPickedUp)
 	{
 		//Clear the cube's velocity so that it's impossible to fling the cube around.
-		m_rigidBody.GetRigidBody()->setLinearVelocity(btVector3(0, 0, 0));
-		m_rigidBody.GetRigidBody()->setAngularVelocity(btVector3(0, 0, 0));
+		m_physicsObject.velocity = { };
 	}
 }
 
@@ -156,9 +151,14 @@ bool CubeEnt::SetGravity(Dir newGravity)
 void CubeEnt::Update(const WorldUpdateArgs& args)
 {
 	if (!args.player)
+	{
+		m_physicsObject.displayPosition = m_position;
 		return;
+	}
 	
-	eg::Sphere sphere(m_position, RADIUS);
+	args.world->physicsEngine.RegisterObject(&m_physicsObject);
+	
+	eg::Sphere sphere(m_physicsObject.position, RADIUS);
 	
 	bool inGoo = false;
 	args.world->entManager.ForEachOfType<GooPlaneEnt>([&] (const GooPlaneEnt& goo)
@@ -189,10 +189,6 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 	
 	if (m_isPickedUp)
 	{
-		auto [rbPos, rbRot] = m_rigidBody.GetTransform();
-		m_position = rbPos;
-		m_rotation = rbRot;
-		
 		constexpr float DIST_FROM_PLAYER = RADIUS + 0.7f; //Distance to the cube when carrying
 		constexpr float MAX_DIST_FROM_PLAYER = RADIUS + 0.9f; //Drop the cube if further away than this
 		
@@ -200,7 +196,8 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 		
 		eg::AABB desiredAABB(desiredPosition - RADIUS * 1.001f, desiredPosition + RADIUS * 1.001f);
 		
-		glm::vec3 deltaPos = desiredPosition - m_position;
+		glm::vec3 deltaPos = desiredPosition - m_physicsObject.position;
+		m_physicsObject.gravity = { };
 		
 		if (glm::length2(deltaPos) > MAX_DIST_FROM_PLAYER * MAX_DIST_FROM_PLAYER)
 		{
@@ -210,26 +207,13 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 		}
 		else
 		{
-			//ClippingArgs clipArgs;
-			//clipArgs.ellipsoid.center = m_position;
-			//clipArgs.ellipsoid.radii = glm::vec3(RADIUS * 0.75f);
-			//clipArgs.move = deltaPos;
-			//args.world->CalcClipping(clipArgs, m_currentDown);
-			//
-			//if (clipArgs.collisionInfo.collisionFound)
-			//	deltaPos *= clipArgs.collisionInfo.distance;
-			
-			m_rigidBody.GetRigidBody()->setGravity(btVector3(0, 0, 0));
-			m_rigidBody.GetRigidBody()->setLinearVelocity(bullet::FromGLM(deltaPos * impulseFactor));
-			m_rigidBody.GetRigidBody()->setAngularVelocity(btVector3(0, 0, 0));
-			m_rigidBody.GetRigidBody()->clearForces();
+			m_physicsObject.move = deltaPos;
+			m_physicsObject.velocity = { };
 		}
 	}
 	else
 	{
-		//Updates the gravity vector
-		glm::vec3 gravityUnit = glm::vec3(DirectionVector(m_currentDown));
-		m_rigidBody.GetRigidBody()->setGravity(bullet::FromGLM(gravityUnit * bullet::GRAVITY));
+		m_physicsObject.gravity = DirectionVector(m_currentDown);
 		
 		//Water interaction
 		if (canFloat && m_waterQueryAABB != nullptr)
@@ -237,9 +221,10 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 			WaterSimulator::QueryResults waterQueryRes = m_waterQueryAABB->GetResults();
 			
 			glm::vec3 buoyancy = waterQueryRes.buoyancy * *cubeBuoyancy;
-			m_rigidBody.GetRigidBody()->applyCentralForce(bullet::FromGLM(buoyancy));
-			float damping = std::min(waterQueryRes.numIntersecting * *cubeWaterDrag, 0.5f);
-			m_rigidBody.GetRigidBody()->setDamping(damping, damping);
+			m_physicsObject.force += buoyancy;
+			//m_rigidBody.GetRigidBody()->applyCentralForce(bullet::FromGLM(buoyancy));
+			//float damping = std::min(waterQueryRes.numIntersecting * *cubeWaterDrag, 0.5f);
+			//m_rigidBody.GetRigidBody()->setDamping(damping, damping);
 		}
 		else
 		{
@@ -265,13 +250,10 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 				if (glm::length2(toCenter) > minDist2)
 				{
 					toCenter = glm::normalize(toCenter) * *cubeButtonAttractForce;
-					m_rigidBody.GetRigidBody()->applyCentralForce(bullet::FromGLM(toCenter));
+					m_physicsObject.force += toCenter;
 				}
 			}
 		}
-		
-		btBroadphaseProxy* bpProxy = m_rigidBody.GetRigidBody()->getBroadphaseProxy();
-		bpProxy->m_collisionFilterGroup = 1U | (2U << ((int)m_currentDown / 2));
 	}
 	
 	m_barrierInteractableComp.currentDown = m_currentDown;
@@ -279,18 +261,13 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 
 void CubeEnt::UpdatePostSim(const WorldUpdateArgs& args)
 {
-	auto [rbPos, rbRot] = m_rigidBody.GetTransform();
-	m_position = rbPos;
-	m_rotation = rbRot;
-	
-	if (m_rigidBody.GetRigidBody()->getLinearVelocity().length2() > 1E-4f ||
-	    m_rigidBody.GetRigidBody()->getAngularVelocity().length2() > 1E-4f)
+	if (glm::distance(m_physicsObject.previousPosition, m_physicsObject.position) > 1E-3f)
 	{
 		args.invalidateShadows(GetSphere());
 	}
 	
 	const glm::vec3 down(DirectionVector(m_currentDown));
-	const eg::AABB cubeAABB(m_position - RADIUS, m_position + RADIUS);
+	const eg::AABB cubeAABB(m_physicsObject.position - RADIUS, m_physicsObject.position + RADIUS);
 	
 	if (canFloat)
 	{
@@ -308,12 +285,14 @@ void CubeEnt::Serialize(std::ostream& stream) const
 {
 	gravity_pb::CubeEntity cubePB;
 	
-	SerializePos(cubePB);
+	cubePB.set_posx(m_physicsObject.position.x);
+	cubePB.set_posy(m_physicsObject.position.y);
+	cubePB.set_posz(m_physicsObject.position.z);
 	
-	cubePB.set_rotationx(m_rotation.x);
-	cubePB.set_rotationy(m_rotation.y);
-	cubePB.set_rotationz(m_rotation.z);
-	cubePB.set_rotationw(m_rotation.w);
+	cubePB.set_rotationx(m_physicsObject.rotation.x);
+	cubePB.set_rotationy(m_physicsObject.rotation.y);
+	cubePB.set_rotationz(m_physicsObject.rotation.z);
+	cubePB.set_rotationw(m_physicsObject.rotation.w);
 	
 	cubePB.set_can_float(canFloat);
 	
@@ -325,12 +304,9 @@ void CubeEnt::Deserialize(std::istream& stream)
 	gravity_pb::CubeEntity cubePB;
 	cubePB.ParseFromIstream(&stream);
 	
-	DeserializePos(cubePB);
-	
-	m_rotation = glm::quat(cubePB.rotationw(), cubePB.rotationx(), cubePB.rotationy(), cubePB.rotationz());
+	m_position = m_physicsObject.position = glm::vec3(cubePB.posx(), cubePB.posy(), cubePB.posz());
+	m_physicsObject.rotation = glm::quat(cubePB.rotationw(), cubePB.rotationx(), cubePB.rotationy(), cubePB.rotationz());
 	canFloat = cubePB.can_float();
-	
-	m_rigidBody.SetTransform(m_position, m_rotation);
 }
 
 template <>

@@ -6,14 +6,10 @@ layout(location=0) in vec3 position_in;
 layout(location=1) in mat4 worldTransform_in;
 layout(location=5) in vec4 color_in;
 
+#define RENDER_SETTINGS_BINDING 0
 #include "Inc/RenderSettings.glh"
 
 layout(location=0) out vec4 color_out;
-
-layout(binding=0, std140) uniform RenderSettingsUB
-{
-	RenderSettings renderSettings;
-};
 
 #ifdef VPlanarRefl
 layout(push_constant) uniform PC

@@ -3,6 +3,7 @@
 #include "../Entity.hpp"
 #include "../Components/ActivatorComp.hpp"
 #include "../Components/RigidBodyComp.hpp"
+#include "../../PhysicsEngine.hpp"
 
 class FloorButtonEnt : public Ent
 {
@@ -37,7 +38,10 @@ private:
 	btRigidBody* m_frameRigidBody;
 	btRigidBody* m_buttonRigidBody;
 	
+	PhysicsObject m_physicsObject;
+	
 	std::unique_ptr<btGeneric6DofSpring2Constraint> m_springConstraint;
 	
+	float m_timeSincePushed = 0;
 	float m_padPushDist = 0;
 };

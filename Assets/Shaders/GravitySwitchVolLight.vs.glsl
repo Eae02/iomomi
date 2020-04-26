@@ -10,12 +10,8 @@ layout(push_constant) uniform PC
 	mat3 rotationMatrix;
 };
 
+#define RENDER_SETTINGS_BINDING 0
 #include "Inc/RenderSettings.glh"
-
-layout(binding=0, std140) uniform RenderSettingsUB
-{
-	RenderSettings renderSettings;
-};
 
 void main()
 {

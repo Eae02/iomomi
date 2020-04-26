@@ -26,7 +26,7 @@ void WindowEnt::RenderSettings()
 {
 	Ent::RenderSettings();
 	
-	ImGui::DragFloat2("Size", &m_aaQuad.size.x, 0.5f);
+	ImGui::DragFloat2("Size", &m_aaQuad.radius.x, 0.5f);
 	
 	ImGui::Combo("Plane", &m_aaQuad.upPlane, "X\0Y\0Z\0");
 	
@@ -43,7 +43,7 @@ void WindowEnt::CommonDraw(const EntDrawArgs& args)
 		glm::vec4(bitangent * 0.5f, 0),
 		glm::vec4(0, 0, 0, 1)
 	);
-	glm::vec2 textureScale = m_aaQuad.size / m_textureScale;
+	glm::vec2 textureScale = m_aaQuad.radius / m_textureScale;
 	args.meshBatch->AddModel(*windowModel, *m_material, StaticPropMaterial::InstanceData(transform, textureScale));
 }
 
@@ -63,8 +63,8 @@ void WindowEnt::Serialize(std::ostream& stream) const
 	SerializePos(windowPB);
 	
 	windowPB.set_up_plane(m_aaQuad.upPlane);
-	windowPB.set_sizex(m_aaQuad.size.x);
-	windowPB.set_sizey(m_aaQuad.size.y);
+	windowPB.set_sizex(m_aaQuad.radius.x);
+	windowPB.set_sizey(m_aaQuad.radius.y);
 	windowPB.set_texture_scale(m_textureScale);
 	
 	windowPB.SerializeToOstream(&stream);
@@ -78,7 +78,7 @@ void WindowEnt::Deserialize(std::istream& stream)
 	DeserializePos(windowPB);
 	
 	m_aaQuad.upPlane = windowPB.up_plane();
-	m_aaQuad.size = glm::vec2(windowPB.sizex(), windowPB.sizey());
+	m_aaQuad.radius = glm::vec2(windowPB.sizex(), windowPB.sizey());
 	m_textureScale = windowPB.texture_scale();
 	
 	auto [tangent, bitangent] = m_aaQuad.GetTangents(0);
@@ -89,28 +89,10 @@ void WindowEnt::Deserialize(std::istream& stream)
 	m_rigidBodyComp.InitStatic(this, *m_bulletShape);
 	m_rigidBodyComp.SetTransform(boxCenter, glm::quat());
 	
-	for (int f = 0; f < 6; f++)
-	{
-		glm::vec3 faceCenter = boxCenter + glm::vec3(DirectionVector((Dir)f)) * boxSize;
-		for (int a = 0; a < 2; a++)
-		{
-			for (int b = 0; b < 2; b++)
-			{
-				m_vertices[f][a * 2 + b] = faceCenter +
-					glm::vec3(voxel::tangents[f] * (a * 2 - 1) + voxel::biTangents[f] * (b * 2 - 1)) * boxSize;
-			}
-		}
-	}
+	m_collisionGeometry = m_aaQuad.GetCollisionGeometry(boxCenter, BOX_SHAPE_RADIUS);
 }
 
 std::optional<glm::vec3> WindowEnt::CheckCollision(const eg::AABB& aabb, const glm::vec3& moveDir) const
 {
-	CollisionResponseCombiner combiner;
-	
-	for (int f = 0; f < 6; f++)
-	{
-		combiner.Update(CheckCollisionAABBPolygon(aabb, m_vertices[f], moveDir));
-	}
-	
-	return combiner.GetCorrection();
+	return m_collisionGeometry.CheckCollision(aabb, moveDir);
 }

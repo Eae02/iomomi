@@ -19,11 +19,16 @@ static float* jumpHeight      = eg::TweakVarFloat("pl_jump_height",       1.1f, 
 static float* fallGravityRamp = eg::TweakVarFloat("pl_fall_gravity_ramp", 0.1f,  0.0f);
 static float* maxYSpeed       = eg::TweakVarFloat("pl_max_yspeed",        300,   0.0f);
 static float* colCorrectExtra = eg::TweakVarFloat("pl_cc_extra",          0.001f, 0.0f);
+static float* eyeRoundPrecision = eg::TweakVarFloat("pl_eye_round_prec",  0.01f, 0);
 
 static constexpr float EYE_OFFSET = Player::EYE_HEIGHT - Player::HEIGHT / 2;
 
 Player::Player()
-	: m_position(1, 2, 1), m_velocity(0.0f) { }
+	: m_position(1, 2, 1), m_velocity(0.0f)
+{
+	m_physicsObject.canBePushed = false;
+	m_physicsObject.owner = this;
+}
 
 static const glm::vec3 leftDirs[6] =
 {
@@ -52,40 +57,7 @@ static btCapsuleShapeZ playerPhysicsShape(Player::WIDTH / 2, Player::HEIGHT / 2)
 
 void Player::Update(World& world, float dt, bool underwater)
 {
-	btTransform rigidBodyTransform;
-	/*
-	if (m_rigidBody == nullptr)
-	{
-		constexpr float MASS = 1;
-		
-		m_motionState = std::make_unique<btDefaultMotionState>();
-		
-		btVector3 localInertia;
-		playerPhysicsShape.calculateLocalInertia(MASS, localInertia);
-		m_rigidBody = std::make_unique<btRigidBody>(MASS, m_motionState.get(), &playerPhysicsShape, localInertia);
-		m_rigidBody->setFlags(m_rigidBody->getFlags() | BT_DISABLE_WORLD_GRAVITY);
-		m_rigidBody->setCollisionFlags(m_rigidBody->getCollisionFlags() | btCollisionObject::CF_CHARACTER_OBJECT);
-		m_rigidBody->setActivationState(DISABLE_DEACTIVATION);
-		m_rigidBody->setGravity(btVector3(0, 0, 0));
-		m_rigidBody->setFriction(0.0f);
-		
-		world.PhysicsWorld()->addRigidBody(m_rigidBody.get());
-		
-		rigidBodyTransform.setIdentity();
-		rigidBodyTransform.setOrigin(bullet::FromGLM(m_position));
-		
-		m_motionState->setWorldTransform(rigidBodyTransform);
-		m_rigidBody->setWorldTransform(rigidBodyTransform);
-	}
-	else
-	{
-		m_motionState->getWorldTransform(rigidBodyTransform);
-		m_position = bullet::ToGLM(rigidBodyTransform.getOrigin());
-		m_velocity = bullet::ToGLM(m_rigidBody->getLinearVelocity());
-	}
-	*/
 	RayIntersectResult rayIntersect = world.RayIntersect(eg::Ray(m_position, glm::vec3(DirectionVector(m_down))));
-	m_onGround = rayIntersect.intersected && rayIntersect.distance < (HEIGHT / 2 + 0.05f);
 	
 	const glm::vec3 up = -DirectionVector(m_down);
 	
@@ -196,75 +168,82 @@ void Player::Update(World& world, float dt, bool underwater)
 	
 	if (m_gravityTransitionMode == TransitionMode::None && !underwater)
 	{
-		const float accelAmount = *walkSpeed / *walkAccelTime;
-		const float deaccelAmount = *walkSpeed / *walkDeaccelTime;
-		
-		if (moveForward == moveBack && std::abs(localAccPlane.x) < 1E-4f)
+		if (glm::length(localVelPlane) > *walkSpeed * 1.1f)
 		{
-			if (localVelPlane.x < 0)
+			localVelPlane *= 1.0f - std::min(dt * 0.1f, 0.05f);
+		}
+		else
+		{
+			const float accelAmount = *walkSpeed / *walkAccelTime;
+			const float deaccelAmount = *walkSpeed / *walkDeaccelTime;
+			
+			if (moveForward == moveBack && std::abs(localAccPlane.x) < 1E-4f)
 			{
-				localVelPlane.x += dt * deaccelAmount;
-				if (localVelPlane.x > 0)
-					localVelPlane.x = 0.0f;
-			}
-			if (localVelPlane.x > 0)
-			{
-				localVelPlane.x -= dt * deaccelAmount;
 				if (localVelPlane.x < 0)
-					localVelPlane.x = 0.0f;
+				{
+					localVelPlane.x += dt * deaccelAmount;
+					if (localVelPlane.x > 0)
+						localVelPlane.x = 0.0f;
+				}
+				if (localVelPlane.x > 0)
+				{
+					localVelPlane.x -= dt * deaccelAmount;
+					if (localVelPlane.x < 0)
+						localVelPlane.x = 0.0f;
+				}
 			}
-		}
-		else if (moveForward)
-		{
-			localAccPlane += glm::vec2(1, 0);
-		}
-		else if (moveBack)
-		{
-			localAccPlane -= glm::vec2(1, 0);
-		}
-		
-		if (moveRight == moveLeft && std::abs(localAccPlane.y) < 1E-4f)
-		{
-			if (localVelPlane.y < 0)
+			else if (moveForward)
 			{
-				localVelPlane.y += dt * deaccelAmount;
-				if (localVelPlane.y > 0)
-					localVelPlane.y = 0.0f;
+				localAccPlane += glm::vec2(1, 0);
 			}
-			if (localVelPlane.y > 0)
+			else if (moveBack)
 			{
-				localVelPlane.y -= dt * deaccelAmount;
+				localAccPlane -= glm::vec2(1, 0);
+			}
+			
+			if (moveRight == moveLeft && std::abs(localAccPlane.y) < 1E-4f)
+			{
 				if (localVelPlane.y < 0)
-					localVelPlane.y = 0.0f;
+				{
+					localVelPlane.y += dt * deaccelAmount;
+					if (localVelPlane.y > 0)
+						localVelPlane.y = 0.0f;
+				}
+				if (localVelPlane.y > 0)
+				{
+					localVelPlane.y -= dt * deaccelAmount;
+					if (localVelPlane.y < 0)
+						localVelPlane.y = 0.0f;
+				}
 			}
-		}
-		else if (moveLeft)
-		{
-			localAccPlane -= glm::vec2(0, 1);
-		}
-		else if (moveRight)
-		{
-			localAccPlane += glm::vec2(0, 1);
-		}
-		
-		const float accelMag = glm::length(localAccPlane);
-		if (accelMag > 1E-6f)
-		{
-			localAccPlane *= accelAmount / accelMag;
+			else if (moveLeft)
+			{
+				localAccPlane -= glm::vec2(0, 1);
+			}
+			else if (moveRight)
+			{
+				localAccPlane += glm::vec2(0, 1);
+			}
 			
-			//Increases the localAccPlane if the player is being accelerated in the opposite direction of it's current
-			// velocity. This makes direction changes snappier.
-			if (glm::dot(localAccPlane, localVelPlane) < 0.0f)
-				localAccPlane *= 4.0f;
+			const float accelMag = glm::length(localAccPlane);
+			if (accelMag > 1E-6f)
+			{
+				localAccPlane *= accelAmount / accelMag;
+				
+				//Increases the localAccPlane if the player is being accelerated in the opposite direction of it's current
+				// velocity. This makes direction changes snappier.
+				if (glm::dot(localAccPlane, localVelPlane) < 0.0f)
+					localAccPlane *= 4.0f;
+				
+				localVelPlane += localAccPlane * dt;
+			}
 			
-			localVelPlane += localAccPlane * dt;
-		}
-		
-		//Caps the local velocity to the walking speed
-		const float speed = glm::length(localVelPlane);
-		if (speed > *walkSpeed)
-		{
-			localVelPlane *= *walkSpeed / speed;
+			//Caps the local velocity to the walking speed
+			const float speed = glm::length(localVelPlane);
+			if (speed > *walkSpeed)
+			{
+				localVelPlane *= *walkSpeed / speed;
+			}
 		}
 	}
 	
@@ -279,6 +258,7 @@ void Player::Update(World& world, float dt, bool underwater)
 		localVelVertical = jumpAccel;
 		m_onGroundRingBufferSize = std::min(m_onGroundRingBufferSize, 1U);
 		m_onGround = false;
+		m_onGroundLinger = 0;
 		m_position += up * 0.01f;
 	}
 	
@@ -396,17 +376,17 @@ void Player::Update(World& world, float dt, bool underwater)
 		}
 	}
 	
-	std::ostringstream cs;
+	glm::vec3 previousPos = m_position;
 	auto ApplyMovement = [&] (glm::vec3& move, const glm::vec3& aabbShift)
 	{
 		constexpr float MAX_MOVE_LEN = 5;
 		constexpr float MAX_MOVE_PER_STEP = 0.5f;
 		constexpr int MAX_ITERATIONS = 4;
-		bool anyCollision = false;
+		std::optional<glm::vec3> maxCorrection;
 		for (int i = 0; i < MAX_ITERATIONS; i++)
 		{
 			float moveLen = glm::length(move);
-			if (moveLen < 1E-3f)
+			if (moveLen < 1E-4f)
 				break;
 			
 			if (moveLen > MAX_MOVE_LEN)
@@ -425,9 +405,10 @@ void Player::Update(World& world, float dt, bool underwater)
 				newAABB.max += partialMove + aabbShift;
 				if (std::optional<glm::vec3> correction = world.CheckCollision(newAABB, move))
 				{
-					move = partialMove + *correction;// + glm::normalize(*correction) * *colCorrectExtra;
+					move = partialMove + *correction;
 					didCollide = true;
-					anyCollision = true;
+					if (!maxCorrection || glm::length2(*correction) > glm::length2(*maxCorrection))
+						maxCorrection = correction;
 					break;
 				}
 			}
@@ -435,15 +416,43 @@ void Player::Update(World& world, float dt, bool underwater)
 			if (!didCollide)
 				break;
 		}
-		return anyCollision;
+		return maxCorrection;
 	};
-	ApplyMovement(moveXZ, up * 0.05f);
-	if (ApplyMovement(moveY, {}))
-		m_velocity[(int)m_down / 2] = 0;
 	
-	std::string css = cs.str();
-	//if (css.size() > 5)
-	//	std::cout << css << std::endl;
+	//Moves the player with the current platform, if there is one below
+	if (m_onGround && rayIntersect.entity != nullptr && rayIntersect.entity->TypeID() == EntTypeID::Platform)
+	{
+		PlatformEnt& platform = *static_cast<PlatformEnt*>(rayIntersect.entity);
+		glm::vec3 platformMove = platform.MoveDelta();
+		ApplyMovement(platformMove, {});
+		m_velocity += platform.LaunchVelocity();
+	}
+	
+	if (std::optional<glm::vec3> correction = ApplyMovement(moveXZ, up * 0.05f))
+	{
+		m_velocity -= *correction * (glm::dot(m_velocity, *correction) / glm::length2(*correction));
+	}
+	
+	m_onGround = false;
+	if (std::optional<glm::vec3> correction = ApplyMovement(moveY, {}))
+	{
+		if (glm::dot(*correction, up) > 0)
+			m_onGround = true;
+		m_velocity[(int)m_down / 2] = 0;
+	}
+	
+	if (m_onGround)
+	{
+		m_onGroundLinger = 0.1f;
+	}
+	else
+	{
+		m_onGroundLinger -= dt;
+		if (m_onGroundLinger > 0)
+			m_onGround = true;
+		else
+			m_onGroundLinger = 0;
+	}
 	
 	eg::Sphere gooPlaneTestSphere(m_position, 0.1f);
 	bool isInGoo = false;
@@ -455,7 +464,6 @@ void Player::Update(World& world, float dt, bool underwater)
 	
 	if (isInGoo && m_onGroundRingBufferSize != 0)
 	{
-		//world.PhysicsWorld()->removeRigidBody(m_rigidBody.get());
 		Reset();
 		uint32_t ringBufferPos = (m_onGroundRingBufferFront + m_onGroundRingBuffer.size() - m_onGroundRingBufferSize) % m_onGroundRingBuffer.size();
 		m_position = m_onGroundRingBuffer[ringBufferPos].first;
@@ -486,30 +494,14 @@ void Player::Update(World& world, float dt, bool underwater)
 		}
 	}
 	
-	//Moves the player with the current platform, if there is one below
-	if (m_onGround && rayIntersect.entity != nullptr && rayIntersect.entity->TypeID() == EntTypeID::Platform)
-	{
-		m_velocity += static_cast<PlatformEnt*>(rayIntersect.entity)->MoveDelta() / dt;
-	}
-	
-	
-	
-	/*
-	m_rigidBody->setLinearVelocity(bullet::FromGLM(m_velocity));
-	m_rigidBody->setGravity(bullet::FromGLM(-up * ((underwater ? 0.2f : 1.0f) * *playerGravity)));
-	
-	//Updates the transform of the rigid body
-	glm::mat3 rigidBodyRotationMatrix(leftDirs[(int)m_down], glm::cross(glm::abs(up), leftDirs[(int)m_down]), glm::abs(up));
-	rigidBodyTransform.setRotation(bullet::FromGLM(glm::quat_cast(rigidBodyRotationMatrix)));
-	rigidBodyTransform.setOrigin(bullet::FromGLM(m_position));
-	m_rigidBody->setWorldTransform(rigidBodyTransform);
-	
-	btBroadphaseProxy* bpProxy = m_rigidBody->getBroadphaseProxy();
-	bpProxy->m_collisionFilterGroup = 1U | (2U << ((int)m_down / 2));
-	*/
+	m_physicsObject.position = glm::vec3();
+	m_physicsObject.move = m_position - previousPos;
+	m_physicsObject.shape = GetAABB();
+	world.physicsEngine.RegisterObject(&m_physicsObject);
 	
 	//Updates the eye position
 	m_eyePosition = m_position + up * EYE_OFFSET;
+	m_eyePosition = glm::round(m_eyePosition / *eyeRoundPrecision) * *eyeRoundPrecision;
 	if (m_gravityTransitionMode == TransitionMode::Fall)
 	{
 		m_eyePosition = glm::mix(m_oldEyePosition, m_eyePosition, TransitionInterpol());
@@ -578,13 +570,10 @@ void Player::Reset()
 	m_down = Dir::NegY;
 	m_isCarrying = false;
 	m_gravityTransitionMode = TransitionMode::None;
-	//m_rigidBody = nullptr;
-	m_motionState = nullptr;
 }
 
 void Player::SetPosition(const glm::vec3& position)
 {
-	//m_rigidBody = nullptr;
 	m_position = position;
 }
 

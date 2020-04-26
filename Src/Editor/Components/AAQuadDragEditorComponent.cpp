@@ -22,14 +22,14 @@ bool AAQuadDragEditorComponent::UpdateInput(float dt, const EditorState& editorS
 		glm::vec3 intersectPos = editorState.viewRay.GetPoint(planeIntersectDist);
 		
 		float edges[] = {
-			entity->Pos()[dragDim] + quadComp.size[draggingBitangent] * 0.5f,
-			entity->Pos()[dragDim] - quadComp.size[draggingBitangent] * 0.5f
+			entity->Pos()[dragDim] + quadComp.radius[draggingBitangent] * 0.5f,
+			entity->Pos()[dragDim] - quadComp.radius[draggingBitangent] * 0.5f
 		};
 		edges[draggingNegative] = SnapToGrid(intersectPos[dragDim]);
 		
 		glm::vec3 newPos = entity->Pos();
 		newPos[dragDim] = (edges[0] + edges[1]) / 2.0f;
-		quadComp.size[draggingBitangent] = (edges[0] - edges[1]);
+		quadComp.radius[draggingBitangent] = (edges[0] - edges[1]);
 		entity->EditorMoved(newPos, {});
 	}
 	

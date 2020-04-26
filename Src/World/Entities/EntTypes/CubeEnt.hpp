@@ -7,6 +7,7 @@
 #include "../Components/RigidBodyComp.hpp"
 #include "../../Dir.hpp"
 #include "../../../Graphics/WaterSimulator.hpp"
+#include "../../PhysicsEngine.hpp"
 
 class CubeEnt : public Ent, public EntInteractable, public EntGravityChargeable
 {
@@ -46,7 +47,7 @@ public:
 	
 	eg::Sphere GetSphere() const
 	{
-		return eg::Sphere(m_position, RADIUS * std::sqrt(3.0f));
+		return eg::Sphere(m_physicsObject.position, RADIUS * std::sqrt(3.0f));
 	}
 	
 	bool canFloat = false;
@@ -54,15 +55,15 @@ public:
 private:
 	void Draw(eg::MeshBatch& meshBatch, const glm::mat4& transform) const;
 	
-	RigidBodyComp m_rigidBody;
+	static bool ShouldCollide(const PhysicsObject& self, const PhysicsObject& other);
+	
+	PhysicsObject m_physicsObject;
 	GravityBarrierInteractableComp m_barrierInteractableComp;
 	
 	bool m_isPickedUp = false;
 	Dir m_currentDown = Dir::NegY;
 	
 	std::shared_ptr<WaterSimulator::QueryAABB> m_waterQueryAABB;
-	
-	glm::quat m_rotation;
 };
 
 template <>

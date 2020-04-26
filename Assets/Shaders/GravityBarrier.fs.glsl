@@ -24,13 +24,6 @@ const float LINE_WIDTH = 0.003;
 const float MAX_INTENSITY = 0.9;
 const float EDGE_FADE_DIST = 0.2;
 
-#include "Inc/RenderSettings.glh"
-
-layout(binding=0, std140) uniform RenderSettingsUB
-{
-	RenderSettings renderSettings;
-};
-
 layout(binding=1) uniform sampler2D noiseTex;
 
 float lineIntensity(float lx, float tx)
@@ -49,7 +42,10 @@ layout(binding=2, std140) uniform BarrierSettingsUB
 {
 	uvec4 iaDownAxis[NUM_INTERACTABLES / 4];
 	vec4 iaPosition[NUM_INTERACTABLES];
+	float gameTime;
 };
+#else
+const float gameTime = 0;
 #endif
 
 void main()
@@ -96,7 +92,7 @@ void main()
 		for (int j = 0; j < OFF_SAMPLES; j++)
 		{
 			float sx = ((centerLn * DUP_LINES + d) * OFF_SAMPLES + j) * 0.01;
-			float sy = (texCoord_in.y + 0.2 * renderSettings.gameTime * (j / float(OFF_SAMPLES - 1)));
+			float sy = (texCoord_in.y + 0.2 * gameTime * (j / float(OFF_SAMPLES - 1)));
 			off += texture(noiseTex, vec2(sx, sy)).r;
 		}
 		intensity += lineIntensity(centerLn + 0.5 + off * offScale, tx);

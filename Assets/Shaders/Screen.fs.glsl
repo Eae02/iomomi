@@ -8,12 +8,8 @@ layout(location=1) in vec2 texCoord_in;
 layout(location=2) in vec3 normal_in;
 layout(location=3) in vec3 tangent_in;
 
+#define RENDER_SETTINGS_BINDING 0
 #include "Inc/RenderSettings.glh"
-
-layout(binding=0, std140) uniform RenderSettingsUB
-{
-	RenderSettings renderSettings;
-};
 
 layout(binding=1) uniform sampler2D colorSampler;
 

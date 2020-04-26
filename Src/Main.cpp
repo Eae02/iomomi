@@ -24,7 +24,7 @@ void Start(eg::RunConfig& runConfig)
 	eg::TextureAssetQuality = settings.textureQuality;
 	
 	runConfig.gameName = "Gravity Game";
-	runConfig.flags |= eg::RunFlags::DevMode | eg::RunFlags::DefaultFramebufferSRGB;
+	runConfig.flags |= eg::RunFlags::DefaultFramebufferSRGB;
 	runConfig.defaultDepthStencilFormat = eg::Format::Depth32;
 	runConfig.initialize = []
 	{
@@ -67,6 +67,10 @@ int main(int argc, char** argv)
 	
 	eg::RunConfig runConfig;
 	bool vSync = true;
+	bool dev = true;
+#ifdef NDEBUG
+	dev = false;
+#endif
 	for (int i = 1; i < argc; i++)
 	{
 		std::string_view arg = argv[i];
@@ -74,8 +78,16 @@ int main(int argc, char** argv)
 			runConfig.graphicsAPI = eg::GraphicsAPI::OpenGL;
 		else if (arg == "--vk")
 			runConfig.graphicsAPI = eg::GraphicsAPI::Vulkan;
+		else if (arg == "--nodev")
+			dev = false;
+		else if (arg == "--dev")
+			dev = true;
 		else if (arg == "--novsync")
 			vSync = false;
+	}
+	if (dev)
+	{
+		runConfig.flags |= eg::RunFlags::DevMode;
 	}
 	if (vSync)
 	{

@@ -2,6 +2,7 @@
 #include "../../BulletPhysics.hpp"
 #include "../../Entities/EntityManager.hpp"
 #include "../../WorldUpdateArgs.hpp"
+#include "../../World.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../../Protobuf/Build/PlatformEntity.pb.h"
 
@@ -13,9 +14,7 @@ static eg::IMaterial* platformMaterial;
 static eg::Model* platformSliderModel;
 static eg::IMaterial* platformSliderMaterial;
 
-static std::unique_ptr<btCollisionShape> platformCollisionShape;
-
-static constexpr float RIGID_BODY_HEIGHT = 0.2f;
+static constexpr float COLLIDER_HALF_HEIGHT = 0.2f;
 
 static void OnInit()
 {
@@ -24,8 +23,6 @@ static void OnInit()
 	
 	platformSliderModel = &eg::GetAsset<eg::Model>("Models/PlatformSlider.obj");
 	platformSliderMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/PlatformSlider.yaml");
-	
-	platformCollisionShape = std::make_unique<btBoxShape>(btVector3(1.0f, RIGID_BODY_HEIGHT, 1.0f));
 }
 
 EG_ON_INIT(OnInit)
@@ -33,10 +30,12 @@ EG_ON_INIT(OnInit)
 PlatformEnt::PlatformEnt()
 	: m_activatable(&PlatformEnt::GetConnectionPoints)
 {
-	m_rigidBody.InitStatic(this, *platformCollisionShape);
-	m_rigidBody.GetRigidBody()->setCollisionFlags(m_rigidBody.GetRigidBody()->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
-	m_rigidBody.GetRigidBody()->setActivationState(DISABLE_DEACTIVATION);
-	m_rigidBody.GetRigidBody()->setFriction(0.5f);
+	m_physicsObject.canBePushed = false;
+	m_physicsObject.canCarry = true;
+	m_physicsObject.shape = eg::AABB(-glm::vec3(1.0f, COLLIDER_HALF_HEIGHT, 1.0f), glm::vec3(1.0f, COLLIDER_HALF_HEIGHT, 1.0f));
+	
+	m_aaQuadComp.upPlane = 1;
+	m_aaQuadComp.radius = glm::vec2(1, 1);
 }
 
 static const glm::mat4 PLATFORM_ROTATION_MATRIX(0, 0, -1, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 1);
@@ -48,9 +47,9 @@ inline glm::mat4 GetPlatformBaseTransform(const Ent& entity)
 }
 
 //Gets the transformation matrix for the platform, slided to it's current position
-glm::mat4 PlatformEnt::GetPlatformTransform() const
+glm::mat4 PlatformEnt::GetPlatformTransform(float slideProgress) const
 {
-	const glm::vec2 slideOffset = m_slideOffset * glm::smoothstep(0.0f, 1.0f, m_slideProgress);
+	const glm::vec2 slideOffset = m_slideOffset * glm::smoothstep(0.0f, 1.0f, slideProgress);
 	return glm::translate(GetPlatformBaseTransform(*this), glm::vec3(slideOffset.x, slideOffset.y, 0));
 }
 
@@ -71,9 +70,9 @@ std::vector<glm::vec3> PlatformEnt::GetConnectionPoints(const Ent& entity)
 	return connectionPointsWS;
 }
 
-glm::vec3 PlatformEnt::GetPlatformPosition() const
+glm::vec3 PlatformEnt::GetPlatformPosition(float slideProgress) const
 {
-	return glm::vec3(GetPlatformTransform() * glm::vec4(0, RIGID_BODY_HEIGHT / 2, 0, 1));
+	return glm::vec3(GetPlatformTransform(slideProgress) * glm::vec4(0, COLLIDER_HALF_HEIGHT / 2, 0, 1));
 }
 
 void PlatformEnt::RenderSettings()
@@ -82,7 +81,11 @@ void PlatformEnt::RenderSettings()
 	
 	ImGui::DragFloat2("Slide Offset", &m_slideOffset.x, 0.1f);
 	
-	ImGui::DragFloat("Slide Time", &m_slideTime);
+	if (ImGui::DragFloat("Slide Time", &m_slideTime))
+		m_slideTime = std::max(m_slideTime, 0.0f);
+	
+	if (ImGui::DragFloat("Launch Speed", &m_launchSpeed, 0.1f, 0.0f, INFINITY))
+		m_launchSpeed = std::max(m_launchSpeed, 0.0f);
 }
 
 void PlatformEnt::CommonDraw(const EntDrawArgs& args)
@@ -104,7 +107,7 @@ void PlatformEnt::CommonDraw(const EntDrawArgs& args)
 		args.meshBatch->AddModel(*platformSliderModel, *platformSliderMaterial, StaticPropMaterial::InstanceData(transform));
 	}
 	
-	args.meshBatch->AddModel(*platformModel, *platformMaterial, StaticPropMaterial::InstanceData(GetPlatformTransform()));
+	args.meshBatch->AddModel(*platformModel, *platformMaterial, StaticPropMaterial::InstanceData(GetPlatformTransform(m_slideProgress)));
 }
 
 void PlatformEnt::Update(const WorldUpdateArgs& args)
@@ -113,6 +116,8 @@ void PlatformEnt::Update(const WorldUpdateArgs& args)
 		return;
 	
 	const glm::vec3 oldPos = GetPlatformPosition();
+	
+	float oldSlideProgress = m_slideProgress;
 	
 	//Updates the slide progress
 	const bool activated = m_activatable.AllSourcesActive();
@@ -125,18 +130,48 @@ void PlatformEnt::Update(const WorldUpdateArgs& args)
 	//Sets the move delta, which will be used by the player update function
 	m_moveDelta = GetPlatformPosition() - oldPos;
 	
+	constexpr float LAUNCH_TIME = 0.8f;
+	
+	if (oldSlideProgress < LAUNCH_TIME && m_slideProgress >= LAUNCH_TIME)
+		m_launchVelocity = m_launchVelocityToSet;
+	else if (oldSlideProgress > 1 - LAUNCH_TIME && m_slideProgress <= 1 - LAUNCH_TIME)
+		m_launchVelocity = -m_launchVelocityToSet;
+	else
+		m_launchVelocity = { };
+	
+	if (!m_physicsObject.childObjects.empty() && glm::length2(m_launchVelocity) > 1E-3f)
+	{
+		for (PhysicsObject* object : m_physicsObject.childObjects)
+			object->velocity += m_launchVelocity;
+	}
+	
 	//Updates shadows if the platform moved
 	if (glm::length2(m_moveDelta) > 1E-5f)
 	{
 		args.invalidateShadows(eg::Sphere::CreateEnclosing(GetPlatformAABB()));
 	}
 	
-	static const glm::vec4 RIGID_BODY_OFFSET_LOCAL(0, -RIGID_BODY_HEIGHT, -1, 1);
+	static const glm::vec4 RIGID_BODY_OFFSET_LOCAL(0, -COLLIDER_HALF_HEIGHT, -1, 1);
 	
-	btTransform rbTransform;
-	rbTransform.setIdentity();
-	rbTransform.setOrigin(bullet::FromGLM(glm::vec3(GetPlatformTransform() * RIGID_BODY_OFFSET_LOCAL)));
-	m_rigidBody.SetWorldTransform(rbTransform);
+	glm::vec3 colCenterOld = glm::vec3(GetPlatformTransform(oldSlideProgress) * RIGID_BODY_OFFSET_LOCAL);
+	glm::vec3 colCenterNew = glm::vec3(GetPlatformTransform(m_slideProgress) * RIGID_BODY_OFFSET_LOCAL);
+	
+	m_physicsObject.move = colCenterNew - colCenterOld;
+	m_physicsObject.position = colCenterOld;
+	args.world->physicsEngine.RegisterObject(&m_physicsObject);
+	
+	m_collisionGeometry = m_aaQuadComp.GetCollisionGeometry(colCenterNew, COLLIDER_HALF_HEIGHT);
+}
+
+void PlatformEnt::ComputeLaunchVelocity()
+{
+	glm::vec3 moveDir = glm::normalize(GetPlatformPosition(1) - GetPlatformPosition(0));
+	m_launchVelocityToSet = m_launchSpeed * moveDir;
+}
+
+std::optional<glm::vec3> PlatformEnt::CheckCollision(const eg::AABB& aabb, const glm::vec3& moveDir) const
+{
+	return m_collisionGeometry.CheckCollision(aabb, moveDir);
 }
 
 PlatformEnt* PlatformEnt::FindPlatform(const eg::AABB& searchAABB, EntityManager& entityManager)
@@ -152,7 +187,7 @@ PlatformEnt* PlatformEnt::FindPlatform(const eg::AABB& searchAABB, EntityManager
 
 eg::AABB PlatformEnt::GetPlatformAABB() const
 {
-	const glm::mat4 transform = GetPlatformTransform();
+	const glm::mat4 transform = GetPlatformTransform(m_slideProgress);
 	const glm::vec3 world1 = transform * glm::vec4(-1.0f, -0.1f, -2.0f, 1.0f);
 	const glm::vec3 world2 = transform * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
 	return eg::AABB(world1, world2);
@@ -160,8 +195,6 @@ eg::AABB PlatformEnt::GetPlatformAABB() const
 
 const void* PlatformEnt::GetComponent(const std::type_info& type) const
 {
-	if (type == typeid(RigidBodyComp))
-		return &m_rigidBody;
 	if (type == typeid(ActivatableComp))
 		return &m_activatable;
 	return Ent::GetComponent(type);
@@ -177,6 +210,7 @@ void PlatformEnt::Serialize(std::ostream& stream) const
 	platformPB.set_slide_offset_x(m_slideOffset.x);
 	platformPB.set_slide_offset_y(m_slideOffset.y);
 	platformPB.set_slide_time(m_slideTime);
+	platformPB.set_launch_speed(m_launchSpeed);
 	
 	platformPB.set_name(m_activatable.m_name);
 	
@@ -193,6 +227,9 @@ void PlatformEnt::Deserialize(std::istream& stream)
 	
 	m_slideOffset = glm::vec2(platformPB.slide_offset_x(), platformPB.slide_offset_y());
 	m_slideTime = platformPB.slide_time();
+	m_launchSpeed = platformPB.launch_speed();
+	
+	ComputeLaunchVelocity();
 	
 	if (platformPB.name() != 0)
 		m_activatable.m_name = platformPB.name();

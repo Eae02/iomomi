@@ -1,16 +1,12 @@
 #version 450 core
 
+#define RENDER_SETTINGS_BINDING 0
 #include "../Inc/RenderSettings.glh"
 
 #include <EGame.glh>
 
 layout(location=0) in vec3 position_in;
 layout(location=1) noperspective out vec2 screenCoord_out;
-
-layout(binding=0, std140) uniform RenderSettingsUB
-{
-	RenderSettings renderSettings;
-};
 
 layout(push_constant, std140) uniform PC
 {
