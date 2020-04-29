@@ -2,8 +2,8 @@
 
 #include "../Entity.hpp"
 #include "../Components/ActivatableComp.hpp"
-#include "../Components/RigidBodyComp.hpp"
 #include "../Components/AxisAlignedQuadComp.hpp"
+#include "../../PhysicsEngine.hpp"
 
 struct GravityBarrierInteractableComp
 {
@@ -15,7 +15,7 @@ class GravityBarrierEnt : public Ent
 public:
 	static constexpr EntTypeID TypeID = EntTypeID::GravityBarrier;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
-		EntTypeFlags::Activatable | EntTypeFlags::DisableClone;
+		EntTypeFlags::Activatable | EntTypeFlags::DisableClone | EntTypeFlags::HasPhysics;
 	
 	GravityBarrierEnt();
 	
@@ -32,6 +32,8 @@ public:
 	void Spawned(bool isEditor) override;
 	
 	const void* GetComponent(const std::type_info& type) const override;
+	
+	void CollectPhysicsObjects(PhysicsEngine& physicsEngine) override;
 	
 	int BlockedAxis() const;
 	
@@ -50,6 +52,8 @@ public:
 private:
 	static std::vector<glm::vec3> GetConnectionPoints(const Ent& entity);
 	
+	static bool ShouldCollide(const PhysicsObject& self, const PhysicsObject& other);
+	
 	std::tuple<glm::vec3, glm::vec3> GetTangents() const;
 	
 	ActivatableComp m_activatable;
@@ -59,7 +63,6 @@ private:
 	bool m_enabled = true;
 	bool m_blockFalling = false;
 	int m_flowDirectionOffset = 0;
-	btBoxShape m_collisionShape;
 	
-	RigidBodyComp m_rigidBody;
+	PhysicsObject m_physicsObject;
 };

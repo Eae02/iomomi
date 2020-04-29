@@ -22,7 +22,7 @@ public:
 	
 	void Interact(class Player& player) override;
 	
-	int CheckInteraction(const class Player& player) const override;
+	int CheckInteraction(const class Player& player, const class PhysicsEngine& physicsEngine) const override;
 	
 	std::string_view GetInteractDescription() const override;
 	

@@ -8,7 +8,7 @@ class Player
 public:
 	Player();
 	
-	void Update(World& world, float dt, bool underwater);
+	void Update(World& world, PhysicsEngine& physicsEngine, float dt, bool underwater);
 	
 	void GetViewMatrix(glm::mat4& matrixOut, glm::mat4& inverseMatrixOut) const;
 	
@@ -40,7 +40,7 @@ public:
 	
 	eg::AABB GetAABB() const
 	{
-		return eg::AABB(m_position - m_radius, m_position + m_radius);
+		return eg::AABB(m_physicsObject.position - m_radius, m_physicsObject.position + m_radius);
 	}
 	
 	void FlipDown();
@@ -59,8 +59,11 @@ public:
 	
 	void Reset();
 	
-	glm::vec3 Position() const { return m_position; }
-	void SetPosition(const glm::vec3& position);
+	glm::vec3 Position() const { return m_physicsObject.position; }
+	void SetPosition(const glm::vec3& position)
+	{
+		m_physicsObject.position = position;
+	}
 	
 	static constexpr float HEIGHT = 1.9f;
 	static constexpr float WIDTH = 0.8f;
@@ -93,13 +96,12 @@ private:
 	glm::quat m_oldRotation;
 	glm::quat m_newRotation;
 	
-	glm::vec3 m_position;
 	glm::vec3 m_eyePosition;
 	glm::vec3 m_velocity;
 	glm::vec2 m_extraPlanarVelocity;
 	glm::quat m_rotation;
 	
-	std::array<std::pair<glm::vec3, glm::quat>, 20> m_onGroundRingBuffer;
+	std::array<std::tuple<glm::vec3, glm::quat, Dir>, 20> m_onGroundRingBuffer;
 	float m_onGroundPushDelay = 0;
 	uint32_t m_onGroundRingBufferSize = 0;
 	uint32_t m_onGroundRingBufferFront = 0;

@@ -20,6 +20,10 @@ EG_ON_INIT(OnInit)
 WindowEnt::WindowEnt()
 {
 	m_material = &eg::GetAsset<StaticPropMaterial>("Materials/Platform.yaml");
+	
+	m_physicsObject.canCarry = false;
+	m_physicsObject.canBePushed = false;
+	m_physicsObject.rayIntersectMask = RAY_MASK_BLOCK_PICK_UP;
 }
 
 void WindowEnt::RenderSettings()
@@ -51,8 +55,6 @@ const void* WindowEnt::GetComponent(const std::type_info& type) const
 {
 	if (type == typeid(AxisAlignedQuadComp))
 		return &m_aaQuad;
-	if (type == typeid(RigidBodyComp))
-		return &m_rigidBodyComp;
 	return nullptr;
 }
 
@@ -85,14 +87,13 @@ void WindowEnt::Deserialize(std::istream& stream)
 	glm::vec3 normal = m_aaQuad.GetNormal() * BOX_SHAPE_RADIUS;
 	glm::vec3 boxSize = (tangent + bitangent) * 0.5f + normal;
 	glm::vec3 boxCenter = Pos() - normal;
-	m_bulletShape = std::make_unique<btBoxShape>(bullet::FromGLM(boxSize));
-	m_rigidBodyComp.InitStatic(this, *m_bulletShape);
-	m_rigidBodyComp.SetTransform(boxCenter, glm::quat());
+	
+	m_physicsObject.shape = eg::AABB(boxCenter - boxSize, boxCenter + boxSize);
 	
 	m_collisionGeometry = m_aaQuad.GetCollisionGeometry(boxCenter, BOX_SHAPE_RADIUS);
 }
 
-std::optional<glm::vec3> WindowEnt::CheckCollision(const eg::AABB& aabb, const glm::vec3& moveDir) const
+void WindowEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine)
 {
-	return m_collisionGeometry.CheckCollision(aabb, moveDir);
+	physicsEngine.RegisterObject(&m_physicsObject);
 }

@@ -1,10 +1,10 @@
 #pragma once
 
 #include "../Entity.hpp"
-#include "../Components/RigidBodyComp.hpp"
 #include "../Components/ActivatableComp.hpp"
 #include "../../WorldUpdateArgs.hpp"
 #include "../../Door.hpp"
+#include "../../PhysicsEngine.hpp"
 #include "../../../Graphics/Materials/ScreenMaterial.hpp"
 
 class EntranceExitEnt : public Ent
@@ -18,7 +18,7 @@ public:
 	
 	static constexpr EntTypeID TypeID = EntTypeID::EntranceExit;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::DisableClone |
-		EntTypeFlags::EditorWallMove | EntTypeFlags::Activatable | EntTypeFlags::HasCollision;
+		EntTypeFlags::EditorWallMove | EntTypeFlags::Activatable | EntTypeFlags::HasPhysics;
 	
 	EntranceExitEnt();
 	
@@ -33,14 +33,14 @@ public:
 	
 	static void MovePlayer(const EntranceExitEnt& oldExit, const EntranceExitEnt& newEntrance, class Player& player);
 	
-	void Update(const WorldUpdateArgs& args);
+	void Update(const WorldUpdateArgs& args) override;
 	
 	void GameDraw(const EntGameDrawArgs& args) override;
 	void EditorDraw(const EntEditorDrawArgs& args) override;
 	
 	const void* GetComponent(const std::type_info& type) const override;
 	
-	std::optional<glm::vec3> CheckCollision(const eg::AABB& aabb, const glm::vec3& moveDir) const override;
+	void CollectPhysicsObjects(class PhysicsEngine& physicsEngine) override;
 	
 	Door GetDoorDescription() const;
 	
@@ -62,9 +62,9 @@ private:
 	
 	static std::vector<glm::vec3> GetConnectionPoints(const Ent& entity);
 	
-	RigidBodyComp m_rigidBody;
-	btRigidBody* m_door1RigidBody;
-	btRigidBody* m_door2RigidBody;
+	PhysicsObject m_roomPhysicsObject;
+	PhysicsObject m_door1PhysicsObject;
+	PhysicsObject m_door2PhysicsObject;
 	
 	ActivatableComp m_activatable;
 	

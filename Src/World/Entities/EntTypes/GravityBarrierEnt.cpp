@@ -5,6 +5,7 @@
 #include "../../../Graphics/Materials/MeshDrawArgs.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../../Protobuf/Build/GravityBarrierEntity.pb.h"
+#include "CubeEnt.hpp"
 
 #include <imgui.h>
 
@@ -168,9 +169,39 @@ EG_ON_INIT(OnInit)
 EG_ON_SHUTDOWN(OnShutdown)
 
 GravityBarrierEnt::GravityBarrierEnt()
-	: m_activatable(&GravityBarrierEnt::GetConnectionPoints), m_collisionShape({})
+	: m_activatable(&GravityBarrierEnt::GetConnectionPoints)
 {
-	
+	m_physicsObject.rayIntersectMask = RAY_MASK_BLOCK_PICK_UP;
+	m_physicsObject.canBePushed = false;
+	m_physicsObject.owner = this;
+	m_physicsObject.shouldCollide = &GravityBarrierEnt::ShouldCollide;
+}
+
+bool GravityBarrierEnt::ShouldCollide(const PhysicsObject& self, const PhysicsObject& other)
+{
+	GravityBarrierEnt& selfBarrier = *(GravityBarrierEnt*)std::get<Ent*>(self.owner);
+	Dir otherDown;
+	if (auto player = std::get_if<Player*>(&other.owner))
+	{
+		otherDown = (**player).CurrentDown();
+	}
+	else if (auto otherEntDP = std::get_if<Ent*>(&other.owner))
+	{
+		const Ent& otherEnt = **otherEntDP;
+		if (otherEnt.TypeID() == EntTypeID::Cube)
+		{
+			otherDown = ((const CubeEnt&)otherEnt).CurrentDown();
+		}
+		else
+		{
+			return false;
+		}
+	}
+	if ((int)otherDown / 2 == selfBarrier.BlockedAxis())
+		return true;
+	if (selfBarrier.m_blockFalling && (int)otherDown / 2 == (int)selfBarrier.Direction() / 2)
+		return true;
+	return false;
 }
 
 std::vector<glm::vec3> GravityBarrierEnt::GetConnectionPoints(const Ent& entity)
@@ -284,8 +315,6 @@ const void* GravityBarrierEnt::GetComponent(const std::type_info& type) const
 {
 	if (type == typeid(ActivatableComp))
 		return &m_activatable;
-	if (type == typeid(RigidBodyComp))
-		return &m_rigidBody;
 	if (type == typeid(AxisAlignedQuadComp))
 		return &m_aaQuad;
 	return Ent::GetComponent(type);
@@ -334,10 +363,6 @@ void GravityBarrierEnt::Update(const WorldUpdateArgs& args)
 			m_opacity = std::max(m_opacity - args.dt / OPACITY_ANIMATION_TIME, 0.0f);
 		else
 			m_opacity = std::min(m_opacity + args.dt / OPACITY_ANIMATION_TIME, 1.0f);
-		
-		btBroadphaseProxy* broadphaseProxy = m_rigidBody.GetRigidBody()->getBroadphaseProxy();
-		broadphaseProxy->m_collisionFilterMask = m_enabled ? (bullet::GRAVITY_BARRIER_COLLISION_MASK0 << BlockedAxis()) : 0;
-		broadphaseProxy->m_collisionFilterGroup = -1;
 	}
 	
 	BarrierBufferData bufferData;
@@ -382,16 +407,9 @@ void GravityBarrierEnt::Spawned(bool isEditor)
 {
 	if (!isEditor)
 	{
-		m_collisionShape = btBoxShape(bullet::FromGLM(glm::abs(GetTransform() * glm::vec4(0.5, 0.5, 0.1f, 0.0f))));
-		
-		m_rigidBody.InitStatic(this, m_collisionShape);
-		m_rigidBody.GetRigidBody()->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
-		m_rigidBody.GetRigidBody()->setActivationState(DISABLE_DEACTIVATION);
-		
-		btTransform transform;
-		transform.setIdentity();
-		transform.setOrigin(bullet::FromGLM(m_position));
-		m_rigidBody.SetWorldTransform(transform);
+		glm::vec3 radius(GetTransform() * glm::vec4(0.5, 0.5, 0.1f, 0.0f));
+		m_physicsObject.shape = eg::AABB(-radius, radius);
+		m_physicsObject.position = m_position;
 	}
 }
 
@@ -428,4 +446,9 @@ void GravityBarrierEnt::Deserialize(std::istream& stream)
 	m_aaQuad.radius = glm::vec2(gravBarrierPB.sizex(), gravBarrierPB.sizey());
 	activateAction = (ActivateAction)gravBarrierPB.activate_action();
 	m_blockFalling = gravBarrierPB.block_falling();
+}
+
+void GravityBarrierEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine)
+{
+	physicsEngine.RegisterObject(&m_physicsObject);
 }

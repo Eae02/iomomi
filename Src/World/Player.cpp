@@ -2,9 +2,9 @@
 #include "Entities/EntInteractable.hpp"
 #include "Entities/EntTypes/PlatformEnt.hpp"
 #include "Entities/EntTypes/ForceFieldEnt.hpp"
+#include "Entities/EntTypes/GooPlaneEnt.hpp"
 #include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
 #include "../Settings.hpp"
-#include "Entities/EntTypes/GooPlaneEnt.hpp"
 
 #include <imgui.h>
 
@@ -24,9 +24,11 @@ static float* eyeRoundPrecision = eg::TweakVarFloat("pl_eye_round_prec",  0.01f,
 static constexpr float EYE_OFFSET = Player::EYE_HEIGHT - Player::HEIGHT / 2;
 
 Player::Player()
-	: m_position(1, 2, 1), m_velocity(0.0f)
+	: m_velocity(0.0f)
 {
+	m_physicsObject.position = { 1, 2, 1 };
 	m_physicsObject.canBePushed = false;
+	m_physicsObject.friction = 0;
 	m_physicsObject.owner = this;
 }
 
@@ -53,15 +55,12 @@ inline glm::quat GetRotation(float yaw, float pitch, Dir down)
 	       glm::angleAxis(pitch, glm::vec3(1, 0, 0));
 }
 
-static btCapsuleShapeZ playerPhysicsShape(Player::WIDTH / 2, Player::HEIGHT / 2);
-
-void Player::Update(World& world, float dt, bool underwater)
+void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool underwater)
 {
-	RayIntersectResult rayIntersect = world.RayIntersect(eg::Ray(m_position, glm::vec3(DirectionVector(m_down))));
-	
 	const glm::vec3 up = -DirectionVector(m_down);
 	
-	auto TransitionInterpol = [&] { return glm::smoothstep(0.0f, 1.0f, m_transitionTime); };
+	auto TransitionInterpol = [&]
+	{ return glm::smoothstep(0.0f, 1.0f, m_transitionTime); };
 	
 	//Updates the gravity switch transition.
 	//If this is playing remaining update logic will be skipped!
@@ -72,7 +71,7 @@ void Player::Update(World& world, float dt, bool underwater)
 		
 		if (m_transitionTime > 1.0f)
 		{
-			m_position = m_newPosition;
+			m_physicsObject.position = m_newPosition;
 			m_rotation = m_newRotation;
 			m_gravityTransitionMode = TransitionMode::None;
 		}
@@ -119,10 +118,10 @@ void Player::Update(World& world, float dt, bool underwater)
 	const glm::vec3 right = m_rotation * glm::vec3(1, 0, 0);
 	
 	const bool moveForward = eg::IsButtonDown(eg::Button::W) || eg::IsButtonDown(eg::Button::CtrlrDPadUp);
-	const bool moveBack =    eg::IsButtonDown(eg::Button::S) || eg::IsButtonDown(eg::Button::CtrlrDPadDown);
-	const bool moveLeft =    eg::IsButtonDown(eg::Button::A) || eg::IsButtonDown(eg::Button::CtrlrDPadLeft);
-	const bool moveRight =   eg::IsButtonDown(eg::Button::D) || eg::IsButtonDown(eg::Button::CtrlrDPadRight);
-	const bool moveUp =      eg::IsButtonDown(eg::Button::Space) || eg::IsButtonDown(eg::Button::CtrlrA);
+	const bool moveBack = eg::IsButtonDown(eg::Button::S) || eg::IsButtonDown(eg::Button::CtrlrDPadDown);
+	const bool moveLeft = eg::IsButtonDown(eg::Button::A) || eg::IsButtonDown(eg::Button::CtrlrDPadLeft);
+	const bool moveRight = eg::IsButtonDown(eg::Button::D) || eg::IsButtonDown(eg::Button::CtrlrDPadRight);
+	const bool moveUp = eg::IsButtonDown(eg::Button::Space) || eg::IsButtonDown(eg::Button::CtrlrA);
 	
 	if (underwater)
 	{
@@ -170,7 +169,7 @@ void Player::Update(World& world, float dt, bool underwater)
 	{
 		if (glm::length(localVelPlane) > *walkSpeed * 1.1f)
 		{
-			localVelPlane *= 1.0f - std::min(dt * 0.1f, 0.05f);
+			localVelPlane *= 1.0f - std::min(dt * 0.3f, 0.1f);
 		}
 		else
 		{
@@ -259,7 +258,7 @@ void Player::Update(World& world, float dt, bool underwater)
 		m_onGroundRingBufferSize = std::min(m_onGroundRingBufferSize, 1U);
 		m_onGround = false;
 		m_onGroundLinger = 0;
-		m_position += up * 0.01f;
+		m_physicsObject.position += up * 0.01f;
 	}
 	
 	if (m_wasUnderwater && !underwater && localVelVertical > 0)
@@ -292,7 +291,7 @@ void Player::Update(World& world, float dt, bool underwater)
 			//Finds the new position of the player after the transition. This is done by transforming 
 			// the player's position to corner local space, swapping x and y, and transforming back.
 			const glm::mat3 cornerRotation = corner->MakeRotationMatrix();
-			glm::vec3 cornerL = glm::transpose(cornerRotation) * (m_position - corner->position);
+			glm::vec3 cornerL = glm::transpose(cornerRotation) * (Position() - corner->position);
 			if (corner->down2 == m_down)
 				cornerL.x = std::max(cornerL.x, 1.5f);
 			else
@@ -301,7 +300,8 @@ void Player::Update(World& world, float dt, bool underwater)
 			m_newPosition = (cornerRotation * cornerL) + corner->position + newUpVec * 0.001f;
 			
 			//Converts the camera's yaw and pitch to the new gravity
-			glm::vec3 f = glm::inverse(GetDownCorrection(newDown)) * (rotationDiff * (m_rotation * glm::vec3(0, 0, -1)));
+			glm::vec3 f =
+				glm::inverse(GetDownCorrection(newDown)) * (rotationDiff * (m_rotation * glm::vec3(0, 0, -1)));
 			glm::vec2 f2 = glm::normalize(glm::vec2(f.x, f.z));
 			m_rotationPitch = std::asin(f.y);
 			m_rotationYaw = std::atan2(-f2.x, -f2.y);
@@ -328,10 +328,10 @@ void Player::Update(World& world, float dt, bool underwater)
 	{
 		EntInteractable* interactableEntity = nullptr;
 		int bestInteractPriority = 0;
-		world.entManager.ForEachWithFlag(EntTypeFlags::Interactable, [&] (Ent& entity)
+		world.entManager.ForEachWithFlag(EntTypeFlags::Interactable, [&](Ent& entity)
 		{
 			EntInteractable& interactable = dynamic_cast<EntInteractable&>(entity);
-			int thisPriority = interactable.CheckInteraction(*this);
+			int thisPriority = interactable.CheckInteraction(*this, physicsEngine);
 			if (thisPriority > bestInteractPriority)
 			{
 				interactableEntity = &interactable;
@@ -358,7 +358,8 @@ void Player::Update(World& world, float dt, bool underwater)
 	forceFieldAABB.min += forceFieldAABB.Size() * 0.2f;
 	forceFieldAABB.max -= forceFieldAABB.Size() * 0.2f;
 	std::optional<Dir> forceFieldGravity = ForceFieldEnt::CheckIntersection(world.entManager, forceFieldAABB);
-	if (m_gravityTransitionMode == TransitionMode::None && forceFieldGravity.has_value() && m_down != *forceFieldGravity)
+	if (m_gravityTransitionMode == TransitionMode::None && forceFieldGravity.has_value() &&
+		m_down != *forceFieldGravity)
 	{
 		m_velocity = glm::vec3(0);
 		if (*forceFieldGravity == OppositeDir(m_down))
@@ -376,70 +377,38 @@ void Player::Update(World& world, float dt, bool underwater)
 		}
 	}
 	
-	glm::vec3 previousPos = m_position;
-	auto ApplyMovement = [&] (glm::vec3& move, const glm::vec3& aabbShift)
-	{
-		constexpr float MAX_MOVE_LEN = 5;
-		constexpr float MAX_MOVE_PER_STEP = 0.5f;
-		constexpr int MAX_ITERATIONS = 4;
-		std::optional<glm::vec3> maxCorrection;
-		for (int i = 0; i < MAX_ITERATIONS; i++)
-		{
-			float moveLen = glm::length(move);
-			if (moveLen < 1E-4f)
-				break;
-			
-			if (moveLen > MAX_MOVE_LEN)
-			{
-				moveLen = MAX_MOVE_LEN;
-				move *= MAX_MOVE_LEN / moveLen;
-			}
-			
-			bool didCollide = false;
-			int numMoveIterations = std::ceil(moveLen / MAX_MOVE_PER_STEP);
-			for (int s = 1; s <= numMoveIterations; s++)
-			{
-				glm::vec3 partialMove = move * ((float)s / (float)numMoveIterations);
-				eg::AABB newAABB = GetAABB();
-				newAABB.min += partialMove + aabbShift;
-				newAABB.max += partialMove + aabbShift;
-				if (std::optional<glm::vec3> correction = world.CheckCollision(newAABB, move))
-				{
-					move = partialMove + *correction;
-					didCollide = true;
-					if (!maxCorrection || glm::length2(*correction) > glm::length2(*maxCorrection))
-						maxCorrection = correction;
-					break;
-				}
-			}
-			m_position += move;
-			if (!didCollide)
-				break;
-		}
-		return maxCorrection;
-	};
-	
 	//Moves the player with the current platform, if there is one below
-	if (m_onGround && rayIntersect.entity != nullptr && rayIntersect.entity->TypeID() == EntTypeID::Platform)
+	m_physicsObject.shape = eg::AABB(-m_radius, m_radius);
+	PhysicsObject* floorObject = physicsEngine.FindFloorObject(m_physicsObject, -up);
+	if (floorObject != nullptr && std::holds_alternative<Ent*>(floorObject->owner))
 	{
-		PlatformEnt& platform = *static_cast<PlatformEnt*>(rayIntersect.entity);
-		glm::vec3 platformMove = platform.MoveDelta();
-		ApplyMovement(platformMove, {});
-		m_velocity += platform.LaunchVelocity();
+		Ent& floorEntity = *std::get<Ent*>(floorObject->owner);
+		if (floorEntity.TypeID() == EntTypeID::Platform)
+		{
+			physicsEngine.ApplyMovement(*floorObject, dt);
+			m_physicsObject.move = floorObject->actualMove;
+			physicsEngine.ApplyMovement(m_physicsObject, dt);
+			m_velocity += ((PlatformEnt&)floorEntity).LaunchVelocity();
+		}
 	}
 	
-	if (std::optional<glm::vec3> correction = ApplyMovement(moveXZ, up * 0.05f))
-	{
-		m_velocity -= *correction * (glm::dot(m_velocity, *correction) / glm::length2(*correction));
-	}
+	//Applies movement in the XZ plane
+	m_physicsObject.shape = eg::AABB(-m_radius + up * 0.05f, m_radius + up * 0.05f);
+	m_physicsObject.move = moveXZ;
+	m_physicsObject.velocity = m_velocity;
+	physicsEngine.ApplyMovement(m_physicsObject, dt);
 	
+	//Applies movement vertically
 	m_onGround = false;
-	if (std::optional<glm::vec3> correction = ApplyMovement(moveY, {}))
+	m_physicsObject.shape = eg::AABB(-m_radius, m_radius);
+	m_physicsObject.move = moveY;
+	physicsEngine.ApplyMovement(m_physicsObject, dt, [&] (const PhysicsObject&, const glm::vec3& correction)
 	{
-		if (glm::dot(*correction, up) > 0)
+		if (glm::dot(correction, up) > 0)
 			m_onGround = true;
-		m_velocity[(int)m_down / 2] = 0;
-	}
+	});
+	
+	m_velocity = m_physicsObject.velocity;
 	
 	if (m_onGround)
 	{
@@ -454,7 +423,7 @@ void Player::Update(World& world, float dt, bool underwater)
 			m_onGroundLinger = 0;
 	}
 	
-	eg::Sphere gooPlaneTestSphere(m_position, 0.1f);
+	eg::Sphere gooPlaneTestSphere(Position(), 0.1f);
 	bool isInGoo = false;
 	world.entManager.ForEachOfType<GooPlaneEnt>([&] (const GooPlaneEnt& gooPlane)
 	{
@@ -466,8 +435,10 @@ void Player::Update(World& world, float dt, bool underwater)
 	{
 		Reset();
 		uint32_t ringBufferPos = (m_onGroundRingBufferFront + m_onGroundRingBuffer.size() - m_onGroundRingBufferSize) % m_onGroundRingBuffer.size();
-		m_position = m_onGroundRingBuffer[ringBufferPos].first;
-		m_rotation = m_onGroundRingBuffer[ringBufferPos].second;
+		auto [prevPos, prevRot, prevDown] = m_onGroundRingBuffer[ringBufferPos];
+		m_physicsObject.position = prevPos;
+		m_rotation = prevRot;
+		m_down = prevDown;
 		return;
 	}
 	
@@ -483,7 +454,7 @@ void Player::Update(World& world, float dt, bool underwater)
 		m_onGroundPushDelay -= dt;
 		while (m_onGroundPushDelay <= 0)
 		{
-			m_onGroundRingBuffer[m_onGroundRingBufferFront] = { m_position, m_rotation };
+			m_onGroundRingBuffer[m_onGroundRingBufferFront] = { Position(), m_rotation, m_down };
 			
 			m_onGroundRingBufferFront++;
 			m_onGroundRingBufferFront %= m_onGroundRingBuffer.size();
@@ -494,13 +465,13 @@ void Player::Update(World& world, float dt, bool underwater)
 		}
 	}
 	
-	m_physicsObject.position = glm::vec3();
-	m_physicsObject.move = m_position - previousPos;
-	m_physicsObject.shape = GetAABB();
-	world.physicsEngine.RegisterObject(&m_physicsObject);
+	//m_physicsObject.position = glm::vec3();
+	//m_physicsObject.move = m_position - previousPos;
+	//m_physicsObject.shape = GetAABB();
+	//world.physicsEngine.RegisterObject(&m_physicsObject);
 	
 	//Updates the eye position
-	m_eyePosition = m_position + up * EYE_OFFSET;
+	m_eyePosition = Position() + up * EYE_OFFSET;
 	m_eyePosition = glm::round(m_eyePosition / *eyeRoundPrecision) * *eyeRoundPrecision;
 	if (m_gravityTransitionMode == TransitionMode::Fall)
 	{
@@ -542,7 +513,7 @@ glm::vec3 Player::Forward() const
 #ifndef NDEBUG
 void Player::DrawDebugOverlay()
 {
-	ImGui::Text("Pos: %.2f, %.2f, %.2f", m_position.x, m_position.y, m_position.z);
+	ImGui::Text("Pos: %.2f, %.2f, %.2f", Position().x, Position().y, Position().z);
 	ImGui::Text("Vel: %.2f, %.2f, %.2f, Speed: %.2f)", m_velocity.x, m_velocity.y, m_velocity.z, glm::length(m_velocity));
 	ImGui::Text("Eye Pos: %.2f, %.2f, %.2f", m_eyePosition.x, m_eyePosition.y, m_eyePosition.z);
 	
@@ -572,12 +543,7 @@ void Player::Reset()
 	m_gravityTransitionMode = TransitionMode::None;
 }
 
-void Player::SetPosition(const glm::vec3& position)
-{
-	m_position = position;
-}
-
 glm::vec3 Player::FeetPosition() const
 {
-	return m_position + glm::vec3(DirectionVector(m_down)) * (HEIGHT * 0.45f);
+	return m_physicsObject.position + glm::vec3(DirectionVector(m_down)) * (HEIGHT * 0.45f);
 }

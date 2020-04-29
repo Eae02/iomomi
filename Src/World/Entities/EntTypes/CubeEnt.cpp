@@ -3,7 +3,6 @@
 #include "PlatformEnt.hpp"
 #include "FloorButtonEnt.hpp"
 #include "../../Player.hpp"
-#include "../../BulletPhysics.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../../Protobuf/Build/CubeEntity.pb.h"
 #include "ForceFieldEnt.hpp"
@@ -104,7 +103,7 @@ void CubeEnt::Interact(Player& player)
 	}
 }
 
-int CubeEnt::CheckInteraction(const Player& player) const
+int CubeEnt::CheckInteraction(const Player& player, const class PhysicsEngine& physicsEngine) const
 {
 	if (!player.OnGround() && !player.Underwater())
 		return 0;
@@ -119,9 +118,15 @@ int CubeEnt::CheckInteraction(const Player& player) const
 	
 	static constexpr int PICK_UP_INTERACT_PRIORITY = 2;
 	static constexpr float MAX_INTERACT_DIST = 1.5f;
-	eg::Ray ray(player.Position(), player.Forward());
-	float intersectDist;
-	if (ray.Intersects(GetSphere(), intersectDist) && intersectDist > 0.0f && intersectDist < MAX_INTERACT_DIST)
+	eg::Ray ray(player.EyePosition(), player.Forward());
+	
+	OrientedBox box;
+	box.center = m_physicsObject.position;
+	box.rotation = m_physicsObject.rotation;
+	box.radius = glm::vec3(RADIUS);
+	auto [intersectObj, intersectDist] = physicsEngine.RayIntersect(ray, RAY_MASK_BLOCK_PICK_UP);
+	
+	if (intersectObj == &m_physicsObject && intersectDist < MAX_INTERACT_DIST)
 	{
 		return PICK_UP_INTERACT_PRIORITY;
 	}
@@ -156,8 +161,6 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 		return;
 	}
 	
-	args.world->physicsEngine.RegisterObject(&m_physicsObject);
-	
 	eg::Sphere sphere(m_physicsObject.position, RADIUS);
 	
 	bool inGoo = false;
@@ -184,8 +187,6 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 			args.player->m_isCarrying = false;
 		}
 	}
-	
-	const float impulseFactor = 1.0f / std::max(args.dt, 1.0f / 60.0f);
 	
 	if (m_isPickedUp)
 	{
@@ -261,8 +262,9 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 
 void CubeEnt::UpdatePostSim(const WorldUpdateArgs& args)
 {
-	if (glm::distance(m_physicsObject.previousPosition, m_physicsObject.position) > 1E-3f)
+	if (glm::distance(m_previousPosition, m_physicsObject.position) > 1E-3f)
 	{
+		m_previousPosition = m_physicsObject.position;
 		args.invalidateShadows(GetSphere());
 	}
 	
@@ -307,6 +309,11 @@ void CubeEnt::Deserialize(std::istream& stream)
 	m_position = m_physicsObject.position = glm::vec3(cubePB.posx(), cubePB.posy(), cubePB.posz());
 	m_physicsObject.rotation = glm::quat(cubePB.rotationw(), cubePB.rotationx(), cubePB.rotationy(), cubePB.rotationz());
 	canFloat = cubePB.can_float();
+}
+
+void CubeEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine)
+{
+	physicsEngine.RegisterObject(&m_physicsObject);
 }
 
 template <>

@@ -17,7 +17,7 @@ EntityManager::EntityManager()
 	m_trackers[1].flags = EntTypeFlags::EditorDrawable;
 	m_trackers[2].flags = EntTypeFlags::Interactable;
 	m_trackers[3].flags = EntTypeFlags::Activatable;
-	m_trackers[4].flags = EntTypeFlags::HasCollision;
+	m_trackers[4].flags = EntTypeFlags::HasPhysics;
 }
 
 void EntityManager::Update(const struct WorldUpdateArgs& args)

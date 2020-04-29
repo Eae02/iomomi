@@ -67,7 +67,7 @@ std::optional<glm::vec3> CheckCollisionAABBPolygon(const eg::AABB& aabb, eg::Spa
 }
 
 std::optional<glm::vec3> CheckCollisionAABBTriangleMesh(const eg::AABB& aabb, const glm::vec3& moveDir,
-	const eg::CollisionMesh& mesh, const glm::mat4& meshTransform)
+	const eg::CollisionMesh& mesh, const glm::mat4& meshTransform, bool flipWinding)
 {
 	if (!aabb.Intersects(mesh.BoundingBox().TransformedBoundingBox(meshTransform)))
 		return { };
@@ -77,9 +77,23 @@ std::optional<glm::vec3> CheckCollisionAABBTriangleMesh(const eg::AABB& aabb, co
 	for (uint32_t i = 0; i < mesh.NumIndices(); i += 3)
 	{
 		glm::vec3 vertices[3];
+		
+		if (flipWinding)
+		{
+			vertices[0] = mesh.VertexByIndex(i + 2);
+			vertices[1] = mesh.VertexByIndex(i + 1);
+			vertices[2] = mesh.VertexByIndex(i + 0);
+		}
+		else
+		{
+			vertices[0] = mesh.VertexByIndex(i + 0);
+			vertices[1] = mesh.VertexByIndex(i + 1);
+			vertices[2] = mesh.VertexByIndex(i + 2);
+		}
+		
 		for (uint32_t j = 0; j < 3; j++)
 		{
-			vertices[j] = glm::vec3(meshTransform * glm::vec4(mesh.VertexByIndex(i + j), 1.0f));
+			vertices[j] = glm::vec3(meshTransform * glm::vec4(vertices[j], 1.0f));
 		}
 		combiner.Update(CheckCollisionAABBPolygon(aabb, vertices, moveDir));
 	}
@@ -110,6 +124,40 @@ std::optional<glm::vec3> CheckCollisionAABBOrientedBox(const eg::AABB& aabb, con
 	}
 	
 	return combiner.GetCorrection();
+}
+
+std::optional<float> RayIntersectOrientedBox(const eg::Ray& ray, const OrientedBox& box)
+{
+	std::optional<float> ans;
+	float minAns = INFINITY;
+	for (int f = 0; f < 6; f++)
+	{
+		glm::vec3 normal = box.rotation * (glm::vec3(DirectionVector((Dir)f)) * box.radius);
+		if (glm::dot(normal, ray.GetDirection()) >= 0)
+			continue;
+		
+		glm::vec3 tangent = box.rotation * (glm::vec3(voxel::tangents[f]) * box.radius);
+		glm::vec3 bitangent = box.rotation * (glm::vec3(voxel::biTangents[f]) * box.radius);
+		glm::vec3 faceCenter = box.center + normal;
+		eg::Plane plane(normal, faceCenter);
+		
+		//tangent /= glm::length2(tangent);
+		//bitangent /= glm::length2(bitangent);
+		
+		float planeIntersect;
+		if (ray.Intersects(plane, planeIntersect) && planeIntersect >= 0 && planeIntersect < minAns)
+		{
+			glm::vec3 intersectPointRel = ray.GetPoint(planeIntersect) - faceCenter;
+			float distT = abs(glm::dot(intersectPointRel, tangent) / glm::length2(tangent));
+			float distB = abs(glm::dot(intersectPointRel, bitangent) / glm::length2(bitangent));
+			if (distT <= 1 && distB <= 1)
+			{
+				minAns = planeIntersect;
+				ans = planeIntersect;
+			}
+		}
+	}
+	return ans;
 }
 
 bool CollisionResponseCombiner::Update(const glm::vec3& correction)

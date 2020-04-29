@@ -1,7 +1,6 @@
 #include "Game.hpp"
 #include "Levels.hpp"
 #include "Settings.hpp"
-#include "World/BulletPhysics.hpp"
 #include "Graphics/Materials/StaticPropMaterial.hpp"
 #include "Graphics/Materials/DecalMaterial.hpp"
 
@@ -17,8 +16,6 @@ static_assert(sizeof(float) == 4);
 void Start(eg::RunConfig& runConfig)
 {
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
-	
-	bullet::Init();
 	
 	LoadSettings();
 	eg::TextureAssetQuality = settings.textureQuality;
@@ -94,8 +91,6 @@ int main(int argc, char** argv)
 		runConfig.flags |= eg::RunFlags::VSync;
 	}
 	Start(runConfig);
-	
-	bullet::Destroy();
 	
 	SaveSettings();
 }

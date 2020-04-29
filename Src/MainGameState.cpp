@@ -9,6 +9,7 @@
 #include "Levels.hpp"
 #include "World/Entities/EntTypes/EntranceExitEnt.hpp"
 #include "World/Entities/EntTypes/ActivationLightStripEnt.hpp"
+#include "World/Entities/EntTypes/CubeEnt.hpp"
 
 #include <fstream>
 #include <imgui.h>
@@ -69,7 +70,6 @@ void MainGameState::LoadWorld(std::istream& stream, int64_t levelIndex, const En
 	});
 	
 	m_world = std::move(newWorld);
-	m_world->InitializeBulletPhysics();
 	
 	ActivationLightStripEnt::GenerateAll(*m_world);
 	
@@ -187,22 +187,39 @@ void MainGameState::RunFrame(float dt)
 		
 		eg::SetRelativeMouseMode(*relativeMouseMode);
 		
+		m_physicsEngine.BeginCollect();
+		
+		m_world->CollectPhysicsObjects(m_physicsEngine);
+		
+		m_physicsEngine.EndCollect();
+		
 		{
 			auto playerUpdateCPUTimer = eg::StartCPUTimer("Player Update");
 			bool underwater = m_playerWaterAABB->GetResults().numIntersecting > 30;
-			m_player.Update(*m_world, dt, underwater);
+			m_player.Update(*m_world, m_physicsEngine, dt, underwater);
 		}
+		
+		updateArgs.dt = dt;
+		updateArgs.player = &m_player;
+		updateArgs.world = m_world.get();
+		updateArgs.physicsEngine = &m_physicsEngine;
+		m_world->Update(updateArgs);
+		
+		{
+			auto playerUpdateCPUTimer = eg::StartCPUTimer("Physics");
+			m_physicsEngine.Simulate(dt);
+		}
+		
+		m_world->entManager.ForEachOfType<CubeEnt>([&] (CubeEnt& cube)
+		{
+			cube.UpdatePostSim(updateArgs);
+		});
 		
 		UpdateViewProjMatrices();
 		if (m_world->playerHasGravityGun)
 		{
-			m_gravityGun.Update(*m_world, m_waterSimulator, m_particleManager, m_player, inverseViewProjMatrix, dt);
+			m_gravityGun.Update(*m_world, m_physicsEngine, m_waterSimulator, m_particleManager, m_player, inverseViewProjMatrix, dt);
 		}
-		
-		//{
-		//	auto particleUpdateCPUTimer = eg::StartCPUTimer("Particle Update");
-		//	eg::ECParticleSystem::Update(m_world->EntityManager());
-		//}
 		
 		EntranceExitEnt* currentExit = nullptr;
 		
@@ -225,11 +242,6 @@ void MainGameState::RunFrame(float dt)
 				LoadWorld(stream, nextLevelIndex, currentExit);
 			}
 		}
-		
-		updateArgs.dt = dt;
-		updateArgs.player = &m_player;
-		updateArgs.world = m_world.get();
-		m_world->Update(updateArgs);
 	}
 	else
 	{

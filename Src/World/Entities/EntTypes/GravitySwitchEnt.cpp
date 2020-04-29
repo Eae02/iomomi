@@ -50,7 +50,7 @@ void GravitySwitchEnt::Interact(Player& player)
 	player.FlipDown();
 }
 
-int GravitySwitchEnt::CheckInteraction(const Player& player) const
+int GravitySwitchEnt::CheckInteraction(const Player& player, const class PhysicsEngine& physicsEngine) const
 {
 	bool canInteract = player.CurrentDown() == OppositeDir(m_direction) && player.OnGround() &&
 		GetAABB().Contains(player.FeetPosition()) && !player.m_isCarrying;

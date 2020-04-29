@@ -1,7 +1,6 @@
 #include "World.hpp"
 #include "PrepareDrawArgs.hpp"
 #include "Entities/EntTypes/EntranceExitEnt.hpp"
-#include "Entities/Components/RigidBodyComp.hpp"
 #include "Entities/Components/ActivatorComp.hpp"
 #include "Entities/EntTypes/CubeEnt.hpp"
 #include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
@@ -252,40 +251,25 @@ glm::mat3 GravityCorner::MakeRotationMatrix() const
 	return glm::mat3(r1, r2, glm::cross(r1, r2));
 }
 
-static float* physicsUpdateRate = eg::TweakVarFloat("phys_update_rate", 60, 0);
+void World::CollectPhysicsObjects(PhysicsEngine& physicsEngine)
+{
+	for (const Region& region : m_regions)
+	{
+		if (region.data)
+		{
+			physicsEngine.RegisterObject(&region.data->physicsObject);
+		}
+	}
+	
+	entManager.ForEachWithFlag(EntTypeFlags::HasPhysics, [&] (Ent& entity)
+	{
+		entity.CollectPhysicsObjects(physicsEngine);
+	});
+}
 
 void World::Update(const WorldUpdateArgs& args)
 {
 	entManager.Update(args);
-	
-	if (args.player)
-	{
-		for (const Region& region : m_regions)
-		{
-			if (region.data)
-			{
-				physicsEngine.RegisterObject(&region.data->physicsObject);
-			}
-		}
-		
-		physicsEngine.Simulate(args.dt);
-	}
-	
-	if (m_bulletWorld)
-	{
-		auto physicsCPUTimer = eg::StartCPUTimer("Physics");
-		
-		constexpr float PHYSICS_UPDATE_TIME_MARGIN = 0.95f;
-		
-		m_accumulatedPhysicsTime = std::min(m_accumulatedPhysicsTime + args.dt * *physicsUpdateRate, 10.0f);
-		while (m_accumulatedPhysicsTime > PHYSICS_UPDATE_TIME_MARGIN)
-		{
-			m_bulletWorld->stepSimulation(1.0f / *physicsUpdateRate, 0);
-			m_accumulatedPhysicsTime = std::max(m_accumulatedPhysicsTime - 1.0f, 0.0f);
-		}
-		
-		entManager.ForEachOfType<CubeEnt>([&] (CubeEnt& cube) { cube.UpdatePostSim(args); });
-	}
 }
 
 void World::PrepareForDraw(PrepareDrawArgs& args)
@@ -1026,93 +1010,6 @@ WallRayIntersectResult World::RayIntersectWall(const eg::Ray& ray) const
 	}
 	
 	return result;
-}
-
-RayIntersectResult World::RayIntersect(const eg::Ray& ray) const
-{
-	btCollisionWorld::ClosestRayResultCallback resultCB(bullet::FromGLM(ray.GetStart()), bullet::FromGLM(ray.GetPoint(1000)));
-	m_bulletWorld->rayTest(resultCB.m_rayFromWorld, resultCB.m_rayToWorld, resultCB);
-	
-	RayIntersectResult result = { };
-	//result.entity = intersectArgs.entity;
-	
-	result.intersected = resultCB.hasHit();
-	
-	if (resultCB.hasHit())
-	{
-		result.distance = glm::dot(bullet::ToGLM(resultCB.m_hitPointWorld) - ray.GetStart(), ray.GetDirection());
-		result.entity = static_cast<Ent*>(resultCB.m_collisionObject->getUserPointer());
-	}
-	
-	return result;
-}
-
-void World::InitializeBulletPhysics()
-{
-	m_bulletBroadphase = std::make_unique<btDbvtBroadphase>();
-	m_bulletWorld = std::make_shared<btDiscreteDynamicsWorld>(bullet::dispatcher, m_bulletBroadphase.get(),
-		bullet::solver, bullet::collisionConfig);
-	m_bulletWorld->setGravity({ 0, -bullet::GRAVITY, 0 });
-	
-	PrepareRegionMeshes(false);
-	
-	m_wallsBulletMesh = std::make_unique<btTriangleMesh>();
-	for (Region& region : m_regions)
-	{
-		if (region.canDraw)
-		{
-			bullet::AddCollisionMesh(*m_wallsBulletMesh, region.data->collisionMesh);
-		}
-	}
-	
-	m_wallsBulletShape = std::make_unique<btBvhTriangleMeshShape>(m_wallsBulletMesh.get(), true);
-	
-	//Creates the wall rigid body and adds it to the world
-	btTransform startTransform;
-	startTransform.setIdentity();
-	m_wallsMotionState = std::make_unique<btDefaultMotionState>(startTransform);
-	btRigidBody::btRigidBodyConstructionInfo rbInfo(0.0f, m_wallsMotionState.get(), m_wallsBulletShape.get());
-	rbInfo.m_friction = 0.5f;
-	rbInfo.m_rollingFriction = 0;
-	rbInfo.m_spinningFriction = 0;
-	m_wallsRigidBody = std::make_unique<btRigidBody>(rbInfo);
-	m_bulletWorld->addRigidBody(m_wallsRigidBody.get());
-	
-	entManager.ForEach([&] (Ent& entity) { InitRigidBodyEntity(entity); });
-}
-
-std::optional<glm::vec3> World::CheckCollision(const eg::AABB& aabb, const glm::vec3& moveDir) const
-{
-	CollisionResponseCombiner combiner;
-	for (const Region& reg : m_regions)
-	{
-		if (!reg.data)
-			continue;
-		combiner.Update(CheckCollisionAABBTriangleMesh(aabb, moveDir, reg.data->collisionMesh, glm::mat4(1)));
-	}
-	
-	//OK to const_cast since ent is const
-	const_cast<EntityManager&>(entManager).ForEachWithFlag(EntTypeFlags::HasCollision, [&] (const Ent& ent)
-	{
-		combiner.Update(ent.CheckCollision(aabb, moveDir));
-	});
-	
-	return combiner.GetCorrection();
-}
-
-void World::InitRigidBodyEntity(Ent& entity)
-{
-	RigidBodyComp* rigidBodyComp = entity.GetComponentMut<RigidBodyComp>();
-	if (rigidBodyComp && m_bulletWorld && !rigidBodyComp->m_rigidBodies.empty() &&
-		!rigidBodyComp->m_worldAssigned)
-	{
-		for (btRigidBody& body : rigidBodyComp->m_rigidBodies)
-		{
-			m_bulletWorld->addRigidBody(&body);
-		}
-		rigidBodyComp->m_physicsWorld = m_bulletWorld;
-		rigidBodyComp->m_worldAssigned = true;
-	}
 }
 
 bool World::HasCollision(const glm::ivec3& pos, Dir side) const

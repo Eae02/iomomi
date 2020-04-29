@@ -136,9 +136,8 @@ void Editor::RunFrame(float dt)
 		ImGui::End();
 	}
 	
-	WorldUpdateArgs entityUpdateArgs;
+	WorldUpdateArgs entityUpdateArgs = { };
 	entityUpdateArgs.dt = dt;
-	entityUpdateArgs.player = nullptr;
 	entityUpdateArgs.world = m_world.get();
 	m_world->Update(entityUpdateArgs);
 	

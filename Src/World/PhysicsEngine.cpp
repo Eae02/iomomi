@@ -4,21 +4,39 @@
 static float* gravityMag = eg::TweakVarFloat("gravity", 10, 0);
 static float* roundPrecision = eg::TweakVarFloat("phys_round_prec", 0.0005f, 0);
 
-void PhysicsEngine::CopyParentMove(PhysicsObject& object)
+PhysicsObject* PhysicsEngine::FindFloorObject(PhysicsObject& object, const glm::vec3& down) const
+{
+	CheckCollisionResult colResult = CheckForCollision(object, object.position + down * 0.1f, object.rotation);
+	
+	if (colResult.collided)
+	{
+		return colResult.other;
+	}
+	return nullptr;
+}
+
+void PhysicsEngine::CopyParentMove(PhysicsObject& object, float dt)
 {
 	if (object.hasCopiedParentMove || !object.canBePushed || !object.canCarry || glm::length2(object.gravity) < 1E-3f)
 		return;
 	object.hasCopiedParentMove = true;
 	
-	CheckCollisionResult colResult = 
-		CheckForCollision(object, object.position + object.gravity * 0.1f, object.rotation);
-	
-	if (colResult.collided && colResult.other->canCarry)
+	PhysicsObject* floor = FindFloorObject(object, object.gravity);
+	if (floor && floor->canCarry)
 	{
-		colResult.other->childObjects.push_back(&object);
-		CopyParentMove(*colResult.other);
-		object.move += colResult.other->move;
+		floor->childObjects.push_back(&object);
+		CopyParentMove(*floor, dt);
+		
+		object.collisionDepth = 10;
+		ApplyMovement(*floor, dt);
+		object.move += floor->actualMove;
+		object.collisionDepth = 0;
 	}
+}
+
+void PhysicsEngine::BeginCollect()
+{
+	m_objects.clear();
 }
 
 void PhysicsEngine::Simulate(float dt)
@@ -28,36 +46,48 @@ void PhysicsEngine::Simulate(float dt)
 		object->velocity += object->gravity * dt * *gravityMag;
 		object->velocity += object->force * dt;
 		object->move += object->velocity * dt;
-		object->previousPosition = object->position;
 		object->collisionDepth = 0;
 		object->hasCopiedParentMove = false;
 		object->childObjects.clear();
 		object->pushForce = { };
+		object->force = { };
 	}
 	
 	for (PhysicsObject* object : m_objects)
-		CopyParentMove(*object);
+	{
+		CopyParentMove(*object, dt);
+	}
 	
 	for (PhysicsObject* object : m_objects)
 	{
-		ApplyMovement(*object);
+		ApplyMovement(*object, dt);
 	}
 	
 	for (PhysicsObject* object : m_objects)
 	{
 		object->displayPosition = glm::round(object->position / *roundPrecision) * *roundPrecision;
 		object->move = { };
-		object->force = { };
 	}
-	m_objects.clear();
+}
+
+void PhysicsEngine::EndCollect()
+{
+	for (PhysicsObject* object : m_objects)
+	{
+		object->hasCopiedParentMove = false;
+		object->childObjects.clear();
+		object->actualMove = { };
+		object->didMove = false;
+	}
 }
 
 void PhysicsEngine::RegisterObject(PhysicsObject* object)
 {
 	m_objects.push_back(object);
+	object->needsFlippedWinding = glm::determinant(glm::mat3_cast(object->rotation)) < 0;
 }
 
-void PhysicsEngine::ApplyMovement(PhysicsObject& object)
+void PhysicsEngine::ApplyMovement(PhysicsObject& object, float dt, const CollisionCallback& callback)
 {
 	if (object.collisionDepth > 2)
 	{
@@ -65,6 +95,11 @@ void PhysicsEngine::ApplyMovement(PhysicsObject& object)
 		return;
 	}
 	object.collisionDepth++;
+	
+	if (object.constrainMove)
+	{
+		object.move = object.constrainMove(object, object.move);
+	}
 	
 	constexpr float MAX_MOVE_LEN = 10;
 	constexpr float MAX_MOVE_PER_STEP = 0.5f;
@@ -90,24 +125,39 @@ void PhysicsEngine::ApplyMovement(PhysicsObject& object)
 			CheckCollisionResult colRes = CheckForCollision(object, newPos, {});
 			if (colRes.collided)
 			{
+				if (callback)
+				{
+					callback(*colRes.other, colRes.correction);
+				}
 				colRes.other->pushForce += -colRes.correction;
 				if (colRes.other->canBePushed)
 				{
-					ApplyMovement(*colRes.other);
-					colRes.other->move += -colRes.correction;
-					ApplyMovement(*colRes.other);
-					colRes = CheckForCollision(object, newPos, {});
+					ApplyMovement(*colRes.other, dt);
+					colRes.other->move += -colRes.correction * 1.05f;
+					ApplyMovement(*colRes.other, dt);
+					colRes = CheckForCollision(object, newPos, { });
 					if (!colRes.collided)
 						continue;
 				}
-				
 				object.velocity -= colRes.correction * (glm::dot(colRes.correction, object.velocity) / glm::length2(colRes.correction));
 				object.move = partialMove + colRes.correction;
+				
+				glm::vec3 relativeVel = object.velocity - colRes.other->velocity;
+				if (glm::length2(relativeVel) > 1E-6f)
+				{
+					float friction = object.friction * colRes.other->friction;
+					float velFactor = 1.0f - (friction * glm::length(colRes.correction)) / (dt * glm::length(relativeVel));
+					object.velocity = relativeVel * std::max(velFactor, 0.0f) + colRes.other->velocity;
+				}
+				
 				didCollide = true;
 				break;
 			}
 		}
+		
 		object.position += object.move;
+		object.actualMove += object.move;
+		object.didMove = true;
 		object.move = { };
 		if (!didCollide)
 			break;
@@ -125,12 +175,11 @@ bool PhysicsEngine::CheckCollisionCallbacks(const PhysicsObject& a, const Physic
 	return true;
 }
 
-PhysicsEngine::CheckCollisionResult PhysicsEngine::CheckForCollision(const PhysicsObject& currentObject,
-	const eg::AABB& shape, const glm::vec3& position, const glm::quat& rotation)
+PhysicsObject* PhysicsEngine::CheckForCollision(CollisionResponseCombiner& combiner, const PhysicsObject& currentObject,
+	const eg::AABB& shape, const glm::vec3& position, const glm::quat& rotation) const
 {
 	eg::AABB shiftedAABB(shape.min + position, shape.max + position);
 	
-	CollisionResponseCombiner combiner;
 	PhysicsObject* otherObject = nullptr;
 	
 	for (PhysicsObject* object : m_objects)
@@ -142,8 +191,9 @@ PhysicsEngine::CheckCollisionResult PhysicsEngine::CheckForCollision(const Physi
 		
 		if (const eg::CollisionMesh* const* mesh = std::get_if<const eg::CollisionMesh*>(&object->shape))
 		{
-			glm::mat4 meshTransform = glm::translate(glm::mat4_cast(object->rotation), object->position);
-			correction = CheckCollisionAABBTriangleMesh(shiftedAABB, currentObject.move, **mesh, meshTransform);
+			glm::mat4 meshTransform = glm::translate(glm::mat4(1.0f), object->position) * glm::mat4_cast(object->rotation);
+			correction = CheckCollisionAABBTriangleMesh(shiftedAABB, currentObject.move, **mesh, meshTransform,
+				object->needsFlippedWinding);
 		}
 		else if (const eg::AABB* otherAABB = std::get_if<eg::AABB>(&object->shape))
 		{
@@ -160,6 +210,26 @@ PhysicsEngine::CheckCollisionResult PhysicsEngine::CheckForCollision(const Physi
 		}
 	}
 	
+	return otherObject;
+}
+
+PhysicsObject* PhysicsEngine::CheckForCollision(CollisionResponseCombiner& combiner, const PhysicsObject& currentObject,
+	const eg::CollisionMesh* shape, const glm::vec3& position, const glm::quat& rotation) const
+{
+	return nullptr;
+}
+
+PhysicsEngine::CheckCollisionResult PhysicsEngine::CheckForCollision(const PhysicsObject& currentObject,
+	const glm::vec3& position, const glm::quat& rotation) const
+{
+	CollisionResponseCombiner combiner;
+	
+	PhysicsObject* otherObject = nullptr;
+	std::visit([&] (const auto& shape)
+	{
+		otherObject = CheckForCollision(combiner, currentObject, shape, position, rotation);
+	}, currentObject.shape);
+	
 	CheckCollisionResult result;
 	if (combiner.GetCorrection())
 	{
@@ -170,17 +240,50 @@ PhysicsEngine::CheckCollisionResult PhysicsEngine::CheckForCollision(const Physi
 	return result;
 }
 
-PhysicsEngine::CheckCollisionResult PhysicsEngine::CheckForCollision(const PhysicsObject& currentObject,
-	const eg::CollisionMesh* shape, const glm::vec3& position, const glm::quat& rotation)
+static inline std::optional<float> RayIntersect(
+	const eg::Ray& ray, const glm::vec3& objPosition, const glm::quat& objRotation, const eg::AABB& shape)
 {
-	return { };
+	OrientedBox obb;
+	obb.center = objPosition + shape.Center();
+	obb.radius = shape.Size() / 2.0f;
+	obb.rotation = objRotation;
+	return RayIntersectOrientedBox(ray, obb);
 }
 
-PhysicsEngine::CheckCollisionResult PhysicsEngine::CheckForCollision(const PhysicsObject& currentObject,
-	const glm::vec3& position, const glm::quat& rotation)
+static inline std::optional<float> RayIntersect(
+	const eg::Ray& ray, const glm::vec3& objPosition, const glm::quat& objRotation, const eg::CollisionMesh* shape)
 {
-	return std::visit([&] (const auto& shape)
+	glm::quat invRotation = glm::inverse(objRotation);
+	glm::vec3 localStart = invRotation * (ray.GetStart() - objPosition);
+	glm::vec3 localDir = invRotation * ray.GetDirection();
+	eg::Ray localRay(localStart, localDir);
+	float intersectPos;
+	if (shape->Intersect(localRay, intersectPos) != -1)
 	{
-		return CheckForCollision(currentObject, shape, position, rotation);
-	}, currentObject.shape);
+		return intersectPos;
+	}
+	return {};
+}
+
+std::pair<PhysicsObject*, float> PhysicsEngine::RayIntersect(const eg::Ray& ray, uint32_t mask) const
+{
+	float minIntersect = INFINITY;
+	PhysicsObject* intersectedObject = nullptr;
+	for (PhysicsObject* object : m_objects)
+	{
+		if (!(object->rayIntersectMask & mask))
+			continue;
+		std::visit([&] (const auto& shape)
+		{
+			if (std::optional<float> intersect = ::RayIntersect(ray, object->position, object->rotation, shape))
+			{
+				if (*intersect < minIntersect)
+				{
+					minIntersect = *intersect;
+					intersectedObject = object;
+				}
+			}
+		}, object->shape);
+	}
+	return { intersectedObject, minIntersect };
 }

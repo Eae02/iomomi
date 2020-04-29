@@ -61,24 +61,19 @@ function (fixIncludes TARGET)
 endfunction()
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
-	set(EMCC_FLAGS "-s ALLOW_MEMORY_GROWTH=1 -s WASM=1 -s USE_BULLET=1 -s USE_ZLIB=1 -s USE_WEBGL2=1 -s FULL_ES3=1 -s FORCE_FILESYSTEM=1 -s FETCH=1")
+	set(EMCC_FLAGS "-s ALLOW_MEMORY_GROWTH=1 -s WASM=1 -s USE_ZLIB=1 -s USE_WEBGL2=1 -s FULL_ES3=1 -s FORCE_FILESYSTEM=1 -s FETCH=1")
 	set_target_properties(Gravity PROPERTIES LINK_FLAGS "-s EXTRA_EXPORTED_RUNTIME_METHODS=['cwrap'] -s EXPORTED_FUNCTIONS=['_WebMain'] ${EMCC_FLAGS}")
-	target_compile_options(Gravity PRIVATE -s USE_BULLET=1)
 	
 	target_link_libraries(Gravity ${PROTOBUF_DIR}/libprotobuf.a)
 	target_include_directories(Gravity SYSTEM PRIVATE ${PROTOBUF_DIR}/include)
 else()
 	set(Protobuf_USE_STATIC_LIBS ON)
 	
-	find_package(Bullet REQUIRED)
 	find_package(Protobuf REQUIRED)
 	
 	fixIncludes(protobuf::libprotobuf)
 	
-	list(REMOVE_ITEM ${BULLET_INCLUDE_DIRS} "/usr/x86_64-w64-mingw32/include")
-	
-	target_link_libraries(Gravity protobuf::libprotobuf ${BULLET_LIBRARIES})
-	target_include_directories(Gravity SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS})
+	target_link_libraries(Gravity protobuf::libprotobuf)
 endif()
 
 target_precompiled_header(Gravity Inc/Common.hpp)

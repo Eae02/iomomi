@@ -3,13 +3,12 @@
 #include <cstddef>
 
 #include "Dir.hpp"
-#include "BulletPhysics.hpp"
 #include "WorldUpdateArgs.hpp"
 #include "Door.hpp"
 #include "Entities/EntityManager.hpp"
+#include "Collision.hpp"
 #include "../Graphics/Vertex.hpp"
 #include "../Graphics/PlanarReflectionsManager.hpp"
-#include "Collision.hpp"
 #include "PhysicsEngine.hpp"
 
 struct WallVertex;
@@ -83,6 +82,8 @@ public:
 	
 	bool HasCollision(const glm::ivec3& pos, Dir side) const;
 	
+	void CollectPhysicsObjects(PhysicsEngine& physicsEngine);
+	
 	void Update(const WorldUpdateArgs& args);
 	
 	void PrepareForDraw(struct PrepareDrawArgs& args);
@@ -100,22 +101,6 @@ public:
 	
 	WallRayIntersectResult RayIntersectWall(const eg::Ray& ray) const;
 	
-	RayIntersectResult RayIntersect(const eg::Ray& ray) const;
-	
-	void InitializeBulletPhysics();
-	
-	//Adds the rigid body belonging to the given entity to the world.
-	//This needs to be called for all entities with an ECRigidBody created after world loading.
-	void InitRigidBodyEntity(Ent& entity);
-	
-	std::optional<glm::vec3> CheckCollision(const eg::AABB& aabb, const glm::vec3& moveDir) const;
-	
-	btDiscreteDynamicsWorld* PhysicsWorld()
-	{
-		return m_bulletWorld.get();
-	}
-	
-	PhysicsEngine physicsEngine;
 	EntityManager entManager;
 	
 	const glm::ivec3& GetBoundsMin() const
@@ -201,9 +186,6 @@ private:
 	
 	std::vector<Region> m_regions;
 	
-	std::unique_ptr<btDbvtBroadphase> m_bulletBroadphase;
-	std::shared_ptr<btDiscreteDynamicsWorld> m_bulletWorld;
-	
 	std::vector<Door> m_doors;
 	
 	bool m_anyOutOfDate = true;
@@ -224,9 +206,4 @@ private:
 	glm::ivec3 m_boundsMax;
 	
 	std::vector<ReflectionPlane> m_wallReflectionPlanes;
-	
-	std::unique_ptr<btTriangleMesh> m_wallsBulletMesh;
-	std::unique_ptr<btDefaultMotionState> m_wallsMotionState;
-	std::unique_ptr<btBvhTriangleMeshShape> m_wallsBulletShape;
-	std::unique_ptr<btRigidBody> m_wallsRigidBody;
 };

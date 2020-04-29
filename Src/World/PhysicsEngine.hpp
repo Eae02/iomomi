@@ -5,11 +5,15 @@
 
 using CollisionShape = std::variant<eg::AABB, const eg::CollisionMesh*>;
 
+constexpr uint32_t RAY_MASK_BLOCK_PICK_UP = 2;
+constexpr uint32_t RAY_MASK_BLOCK_GUN = 1;
+
 class PhysicsObject
 {
 public:
 	friend class PhysicsEngine;
 	
+	//Set by objects
 	glm::vec3 position;
 	glm::quat rotation;
 	glm::vec3 gravity;
@@ -17,35 +21,52 @@ public:
 	glm::vec3 velocity;
 	glm::vec3 move;
 	
+	//Set by the physics engine
 	glm::vec3 pushForce;
+	glm::vec3 actualMove;
 	glm::vec3 displayPosition;
-	glm::vec3 previousPosition;
 	std::vector<class PhysicsObject*> childObjects;
+	bool didMove = false;
 	
-	float mass = 10;
+	//Object properties
 	bool canBePushed = true;
 	bool canCarry = false;
+	float mass = 10;
+	float friction = 0.5f;
 	CollisionShape shape;
 	std::variant<std::monostate, struct Player*, struct Ent*> owner;
+	uint32_t rayIntersectMask = 0xFF;
 	bool(*shouldCollide)(const PhysicsObject& self, const PhysicsObject& other) = nullptr;
+	glm::vec3(*constrainMove)(const PhysicsObject& self, const glm::vec3& move) = nullptr;
 	
 private:
 	int collisionDepth = 0;
 	bool hasCopiedParentMove = false;
+	bool needsFlippedWinding = false;
 };
 
 class PhysicsEngine
 {
 public:
+	void BeginCollect();
+	
+	void EndCollect();
 	
 	void Simulate(float dt);
 	
 	void RegisterObject(PhysicsObject* object);
 	
-private:
-	void CopyParentMove(PhysicsObject& object);
+	using CollisionCallback = std::function<void(PhysicsObject& other, const glm::vec3& correction)>;
 	
-	void ApplyMovement(PhysicsObject& object);
+	void ApplyMovement(PhysicsObject& object, float dt, const CollisionCallback& callback = nullptr);
+	
+	PhysicsObject* FindFloorObject(PhysicsObject& object, const glm::vec3& down) const;
+	
+	//Finds the closest object intersecting the ray. If no intersection, returns (nullptr, infinity)
+	std::pair<PhysicsObject*, float> RayIntersect(const eg::Ray& ray, uint32_t mask = 0xFF) const;
+	
+private:
+	void CopyParentMove(PhysicsObject& object, float dt);
 	
 	struct CheckCollisionResult
 	{
@@ -57,11 +78,11 @@ private:
 	static bool CheckCollisionCallbacks(const PhysicsObject& a, const PhysicsObject& b);
 	
 	CheckCollisionResult CheckForCollision(const PhysicsObject& currentObject,
-		const glm::vec3& position, const glm::quat& rotation);
-	CheckCollisionResult CheckForCollision(const PhysicsObject& currentObject,
-		const eg::AABB& shape, const glm::vec3& position, const glm::quat& rotation);
-	CheckCollisionResult CheckForCollision(const PhysicsObject& currentObject,
-		const eg::CollisionMesh* shape, const glm::vec3& position, const glm::quat& rotation);
+		const glm::vec3& position, const glm::quat& rotation) const;
+	PhysicsObject* CheckForCollision(struct CollisionResponseCombiner& combiner, const PhysicsObject& currentObject,
+		const eg::AABB& shape, const glm::vec3& position, const glm::quat& rotation) const;
+	PhysicsObject* CheckForCollision(struct CollisionResponseCombiner& combiner, const PhysicsObject& currentObject,
+		const eg::CollisionMesh* shape, const glm::vec3& position, const glm::quat& rotation) const;
 	
 	std::vector<PhysicsObject*> m_objects;
 };

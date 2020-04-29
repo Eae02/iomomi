@@ -76,6 +76,8 @@ private:
 	GravityGun m_gravityGun;
 	
 	PausedMenu m_pausedMenu;
+	
+	PhysicsEngine m_physicsEngine;
 };
 
 extern MainGameState* mainGameState;

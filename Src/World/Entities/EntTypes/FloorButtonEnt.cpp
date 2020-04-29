@@ -11,13 +11,8 @@ static eg::IMaterial* s_material;
 static size_t s_padMeshIndex;
 static size_t s_lightsMeshIndex;
 
-static eg::CollisionMesh frameCollisionMeshEG;
-static btTriangleMesh frameCollisionMesh;
-static std::unique_ptr<btCollisionShape> frameCollisionShape;
-
-static eg::CollisionMesh buttonCollisionMeshEG;
-static btTriangleMesh buttonCollisionMesh;
-static std::unique_ptr<btCollisionShape> buttonCollisionShape;
+static eg::CollisionMesh frameCollisionMesh;
+static eg::CollisionMesh buttonCollisionMesh;
 
 static void OnInit()
 {
@@ -29,18 +24,13 @@ static void OnInit()
 		if (s_model->GetMesh(i).name.find("Pad") != std::string::npos)
 		{
 			auto meshData = s_model->GetMeshData<eg::StdVertex, uint32_t>(i);
-			buttonCollisionMeshEG = eg::CollisionMesh::Create(meshData.vertices, meshData.indices);
-			bullet::AddCollisionMesh(buttonCollisionMesh, buttonCollisionMeshEG);
-			buttonCollisionShape = std::make_unique<btBvhTriangleMeshShape>(&buttonCollisionMesh, true);
-			
+			buttonCollisionMesh = eg::CollisionMesh::Create(meshData.vertices, meshData.indices);
 			s_padMeshIndex = i;
 		}
 		else if (s_model->GetMesh(i).name.find("Circle") != std::string::npos)
 		{
 			auto meshData = s_model->GetMeshData<eg::StdVertex, uint32_t>(i);
-			frameCollisionMeshEG = eg::CollisionMesh::Create(meshData.vertices, meshData.indices);
-			bullet::AddCollisionMesh(frameCollisionMesh, frameCollisionMeshEG);
-			frameCollisionShape = std::make_unique<btBvhTriangleMeshShape>(&frameCollisionMesh, true);
+			frameCollisionMesh = eg::CollisionMesh::Create(meshData.vertices, meshData.indices);
 		}
 		else if (s_model->GetMesh(i).name.find("Lights") != std::string::npos)
 		{
@@ -57,14 +47,9 @@ constexpr float ACTIVATE_PUSH_DST = MAX_PUSH_DST * 0.8f;
 
 FloorButtonEnt::FloorButtonEnt()
 {
-	m_frameRigidBody = &m_rigidBody.InitStatic(this, *frameCollisionShape);
-	m_buttonRigidBody = &m_rigidBody.Init(this, 0.01f, *buttonCollisionShape);
-	m_buttonRigidBody->setIgnoreCollisionCheck(m_frameRigidBody, true);
-	m_buttonRigidBody->setFlags(m_buttonRigidBody->getFlags() | BT_DISABLE_WORLD_GRAVITY);
-	
 	m_physicsObject.canBePushed = false;
 	m_physicsObject.owner = this;
-	m_physicsObject.shape = frameCollisionMeshEG.BoundingBox();
+	m_physicsObject.shape = frameCollisionMesh.BoundingBox();
 }
 
 void FloorButtonEnt::CommonDraw(const EntDrawArgs& args)
@@ -126,8 +111,6 @@ void FloorButtonEnt::Update(const WorldUpdateArgs& args)
 	}
 	m_padPushDist = glm::clamp(m_padPushDist, 0.0f, MAX_PUSH_DST);
 	
-	args.world->physicsEngine.RegisterObject(&m_physicsObject);
-	
 	m_activator.Update(args);
 }
 
@@ -135,8 +118,6 @@ const void* FloorButtonEnt::GetComponent(const std::type_info& type) const
 {
 	if (type == typeid(ActivatorComp))
 		return &m_activator;
-	if (type == typeid(RigidBodyComp))
-		return &m_rigidBody;
 	return Ent::GetComponent(type);
 }
 
@@ -162,7 +143,6 @@ void FloorButtonEnt::Deserialize(std::istream& stream)
 	
 	m_physicsObject.position = m_position;
 	m_physicsObject.rotation = glm::quat_cast(GetRotationMatrix());
-	m_rigidBody.SetTransform(m_position, glm::quat_cast(GetRotationMatrix()));
 	
 	if (buttonPB.has_activator())
 	{
@@ -180,4 +160,9 @@ static float* floorButtonAABBScale = eg::TweakVarFloat("fbtn_aabb_scale", 1.0f, 
 eg::AABB FloorButtonEnt::GetAABB() const
 {
 	return Ent::GetAABB(*floorButtonAABBScale, 0.2f);
+}
+
+void FloorButtonEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine)
+{
+	physicsEngine.RegisterObject(&m_physicsObject);
 }

@@ -3,15 +3,15 @@
 #include <optional>
 #include <EGame/AABB.hpp>
 #include "../Entity.hpp"
-#include "../Components/RigidBodyComp.hpp"
+#include "../../PhysicsEngine.hpp"
 
 class RampEnt : public Ent
 {
 public:
-	RampEnt() = default;
+	RampEnt();
 	
 	static constexpr EntTypeID TypeID = EntTypeID::Ramp;
-	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::HasCollision;
+	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::HasPhysics;
 	
 	void Spawned(bool isEditor) override;
 	
@@ -23,9 +23,7 @@ public:
 	
 	void CommonDraw(const EntDrawArgs& args) override;
 	
-	const void* GetComponent(const std::type_info& type) const override;
-	
-	std::optional<glm::vec3> CheckCollision(const eg::AABB& aabb, const glm::vec3& moveDir) const override;
+	void CollectPhysicsObjects(PhysicsEngine& physicsEngine) override;
 	
 	int m_yaw = 0;
 	bool m_flipped = false;
@@ -40,9 +38,8 @@ private:
 	bool m_vertexBufferOutOfDate = false;
 	eg::Buffer m_vertexBuffer;
 	
-	RigidBodyComp m_rigidBody;
-	btTriangleMesh m_collisionMesh;
-	std::unique_ptr<btBvhTriangleMeshShape> m_collisionShape;
+	eg::CollisionMesh m_collisionMesh;
+	PhysicsObject m_physicsObject;
 };
 
 template <>

@@ -13,6 +13,12 @@ static const glm::vec3 untransformedPositions[4] =
 static const int indices[6] = { 0, 1, 2, 1, 3, 2 };
 static const glm::vec2 uvs[4] = { { 0, 0 }, { 1, 0 }, { 0, 1 }, { 1, 1 } };
 
+RampEnt::RampEnt()
+{
+	m_physicsObject.canBePushed = false;
+	m_physicsObject.owner = this;
+}
+
 void RampEnt::RenderSettings()
 {
 	Ent::RenderSettings();
@@ -130,32 +136,15 @@ void RampEnt::Deserialize(std::istream& stream)
 	m_vertexBufferOutOfDate = true;
 	std::array<glm::vec3, 4> vertices = GetTransformedVertices();
 	
-	m_collisionMesh.addTriangle(
-		bullet::FromGLM(vertices[indices[0]]),
-		bullet::FromGLM(vertices[indices[1]]),
-		bullet::FromGLM(vertices[indices[2]]));
-	m_collisionMesh.addTriangle(
-		bullet::FromGLM(vertices[indices[3]]),
-		bullet::FromGLM(vertices[indices[4]]),
-		bullet::FromGLM(vertices[indices[5]]));
-	m_collisionShape = std::make_unique<btBvhTriangleMeshShape>(&m_collisionMesh, true);
-	
-	m_rigidBody.InitStatic(this, *m_collisionShape);
-	m_rigidBody.SetTransform(m_position, glm::quat());
-	m_rigidBody.GetRigidBody()->setFriction(1.0f);
+	m_collisionMesh = eg::CollisionMesh::CreateV3(vertices, eg::Span<const int>(indices));
+	m_collisionMesh.FlipWinding();
+	m_physicsObject.position = m_position;
+	m_physicsObject.shape = &m_collisionMesh;
 }
 
-const void* RampEnt::GetComponent(const std::type_info& type) const
+void RampEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine)
 {
-	if (type == typeid(RigidBodyComp))
-		return &m_rigidBody;
-	return Ent::GetComponent(type);
-}
-
-std::optional<glm::vec3> RampEnt::CheckCollision(const eg::AABB& aabb, const glm::vec3& moveDir) const
-{
-	std::array<glm::vec3, 4> vertices = GetTransformedVertices();
-	return CheckCollisionAABBPolygon(aabb, vertices, {}, 0);
+	physicsEngine.RegisterObject(&m_physicsObject);
 }
 
 template <>

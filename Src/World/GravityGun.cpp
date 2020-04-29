@@ -95,10 +95,9 @@ static float GUN_BOB_SPEED = 4.0f;
 static float ORB_SPEED = 25.0f;
 
 static eg::ColorSRGB LIGHT_COLOR = eg::ColorSRGB::FromHex(0x19ebd8);
-static float LIGHT_INTENSITY_FALL_SPEED = 30.0f;
 
-void GravityGun::Update(World& world, WaterSimulator& waterSim, eg::ParticleManager& particleManager,
-	const Player& player, const glm::mat4& inverseViewProj, float dt)
+void GravityGun::Update(World& world, const PhysicsEngine& physicsEngine, WaterSimulator& waterSim,
+	eg::ParticleManager& particleManager, const Player& player, const glm::mat4& inverseViewProj, float dt)
 {
 	glm::mat3 rotationMatrix = (glm::mat3_cast(player.Rotation()));
 	
@@ -167,36 +166,30 @@ void GravityGun::Update(World& world, WaterSimulator& waterSim, eg::ParticleMana
 		(eg::IsButtonDown(eg::Button::CtrlrLeftShoulder) && !eg::WasButtonDown(eg::Button::CtrlrLeftShoulder)))
 	{
 		eg::Ray viewRay = eg::Ray::UnprojectNDC(inverseViewProj, glm::vec2(0.0f));
-		RayIntersectResult intersectResult = world.RayIntersect(viewRay);
-		
+		auto[intersectObject, intersectDist] = physicsEngine.RayIntersect(viewRay, RAY_MASK_BLOCK_GUN);
 		auto[waterIntersectDst, waterIntersectParticle] = waterSim.RayIntersect(viewRay);
 		
-		if (intersectResult.intersected || waterIntersectParticle != -1)
+		if (intersectObject || waterIntersectParticle != -1)
 		{
 			m_orbParticleEmitter = particleManager.AddEmitter(eg::GetAsset<eg::ParticleEmitterType>("Particles/BlueOrb.ype"));
 			
 			glm::vec3 start = m_gunTransform * glm::vec4(0, 0, 0, 1);
-			glm::vec3 target = viewRay.GetPoint(intersectResult.distance * 0.99f);
-			
-			//PointLight& light = orbEntity.GetComponent<PointLight>();
-			//light.SetRadiance(LIGHT_COLOR, 15.0f);
-			//light.castsShadows = settings.shadowQuality >= QualityLevel::Medium;
+			glm::vec3 target = viewRay.GetPoint(intersectDist * 0.99f);
 			
 			m_newDown = player.CurrentDown();
 			m_beamDirection = glm::normalize(target - start) * ORB_SPEED;
 			m_beamTargetPos = target;
-			m_beamTimeRemaining = intersectResult.distance / ORB_SPEED;
+			m_beamTimeRemaining = intersectDist / ORB_SPEED;
 			m_beamPos = start;
-			//orbComp.lightIntensity = 15.0f;
 			
 			m_entityToCharge = { };
-			if (waterIntersectParticle != -1 && waterIntersectDst < intersectResult.distance)
+			if (waterIntersectParticle != -1 && waterIntersectDst < intersectDist)
 			{
 				waterSim.ChangeGravity(waterIntersectParticle, player.CurrentDown());
 			}
-			else if (intersectResult.entity != nullptr)
+			else if (auto entityDP = std::get_if<Ent*>(&intersectObject->owner))
 			{
-				m_entityToCharge = std::dynamic_pointer_cast<EntGravityChargeable>(intersectResult.entity->shared_from_this());
+				m_entityToCharge = std::dynamic_pointer_cast<EntGravityChargeable>((**entityDP).shared_from_this());
 			}
 		}
 	}

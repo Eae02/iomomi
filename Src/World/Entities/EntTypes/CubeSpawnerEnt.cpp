@@ -45,7 +45,6 @@ void CubeSpawnerEnt::Update(const WorldUpdateArgs& args)
 		glm::vec3 spawnPos = m_position + spawnDir * (CubeEnt::RADIUS + 0.01f);
 		
 		cube = Ent::Create<CubeEnt>(spawnPos, m_cubeCanFloat);
-		args.world->InitRigidBodyEntity(*cube);
 		m_cube = cube;
 		args.world->entManager.AddEntity(std::move(cube));
 	}

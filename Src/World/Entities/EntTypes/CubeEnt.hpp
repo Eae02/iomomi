@@ -4,7 +4,6 @@
 #include "../Entity.hpp"
 #include "../EntInteractable.hpp"
 #include "../EntGravityChargeable.hpp"
-#include "../Components/RigidBodyComp.hpp"
 #include "../../Dir.hpp"
 #include "../../../Graphics/WaterSimulator.hpp"
 #include "../../PhysicsEngine.hpp"
@@ -14,7 +13,7 @@ class CubeEnt : public Ent, public EntInteractable, public EntGravityChargeable
 public:
 	static constexpr EntTypeID TypeID = EntTypeID::Cube;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
-		EntTypeFlags::Interactable;
+		EntTypeFlags::Interactable | EntTypeFlags::HasPhysics;
 	static constexpr int EditorIconIndex = 4;
 	
 	CubeEnt() : CubeEnt(glm::vec3(0.0f), false) { }
@@ -37,11 +36,15 @@ public:
 	const void* GetComponent(const std::type_info& type) const override;
 	
 	void Interact(class Player& player) override;
-	int CheckInteraction(const class Player& player) const override;
+	int CheckInteraction(const class Player& player, const PhysicsEngine& physicsEngine) const override;
 	
 	bool SetGravity(Dir newGravity) override;
 	
+	Dir CurrentDown() const { return m_currentDown; }
+	
 	std::string_view GetInteractDescription() const override;
+	
+	void CollectPhysicsObjects(PhysicsEngine& physicsEngine) override;
 	
 	static constexpr float RADIUS = 0.4f;
 	
@@ -57,6 +60,7 @@ private:
 	
 	static bool ShouldCollide(const PhysicsObject& self, const PhysicsObject& other);
 	
+	glm::vec3 m_previousPosition;
 	PhysicsObject m_physicsObject;
 	GravityBarrierInteractableComp m_barrierInteractableComp;
 	

@@ -1,5 +1,4 @@
 #include "EntranceExitEnt.hpp"
-#include "../../BulletPhysics.hpp"
 #include "../../Player.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../Graphics/Materials/EmissiveMaterial.hpp"
@@ -33,9 +32,7 @@ struct
 	const eg::IMaterial* editorEntMaterial;
 	const eg::IMaterial* editorExitMaterial;
 	
-	btTriangleMesh roomCollisionMesh, door1CollisionMesh, door2CollisionMesh;
-	std::unique_ptr<btBvhTriangleMeshShape> roomCollisionMeshShape, door1CollisionMeshShape, door2CollisionMeshShape;
-	eg::CollisionMesh roomCollisionMeshEG, door1CollisionMeshEG, door2CollisionMeshEG;
+	eg::CollisionMesh roomCollisionMesh, door1CollisionMesh, door2CollisionMesh;
 } entrance;
 
 inline static void AssignMaterial(std::string_view materialName, std::string_view assetName)
@@ -91,30 +88,16 @@ static void OnInit()
 	}
 	
 	const eg::Model& colModel = eg::GetAsset<eg::Model>("Models/EnterRoomCol.obj");
-	auto MakeCollisionMesh = [&] (std::string_view name, btTriangleMesh& mesh,
-		std::unique_ptr<btBvhTriangleMeshShape>& btMesh, eg::CollisionMesh& egMesh)
+	auto MakeCollisionMesh = [&] (std::string_view meshName) -> eg::CollisionMesh
 	{
-		int index = colModel.GetMeshIndex(name);
+		int index = colModel.GetMeshIndex(meshName);
 		EG_ASSERT(index != -1);
 		auto meshData = colModel.GetMeshData<eg::StdVertex, uint32_t>(index);
-		
-		btIndexedMesh indexedMesh;
-		indexedMesh.m_indexType = PHY_INTEGER;
-		indexedMesh.m_vertexType = PHY_FLOAT;
-		indexedMesh.m_numVertices = meshData.vertices.size();
-		indexedMesh.m_vertexStride = sizeof(eg::StdVertex);
-		indexedMesh.m_vertexBase = reinterpret_cast<const uint8_t*>(&meshData.vertices[0].position);
-		indexedMesh.m_numTriangles = (int)meshData.indices.size() / 3;
-		indexedMesh.m_triangleIndexStride = sizeof(uint32_t) * 3;
-		indexedMesh.m_triangleIndexBase = reinterpret_cast<const uint8_t*>(meshData.indices.data());
-		mesh.addIndexedMesh(indexedMesh, PHY_INTEGER);
-		
-		btMesh = std::make_unique<btBvhTriangleMeshShape>(&mesh, true);
-		egMesh = eg::CollisionMesh::Create(meshData.vertices, meshData.indices);
+		return eg::CollisionMesh::Create(meshData.vertices, meshData.indices);
 	};
-	MakeCollisionMesh("Door1", entrance.door1CollisionMesh, entrance.door1CollisionMeshShape, entrance.door1CollisionMeshEG);
-	MakeCollisionMesh("Door2", entrance.door2CollisionMesh, entrance.door2CollisionMeshShape, entrance.door2CollisionMeshEG);
-	MakeCollisionMesh("Room", entrance.roomCollisionMesh, entrance.roomCollisionMeshShape, entrance.roomCollisionMeshEG);
+	entrance.door1CollisionMesh = MakeCollisionMesh("Door1");
+	entrance.door2CollisionMesh = MakeCollisionMesh("Door2");
+	entrance.roomCollisionMesh = MakeCollisionMesh("Room");
 }
 
 EG_ON_INIT(OnInit)
@@ -149,9 +132,12 @@ EntranceExitEnt::EntranceExitEnt()
 	  m_pointLight(eg::ColorSRGB::FromHex(0xD1F8FE), 25.0f),
 	  m_screenMaterial(500, 200)
 {
-	m_rigidBody.InitStatic(this, *entrance.roomCollisionMeshShape);
-	m_door1RigidBody = &m_rigidBody.InitStatic(this, *entrance.door1CollisionMeshShape);
-	m_door2RigidBody = &m_rigidBody.InitStatic(this, *entrance.door2CollisionMeshShape);
+	m_roomPhysicsObject.canBePushed = false;
+	m_door1PhysicsObject.canBePushed = false;
+	m_door2PhysicsObject.canBePushed = false;
+	m_roomPhysicsObject.shape = &entrance.roomCollisionMesh;
+	m_door1PhysicsObject.shape = &entrance.door1CollisionMesh;
+	m_door2PhysicsObject.shape = &entrance.door2CollisionMesh;
 	
 	m_screenMaterial.render = [this] (eg::SpriteBatch& spriteBatch)
 	{
@@ -240,8 +226,6 @@ void EntranceExitEnt::Update(const WorldUpdateArgs& args)
 	bool doorOpen = m_doorOpenProgress > 0.1f;
 	m_door1Open = doorOpen && m_type == Type::Exit;
 	m_door2Open = doorOpen && m_type == Type::Entrance;
-	m_door1RigidBody->getBroadphaseProxy()->m_collisionFilterGroup = m_door1Open ? 0 : 1;
-	m_door2RigidBody->getBroadphaseProxy()->m_collisionFilterGroup = m_door2Open ? 0 : 1;
 }
 
 void EntranceExitEnt::GameDraw(const EntGameDrawArgs& args)
@@ -362,8 +346,6 @@ const void* EntranceExitEnt::GetComponent(const std::type_info& type) const
 {
 	if (type == typeid(ActivatableComp))
 		return &m_activatable;
-	if (type == typeid(RigidBodyComp))
-		return &m_rigidBody;
 	return Ent::GetComponent(type);
 }
 
@@ -392,22 +374,16 @@ void EntranceExitEnt::Deserialize(std::istream& stream)
 	if (entrancePB.name() != 0)
 		m_activatable.m_name = entrancePB.name();
 	
-	glm::mat4 transform = GetTransform();
-	btTransform bTransform;
-	bTransform.setFromOpenGLMatrix(reinterpret_cast<float*>(&transform));
-	m_rigidBody.SetWorldTransform(bTransform);
+	auto [rotation, translation] = GetTransformParts();
+	m_roomPhysicsObject.position = m_door1PhysicsObject.position = m_door2PhysicsObject.position = translation;
+	m_roomPhysicsObject.rotation = m_door1PhysicsObject.rotation = m_door2PhysicsObject.rotation = glm::quat_cast(rotation);
 }
 
-std::optional<glm::vec3> EntranceExitEnt::CheckCollision(const eg::AABB& aabb, const glm::vec3& moveDir) const
+void EntranceExitEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine)
 {
-	CollisionResponseCombiner combiner;
-	
-	glm::mat4 transform = GetTransform();
-	combiner.Update(CheckCollisionAABBTriangleMesh(aabb, moveDir, entrance.roomCollisionMeshEG, transform));
+	physicsEngine.RegisterObject(&m_roomPhysicsObject);
 	if (!m_door1Open)
-		combiner.Update(CheckCollisionAABBTriangleMesh(aabb, moveDir, entrance.door1CollisionMeshEG, transform));
+		physicsEngine.RegisterObject(&m_door1PhysicsObject);
 	if (!m_door2Open)
-		combiner.Update(CheckCollisionAABBTriangleMesh(aabb, moveDir, entrance.door2CollisionMeshEG, transform));
-	
-	return combiner.GetCorrection();
+		physicsEngine.RegisterObject(&m_door2PhysicsObject);
 }
