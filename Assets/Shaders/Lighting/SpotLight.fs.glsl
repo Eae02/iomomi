@@ -1,7 +1,5 @@
 #version 450 core
 
-#pragma variants VDefault VMSAA
-
 #include "../Inc/Light.glh"
 #include "../Inc/DeferredLight.glh"
 

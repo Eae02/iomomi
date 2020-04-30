@@ -45,22 +45,13 @@ std::pair<uint32_t, uint32_t> SSR_SAMPLES[] =
 {
 	/* VeryLow  */ { 0, 0 },
 	/* Low      */ { 0, 0 },
-	/* Medium   */ { 2, 4 },
-	/* High     */ { 4, 6 },
-	/* VeryHigh */ { 6, 6 }
+	/* Medium   */ { 4, 6 },
+	/* High     */ { 6, 6 },
+	/* VeryHigh */ { 8, 8 }
 };
 
 void DeferredRenderer::CreatePipelines()
 {
-	eg::SpecializationConstantEntry specConstantEntries[1];
-	specConstantEntries[0].constantID = 100;
-	specConstantEntries[0].size = sizeof(uint32_t);
-	specConstantEntries[0].offset = 0;
-	
-	bool msVariant = eg::CurrentGraphicsAPI() != eg::GraphicsAPI::OpenGL || m_currentSampleCount != 1;
-	
-	std::string_view variantName = msVariant ? "VMSAA" : "VDefault";
-	
 	eg::StencilState ambientStencilState;
 	ambientStencilState.failOp = eg::StencilOp::Keep;
 	ambientStencilState.passOp = eg::StencilOp::Keep;
@@ -71,18 +62,18 @@ void DeferredRenderer::CreatePipelines()
 	ambientStencilState.reference = 0;
 	
 	eg::SpecializationConstantEntry ambientSpecConstEntries[2];
-	specConstantEntries[0].constantID = 0;
-	specConstantEntries[0].size = sizeof(uint32_t);
-	specConstantEntries[0].offset = offsetof(std::decay_t<decltype(SSR_SAMPLES[0])>, first);
-	specConstantEntries[1].constantID = 1;
-	specConstantEntries[1].size = sizeof(uint32_t);
-	specConstantEntries[1].offset = offsetof(std::decay_t<decltype(SSR_SAMPLES[0])>, second);
+	ambientSpecConstEntries[0].constantID = 0;
+	ambientSpecConstEntries[0].size = sizeof(uint32_t);
+	ambientSpecConstEntries[0].offset = offsetof(std::decay_t<decltype(SSR_SAMPLES[0])>, first);
+	ambientSpecConstEntries[1].constantID = 1;
+	ambientSpecConstEntries[1].size = sizeof(uint32_t);
+	ambientSpecConstEntries[1].offset = offsetof(std::decay_t<decltype(SSR_SAMPLES[0])>, second);
 	
 	eg::GraphicsPipelineCreateInfo ambientPipelineCI;
 	ambientPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
 	ambientPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/Ambient.fs.glsl").DefaultVariant();
 	ambientPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
-	ambientPipelineCI.fragmentShader.specConstants = specConstantEntries;
+	ambientPipelineCI.fragmentShader.specConstants = ambientSpecConstEntries;
 	ambientPipelineCI.fragmentShader.specConstantsData = &SSR_SAMPLES[(int)settings.reflectionsQuality];
 	ambientPipelineCI.fragmentShader.specConstantsDataSize = sizeof(SSR_SAMPLES[0]);
 	ambientPipelineCI.frontStencilState = ambientStencilState;
@@ -94,35 +85,37 @@ void DeferredRenderer::CreatePipelines()
 	
 	eg::GraphicsPipelineCreateInfo slPipelineCI;
 	slPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/SpotLight.vs.glsl").DefaultVariant();
-	slPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/SpotLight.fs.glsl").GetVariant(variantName);
+	slPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/SpotLight.fs.glsl").DefaultVariant();
 	slPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
 	slPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
 	slPipelineCI.vertexBindings[0] = { sizeof(float) * 3, eg::InputRate::Vertex };
 	slPipelineCI.cullMode = eg::CullMode::Front;
-	slPipelineCI.fragmentShader.specConstants = specConstantEntries;
-	slPipelineCI.fragmentShader.specConstantsData = &m_currentSampleCount;
-	slPipelineCI.fragmentShader.specConstantsDataSize = sizeof(uint32_t);
 	m_spotLightPipeline = eg::Pipeline::Create(slPipelineCI);
 	m_spotLightPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
 	m_spotLightPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
 	
-	const eg::ShaderModuleAsset& pointLightFS = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/PointLight.fs.glsl");
+	eg::SpecializationConstantEntry pointLightSpecConstEntries[1];
+	pointLightSpecConstEntries[0].constantID = 0;
+	pointLightSpecConstEntries[0].size = sizeof(uint32_t);
+	pointLightSpecConstEntries[0].offset = 0;
+	uint32_t PL_SPEC_CONST_DATA_SOFT_SHADOWS = 1;
+	uint32_t PL_SPEC_CONST_DATA_HARD_SHADOWS = 0;
 	
 	eg::GraphicsPipelineCreateInfo plPipelineCI;
 	plPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/PointLight.vs.glsl").DefaultVariant();
-	plPipelineCI.fragmentShader = pointLightFS.GetVariant(msVariant ? "VSoftShadowsMS" : "VSoftShadows");
+	plPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/PointLight.fs.glsl").DefaultVariant();
 	plPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
 	plPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
 	plPipelineCI.vertexBindings[0] = { sizeof(float) * 3, eg::InputRate::Vertex };
 	plPipelineCI.cullMode = eg::CullMode::Back;
-	plPipelineCI.fragmentShader.specConstants = specConstantEntries;
-	plPipelineCI.fragmentShader.specConstantsData = &m_currentSampleCount;
+	plPipelineCI.fragmentShader.specConstants = pointLightSpecConstEntries;
+	plPipelineCI.fragmentShader.specConstantsData = &PL_SPEC_CONST_DATA_SOFT_SHADOWS;
 	plPipelineCI.fragmentShader.specConstantsDataSize = sizeof(uint32_t);
 	m_pointLightPipelineSoftShadows = eg::Pipeline::Create(plPipelineCI);
 	m_pointLightPipelineSoftShadows.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
 	m_pointLightPipelineSoftShadows.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
 	
-	plPipelineCI.fragmentShader = pointLightFS.GetVariant(msVariant ? "VHardShadowsMS" : "VHardShadows");
+	plPipelineCI.fragmentShader.specConstantsData = &PL_SPEC_CONST_DATA_HARD_SHADOWS;
 	m_pointLightPipelineHardShadows = eg::Pipeline::Create(plPipelineCI);
 	m_pointLightPipelineHardShadows.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
 	m_pointLightPipelineHardShadows.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
@@ -140,15 +133,12 @@ void DeferredRenderer::CreatePipelines()
 	
 	eg::GraphicsPipelineCreateInfo reflPlanePipelineCI;
 	reflPlanePipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/ReflectionPlane.vs.glsl").DefaultVariant();
-	reflPlanePipelineCI.fragmentShader = reflPlaneFS.DefaultVariant();//pointLightFS.GetVariant(msVariant ? "VSoftShadowsMS" : "VSoftShadows");
+	reflPlanePipelineCI.fragmentShader = reflPlaneFS.DefaultVariant();
 	reflPlanePipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
 	reflPlanePipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 2, 0 };
 	reflPlanePipelineCI.vertexBindings[0] = { sizeof(float) * 2, eg::InputRate::Vertex };
 	reflPlanePipelineCI.cullMode = eg::CullMode::None;
 	reflPlanePipelineCI.topology = eg::Topology::TriangleStrip;
-	reflPlanePipelineCI.fragmentShader.specConstants = specConstantEntries;
-	reflPlanePipelineCI.fragmentShader.specConstantsData = &m_currentSampleCount;
-	reflPlanePipelineCI.fragmentShader.specConstantsDataSize = sizeof(uint32_t);
 	reflPlanePipelineCI.enableStencilTest = true;
 	reflPlanePipelineCI.frontStencilState = reflPlaneStencilState;
 	reflPlanePipelineCI.backStencilState = reflPlaneStencilState;
@@ -169,19 +159,17 @@ void DeferredRenderer::CreatePipelines()
 	m_reflectionPlaneVertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
 }
 
-DeferredRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height, uint32_t samples,
+DeferredRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height,
 	eg::TextureRef outputTexture, uint32_t outputArrayLayer, QualityLevel waterQuality)
 {
 	m_width = width;
 	m_height = height;
 	m_waterOutputTexture = outputTexture;
-	m_samples = samples;
 	
 	eg::TextureCreateInfo colorTexCreateInfo;
 	colorTexCreateInfo.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample;
 	colorTexCreateInfo.width = m_width;
 	colorTexCreateInfo.height = m_height;
-	colorTexCreateInfo.sampleCount = samples;
 	colorTexCreateInfo.mipLevels = 1;
 	colorTexCreateInfo.format = eg::Format::R8G8B8A8_UNorm;
 	colorTexCreateInfo.defaultSamplerDescription = &s_attachmentSamplerDesc;
@@ -192,7 +180,6 @@ DeferredRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height, ui
 	depthTexCreateInfo.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample | eg::TextureFlags::CopySrc;
 	depthTexCreateInfo.width = m_width;
 	depthTexCreateInfo.height = m_height;
-	depthTexCreateInfo.sampleCount = samples;
 	depthTexCreateInfo.mipLevels = 1;
 	depthTexCreateInfo.format = DEPTH_FORMAT;
 	depthTexCreateInfo.defaultSamplerDescription = &s_attachmentSamplerDesc;
@@ -203,22 +190,6 @@ DeferredRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height, ui
 	eg::FramebufferCreateInfo gbFramebufferCI;
 	gbFramebufferCI.colorAttachments = gbColorAttachments;
 	gbFramebufferCI.depthStencilAttachment = m_gbDepthTexture.handle;
-	
-	if (samples > 1)
-	{
-		eg::TextureCreateInfo resolvedDepthTexCreateInfo;
-		resolvedDepthTexCreateInfo.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample;
-		resolvedDepthTexCreateInfo.width = m_width;
-		resolvedDepthTexCreateInfo.height = m_height;
-		resolvedDepthTexCreateInfo.sampleCount = 1;
-		resolvedDepthTexCreateInfo.mipLevels = 1;
-		resolvedDepthTexCreateInfo.format = DeferredRenderer::DEPTH_FORMAT;
-		resolvedDepthTexCreateInfo.defaultSamplerDescription = &s_attachmentSamplerDesc;
-		m_resolvedDepthTexture = eg::Texture::Create2D(resolvedDepthTexCreateInfo);
-		
-		gbFramebufferCI.depthStencilResolveAttachment = m_resolvedDepthTexture.handle;
-	}
-	
 	m_gbFramebuffer = eg::Framebuffer(gbFramebufferCI);
 	
 	
@@ -226,7 +197,6 @@ DeferredRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height, ui
 	waterInputTexCreateInfo.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample;
 	waterInputTexCreateInfo.width = m_width;
 	waterInputTexCreateInfo.height = m_height;
-	waterInputTexCreateInfo.sampleCount = samples;
 	waterInputTexCreateInfo.mipLevels = 1;
 	waterInputTexCreateInfo.format = DeferredRenderer::LIGHT_COLOR_FORMAT_HDR;
 	waterInputTexCreateInfo.defaultSamplerDescription = &s_attachmentSamplerDesc;
@@ -243,45 +213,20 @@ DeferredRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height, ui
 	eg::FramebufferCreateInfo emissiveFramebufferNoWaterCI;
 	emissiveFramebufferCI.depthStencilAttachment = m_gbDepthTexture.handle;
 	emissiveFramebufferNoWaterCI.depthStencilAttachment = m_gbDepthTexture.handle;
-	
-	eg::FramebufferAttachment emissiveColorAttachments[1];
-	if (samples > 1)
-	{
-		eg::TextureCreateInfo emissiveTexCreateInfo;
-		emissiveTexCreateInfo.flags = eg::TextureFlags::FramebufferAttachment;
-		emissiveTexCreateInfo.width = m_width;
-		emissiveTexCreateInfo.height = m_height;
-		emissiveTexCreateInfo.sampleCount = samples;
-		emissiveTexCreateInfo.mipLevels = 1;
-		emissiveTexCreateInfo.format = DeferredRenderer::LIGHT_COLOR_FORMAT_HDR;
-		m_emissiveTexture = eg::Texture::Create2D(emissiveTexCreateInfo);
-		
-		emissiveColorAttachments[0] = m_emissiveTexture.handle;
-		
-		emissiveFramebufferCI.colorAttachments = emissiveColorAttachments;
-		emissiveFramebufferCI.colorResolveAttachments = lightFBAttachments;
-		
-		emissiveFramebufferNoWaterCI.colorAttachments = emissiveColorAttachments;
-		emissiveFramebufferNoWaterCI.colorResolveAttachments = lightFBAttachmentsNoWater;
-	}
-	else
-	{
-		emissiveFramebufferCI.colorAttachments = lightFBAttachments;
-		emissiveFramebufferNoWaterCI.colorAttachments = lightFBAttachmentsNoWater;
-	}
+	emissiveFramebufferCI.colorAttachments = lightFBAttachments;
+	emissiveFramebufferNoWaterCI.colorAttachments = lightFBAttachmentsNoWater;
 	
 	m_emissiveFramebuffer = eg::Framebuffer(emissiveFramebufferCI);
 	m_emissiveFramebufferNoWater = eg::Framebuffer(emissiveFramebufferNoWaterCI);
 	
 	m_waterRT = WaterRenderer::RenderTarget(width, height, m_lightingOutputTexture,
-		ResolvedDepthTexture(), outputTexture, outputArrayLayer, waterQuality);
+		DepthTexture(), outputTexture, outputArrayLayer, waterQuality);
 }
 
 void DeferredRenderer::PollSettingsChanged()
 {
-	if (settings.msaaSamples != m_currentSampleCount || settings.reflectionsQuality != m_currentReflectionQualityLevel)
+	if (settings.reflectionsQuality != m_currentReflectionQualityLevel)
 	{
-		m_currentSampleCount = settings.msaaSamples;
 		m_currentReflectionQualityLevel = settings.reflectionsQuality;
 		CreatePipelines();
 	}
@@ -320,11 +265,6 @@ void DeferredRenderer::BeginLighting(RenderTarget& target, bool hasWater) const
 	target.m_gbColor1Texture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 	target.m_gbColor2Texture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 	target.m_gbDepthTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
-	
-	if (target.m_samples > 1)
-	{
-		target.m_resolvedDepthTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
-	}
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
 	rpBeginInfo.framebuffer = hasWater ? target.m_lightingFramebuffer.handle : target.m_lightingFramebufferNoWater.handle;

@@ -15,12 +15,17 @@ const vec3 COLOR = vec3(0.12, 0.9, 0.7);
 
 layout(binding=1) uniform sampler2D hexSampler;
 
+layout(push_constant) uniform PC
+{
+	float intensityBoost;
+};
+
 void main()
 {
 	vec2 hex = texture(hexSampler, texCoord_in * 4).rg;
 	float edge = max(max(abs(texCoord_in.x / 1.6 - 0.5), abs(texCoord_in.y - 0.5)) * 4.0 - 1.0, 0.0);
 	
-	float intensity = hex.r * sin01(hex.g * TWO_PI + renderSettings.gameTime * 2);
+	float intensity = hex.r * sin01(hex.g * TWO_PI + renderSettings.gameTime * 2) + intensityBoost;
 	
 	intensity += mix(0.1, 1.0, pow(edge, 3));
 	

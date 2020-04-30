@@ -14,13 +14,13 @@ struct Settings
 	QualityLevel lightingQuality      = QualityLevel::Medium;
 	QualityLevel waterQuality         = QualityLevel::Medium;
 	float fieldOfViewDeg              = 80.0f;
-	uint32_t msaaSamples              = 1;
 	
 	float exposure = 1.2f;
 	
 	float lookSensitivityMS = 0.005f;
 	float lookSensitivityGP = 2.0f;
 	bool lookInvertY        = false;
+	bool enableFXAA         = true;
 	
 	bool HDREnabled() const
 	{

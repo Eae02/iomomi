@@ -24,15 +24,6 @@ void DecodeQualityLevel(std::string_view name, QualityLevel& def)
 		eg::Log(eg::LogLevel::Error, "opt", "Unknwon quality level '{0}'", name);
 }
 
-inline void CheckMSAA()
-{
-	uint32_t validMsaaSamples[] = { 1, 2, 4, 8 };
-	if (!eg::Contains(validMsaaSamples, settings.msaaSamples))
-	{
-		settings.msaaSamples = 1;
-	}
-}
-
 eg::TextureQuality initialTextureQuality;
 
 void LoadSettings()
@@ -59,14 +50,12 @@ void LoadSettings()
 	DecodeQualityLevel(settingsNode["shadowQuality"].as<std::string>("medium"), settings.shadowQuality);
 	DecodeQualityLevel(settingsNode["lightingQuality"].as<std::string>("medium"), settings.lightingQuality);
 	DecodeQualityLevel(settingsNode["waterQuality"].as<std::string>("medium"), settings.waterQuality);
-	settings.msaaSamples = settingsNode["msaaSamples"].as<uint32_t>(1);
 	settings.fieldOfViewDeg = settingsNode["fieldOfView"].as<float>(80.0f);
 	settings.exposure = settingsNode["exposure"].as<float>(1.2f);
 	settings.lookSensitivityMS = settingsNode["lookSensitivityMS"].as<float>(0.005f);
 	settings.lookSensitivityGP = settingsNode["lookSensitivityGP"].as<float>(2.0f);
 	settings.lookInvertY = settingsNode["lookInvertY"].as<bool>(false);
-	
-	CheckMSAA();
+	settings.enableFXAA = settingsNode["fxaa"].as<bool>(true);
 #endif
 }
 
@@ -83,12 +72,12 @@ void SaveSettings()
 	emitter << YAML::Key << "shadowQuality" << YAML::Value << qualityNames[(int)settings.shadowQuality];
 	emitter << YAML::Key << "lightingQuality" << YAML::Value << qualityNames[(int)settings.lightingQuality];
 	emitter << YAML::Key << "waterQuality" << YAML::Value << qualityNames[(int)settings.waterQuality];
-	emitter << YAML::Key << "msaaSamples" << YAML::Value << settings.msaaSamples;
 	emitter << YAML::Key << "fieldOfView" << YAML::Value << settings.fieldOfViewDeg;
 	emitter << YAML::Key << "exposure" << YAML::Value << settings.exposure;
 	emitter << YAML::Key << "lookSensitivityMS" << YAML::Value << settings.lookSensitivityMS;
 	emitter << YAML::Key << "lookSensitivityGP" << YAML::Value << settings.lookSensitivityGP;
 	emitter << YAML::Key << "lookInvertY" << YAML::Value << settings.lookInvertY;
+	emitter << YAML::Key << "fxaa" << YAML::Value << settings.enableFXAA;
 	emitter << YAML::EndMap;
 	
 	std::ofstream settingsStream(settingsPath);
@@ -179,19 +168,6 @@ void OptCommand(eg::Span<const std::string_view> args)
 			SettingsChanged();
 		}
 	}
-	else if (args[0] == "msaa")
-	{
-		if (args.size() == 1)
-		{
-			eg::Log(eg::LogLevel::Info, "opt", "MSAA: {0}", settings.msaaSamples);
-		}
-		else
-		{
-			settings.msaaSamples = std::stoi(std::string(args[1]));
-			CheckMSAA();
-			SettingsChanged();
-		}
-	}
 	else if (args[0] == "exposure")
 	{
 		if (args.size() == 1)
@@ -240,12 +216,24 @@ void OptCommand(eg::Span<const std::string_view> args)
 			SettingsChanged();
 		}
 	}
+	else if (args[0] == "fxaa")
+	{
+		if (args.size() == 1)
+		{
+			eg::Log(eg::LogLevel::Info, "opt", "FXAA: {0}", settings.enableFXAA);
+		}
+		else
+		{
+			settings.enableFXAA = args[1] == "true";
+			SettingsChanged();
+		}
+	}
 }
 
 static const char* commands[] =
 {
-	"reflQuality", "shadowQuality", "lightingQuality", "waterQuality", "fov", "msaa", "exposure", "lookSensitivityMS",
-	"lookSensMS", "lookSensitivityGP", "lookSensGP", "lookInvY"
+	"reflQuality", "shadowQuality", "lightingQuality", "waterQuality", "fov", "exposure", "lookSensitivityMS",
+	"lookSensMS", "lookSensitivityGP", "lookSensGP", "lookInvY", "fxaa"
 };
 
 static const char* qualityCommands[] =
@@ -303,14 +291,6 @@ void DrawSettingsWindow()
 				SettingsChanged();
 			if (ImGui::Combo("Water Quality", reinterpret_cast<int*>(&settings.waterQuality), QUALITY_SETTINGS_STR))
 				SettingsChanged();
-			/*
-			int curMSAA = (int)std::log2(settings.msaaSamples);
-			const char* MSAAModes[] = { "Off", "2x", "4x", "8x" };
-			if (ImGui::Combo("MSAA", reinterpret_cast<int*>(&curMSAA), MSAAModes, 4))
-			{
-				settings.msaaSamples = 1 << curMSAA;
-				SettingsChanged();
-			}*/
 		}
 		
 		if (ImGui::CollapsingHeader("Graphics", ImGuiTreeNodeFlags_DefaultOpen))
@@ -325,6 +305,7 @@ void DrawSettingsWindow()
 				settings.exposure = std::max(settings.exposure, 0.5f);
 				SettingsChanged();
 			}
+			ImGui::Checkbox("FXAA", &settings.enableFXAA);
 		}
 		
 		if (ImGui::CollapsingHeader("Input", ImGuiTreeNodeFlags_DefaultOpen))

@@ -10,7 +10,7 @@ public:
 	class RenderTarget
 	{
 	public:
-		RenderTarget(uint32_t width, uint32_t height, uint32_t samples,
+		RenderTarget(uint32_t width, uint32_t height,
 			eg::TextureRef outputTexture, uint32_t outputArrayLayer, QualityLevel waterQuality);
 		
 		uint32_t Width() const
@@ -23,14 +23,9 @@ public:
 			return m_height;
 		}
 		
-		uint32_t Samples() const
+		eg::TextureRef DepthTexture() const
 		{
-			return m_samples;
-		}
-		
-		eg::TextureRef ResolvedDepthTexture() const
-		{
-			return m_samples <= 1 ? m_gbDepthTexture : m_resolvedDepthTexture;
+			return m_gbDepthTexture;
 		}
 		
 	private:
@@ -38,14 +33,11 @@ public:
 		
 		uint32_t m_width;
 		uint32_t m_height;
-		uint32_t m_samples;
 		
 		eg::Texture m_gbColor1Texture;
 		eg::Texture m_gbColor2Texture;
 		eg::Texture m_gbDepthTexture;
 		eg::Framebuffer m_gbFramebuffer;
-		
-		eg::Texture m_resolvedDepthTexture;
 		
 		eg::Texture m_emissiveTexture;
 		
@@ -98,7 +90,6 @@ private:
 	
 	eg::Sampler m_shadowMapSampler;
 	
-	uint32_t m_currentSampleCount = 0;
 	QualityLevel m_currentReflectionQualityLevel = (QualityLevel)-1;
 	
 	eg::Buffer m_reflectionPlaneVertexBuffer;

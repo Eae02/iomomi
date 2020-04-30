@@ -32,6 +32,8 @@ public:
 		return m_instanceID;
 	}
 	
+	static uint64_t NextInstanceID();
+	
 	void RenderRadianceSettings();
 	
 private:

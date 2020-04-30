@@ -2,6 +2,7 @@
 
 #include "Dir.hpp"
 #include "Entities/EntGravityChargeable.hpp"
+#include "../Graphics/Lighting/PointLight.hpp"
 
 class GravityGun
 {
@@ -12,6 +13,8 @@ public:
 		eg::ParticleManager& particleManager, const class Player& player, const glm::mat4& inverseViewProj, float dt);
 	
 	void Draw(eg::MeshBatch& meshBatch);
+	
+	void CollectLights(std::vector<PointLightDrawData>& pointLightsOut) const;
 	
 private:
 	struct MidMaterial : eg::IMaterial
@@ -24,6 +27,7 @@ private:
 		
 		eg::Pipeline m_pipeline;
 		eg::DescriptorSet m_descriptorSet;
+		float m_intensityBoost = 0;
 	};
 	
 	glm::vec3 m_gunOffset;
@@ -36,12 +40,22 @@ private:
 	const eg::Model* m_model;
 	std::array<const eg::IMaterial*, 2> m_materials;
 	
-	eg::ParticleEmitterInstance m_orbParticleEmitter;
+	std::bitset<10> m_meshIsPartOfFront;
 	
-	glm::vec3 m_beamDirection;
-	glm::vec3 m_beamTargetPos;
-	glm::vec3 m_beamPos;
-	float m_beamTimeRemaining = 0;
-	Dir m_newDown;
-	std::weak_ptr<EntGravityChargeable> m_entityToCharge;
+	float m_fireAnimationTime = 0;
+	
+	struct BeamInstance
+	{
+		eg::ParticleEmitterInstance particleEmitter;
+		glm::vec3 direction;
+		glm::vec3 targetPos;
+		glm::vec3 beamPos;
+		float timeRemaining = 0;
+		uint64_t lightInstanceID;
+		float lightIntensity = 0;
+		Dir newDown;
+		std::weak_ptr<EntGravityChargeable> entityToCharge;
+	};
+	
+	std::vector<BeamInstance> m_beamInstances;
 };

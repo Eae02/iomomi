@@ -54,12 +54,6 @@ class World
 public:
 	World() = default;
 	
-	//Move breaks bullet
-	World(World&&) = delete;
-	World(const World&) = delete;
-	World& operator=(World&&) = delete;
-	World& operator=(const World&) = delete;
-	
 	static std::unique_ptr<World> Load(std::istream& stream, bool isEditor);
 	
 	void Save(std::ostream& outStream) const;

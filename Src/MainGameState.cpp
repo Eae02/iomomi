@@ -125,7 +125,7 @@ void MainGameState::DoDeferredRendering(bool useLightProbes, DeferredRenderer::R
 		m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
 		m_renderCtx->transparentMeshBatch.Draw(eg::DC, &mDrawArgs);
 		
-		m_particleRenderer.Draw(m_particleManager, renderTarget.ResolvedDepthTexture());
+		m_particleRenderer.Draw(m_particleManager, renderTarget.DepthTexture());
 		
 		m_renderCtx->renderer.End(renderTarget);
 	}
@@ -270,9 +270,8 @@ void MainGameState::RunFrame(float dt)
 		
 		m_lastSettingsGeneration = SettingsGeneration();
 		
-		if (m_lightingQuality != settings.lightingQuality || m_msaaSamples != settings.msaaSamples)
+		if (m_lightingQuality != settings.lightingQuality)
 		{
-			m_msaaSamples = settings.msaaSamples;
 			m_lightingQuality = settings.lightingQuality;
 			m_renderTarget.reset();
 			m_bloomRenderTarget.reset();
@@ -302,7 +301,7 @@ void MainGameState::RunFrame(float dt)
 		m_renderOutputTexture = eg::Texture::Create2D(textureCI);
 		
 		m_renderTarget = std::make_unique<DeferredRenderer::RenderTarget>((uint32_t)eg::CurrentResolutionX(),
-			(uint32_t)eg::CurrentResolutionY(), settings.msaaSamples, m_renderOutputTexture, 0, m_waterQuality);
+			(uint32_t)eg::CurrentResolutionY(), m_renderOutputTexture, 0, m_waterQuality);
 		
 		if (settings.BloomEnabled())
 		{
@@ -337,6 +336,7 @@ void MainGameState::RunFrame(float dt)
 	m_world->PrepareForDraw(m_prepareDrawArgs);
 	if (m_world->playerHasGravityGun)
 	{
+		m_gravityGun.CollectLights(m_prepareDrawArgs.pointLights);
 		m_gravityGun.Draw(m_renderCtx->meshBatch);
 	}
 	

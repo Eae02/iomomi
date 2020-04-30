@@ -1,4 +1,4 @@
-emissionRate: 5000
+emissionRate: 10000
 lifeTime: 0.3
 position:
   shape: sphere

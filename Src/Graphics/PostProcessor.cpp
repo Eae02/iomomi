@@ -5,19 +5,6 @@ static float* bloomIntensity = eg::TweakVarFloat("bloom_intensity", 0.5f, 0);
 
 PostProcessor::PostProcessor()
 {
-	const eg::ShaderModuleAsset& fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.fs.glsl");
-	
-	eg::GraphicsPipelineCreateInfo postPipelineCI;
-	postPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
-	postPipelineCI.fragmentShader = fragmentShader.GetVariant("VNoBloom");
-	postPipelineCI.label = "PostProcess";
-	m_pipelineNoBloom = eg::Pipeline::Create(postPipelineCI);
-	m_pipelineNoBloom.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
-	
-	postPipelineCI.fragmentShader = fragmentShader.GetVariant("VBloom");
-	m_pipelineBloom = eg::Pipeline::Create(postPipelineCI);
-	m_pipelineBloom.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
-	
 	eg::SamplerDescription samplerDescription;
 	samplerDescription.wrapU = eg::WrapMode::ClampToEdge;
 	samplerDescription.wrapV = eg::WrapMode::ClampToEdge;
@@ -25,28 +12,65 @@ PostProcessor::PostProcessor()
 	m_inputSampler = eg::Sampler(samplerDescription);
 }
 
+void PostProcessor::InitPipeline()
+{
+	struct SpecConstData
+	{
+		uint32_t enableBloom;
+		uint32_t enableFXAA;
+	};
+	SpecConstData specConstData;
+	specConstData.enableBloom = settings.BloomEnabled();
+	specConstData.enableFXAA = settings.enableFXAA;
+	
+	eg::SpecializationConstantEntry specConstEntries[2];
+	specConstEntries[0].constantID = 0;
+	specConstEntries[0].size = sizeof(uint32_t);
+	specConstEntries[0].offset = offsetof(SpecConstData, enableBloom);
+	specConstEntries[1].constantID = 1;
+	specConstEntries[1].size = sizeof(uint32_t);
+	specConstEntries[1].offset = offsetof(SpecConstData, enableFXAA);
+	
+	eg::GraphicsPipelineCreateInfo postPipelineCI;
+	postPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
+	postPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.fs.glsl").DefaultVariant();
+	postPipelineCI.label = "PostProcess";
+	postPipelineCI.fragmentShader.specConstants = specConstEntries;
+	postPipelineCI.fragmentShader.specConstantsData = &specConstData;
+	postPipelineCI.fragmentShader.specConstantsDataSize = sizeof(SpecConstData);
+	m_pipeline = eg::Pipeline::Create(postPipelineCI);
+	m_pipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
+	
+	m_bloomWasEnabled = settings.BloomEnabled();
+	m_fxaaWasEnabled = settings.enableFXAA;
+}
+
 void PostProcessor::Render(eg::TextureRef input, const eg::BloomRenderer::RenderTarget* bloomRenderTarget)
 {
+	if (m_bloomWasEnabled != settings.BloomEnabled() || m_fxaaWasEnabled != settings.enableFXAA)
+	{
+		InitPipeline();
+	}
+	
 	eg::RenderPassBeginInfo rpBeginInfo;
 	rpBeginInfo.framebuffer = nullptr;
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
 	
 	eg::DC.BeginRenderPass(rpBeginInfo);
 	
+	const float pc[] = {
+		1.0f / eg::CurrentResolutionX(),
+		1.0f / eg::CurrentResolutionY(),
+		settings.exposure,
+		*bloomIntensity
+	};
+	
+	eg::DC.BindPipeline(m_pipeline);
+	eg::DC.PushConstants(0, sizeof(float) * 4, pc);
+	
 	if (bloomRenderTarget != nullptr)
 	{
-		eg::DC.BindPipeline(m_pipelineBloom);
 		eg::DC.BindTexture(bloomRenderTarget->OutputTexture(), 0, 1, &m_inputSampler);
-		
-		float pc[] = { settings.exposure, *bloomIntensity };
-		eg::DC.PushConstants(0, sizeof(pc), pc);
-	}
-	else
-	{
-		eg::DC.BindPipeline(m_pipelineNoBloom);
-		
-		float pc[] = { settings.exposure };
-		eg::DC.PushConstants(0, sizeof(pc), pc);
 	}
 	
 	eg::DC.BindTexture(input, 0, 0, &m_inputSampler);

@@ -97,7 +97,7 @@ bool GooPlaneMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) 
 	
 	cmdCtx.BindDescriptorSet(s_descriptorSet, 0);
 	
-	cmdCtx.BindTexture(meshDrawArgs.renderTarget->ResolvedDepthTexture(), 1, 0);
+	cmdCtx.BindTexture(meshDrawArgs.renderTarget->DepthTexture(), 1, 0);
 	
 	return true;
 }

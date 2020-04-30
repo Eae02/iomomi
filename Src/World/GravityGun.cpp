@@ -54,6 +54,7 @@ bool GravityGun::MidMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* dra
 	
 	cmdCtx.BindPipeline(m_pipeline);
 	cmdCtx.BindDescriptorSet(m_descriptorSet, 0);
+	cmdCtx.PushConstants(0, sizeof(m_intensityBoost), &m_intensityBoost);
 	return true;
 }
 
@@ -61,15 +62,6 @@ bool GravityGun::MidMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* dra
 {
 	return true;
 }
-
-struct ECGravityOrb
-{
-	glm::vec3 direction;
-	glm::vec3 targetPos;
-	float timeAlive;
-	Dir newDown;
-	float lightIntensity;
-};
 
 GravityGun::GravityGun()
 {
@@ -83,6 +75,12 @@ GravityGun::GravityGun()
 	
 	m_materials.at(m_model->GetMaterialIndex("EnergyCyl")) = &m_midMaterial;
 	m_materials.at(m_model->GetMaterialIndex("Main")) = &eg::GetAsset<StaticPropMaterial>("Materials/GravityGunMain.yaml");
+	
+	for (size_t i = 0; i < m_model->NumMeshes(); i++)
+	{
+		std::string_view name = m_model->GetMesh(i).name;
+		m_meshIsPartOfFront[i] = (eg::StringStartsWith(name, "Front") || eg::StringStartsWith(name, "EnergyCyl"));
+	}
 }
 
 static glm::vec3 GUN_POSITION(2.44f, -2.16f, -6.5f);
@@ -92,8 +90,10 @@ static float GUN_SCALE = 0.04f;
 static float GUN_BOB_SCALE = 0.3f;
 static float GUN_BOB_SPEED = 4.0f;
 
-static float ORB_SPEED = 25.0f;
+static float ORB_SPEED = 40.0f;
 
+static float LIGHT_INTENSITY_MAX = 20.0f;
+static float LIGHT_INTENSITY_FALL_TIME = 0.2f;
 static eg::ColorSRGB LIGHT_COLOR = eg::ColorSRGB::FromHex(0x19ebd8);
 
 void GravityGun::Update(World& world, const PhysicsEngine& physicsEngine, WaterSimulator& waterSim,
@@ -134,30 +134,41 @@ void GravityGun::Update(World& world, const PhysicsEngine& physicsEngine, WaterS
 	m_gunTransform = glm::rotate(m_gunTransform, eg::PI * GUN_ROTATION_Y, glm::vec3(0, 1, 0));
 	m_gunTransform = glm::scale(m_gunTransform, glm::vec3(GUN_SCALE));
 	
-	if (m_beamTimeRemaining > 0)
+	m_fireAnimationTime = std::max(m_fireAnimationTime - dt, 0.0f);
+	m_midMaterial.m_intensityBoost = glm::smoothstep(0.0f, 1.0f, m_fireAnimationTime) * 1;
+	
+	//Updates beam instances
+	for (BeamInstance& beamInstance : m_beamInstances)
 	{
-		m_beamTimeRemaining -= dt;
-		if (m_beamTimeRemaining < 0)
+		beamInstance.timeRemaining -= dt;
+		if (beamInstance.timeRemaining < 0)
 		{
-			m_beamPos = m_beamTargetPos;
-			if (std::shared_ptr<EntGravityChargeable> targetEntity = m_entityToCharge.lock())
+			beamInstance.beamPos = beamInstance.targetPos;
+			if (std::shared_ptr<EntGravityChargeable> targetEntity = beamInstance.entityToCharge.lock())
 			{
-				targetEntity->SetGravity(m_newDown);
-				m_orbParticleEmitter.Kill();
+				targetEntity->SetGravity(beamInstance.newDown);
+				beamInstance.particleEmitter.Kill();
 			}
 			
-			//orbEntity.GetComponent<PointLight>().SetRadiance(LIGHT_COLOR, orbComp.lightIntensity);
-			//orbComp.lightIntensity -= LIGHT_INTENSITY_FALL_SPEED * dt;
-			
-			//if (orbComp.lightIntensity < 0)
-			//{
-			//	orbEntity.Despawn();
-			//}
+			beamInstance.lightIntensity -= dt / LIGHT_INTENSITY_FALL_TIME;
 		}
 		else
 		{
-			m_beamPos += m_beamDirection * dt;
-			m_orbParticleEmitter.SetTransform(glm::translate(glm::mat4(1), m_beamPos));
+			beamInstance.beamPos += beamInstance.direction * dt;
+			beamInstance.particleEmitter.SetTransform(glm::translate(glm::mat4(1), beamInstance.beamPos));
+		}
+	}
+	
+	//Removes dead beam instances
+	for (long i = (long)m_beamInstances.size() - 1; i >= 0; i--)
+	{
+		if (m_beamInstances[i].lightIntensity < 0)
+		{
+			if (i != (long)m_beamInstances.size() - 1)
+			{
+				m_beamInstances.back() = std::move(m_beamInstances[i]);
+			}
+			m_beamInstances.pop_back();
 		}
 	}
 	
@@ -171,35 +182,71 @@ void GravityGun::Update(World& world, const PhysicsEngine& physicsEngine, WaterS
 		
 		if (intersectObject || waterIntersectParticle != -1)
 		{
-			m_orbParticleEmitter = particleManager.AddEmitter(eg::GetAsset<eg::ParticleEmitterType>("Particles/BlueOrb.ype"));
+			BeamInstance& beamInstance = m_beamInstances.emplace_back();
+			
+			beamInstance.particleEmitter = particleManager.AddEmitter(eg::GetAsset<eg::ParticleEmitterType>("Particles/BlueOrb.ype"));
 			
 			glm::vec3 start = m_gunTransform * glm::vec4(0, 0, 0, 1);
 			glm::vec3 target = viewRay.GetPoint(intersectDist * 0.99f);
 			
-			m_newDown = player.CurrentDown();
-			m_beamDirection = glm::normalize(target - start) * ORB_SPEED;
-			m_beamTargetPos = target;
-			m_beamTimeRemaining = intersectDist / ORB_SPEED;
-			m_beamPos = start;
+			beamInstance.newDown = player.CurrentDown();
+			beamInstance.direction = glm::normalize(target - start) * ORB_SPEED;
+			beamInstance.targetPos = target;
+			beamInstance.timeRemaining = intersectDist / ORB_SPEED;
+			beamInstance.beamPos = start;
+			beamInstance.lightIntensity = 1;
+			beamInstance.lightInstanceID = LightSource::NextInstanceID();
 			
-			m_entityToCharge = { };
+			beamInstance.particleEmitter.SetTransform(glm::translate(glm::mat4(1), start));
+			
+			m_fireAnimationTime = 1;
+			
 			if (waterIntersectParticle != -1 && waterIntersectDst < intersectDist)
 			{
 				waterSim.ChangeGravity(waterIntersectParticle, player.CurrentDown());
 			}
 			else if (auto entityDP = std::get_if<Ent*>(&intersectObject->owner))
 			{
-				m_entityToCharge = std::dynamic_pointer_cast<EntGravityChargeable>((**entityDP).shared_from_this());
+				beamInstance.entityToCharge = std::dynamic_pointer_cast<EntGravityChargeable>((**entityDP).shared_from_this());
 			}
 		}
 	}
 }
 
+void GravityGun::CollectLights(std::vector<PointLightDrawData>& pointLightsOut) const
+{
+	for (const BeamInstance& instance : m_beamInstances)
+	{
+		PointLight pointLight(LIGHT_COLOR, instance.lightIntensity * LIGHT_INTENSITY_MAX);
+		pointLightsOut.push_back(pointLight.GetDrawData(instance.beamPos));
+	}
+}
+
 void GravityGun::Draw(eg::MeshBatch& meshBatch)
 {
+	constexpr float KICK_BACK_TIME = 0.08f;
+	constexpr float KICK_RESTORE_TIME = 0.5f;
+	constexpr float KICK_BACK_DIST_MAX = 0.3f;
+	constexpr float ANIMATION_END = 1 - KICK_BACK_TIME - KICK_RESTORE_TIME;
+	float kickBackDist = 0;
+	if (m_fireAnimationTime > 1 - KICK_BACK_TIME)
+	{
+		kickBackDist = glm::smoothstep(0.0f, 1.0f, (1 - m_fireAnimationTime) / KICK_BACK_TIME);
+	}
+	else if (m_fireAnimationTime > ANIMATION_END)
+	{
+		kickBackDist = glm::smoothstep(0.0f, 1.0f, (m_fireAnimationTime - ANIMATION_END) / (KICK_RESTORE_TIME));
+	}
+	
+	
 	for (size_t m = 0; m < m_model->NumMeshes(); m++)
 	{
+		glm::mat4 transform = m_gunTransform;
+		if (m_meshIsPartOfFront[m])
+		{
+			transform = glm::translate(transform, glm::vec3(0, 0, -kickBackDist * KICK_BACK_DIST_MAX));
+		}
 		meshBatch.AddModelMesh(*m_model, m, *m_materials[m_model->GetMesh(m).materialIndex],
-			StaticPropMaterial::InstanceData(m_gunTransform), -1);
+			StaticPropMaterial::InstanceData(transform), -1);
 	}
 }

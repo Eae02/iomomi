@@ -35,3 +35,8 @@ void LightSource::RenderRadianceSettings()
 		SetRadiance(m_color, std::max(m_intensity, 0.0f));
 	}
 }
+
+uint64_t LightSource::NextInstanceID()
+{
+	return nextInstanceID++;
+}
