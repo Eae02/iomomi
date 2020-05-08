@@ -81,6 +81,24 @@ void PrimitiveRenderer::AddLine(const glm::vec3& a, const glm::vec3& b, const eg
 	AddQuad(quadPositions, color);
 }
 
+void PrimitiveRenderer::AddCollisionMesh(const eg::CollisionMesh& mesh, const eg::ColorSRGB& color)
+{
+	uint32_t baseIndex = m_vertices.size();
+	for (size_t v = 0; v < mesh.NumVertices(); v++)
+	{
+		AddVertex(mesh.Vertex(v), color);
+	}
+	
+	for (size_t i = 0; i < mesh.NumIndices(); i += 3)
+	{
+		AddTriangle(
+			baseIndex + mesh.Indices()[i],
+			baseIndex + mesh.Indices()[i + 1],
+			baseIndex + mesh.Indices()[i + 2]
+		);
+	}
+}
+
 void PrimitiveRenderer::End()
 {
 	if (m_triangles.empty())

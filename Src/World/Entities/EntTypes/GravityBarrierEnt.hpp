@@ -15,7 +15,7 @@ class GravityBarrierEnt : public Ent
 public:
 	static constexpr EntTypeID TypeID = EntTypeID::GravityBarrier;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
-		EntTypeFlags::Activatable | EntTypeFlags::DisableClone | EntTypeFlags::HasPhysics;
+		EntTypeFlags::Activatable | EntTypeFlags::HasPhysics;
 	
 	GravityBarrierEnt();
 	
@@ -33,7 +33,7 @@ public:
 	
 	const void* GetComponent(const std::type_info& type) const override;
 	
-	void CollectPhysicsObjects(PhysicsEngine& physicsEngine) override;
+	void CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt) override;
 	
 	int BlockedAxis() const;
 	

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <imgui.h>
+#include "Graphics/GraphicsCommon.hpp"
 
 class ImGuiInterface
 {
@@ -22,9 +23,6 @@ private:
 	
 	eg::Pipeline m_pipeline;
 	
-	int m_vertexCapacity = 0;
-	int m_indexCapacity = 0;
-	
-	eg::Buffer m_vertexBuffer;
-	eg::Buffer m_indexBuffer;
+	ResizableBuffer m_vertexBuffer;
+	ResizableBuffer m_indexBuffer;
 };

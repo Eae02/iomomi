@@ -13,7 +13,7 @@ public:
 	
 	static constexpr EntTypeID TypeID = EntTypeID::Window;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
-		EntTypeFlags::DisableClone | EntTypeFlags::HasPhysics;
+		EntTypeFlags::HasPhysics;
 	
 	void Serialize(std::ostream& stream) const override;
 	
@@ -25,7 +25,7 @@ public:
 	
 	const void* GetComponent(const std::type_info& type) const override;
 	
-	void CollectPhysicsObjects(PhysicsEngine& physicsEngine) override;
+	void CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt) override;
 	
 private:
 	const eg::IMaterial* m_material;

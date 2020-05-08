@@ -33,6 +33,7 @@ PlatformEnt::PlatformEnt()
 	m_physicsObject.canCarry = true;
 	m_physicsObject.shape = eg::AABB(-glm::vec3(1.0f, COLLIDER_HALF_HEIGHT, 1.0f), glm::vec3(1.0f, COLLIDER_HALF_HEIGHT, 1.0f));
 	m_physicsObject.owner = this;
+	m_physicsObject.debugColor = 0xcf24cf;
 	m_physicsObject.constrainMove = &ConstrainMove;
 	
 	m_aaQuadComp.upPlane = 1;
@@ -126,46 +127,6 @@ glm::vec3 PlatformEnt::ConstrainMove(const PhysicsObject& object, const glm::vec
 
 void PlatformEnt::Update(const WorldUpdateArgs& args)
 {
-	if (args.player == nullptr)
-		return;
-	
-	glm::vec3 moveDir = FinalPosition() - m_position;
-	float slideProgress = glm::clamp(glm::dot(m_physicsObject.position, moveDir) / glm::length2(moveDir), 0.0f, 1.0f);
-	float oldSlideProgress = slideProgress;
-	
-	//Updates the slide progress
-	if (m_activatable.m_enabledConnections)
-	{
-		m_physicsObject.canBePushed = false;
-		const bool activated = m_activatable.AllSourcesActive();
-		const float slideDelta = args.dt / m_slideTime;
-		if (activated)
-			slideProgress = std::min(slideProgress + slideDelta, 1.0f);
-		else
-			slideProgress = std::max(slideProgress - slideDelta, 0.0f);
-	}
-	else
-	{
-		m_physicsObject.canBePushed = true;
-	}
-	
-	m_physicsObject.move = moveDir * (slideProgress - oldSlideProgress);
-	
-	constexpr float LAUNCH_TIME = 0.8f;
-	
-	if (oldSlideProgress < LAUNCH_TIME && slideProgress >= LAUNCH_TIME)
-		m_launchVelocity = m_launchVelocityToSet;
-	else if (oldSlideProgress > 1 - LAUNCH_TIME && slideProgress <= 1 - LAUNCH_TIME)
-		m_launchVelocity = -m_launchVelocityToSet;
-	else
-		m_launchVelocity = { };
-	
-	if (!m_physicsObject.childObjects.empty() && glm::length2(m_launchVelocity) > 1E-3f)
-	{
-		for (PhysicsObject* object : m_physicsObject.childObjects)
-			object->velocity += m_launchVelocity;
-	}
-	
 	if (m_physicsObject.didMove)
 	{
 		eg::AABB aabb = std::get<eg::AABB>(m_physicsObject.shape);
@@ -225,8 +186,45 @@ void PlatformEnt::Deserialize(std::istream& stream)
 		m_activatable.m_name = platformPB.name();
 }
 
-void PlatformEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine)
+void PlatformEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 {
+	glm::vec3 moveDir = FinalPosition() - m_position;
+	float slideProgress = glm::clamp(glm::dot(m_physicsObject.position, moveDir) / glm::length2(moveDir), 0.0f, 1.0f);
+	float oldSlideProgress = slideProgress;
+	
+	//Updates the slide progress
+	if (m_activatable.m_enabledConnections)
+	{
+		m_physicsObject.canBePushed = false;
+		const bool activated = m_activatable.AllSourcesActive();
+		const float slideDelta = dt / m_slideTime;
+		if (activated)
+			slideProgress = std::min(slideProgress + slideDelta, 1.0f);
+		else
+			slideProgress = std::max(slideProgress - slideDelta, 0.0f);
+	}
+	else
+	{
+		m_physicsObject.canBePushed = true;
+	}
+	
+	m_physicsObject.move = moveDir * (slideProgress - oldSlideProgress);
+	
+	constexpr float LAUNCH_TIME = 0.8f;
+	
+	if (oldSlideProgress < LAUNCH_TIME && slideProgress >= LAUNCH_TIME)
+		m_launchVelocity = m_launchVelocityToSet;
+	else if (oldSlideProgress > 1 - LAUNCH_TIME && slideProgress <= 1 - LAUNCH_TIME)
+		m_launchVelocity = -m_launchVelocityToSet;
+	else
+		m_launchVelocity = { };
+	
+	if (!m_physicsObject.childObjects.empty() && glm::length2(m_launchVelocity) > 1E-3f)
+	{
+		for (PhysicsObject* object : m_physicsObject.childObjects)
+			object->velocity += m_launchVelocity;
+	}
+	
 	physicsEngine.RegisterObject(&m_physicsObject);
 }
 

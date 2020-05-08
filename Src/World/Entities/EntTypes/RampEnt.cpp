@@ -142,7 +142,7 @@ void RampEnt::Deserialize(std::istream& stream)
 	m_physicsObject.shape = &m_collisionMesh;
 }
 
-void RampEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine)
+void RampEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 {
 	physicsEngine.RegisterObject(&m_physicsObject);
 }

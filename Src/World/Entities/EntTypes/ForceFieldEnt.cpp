@@ -5,6 +5,7 @@
 #include "../../../Graphics/Materials/ForceFieldMaterial.hpp"
 #include "../../../Graphics/RenderSettings.hpp"
 #include "../../../../Protobuf/Build/ForceFieldEntity.pb.h"
+#include "../../../Graphics/GraphicsCommon.hpp"
 
 #include <imgui.h>
 
@@ -95,61 +96,23 @@ void ForceFieldEnt::GameDraw(const EntGameDrawArgs& args)
 	}
 }
 
-const glm::ivec3 cubeVertices[] =
-{
-	{ -1, -1, -1 },
-	{ -1,  1, -1 },
-	{ -1, -1,  1 },
-	{ -1,  1,  1 },
-	{  1, -1, -1 },
-	{  1,  1, -1 },
-	{  1, -1,  1 },
-	{  1,  1,  1 },
-};
-
-const int cubeFaces[6][4] =
-{
-	{ 0, 1, 2, 3 },
-	{ 4, 5, 6, 7 },
-	{ 0, 2, 4, 6 },
-	{ 1, 3, 5, 7 },
-	{ 0, 1, 4, 5 },
-	{ 2, 3, 6, 7 }
-};
-
-const std::pair<int, int> cubeEdges[] =
-{
-	{ 0, 4 },
-	{ 1, 5 },
-	{ 2, 6 },
-	{ 3, 7 },
-	{ 0, 1 },
-	{ 0, 2 },
-	{ 1, 3 },
-	{ 2, 3 },
-	{ 4, 5 },
-	{ 4, 6 },
-	{ 5, 7 },
-	{ 6, 7 }
-};
-
 void ForceFieldEnt::EditorDraw(const EntEditorDrawArgs& args)
 {
 	glm::vec3 realVertices[8];
 	for (int i = 0; i < 8; i++)
 	{
-		realVertices[i] = m_position + radius * glm::vec3(cubeVertices[i]);
+		realVertices[i] = m_position + radius * glm::vec3(cubeMesh::vertices[i]);
 	}
 	
 	for (int f = 0; f < 6; f++)
 	{
 		glm::vec3 positions[4];
 		for (int i = 0; i < 4; i++)
-			positions[i] = realVertices[cubeFaces[f][i]];
+			positions[i] = realVertices[cubeMesh::faces[f][i]];
 		args.primitiveRenderer->AddQuad(positions, eg::ColorSRGB::FromRGBAHex(0x2390c333));
 	}
 	
-	for (std::pair<int, int> edge : cubeEdges)
+	for (std::pair<int, int> edge : cubeMesh::edges)
 	{
 		args.primitiveRenderer->AddLine(realVertices[edge.first], realVertices[edge.second], eg::ColorSRGB::FromRGBAHex(0x2390c3BB));
 	}

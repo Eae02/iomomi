@@ -17,7 +17,7 @@ public:
 	};
 	
 	static constexpr EntTypeID TypeID = EntTypeID::EntranceExit;
-	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::DisableClone |
+	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
 		EntTypeFlags::EditorWallMove | EntTypeFlags::Activatable | EntTypeFlags::HasPhysics;
 	
 	EntranceExitEnt();
@@ -40,7 +40,7 @@ public:
 	
 	const void* GetComponent(const std::type_info& type) const override;
 	
-	void CollectPhysicsObjects(class PhysicsEngine& physicsEngine) override;
+	void CollectPhysicsObjects(class PhysicsEngine& physicsEngine, float dt) override;
 	
 	Door GetDoorDescription() const;
 	
@@ -82,3 +82,6 @@ private:
 	
 	std::string_view m_levelTitle;
 };
+
+template <>
+std::shared_ptr<Ent> CloneEntity<EntranceExitEnt>(const Ent& entity);

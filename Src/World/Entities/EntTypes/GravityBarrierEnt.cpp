@@ -175,6 +175,7 @@ GravityBarrierEnt::GravityBarrierEnt()
 	m_physicsObject.canBePushed = false;
 	m_physicsObject.owner = this;
 	m_physicsObject.shouldCollide = &GravityBarrierEnt::ShouldCollide;
+	m_physicsObject.debugColor = 0xcf24cf;
 }
 
 bool GravityBarrierEnt::ShouldCollide(const PhysicsObject& self, const PhysicsObject& other)
@@ -448,7 +449,7 @@ void GravityBarrierEnt::Deserialize(std::istream& stream)
 	m_blockFalling = gravBarrierPB.block_falling();
 }
 
-void GravityBarrierEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine)
+void GravityBarrierEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 {
 	physicsEngine.RegisterObject(&m_physicsObject);
 }

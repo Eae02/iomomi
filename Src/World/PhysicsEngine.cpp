@@ -1,5 +1,9 @@
+#include <netinet/in.h>
 #include "PhysicsEngine.hpp"
 #include "Collision.hpp"
+#include "../Editor/PrimitiveRenderer.hpp"
+#include "../Graphics/PhysicsDebugRenderer.hpp"
+#include "../Graphics/GraphicsCommon.hpp"
 
 static float* gravityMag = eg::TweakVarFloat("gravity", 10, 0);
 static float* roundPrecision = eg::TweakVarFloat("phys_round_prec", 0.0005f, 0);
@@ -198,7 +202,7 @@ PhysicsObject* PhysicsEngine::CheckForCollision(CollisionResponseCombiner& combi
 		else if (const eg::AABB* otherAABB = std::get_if<eg::AABB>(&object->shape))
 		{
 			OrientedBox otherOBB;
-			otherOBB.center = otherAABB->Center() + object->position;
+			otherOBB.center = object->rotation * otherAABB->Center() + object->position;
 			otherOBB.radius = otherAABB->Size() / 2.0f;
 			otherOBB.rotation = object->rotation;
 			correction = CheckCollisionAABBOrientedBox(shiftedAABB, otherOBB, currentObject.move);
@@ -286,4 +290,59 @@ std::pair<PhysicsObject*, float> PhysicsEngine::RayIntersect(const eg::Ray& ray,
 		}, object->shape);
 	}
 	return { intersectedObject, minIntersect };
+}
+
+void GetDebugRenderDataForShape(PhysicsDebugRenderData& dataOut, const PhysicsObject& obj,
+	const eg::CollisionMesh* mesh, uint32_t color)
+{
+	for (size_t i = 0; i < mesh->NumIndices(); i++)
+	{
+		dataOut.triangleIndices.push_back(mesh->Indices()[i] + dataOut.vertices.size());
+	}
+	
+	for (size_t v = 0; v < mesh->NumVertices(); v++)
+	{
+		glm::vec3 transformedPos = obj.position + (obj.rotation * mesh->Vertex(v));
+		PhysicsDebugVertex& vertex = dataOut.vertices.emplace_back();
+		vertex.x = transformedPos.x;
+		vertex.y = transformedPos.y;
+		vertex.z = transformedPos.z;
+		vertex.color = color;
+	}
+}
+
+void GetDebugRenderDataForShape(PhysicsDebugRenderData& dataOut, const PhysicsObject& obj,
+	const eg::AABB& aabb, uint32_t color)
+{
+	for (const std::pair<uint32_t, uint32_t>& edge : cubeMesh::edges)
+	{
+		dataOut.lineIndices.push_back(dataOut.vertices.size() + edge.first);
+		dataOut.lineIndices.push_back(dataOut.vertices.size() + edge.second);
+	}
+	
+	const glm::vec3 aabbCenter = aabb.Center();
+	const glm::vec3 aabbDiag = aabb.Size() / 2.0f;
+	
+	for (const glm::ivec3& localPos : cubeMesh::vertices)
+	{
+		glm::vec3 worldPos = obj.rotation * (aabbCenter + aabbDiag * glm::vec3(localPos)) + obj.position;
+		PhysicsDebugVertex& vertex = dataOut.vertices.emplace_back();
+		vertex.x = worldPos.x;
+		vertex.y = worldPos.y;
+		vertex.z = worldPos.z;
+		vertex.color = color;
+	}
+}
+
+void PhysicsEngine::GetDebugRenderData(PhysicsDebugRenderData& dataOut) const
+{
+	for (const PhysicsObject* object : m_objects)
+	{
+		uint32_t color = htonl((object->debugColor << 8) | 0xFF);
+		
+		std::visit([&] (const auto& shape)
+		{
+			GetDebugRenderDataForShape(dataOut, *object, shape, color);
+		}, object->shape);
+	}
 }

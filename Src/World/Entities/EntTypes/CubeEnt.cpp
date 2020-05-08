@@ -34,6 +34,7 @@ CubeEnt::CubeEnt(const glm::vec3& position, bool _canFloat)
 	m_physicsObject.shape = eg::AABB(-glm::vec3(RADIUS), glm::vec3(RADIUS));
 	m_physicsObject.owner = this;
 	m_physicsObject.canCarry = true;
+	m_physicsObject.debugColor = 0x1f9bde;
 	m_physicsObject.shouldCollide = ShouldCollide;
 }
 
@@ -311,13 +312,7 @@ void CubeEnt::Deserialize(std::istream& stream)
 	canFloat = cubePB.can_float();
 }
 
-void CubeEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine)
+void CubeEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 {
 	physicsEngine.RegisterObject(&m_physicsObject);
-}
-
-template <>
-std::shared_ptr<Ent> CloneEntity<CubeEnt>(const Ent& entity)
-{
-	return Ent::Create<CubeEnt>(entity.Pos(), static_cast<const CubeEnt&>(entity).canFloat);
 }

@@ -77,8 +77,8 @@ public:
 private:
 	Dir m_down = Dir::NegY;
 	
-	bool m_onGround = false;
 	float m_onGroundLinger = 0;
+	bool m_onGround = false;
 	bool m_wasOnGround = false;
 	bool m_wasUnderwater = false;
 	

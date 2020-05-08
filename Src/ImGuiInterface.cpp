@@ -112,6 +112,9 @@ ImGuiInterface::ImGuiInterface()
 	io.Fonts->TexID = &m_fontTexture;
 	
 	m_fontTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
+	
+	m_vertexBuffer.flags = eg::BufferFlags::VertexBuffer | eg::BufferFlags::CopyDst;
+	m_indexBuffer.flags = eg::BufferFlags::IndexBuffer | eg::BufferFlags::CopyDst;
 }
 
 void ImGuiInterface::NewFrame()
@@ -188,21 +191,8 @@ void ImGuiInterface::EndFrame()
 	uint64_t verticesBytes = drawData->TotalVtxCount * sizeof(ImDrawVert);
 	uint64_t indicesBytes = drawData->TotalIdxCount * sizeof(ImDrawIdx);
 	
-	//Create the vertex buffer if it's too small or hasn't been created yet
-	if (m_vertexCapacity < drawData->TotalVtxCount)
-	{
-		m_vertexCapacity = eg::RoundToNextMultiple(drawData->TotalVtxCount, 1024);
-		m_vertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer | eg::BufferFlags::CopyDst,
-			m_vertexCapacity * sizeof(ImDrawVert), nullptr);
-	}
-	
-	//Create the index buffer if it's too small or hasn't been created yet
-	if (m_indexCapacity < drawData->TotalIdxCount)
-	{
-		m_indexCapacity = eg::RoundToNextMultiple(drawData->TotalIdxCount, 1024);
-		m_indexBuffer = eg::Buffer(eg::BufferFlags::IndexBuffer | eg::BufferFlags::CopyDst,
-			m_indexCapacity * sizeof(ImDrawIdx), nullptr);
-	}
+	m_vertexBuffer.EnsureSize(drawData->TotalVtxCount, sizeof(ImDrawVert));
+	m_indexBuffer.EnsureSize(drawData->TotalIdxCount, sizeof(ImDrawIdx));
 	
 	size_t uploadBufferSize = verticesBytes + indicesBytes;
 	eg::UploadBuffer uploadBuffer = eg::GetTemporaryUploadBuffer(uploadBufferSize);
@@ -230,11 +220,11 @@ void ImGuiInterface::EndFrame()
 	
 	uploadBuffer.Flush();
 	
-	eg::DC.CopyBuffer(uploadBuffer.buffer, m_vertexBuffer, uploadBuffer.offset, 0, verticesBytes);
-	eg::DC.CopyBuffer(uploadBuffer.buffer, m_indexBuffer, uploadBuffer.offset + verticesBytes, 0, indicesBytes);
+	eg::DC.CopyBuffer(uploadBuffer.buffer, m_vertexBuffer.buffer, uploadBuffer.offset, 0, verticesBytes);
+	eg::DC.CopyBuffer(uploadBuffer.buffer, m_indexBuffer.buffer, uploadBuffer.offset + verticesBytes, 0, indicesBytes);
 	
-	m_vertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
-	m_indexBuffer.UsageHint(eg::BufferUsage::IndexBuffer);
+	m_vertexBuffer.buffer.UsageHint(eg::BufferUsage::VertexBuffer);
+	m_indexBuffer.buffer.UsageHint(eg::BufferUsage::IndexBuffer);
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
 	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Load;
@@ -246,8 +236,8 @@ void ImGuiInterface::EndFrame()
 	float scale[] = { 2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y };
 	eg::DC.PushConstants(0, scale);
 	
-	eg::DC.BindVertexBuffer(0, m_vertexBuffer, 0);
-	eg::DC.BindIndexBuffer(eg::IndexType::UInt16, m_indexBuffer, 0);
+	eg::DC.BindVertexBuffer(0, m_vertexBuffer.buffer, 0);
+	eg::DC.BindIndexBuffer(eg::IndexType::UInt16, m_indexBuffer.buffer, 0);
 	
 	//Renders the command lists
 	uint32_t firstIndex = 0;

@@ -12,6 +12,7 @@
 #include "World/GravityGun.hpp"
 #include "Graphics/WaterSimulator.hpp"
 #include "Gui/PausedMenu.hpp"
+#include "Graphics/PhysicsDebugRenderer.hpp"
 
 #include <EGame/Graphics/BloomRenderer.hpp>
 
@@ -77,6 +78,7 @@ private:
 	PausedMenu m_pausedMenu;
 	
 	PhysicsEngine m_physicsEngine;
+	PhysicsDebugRenderer m_physicsDebugRenderer;
 };
 
 extern MainGameState* mainGameState;

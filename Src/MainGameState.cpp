@@ -17,6 +17,7 @@
 MainGameState* mainGameState;
 
 static int* relativeMouseMode = eg::TweakVarInt("relms", 1, 0, 1);
+static int* physicsDebug = eg::TweakVarInt("phys_dbg_draw", 0, 0, 1);
 
 MainGameState::MainGameState(RenderContext& renderCtx)
 	: m_renderCtx(&renderCtx)
@@ -189,7 +190,7 @@ void MainGameState::RunFrame(float dt)
 		
 		m_physicsEngine.BeginCollect();
 		
-		m_world->CollectPhysicsObjects(m_physicsEngine);
+		m_world->CollectPhysicsObjects(m_physicsEngine, dt);
 		
 		m_physicsEngine.EndCollect();
 		
@@ -369,6 +370,12 @@ void MainGameState::RunFrame(float dt)
 	});
 	
 	DoDeferredRendering(true, *m_renderTarget);
+	
+	if (*physicsDebug)
+	{
+		m_physicsDebugRenderer.Render(m_physicsEngine, viewProjMatrix,
+			m_renderOutputTexture, m_renderTarget->DepthTexture());
+	}
 	
 	m_renderOutputTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 	

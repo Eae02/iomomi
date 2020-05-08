@@ -34,8 +34,8 @@ glm::mat4 Ent::GetTransform(float scale) const
 
 glm::mat3 Ent::GetRotationMatrix() const
 {
-	const glm::vec3 l = voxel::tangents[(int)m_direction];
-	const glm::vec3 u = DirectionVector(m_direction);
+	glm::vec3 l = voxel::tangents[(int)m_direction];
+	glm::vec3 u = DirectionVector(m_direction);
 	return glm::mat3(l, u, glm::cross(l, u));
 }
 

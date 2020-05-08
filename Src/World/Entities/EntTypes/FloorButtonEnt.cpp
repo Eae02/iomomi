@@ -49,6 +49,7 @@ FloorButtonEnt::FloorButtonEnt()
 {
 	m_physicsObject.canBePushed = false;
 	m_physicsObject.owner = this;
+	m_physicsObject.debugColor = 0x12b81a;
 	m_physicsObject.shape = frameCollisionMesh.BoundingBox();
 }
 
@@ -162,7 +163,7 @@ eg::AABB FloorButtonEnt::GetAABB() const
 	return Ent::GetAABB(*floorButtonAABBScale, 0.2f);
 }
 
-void FloorButtonEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine)
+void FloorButtonEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 {
 	physicsEngine.RegisterObject(&m_physicsObject);
 }

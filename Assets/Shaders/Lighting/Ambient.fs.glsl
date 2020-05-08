@@ -57,8 +57,9 @@ vec3 calcReflection(vec3 surfacePos, vec3 dirToEye, vec3 normal)
 			}
 			
 			float fade01 = max(abs(ndc.x), abs(ndc.y));
-			float fade = clamp((fade01 - 1) / (1 - FADE_BEGIN) + 1, 0, 1);
-			return mix(texture(gbColor1Sampler, sampleTC).rgb, ambient, fade);
+			float fade = 1 - clamp((fade01 - 1) / (1 - FADE_BEGIN) + 1, 0, 1);
+			fade *= 1 - (lo / ssrLinearSamples);
+			return mix(ambient, texture(gbColor1Sampler, sampleTC).rgb, fade);
 		}
 	}
 	

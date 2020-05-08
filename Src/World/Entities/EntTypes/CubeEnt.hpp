@@ -44,7 +44,7 @@ public:
 	
 	std::string_view GetInteractDescription() const override;
 	
-	void CollectPhysicsObjects(PhysicsEngine& physicsEngine) override;
+	void CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt) override;
 	
 	static constexpr float RADIUS = 0.4f;
 	
@@ -69,6 +69,3 @@ private:
 	
 	std::shared_ptr<WaterSimulator::QueryAABB> m_waterQueryAABB;
 };
-
-template <>
-std::shared_ptr<Ent> CloneEntity<CubeEnt>(const Ent& entity);

@@ -251,7 +251,7 @@ glm::mat3 GravityCorner::MakeRotationMatrix() const
 	return glm::mat3(r1, r2, glm::cross(r1, r2));
 }
 
-void World::CollectPhysicsObjects(PhysicsEngine& physicsEngine)
+void World::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 {
 	for (const Region& region : m_regions)
 	{
@@ -263,7 +263,7 @@ void World::CollectPhysicsObjects(PhysicsEngine& physicsEngine)
 	
 	entManager.ForEachWithFlag(EntTypeFlags::HasPhysics, [&] (Ent& entity)
 	{
-		entity.CollectPhysicsObjects(physicsEngine);
+		entity.CollectPhysicsObjects(physicsEngine, dt);
 	});
 }
 

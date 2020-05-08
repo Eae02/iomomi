@@ -136,8 +136,8 @@ EntranceExitEnt::EntranceExitEnt()
 	m_door1PhysicsObject.canBePushed = false;
 	m_door2PhysicsObject.canBePushed = false;
 	m_roomPhysicsObject.shape = &entrance.roomCollisionMesh;
-	m_door1PhysicsObject.shape = &entrance.door1CollisionMesh;
-	m_door2PhysicsObject.shape = &entrance.door2CollisionMesh;
+	m_door1PhysicsObject.shape = entrance.door1CollisionMesh.BoundingBox();
+	m_door2PhysicsObject.shape = entrance.door2CollisionMesh.BoundingBox();
 	
 	m_screenMaterial.render = [this] (eg::SpriteBatch& spriteBatch)
 	{
@@ -379,11 +379,22 @@ void EntranceExitEnt::Deserialize(std::istream& stream)
 	m_roomPhysicsObject.rotation = m_door1PhysicsObject.rotation = m_door2PhysicsObject.rotation = glm::quat_cast(rotation);
 }
 
-void EntranceExitEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine)
+void EntranceExitEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 {
 	physicsEngine.RegisterObject(&m_roomPhysicsObject);
 	if (!m_door1Open)
 		physicsEngine.RegisterObject(&m_door1PhysicsObject);
 	if (!m_door2Open)
 		physicsEngine.RegisterObject(&m_door2PhysicsObject);
+}
+
+template <>
+std::shared_ptr<Ent> CloneEntity<EntranceExitEnt>(const Ent& entity)
+{
+	const EntranceExitEnt& original = static_cast<const EntranceExitEnt&>(entity);
+	std::shared_ptr<EntranceExitEnt> clone = Ent::Create<EntranceExitEnt>();
+	clone->m_type = original.m_type;
+	clone->m_position = original.m_position;
+	clone->m_direction = original.m_direction;
+	return clone;
 }

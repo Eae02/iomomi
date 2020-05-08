@@ -26,6 +26,8 @@ public:
 	
 	void AddLine(const glm::vec3& a, const glm::vec3& b, const eg::ColorSRGB& color, float width = 0.01f);
 	
+	void AddCollisionMesh(const eg::CollisionMesh& mesh, const eg::ColorSRGB& color);
+	
 	static void OnInit();
 	static void OnShutdown();
 	

@@ -93,7 +93,7 @@ void WindowEnt::Deserialize(std::istream& stream)
 	m_collisionGeometry = m_aaQuad.GetCollisionGeometry(boxCenter, BOX_SHAPE_RADIUS);
 }
 
-void WindowEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine)
+void WindowEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 {
 	physicsEngine.RegisterObject(&m_physicsObject);
 }

@@ -70,7 +70,7 @@ public:
 	
 	virtual void Update(const struct WorldUpdateArgs& args);
 	
-	virtual void CollectPhysicsObjects(class PhysicsEngine& physicsEngine) { }
+	virtual void CollectPhysicsObjects(class PhysicsEngine& physicsEngine, float dt) { }
 	
 	glm::mat4 GetTransform(float scale) const;
 	glm::mat3 GetRotationMatrix() const;

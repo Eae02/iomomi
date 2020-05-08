@@ -76,7 +76,7 @@ public:
 	
 	bool HasCollision(const glm::ivec3& pos, Dir side) const;
 	
-	void CollectPhysicsObjects(PhysicsEngine& physicsEngine);
+	void CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt);
 	
 	void Update(const WorldUpdateArgs& args);
 	

@@ -11,7 +11,7 @@ public:
 	
 	static constexpr EntTypeID TypeID = EntTypeID::FloorButton;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
-		EntTypeFlags::EditorWallMove | EntTypeFlags::DisableClone | EntTypeFlags::HasPhysics;
+		EntTypeFlags::EditorWallMove | EntTypeFlags::HasPhysics;
 	
 	void CommonDraw(const EntDrawArgs& args) override;
 	
@@ -23,7 +23,7 @@ public:
 	
 	const void* GetComponent(const std::type_info& type) const override;
 	
-	void CollectPhysicsObjects(PhysicsEngine& physicsEngine) override;
+	void CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt) override;
 	
 	eg::AABB GetAABB() const;
 	

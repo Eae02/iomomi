@@ -33,6 +33,7 @@ public:
 	bool canCarry = false;
 	float mass = 10;
 	float friction = 0.5f;
+	uint32_t debugColor = 0xde921f;
 	CollisionShape shape;
 	std::variant<std::monostate, struct Player*, struct Ent*> owner;
 	uint32_t rayIntersectMask = 0xFF;
@@ -64,6 +65,8 @@ public:
 	
 	//Finds the closest object intersecting the ray. If no intersection, returns (nullptr, infinity)
 	std::pair<PhysicsObject*, float> RayIntersect(const eg::Ray& ray, uint32_t mask = 0xFF) const;
+	
+	void GetDebugRenderData(struct PhysicsDebugRenderData& dataOut) const;
 	
 private:
 	void CopyParentMove(PhysicsObject& object, float dt);

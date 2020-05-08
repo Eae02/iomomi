@@ -27,7 +27,7 @@ public:
 	
 	const void* GetComponent(const std::type_info& type) const override;
 	
-	void CollectPhysicsObjects(PhysicsEngine& physicsEngine) override;
+	void CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt) override;
 	
 	const glm::vec3& LaunchVelocity() const { return m_launchVelocity; }
 	glm::vec3 FinalPosition() const;

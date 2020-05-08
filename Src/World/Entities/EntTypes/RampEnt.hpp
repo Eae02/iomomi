@@ -23,7 +23,7 @@ public:
 	
 	void CommonDraw(const EntDrawArgs& args) override;
 	
-	void CollectPhysicsObjects(PhysicsEngine& physicsEngine) override;
+	void CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt) override;
 	
 	int m_yaw = 0;
 	bool m_flipped = false;
