@@ -1,25 +1,7 @@
 #include "LiquidPlaneComp.hpp"
 #include "../../World.hpp"
 #include "../../../Vec3Compare.hpp"
-/*
-void LiquidPlaneComp::HandleMessage(eg::Entity& entity, const EditorSpawnedMessage& message)
-{
-	m_shouldGenerateMesh = true;
-	m_outOfDate = true;
-}
 
-void LiquidPlaneComp::HandleMessage(eg::Entity& entity, const EditorWallsChangedMessage& message)
-{
-	m_shouldGenerateMesh = true;
-	m_outOfDate = true;
-}
-
-void LiquidPlaneComp::HandleMessage(eg::Entity& entity, const EditorMovedMessage& message)
-{
-	m_shouldGenerateMesh = true;
-	m_outOfDate = true;
-}
-*/
 bool LiquidPlaneComp::IsUnderwater(const glm::ivec3& pos) const
 {
 	auto it = std::lower_bound(m_underwater.begin(), m_underwater.end(), pos, Vec3Compare());

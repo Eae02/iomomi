@@ -25,14 +25,10 @@ vec3 CalculateLighting(GBData gbData)
 	
 	vec3 fresnel = calcFresnel(gbData, toEye);
 	
-	vec3 radiance = pc.radiance * calcAttenuation(dist);
-	
 	float cosT = dot(toLight, -pc.direction);
 	float penumbraFactor = min((cosT + pc.penumbraBias) * pc.penumbraScale, 1.0);
 	if (penumbraFactor <= 0.0)
 		discard;
 	
-	radiance *= penumbraFactor;
-	
-	return calcDirectReflectance(toLight, toEye, fresnel, gbData, radiance);
+	return calcDirectReflectance(toLight, dist, toEye, fresnel, gbData, pc.radiance * penumbraFactor);
 }

@@ -1,19 +1,88 @@
 #include "Levels.hpp"
+#include "World/World.hpp"
 
 #ifdef __EMSCRIPTEN__
 #include <experimental/filesystem>
 using namespace std::experimental::filesystem;
 #else
 #include <filesystem>
+#include <fstream>
+
 using namespace std::filesystem;
 #endif
 
-#include <yaml-cpp/yaml.h>
-
 std::vector<Level> levels;
+
+static const std::string_view levelsOrder[] = 
+{
+	"intro_0",
+	"intro_1",
+	"intro_2",
+	"button_0",
+	"button_1",
+	"button_2",
+	"button_3",
+	
+	"gravgun_0",
+	"gravgun_1",
+	"gravgun_2",
+	"gravgun_3",
+	"gravgun_4",
+	"gravgun_5",
+	"gravgun_6",
+	
+	"forcefield_1",
+	"forcefield_2",
+	"forcefield_3",
+	
+	"water_0",
+	"water_1",
+	"water_2",
+	
+	"gravbarrier_0",
+	"gravbarrier_1",
+	"gravbarrier_2"
+};
+
+void UpgradeLevelsCommand(eg::Span<const std::string_view> args)
+{
+	int numUpgraded = 0;
+	for (const Level& level : levels)
+	{
+		std::string path = GetLevelPath(level.name);
+		
+		std::ifstream inputStream(path, std::ios::binary);
+		if (!inputStream)
+		{
+			std::string message = "Could not open " + path + "!";
+			eg::console::Write(eg::console::InfoColor, message);
+		}
+		else
+		{
+			std::unique_ptr<World> world = World::Load(inputStream, false);
+			inputStream.close();
+			
+			if (world->IsLatestVersion())
+				continue;
+			
+			std::string text = "Upgrading " + path + "...";
+			eg::console::Write(eg::console::InfoColor, text);
+			
+			std::ofstream outStream(path, std::ios::binary);
+			world->Save(outStream);
+			
+			numUpgraded++;
+		}
+	}
+	
+	std::string endMessage = "Upgraded " + std::to_string(numUpgraded) + " level(s)";
+	eg::console::Write(eg::console::InfoColor, endMessage);
+}
 
 void InitLevels()
 {
+	eg::console::AddCommand("upgradeLevels", 0, &UpgradeLevelsCommand);
+	
 	std::string levelsPath = eg::ExeRelPath("levels");
 	if (!eg::FileExists(levelsPath.c_str()))
 	{
@@ -36,55 +105,16 @@ void InitLevels()
 	{
 		return a.name < b.name;
 	});
-}
-
-void InitLevelsGraph()
-{
-	YAML::Node graphRoot;
-	try
-	{
-		graphRoot = YAML::LoadFile(eg::ExeRelPath("levels/graph.yaml"));
-	}
-	catch (...)
-	{
-		eg::ReleasePanic("Cannot open file \"levels/graph.yaml\" for reading.");
-	}
 	
-	for (auto levelIt = graphRoot.begin(); levelIt != graphRoot.end(); ++levelIt)
+	int64_t prevLevelIndex = FindLevel(levelsOrder[0]);
+	for (size_t i = 1; i < std::size(levelsOrder); i++)
 	{
-		std::string srcLevelName = levelIt->first.as<std::string>();
-		int64_t srcLevel = FindLevel(srcLevelName);
-		if (srcLevel == -1)
+		int64_t thisLevelIndex = FindLevel(levelsOrder[i]);
+		if (thisLevelIndex != -1 && prevLevelIndex != -1)
 		{
-			eg::Log(eg::LogLevel::Error, "lvl", "Level not found: {0}", srcLevelName);
-			continue;
+			levels[prevLevelIndex].nextLevelIndex = thisLevelIndex;
 		}
-		
-		auto AddNextLevel = [&] (const std::string& levelName, std::string_view exitName)
-		{
-			const uint32_t exitNameHash = eg::HashFNV1a32(exitName);
-			int64_t nextLevel = FindLevel(levelName);
-			if (srcLevel == -1)
-			{
-				eg::Log(eg::LogLevel::Error, "lvl", "Level not found: {0}", levelName);
-			}
-			else
-			{
-				levels[srcLevel].nextLevels.push_back({ nextLevel, exitNameHash });
-			}
-		};
-		
-		if (levelIt->second.IsMap())
-		{
-			for (auto edgeIt = levelIt->second.begin(); edgeIt != levelIt->second.end(); ++edgeIt)
-			{
-				AddNextLevel(edgeIt->second.as<std::string>(), edgeIt->first.as<std::string>());
-			}
-		}
-		else
-		{
-			AddNextLevel(levelIt->second.as<std::string>(), "main");
-		}
+		prevLevelIndex = thisLevelIndex;
 	}
 }
 
@@ -98,22 +128,6 @@ int64_t FindLevel(std::string_view name)
 	if (it == levels.end() || it->name != name)
 		return -1;
 	return it - levels.begin();
-}
-
-int64_t GetNextLevelIndex(int64_t currentLevel, std::string_view exitName)
-{
-	if (currentLevel < 0 || currentLevel >= (int64_t)levels.size())
-		return -1;
-	
-	uint32_t exitNameHash = eg::HashFNV1a32(exitName);
-	
-	for (const NextLevel& level : levels[currentLevel].nextLevels)
-	{
-		if (level.exitNameHash == exitNameHash)
-			return level.nextIndex;
-	}
-	
-	return -1;
 }
 
 std::string GetLevelPath(std::string_view name)

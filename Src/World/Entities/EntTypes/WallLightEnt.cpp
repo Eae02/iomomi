@@ -1,4 +1,5 @@
 #include "WallLightEnt.hpp"
+#include "../../World.hpp"
 #include "../../../Graphics/Materials/EmissiveMaterial.hpp"
 #include "../../../../Protobuf/Build/WallLightEntity.pb.h"
 
@@ -82,4 +83,9 @@ void WallLightEnt::Deserialize(std::istream& stream)
 	
 	eg::ColorSRGB color(wallLightPB.colorr(), wallLightPB.colorg(), wallLightPB.colorb());
 	m_pointLight.SetRadiance(color, wallLightPB.intensity());
+}
+
+void WallLightEnt::HalfLightIntensity()
+{
+	m_pointLight.SetRadiance(m_pointLight.GetColor(), m_pointLight.Intensity() / 2);
 }

@@ -86,7 +86,7 @@ void Editor::RunFrame(float dt)
 							m_world->SetIsAir({x, y, z}, true);
 							for (int s = 0; s < 6; s++)
 							{
-								m_world->SetMaterialSafe({x, y, z}, (Dir)s, { NEW_LEVEL_WALL_TEXTURE, false });
+								m_world->SetMaterialSafe({x, y, z}, (Dir)s, NEW_LEVEL_WALL_TEXTURE);
 							}
 						}
 					}
@@ -127,10 +127,10 @@ void Editor::RunFrame(float dt)
 	
 	if (m_levelSettingsOpen)
 	{
+		ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiCond_FirstUseEver);
 		if (ImGui::Begin("Level Settings", &m_levelSettingsOpen))
 		{
 			ImGui::Checkbox("Has Gravity Gun", &m_world->playerHasGravityGun);
-			
 			ImGui::InputText("Title", &m_world->title);
 		}
 		ImGui::End();

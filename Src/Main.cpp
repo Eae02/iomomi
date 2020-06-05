@@ -40,7 +40,6 @@ void Start(eg::RunConfig& runConfig)
 		}
 		RenderSettings::instance = new RenderSettings;
 		InitLevels();
-		InitLevelsGraph();
 	};
 	
 	eg::Run<Game>(runConfig);

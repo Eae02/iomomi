@@ -13,6 +13,8 @@ const eg::FramebufferFormatHint DeferredRenderer::GEOMETRY_FB_FORMAT =
 
 static eg::SamplerDescription s_attachmentSamplerDesc;
 
+static bool unlit = false;
+
 static void OnInit()
 {
 	s_attachmentSamplerDesc.wrapU = eg::WrapMode::ClampToEdge;
@@ -21,6 +23,10 @@ static void OnInit()
 	s_attachmentSamplerDesc.minFilter = eg::TextureFilter::Nearest;
 	s_attachmentSamplerDesc.magFilter = eg::TextureFilter::Nearest;
 	s_attachmentSamplerDesc.mipFilter = eg::TextureFilter::Nearest;
+	
+	eg::console::AddCommand("unlit", 0, [&] (eg::Span<const std::string_view>) {
+		unlit = !unlit;
+	});
 }
 
 EG_ON_INIT(OnInit)
@@ -275,12 +281,16 @@ void DeferredRenderer::BeginLighting(RenderTarget& target, bool hasWater) const
 	eg::DC.BeginRenderPass(rpBeginInfo);
 	
 	eg::ColorLin ambientColor = eg::ColorLin(eg::ColorSRGB::FromHex(0xf6f9fc));
+	if (!unlit)
+	{
+		ambientColor = ambientColor.ScaleRGB(0.2f);
+	}
+	
 	eg::DC.BindPipeline(m_ambientPipeline);
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 	eg::DC.BindTexture(target.m_gbColor1Texture, 0, 1);
 	eg::DC.BindTexture(target.m_gbColor2Texture, 0, 2);
 	eg::DC.BindTexture(target.m_gbDepthTexture, 0, 3);
-	ambientColor = ambientColor.ScaleRGB(0.2f);
 	
 	eg::DC.PushConstants(0, sizeof(float) * 3, &ambientColor.r);
 	
@@ -309,7 +319,7 @@ void DeferredRenderer::DrawWater(RenderTarget& target, eg::BufferRef positionsBu
 
 void DeferredRenderer::DrawSpotLights(RenderTarget& target, const std::vector<SpotLightDrawData>& spotLights) const
 {
-	if (spotLights.empty())
+	if (spotLights.empty() || unlit)
 		return;
 	
 	eg::DC.BindPipeline(m_spotLightPipeline);
@@ -332,7 +342,7 @@ void DeferredRenderer::DrawSpotLights(RenderTarget& target, const std::vector<Sp
 
 void DeferredRenderer::DrawPointLights(RenderTarget& target, const std::vector<PointLightDrawData>& pointLights) const
 {
-	if (pointLights.empty())
+	if (pointLights.empty() || unlit)
 		return;
 	
 	bool softShadows = settings.shadowQuality >= QualityLevel::Medium;
@@ -359,7 +369,7 @@ void DeferredRenderer::DrawPointLights(RenderTarget& target, const std::vector<P
 
 void DeferredRenderer::DrawReflectionPlaneLighting(RenderTarget& target, const std::vector<ReflectionPlane*>& planes)
 {
-	if (planes.empty())
+	if (planes.empty() || unlit)
 		return;
 	
 	eg::DC.BindPipeline(m_reflectionPlanePipeline);

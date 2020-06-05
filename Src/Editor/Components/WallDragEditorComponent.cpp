@@ -79,16 +79,19 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 					
 					if (m_dragAirMode == airMode)
 					{
-						for (int x = mn.x; x <= mx.x; x++)
+						auto UpdateIsAir = [&] ()
 						{
-							for (int y = mn.y; y <= mx.y; y++)
+							for (int x = mn.x; x <= mx.x; x++)
 							{
-								for (int z = mn.z; z <= mx.z; z++)
+								for (int y = mn.y; y <= mx.y; y++)
 								{
-									editorState.world->SetIsAir(glm::ivec3(x, y, z), !allAir);
+									for (int z = mn.z; z <= mx.z; z++)
+									{
+										editorState.world->SetIsAir(glm::ivec3(x, y, z), !allAir);
+									}
 								}
 							}
-						}
+						};
 						
 						const Dir texSourceSide = m_selectionNormal;
 						
@@ -101,6 +104,7 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 						else
 						{
 							texSourceOffset = absNormal * (-newDragDir);
+							UpdateIsAir();
 						}
 						
 						for (int x = mn.x; x <= mx.x; x++)
@@ -110,7 +114,7 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 								for (int z = mn.z; z <= mx.z; z++)
 								{
 									const glm::ivec3 pos(x, y, z);
-									const WallSideMaterial material = editorState.world->GetMaterial(pos + texSourceOffset, texSourceSide);
+									int material = editorState.world->GetMaterial(pos + texSourceOffset, texSourceSide);
 									editorState.world->SetMaterialSafe(pos + texDestOffset, texSourceSide, material);
 									for (int s = 0; s < 4; s++)
 									{
@@ -128,6 +132,11 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 									}
 								}
 							}
+						}
+						
+						if (allAir)
+						{
+							UpdateIsAir();
 						}
 						
 						m_selection1[selDim] += newDragDist - m_dragDistance;
@@ -255,9 +264,7 @@ void WallDragEditorComponent::RenderSettings(const EditorState& editorState)
 			{
 				IterateSelection([&] (glm::ivec3 pos)
 				{
-					WallSideMaterial material = editorState.world->GetMaterial(pos, m_selectionNormal);
-					material.texture = i;
-					editorState.world->SetMaterialSafe(pos, m_selectionNormal, material);
+					editorState.world->SetMaterialSafe(pos, m_selectionNormal, i);
 				});
 			}
 		}

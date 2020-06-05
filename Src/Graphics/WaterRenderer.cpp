@@ -1,9 +1,6 @@
 #include "WaterRenderer.hpp"
 #include "RenderSettings.hpp"
-#include "DeferredRenderer.hpp"
 #include "../Settings.hpp"
-
-constexpr uint32_t UNDERWATER_DOWNLOAD_BUFFER_SIZE = sizeof(uint32_t) * eg::MAX_CONCURRENT_FRAMES;
 
 WaterRenderer::WaterRenderer()
 {

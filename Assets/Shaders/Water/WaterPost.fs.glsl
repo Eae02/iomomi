@@ -49,8 +49,6 @@ vec3 doColorExtinction(vec3 inputColor, float waterTravelDist)
 	return mix(step1Res, colorDeep, clamp(min(waterTravelDist, 10) / (colorExtinction), vec3(0.0), vec3(1.0)));
 }
 
-bool underwater;
-
 vec3 viewPosFromDepth(vec2 screenCoord, float waterDepthH)
 {
 	vec4 h = vec4(screenCoord * 2.0 - vec2(1.0), EG_OPENGL ? (waterDepthH * 2.0 - 1.0) : waterDepthH, 1.0);
@@ -60,7 +58,7 @@ vec3 viewPosFromDepth(vec2 screenCoord, float waterDepthH)
 	return d.xyz / d.w;
 }
 
-vec3 viewPosSampleDepth(vec2 screenCoord)
+vec3 viewPosSampleDepth(vec2 screenCoord, bool underwater)
 {
 	vec4 depthSample = texture(waterDepthSampler, screenCoord);
 	return viewPosFromDepth(screenCoord, hyperDepth(underwater ? depthSample.b : depthSample.r));
@@ -71,9 +69,6 @@ const vec3 DEFAULT_REFLECT_COLOR = vec3(0.5, 0.6, 0.7);
 vec3 calcReflection(vec3 surfacePos, vec3 dirToEye, vec3 normal)
 {
 #ifdef VHighQual
-	if (underwater)
-		return DEFAULT_REFLECT_COLOR;
-	
 	// ** Screen space reflections **
 	
 	vec3 rayDir = normalize(reflect(-dirToEye, normal));
@@ -123,7 +118,7 @@ void main()
 {
 	vec3 waterDepth3 = texture(waterDepthSampler, texCoord_in).rgb;
 	
-	underwater = waterDepth3.r < UNDERWATER_DEPTH;
+	bool underwater = waterDepth3.r < UNDERWATER_DEPTH;
 	
 	vec3 worldColor = texture(worldColorSampler, texCoord_in).rgb;
 	
@@ -149,8 +144,8 @@ void main()
 	vec3 posEye = viewPosFromDepth(texCoord_in, waterDepthH);
 	
 	//Finds the difference in view space position along the x-axis
-	vec3 ddx = viewPosSampleDepth(texCoord_in + vec2(pixelSize.x, 0)) - posEye;
-	vec3 ddx2 = posEye - viewPosSampleDepth(texCoord_in - vec2(pixelSize.x, 0));
+	vec3 ddx = viewPosSampleDepth(texCoord_in + vec2(pixelSize.x, 0), underwater) - posEye;
+	vec3 ddx2 = posEye - viewPosSampleDepth(texCoord_in - vec2(pixelSize.x, 0), underwater);
 	if (abs(ddx.z) > abs(ddx2.z))
 	{
 		ddx = ddx2;
@@ -158,8 +153,8 @@ void main()
 	
 	//Finds the difference in view space position along the y-axis
 	float offsetY = EG_OPENGL ? -pixelSize.y : pixelSize.y;
-	vec3 ddy = viewPosSampleDepth(texCoord_in + vec2(0, offsetY)) - posEye;
-	vec3 ddy2 = posEye - viewPosSampleDepth(texCoord_in - vec2(0, offsetY));
+	vec3 ddy = viewPosSampleDepth(texCoord_in + vec2(0, offsetY), underwater) - posEye;
+	vec3 ddy2 = posEye - viewPosSampleDepth(texCoord_in - vec2(0, offsetY), underwater);
 	if (abs(ddy2.z) < abs(ddy.z))
 	{
 		ddy = ddy2;
@@ -257,7 +252,7 @@ void main()
 		waterTravelDist = distance(targetPos, surfacePos);
 	waterTravelDist = min(waterTravelDist, waterDepth3.g);
 	
-	vec3 reflectColor = calcReflection(surfacePos, dirToEye, normal);
+	vec3 reflectColor = underwater ? DEFAULT_REFLECT_COLOR : calcReflection(surfacePos, dirToEye, normal);
 	
 	vec3 light = vec3(0.8, 0.9, 1.0) * abs(dot(underwater ? -normal : normal, normalize(vec3(1, 1, 1)))) * 0.25 + 0.5;
 	

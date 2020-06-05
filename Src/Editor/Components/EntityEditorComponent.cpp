@@ -123,21 +123,24 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 		m_translationGizmo.Update(m_gizmoPosUnaligned, RenderSettings::instance->cameraPosition,
 		                          RenderSettings::instance->viewProjection, editorState.viewRay);
 		
-		const glm::vec3 gizmoPosAligned = SnapToGrid(m_gizmoPosUnaligned);
-		const glm::vec3 dragDelta = gizmoPosAligned - m_prevGizmoPos;
-		if (glm::length2(dragDelta) > 1E-6f)
+		if (glm::distance2(m_gizmoPosUnaligned, m_prevGizmoPos) > 1E-6f)
 		{
-			MaybeClone();
-			for (const std::weak_ptr<Ent>& selectedEntity : *editorState.selectedEntities)
+			const glm::vec3 gizmoPosAligned = SnapToGrid(m_gizmoPosUnaligned);
+			const glm::vec3 dragDelta = gizmoPosAligned - m_prevGizmoPos;
+			if (glm::length2(dragDelta) > 1E-6f)
 			{
-				if (std::shared_ptr<Ent> selectedEntitySP = selectedEntity.lock())
+				MaybeClone();
+				for (const std::weak_ptr<Ent>& selectedEntity : *editorState.selectedEntities)
 				{
-					selectedEntitySP->EditorMoved(selectedEntitySP->Pos() + dragDelta, {});
-					EntityMoved(*selectedEntitySP);
+					if (std::shared_ptr<Ent> selectedEntitySP = selectedEntity.lock())
+					{
+						selectedEntitySP->EditorMoved(selectedEntitySP->Pos() + dragDelta, {});
+						EntityMoved(*selectedEntitySP);
+					}
 				}
+				m_prevGizmoPos = gizmoPosAligned;
 			}
 		}
-		m_prevGizmoPos = gizmoPosAligned;
 		
 		if (m_translationGizmo.HasInputFocus())
 			blockFurtherInput = true;

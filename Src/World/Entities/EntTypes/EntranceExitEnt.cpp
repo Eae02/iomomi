@@ -1,8 +1,6 @@
 #include "EntranceExitEnt.hpp"
 #include "../../Player.hpp"
-#include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../Graphics/Materials/EmissiveMaterial.hpp"
-#include "../../../Graphics/Lighting/PointLight.hpp"
 #include "../../../YAMLUtils.hpp"
 #include "../../../../Protobuf/Build/EntranceEntity.pb.h"
 
@@ -129,7 +127,7 @@ static const eg::ColorLin ScreenBackColor(eg::ColorSRGB::FromHex(0xd8f3ff));
 
 EntranceExitEnt::EntranceExitEnt()
 	: m_activatable(&EntranceExitEnt::GetConnectionPoints),
-	  m_pointLight(eg::ColorSRGB::FromHex(0xD1F8FE), 25.0f),
+	  m_pointLight(eg::ColorSRGB::FromHex(0xD1F8FE), 20.0f),
 	  m_screenMaterial(500, 200)
 {
 	m_roomPhysicsObject.canBePushed = false;

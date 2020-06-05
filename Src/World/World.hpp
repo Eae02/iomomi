@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstddef>
+#include <bitset>
+#include <glm/gtx/hash.hpp>
 
 #include "Dir.hpp"
 #include "WorldUpdateArgs.hpp"
@@ -10,6 +12,7 @@
 #include "../Graphics/Vertex.hpp"
 #include "../Graphics/PlanarReflectionsManager.hpp"
 #include "PhysicsEngine.hpp"
+#include "../Graphics/GraphicsCommon.hpp"
 
 struct WallVertex;
 
@@ -19,13 +22,6 @@ struct WallRayIntersectResult
 	glm::ivec3 voxelPosition;
 	glm::vec3 intersectPosition;
 	Dir normalDir;
-};
-
-struct RayIntersectResult
-{
-	bool intersected;
-	Ent* entity;
-	float distance;
 };
 
 struct GravityCorner
@@ -43,16 +39,10 @@ struct GravityCorner
 	glm::mat3 MakeRotationMatrix() const;
 };
 
-struct WallSideMaterial
-{
-	int texture;
-	bool enableReflections;
-};
-
 class World
 {
 public:
-	World() = default;
+	World();
 	
 	static std::unique_ptr<World> Load(std::istream& stream, bool isEditor);
 	
@@ -62,17 +52,11 @@ public:
 	
 	bool IsAir(const glm::ivec3& pos) const;
 	
-	void SetMaterialSafe(const glm::ivec3& pos, Dir side, WallSideMaterial material)
-	{
-		if (IsAir(pos))
-		{
-			SetMaterial(pos, side, material);
-		}
-	}
+	void SetMaterialSafe(const glm::ivec3& pos, Dir side, int material);
 	
-	void SetMaterial(const glm::ivec3& pos, Dir side, WallSideMaterial material);
+	void SetMaterial(const glm::ivec3& pos, Dir side, int material);
 	
-	WallSideMaterial GetMaterial(const glm::ivec3& pos, Dir side) const;
+	int GetMaterial(const glm::ivec3& pos, Dir side) const;
 	
 	bool HasCollision(const glm::ivec3& pos, Dir side) const;
 	
@@ -97,107 +81,49 @@ public:
 	
 	EntityManager entManager;
 	
-	const glm::ivec3& GetBoundsMin() const
-	{
-		return m_boundsMin;
-	}
+	bool IsLatestVersion() const { return m_isLatestVersion; }
 	
-	const glm::ivec3& GetBoundsMax() const
-	{
-		return m_boundsMax;
-	}
+	std::pair<glm::ivec3, glm::ivec3> CalculateBounds() const;
 	
-	bool playerHasGravityGun = false;
+	bool playerHasGravityGun = true;
 	std::string title;
 	
 private:
-	static constexpr uint32_t REGION_SIZE = 16;
+	void LoadFormatSub5(std::istream& stream, uint32_t version, bool isEditor);
+	void LoadFormatSup5(std::istream& stream, uint32_t version, bool isEditor);
 	
-	inline static std::tuple<glm::ivec3, glm::ivec3> DecomposeGlobalCoordinate(const glm::ivec3& globalC);
-	
-	struct VoxelReflectionPlane
+	struct AirVoxel
 	{
-		Dir normalDir;
-		int distance;
+		//Tracks which material to use for each face
+		uint8_t materials[6];
+		std::bitset<12> hasGravityCorner;
 		
-		bool operator==(const VoxelReflectionPlane& other) const
-		{
-			return normalDir == other.normalDir && distance == other.distance;
-		}
+		AirVoxel() : materials { }, hasGravityCorner(0) { }
 	};
 	
-	/**
-	 * Each voxel is represented by one 64-bit integer where the low 48 bits store which texture is used
-	 * for each side and if reflection is enabled (7 bits for texture and 1 bit for reflection).
-	 * Bits 48-59 store if the sides of this voxel are gravity corners.
-	 * The 60th bit is a 1 if the voxel is air, or 0 otherwise.
-	 * Texture information is stored in the air voxel that the solid voxel faces into.
-	 */
-	struct RegionData
-	{
-		uint32_t numAirVoxels = 0;
-		uint32_t firstVertex;
-		uint32_t firstIndex;
-		uint64_t voxels[REGION_SIZE][REGION_SIZE][REGION_SIZE] = { };
-		std::vector<WallVertex> vertices;
-		std::vector<uint16_t> indices;
-		std::vector<uint16_t> indicesReflective;
-		std::vector<WallBorderVertex> borderVertices;
-		std::vector<GravityCorner> gravityCorners;
-		std::vector<VoxelReflectionPlane> reflectionPlanes;
-		eg::CollisionMesh collisionMesh;
-		PhysicsObject physicsObject;
-	};
+	std::unordered_map<glm::ivec3, AirVoxel> m_voxels;
 	
-	struct Region
-	{
-		glm::ivec3 coordinate;
-		bool voxelsOutOfDate;
-		bool gravityCornersOutOfDate;
-		bool canDraw;
-		std::unique_ptr<RegionData> data;
-		
-		bool operator<(const glm::ivec3& c) const
-		{
-			return std::tie(coordinate.x, coordinate.y, coordinate.z) < std::tie(c.x, c.y, c.z);
-		}
-		
-		bool operator<(const Region& other) const
-		{
-			return operator<(other.coordinate);
-		}
-	};
-	
-	void PrepareRegionMeshes(bool isEditor);
-	
-	const Region* GetRegion(const glm::ivec3& coordinate) const;
-	Region* GetRegion(const glm::ivec3& coordinate, bool maybeCreate);
-	
-	void BuildRegionMesh(glm::ivec3 coordinate, RegionData& region, bool includeNoDraw);
-	void BuildRegionBorderMesh(glm::ivec3 coordinate, RegionData& region);
+	std::vector<GravityCorner> m_gravityCorners;
 	
 	glm::ivec4 GetGravityCornerVoxelPos(glm::ivec3 cornerPos, Dir cornerDir) const;
 	
-	std::vector<Region> m_regions;
+	void PrepareMeshes(bool isEditor);
+	eg::CollisionMesh BuildMesh(std::vector<WallVertex>& vertices, std::vector<uint32_t>& indices, bool includeNoDraw) const;
+	void BuildBorderMesh(std::vector<WallBorderVertex>* borderVertices, std::vector<GravityCorner>& gravityCorners) const;
 	
 	std::vector<Door> m_doors;
 	
-	bool m_anyOutOfDate = true;
+	bool m_buffersOutOfDate = true;
 	bool m_canDraw = false;
+	bool m_isLatestVersion = false;
 	
-	eg::Buffer m_voxelVertexBuffer;
-	eg::Buffer m_voxelIndexBuffer;
-	size_t m_voxelVertexBufferCapacity = 0;
-	size_t m_voxelIndexBufferCapacity = 0;
+	eg::CollisionMesh m_collisionMesh;
+	PhysicsObject m_physicsObject;
 	
-	eg::Buffer m_borderVertexBuffer;
-	size_t m_borderVertexBufferCapacity = 0;
-	uint32_t m_numBorderVertices;
+	ResizableBuffer m_voxelVertexBuffer;
+	ResizableBuffer m_voxelIndexBuffer;
+	uint32_t m_numVoxelIndices = 0;
 	
-	float m_accumulatedPhysicsTime;
-	
-	glm::ivec3 m_boundsMin;
-	glm::ivec3 m_boundsMax;
-	
-	std::vector<ReflectionPlane> m_wallReflectionPlanes;
+	ResizableBuffer m_borderVertexBuffer;
+	uint32_t m_numBorderVertices = 0;
 };

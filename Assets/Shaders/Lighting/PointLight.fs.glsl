@@ -33,12 +33,7 @@ vec3 CalculateLighting(GBData gbData)
 {
 	vec3 toLight = pc.position - gbData.worldPos;
 	float dist = length(toLight);
-	
-	float atten = calcAttenuation(dist);
-	if (atten < 0.0001)
-		return vec3(0.0);
-	
-	toLight /= dist;
+	toLight = normalize(toLight);
 	
 	float compare = dist * pc.invRange - DEPTH_BIAS;
 	
@@ -58,10 +53,10 @@ vec3 CalculateLighting(GBData gbData)
 	}
 	
 	if (shadow < 0.0001)
-		return vec3(0.0);
+		discard;
 	
 	vec3 toEye = normalize(renderSettings.cameraPosition - gbData.worldPos);
 	vec3 fresnel = calcFresnel(gbData, toEye);
 	
-	return calcDirectReflectance(toLight, toEye, fresnel, gbData, pc.radiance * (shadow * atten));
+	return calcDirectReflectance(toLight, dist, toEye, fresnel, gbData, pc.radiance * shadow);
 }

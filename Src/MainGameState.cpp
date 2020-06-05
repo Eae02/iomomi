@@ -163,6 +163,10 @@ void MainGameState::RenderPlanarReflections(const ReflectionPlane& plane, eg::Fr
 
 void MainGameState::RunFrame(float dt)
 {
+	constexpr float MAX_DT = 0.2f;
+	if (dt > MAX_DT)
+		dt = MAX_DT;
+	
 	glm::mat4 viewMatrix, inverseViewMatrix, viewProjMatrix, inverseViewProjMatrix;
 	auto UpdateViewProjMatrices = [&] ()
 	{
@@ -231,17 +235,13 @@ void MainGameState::RunFrame(float dt)
 				currentExit = &entity;
 		});
 		
-		if (currentExit != nullptr && m_currentLevelIndex != -1)
+		if (currentExit != nullptr && m_currentLevelIndex != -1 && levels[m_currentLevelIndex].nextLevelIndex != -1)
 		{
-			const std::string& exitName = currentExit->GetName();
-			int64_t nextLevelIndex = GetNextLevelIndex(m_currentLevelIndex, exitName);
-			if (nextLevelIndex != -1)
-			{
-				eg::Log(eg::LogLevel::Info, "lvl", "Going to next level '{0}'", levels[nextLevelIndex].name);
-				std::string path = GetLevelPath(levels[nextLevelIndex].name);
-				std::ifstream stream(path, std::ios::binary);
-				LoadWorld(stream, nextLevelIndex, currentExit);
-			}
+			int64_t nextLevelIndex = levels[m_currentLevelIndex].nextLevelIndex;
+			eg::Log(eg::LogLevel::Info, "lvl", "Going to next level '{0}'", levels[nextLevelIndex].name);
+			std::string path = GetLevelPath(levels[nextLevelIndex].name);
+			std::ifstream stream(path, std::ios::binary);
+			LoadWorld(stream, nextLevelIndex, currentExit);
 		}
 	}
 	else

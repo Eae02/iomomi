@@ -4,21 +4,22 @@
 #include "Entities/Components/ActivatorComp.hpp"
 #include "Entities/EntTypes/CubeEnt.hpp"
 #include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
-#include "../Graphics/Materials/StaticPropMaterial.hpp"
-#include "../Graphics/RenderSettings.hpp"
 #include "../Graphics/WallShader.hpp"
+#include "Entities/EntTypes/WallLightEnt.hpp"
 
 #include <yaml-cpp/yaml.h>
 
-std::tuple<glm::ivec3, glm::ivec3> World::DecomposeGlobalCoordinate(const glm::ivec3& globalC)
+World::World()
 {
-	glm::ivec3 localCoord(globalC.x & (REGION_SIZE - 1), globalC.y & (REGION_SIZE - 1), globalC.z & (REGION_SIZE - 1));
-	glm::ivec3 regionCoord = (globalC - localCoord) / (int)REGION_SIZE;
-	return std::make_tuple(localCoord, regionCoord);
+	m_physicsObject.canBePushed = false;
+	m_physicsObject.shape = &m_collisionMesh;
+	
+	m_voxelVertexBuffer.flags = eg::BufferFlags::VertexBuffer | eg::BufferFlags::CopyDst;
+	m_voxelIndexBuffer.flags = eg::BufferFlags::IndexBuffer | eg::BufferFlags::CopyDst;
+	m_borderVertexBuffer.flags = eg::BufferFlags::VertexBuffer | eg::BufferFlags::CopyDst;
 }
 
-static constexpr uint64_t IS_AIR_MASK = (uint64_t)1 << (uint64_t)60;
-
+static const uint32_t CURRENT_VERSION = 6;
 static char MAGIC[] = { (char)0xFF, 'G', 'W', 'D' };
 
 std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
@@ -34,73 +35,19 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 	std::unique_ptr<World> world = std::make_unique<World>();
 	
 	const uint32_t version = eg::BinRead<uint32_t>(stream);
-	if (version != 1 && version != 2 && version != 3)
+	if (version >= 1 && version <= 4)
+	{
+		world->LoadFormatSub5(stream, version, isEditor);
+	}
+	else if (version >= 5 && version <= 6)
+	{
+		world->LoadFormatSup5(stream, version, isEditor);
+	}
+	else
 	{
 		eg::Log(eg::LogLevel::Error, "wd", "Unsupported world format");
 		return nullptr;
 	}
-	
-	world->m_boundsMin = glm::ivec3(INT_MAX);
-	world->m_boundsMax = glm::ivec3(INT_MIN);
-	const uint32_t numRegions = eg::BinRead<uint32_t>(stream);
-	for (uint32_t i = 0; i < numRegions; i++)
-	{
-		Region& region = world->m_regions.emplace_back();
-		for (int c = 0; c < 3; c++)
-		{
-			region.coordinate[c] = eg::BinRead<int32_t>(stream);
-		}
-		region.voxelsOutOfDate = true;
-		region.gravityCornersOutOfDate = true;
-		region.canDraw = false;
-		region.data = std::make_unique<RegionData>();
-		
-		if (!eg::ReadCompressedSection(stream, region.data->voxels, sizeof(RegionData::voxels)))
-		{
-			eg::Log(eg::LogLevel::Error, "wd", "Could not decompress voxels");
-			return nullptr;
-		}
-		
-		glm::ivec3 regionMin = region.coordinate * (int)REGION_SIZE;
-		for (uint32_t x = 0; x < REGION_SIZE; x++)
-		{
-			for (uint32_t y = 0; y < REGION_SIZE; y++)
-			{
-				for (uint32_t z = 0; z < REGION_SIZE; z++)
-				{
-					if (region.data->voxels[x][y][z] & IS_AIR_MASK)
-					{
-						world->m_boundsMin = glm::min(world->m_boundsMin, regionMin + glm::ivec3(x, y, z));
-						world->m_boundsMax = glm::max(world->m_boundsMax, regionMin + glm::ivec3(x, y, z));
-					}
-				}
-			}
-		}
-	}
-	world->m_boundsMin -= 1;
-	world->m_boundsMax += 2;
-	
-	if (!std::is_sorted(world->m_regions.begin(), world->m_regions.end()))
-	{
-		eg::Log(eg::LogLevel::Error, "wd", "Regions are not sorted");
-		return nullptr;
-	}
-	
-	if (version >= 2)
-	{
-		world->playerHasGravityGun = eg::BinRead<uint8_t>(stream);
-	}
-	
-	if (version >= 3)
-	{
-		world->title = eg::BinReadString(stream);
-	}
-	else
-	{
-		world->title = "Untitled";
-	}
-	
-	world->entManager = EntityManager::Deserialize(stream);
 	
 	ActivatorComp::Initialize(world->entManager);
 	
@@ -112,136 +59,189 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 		});
 	}
 	
-	world->m_anyOutOfDate = true;
+	world->m_isLatestVersion = version == CURRENT_VERSION;
 	
 	return world;
 }
 
+void World::LoadFormatSub5(std::istream& stream, uint32_t version, bool isEditor)
+{
+	const uint32_t numRegions = eg::BinRead<uint32_t>(stream);
+	for (uint32_t i = 0; i < numRegions; i++)
+	{
+		glm::ivec3 coordinate;
+		coordinate.x = eg::BinRead<int32_t>(stream);
+		coordinate.y = eg::BinRead<int32_t>(stream);
+		coordinate.z = eg::BinRead<int32_t>(stream);
+		
+		constexpr uint32_t REGION_SIZE = 16;
+		constexpr uint64_t IS_AIR_MASK = (uint64_t)1 << (uint64_t)60;
+		
+		uint64_t voxels[REGION_SIZE][REGION_SIZE][REGION_SIZE];
+		
+		if (!eg::ReadCompressedSection(stream, voxels, sizeof(voxels)))
+		{
+			EG_PANIC("Could not decompress voxels")
+		}
+		
+		glm::ivec3 regionMin = coordinate * (int)REGION_SIZE;
+		for (uint32_t x = 0; x < REGION_SIZE; x++)
+		{
+			for (uint32_t y = 0; y < REGION_SIZE; y++)
+			{
+				for (uint32_t z = 0; z < REGION_SIZE; z++)
+				{
+					if (!(voxels[x][y][z] & IS_AIR_MASK))
+						continue;
+					AirVoxel& voxel = m_voxels.emplace(regionMin + glm::ivec3(x, y, z), AirVoxel()).first->second;
+					for (int f = 0; f < 6; f++)
+					{
+						voxel.materials[f] = (voxels[x][y][z] >> (f * 8)) & 0xFF;
+					}
+					voxel.hasGravityCorner = (voxels[x][y][z] >> 48) & 0xFFF;
+				}
+			}
+		}
+	}
+	
+	playerHasGravityGun = version >= 2 && (bool)eg::BinRead<uint8_t>(stream);
+	
+	bool halfLightIntensity = version < 4 || (bool)eg::BinRead<uint8_t>(stream);
+	
+	title = version >= 3 ? eg::BinReadString(stream) : "Untitled";
+	
+	entManager = EntityManager::Deserialize(stream);
+	
+	if (halfLightIntensity)
+	{
+		entManager.ForEachOfType<WallLightEnt>([&] (WallLightEnt& ent)
+		{
+			ent.HalfLightIntensity();
+		});
+	}
+}
+
+#pragma pack(push, 1)
+struct VoxelData
+{
+	int32_t x;
+	int32_t y;
+	int32_t z;
+	uint8_t materials[6];
+	uint16_t hasGravityCorner;
+};
+#pragma pack(pop)
+
+void World::LoadFormatSup5(std::istream& stream, uint32_t version, bool isEditor)
+{
+	uint32_t numVoxels = eg::BinRead<uint32_t>(stream);
+	std::vector<VoxelData> voxelData(numVoxels);
+	
+	if (version == 5)
+	{
+		stream.read(reinterpret_cast<char*>(voxelData.data()), numVoxels * sizeof(VoxelData));
+	}
+	else
+	{
+		eg::ReadCompressedSection(stream, voxelData.data(), numVoxels * sizeof(VoxelData));
+	}
+	
+	for (const VoxelData& data : voxelData)
+	{
+		AirVoxel& voxel = m_voxels.emplace(glm::ivec3(data.x, data.y, data.z), AirVoxel()).first->second;
+		std::copy_n(data.materials, 6, voxel.materials);
+		voxel.hasGravityCorner = std::bitset<12>(data.hasGravityCorner);
+	}
+	
+	playerHasGravityGun = eg::BinRead<uint8_t>(stream);
+	title = eg::BinReadString(stream);
+	
+	entManager = EntityManager::Deserialize(stream);
+}
+
 void World::Save(std::ostream& outStream) const
 {
-	static const uint32_t CURRENT_VERSION = 3;
-	
 	outStream.write(MAGIC, sizeof(MAGIC));
 	eg::BinWrite(outStream, CURRENT_VERSION);
 	
-	eg::BinWrite(outStream, (uint32_t)m_regions.size());
-	for (const Region& region : m_regions)
+	eg::BinWrite(outStream, (uint32_t)m_voxels.size());
+	std::vector<VoxelData> voxelData;
+	voxelData.reserve(m_voxels.size());
+	
+	for (const auto& voxel : m_voxels)
 	{
-		for (int c = 0; c < 3; c++)
-		{
-			eg::BinWrite(outStream, (int32_t)region.coordinate[c]);
-		}
-		
-		eg::WriteCompressedSection(outStream, region.data->voxels, sizeof(RegionData::voxels));
+		VoxelData& data = voxelData.emplace_back();
+		data.x = voxel.first.x;
+		data.y = voxel.first.y;
+		data.z = voxel.first.z;
+		std::copy_n(voxel.second.materials, 6, data.materials);
+		data.hasGravityCorner = voxel.second.hasGravityCorner.to_ulong();
 	}
 	
-	eg::BinWrite<uint8_t>(outStream, playerHasGravityGun);
+	eg::WriteCompressedSection(outStream, voxelData.data(), voxelData.size() * sizeof(VoxelData));
 	
+	eg::BinWrite<uint8_t>(outStream, playerHasGravityGun);
 	eg::BinWriteString(outStream, title);
 	
 	entManager.Serialize(outStream);
 }
 
-const World::Region* World::GetRegion(const glm::ivec3& coordinate) const
+std::pair<glm::ivec3, glm::ivec3> World::CalculateBounds() const
 {
-	auto it = std::lower_bound(m_regions.begin(), m_regions.end(), coordinate);
-	if (it != m_regions.end() && it->coordinate == coordinate)
-		return &*it;
-	return nullptr;
+	glm::ivec3 boundsMin(INT_MAX);
+	glm::ivec3 boundsMax(INT_MIN);
+	for (const auto& voxel : m_voxels)
+	{
+		boundsMin = glm::min(boundsMin, voxel.first);
+		boundsMax = glm::max(boundsMax, voxel.first);
+	}
+	boundsMin -= 1;
+	boundsMax += 2;
+	return std::make_pair(boundsMin, boundsMax);
 }
 
-World::Region* World::GetRegion(const glm::ivec3& coordinate, bool maybeCreate)
+void World::SetIsAir(const glm::ivec3& pos, bool air)
 {
-	auto it = std::lower_bound(m_regions.begin(), m_regions.end(), coordinate);
-	if (it != m_regions.end() && it->coordinate == coordinate)
-		return &*it;
+	auto voxelIt = m_voxels.find(pos);
+	bool alreadyAir = voxelIt != m_voxels.end();
 	
-	if (!maybeCreate)
-		return nullptr;
-	
-	Region* region = &*m_regions.emplace(it);
-	region->coordinate = coordinate;
-	region->canDraw = false;
-	region->voxelsOutOfDate = true;
-	region->gravityCornersOutOfDate = true;
-	region->data = std::make_unique<RegionData>();
-	
-	m_anyOutOfDate = true;
-	
-	return region;
-}
-
-void World::SetIsAir(const glm::ivec3& pos, bool isAir)
-{
-	auto [localC, regionC] = DecomposeGlobalCoordinate(pos);
-	Region* region = GetRegion(regionC, isAir);
-	if (region == nullptr)
+	if (alreadyAir == air)
 		return;
 	
-	uint64_t& voxelRef = region->data->voxels[localC.x][localC.y][localC.z];
-	if (isAir != ((voxelRef & IS_AIR_MASK) != 0))
+	if (alreadyAir)
 	{
-		if (isAir)
-			voxelRef |= IS_AIR_MASK;
-		else
-			voxelRef &= ~IS_AIR_MASK;
-		
-		region->voxelsOutOfDate = true;
-		region = nullptr; //region is not valid after this, since GetRegion below can invalidate the pointer
-		
-		for (int s = 0; s < 6; s++)
-		{
-			int sd = s / 2;
-			glm::ivec3 d = DirectionVector((Dir)s);
-			if (localC[sd] + d[sd] < 0 || localC[sd] + d[sd] >= (int)REGION_SIZE)
-			{
-				Region* nRegion = GetRegion(regionC + d, true);
-				nRegion->voxelsOutOfDate = true;
-			}
-		}
-		
-		m_anyOutOfDate = true;
+		m_voxels.erase(voxelIt);
+	}
+	else
+	{
+		m_voxels.emplace(pos, AirVoxel());
 	}
 }
 
-bool World::IsAir(const glm::ivec3& pos) const
+void World::SetMaterialSafe(const glm::ivec3& pos, Dir side, int material)
 {
-	auto [localC, regionC] = DecomposeGlobalCoordinate(pos);
-	const Region* region = GetRegion(regionC);
-	if (region == nullptr)
-		return false;
-	return (region->data->voxels[localC.x][localC.y][localC.z] & IS_AIR_MASK) != 0;
+	auto voxelIt = m_voxels.find(pos);
+	if (voxelIt != m_voxels.end())
+	{
+		voxelIt->second.materials[(int)side] = material;
+		m_buffersOutOfDate = true;
+	}
 }
 
-void World::SetMaterial(const glm::ivec3& pos, Dir side, WallSideMaterial material)
+void World::SetMaterial(const glm::ivec3& pos, Dir side, int material)
 {
-#ifndef NDEBUG
-	if (!IsAir(pos))
-		EG_PANIC("Attempted to set texture of a voxel which is not air.");
-#endif
-	
-	auto [localC, regionC] = DecomposeGlobalCoordinate(pos);
-	Region* region = GetRegion(regionC, true);
-	
-	uint64_t state = material.texture & 127;
-	if (material.enableReflections)
-		state |= 128;
-	
-	const uint64_t shift = (uint64_t)side * 8;
-	uint64_t& voxelRef = region->data->voxels[localC.x][localC.y][localC.z];
-	voxelRef = (voxelRef & ~(0xFFULL << shift)) | (state << shift);
-	m_anyOutOfDate = true;
-	region->voxelsOutOfDate = true;
+	auto voxelIt = m_voxels.find(pos);
+	EG_ASSERT(voxelIt != m_voxels.end())
+	voxelIt->second.materials[(int)side] = material;
+	m_buffersOutOfDate = true;
 }
 
-WallSideMaterial World::GetMaterial(const glm::ivec3& pos, Dir side) const
+int World::GetMaterial(const glm::ivec3& pos, Dir side) const
 {
-	auto [localC, regionC] = DecomposeGlobalCoordinate(pos);
-	const Region* region = GetRegion(regionC);
-	if (region == nullptr)
-		return { };
-	uint8_t state = (region->data->voxels[localC.x][localC.y][localC.z] >> ((uint64_t)side * 8)) & 0xFFULL;
-	return { (int)(state & 127), (state & 128) != 0 };
+	auto voxelIt = m_voxels.find(pos);
+	if (voxelIt == m_voxels.end())
+		return 0;
+	return voxelIt->second.materials[(int)side];
 }
 
 glm::mat3 GravityCorner::MakeRotationMatrix() const
@@ -253,13 +253,7 @@ glm::mat3 GravityCorner::MakeRotationMatrix() const
 
 void World::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 {
-	for (const Region& region : m_regions)
-	{
-		if (region.data)
-		{
-			physicsEngine.RegisterObject(&region.data->physicsObject);
-		}
-	}
+	physicsEngine.RegisterObject(&m_physicsObject);
 	
 	entManager.ForEachWithFlag(EntTypeFlags::HasPhysics, [&] (Ent& entity)
 	{
@@ -274,7 +268,8 @@ void World::Update(const WorldUpdateArgs& args)
 
 void World::PrepareForDraw(PrepareDrawArgs& args)
 {
-	PrepareRegionMeshes(args.isEditor);
+	if (m_buffersOutOfDate)
+		PrepareMeshes(args.isEditor);
 	
 	eg::Model& gravityCornerModel = eg::GetAsset<eg::Model>("Models/GravityCornerConvex.obj");
 	const eg::IMaterial& gravityCornerMat = eg::GetAsset<StaticPropMaterial>("Materials/GravityCorner.yaml");
@@ -289,46 +284,33 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 			midMeshIndex = i;
 	}
 	
-	for (const Region& region : m_regions)
+	for (const GravityCorner& corner : m_gravityCorners)
 	{
-		if (!region.canDraw)
-			continue;
-		
-		for (const GravityCorner& corner : region.data->gravityCorners)
+		for (int s = 0; s < 2; s++)
 		{
-			for (int s = 0; s < 2; s++)
+			glm::mat4 transform = glm::translate(glm::mat4(1.0f), corner.position) *
+			                      glm::mat4(corner.MakeRotationMatrix()) *
+			                      glm::translate(glm::mat4(1.0f), glm::vec3(0.01f, 0.01f, 0));
+			
+			if (s)
 			{
-				glm::mat4 transform = glm::translate(glm::mat4(1.0f), corner.position) *
-				                      glm::mat4(corner.MakeRotationMatrix()) *
-				                      glm::translate(glm::mat4(1.0f), glm::vec3(0.01f, 0.01f, 0));
-				
-				if (s)
-				{
-					transform = transform *
-					            glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 1)) *
-					            glm::scale(glm::mat4(1.0f), glm::vec3(1, 1, -1));
-				}
-				
-				glm::mat4 transformLight = transform * glm::translate(glm::mat4(1.0f), glm::vec3(0.01f, 0.01f, 0));
-				
-				int meshIndex = corner.isEnd[s] ? endMeshIndex : midMeshIndex;
-				args.meshBatch->AddModelMesh(gravityCornerModel, meshIndex, GravityCornerLightMaterial::instance,
-					StaticPropMaterial::InstanceData(transformLight));
-				args.meshBatch->AddModelMesh(gravityCornerModel, meshIndex, gravityCornerMat,
-					StaticPropMaterial::InstanceData(transform));
+				transform = transform *
+				            glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 1)) *
+				            glm::scale(glm::mat4(1.0f), glm::vec3(1, 1, -1));
 			}
+			
+			glm::mat4 transformLight = transform * glm::translate(glm::mat4(1.0f), glm::vec3(0.01f, 0.01f, 0));
+			
+			int meshIndex = corner.isEnd[s] ? endMeshIndex : midMeshIndex;
+			args.meshBatch->AddModelMesh(gravityCornerModel, meshIndex, GravityCornerLightMaterial::instance,
+				StaticPropMaterial::InstanceData(transformLight));
+			args.meshBatch->AddModelMesh(gravityCornerModel, meshIndex, gravityCornerMat,
+				StaticPropMaterial::InstanceData(transform));
 		}
 	}
 	
 	if (!args.isEditor)
 	{
-		for (ReflectionPlane& plane : m_wallReflectionPlanes)
-		{
-			args.reflectionPlanes.push_back(&plane);
-		}
-		
-		//ECGravityBarrier::PrepareForDraw(*args.player, *m_entityManager);
-		
 		EntGameDrawArgs entDrawArgs;
 		entDrawArgs.world = this;
 		entDrawArgs.meshBatch = args.meshBatch;
@@ -346,38 +328,9 @@ void World::Draw()
 	
 	BindWallShaderGame();
 	
-	eg::DC.BindVertexBuffer(0, m_voxelVertexBuffer, 0);
-	eg::DC.BindIndexBuffer(eg::IndexType::UInt16, m_voxelIndexBuffer, 0);
-	
-	int reflectiveCur = -1;
-	auto UpdateReflective = [&] (bool reflective)
-	{
-		if (reflectiveCur != (int)reflective)
-		{
-			reflectiveCur = (int)reflective;
-			eg::DC.SetStencilValue(eg::StencilValue::Reference, reflectiveCur);
-		}
-	};
-	
-	for (const Region& region : m_regions)
-	{
-		if (region.canDraw)
-		{
-			if (!region.data->indices.empty())
-			{
-				UpdateReflective(false);
-				eg::DC.DrawIndexed(region.data->firstIndex, (uint32_t)region.data->indices.size(),
-				                   region.data->firstVertex, 0, 1);
-			}
-			
-			if (!region.data->indicesReflective.empty())
-			{
-				UpdateReflective(true);
-				eg::DC.DrawIndexed(region.data->firstIndex + region.data->indices.size(),
-				                   (uint32_t)region.data->indicesReflective.size(), region.data->firstVertex, 0, 1);
-			}
-		}
-	}
+	eg::DC.BindVertexBuffer(0, m_voxelVertexBuffer.buffer, 0);
+	eg::DC.BindIndexBuffer(eg::IndexType::UInt32, m_voxelIndexBuffer.buffer, 0);
+	eg::DC.DrawIndexed(0, m_numVoxelIndices, 0, 0, 1);
 }
 
 void World::DrawPointLightShadows(const struct PointLightShadowRenderArgs& renderArgs)
@@ -387,18 +340,9 @@ void World::DrawPointLightShadows(const struct PointLightShadowRenderArgs& rende
 	
 	BindWallShaderPointLightShadow(renderArgs);
 	
-	eg::DC.BindVertexBuffer(0, m_voxelVertexBuffer, 0);
-	eg::DC.BindIndexBuffer(eg::IndexType::UInt16, m_voxelIndexBuffer, 0);
-	
-	for (const Region& region : m_regions)
-	{
-		if (region.canDraw)
-		{
-			eg::DC.DrawIndexed(region.data->firstIndex,
-				(uint32_t)(region.data->indices.size() + region.data->indicesReflective.size()),
-				region.data->firstVertex, 0, 1);
-		}
-	}
+	eg::DC.BindVertexBuffer(0, m_voxelVertexBuffer.buffer, 0);
+	eg::DC.BindIndexBuffer(eg::IndexType::UInt32, m_voxelIndexBuffer.buffer, 0);
+	eg::DC.DrawIndexed(0, m_numVoxelIndices, 0, 0, 1);
 }
 
 void World::DrawPlanarReflections(const eg::Plane& plane)
@@ -408,18 +352,9 @@ void World::DrawPlanarReflections(const eg::Plane& plane)
 	
 	BindWallShaderPlanarReflections(plane);
 	
-	eg::DC.BindVertexBuffer(0, m_voxelVertexBuffer, 0);
-	eg::DC.BindIndexBuffer(eg::IndexType::UInt16, m_voxelIndexBuffer, 0);
-	
-	for (const Region& region : m_regions)
-	{
-		if (region.canDraw)
-		{
-			eg::DC.DrawIndexed(region.data->firstIndex,
-				(uint32_t)(region.data->indices.size() + region.data->indicesReflective.size()),
-				region.data->firstVertex, 0, 1);
-		}
-	}
+	eg::DC.BindVertexBuffer(0, m_voxelVertexBuffer.buffer, 0);
+	eg::DC.BindIndexBuffer(eg::IndexType::UInt32, m_voxelIndexBuffer.buffer, 0);
+	eg::DC.DrawIndexed(0, m_numVoxelIndices, 0, 0, 1);
 }
 
 void World::DrawEditor()
@@ -429,385 +364,209 @@ void World::DrawEditor()
 	
 	BindWallShaderEditor();
 	
-	eg::DC.BindVertexBuffer(0, m_voxelVertexBuffer, 0);
-	eg::DC.BindIndexBuffer(eg::IndexType::UInt16, m_voxelIndexBuffer, 0);
-	
-	int reflectiveCur = -1;
-	auto UpdateReflective = [&] (bool reflective)
-	{
-		if (reflectiveCur != (int)reflective)
-		{
-			reflectiveCur = (int)reflective;
-			eg::DC.PushConstants(0, 4, &reflectiveCur);
-		}
-	};
-	
-	for (const Region& region : m_regions)
-	{
-		if (region.canDraw)
-		{
-			if (!region.data->indices.empty())
-			{
-				UpdateReflective(false);
-				eg::DC.DrawIndexed(region.data->firstIndex, (uint32_t)region.data->indices.size(),
-				                   region.data->firstVertex, 0, 1);
-			}
-			
-			if (!region.data->indicesReflective.empty())
-			{
-				UpdateReflective(true);
-				eg::DC.DrawIndexed(region.data->firstIndex + region.data->indices.size(),
-				                   (uint32_t)region.data->indicesReflective.size(), region.data->firstVertex, 0, 1);
-			}
-		}
-	}
+	eg::DC.BindVertexBuffer(0, m_voxelVertexBuffer.buffer, 0);
+	eg::DC.BindIndexBuffer(eg::IndexType::UInt32, m_voxelIndexBuffer.buffer, 0);
+	eg::DC.DrawIndexed(0, m_numVoxelIndices, 0, 0, 1);
 	
 	if (m_numBorderVertices > 0)
 	{
-		DrawWallBordersEditor(m_borderVertexBuffer, m_numBorderVertices);
+		DrawWallBordersEditor(m_borderVertexBuffer.buffer, m_numBorderVertices);
 	}
 }
 
-void World::PrepareRegionMeshes(bool isEditor)
+void World::PrepareMeshes(bool isEditor)
 {
-	if (m_anyOutOfDate)
-	{
-		uint32_t totalVertices = 0;
-		uint32_t totalIndices = 0;
-		uint32_t totalBorderVertices = 0;
-		
-		bool uploadVoxels = false;
-		
-		m_wallReflectionPlanes.clear();
-		std::vector<VoxelReflectionPlane> seenReflectionPlanes;
-		
-		for (Region& region : m_regions)
-		{
-			if (region.gravityCornersOutOfDate || region.voxelsOutOfDate)
-			{
-				BuildRegionBorderMesh(region.coordinate, *region.data);
-				region.gravityCornersOutOfDate = false;
-			}
-			
-			if (region.voxelsOutOfDate)
-			{
-				BuildRegionMesh(region.coordinate, *region.data, isEditor);
-				region.canDraw = !region.data->indices.empty() || !region.data->indicesReflective.empty();
-				region.voxelsOutOfDate = false;
-				uploadVoxels = true;
-			}
-			
-			if (!isEditor)
-			{
-				for (const VoxelReflectionPlane& reflectionPlane : region.data->reflectionPlanes)
-				{
-					if (!eg::Contains(seenReflectionPlanes, reflectionPlane))
-					{
-						ReflectionPlane& actualPlane = m_wallReflectionPlanes.emplace_back();
-						actualPlane.plane = eg::Plane(DirectionVector(reflectionPlane.normalDir),
-							reflectionPlane.distance);
-						
-						seenReflectionPlanes.push_back(reflectionPlane);
-					}
-				}
-			}
-			
-			totalVertices += region.data->vertices.size();
-			totalIndices += region.data->indices.size() + region.data->indicesReflective.size();
-			totalBorderVertices += region.data->borderVertices.size();
-		}
-		
-		if (totalIndices == 0)
-		{
-			m_canDraw = false;
-			return;
-		}
-		m_canDraw = true;
-		
-		if (uploadVoxels)
-		{
-			const uint64_t indicesOffset = totalVertices * sizeof(WallVertex);
-			const uint64_t borderVerticesOffset = indicesOffset + totalIndices * sizeof(uint16_t);
-			const uint64_t uploadBytes = borderVerticesOffset + totalBorderVertices * sizeof(WallBorderVertex);
-			
-			//Creates an upload buffer and copies data to it
-			eg::UploadBuffer uploadBuffer = eg::GetTemporaryUploadBuffer(uploadBytes);
-			char* uploadBufferMem = reinterpret_cast<char*>(uploadBuffer.Map());
-			auto* verticesOut = reinterpret_cast<WallVertex*>(uploadBufferMem);
-			auto* indicesOut = reinterpret_cast<uint16_t*>(uploadBufferMem + indicesOffset);
-			auto* borderVerticesOut = reinterpret_cast<WallBorderVertex*>(uploadBufferMem + borderVerticesOffset);
-			
-			uint32_t firstVertex = 0;
-			uint32_t firstIndex = 0;
-			for (Region& region : m_regions)
-			{
-				std::copy_n(region.data->vertices.data(), region.data->vertices.size(), verticesOut + firstVertex);
-				std::copy_n(region.data->indices.data(), region.data->indices.size(), indicesOut + firstIndex);
-				std::copy_n(region.data->indicesReflective.data(), region.data->indicesReflective.size(),
-					indicesOut + firstIndex + region.data->indices.size());
-				
-				region.data->firstVertex = firstVertex;
-				region.data->firstIndex = firstIndex;
-				
-				firstVertex += region.data->vertices.size();
-				firstIndex += region.data->indices.size() + region.data->indicesReflective.size();
-				
-				if (isEditor)
-				{
-					std::copy_n(region.data->borderVertices.begin(), region.data->borderVertices.size(), borderVerticesOut);
-					borderVerticesOut += region.data->borderVertices.size();
-				}
-			}
-			
-			uploadBuffer.Flush();
-			
-			//Reallocates the vertex buffer if it is too small
-			if (m_voxelVertexBufferCapacity < totalVertices)
-			{
-				m_voxelVertexBufferCapacity = eg::RoundToNextMultiple(totalVertices, 16 * 1024);
-				m_voxelVertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer | eg::BufferFlags::CopyDst,
-					m_voxelVertexBufferCapacity * sizeof(WallVertex), nullptr);
-			}
-			
-			//Reallocates the index buffer if it is too small
-			if (m_voxelIndexBufferCapacity < totalIndices)
-			{
-				m_voxelIndexBufferCapacity = eg::RoundToNextMultiple(totalIndices, 16 * 1024);
-				m_voxelIndexBuffer = eg::Buffer(eg::BufferFlags::IndexBuffer | eg::BufferFlags::CopyDst,
-					m_voxelIndexBufferCapacity * sizeof(uint16_t), nullptr);
-			}
-			
-			//Reallocates the border vertex buffer if it is too small
-			if (m_borderVertexBufferCapacity < totalBorderVertices)
-			{
-				m_borderVertexBufferCapacity = eg::RoundToNextMultiple(totalBorderVertices, 16 * 1024);
-				m_borderVertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer | eg::BufferFlags::CopyDst,
-					m_borderVertexBufferCapacity * sizeof(WallBorderVertex), nullptr);
-			}
-			
-			//Uploads data to the vertex and index buffers
-			eg::DC.CopyBuffer(uploadBuffer.buffer, m_voxelVertexBuffer, uploadBuffer.offset, 0,
-				totalVertices * sizeof(WallVertex));
-			eg::DC.CopyBuffer(uploadBuffer.buffer, m_voxelIndexBuffer, uploadBuffer.offset + indicesOffset, 0,
-				totalIndices * sizeof(uint16_t));
-			
-			m_voxelVertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
-			m_voxelIndexBuffer.UsageHint(eg::BufferUsage::IndexBuffer);
-			
-			if (isEditor && totalBorderVertices > 0)
-			{
-				eg::DC.CopyBuffer(uploadBuffer.buffer, m_borderVertexBuffer,
-					uploadBuffer.offset + borderVerticesOffset, 0,
-					totalBorderVertices * sizeof(WallBorderVertex));
-				m_borderVertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
-			}
-			m_numBorderVertices = totalBorderVertices;
-		}
-		
-		m_anyOutOfDate = false;
-	}
-}
-
-void World::BuildRegionMesh(glm::ivec3 coordinate, World::RegionData& region, bool includeNoDraw)
-{
-	const glm::ivec3 globalBase = coordinate * (int)REGION_SIZE;
-	region.vertices.clear();
-	region.indices.clear();
-	region.indicesReflective.clear();
-	region.reflectionPlanes.clear();
+	std::vector<WallVertex> wallVertices;
+	std::vector<uint32_t> wallIndices;
+	m_collisionMesh = BuildMesh(wallVertices, wallIndices, isEditor);
 	
+	m_gravityCorners.clear();
+	std::vector<WallBorderVertex> borderVertices;
+	BuildBorderMesh(isEditor ? &borderVertices : nullptr, m_gravityCorners);
+	
+	const uint64_t wallVerticesBytes = wallVertices.size() * sizeof(WallVertex);
+	const uint64_t wallIndicesBytes = wallIndices.size() * sizeof(uint32_t);
+	const uint64_t borderVerticesBytes = borderVertices.size() * sizeof(WallBorderVertex);
+	
+	//Creates an upload buffer and copies data to it
+	eg::UploadBuffer uploadBuffer = eg::GetTemporaryUploadBuffer(wallVerticesBytes + wallIndicesBytes + borderVerticesBytes);
+	char* uploadBufferMem = reinterpret_cast<char*>(uploadBuffer.Map());
+	std::memcpy(uploadBufferMem, wallVertices.data(), wallVerticesBytes);
+	std::memcpy(uploadBufferMem + wallVerticesBytes, wallIndices.data(), wallIndicesBytes);
+	std::memcpy(uploadBufferMem + wallVerticesBytes + wallIndicesBytes, borderVertices.data(), borderVerticesBytes);
+	uploadBuffer.Flush();
+	
+	m_voxelVertexBuffer.EnsureSize(wallVertices.size(), sizeof(WallVertex));
+	m_voxelIndexBuffer.EnsureSize(wallIndices.size(), sizeof(uint32_t));
+	m_borderVertexBuffer.EnsureSize(borderVertices.size(), sizeof(WallBorderVertex));
+	
+	//Uploads data to the vertex and index buffers
+	eg::DC.CopyBuffer(uploadBuffer.buffer, m_voxelVertexBuffer.buffer, uploadBuffer.offset, 0, wallVerticesBytes);
+	eg::DC.CopyBuffer(uploadBuffer.buffer, m_voxelIndexBuffer.buffer, uploadBuffer.offset + wallVerticesBytes, 0, wallIndicesBytes);
+	if (!borderVertices.empty())
+	{
+		eg::DC.CopyBuffer(uploadBuffer.buffer, m_borderVertexBuffer.buffer,
+		                  uploadBuffer.offset + wallVerticesBytes + wallIndicesBytes, 0, borderVerticesBytes);
+		m_borderVertexBuffer.buffer.UsageHint(eg::BufferUsage::VertexBuffer);
+	}
+	
+	m_voxelVertexBuffer.buffer.UsageHint(eg::BufferUsage::VertexBuffer);
+	m_voxelIndexBuffer.buffer.UsageHint(eg::BufferUsage::IndexBuffer);
+	
+	m_numVoxelIndices = wallIndices.size();
+	m_numBorderVertices = borderVertices.size();
+	m_buffersOutOfDate = false;
+	m_canDraw = true;
+}
+
+eg::CollisionMesh World::BuildMesh(std::vector<WallVertex>& vertices, std::vector<uint32_t>& indices, bool includeNoDraw) const
+{
 	std::vector<glm::vec3> collisionVertices;
 	std::vector<uint32_t> collisionIndices;
 	
-	for (uint32_t x = 0; x < REGION_SIZE; x++)
+	for (const auto& voxel : m_voxels)
 	{
-		for (uint32_t y = 0; y < REGION_SIZE; y++)
+		for (int s = 0; s < 6; s++)
 		{
-			for (uint32_t z = 0; z < REGION_SIZE; z++)
+			glm::ivec3 normal = DirectionVector((Dir)s);
+			const glm::ivec3 nPos = voxel.first - normal;
+			
+			//Only emit triangles for voxels that face into a solid voxel
+			if (IsAir(nPos))
+				continue;
+			int texture = voxel.second.materials[s];
+			if (texture == 0 && !includeNoDraw)
+				continue;
+			
+			//The center of the face to be emitted
+			const glm::ivec3 faceCenter2 = voxel.first * 2 + 1 - normal;
+			
+			//Emits indices
+			const uint32_t baseIndex = (uint32_t)vertices.size();
+			static const uint32_t indicesRelative[] = { 0, 1, 2, 2, 1, 3 };
+			for (uint32_t i : indicesRelative)
+				indices.push_back(baseIndex + i);
+			
+			uint32_t baseIndexCol = collisionVertices.size();
+			bool hasCollision = true;
+			
+			//Emits vertices
+			const glm::ivec3 tangent = voxel::tangents[s];
+			const glm::ivec3 biTangent = voxel::biTangents[s];
+			for (int fx = 0; fx < 2; fx++)
 			{
-				//Only emit triangles for air voxels
-				if ((region.voxels[x][y][z] & IS_AIR_MASK) == 0)
-					continue;
-				
-				const glm::ivec3 globalPos = globalBase + glm::ivec3(x, y, z);
-				
-				for (int s = 0; s < 6; s++)
+				for (int fy = 0; fy < 2; fy++)
 				{
-					glm::ivec3 normal = DirectionVector((Dir)s);
-					const glm::ivec3 nPos = globalPos - normal;
+					const glm::ivec3 tDir = tangent * (fy * 2 - 1);
+					const glm::ivec3 bDir = biTangent * (fx * 2 - 1);
+					const glm::ivec3 diagDir = tDir + bDir;
+					const glm::vec3 pos = glm::vec3(faceCenter2 + diagDir) * 0.5f;
 					
-					//Only emit triangles for voxels that face into a solid voxel
-					if (IsAir(nPos))
-						continue;
-					const uint8_t material = (region.voxels[x][y][z] >> (uint64_t)(8 * s)) & 0xFFULL;
-					int texture = material & 127;
-					if (texture == 0 && !includeNoDraw)
-						continue;
-					
-					bool reflective = (material & 128) != 0;
-					std::vector<uint16_t>* indices = reflective ? &region.indicesReflective : &region.indices;
-					
-					//The center of the face to be emitted
-					const glm::ivec3 faceCenter2 = globalPos * 2 + 1 - normal;
-					
-					if (reflective)
+					float doorDist = INFINITY;
+					for (const Door& door : m_doors)
 					{
-						VoxelReflectionPlane plane;
-						plane.normalDir = (Dir)s;
-						plane.distance = (faceCenter2[s / 2] / 2) * (1 - (s % 2) * 2);
-						if (!eg::Contains(region.reflectionPlanes, plane))
-							region.reflectionPlanes.push_back(plane);
+						if (std::abs(glm::dot(door.normal, glm::vec3(normal))) > 0.5f)
+							doorDist = std::min(doorDist, glm::distance(pos, door.position) - door.radius);
 					}
+					const float doorDist255 = (glm::clamp(doorDist, -1.0f, 1.0f) + 1.0f) * 127.0f;
 					
-					//Emits indices
-					const uint16_t baseIndex = (uint16_t)region.vertices.size();
-					static const uint16_t indicesRelative[] = { 0, 1, 2, 2, 1, 3 };
-					for (uint16_t i : indicesRelative)
-						indices->push_back(baseIndex + i);
+					WallVertex& vertex = vertices.emplace_back();
+					vertex.position = pos;
+					vertex.misc[WallVertex::M_TexLayer] = texture;
+					vertex.misc[WallVertex::M_DoorDist] = (uint8_t)doorDist255;
+					vertex.misc[WallVertex::M_AO] = 0;
+					vertex.SetNormal(normal);
+					vertex.SetTangent(tangent);
 					
-					uint32_t baseIndexCol = collisionVertices.size();
-					bool hasCollision = true;
-					
-					//Emits vertices
-					const glm::ivec3 tangent = voxel::tangents[s];
-					const glm::ivec3 biTangent = voxel::biTangents[s];
-					for (int fx = 0; fx < 2; fx++)
-					{
-						for (int fy = 0; fy < 2; fy++)
-						{
-							const glm::ivec3 tDir = tangent * (fy * 2 - 1);
-							const glm::ivec3 bDir = biTangent * (fx * 2 - 1);
-							const glm::ivec3 diagDir = tDir + bDir;
-							const glm::vec3 pos = glm::vec3(faceCenter2 + diagDir) * 0.5f;
-							
-							float doorDist = INFINITY;
-							for (const Door& door : m_doors)
-							{
-								if (std::abs(glm::dot(door.normal, glm::vec3(normal))) > 0.5f)
-									doorDist = std::min(doorDist, glm::distance(pos, door.position) - door.radius);
-							}
-							const float doorDist255 = (glm::clamp(doorDist, -1.0f, 1.0f) + 1.0f) * 127.0f;
-							
-							WallVertex& vertex = region.vertices.emplace_back();
-							vertex.position = pos;
-							vertex.misc[WallVertex::M_TexLayer] = texture;
-							vertex.misc[WallVertex::M_DoorDist] = (uint8_t)doorDist255;
-							vertex.misc[WallVertex::M_AO] = 0;
-							vertex.SetNormal(normal);
-							vertex.SetTangent(tangent);
-							
-							if (doorDist < 0.0f)
-								hasCollision = false;
-							if (hasCollision)
-								collisionVertices.push_back(pos);
-							
-							if (!IsAir(globalPos + tDir))
-								vertex.misc[WallVertex::M_AO] |= fy + 1;
-							if (!IsAir(globalPos + bDir))
-								vertex.misc[WallVertex::M_AO] |= (fx + 1) << 2;
-							if (!IsAir(globalPos + diagDir) && vertex.misc[WallVertex::M_AO] == 0)
-								vertex.misc[WallVertex::M_AO] = 1 << (fx + 2 * fy);
-						}
-					}
-					
+					if (doorDist < 0.0f)
+						hasCollision = false;
 					if (hasCollision)
-					{
-						for (uint16_t i : indicesRelative)
-						{
-							collisionIndices.push_back(baseIndexCol + i);
-						}
-					}
-					else
-					{
-						while (collisionVertices.size() > baseIndexCol)
-						{
-							collisionVertices.pop_back();
-						}
-					}
+						collisionVertices.push_back(pos);
+					
+					if (!IsAir(voxel.first + tDir))
+						vertex.misc[WallVertex::M_AO] |= fy + 1;
+					if (!IsAir(voxel.first + bDir))
+						vertex.misc[WallVertex::M_AO] |= (fx + 1) << 2;
+					if (!IsAir(voxel.first + diagDir) && vertex.misc[WallVertex::M_AO] == 0)
+						vertex.misc[WallVertex::M_AO] = 1 << (fx + 2 * fy);
+				}
+			}
+			
+			if (hasCollision)
+			{
+				for (uint32_t i : indicesRelative)
+				{
+					collisionIndices.push_back(baseIndexCol + i);
+				}
+			}
+			else
+			{
+				while (collisionVertices.size() > baseIndexCol)
+				{
+					collisionVertices.pop_back();
 				}
 			}
 		}
 	}
 	
-	region.collisionMesh = eg::CollisionMesh::CreateV3<uint32_t>(collisionVertices, collisionIndices);
-	region.collisionMesh.FlipWinding();
-	
-	region.physicsObject.canBePushed = false;
-	region.physicsObject.shape = &region.collisionMesh;
+	eg::CollisionMesh collisionMesh = eg::CollisionMesh::CreateV3<uint32_t>(collisionVertices, collisionIndices);
+	collisionMesh.FlipWinding();
+	return collisionMesh;
 }
 
-void World::BuildRegionBorderMesh(glm::ivec3 coordinate, World::RegionData& region)
+void World::BuildBorderMesh(std::vector<WallBorderVertex>* borderVertices, std::vector<GravityCorner>& gravityCorners) const
 {
-	const glm::ivec3 globalBase = coordinate * (int)REGION_SIZE;
-	region.borderVertices.clear();
-	region.gravityCorners.clear();
-	
-	for (uint32_t x = 0; x < REGION_SIZE; x++)
+	for (const auto& voxel : m_voxels)
 	{
-		for (uint32_t y = 0; y < REGION_SIZE; y++)
+		const glm::vec3 cPos = glm::vec3(voxel.first) + 0.5f;
+		
+		for (int dl = 0; dl < 3; dl++)
 		{
-			for (uint32_t z = 0; z < REGION_SIZE; z++)
+			glm::ivec3 dlV, uV, vV;
+			dlV[dl] = 1;
+			uV[(dl + 1) % 3] = 1;
+			vV[(dl + 2) % 3] = 1;
+			const Dir uDir = (Dir)(((dl + 1) % 3) * 2);
+			const Dir vDir = (Dir)(((dl + 2) % 3) * 2);
+			
+			for (int u = 0; u < 2; u++)
 			{
-				const uint64_t voxel = region.voxels[x][y][z];
-				if ((voxel & IS_AIR_MASK) == 0)
-					continue;
-				const glm::ivec3 gPos = globalBase + glm::ivec3(x, y, z);
-				const glm::vec3 cPos = glm::vec3(gPos) + 0.5f;
-				
-				for (int dl = 0; dl < 3; dl++)
+				const glm::ivec3 uSV = uV * (u * 2 - 1);
+				for (int v = 0; v < 2; v++)
 				{
-					glm::ivec3 dlV, uV, vV;
-					dlV[dl] = 1;
-					uV[(dl + 1) % 3] = 1;
-					vV[(dl + 2) % 3] = 1;
-					const Dir uDir = (Dir)(((dl + 1) % 3) * 2);
-					const Dir vDir = (Dir)(((dl + 2) % 3) * 2);
+					const glm::ivec3 vSV = vV * (v * 2 - 1);
+					const bool uAir = IsAir(voxel.first + uSV);
+					const bool vAir = IsAir(voxel.first + vSV);
+					const bool diagAir = IsAir(voxel.first + uSV + vSV);
+					if (diagAir || uAir != vAir)
+						continue;
 					
-					for (int u = 0; u < 2; u++)
+					if (borderVertices != nullptr)
 					{
-						const glm::ivec3 uSV = uV * (u * 2 - 1);
-						for (int v = 0; v < 2; v++)
+						WallBorderVertex& v1 = borderVertices->emplace_back();
+						v1.position = glm::vec4(cPos + 0.5f * glm::vec3(uSV + vSV + dlV), 0.0f);
+						VecEncode(-uSV, v1.normal1);
+						VecEncode(-vSV, v1.normal2);
+						
+						WallBorderVertex& v2 = borderVertices->emplace_back(v1);
+						v2.position -= glm::vec4(dlV, -1);
+					}
+					
+					const uint64_t gBit = (dl * 4 + (1 - v) * 2 + (1 - u));
+					if (voxel.second.hasGravityCorner[gBit])
+					{
+						GravityCorner& corner = gravityCorners.emplace_back();
+						corner.position = cPos + 0.5f * glm::vec3(uSV + vSV - dlV);
+						corner.down1 = u ? uDir : OppositeDir(uDir);
+						corner.down2 = v ? vDir : OppositeDir(vDir);
+						if (u != v)
+							corner.position += dlV;
+						
+						for (int s = 0; s < 2; s++)
 						{
-							const glm::ivec3 vSV = vV * (v * 2 - 1);
-							const bool uAir = IsAir(gPos + uSV);
-							const bool vAir = IsAir(gPos + vSV);
-							const bool diagAir = IsAir(gPos + uSV + vSV);
-							if (diagAir || uAir != vAir)
-								continue;
-							
-							WallBorderVertex& v1 = region.borderVertices.emplace_back();
-							v1.position = glm::vec4(cPos + 0.5f * glm::vec3(uSV + vSV + dlV), 0.0f);
-							VecEncode(-uSV, v1.normal1);
-							VecEncode(-vSV, v1.normal2);
-							
-							WallBorderVertex& v2 = region.borderVertices.emplace_back(v1);
-							v2.position -= glm::vec4(dlV, -1);
-							
-							const uint64_t gBit = (48 + dl * 4 + (1 - v) * 2 + (1 - u));
-							if ((voxel >> gBit) & 1U)
-							{
-								GravityCorner& corner = region.gravityCorners.emplace_back();
-								corner.position = cPos + 0.5f * glm::vec3(uSV + vSV - dlV);
-								corner.down1 = u ? uDir : OppositeDir(uDir);
-								corner.down2 = v ? vDir : OppositeDir(vDir);
-								if (u != v)
-									corner.position += dlV;
-								
-								for (int s = 0; s < 2; s++)
-								{
-									glm::ivec3 nextGlobalPos = gPos + dlV * (((s + u + v) % 2) * 2 - 1);
-									auto [nextLocalC, nextRegionC] = DecomposeGlobalCoordinate(nextGlobalPos);
-									const Region* nextRegion = GetRegion(nextRegionC);
-									if (nextRegion == nullptr)
-									{
-										corner.isEnd[s] = true;
-										continue;
-									}
-									
-									const uint64_t nextVoxel = nextRegion->data->voxels[nextLocalC.x][nextLocalC.y][nextLocalC.z];
-									corner.isEnd[s] = ((nextVoxel >> gBit) & 1U) == 0;
-								}
-							}
+							glm::ivec3 nextGlobalPos = voxel.first + dlV * (((s + u + v) % 2) * 2 - 1);
+							auto nextVoxelIt = m_voxels.find(nextGlobalPos);
+							corner.isEnd[s] = nextVoxelIt == m_voxels.end() || !nextVoxelIt->second.hasGravityCorner[gBit];
 						}
 					}
 				}
@@ -864,12 +623,11 @@ bool World::IsGravityCorner(const glm::ivec3& cornerPos, Dir cornerDir) const
 	if (voxelPos.w == -1)
 		return false;
 	
-	auto [localC, regionC] = DecomposeGlobalCoordinate(glm::ivec3(voxelPos));
-	const Region* region = GetRegion(regionC);
-	if (region == nullptr)
+	auto voxelIt = m_voxels.find(glm::ivec3(voxelPos));
+	if (voxelIt == m_voxels.end())
 		return false;
 	
-	return (bool)((region->data->voxels[localC.x][localC.y][localC.z] >> (48ULL + voxelPos.w)) & 1);
+	return voxelIt->second.hasGravityCorner[voxelPos.w];
 }
 
 void World::SetIsGravityCorner(const glm::ivec3& cornerPos, Dir cornerDir, bool value)
@@ -878,17 +636,12 @@ void World::SetIsGravityCorner(const glm::ivec3& cornerPos, Dir cornerDir, bool 
 	if (voxelPos.w == -1)
 		return;
 	
-	auto [localC, regionC] = DecomposeGlobalCoordinate(glm::ivec3(voxelPos));
-	Region* region = GetRegion(regionC, true);
-	if (region == nullptr)
+	auto voxelIt = m_voxels.find(glm::ivec3(voxelPos));
+	if (voxelIt == m_voxels.end())
 		return;
 	
-	uint64_t& voxelRef = region->data->voxels[localC.x][localC.y][localC.z];
-	uint64_t mask = 1ULL << (48ULL + voxelPos.w);
-	voxelRef = value ? (voxelRef | mask) : (voxelRef & ~mask);
-	
-	m_anyOutOfDate = true;
-	region->gravityCornersOutOfDate = true;
+	voxelIt->second.hasGravityCorner[voxelPos.w] = value;
+	m_buffersOutOfDate = true;
 }
 
 bool World::IsCorner(const glm::ivec3& cornerPos, Dir cornerDir) const
@@ -909,7 +662,7 @@ const GravityCorner* World::FindGravityCorner(const eg::AABB& aabb, glm::vec3 mo
 	
 	glm::vec3 currentDownDir = DirectionVector(currentDown);
 	
-	auto CheckCorner = [&] (const GravityCorner& corner)
+	for (const GravityCorner& corner : m_gravityCorners)
 	{
 		glm::vec3 otherDown;
 		if (corner.down1 == currentDown)
@@ -917,24 +670,24 @@ const GravityCorner* World::FindGravityCorner(const eg::AABB& aabb, glm::vec3 mo
 		else if (corner.down2 == currentDown)
 			otherDown = DirectionVector(corner.down1);
 		else
-			return;
+			continue;
 		
 		//Checks that the player is moving towards the corner
 		if (glm::dot(move, otherDown) < 0.0001f)
-			return;
+			continue;
 		
 		//Checks that the player is positioned correctly along the side of the corner
 		glm::vec3 cornerVec = glm::cross(glm::vec3(DirectionVector(corner.down1)), glm::vec3(DirectionVector(corner.down2)));
 		float t = glm::dot(cornerVec, pos - corner.position);
 		
 		if (t < 0.0f || t > 1.0f)
-			return;
+			continue;
 		
 		//Checks that the player is positioned at the same height as the corner
 		float h1 = glm::dot(currentDownDir, corner.position - aabb.min);
 		float h2 = glm::dot(currentDownDir, corner.position - aabb.max);
 		if (std::abs(h1) > MAX_HEIGHT_DIFF && std::abs(h2) > MAX_HEIGHT_DIFF)
-			return;
+			continue;
 		
 		//Checks that the player is within range of the corner
 		float dist = glm::dot(otherDown, corner.position - pos);
@@ -945,29 +698,6 @@ const GravityCorner* World::FindGravityCorner(const eg::AABB& aabb, glm::vec3 mo
 			{
 				ret = &corner;
 				minDist = absDist;
-			}
-		}
-	};
-	
-	glm::ivec3 gMin = glm::ivec3(glm::floor(glm::min(aabb.min, aabb.min + move))) - 2;
-	glm::ivec3 gMax = glm::ivec3(glm::ceil(glm::max(aabb.max, aabb.max + move))) + 1;
-	
-	glm::ivec3 rMin = std::get<1>(DecomposeGlobalCoordinate(gMin));
-	glm::ivec3 rMax = std::get<1>(DecomposeGlobalCoordinate(gMax));
-	
-	for (int rx = rMin.x; rx <= rMax.x; rx++)
-	{
-		for (int ry = rMin.y; ry <= rMax.y; ry++)
-		{
-			for (int rz = rMin.z; rz <= rMax.z; rz++)
-			{
-				if (const Region* region = GetRegion({rx, ry, rz}))
-				{
-					for (const GravityCorner& corner : region->data->gravityCorners)
-					{
-						CheckCorner(corner);
-					}
-				}
 			}
 		}
 	}
@@ -1043,4 +773,9 @@ bool World::HasCollision(const glm::ivec3& pos, Dir side) const
 	}
 	
 	return true;
+}
+
+bool World::IsAir(const glm::ivec3& pos) const
+{
+	return m_voxels.count(pos) != 0;
 }

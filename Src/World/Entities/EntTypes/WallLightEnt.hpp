@@ -22,10 +22,10 @@ public:
 	void GameDraw(const EntGameDrawArgs& args) override;
 	void EditorDraw(const EntEditorDrawArgs& args) override;
 	
+	void HalfLightIntensity();
+	
 private:
 	EmissiveMaterial::InstanceData GetInstanceData(float colorScale) const;
 	
 	PointLight m_pointLight;
 };
-
-
