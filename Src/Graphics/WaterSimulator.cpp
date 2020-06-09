@@ -190,7 +190,18 @@ eg::BufferRef WaterSimulator::GetPositionsBuffer() const
 void WaterSimulator::Update()
 {
 	if (m_numParticles == 0)
+	{
+		for (const std::weak_ptr<QueryAABB>& queryAABB : m_queryAABBs)
+		{
+			if (std::shared_ptr<QueryAABB> aabb = queryAABB.lock())
+			{
+				aabb->m_results.numIntersecting = 0;
+				aabb->m_results.buoyancy = glm::vec3(0);
+				aabb->m_results.waterVelocity = glm::vec3(0);
+			}
+		}
 		return;
+	}
 	
 	const uint64_t uploadBufferRange = m_numParticles * 4 * sizeof(float);
 	const uint64_t uploadBufferOffset = eg::CFrameIdx() * uploadBufferRange;
