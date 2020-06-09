@@ -6,10 +6,7 @@
 
 static eg::Pipeline gravitySwitchPipelineEditor;
 static eg::Pipeline gravitySwitchPipelineGame;
-static eg::Pipeline gravitySwitchPipelinePlanarRefl;
 static eg::DescriptorSet gravitySwitchDescriptorSet;
-
-static const eg::StencilState stencilState = DeferredRenderer::MakeStencilState(0);
 
 static void OnInit()
 {
@@ -32,37 +29,17 @@ static void OnInit()
 	pipelineCI.vertexAttributes[6] = { 1, eg::DataType::Float32, 4, offsetof(StaticPropMaterial::InstanceData, transform) + 32 };
 	pipelineCI.vertexAttributes[7] = { 1, eg::DataType::Float32, 2, offsetof(StaticPropMaterial::InstanceData, textureScale) };
 	pipelineCI.numColorAttachments = 2;
-	pipelineCI.enableStencilTest = true;
-	pipelineCI.frontStencilState = stencilState;
-	pipelineCI.backStencilState = stencilState;
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.label = "GravSwitchGame";
 	gravitySwitchPipelineGame = eg::Pipeline::Create(pipelineCI);
 	gravitySwitchPipelineGame.FramebufferFormatHint(DeferredRenderer::GEOMETRY_FB_FORMAT);
 	
 	pipelineCI.label = "GravSwitchEditor";
-	pipelineCI.enableStencilTest = false;
 	pipelineCI.fragmentShader = fragmentShader.GetVariant("VEditor");
 	pipelineCI.cullMode = eg::CullMode::None;
 	pipelineCI.numColorAttachments = 1;
 	gravitySwitchPipelineEditor = eg::Pipeline::Create(pipelineCI);
 	gravitySwitchPipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
-	
-	pipelineCI.label = "GravSwitchPlanarRefl";
-	pipelineCI.fragmentShader = fragmentShader.GetVariant("VPlanarRefl");
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Common3D-PlanarRefl.vs.glsl").DefaultVariant();
-	pipelineCI.cullMode = eg::CullMode::Back;
-	pipelineCI.frontFaceCCW = !pipelineCI.frontFaceCCW;
-	pipelineCI.numClipDistances = 1;
-	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(eg::StdVertex, position) };
-	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::Float32, 2, offsetof(eg::StdVertex, texCoord) };
-	pipelineCI.vertexAttributes[2] = { 1, eg::DataType::Float32, 4, 0 * sizeof(float) * 4 };
-	pipelineCI.vertexAttributes[3] = { 1, eg::DataType::Float32, 4, 1 * sizeof(float) * 4 };
-	pipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 4, 2 * sizeof(float) * 4 };
-	pipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
-	pipelineCI.vertexAttributes[6] = { };
-	pipelineCI.vertexAttributes[7] = { };
-	gravitySwitchPipelinePlanarRefl = eg::Pipeline::Create(pipelineCI);
 	
 	gravitySwitchDescriptorSet = eg::DescriptorSet(gravitySwitchPipelineGame, 0);
 	gravitySwitchDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
@@ -73,14 +50,11 @@ static void OnShutdown()
 {
 	gravitySwitchPipelineEditor.Destroy();
 	gravitySwitchPipelineGame.Destroy();
-	gravitySwitchPipelinePlanarRefl.Destroy();
 	gravitySwitchDescriptorSet.Destroy();
 }
 
 EG_ON_INIT(OnInit)
 EG_ON_SHUTDOWN(OnShutdown)
-
-GravitySwitchMaterial GravitySwitchMaterial::instance;
 
 size_t GravitySwitchMaterial::PipelineHash() const
 {
@@ -93,7 +67,6 @@ inline static eg::PipelineRef GetPipeline(const MeshDrawArgs& drawArgs)
 	{
 	case MeshDrawMode::Game: return gravitySwitchPipelineGame;
 	case MeshDrawMode::Editor: return gravitySwitchPipelineEditor;
-	case MeshDrawMode::PlanarReflection: return gravitySwitchPipelinePlanarRefl;
 	default: return eg::PipelineRef();
 	}
 }
@@ -109,16 +82,13 @@ bool GravitySwitchMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawA
 	
 	cmdCtx.BindDescriptorSet(gravitySwitchDescriptorSet, 0);
 	
-	if (mDrawArgs->drawMode == MeshDrawMode::PlanarReflection)
-	{
-		glm::vec4 pc(mDrawArgs->reflectionPlane.GetNormal(), -mDrawArgs->reflectionPlane.GetDistance());
-		eg::DC.PushConstants(0, pc);
-	}
-	
 	return true;
 }
 
 bool GravitySwitchMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
+	float pc[2] = { intensity, timeOffset * 10 };
+	cmdCtx.PushConstants(0, sizeof(pc), pc);
+	
 	return true;
 }

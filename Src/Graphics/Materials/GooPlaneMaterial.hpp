@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../PlanarReflectionsManager.hpp"
 #include "../RenderSettings.hpp"
 #include "../Materials/MeshDrawArgs.hpp"
 #include "../DeferredRenderer.hpp"
@@ -17,11 +16,8 @@ public:
 	static void OnInit();
 	static void OnShutdown();
 	
-	ReflectionPlane m_reflectionPlane;
-	
 private:
-	static eg::Pipeline s_pipelineReflEnabled;
-	static eg::Pipeline s_pipelineReflDisabled;
+	static eg::Pipeline s_pipeline;
 	static eg::Buffer s_textureTransformsBuffer;
 	static eg::DescriptorSet s_descriptorSet;
 };

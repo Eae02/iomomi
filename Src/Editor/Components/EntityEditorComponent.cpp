@@ -1,9 +1,11 @@
 #include "EntityEditorComponent.hpp"
+#include "../../Graphics/RenderSettings.hpp"
 #include "../../World/Entities/Components/ActivatableComp.hpp"
 #include "../../World/Entities/EntTypes/ActivationLightStripEnt.hpp"
 #include "../../World/Entities/Components/ActivatorComp.hpp"
 
 #include <imgui.h>
+#include <imgui_internal.h>
 
 bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState)
 {
@@ -112,7 +114,7 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 				}
 				else
 				{
-					m_gizmoPosUnaligned += selectedEntitySP->Pos();
+					m_gizmoPosUnaligned += selectedEntitySP->GetPosition();
 				}
 			}
 			m_gizmoPosUnaligned /= (float)editorState.selectedEntities->size();
@@ -134,7 +136,7 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 				{
 					if (std::shared_ptr<Ent> selectedEntitySP = selectedEntity.lock())
 					{
-						selectedEntitySP->EditorMoved(selectedEntitySP->Pos() + dragDelta, {});
+						selectedEntitySP->EditorMoved(selectedEntitySP->GetPosition() + dragDelta, {});
 						EntityMoved(*selectedEntitySP);
 					}
 				}
@@ -179,6 +181,23 @@ void EntityEditorComponent::RenderSettings(const EditorState& editorState)
 		if (ImGui::CollapsingHeader(entType.prettyName.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			entity->RenderSettings();
+			
+			if (ActivatorComp* activator = entity->GetComponentMut<ActivatorComp>())
+			{
+				const bool disabled = activator->activatableName == 0;
+				if (disabled)
+					ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+				if (ImGui::Button("Disconnect"))
+				{
+					activator->activatableName = 0;
+					if (std::shared_ptr<ActivationLightStripEnt> lightStrip = activator->lightStripEntity.lock())
+					{
+						editorState.world->entManager.RemoveEntity(*lightStrip);
+					}
+				}
+				if (disabled)
+					ImGui::PopStyleVar();
+			}
 		}
 		ImGui::PopID();
 	}
@@ -191,7 +210,7 @@ bool EntityEditorComponent::CollectIcons(const EditorState& editorState, std::ve
 		if (eg::HasFlag(entity.TypeFlags(), EntTypeFlags::EditorInvisible))
 			return;
 		
-		EditorIcon& icon = icons.emplace_back(entity.Pos(), [entityWP = entity.shared_from_this(), selected = editorState.selectedEntities] ()
+		EditorIcon& icon = icons.emplace_back(entity.GetPosition(), [entityWP = entity.shared_from_this(), selected = editorState.selectedEntities] ()
 		{
 			selected->push_back(move(entityWP));
 		});

@@ -46,7 +46,9 @@ void DecalEnt::UpdateMaterialPointer()
 glm::mat4 DecalEnt::GetDecalTransform() const
 {
 	const float ar = m_material->AspectRatio();
-	return GetTransform(1.0f) * glm::rotate(glm::mat4(1), rotation, glm::vec3(0, 1, 0)) *
+	return glm::translate(glm::mat4(1), m_position) *
+	       glm::mat4(GetRotationMatrix(m_direction)) *
+	       glm::rotate(glm::mat4(1), rotation, glm::vec3(0, 1, 0)) *
 	       glm::scale(glm::mat4(1), glm::vec3(scale * ar, 1.0f, scale));
 }
 
@@ -72,7 +74,7 @@ void DecalEnt::Serialize(std::ostream& stream) const
 {
 	gravity_pb::DecalEntity decalPB;
 	
-	SerializePos(decalPB);
+	SerializePos(decalPB, m_position);
 	
 	decalPB.set_material_name(GetMaterialName());
 	
@@ -88,11 +90,18 @@ void DecalEnt::Deserialize(std::istream& stream)
 	gravity_pb::DecalEntity decalPB;
 	decalPB.ParseFromIstream(&stream);
 	
-	DeserializePos(decalPB);
+	m_position = DeserializePos(decalPB);
 	m_direction = (Dir)decalPB.dir();
 	
 	rotation = decalPB.rotation();
 	scale = decalPB.scale();
 	
 	SetMaterialByName(decalPB.material_name());
+}
+
+void DecalEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+{
+	m_position = newPosition;
+	if (faceDirection)
+		m_direction = *faceDirection;
 }

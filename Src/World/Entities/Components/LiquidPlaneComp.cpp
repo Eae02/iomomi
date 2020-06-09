@@ -8,23 +8,23 @@ bool LiquidPlaneComp::IsUnderwater(const glm::ivec3& pos) const
 	return it != m_underwater.end() && *it == pos;
 }
 
-bool LiquidPlaneComp::IsUnderwater(const Ent& entity, const glm::vec3& pos)
+bool LiquidPlaneComp::IsUnderwater(const glm::vec3& pos) const
 {
-	return entity.GetComponent<LiquidPlaneComp>()->IsUnderwater(glm::ivec3(pos)) && pos.y < entity.Pos().y;
+	return IsUnderwater(glm::ivec3(glm::floor(pos))) && pos.y < position.y;
 }
 
-bool LiquidPlaneComp::IsUnderwater(const Ent& entity, const eg::Sphere& sphere)
+bool LiquidPlaneComp::IsUnderwater(const eg::Sphere& sphere) const
 {
-	return IsUnderwater(entity, sphere.position) && sphere.position.y + sphere.radius < entity.Pos().y;
+	return IsUnderwater(sphere.position) && sphere.position.y + sphere.radius < position.y;
 }
 
-void LiquidPlaneComp::MaybeUpdate(const Ent& entity, const World& world)
+void LiquidPlaneComp::MaybeUpdate(const World& world)
 {
 	if (!m_outOfDate)
 		return;
 	m_outOfDate = true;
 	
-	glm::vec3 startF = entity.Pos() + glm::vec3(DirectionVector(entity.Direction())) * 0.5f;
+	glm::vec3 startF = position + glm::vec3(DirectionVector(wallForward)) * 0.5f;
 	
 	std::set<glm::ivec3, Vec3Compare> visited;
 	std::queue<glm::ivec3> bfsQueue;
@@ -61,12 +61,10 @@ void LiquidPlaneComp::MaybeUpdate(const Ent& entity, const World& world)
 	std::copy(visited.begin(), visited.end(), m_underwater.begin());
 	
 	if (m_shouldGenerateMesh)
-	{
-		GenerateMesh(entity);
-	}
+		GenerateMesh();
 }
 
-void LiquidPlaneComp::GenerateMesh(const Ent& entity)
+void LiquidPlaneComp::GenerateMesh()
 {
 	std::map<glm::ivec3, uint16_t, Vec3Compare> indexMap;
 	std::vector<glm::vec3> vertices;
@@ -77,7 +75,7 @@ void LiquidPlaneComp::GenerateMesh(const Ent& entity)
 		if (IsUnderwater(waterCoord + glm::ivec3(0, 1, 0)))
 			continue;
 		
-		float y = std::min<float>(entity.Pos().y, waterCoord.y + 1);
+		float y = std::min<float>(position.y, waterCoord.y + 1);
 		
 		uint16_t vIndices[2][2];
 		for (int dx = 0; dx < 2; dx++)

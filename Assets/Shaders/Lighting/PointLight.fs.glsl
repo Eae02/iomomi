@@ -15,7 +15,7 @@ layout(push_constant, std140) uniform PC
 
 layout(location=1) noperspective in vec2 screenCoord_in;
 
-layout(set=0, binding=4) uniform samplerCubeShadow shadowMap;
+layout(set=0, binding=5) uniform samplerCubeShadow shadowMap;
 
 const vec3 SAMPLE_OFFSETS[] = vec3[]
 (

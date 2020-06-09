@@ -7,13 +7,11 @@ class LiquidPlaneComp
 public:
 	LiquidPlaneComp() = default;
 	
-	void MaybeUpdate(const Ent& entity, const class World& world);
+	void MaybeUpdate(const class World& world);
 	
 	bool IsUnderwater(const glm::ivec3& pos) const;
-	
-	static bool IsUnderwater(const Ent& entity, const glm::vec3& pos);
-	
-	static bool IsUnderwater(const Ent& entity, const eg::Sphere& sphere);
+	bool IsUnderwater(const glm::vec3& pos) const;
+	bool IsUnderwater(const eg::Sphere& sphere) const;
 	
 	const std::vector<glm::ivec3> UnderwaterCells() const
 	{
@@ -62,8 +60,11 @@ public:
 	
 	eg::MeshBatch::Mesh GetMesh() const;
 	
+	glm::vec3 position;
+	Dir wallForward;
+	
 private:
-	void GenerateMesh(const Ent& entity);
+	void GenerateMesh();
 	
 	std::vector<glm::ivec3> m_underwater;
 	

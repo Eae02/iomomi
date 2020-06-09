@@ -10,6 +10,7 @@ struct GBData
 	float roughness;
 	float metallic;
 	float ao;
+	uint flags;
 };
 
 #endif

@@ -38,6 +38,8 @@ public:
 	int BlockedAxis() const;
 	
 	glm::mat4 GetTransform() const;
+	glm::vec3 GetPosition() const override { return m_position; }
+	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
 	enum class ActivateAction
 	{
@@ -50,6 +52,8 @@ public:
 	ActivateAction activateAction = ActivateAction::Disable;
 	
 private:
+	glm::vec3 m_position;
+	
 	static std::vector<glm::vec3> GetConnectionPoints(const Ent& entity);
 	
 	static bool ShouldCollide(const PhysicsObject& self, const PhysicsObject& other);

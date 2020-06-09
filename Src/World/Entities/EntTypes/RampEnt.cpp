@@ -33,10 +33,10 @@ void RampEnt::RenderSettings()
 
 void RampEnt::Spawned(bool isEditor)
 {
-	if (isEditor)
-	{
-		m_position += glm::vec3(DirectionVector(m_direction)) * 0.5f;
-	}
+	//if (isEditor)
+	//{
+	//	m_position += glm::vec3(DirectionVector(m_direction)) * 0.5f;
+	//}
 }
 
 void RampEnt::CommonDraw(const EntDrawArgs& args)
@@ -49,7 +49,7 @@ void RampEnt::CommonDraw(const EntDrawArgs& args)
 	mesh.numElements = 6;
 	mesh.vertexBuffer = m_vertexBuffer;
 	args.meshBatch->Add(mesh, eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml"),
-		StaticPropMaterial::InstanceData(glm::translate(glm::mat4(1), Pos())));
+		StaticPropMaterial::InstanceData(glm::translate(glm::mat4(1), m_position)));
 }
 
 void RampEnt::InitializeVertexBuffer()
@@ -110,7 +110,7 @@ void RampEnt::Serialize(std::ostream& stream) const
 {
 	gravity_pb::RampEntity rampPB;
 	
-	SerializePos(rampPB);
+	SerializePos(rampPB, m_position);
 	
 	rampPB.set_yaw(m_yaw);
 	rampPB.set_flipped(m_flipped);
@@ -131,7 +131,7 @@ void RampEnt::Deserialize(std::istream& stream)
 	m_size.x = rampPB.scalex();
 	m_size.y = rampPB.scaley();
 	m_size.z = rampPB.scalez();
-	DeserializePos(rampPB);
+	m_position = DeserializePos(rampPB);
 	
 	m_vertexBufferOutOfDate = true;
 	std::array<glm::vec3, 4> vertices = GetTransformedVertices();
@@ -147,6 +147,11 @@ void RampEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 	physicsEngine.RegisterObject(&m_physicsObject);
 }
 
+void RampEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+{
+	m_position = newPosition;
+}
+
 template <>
 std::shared_ptr<Ent> CloneEntity<RampEnt>(const Ent& entity)
 {
@@ -155,5 +160,6 @@ std::shared_ptr<Ent> CloneEntity<RampEnt>(const Ent& entity)
 	clone->m_yaw = src.m_yaw;
 	clone->m_flipped = src.m_flipped;
 	clone->m_size = src.m_size;
+	clone->m_position = src.m_position;
 	return clone;
 }

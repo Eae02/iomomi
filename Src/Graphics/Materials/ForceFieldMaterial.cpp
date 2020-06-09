@@ -16,9 +16,6 @@ ForceFieldMaterial::ForceFieldMaterial()
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.topology = eg::Topology::TriangleStrip;
 	pipelineCI.cullMode = eg::CullMode::None;
-	pipelineCI.enableDepthTest = true;
-	pipelineCI.enableDepthWrite = false;
-	pipelineCI.depthCompare = eg::CompareOp::Less;
 	pipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::OneMinusSrcAlpha);
 	m_pipeline = eg::Pipeline::Create(pipelineCI);
 	

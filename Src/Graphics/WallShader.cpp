@@ -9,7 +9,6 @@ struct
 	eg::Pipeline pipelineDeferredGeom;
 	eg::Pipeline pipelineEditor;
 	eg::Pipeline pipelineBorderEditor;
-	eg::Pipeline pipelinePlanarReflection;
 	eg::Pipeline pipelinePLShadow;
 	eg::Buffer materialSettingsBuffer;
 	eg::Texture* diffuseTexture;
@@ -18,7 +17,6 @@ struct
 	eg::Texture* gridTexture;
 	eg::Texture* noDrawTexture;
 	eg::DescriptorSet gameDescriptorSet;
-	eg::DescriptorSet planarReflDescriptorSet;
 	eg::DescriptorSet editorDescriptorSet;
 } wr;
 
@@ -41,13 +39,11 @@ static MaterialSettings materialSettings[] =
 	{ 2.0f, 0.5f, 1.0f }
 };
 
-static const eg::StencilState stencilState = DeferredRenderer::MakeStencilState(0);
-
 void InitializeWallShader()
 {
 	//Creates the game pipeline
 	eg::GraphicsPipelineCreateInfo pipelineCI;
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall.vs.glsl").GetVariant("VDefault");
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall.vs.glsl").DefaultVariant();
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall.fs.glsl").DefaultVariant();
 	pipelineCI.enableDepthWrite = true;
 	pipelineCI.enableDepthTest = true;
@@ -60,25 +56,11 @@ void InitializeWallShader()
 	pipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallVertex, normal) };
 	pipelineCI.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallVertex, tangent) };
 	pipelineCI.numClipDistances = 1;
-	pipelineCI.enableStencilTest = true;
-	pipelineCI.dynamicStencilReference = true;
-	pipelineCI.frontStencilState = stencilState;
-	pipelineCI.backStencilState = stencilState;
 	wr.pipelineDeferredGeom = eg::Pipeline::Create(pipelineCI);
 	wr.pipelineDeferredGeom.FramebufferFormatHint(DeferredRenderer::GEOMETRY_FB_FORMAT);
 	
-	//Creates the planar reflections pipeline
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall.vs.glsl").GetVariant("VPlanarRefl");
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall-PlanarRefl.fs.glsl").DefaultVariant();
-	pipelineCI.numColorAttachments = 1;
-	pipelineCI.enableStencilTest = false;
-	pipelineCI.dynamicStencilReference = false;
-	pipelineCI.frontFaceCCW = true;
-	pipelineCI.numClipDistances = 2;
-	wr.pipelinePlanarReflection = eg::Pipeline::Create(pipelineCI);
-	
 	//Creates the editor pipeline
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall.vs.glsl").GetVariant("VDefault");
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall.vs.glsl").DefaultVariant();
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall-Editor.fs.glsl").DefaultVariant();
 	pipelineCI.enableDepthWrite = true;
 	pipelineCI.depthCompare = eg::CompareOp::Less;
@@ -139,11 +121,6 @@ void InitializeWallShader()
 	wr.gameDescriptorSet.BindTexture(*wr.normalMapTexture, 3, &GetCommonTextureSampler());
 	wr.gameDescriptorSet.BindTexture(*wr.miscMapTexture, 4, &GetCommonTextureSampler());
 	
-	wr.planarReflDescriptorSet = { wr.pipelinePlanarReflection, 0 };
-	wr.planarReflDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
-	wr.planarReflDescriptorSet.BindUniformBuffer(wr.materialSettingsBuffer, 1, 0, sizeof(materialSettings));
-	wr.planarReflDescriptorSet.BindTexture(*wr.diffuseTexture, 2, &GetCommonTextureSampler());
-	
 	wr.editorDescriptorSet = { wr.pipelineEditor, 0 };
 	wr.editorDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
 	wr.editorDescriptorSet.BindUniformBuffer(wr.materialSettingsBuffer, 1, 0, sizeof(materialSettings));
@@ -179,16 +156,6 @@ void BindWallShaderPointLightShadow(const PointLightShadowRenderArgs& renderArgs
 	eg::DC.BindPipeline(wr.pipelinePLShadow);
 	
 	eg::DC.BindUniformBuffer(renderArgs.matricesBuffer, 0, 0, 0, PointLightShadowMapper::BUFFER_SIZE);
-}
-
-void BindWallShaderPlanarReflections(const eg::Plane& plane)
-{
-	eg::DC.BindPipeline(wr.pipelinePlanarReflection);
-	
-	eg::DC.BindDescriptorSet(wr.planarReflDescriptorSet, 0);
-	
-	glm::vec4 planeV4(plane.GetNormal(), -plane.GetDistance());
-	eg::DC.PushConstants(0, planeV4);
 }
 
 void DrawWallBordersEditor(eg::BufferRef vertexBuffer, uint32_t numVertices)

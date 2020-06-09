@@ -6,7 +6,7 @@
 class ActivationLightStripEnt : public Ent
 {
 public:
-	ActivationLightStripEnt();
+	ActivationLightStripEnt() = default;
 	
 	static constexpr EntTypeID TypeID = EntTypeID::ActivationLightStrip;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::EditorInvisible;
@@ -17,6 +17,8 @@ public:
 	void RenderSettings() override;
 	
 	void CommonDraw(const EntDrawArgs& args) override;
+	
+	glm::vec3 GetPosition() const override;
 	
 	struct WayPoint
 	{

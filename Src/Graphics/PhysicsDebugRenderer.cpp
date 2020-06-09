@@ -15,7 +15,7 @@ PhysicsDebugRenderer::PhysicsDebugRenderer()
 	pipelineCI.cullMode = eg::CullMode::None;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.enableDepthWrite = false;
-	//pipelineCI.lineWidth = 2;
+	pipelineCI.lineWidth = 2;
 	pipelineCI.blendStates[0] = eg::AlphaBlend;
 	
 	pipelineCI.topology = eg::Topology::TriangleList;

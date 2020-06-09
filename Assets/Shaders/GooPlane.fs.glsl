@@ -1,7 +1,5 @@
 #version 450 core
 
-#pragma variants VDefault VNoRefl
-
 #define RENDER_SETTINGS_BINDING 0
 #include "Inc/RenderSettings.glh"
 #include "Inc/Fresnel.glh"
@@ -25,7 +23,6 @@ layout(set=0, binding=1, std140) uniform NMTransformsUB
 layout(set=0, binding=2) uniform sampler2D normalMap;
 
 layout(set=1, binding=0) uniform sampler2D depthBuffer;
-layout(set=1, binding=1) uniform sampler2D reflectionMap;
 
 const float ROUGHNESS = 0.2;
 const float DISTORT_INTENSITY = 0.1;
@@ -36,6 +33,7 @@ void main()
 	
 	vec2 screenCoord = vec2(gl_FragCoord.xy) / vec2(textureSize(depthBuffer, 0).xy);
 	float hDepth = texture(depthBuffer, screenCoord).r;
+	
 	vec3 geomWorldPos = WorldPosFromDepth(hDepth, screenCoord, renderSettings.invViewProjection);
 	
 	float depth = distance(worldPos_in, geomWorldPos);
@@ -58,24 +56,12 @@ void main()
 	const float CUTOFF = 0.45;
 	vec3 waterColor = color * mix(minBrightness, 1.0, brightness);
 	
-#ifndef VNoRefl
-	vec3 toEye = normalize(renderSettings.cameraPosition - worldPos_in);
-	vec3 reflSampleWS = worldPos_in - reflect(-toEye, normal) * DISTORT_INTENSITY;
-	vec4 reflSamplePPS = renderSettings.viewProjection * vec4(reflSampleWS, 1.0);
-	vec2 reflSampleSS = (reflSamplePPS.xy / reflSamplePPS.w) * 0.5 + 0.5;
-	if (EG_VULKAN)
-		reflSampleSS.y = 1.0 - reflSampleSS.y;
-	
-	vec3 F0 = vec3(0.04);
-	vec3 fresnel = pow(fresnelSchlick(max(dot(normal, toEye), 0.0), F0, ROUGHNESS), vec3(2.5));
-	
-	vec3 reflColor = textureLod(reflectionMap, reflSampleSS, 0).rgb * color;
-	waterColor = mix(waterColor, reflColor, fresnel);
-#endif
-	
 	float glow = max(brightness - CUTOFF, 0.0) * MAX_BRIGHTNESS / (1.0 - CUTOFF);
 	alpha += glow;
 	waterColor += color * glow;
+	
+	if (hDepth < gl_FragCoord.z)
+		alpha = 0;
 	
 	color_out = vec4(waterColor, min(alpha, 1.0));
 }

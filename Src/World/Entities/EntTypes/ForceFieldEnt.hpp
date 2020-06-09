@@ -32,6 +32,9 @@ public:
 	
 	void Update(const struct WorldUpdateArgs& args) override;
 	
+	glm::vec3 GetPosition() const override { return m_position; }
+	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	
 	static std::optional<Dir> CheckIntersection(class EntityManager& entityManager, const eg::AABB& aabb);
 	
 	glm::vec3 radius { 1.0f };
@@ -39,8 +42,8 @@ public:
 	Dir newGravity;
 	
 private:
+	glm::vec3 m_position;
+	
 	std::vector<ForceFieldParticle> particles;
 	float timeSinceEmission = 0;
 };
-
-

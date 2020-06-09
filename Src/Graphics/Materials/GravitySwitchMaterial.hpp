@@ -8,6 +8,7 @@ public:
 	bool BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const override;
 	
 	bool BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const override;
-
-	static GravitySwitchMaterial instance;
+	
+	float intensity = 1;
+	float timeOffset = 0;
 };

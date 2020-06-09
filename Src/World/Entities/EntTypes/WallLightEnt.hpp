@@ -24,8 +24,15 @@ public:
 	
 	void HalfLightIntensity();
 	
+	glm::vec3 GetPosition() const override { return m_position; }
+	Dir GetFacingDirection() const override { return m_forwardDir; }
+	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	
 private:
 	EmissiveMaterial::InstanceData GetInstanceData(float colorScale) const;
+	
+	Dir m_forwardDir;
+	glm::vec3 m_position;
 	
 	PointLight m_pointLight;
 };

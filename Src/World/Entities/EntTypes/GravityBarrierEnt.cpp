@@ -181,6 +181,9 @@ GravityBarrierEnt::GravityBarrierEnt()
 bool GravityBarrierEnt::ShouldCollide(const PhysicsObject& self, const PhysicsObject& other)
 {
 	GravityBarrierEnt& selfBarrier = *(GravityBarrierEnt*)std::get<Ent*>(self.owner);
+	if (!selfBarrier.m_enabled)
+		return false;
+	
 	Dir otherDown;
 	if (auto player = std::get_if<Player*>(&other.owner))
 	{
@@ -200,19 +203,20 @@ bool GravityBarrierEnt::ShouldCollide(const PhysicsObject& self, const PhysicsOb
 	}
 	if ((int)otherDown / 2 == selfBarrier.BlockedAxis())
 		return true;
-	if (selfBarrier.m_blockFalling && (int)otherDown / 2 == (int)selfBarrier.Direction() / 2)
+	if (selfBarrier.m_blockFalling && (int)otherDown / 2 == (int)selfBarrier.m_aaQuad.upPlane / 2)
 		return true;
 	return false;
 }
 
 std::vector<glm::vec3> GravityBarrierEnt::GetConnectionPoints(const Ent& entity)
 {
-	auto [tangent, bitangent] = static_cast<const GravityBarrierEnt&>(entity).GetTangents();
+	const GravityBarrierEnt& barrierEnt = (const GravityBarrierEnt&)entity;
+	auto [tangent, bitangent] = barrierEnt.GetTangents();
 	return {
-		entity.Pos() + bitangent * 0.5f,
-		entity.Pos() - bitangent * 0.5f,
-		entity.Pos() + tangent * 0.5f,
-		entity.Pos() - tangent * 0.5f
+		barrierEnt.m_position + bitangent * 0.5f,
+		barrierEnt.m_position - bitangent * 0.5f,
+		barrierEnt.m_position + tangent * 0.5f,
+		barrierEnt.m_position - tangent * 0.5f
 	};
 }
 
@@ -383,7 +387,7 @@ void GravityBarrierEnt::Update(const WorldUpdateArgs& args)
 		if (comp != nullptr && itemsWritten < NUM_INTERACTABLES)
 		{
 			bufferData.iaDownAxis[itemsWritten] = (int)comp->currentDown / 2;
-			bufferData.iaPosition[itemsWritten] = glm::vec4(entity.Pos(), 0.0f);
+			bufferData.iaPosition[itemsWritten] = glm::vec4(entity.GetPosition(), 0.0f);
 			itemsWritten++;
 		}
 	});
@@ -418,7 +422,7 @@ void GravityBarrierEnt::Serialize(std::ostream& stream) const
 {
 	gravity_pb::GravityBarrierEntity gravBarrierPB;
 	
-	SerializePos(gravBarrierPB);
+	SerializePos(gravBarrierPB, m_position);
 	
 	gravBarrierPB.set_flow_direction(flowDirection);
 	gravBarrierPB.set_up_plane(m_aaQuad.upPlane);
@@ -437,7 +441,7 @@ void GravityBarrierEnt::Deserialize(std::istream& stream)
 	gravity_pb::GravityBarrierEntity gravBarrierPB;
 	gravBarrierPB.ParseFromIstream(&stream);
 	
-	DeserializePos(gravBarrierPB);
+	m_position = DeserializePos(gravBarrierPB);
 	
 	if (gravBarrierPB.name() != 0)
 		m_activatable.m_name = gravBarrierPB.name();
@@ -452,4 +456,9 @@ void GravityBarrierEnt::Deserialize(std::istream& stream)
 void GravityBarrierEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 {
 	physicsEngine.RegisterObject(&m_physicsObject);
+}
+
+void GravityBarrierEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+{
+	m_position = newPosition;
 }

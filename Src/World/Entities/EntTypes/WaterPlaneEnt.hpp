@@ -9,15 +9,16 @@ public:
 	WaterPlaneEnt();
 	
 	static constexpr EntTypeID TypeID = EntTypeID::WaterPlane;
-	static constexpr EntTypeFlags EntFlags = EntTypeFlags::EditorWallMove;
+	static constexpr EntTypeFlags EntFlags = EntTypeFlags::EditorWallMove | EntTypeFlags::DisableClone;
 	
 	void Serialize(std::ostream& stream) const override;
 	void Deserialize(std::istream& stream) override;
 	
 	const void* GetComponent(const std::type_info& type) const override;
 	
-	LiquidPlaneComp m_liquidPlane;
+	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	
+	glm::vec3 GetPosition() const override;
+	
+	LiquidPlaneComp liquidPlane;
 };
-
-template <>
-std::shared_ptr<Ent> CloneEntity<WaterPlaneEnt>(const Ent& entity);

@@ -80,6 +80,8 @@ bool LightStripEditorComponent::CollectIcons(const EditorState& editorState, std
 						ActivationLightStripEnt::GenerateForActivator(*world, *activatorEntity);
 					});
 					
+					icon.ApplyDepthBias(0.01f);
+					
 					icon.iconIndex = 6;
 					icon.shouldClearSelection = false;
 					if (activator->activatableName == activatableComp->m_name && activator->targetConnectionIndex == i)
@@ -152,6 +154,7 @@ bool LightStripEditorComponent::CollectIcons(const EditorState& editorState, std
 				
 				selectedEntities->push_back(activatorEntity);
 			});
+			icon.hideIfNotHovered = true;
 			icon.iconIndex = 7;
 		}
 	}

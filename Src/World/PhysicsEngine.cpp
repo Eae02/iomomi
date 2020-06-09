@@ -6,7 +6,8 @@
 #include "../Graphics/GraphicsCommon.hpp"
 
 static float* gravityMag = eg::TweakVarFloat("gravity", 10, 0);
-static float* roundPrecision = eg::TweakVarFloat("phys_round_prec", 0.0005f, 0);
+static float* dispLockDist = eg::TweakVarFloat("phys_dlock_dist", 0.01f, 0);
+static float* dispLockTime = eg::TweakVarFloat("phys_dlock_time", 0.1f, 0);
 
 PhysicsObject* PhysicsEngine::FindFloorObject(PhysicsObject& object, const glm::vec3& down) const
 {
@@ -69,7 +70,27 @@ void PhysicsEngine::Simulate(float dt)
 	
 	for (PhysicsObject* object : m_objects)
 	{
-		object->displayPosition = glm::round(object->position / *roundPrecision) * *roundPrecision;
+		object->displayPosition = object->position;
+		
+		if (object->firstFrame || glm::distance2(object->lockedDisplayPosition, object->position) > *dispLockDist * *dispLockDist)
+		{
+			object->timeUntilLockDisplayPosition = *dispLockTime;
+			object->lockedDisplayPosition = object->position;
+			object->firstFrame = false;
+		}
+		else if (object->timeUntilLockDisplayPosition < 0)
+		{
+			object->displayPosition = object->lockedDisplayPosition;
+		}
+		else
+		{
+			object->timeUntilLockDisplayPosition -= dt;
+			if (object->timeUntilLockDisplayPosition < 0)
+			{
+				object->displayPosition = object->lockedDisplayPosition = object->position;
+			}
+		}
+		
 		object->move = { };
 	}
 }
@@ -105,10 +126,12 @@ void PhysicsEngine::ApplyMovement(PhysicsObject& object, float dt, const Collisi
 		object.move = object.constrainMove(object, object.move);
 	}
 	
+	bool didCollide = true;
+	
 	constexpr float MAX_MOVE_LEN = 10;
 	constexpr float MAX_MOVE_PER_STEP = 0.5f;
-	constexpr int MAX_ITERATIONS = 4;
-	for (int i = 0; i < MAX_ITERATIONS; i++)
+	constexpr int MAX_ITERATIONS = 10;
+	for (int i = 0; i < MAX_ITERATIONS && didCollide; i++)
 	{
 		float moveLen = glm::length(object.move);
 		if (moveLen < 1E-4f)
@@ -120,7 +143,7 @@ void PhysicsEngine::ApplyMovement(PhysicsObject& object, float dt, const Collisi
 			object.move *= MAX_MOVE_LEN / moveLen;
 		}
 		
-		bool didCollide = false;
+		didCollide = false;
 		int numMoveIterations = std::ceil(moveLen / MAX_MOVE_PER_STEP);
 		for (int s = 1; s <= numMoveIterations; s++)
 		{
@@ -158,14 +181,16 @@ void PhysicsEngine::ApplyMovement(PhysicsObject& object, float dt, const Collisi
 				break;
 			}
 		}
-		
+	}
+	
+	if (!didCollide && glm::length2(object.move) > 1E-6f)
+	{
 		object.position += object.move;
 		object.actualMove += object.move;
 		object.didMove = true;
-		object.move = { };
-		if (!didCollide)
-			break;
 	}
+	
+	object.move = { };
 	
 	object.collisionDepth--;
 }
@@ -220,6 +245,8 @@ PhysicsObject* PhysicsEngine::CheckForCollision(CollisionResponseCombiner& combi
 PhysicsObject* PhysicsEngine::CheckForCollision(CollisionResponseCombiner& combiner, const PhysicsObject& currentObject,
 	const eg::CollisionMesh* shape, const glm::vec3& position, const glm::quat& rotation) const
 {
+	//Collision mesh object cannot currently collide with other things,
+	// but this is ok for now since there are no such objects that move.
 	return nullptr;
 }
 

@@ -41,7 +41,7 @@ void WindowEnt::CommonDraw(const EntDrawArgs& args)
 {
 	auto [tangent, bitangent] = m_aaQuad.GetTangents(0);
 	glm::vec3 normal = glm::normalize(glm::cross(tangent, bitangent));
-	glm::mat4 transform = glm::translate(glm::mat4(1), Pos()) * glm::mat4(
+	glm::mat4 transform = glm::translate(glm::mat4(1), m_physicsObject.position) * glm::mat4(
 		glm::vec4(tangent * 0.5f, 0),
 		glm::vec4(normal, 0),
 		glm::vec4(bitangent * 0.5f, 0),
@@ -62,7 +62,7 @@ void WindowEnt::Serialize(std::ostream& stream) const
 {
 	gravity_pb::WindowEntity windowPB;
 	
-	SerializePos(windowPB);
+	SerializePos(windowPB, m_physicsObject.position);
 	
 	windowPB.set_up_plane(m_aaQuad.upPlane);
 	windowPB.set_sizex(m_aaQuad.radius.x);
@@ -77,7 +77,7 @@ void WindowEnt::Deserialize(std::istream& stream)
 	gravity_pb::WindowEntity windowPB;
 	windowPB.ParseFromIstream(&stream);
 	
-	DeserializePos(windowPB);
+	m_physicsObject.position = DeserializePos(windowPB);
 	
 	m_aaQuad.upPlane = windowPB.up_plane();
 	m_aaQuad.radius = glm::vec2(windowPB.sizex(), windowPB.sizey());
@@ -86,14 +86,21 @@ void WindowEnt::Deserialize(std::istream& stream)
 	auto [tangent, bitangent] = m_aaQuad.GetTangents(0);
 	glm::vec3 normal = m_aaQuad.GetNormal() * BOX_SHAPE_RADIUS;
 	glm::vec3 boxSize = (tangent + bitangent) * 0.5f + normal;
-	glm::vec3 boxCenter = Pos() - normal;
 	
-	m_physicsObject.shape = eg::AABB(boxCenter - boxSize, boxCenter + boxSize);
-	
-	m_collisionGeometry = m_aaQuad.GetCollisionGeometry(boxCenter, BOX_SHAPE_RADIUS);
+	m_physicsObject.shape = eg::AABB(-normal - boxSize, -normal + boxSize);
 }
 
 void WindowEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 {
 	physicsEngine.RegisterObject(&m_physicsObject);
+}
+
+void WindowEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+{
+	m_physicsObject.position = newPosition;
+}
+
+glm::vec3 WindowEnt::GetPosition() const
+{
+	return m_physicsObject.position;
 }

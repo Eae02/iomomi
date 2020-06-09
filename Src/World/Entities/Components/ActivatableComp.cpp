@@ -25,12 +25,12 @@ static std::mt19937 nameGen { (uint32_t)std::time(nullptr) };
 
 static std::vector<glm::vec3> GetConnectionPointsDefault(const Ent& entity)
 {
-	return { entity.Pos() };
+	return { entity.GetPosition() };
 }
 
 ActivatableComp::ActivatableComp(GetConnectionPointsCallback getConnectionPoints)
-	: m_name(std::max<uint32_t>(nameGen(), 1))
 {
+	GiveNewName();
 	if (getConnectionPoints != nullptr)
 		m_getConnectionPoints = getConnectionPoints;
 	else
@@ -62,4 +62,9 @@ Ent* ActivatableComp::FindByName(EntityManager& entityManager, uint32_t name)
 			result = &entity;
 	});
 	return result;
+}
+
+void ActivatableComp::GiveNewName()
+{
+	m_name = std::uniform_int_distribution<uint32_t>(1)(nameGen);
 }

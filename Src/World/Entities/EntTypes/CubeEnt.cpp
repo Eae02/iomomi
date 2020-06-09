@@ -55,11 +55,10 @@ void CubeEnt::RenderSettings()
 
 void CubeEnt::Spawned(bool isEditor)
 {
-	if (isEditor)
-	{
-		m_physicsObject.position += glm::vec3(DirectionVector(m_direction)) * (RADIUS + 0.01f);
-		m_physicsObject.position = m_physicsObject.position;
-	}
+	//if (isEditor)
+	//{
+	//	m_physicsObject.position += glm::vec3(DirectionVector(m_direction)) * (RADIUS + 0.01f);
+	//}
 }
 
 void CubeEnt::Draw(eg::MeshBatch& meshBatch, const glm::mat4& transform) const
@@ -79,7 +78,7 @@ void CubeEnt::GameDraw(const EntGameDrawArgs& args)
 void CubeEnt::EditorDraw(const EntEditorDrawArgs& args)
 {
 	const glm::mat4 worldMatrix =
-		glm::translate(glm::mat4(1), m_physicsObject.displayPosition) *
+		glm::translate(glm::mat4(1), m_physicsObject.position) *
 		glm::mat4_cast(m_physicsObject.rotation) *
 		glm::scale(glm::mat4(1), glm::vec3(RADIUS));
 	Draw(*args.meshBatch, worldMatrix);
@@ -157,10 +156,7 @@ bool CubeEnt::SetGravity(Dir newGravity)
 void CubeEnt::Update(const WorldUpdateArgs& args)
 {
 	if (!args.player)
-	{
-		m_physicsObject.displayPosition = m_position;
 		return;
-	}
 	
 	eg::Sphere sphere(m_physicsObject.position, RADIUS);
 	
@@ -221,13 +217,9 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 		if (canFloat && m_waterQueryAABB != nullptr)
 		{
 			WaterSimulator::QueryResults waterQueryRes = m_waterQueryAABB->GetResults();
-			
-			glm::vec3 buoyancy = waterQueryRes.buoyancy * *cubeBuoyancy;
-			m_physicsObject.force += buoyancy;
-			//m_rigidBody.GetRigidBody()->applyCentralForce(bullet::FromGLM(buoyancy));
-			//float damping = std::min(waterQueryRes.numIntersecting * *cubeWaterDrag, 0.5f);
-			//m_rigidBody.GetRigidBody()->setDamping(damping, damping);
+			m_physicsObject.force += waterQueryRes.buoyancy * *cubeBuoyancy;
 		}
+		/* code for moving the cube towards buttons, currently disabled
 		else
 		{
 			const float maxDist2 = *cubeButtonMaxAttractDist * *cubeButtonMaxAttractDist;
@@ -236,7 +228,7 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 			args.world->entManager.ForEachOfType<FloorButtonEnt>([&] (const FloorButtonEnt& floorButton)
 			{
 				if (floorButton.Direction() == OppositeDir(m_currentDown) &&
-				    glm::distance2(floorButton.Pos(), Pos()) < maxDist2)
+				    glm::distance2(floorButton.Pos(), m_physicsObject.position) < maxDist2)
 				{
 					currentButton = &floorButton;
 				}
@@ -246,8 +238,8 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 			{
 				const float minDist2 = *cubeButtonMinAttractDist * *cubeButtonMinAttractDist;
 				
-				glm::vec3 toCenter = currentButton->Pos() - Pos();
-				glm::vec3 buttonDir(DirectionVector(currentButton->Direction()));
+				glm::vec3 toCenter = currentButton->Pos() - m_physicsObject.position;
+				glm::vec3 buttonDir(glm::abs(DirectionVector(currentButton->Direction())));
 				toCenter -= buttonDir * glm::dot(toCenter, buttonDir);
 				if (glm::length2(toCenter) > minDist2)
 				{
@@ -255,7 +247,7 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 					m_physicsObject.force += toCenter;
 				}
 			}
-		}
+		}*/
 	}
 	
 	m_barrierInteractableComp.currentDown = m_currentDown;
@@ -288,9 +280,7 @@ void CubeEnt::Serialize(std::ostream& stream) const
 {
 	gravity_pb::CubeEntity cubePB;
 	
-	cubePB.set_posx(m_physicsObject.position.x);
-	cubePB.set_posy(m_physicsObject.position.y);
-	cubePB.set_posz(m_physicsObject.position.z);
+	SerializePos(cubePB, m_physicsObject.position);
 	
 	cubePB.set_rotationx(m_physicsObject.rotation.x);
 	cubePB.set_rotationy(m_physicsObject.rotation.y);
@@ -307,7 +297,7 @@ void CubeEnt::Deserialize(std::istream& stream)
 	gravity_pb::CubeEntity cubePB;
 	cubePB.ParseFromIstream(&stream);
 	
-	m_position = m_physicsObject.position = glm::vec3(cubePB.posx(), cubePB.posy(), cubePB.posz());
+	m_physicsObject.position = DeserializePos(cubePB);
 	m_physicsObject.rotation = glm::quat(cubePB.rotationw(), cubePB.rotationx(), cubePB.rotationy(), cubePB.rotationz());
 	canFloat = cubePB.can_float();
 }
@@ -315,4 +305,9 @@ void CubeEnt::Deserialize(std::istream& stream)
 void CubeEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 {
 	physicsEngine.RegisterObject(&m_physicsObject);
+}
+
+void CubeEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+{
+	m_physicsObject.position = newPosition;
 }

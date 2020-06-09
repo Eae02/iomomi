@@ -21,7 +21,14 @@ public:
 	
 	const void* GetComponent(const std::type_info& type) const override;
 	
+	glm::vec3 GetPosition() const override { return m_position; }
+	Dir GetFacingDirection() const override { return m_direction; }
+	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	
 private:
+	glm::vec3 m_position;
+	Dir m_direction;
+	
 	ActivatableComp m_activatable;
 	
 	std::weak_ptr<Ent> m_cube;

@@ -22,6 +22,14 @@ const float ROUGHNESS = 0.4;
 
 const vec3 COLOR = vec3(0.12, 0.9, 0.7);
 
+layout(push_constant) uniform PC
+{
+	float intensityScale;
+	float timeOffset;
+};
+
+const float PI = 3.1415;
+
 void main()
 {
 	vec2 patternPos = texCoord_in * 2 - 1;
@@ -29,7 +37,8 @@ void main()
 	float hex = texture(hexSampler, patternPos * 4).r;
 	
 	float a = dot(patternPos, patternPos);
-	float intensity = (sin(a * 20 - renderSettings.gameTime * 10 + hex * 3.1415 * 0.25) * 0.5 + 0.5) / (a + 1);
+	float theta = a * -20 + timeOffset + hex * PI * 0.25;
+	float intensity = intensityScale * (cos(theta) * 0.5 + 0.5) / (a + 1);
 	
 	vec3 color = COLOR * mix(0.5, 2.0, intensity);
 	
@@ -42,6 +51,6 @@ void main()
 #endif
 	
 #ifdef VDefault
-	DeferredOut(color, normal_in, ROUGHNESS, 1.0, AO_PRELIT);
+	DeferredOut(color, normal_in, ROUGHNESS, 1.0, 1.0);
 #endif
 }

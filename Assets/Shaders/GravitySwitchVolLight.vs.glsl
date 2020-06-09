@@ -7,6 +7,7 @@ layout(location=0) out vec3 worldPos_out;
 layout(push_constant) uniform PC
 {
 	vec3 switchPos;
+	float intensity;
 	mat3 rotationMatrix;
 };
 

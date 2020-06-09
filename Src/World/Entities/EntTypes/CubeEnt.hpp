@@ -19,6 +19,10 @@ public:
 	CubeEnt() : CubeEnt(glm::vec3(0.0f), false) { }
 	CubeEnt(const glm::vec3& position, bool canFloat);
 	
+	glm::vec3 GetPosition() const override { return m_physicsObject.position; }
+	
+	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	
 	void Serialize(std::ostream& stream) const override;
 	
 	void Deserialize(std::istream& stream) override;

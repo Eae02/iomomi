@@ -25,7 +25,8 @@ const EntTypeID entUpdateOrder[NUM_UPDATABLE_ENTITY_TYPES] =
 	EntTypeID::GravityBarrier,
 	EntTypeID::CubeSpawner,
 	EntTypeID::Cube,
-	EntTypeID::Platform
+	EntTypeID::Platform,
+	EntTypeID::GravitySwitch
 };
 
 template <typename T>

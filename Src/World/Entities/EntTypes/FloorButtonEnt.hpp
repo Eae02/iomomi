@@ -13,6 +13,10 @@ public:
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
 		EntTypeFlags::EditorWallMove | EntTypeFlags::HasPhysics;
 	
+	Dir GetFacingDirection() const override { return m_direction; }
+	glm::vec3 GetPosition() const override { return m_ringPhysicsObject.position; }
+	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	
 	void CommonDraw(const EntDrawArgs& args) override;
 	
 	void Serialize(std::ostream& stream) const override;
@@ -33,9 +37,14 @@ public:
 	}
 	
 private:
-	ActivatorComp m_activator;
-	PhysicsObject m_physicsObject;
+	static bool ShouldCollide(const PhysicsObject& self, const PhysicsObject& other);
+	static glm::vec3 ConstrainMove(const PhysicsObject& object, const glm::vec3& move);
 	
-	float m_timeSincePushed = 0;
-	float m_padPushDist = 0;
+	Dir m_direction;
+	
+	ActivatorComp m_activator;
+	PhysicsObject m_ringPhysicsObject;
+	PhysicsObject m_padPhysicsObject;
+	
+	float m_lightColor = 0;
 };

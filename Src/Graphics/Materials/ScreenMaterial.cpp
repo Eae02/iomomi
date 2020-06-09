@@ -5,8 +5,6 @@
 
 static eg::Pipeline screenMatPipeline;
 
-static const eg::StencilState stencilState = DeferredRenderer::MakeStencilState(0);
-
 static void OnInit()
 {
 	eg::GraphicsPipelineCreateInfo pipelineCI;
@@ -26,7 +24,6 @@ static void OnInit()
 	pipelineCI.vertexAttributes[6] = { 1, eg::DataType::Float32, 4, offsetof(ScreenMaterial::InstanceData, transform) + 32 };
 	pipelineCI.vertexAttributes[7] = { 1, eg::DataType::Float32, 2, offsetof(ScreenMaterial::InstanceData, textureScale) };
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
-	pipelineCI.backStencilState = stencilState;
 	pipelineCI.numColorAttachments = 2;
 	pipelineCI.label = "ScreenGame";
 	screenMatPipeline = eg::Pipeline::Create(pipelineCI);

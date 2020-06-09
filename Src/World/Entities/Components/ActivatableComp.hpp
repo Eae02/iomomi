@@ -22,6 +22,8 @@ public:
 	
 	std::vector<glm::vec3> GetConnectionPoints(const Ent& entity) const;
 	
+	void GiveNewName();
+	
 	static Ent* FindByName(class EntityManager& entityManager, uint32_t name);
 	
 private:

@@ -351,7 +351,7 @@ void EntranceExitEnt::Serialize(std::ostream& stream) const
 {
 	gravity_pb::EntranceEntity entrancePB;
 	
-	SerializePos(entrancePB);
+	SerializePos(entrancePB, m_position);
 	
 	entrancePB.set_isexit(m_type == Type::Exit);
 	entrancePB.set_dir((gravity_pb::Dir)OppositeDir(m_direction));
@@ -365,7 +365,7 @@ void EntranceExitEnt::Deserialize(std::istream& stream)
 	gravity_pb::EntranceEntity entrancePB;
 	entrancePB.ParseFromIstream(&stream);
 	
-	DeserializePos(entrancePB);
+	m_position = DeserializePos(entrancePB);
 	m_type = entrancePB.isexit() ? Type::Exit : Type::Entrance;
 	m_direction = OppositeDir((Dir)entrancePB.dir());
 	

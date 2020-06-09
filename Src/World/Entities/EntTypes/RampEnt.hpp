@@ -25,10 +25,14 @@ public:
 	
 	void CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt) override;
 	
+	glm::vec3 GetPosition() const override { return m_position; }
+	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	
 	int m_yaw = 0;
 	bool m_flipped = false;
 	
 	glm::vec3 m_size { 1.0f };
+	glm::vec3 m_position;
 	
 private:
 	void InitializeVertexBuffer();

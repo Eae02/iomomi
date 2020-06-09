@@ -33,6 +33,5 @@ private:
 	bool m_inheritNormals;
 	
 	mutable eg::DescriptorSet m_descriptorSet;
-	mutable eg::DescriptorSet m_descriptorSetPlanarRefl;
 	mutable bool m_descriptorSetInitialized = false;
 };

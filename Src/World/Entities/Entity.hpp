@@ -60,7 +60,9 @@ public:
 	
 	virtual void RenderSettings();
 	
-	virtual void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection);
+	virtual void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) { }
+	virtual glm::vec3 GetPosition() const = 0;
+	virtual Dir GetFacingDirection() const { return Dir::PosY; }
 	
 	virtual void Spawned(bool isEditor);
 	
@@ -72,12 +74,7 @@ public:
 	
 	virtual void CollectPhysicsObjects(class PhysicsEngine& physicsEngine, float dt) { }
 	
-	glm::mat4 GetTransform(float scale) const;
-	glm::mat3 GetRotationMatrix() const;
-	eg::AABB GetAABB(float scale, float upDist) const;
-	
-	glm::vec3 Pos() const { return m_position; }
-	Dir Direction() const { return m_direction; }
+	static glm::mat3 GetRotationMatrix(Dir dir);
 	
 	uint32_t Name() const { return m_name; }
 	EntTypeID TypeID() const { return m_typeID; }
@@ -126,22 +123,7 @@ public:
 	friend std::shared_ptr<Ent> CloneEntity(const Ent& entity);
 	
 protected:
-	Dir m_direction = Dir::PosX;
-	glm::vec3 m_position;
-	
-	template <typename ST>
-	inline void SerializePos(ST& st) const
-	{
-		st.set_posx(m_position.x);
-		st.set_posy(m_position.y);
-		st.set_posz(m_position.z);
-	}
-	
-	template <typename ST>
-	inline void DeserializePos(const ST& st)
-	{
-		m_position = glm::vec3(st.posx(), st.posy(), st.posz());
-	}
+	eg::AABB GetAABB(float scale, float upDist, Dir facingDirection) const;
 	
 private:
 	static std::mt19937 s_nameGen;
@@ -158,6 +140,20 @@ std::shared_ptr<Ent> CloneEntity(const Ent& entity)
 		return nullptr;
 	else
 		return Ent::Create<T>(static_cast<const T&>(entity));
+}
+
+template <typename ST>
+inline void SerializePos(ST& st, const glm::vec3& position)
+{
+	st.set_posx(position.x);
+	st.set_posy(position.y);
+	st.set_posz(position.z);
+}
+
+template <typename ST>
+[[nodiscard]] inline glm::vec3 DeserializePos(const ST& st)
+{
+	return glm::vec3(st.posx(), st.posy(), st.posz());
 }
 
 EG_BIT_FIELD(EntTypeFlags)

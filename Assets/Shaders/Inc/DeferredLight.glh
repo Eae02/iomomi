@@ -9,6 +9,7 @@
 layout(binding=1) uniform sampler2D gbColor1Sampler;
 layout(binding=2) uniform sampler2D gbColor2Sampler;
 layout(binding=3) uniform sampler2D gbDepthSampler;
+layout(binding=4) uniform usampler2D gbFlagsSampler;
 
 layout(location=0) out vec4 color_out;
 
@@ -16,9 +17,15 @@ vec2 texSize;
 
 vec3 CalculateLighting(GBData data);
 
+const uint RF_NO_LIGHTING = 0x1;
+const uint RF_NO_SSR = 0x2;
+
 void main()
 {
 	ivec2 screenCoord = ivec2(gl_FragCoord.xy);
+	uint flags = texelFetch(gbFlagsSampler, ivec2(gl_FragCoord.xy), 0).r;
+	if ((flags & RF_NO_LIGHTING) != 0)
+		discard;
 	
 	texSize = vec2(textureSize(gbColor1Sampler, 0).xy);
 	vec2 screenCoord01 = vec2(screenCoord) / texSize;
@@ -27,6 +34,7 @@ void main()
 	vec4 c2 = texelFetch(gbColor2Sampler, screenCoord, 0);
 	
 	GBData data;
+	data.flags = flags;
 	data.hDepth = texelFetch(gbDepthSampler, screenCoord, 0).r;
 	data.worldPos = WorldPosFromDepth(data.hDepth, screenCoord01, renderSettings.invViewProjection);
 	data.normal = SMDecode(c2.xy);

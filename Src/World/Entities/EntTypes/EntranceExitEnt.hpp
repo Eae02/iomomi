@@ -44,7 +44,13 @@ public:
 	
 	Door GetDoorDescription() const;
 	
+	Dir GetFacingDirection() const override { return m_direction; }
+	glm::vec3 GetPosition() const override { return m_position; }
+	
 	Type m_type = Type::Entrance;
+	
+	Dir m_direction;
+	glm::vec3 m_position;
 	
 	const std::string& GetName() const
 	{

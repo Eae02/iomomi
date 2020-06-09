@@ -16,4 +16,5 @@ struct GravitySwitchVolLightMaterial : public eg::IMaterial
 	
 	glm::vec3 switchPosition;
 	glm::mat3 rotationMatrix;
+	float intensity = 1;
 };

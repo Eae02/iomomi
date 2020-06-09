@@ -2,8 +2,11 @@ syntax="proto3";
 
 package gravity_pb;
 
+import "Dir.proto";
+
 message GooPlaneEntity {
 	float posX = 1;
 	float posY = 2;
 	float posZ = 3;
+	Dir wall_dir = 4;
 }

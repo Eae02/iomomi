@@ -15,19 +15,18 @@ void GooPlaneEnt::RenderSettings()
 
 void GooPlaneEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
-	Ent::EditorMoved(newPosition, faceDirection);
+	m_liquidPlane.position = newPosition;
+	if (faceDirection)
+		m_liquidPlane.wallForward = *faceDirection;
 }
 
 void GooPlaneEnt::GameDraw(const EntGameDrawArgs& args)
 {
-	m_liquidPlane.MaybeUpdate(*this, *args.world);
-	m_material.m_reflectionPlane.plane = eg::Plane(glm::vec3(0, 1, 0), m_position);
-	m_material.m_reflectionPlane.texture = eg::TextureRef();
+	m_liquidPlane.MaybeUpdate(*args.world);
 	
 	if (m_liquidPlane.NumIndices() != 0)
 	{
-		args.reflectionPlanes->push_back(&m_material.m_reflectionPlane);
-		args.meshBatch->AddNoData(m_liquidPlane.GetMesh(), m_material, DepthDrawOrder(m_position));
+		args.meshBatch->AddNoData(m_liquidPlane.GetMesh(), m_material, DepthDrawOrder(m_liquidPlane.position));
 	}
 }
 
@@ -42,7 +41,8 @@ void GooPlaneEnt::Serialize(std::ostream& stream) const
 {
 	gravity_pb::GooPlaneEntity gooPlanePB;
 	
-	SerializePos(gooPlanePB);
+	SerializePos(gooPlanePB, m_liquidPlane.position);
+	gooPlanePB.set_wall_dir((gravity_pb::Dir)m_liquidPlane.wallForward);
 	
 	gooPlanePB.SerializeToOstream(&stream);
 }
@@ -51,14 +51,6 @@ void GooPlaneEnt::Deserialize(std::istream& stream)
 {
 	gravity_pb::GooPlaneEntity gooPlanePB;
 	gooPlanePB.ParseFromIstream(&stream);
-	DeserializePos(gooPlanePB);
-}
-
-template <>
-std::shared_ptr<Ent> CloneEntity<GooPlaneEnt>(const Ent& entity)
-{
-	std::shared_ptr<GooPlaneEnt> newEntity = Ent::Create<GooPlaneEnt>();
-	newEntity->m_position = entity.Pos();
-	newEntity->m_direction = entity.Direction();
-	return newEntity;
+	m_liquidPlane.position = DeserializePos(gooPlanePB);
+	m_liquidPlane.wallForward = (Dir)gooPlanePB.wall_dir();
 }

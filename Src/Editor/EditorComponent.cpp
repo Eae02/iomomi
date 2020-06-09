@@ -1,4 +1,5 @@
 #include "EditorComponent.hpp"
+#include "../Graphics/RenderSettings.hpp"
 
 static constexpr float ICON_SIZE = 32;
 

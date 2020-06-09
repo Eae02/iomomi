@@ -20,7 +20,6 @@ public:
 	void RenderSettings() override;
 	
 	void GameDraw(const EntGameDrawArgs& args) override;
-	
 	void EditorDraw(const EntEditorDrawArgs& args) override;
 	
 	void Update(const struct WorldUpdateArgs& args) override;
@@ -32,7 +31,13 @@ public:
 	const glm::vec3& LaunchVelocity() const { return m_launchVelocity; }
 	glm::vec3 FinalPosition() const;
 	
+	glm::vec3 GetPosition() const override { return m_basePosition; }
+	Dir GetFacingDirection() const override { return m_forwardDir; }
+	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	
 private:
+	glm::mat4 GetBaseTransform() const;
+	
 	static glm::vec3 ConstrainMove(const PhysicsObject& object, const glm::vec3& move);
 	
 	static std::vector<glm::vec3> GetConnectionPoints(const Ent& entity);
@@ -40,6 +45,9 @@ private:
 	void Draw(eg::MeshBatch& meshBatch, const glm::mat4& transform) const;
 	
 	void ComputeLaunchVelocity();
+	
+	glm::vec3 m_basePosition;
+	Dir m_forwardDir;
 	
 	PhysicsObject m_physicsObject;
 	ActivatableComp m_activatable;

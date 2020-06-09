@@ -30,11 +30,11 @@ void LiquidPlaneRenderer::Prepare(World& world, eg::MeshBatchOrdered& meshBatch,
 			return;
 		
 		plane->SetShouldGenerateMesh(true);
-		plane->MaybeUpdate(entity, world);
+		plane->MaybeUpdate(world);
 		
 		if (plane->NumIndices() != 0)
 		{
-			float distToCamera = std::abs(entity.Pos().y - cameraPos.y);
+			float distToCamera = std::abs(plane->position.y - cameraPos.y);
 			m_planes.emplace_back(distToCamera, plane);
 		}
 	});

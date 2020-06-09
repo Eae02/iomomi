@@ -43,15 +43,17 @@ PlatformEnt::PlatformEnt()
 static const glm::mat4 PLATFORM_ROTATION_MATRIX(0, 0, -1, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 1);
 
 //Gets the transformation matrix for the platform without any sliding
-inline glm::mat4 GetPlatformBaseTransform(const Ent& entity)
+glm::mat4 PlatformEnt::GetBaseTransform() const 
 {
-	return entity.GetTransform(1.0f) * PLATFORM_ROTATION_MATRIX;
+	return glm::translate(glm::mat4(1), m_basePosition) *
+	       glm::mat4(GetRotationMatrix(m_forwardDir)) *
+	       PLATFORM_ROTATION_MATRIX;
 }
 
 std::vector<glm::vec3> PlatformEnt::GetConnectionPoints(const Ent& entity)
 {
-	const glm::mat4 baseTransform = GetPlatformBaseTransform(entity);
 	const PlatformEnt& platform = static_cast<const PlatformEnt&>(entity);
+	const glm::mat4 baseTransform = platform.GetBaseTransform();
 	
 	const float connectionPoints[] = { 0.0f, 0.5f, 1.0f };
 	
@@ -90,7 +92,9 @@ void PlatformEnt::Draw(eg::MeshBatch& meshBatch, const glm::mat4& transform) con
 	
 	const glm::vec3 localFwd = glm::normalize(glm::vec3(m_slideOffset.y, 0, -m_slideOffset.x));
 	const glm::vec3 localUp(0, 1, 0);
-	const glm::mat4 sliderTransform = GetTransform(1.0f) *
+	const glm::mat4 sliderTransform =
+		glm::translate(glm::mat4(1), m_basePosition) *
+		glm::mat4(GetRotationMatrix(m_forwardDir)) *
 		glm::mat4(glm::mat3(glm::cross(localUp, localFwd), localUp, localFwd) * SLIDER_MODEL_SCALE);
 	
 	for (int i = 1; i <= numSliderInstances; i++)
@@ -104,20 +108,18 @@ void PlatformEnt::Draw(eg::MeshBatch& meshBatch, const glm::mat4& transform) con
 
 void PlatformEnt::GameDraw(const EntGameDrawArgs& args)
 {
-	Draw(*args.meshBatch,
-		glm::translate(glm::mat4(1), m_physicsObject.displayPosition) * GetPlatformBaseTransform(*this)
-	);
+	Draw(*args.meshBatch, glm::translate(glm::mat4(1), m_physicsObject.position) * GetBaseTransform());
 }
 
 void PlatformEnt::EditorDraw(const EntEditorDrawArgs& args)
 {
-	Draw(*args.meshBatch, GetPlatformBaseTransform(*this));
+	Draw(*args.meshBatch, GetBaseTransform());
 }
 
 glm::vec3 PlatformEnt::ConstrainMove(const PhysicsObject& object, const glm::vec3& move)
 {
 	PlatformEnt& ent = *(PlatformEnt*)std::get<Ent*>(object.owner);
-	glm::vec3 moveDir = ent.FinalPosition() - ent.m_position;
+	glm::vec3 moveDir = ent.FinalPosition() - ent.m_basePosition;
 	
 	float posSlideTime = glm::dot(object.position, moveDir) / glm::length2(moveDir);
 	float slideDist = glm::dot(move, moveDir) / glm::length2(moveDir);
@@ -138,7 +140,7 @@ void PlatformEnt::Update(const WorldUpdateArgs& args)
 
 void PlatformEnt::ComputeLaunchVelocity()
 {
-	glm::vec3 moveDir = glm::normalize(FinalPosition() - m_position);
+	glm::vec3 moveDir = glm::normalize(FinalPosition() - m_basePosition);
 	m_launchVelocityToSet = m_launchSpeed * moveDir;
 }
 
@@ -153,8 +155,8 @@ void PlatformEnt::Serialize(std::ostream& stream) const
 {
 	gravity_pb::PlatformEntity platformPB;
 	
-	platformPB.set_dir((gravity_pb::Dir)m_direction);
-	SerializePos(platformPB);
+	platformPB.set_dir((gravity_pb::Dir)m_forwardDir);
+	SerializePos(platformPB, m_basePosition);
 	
 	platformPB.set_slide_offset_x(m_slideOffset.x);
 	platformPB.set_slide_offset_y(m_slideOffset.y);
@@ -171,14 +173,13 @@ void PlatformEnt::Deserialize(std::istream& stream)
 	gravity_pb::PlatformEntity platformPB;
 	platformPB.ParseFromIstream(&stream);
 	
-	DeserializePos(platformPB);
-	m_direction = (Dir)platformPB.dir();
+	m_basePosition = DeserializePos(platformPB);
+	m_forwardDir = (Dir)platformPB.dir();
 	
 	m_slideOffset = glm::vec2(platformPB.slide_offset_x(), platformPB.slide_offset_y());
 	m_slideTime = platformPB.slide_time();
 	m_launchSpeed = platformPB.launch_speed();
-	m_physicsObject.shape = eg::AABB(glm::vec3(-1, -0.4f, -2), glm::vec3(1, 0, 0))
-		.TransformedBoundingBox(GetPlatformBaseTransform(*this));
+	m_physicsObject.shape = eg::AABB(glm::vec3(-1, -0.4f, -2), glm::vec3(1, 0, 0)).TransformedBoundingBox(GetBaseTransform());
 	
 	ComputeLaunchVelocity();
 	
@@ -188,7 +189,7 @@ void PlatformEnt::Deserialize(std::istream& stream)
 
 void PlatformEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 {
-	glm::vec3 moveDir = FinalPosition() - m_position;
+	glm::vec3 moveDir = FinalPosition() - m_basePosition;
 	float slideProgress = glm::clamp(glm::dot(m_physicsObject.position, moveDir) / glm::length2(moveDir), 0.0f, 1.0f);
 	float oldSlideProgress = slideProgress;
 	
@@ -230,5 +231,12 @@ void PlatformEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 
 glm::vec3 PlatformEnt::FinalPosition() const
 {
-	return GetPlatformBaseTransform(*this) * glm::vec4(m_slideOffset.x, m_slideOffset.y, 0, 1);
+	return GetBaseTransform() * glm::vec4(m_slideOffset.x, m_slideOffset.y, 0, 1);
+}
+
+void PlatformEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+{
+	m_basePosition = newPosition;
+	if (faceDirection)
+		m_forwardDir = *faceDirection;
 }

@@ -1,7 +1,5 @@
 #version 450 core
 
-#pragma variants VDefault VPlanarRefl
-
 layout(location=0) in vec3 position_in;
 layout(location=1) in uvec4 misc_in;
 layout(location=2) in vec3 normal_in;
@@ -20,16 +18,6 @@ layout(binding=1, std140) uniform MaterialSettingsUB
 {
 	vec4 matSettings[4]; 
 };
-
-#ifdef VPlanarRefl
-layout(push_constant) uniform PC
-{
-	vec4 plane;
-};
-
-#define REFLECTION_CLIP_PLANE 1
-#include "Inc/PlanarRefl.glh"
-#endif
 
 void main()
 {
@@ -62,10 +50,5 @@ void main()
 	
 	gl_ClipDistance[0] = misc_in.y / 127.0 - 1.0;
 	
-	vec3 worldPos = position_in;
-#ifdef VPlanarRefl
-	planarReflection(plane, worldPos);
-#endif
-	
-	gl_Position = renderSettings.viewProjection * vec4(worldPos, 1.0);
+	gl_Position = renderSettings.viewProjection * vec4(position_in, 1.0);
 }

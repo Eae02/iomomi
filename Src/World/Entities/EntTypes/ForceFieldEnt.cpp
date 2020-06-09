@@ -183,7 +183,7 @@ void ForceFieldEnt::Serialize(std::ostream& stream) const
 {
 	gravity_pb::ForceFieldEntity forceFieldPB;
 	
-	SerializePos(forceFieldPB);
+	SerializePos(forceFieldPB, m_position);
 	
 	forceFieldPB.set_radx(radius.x);
 	forceFieldPB.set_rady(radius.y);
@@ -199,8 +199,13 @@ void ForceFieldEnt::Deserialize(std::istream& stream)
 	gravity_pb::ForceFieldEntity forceFieldPB;
 	forceFieldPB.ParseFromIstream(&stream);
 	
-	DeserializePos(forceFieldPB);
+	m_position = DeserializePos(forceFieldPB);
 	
 	radius = glm::vec3(forceFieldPB.radx(), forceFieldPB.rady(), forceFieldPB.radz());
 	newGravity = (Dir)forceFieldPB.new_gravity();
+}
+
+void ForceFieldEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+{
+	m_position = newPosition;
 }

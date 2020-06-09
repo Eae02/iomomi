@@ -10,7 +10,7 @@ public:
 	GooPlaneEnt();
 	
 	static constexpr EntTypeID TypeID = EntTypeID::GooPlane;
-	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorWallMove;
+	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorWallMove | EntTypeFlags::DisableClone;
 	
 	void Serialize(std::ostream& stream) const override;
 	void Deserialize(std::istream& stream) override;
@@ -25,13 +25,12 @@ public:
 	
 	bool IsUnderwater(const eg::Sphere& sphere) const
 	{
-		return m_liquidPlane.IsUnderwater(*this, sphere);
+		return m_liquidPlane.IsUnderwater(sphere);
 	}
+	
+	glm::vec3 GetPosition() const override { return m_liquidPlane.position; }
 	
 private:
 	LiquidPlaneComp m_liquidPlane;
 	GooPlaneMaterial m_material;
 };
-
-template <>
-std::shared_ptr<Ent> CloneEntity<GooPlaneEnt>(const Ent& entity);

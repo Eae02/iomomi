@@ -7,7 +7,6 @@
 
 static eg::Pipeline decalsGamePipeline;
 static eg::Pipeline decalsGamePipelineInheritNormals;
-static eg::Pipeline decalsPlanarReflPipeline;
 static eg::Pipeline decalsEditorPipeline;
 
 static eg::Buffer decalVertexBuffer;
@@ -64,12 +63,6 @@ static void OnInit()
 	pipelineCI.label = "DecalsEditor";
 	decalsEditorPipeline = eg::Pipeline::Create(pipelineCI);
 	
-	pipelineCI.vertexShader = vs.GetVariant("VPlanarRefl");
-	pipelineCI.fragmentShader = fs.GetVariant("VPlanarRefl");
-	pipelineCI.numClipDistances = 1;
-	pipelineCI.label = "DecalsPlanarRefl";
-	decalsPlanarReflPipeline = eg::Pipeline::Create(pipelineCI);
-	
 	decalVertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer, sizeof(decalVertexData), decalVertexData);
 	decalVertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
 }
@@ -79,7 +72,6 @@ static void OnShutdown()
 	decalsGamePipeline.Destroy();
 	decalsGamePipelineInheritNormals.Destroy();
 	decalsEditorPipeline.Destroy();
-	decalsPlanarReflPipeline.Destroy();
 	decalVertexBuffer.Destroy();
 }
 
@@ -177,22 +169,14 @@ bool DecalMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) con
 	{
 		cmdCtx.BindPipeline(decalsEditorPipeline);
 	}
-	else if (mDrawArgs->drawMode == MeshDrawMode::PlanarReflection)
-	{
-		cmdCtx.BindPipeline(decalsPlanarReflPipeline);
-	}
 	else
 	{
 		return false;
 	}
 	
-	float pc[6];
-	pc[0] = mDrawArgs->reflectionPlane.GetNormal().x;
-	pc[1] = mDrawArgs->reflectionPlane.GetNormal().y;
-	pc[2] = mDrawArgs->reflectionPlane.GetNormal().z;
-	pc[3] = -mDrawArgs->reflectionPlane.GetDistance();
-	pc[4] = m_roughness;
-	pc[5] = m_opacity;
+	float pc[2];
+	pc[0] = m_roughness;
+	pc[1] = m_opacity;
 	
 	cmdCtx.PushConstants(0, sizeof(pc), &pc);
 	
@@ -209,21 +193,10 @@ bool DecalMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) con
 		m_descriptorSet.BindTexture(m_albedoTexture, 1, &GetCommonTextureSampler());
 		m_descriptorSet.BindTexture(m_normalMapTexture, 2, &GetCommonTextureSampler());
 		
-		m_descriptorSetPlanarRefl = eg::DescriptorSet(decalsPlanarReflPipeline, 0);
-		m_descriptorSetPlanarRefl.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
-		m_descriptorSetPlanarRefl.BindTexture(m_albedoTexture, 1, &GetCommonTextureSampler());
-		
 		m_descriptorSetInitialized = true;
 	}
 	
-	if (reinterpret_cast<MeshDrawArgs*>(drawArgs)->drawMode == MeshDrawMode::PlanarReflection)
-	{
-		cmdCtx.BindDescriptorSet(m_descriptorSetPlanarRefl, 0);
-	}
-	else
-	{
-		cmdCtx.BindDescriptorSet(m_descriptorSet, 0);
-	}
+	cmdCtx.BindDescriptorSet(m_descriptorSet, 0);
 	
 	return true;
 }

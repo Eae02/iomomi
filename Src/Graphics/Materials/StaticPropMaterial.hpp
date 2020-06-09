@@ -26,14 +26,13 @@ private:
 	const eg::Texture* m_albedoTexture;
 	const eg::Texture* m_normalMapTexture;
 	const eg::Texture* m_miscMapTexture;
-	mutable eg::DescriptorSet m_descriptorSetGame;
+	mutable eg::DescriptorSet m_descriptorSet;
 	mutable eg::DescriptorSet m_descriptorSetEditor;
-	mutable eg::DescriptorSet m_descriptorSetPlanarRefl;
 	mutable bool m_descriptorsInitialized = false;
 	float m_roughnessMin;
 	float m_roughnessMax;
 	glm::vec2 m_textureScale;
 	bool m_backfaceCull = true;
 	bool m_castShadows = true;
-	bool m_reflect = true;
+	uint32_t m_objectFlags = 0;
 };

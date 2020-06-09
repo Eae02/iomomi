@@ -7,7 +7,7 @@
 
 #include <fstream>
 
-static const eg::AssetFormat StaticPropMaterialAssetFormat { "StaticPropMaterial", 4 };
+static const eg::AssetFormat StaticPropMaterialAssetFormat { "StaticPropMaterial", 5 };
 
 class StaticPropMaterialGenerator : public eg::AssetGenerator
 {
@@ -29,7 +29,7 @@ public:
 		const float texScaleY = rootYaml["textureScaleY"].as<float>(texScale);
 		const bool backfaceCull = rootYaml["backfaceCull"].as<bool>(true);
 		const bool castShadows = rootYaml["castShadows"].as<bool>(true);
-		const bool reflect = rootYaml["reflect"].as<bool>(true);
+		const bool enableSSR = rootYaml["enableSSR"].as<bool>(true);
 		
 		std::string albedoPath = rootYaml["albedo"].as<std::string>(std::string());
 		std::string normalMapPath = rootYaml["normalMap"].as<std::string>(std::string());
@@ -42,6 +42,10 @@ public:
 			return false;
 		}
 		
+		uint32_t objectFlags = 0;
+		if (!enableSSR)
+			objectFlags |= ObjectRenderFlags::NoSSR;
+		
 		eg::BinWriteString(generateContext.outputStream, albedoPath);
 		eg::BinWriteString(generateContext.outputStream, normalMapPath);
 		eg::BinWriteString(generateContext.outputStream, miscMapPath);
@@ -51,7 +55,7 @@ public:
 		eg::BinWrite(generateContext.outputStream, texScaleY);
 		eg::BinWrite<uint8_t>(generateContext.outputStream, (uint8_t)backfaceCull);
 		eg::BinWrite<uint8_t>(generateContext.outputStream, (uint8_t)castShadows);
-		eg::BinWrite<uint8_t>(generateContext.outputStream, (uint8_t)reflect);
+		eg::BinWrite<uint8_t>(generateContext.outputStream, (uint8_t)objectFlags);
 		
 		generateContext.AddLoadDependency(std::move(albedoPath));
 		generateContext.AddLoadDependency(std::move(normalMapPath));
@@ -63,10 +67,8 @@ public:
 
 static eg::Pipeline staticPropPipelineEditor;
 static eg::Pipeline staticPropPipelineGame[2];
+static eg::Pipeline staticPropPipelineFlags[2];
 static eg::Pipeline staticPropPipelinePLShadow[2];
-static eg::Pipeline staticPropPipelinePlanarRefl[2];
-
-static const eg::StencilState stencilState = DeferredRenderer::MakeStencilState(0);
 
 static void OnInit()
 {
@@ -87,9 +89,6 @@ static void OnInit()
 	pipelineCI.vertexAttributes[6] = { 1, eg::DataType::Float32, 4, offsetof(StaticPropMaterial::InstanceData, transform) + 32 };
 	pipelineCI.vertexAttributes[7] = { 1, eg::DataType::Float32, 2, offsetof(StaticPropMaterial::InstanceData, textureScale) };
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
-	pipelineCI.enableStencilTest = true;
-	pipelineCI.frontStencilState = stencilState;
-	pipelineCI.backStencilState = stencilState;
 	pipelineCI.numColorAttachments = 2;
 	pipelineCI.label = "StaticPropGame";
 	staticPropPipelineGame[1] = eg::Pipeline::Create(pipelineCI);
@@ -100,7 +99,6 @@ static void OnInit()
 	staticPropPipelineGame[0] = eg::Pipeline::Create(pipelineCI);
 	staticPropPipelineGame[0].FramebufferFormatHint(DeferredRenderer::GEOMETRY_FB_FORMAT);
 	
-	pipelineCI.enableStencilTest = false;
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/StaticModel-Editor.fs.glsl").DefaultVariant();
 	pipelineCI.cullMode = eg::CullMode::None;
@@ -108,23 +106,28 @@ static void OnInit()
 	staticPropPipelineEditor = eg::Pipeline::Create(pipelineCI);
 	staticPropPipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Common3D-PlanarRefl.vs.glsl").DefaultVariant();
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/StaticModel-PlanarRefl.fs.glsl").DefaultVariant();
-	pipelineCI.cullMode = eg::CullMode::Back;
-	pipelineCI.frontFaceCCW = true;
-	pipelineCI.numClipDistances = 1;
-	pipelineCI.vertexAttributes[2] = { 1, eg::DataType::Float32, 4, offsetof(StaticPropMaterial::InstanceData, transform) + 0 };
-	pipelineCI.vertexAttributes[3] = { 1, eg::DataType::Float32, 4, offsetof(StaticPropMaterial::InstanceData, transform) + 16 };
-	pipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 4, offsetof(StaticPropMaterial::InstanceData, transform) + 32 };
-	pipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 2, offsetof(StaticPropMaterial::InstanceData, textureScale) };
-	pipelineCI.vertexAttributes[6] = { };
-	pipelineCI.vertexAttributes[7] = { };
-	pipelineCI.label = "StaticPropPlanarRefl";
-	staticPropPipelinePlanarRefl[1] = eg::Pipeline::Create(pipelineCI);
 	
-	pipelineCI.cullMode = eg::CullMode::None;
-	pipelineCI.label = "StaticPropPlanarReflNoCull";
-	staticPropPipelinePlanarRefl[0] = eg::Pipeline::Create(pipelineCI);
+	eg::GraphicsPipelineCreateInfo flagsPipelineCI;
+	flagsPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/ObjectFlags.vs.glsl").DefaultVariant();
+	flagsPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/ObjectFlags.fs.glsl").DefaultVariant();
+	flagsPipelineCI.enableDepthTest = true;
+	flagsPipelineCI.enableDepthWrite = false;
+	flagsPipelineCI.depthCompare = eg::CompareOp::Equal;
+	flagsPipelineCI.cullMode = eg::CullMode::Back;
+	flagsPipelineCI.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
+	flagsPipelineCI.vertexBindings[1] = { sizeof(StaticPropMaterial::InstanceData), eg::InputRate::Instance };
+	flagsPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(eg::StdVertex, position) };
+	flagsPipelineCI.vertexAttributes[1] = { 1, eg::DataType::Float32, 4, offsetof(StaticPropMaterial::InstanceData, transform) + 0 };
+	flagsPipelineCI.vertexAttributes[2] = { 1, eg::DataType::Float32, 4, offsetof(StaticPropMaterial::InstanceData, transform) + 16 };
+	flagsPipelineCI.vertexAttributes[3] = { 1, eg::DataType::Float32, 4, offsetof(StaticPropMaterial::InstanceData, transform) + 32 };
+	flagsPipelineCI.numColorAttachments = 1;
+	flagsPipelineCI.label = "StaticPropFlags";
+	staticPropPipelineFlags[1] = eg::Pipeline::Create(flagsPipelineCI);
+	
+	flagsPipelineCI.cullMode = eg::CullMode::None;
+	flagsPipelineCI.label = "StaticPropFlagsNoCull";
+	staticPropPipelineFlags[0] = eg::Pipeline::Create(flagsPipelineCI);
+	
 	
 	eg::GraphicsPipelineCreateInfo plsPipelineCI;
 	plsPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Common3D-PLShadow.vs.glsl").DefaultVariant();
@@ -161,8 +164,8 @@ static void OnShutdown()
 	staticPropPipelineEditor.Destroy();
 	staticPropPipelineGame[0].Destroy();
 	staticPropPipelineGame[1].Destroy();
-	staticPropPipelinePlanarRefl[0].Destroy();
-	staticPropPipelinePlanarRefl[1].Destroy();
+	staticPropPipelineFlags[0].Destroy();
+	staticPropPipelineFlags[1].Destroy();
 	staticPropPipelinePLShadow[0].Destroy();
 	staticPropPipelinePLShadow[1].Destroy();
 }
@@ -194,7 +197,7 @@ bool StaticPropMaterial::AssetLoader(const eg::AssetLoadContext& loadContext)
 	material.m_textureScale.y = 1.0f / eg::BinRead<float>(stream);
 	material.m_backfaceCull = eg::BinRead<uint8_t>(stream);
 	material.m_castShadows = eg::BinRead<uint8_t>(stream);
-	material.m_reflect = eg::BinRead<uint8_t>(stream);
+	material.m_objectFlags = eg::BinRead<uint8_t>(stream);
 	
 	return true;
 }
@@ -215,9 +218,9 @@ inline static eg::PipelineRef GetPipeline(const MeshDrawArgs& drawArgs, bool bac
 	switch (drawArgs.drawMode)
 	{
 	case MeshDrawMode::Game: return staticPropPipelineGame[(int)backfaceCull];
+	case MeshDrawMode::ObjectFlags: return staticPropPipelineFlags[(int)backfaceCull];
 	case MeshDrawMode::Editor: return staticPropPipelineEditor;
 	case MeshDrawMode::PointLightShadow: return staticPropPipelinePLShadow[(int)backfaceCull];
-	case MeshDrawMode::PlanarReflection: return staticPropPipelinePlanarRefl[(int)backfaceCull];
 	default: return eg::PipelineRef();
 	}
 	EG_UNREACHABLE
@@ -242,64 +245,43 @@ bool StaticPropMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs
 bool StaticPropMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
 	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
+	if (mDrawArgs->drawMode == MeshDrawMode::ObjectFlags && m_objectFlags == 0)
+		return false;
+	
 	if (mDrawArgs->drawMode == MeshDrawMode::PointLightShadow)
 	{
 		cmdCtx.BindTexture(*m_albedoTexture, 0, 1);
 		return m_castShadows;
 	}
-	if (mDrawArgs->drawMode == MeshDrawMode::PlanarReflection && !m_reflect)
-		return false;
 	
 	if (!m_descriptorsInitialized)
 	{
-		m_descriptorSetGame = eg::DescriptorSet(staticPropPipelineGame[(int)m_backfaceCull], 0);
+		m_descriptorSet = eg::DescriptorSet(staticPropPipelineGame[(int)m_backfaceCull], 0);
 		m_descriptorSetEditor = eg::DescriptorSet(staticPropPipelineEditor, 0);
-		m_descriptorSetPlanarRefl = eg::DescriptorSet(staticPropPipelinePlanarRefl[(int)m_backfaceCull], 0);
 		m_descriptorsInitialized = true;
 		
-		m_descriptorSetGame.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
-		m_descriptorSetGame.BindTexture(*m_albedoTexture, 1, &GetCommonTextureSampler());
-		m_descriptorSetGame.BindTexture(*m_normalMapTexture, 2, &GetCommonTextureSampler());
-		m_descriptorSetGame.BindTexture(*m_miscMapTexture, 3, &GetCommonTextureSampler());
-		
-		m_descriptorSetPlanarRefl.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
-		m_descriptorSetPlanarRefl.BindTexture(*m_albedoTexture, 1, &GetCommonTextureSampler());
-		m_descriptorSetPlanarRefl.BindTexture(*m_miscMapTexture, 2, &GetCommonTextureSampler());
-		
-		m_descriptorSetEditor.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
-		m_descriptorSetEditor.BindTexture(*m_albedoTexture, 1, &GetCommonTextureSampler());
-		m_descriptorSetEditor.BindTexture(*m_normalMapTexture, 2, &GetCommonTextureSampler());
-		m_descriptorSetEditor.BindTexture(*m_miscMapTexture, 3, &GetCommonTextureSampler());
+		m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+		m_descriptorSet.BindTexture(*m_albedoTexture, 1, &GetCommonTextureSampler());
+		m_descriptorSet.BindTexture(*m_normalMapTexture, 2, &GetCommonTextureSampler());
+		m_descriptorSet.BindTexture(*m_miscMapTexture, 3, &GetCommonTextureSampler());
 	}
 	
-	switch (mDrawArgs->drawMode)
+	if (mDrawArgs->drawMode == MeshDrawMode::Editor || mDrawArgs->drawMode == MeshDrawMode::Game)
 	{
-	case MeshDrawMode::Game:
-		cmdCtx.BindDescriptorSet(m_descriptorSetGame, 0);
-		break;
-	case MeshDrawMode::PlanarReflection:
-		cmdCtx.BindDescriptorSet(m_descriptorSetPlanarRefl, 0);
-		break;
-	case MeshDrawMode::Editor:
-		cmdCtx.BindDescriptorSet(m_descriptorSetEditor, 0);
-		break;
-	default:
-		EG_UNREACHABLE;
-	}
-	
-	if (mDrawArgs->drawMode == MeshDrawMode::PlanarReflection)
-	{
-		float pushConstants[6];
-		std::copy_n(&mDrawArgs->reflectionPlane.GetNormal().x, 3, pushConstants);
-		pushConstants[3] = -mDrawArgs->reflectionPlane.GetDistance();
-		pushConstants[4] = m_textureScale.x;
-		pushConstants[5] = m_textureScale.y;
-		cmdCtx.PushConstants(0, sizeof(pushConstants), pushConstants);
-	}
-	else
-	{
+		cmdCtx.BindDescriptorSet(m_descriptorSet, 0);
+		
 		float pushConstants[] = { m_roughnessMin, m_roughnessMax, m_textureScale.x, m_textureScale.y };
 		cmdCtx.PushConstants(0, sizeof(pushConstants), pushConstants);
+	}
+	else if (mDrawArgs->drawMode == MeshDrawMode::ObjectFlags)
+	{
+		struct
+		{
+			glm::mat4 viewProj;
+			uint32_t flags;
+		} pc = { RenderSettings::instance->viewProjection, m_objectFlags };
+		
+		cmdCtx.PushConstants(0, sizeof(pc), &pc);
 	}
 	
 	return true;

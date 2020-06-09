@@ -163,19 +163,16 @@ bool GravitySwitchVolLightMaterial::BindPipeline(eg::CommandContext& cmdCtx, voi
 	cmdCtx.BindPipeline(gsVolLightPipeline);
 	cmdCtx.BindDescriptorSet(lightVolDescriptorSet, 0);
 	
-	if (mDrawArgs->drawMode == MeshDrawMode::PlanarReflection)
-	{
-		glm::vec4 pc(mDrawArgs->reflectionPlane.GetNormal(), -mDrawArgs->reflectionPlane.GetDistance());
-		eg::DC.PushConstants(0, pc);
-	}
-	
 	return true;
 }
 
 bool GravitySwitchVolLightMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
 	float pcData[4 + 4 + 4 + 3];
-	std::copy_n(&switchPosition.x, 3, pcData + 0);
+	pcData[0] = switchPosition.x;
+	pcData[1] = switchPosition.y;
+	pcData[2] = switchPosition.z;
+	pcData[3] = intensity;
 	std::copy_n(&rotationMatrix[0].x, 3, pcData + 4);
 	std::copy_n(&rotationMatrix[1].x, 3, pcData + 8);
 	std::copy_n(&rotationMatrix[2].x, 3, pcData + 12);

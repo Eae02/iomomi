@@ -7,6 +7,7 @@ layout(location=0) out vec4 color_out;
 layout(push_constant) uniform PC
 {
 	vec3 switchPos;
+	float intensity;
 	mat3 rotationMatrix;
 };
 
@@ -88,5 +89,5 @@ void main()
 		}
 	}
 	
-	color_out = vec4(color, 0.0);
+	color_out = vec4(color * intensity, 0.0);
 }

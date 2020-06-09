@@ -14,11 +14,6 @@ const eg::IMaterial* ActivationLightStripEnt::s_materials[MV_Count];
 const eg::ColorLin ActivationLightStripEnt::ACTIVATED_COLOR = eg::ColorLin(eg::ColorSRGB::FromHex(0x4bf863)).ScaleRGB(4);
 const eg::ColorLin ActivationLightStripEnt::DEACTIVATED_COLOR = eg::ColorLin(eg::ColorSRGB::FromHex(0xf84b5e)).ScaleRGB(4);
 
-ActivationLightStripEnt::ActivationLightStripEnt()
-{
-	
-}
-
 void ActivationLightStripEnt::OnInit()
 {
 	s_models[MV_Straight] = &eg::GetAsset<eg::Model>("Models/ActivationStripStraight.obj");
@@ -443,8 +438,8 @@ void ActivationLightStripEnt::GenerateForActivator(World& world, Ent& activatorE
 	
 	std::vector<WayPoint> points(activator->waypoints.size() + 2);
 	
-	points[0].position = activatorEntity.Pos();
-	points[0].wallNormal = activatorEntity.Direction();
+	points[0].position = activatorEntity.GetPosition();
+	points[0].wallNormal = activatorEntity.GetFacingDirection();
 	std::copy(activator->waypoints.begin(), activator->waypoints.end(), points.begin() + 1);
 	points.back().position = connectionPoints[std::min<size_t>(activator->targetConnectionIndex, connectionPoints.size() - 1)];
 	
@@ -471,3 +466,8 @@ void ActivationLightStripEnt::ClearGeneratedMesh()
 
 void ActivationLightStripEnt::Serialize(std::ostream& stream) const { }
 void ActivationLightStripEnt::Deserialize(std::istream& stream) { }
+
+glm::vec3 ActivationLightStripEnt::GetPosition() const
+{
+	return glm::vec3(0);
+}

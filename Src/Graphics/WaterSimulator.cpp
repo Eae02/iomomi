@@ -39,8 +39,8 @@ void WaterSimulator::Init(World& world)
 	world.entManager.ForEachOfType<WaterPlaneEnt>([&] (WaterPlaneEnt& waterPlaneEntity)
 	{
 		//Add all cells from this liquid plane to the vector
-		waterPlaneEntity.m_liquidPlane.MaybeUpdate(waterPlaneEntity, world);
-		for (glm::ivec3 cell : waterPlaneEntity.m_liquidPlane.UnderwaterCells())
+		waterPlaneEntity.liquidPlane.MaybeUpdate(world);
+		for (glm::ivec3 cell : waterPlaneEntity.liquidPlane.UnderwaterCells())
 		{
 			underwaterCells.push_back(cell);
 		}

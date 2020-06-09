@@ -8,7 +8,6 @@ assets:
   - name: Shaders/ImGui.fs.glsl
   - name: Shaders/Common3D.vs.glsl
   - name: Shaders/Common3D-PLShadow.vs.glsl
-  - name: Shaders/Common3D-PlanarRefl.vs.glsl
   - name: Shaders/GravityCornerLight.fs.glsl
   - name: Shaders/Primitive.vs.glsl
   - name: Shaders/Primitive.fs.glsl
@@ -17,7 +16,8 @@ assets:
   - name: Shaders/Post.fs.glsl
   - name: Shaders/StaticModel.fs.glsl
   - name: Shaders/StaticModel-Editor.fs.glsl
-  - name: Shaders/StaticModel-PlanarRefl.fs.glsl
+  - name: Shaders/ObjectFlags.vs.glsl
+  - name: Shaders/ObjectFlags.fs.glsl
   - name: Shaders/LiquidPlaneEditor.vs.glsl
   - name: Shaders/LiquidPlaneEditor.fs.glsl
   - name: Shaders/GooPlane.vs.glsl
@@ -29,7 +29,6 @@ assets:
   - name: Shaders/Wall-Border.fs.glsl
   - name: Shaders/Wall-PLShadow.vs.glsl
   - name: Shaders/Wall-PLShadow.gs.glsl
-  - name: Shaders/Wall-PlanarRefl.fs.glsl
   - name: Shaders/Emissive.vs.glsl
   - name: Shaders/Emissive.fs.glsl
   - name: Shaders/LightStrip.vs.glsl
@@ -39,8 +38,6 @@ assets:
   - name: Shaders/Lighting/SpotLight.fs.glsl
   - name: Shaders/Lighting/PointLight.vs.glsl
   - name: Shaders/Lighting/PointLight.fs.glsl
-  - name: Shaders/Lighting/ReflectionPlane.vs.glsl
-  - name: Shaders/Lighting/ReflectionPlane.fs.glsl
   - name: Shaders/PointLightShadow.gs.glsl
   - name: Shaders/PointLightShadow.fs.glsl
   - name: Shaders/GravitySwitchLight.fs.glsl
@@ -57,7 +54,6 @@ assets:
   - name: Shaders/Particle.fs.glsl
   - name: Shaders/GooPlane.vs.glsl
   - name: Shaders/GooPlane.fs.glsl
-  - name: Shaders/GooPlane-Emissive.fs.glsl
   - name: Shaders/Water/WaterSphere.vs.glsl
   - name: Shaders/Water/WaterSphereBasic.fs.glsl
   - name: Shaders/Water/WaterSphereDepth.fs.glsl
@@ -78,7 +74,11 @@ assets:
   - name: Models/Cube.obj
   - name: Models/WoodCube.obj
   - name: Models/Button.obj
-    access: all
+    removeNameSuffix: true
+  - name: Models/ButtonCol.obj
+    access: cpu
+    flipWinding: true
+    removeNameSuffix: true
   - name: Models/Platform.obj
   - name: Models/PlatformSlider.obj
   - name: Models/GravityGun.obj

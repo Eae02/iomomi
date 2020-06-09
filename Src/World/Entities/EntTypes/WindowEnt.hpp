@@ -27,11 +27,14 @@ public:
 	
 	void CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt) override;
 	
+	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	
+	glm::vec3 GetPosition() const override;
+	
 private:
 	const eg::IMaterial* m_material;
 	float m_textureScale = 1;
 	AxisAlignedQuadComp m_aaQuad;
-	AxisAlignedQuadComp::CollisionGeometry m_collisionGeometry;
 	
 	PhysicsObject m_physicsObject;
 };

@@ -5,7 +5,6 @@
 
 layout(push_constant) uniform PC
 {
-	vec4 plane;
 	vec3 actPos;
 	float actIntensity;
 } pc;

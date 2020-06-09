@@ -219,24 +219,25 @@ void Editor::RunFrame(float dt)
 		return a.m_depth > b.m_depth;
 	});
 	
+	glm::vec2 flippedCursorPos(eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY());
+	m_hoveredIcon = -1;
+	for (size_t i = 0; i < m_icons.size(); i++)
+	{
+		if (m_icons[i].m_rectangle.Contains(flippedCursorPos))
+			m_hoveredIcon = i;
+	}
+	
 	if (canUpdateInput && eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft))
 	{
 		bool shouldClearSelected = !eg::IsButtonDown(eg::Button::LeftControl) && !eg::IsButtonDown(eg::Button::RightControl);
 		
-		glm::vec2 flippedCursorPos(eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY());
-		for (const EditorIcon& icon : m_icons)
+		if (m_hoveredIcon != -1)
 		{
-			if (icon.m_rectangle.Contains(flippedCursorPos))
-			{
-				if (icon.shouldClearSelection && shouldClearSelected)
-					m_selectedEntities.clear();
-				shouldClearSelected = false;
-				icon.m_callback();
-				break;
-			}
+			if (m_icons[m_hoveredIcon].shouldClearSelection && shouldClearSelected)
+				m_selectedEntities.clear();
+			m_icons[m_hoveredIcon].m_callback();
 		}
-		
-		if (shouldClearSelected)
+		else if (shouldClearSelected)
 			m_selectedEntities.clear();
 	}
 	
@@ -266,17 +267,20 @@ void Editor::DrawWorld()
 	{
 		return eg::Rectangle(index * 50, 0, 50, 50);
 	};
-	for (const EditorIcon& icon : m_icons)
+	for (size_t i = 0; i < m_icons.size(); i++)
 	{
+		if (m_icons[i].hideIfNotHovered && (int)i != m_hoveredIcon)
+			continue;
+		
 		eg::ColorLin color(eg::Color::White);
 		
 		//Draws the background sprite
-		m_spriteBatch.Draw(iconsTexture, icon.m_rectangle, color,
-			CreateSrcRectangle(icon.selected ? 1 : 0), eg::SpriteFlags::None);
+		m_spriteBatch.Draw(iconsTexture, m_icons[i].m_rectangle, color,
+			CreateSrcRectangle(m_icons[i].selected ? 1 : ((int)i == m_hoveredIcon ? 10 : 0)), eg::SpriteFlags::None);
 		
 		//Draws the icon
-		m_spriteBatch.Draw(iconsTexture, icon.m_rectangle, color,
-			CreateSrcRectangle(icon.iconIndex), eg::SpriteFlags::None);
+		m_spriteBatch.Draw(iconsTexture, m_icons[i].m_rectangle, color,
+			CreateSrcRectangle(m_icons[i].iconIndex), eg::SpriteFlags::None);
 	}
 	
 	//Sends the editor draw message to entities

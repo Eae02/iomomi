@@ -55,3 +55,8 @@ const void* MeshEnt::GetComponent(const std::type_info& type) const
 {
 	return Ent::GetComponent(type);
 }
+
+void MeshEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+{
+	m_position = newPosition;
+}

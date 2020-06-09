@@ -29,7 +29,11 @@ EmissiveMaterial::InstanceData WallLightEnt::GetInstanceData(float colorScale) c
 	eg::ColorLin color = eg::ColorLin(m_pointLight.GetColor()).ScaleRGB(colorScale);
 	
 	EmissiveMaterial::InstanceData instanceData;
-	instanceData.transform = GetTransform(MODEL_SCALE);
+	instanceData.transform =
+	       glm::translate(glm::mat4(1), m_position) *
+	       glm::mat4(GetRotationMatrix(m_forwardDir)) *
+	       glm::scale(glm::mat4(1), glm::vec3(MODEL_SCALE));
+	
 	instanceData.color = glm::vec4(color.r, color.g, color.b, 1.0f);
 	
 	return instanceData;
@@ -47,7 +51,7 @@ static eg::Model& GetModel()
 
 void WallLightEnt::GameDraw(const EntGameDrawArgs& args)
 {
-	glm::vec3 lightPos = m_position + glm::vec3(DirectionVector(m_direction)) * LIGHT_DIST;
+	glm::vec3 lightPos = m_position + glm::vec3(DirectionVector(m_forwardDir)) * LIGHT_DIST;
 	args.pointLights->emplace_back(m_pointLight.GetDrawData(lightPos));
 	
 	args.meshBatch->AddModel(GetModel(), EmissiveMaterial::instance, GetInstanceData(4.0f));
@@ -62,8 +66,8 @@ void WallLightEnt::Serialize(std::ostream& stream) const
 {
 	gravity_pb::WallLightEntity wallLightPB;
 	
-	wallLightPB.set_dir((gravity_pb::Dir)m_direction);
-	SerializePos(wallLightPB);
+	wallLightPB.set_dir((gravity_pb::Dir)m_forwardDir);
+	SerializePos(wallLightPB, m_position);
 	
 	wallLightPB.set_colorr(m_pointLight.GetColor().r);
 	wallLightPB.set_colorg(m_pointLight.GetColor().g);
@@ -78,8 +82,8 @@ void WallLightEnt::Deserialize(std::istream& stream)
 	gravity_pb::WallLightEntity wallLightPB;
 	wallLightPB.ParseFromIstream(&stream);
 	
-	m_direction = (Dir)wallLightPB.dir();
-	DeserializePos(wallLightPB);
+	m_forwardDir = (Dir)wallLightPB.dir();
+	m_position = DeserializePos(wallLightPB);
 	
 	eg::ColorSRGB color(wallLightPB.colorr(), wallLightPB.colorg(), wallLightPB.colorb());
 	m_pointLight.SetRadiance(color, wallLightPB.intensity());
@@ -88,4 +92,11 @@ void WallLightEnt::Deserialize(std::istream& stream)
 void WallLightEnt::HalfLightIntensity()
 {
 	m_pointLight.SetRadiance(m_pointLight.GetColor(), m_pointLight.Intensity() / 2);
+}
+
+void WallLightEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+{
+	m_position = newPosition;
+	if (faceDirection)
+		m_forwardDir = *faceDirection;
 }

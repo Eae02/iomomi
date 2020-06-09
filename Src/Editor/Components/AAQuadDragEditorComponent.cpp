@@ -12,7 +12,7 @@ bool AAQuadDragEditorComponent::UpdateInput(float dt, const EditorState& editorS
 	}
 	
 	AxisAlignedQuadComp& quadComp = *entity->GetComponentMut<AxisAlignedQuadComp>();
-	eg::Plane plane(quadComp.GetNormal(), entity->Pos());
+	eg::Plane plane(quadComp.GetNormal(), entity->GetPosition());
 	
 	float planeIntersectDist;
 	if (editorState.viewRay.Intersects(plane, planeIntersectDist))
@@ -22,12 +22,12 @@ bool AAQuadDragEditorComponent::UpdateInput(float dt, const EditorState& editorS
 		glm::vec3 intersectPos = editorState.viewRay.GetPoint(planeIntersectDist);
 		
 		float edges[] = {
-			entity->Pos()[dragDim] + quadComp.radius[draggingBitangent] * 0.5f,
-			entity->Pos()[dragDim] - quadComp.radius[draggingBitangent] * 0.5f
+			entity->GetPosition()[dragDim] + quadComp.radius[draggingBitangent] * 0.5f,
+			entity->GetPosition()[dragDim] - quadComp.radius[draggingBitangent] * 0.5f
 		};
 		edges[draggingNegative] = SnapToGrid(intersectPos[dragDim]);
 		
-		glm::vec3 newPos = entity->Pos();
+		glm::vec3 newPos = entity->GetPosition();
 		newPos[dragDim] = (edges[0] + edges[1]) / 2.0f;
 		quadComp.radius[draggingBitangent] = (edges[0] - edges[1]);
 		entity->EditorMoved(newPos, {});
@@ -52,7 +52,7 @@ bool AAQuadDragEditorComponent::CollectIcons(const EditorState& editorState, std
 		
 		for (int d = 0; d < 4; d++)
 		{
-			EditorIcon& icon = icons.emplace_back(entity->Pos() + dirs[d] * 0.5f, [entityWP=entityWP, d, this]
+			EditorIcon& icon = icons.emplace_back(entity->GetPosition() + dirs[d] * 0.5f, [entityWP=entityWP, d, this]
 			{
 				m_activeEntity = entityWP;
 				draggingBitangent = d / 2;

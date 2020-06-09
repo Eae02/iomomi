@@ -34,8 +34,11 @@ public:
 	int iconIndex = 5;
 	bool selected = false;
 	bool shouldClearSelection = true;
+	bool hideIfNotHovered = false;
 	
 	const eg::Rectangle& Rectangle() const { return m_rectangle; }
+	
+	void ApplyDepthBias(float bias) { m_depth -= bias; }
 	
 private:
 	eg::Rectangle m_rectangle;

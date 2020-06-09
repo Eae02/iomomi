@@ -63,7 +63,7 @@ void CubeSpawnerEnt::Serialize(std::ostream& stream) const
 {
 	gravity_pb::CubeSpawnerEntity cubeSpawnerPB;
 	
-	SerializePos(cubeSpawnerPB);
+	SerializePos(cubeSpawnerPB, m_position);
 	cubeSpawnerPB.set_dir((gravity_pb::Dir)m_direction);
 	
 	cubeSpawnerPB.set_cube_can_float(m_cubeCanFloat);
@@ -80,7 +80,7 @@ void CubeSpawnerEnt::Deserialize(std::istream& stream)
 	gravity_pb::CubeSpawnerEntity cubeSpawnerPB;
 	cubeSpawnerPB.ParseFromIstream(&stream);
 	
-	DeserializePos(cubeSpawnerPB);
+	m_position = DeserializePos(cubeSpawnerPB);
 	m_direction = (Dir)cubeSpawnerPB.dir();
 	m_cubeCanFloat = cubeSpawnerPB.cube_can_float();
 	m_requireActivation = !cubeSpawnerPB.spawn_if_none();
@@ -88,4 +88,11 @@ void CubeSpawnerEnt::Deserialize(std::istream& stream)
 	
 	if (cubeSpawnerPB.name() != 0)
 		m_activatable.m_name = cubeSpawnerPB.name();
+}
+
+void CubeSpawnerEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+{
+	m_position = newPosition;
+	if (faceDirection)
+		m_direction = *faceDirection;
 }

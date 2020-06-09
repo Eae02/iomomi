@@ -3,21 +3,22 @@
 
 WaterPlaneEnt::WaterPlaneEnt()
 {
-	m_liquidPlane.SetShouldGenerateMesh(true);
-	m_liquidPlane.SetEditorColor(eg::ColorSRGB::FromRGBAHex(0x67BEEA98));
+	liquidPlane.SetShouldGenerateMesh(true);
+	liquidPlane.SetEditorColor(eg::ColorSRGB::FromRGBAHex(0x67BEEA98));
 }
 
 const void* WaterPlaneEnt::GetComponent(const std::type_info& type) const
 {
 	if (type == typeid(LiquidPlaneComp))
-		return &m_liquidPlane;
+		return &liquidPlane;
 	return Ent::GetComponent(type);
 }
 
 void WaterPlaneEnt::Serialize(std::ostream& stream) const
 {
 	gravity_pb::WaterPlaneEntity waterPlanePB;
-	SerializePos(waterPlanePB);
+	SerializePos(waterPlanePB, liquidPlane.position);
+	waterPlanePB.set_wall_dir((gravity_pb::Dir)liquidPlane.wallForward);
 	waterPlanePB.SerializeToOstream(&stream);
 }
 
@@ -25,14 +26,18 @@ void WaterPlaneEnt::Deserialize(std::istream& stream)
 {
 	gravity_pb::WaterPlaneEntity waterPlanePB;
 	waterPlanePB.ParseFromIstream(&stream);
-	DeserializePos(waterPlanePB);
+	liquidPlane.position = DeserializePos(waterPlanePB);
+	liquidPlane.wallForward = (Dir)waterPlanePB.wall_dir();
 }
 
-template <>
-std::shared_ptr<Ent> CloneEntity<WaterPlaneEnt>(const Ent& entity)
+void WaterPlaneEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
-	std::shared_ptr<WaterPlaneEnt> newEntity = Ent::Create<WaterPlaneEnt>();
-	newEntity->m_position = entity.Pos();
-	newEntity->m_direction = entity.Direction();
-	return newEntity;
+	liquidPlane.position = newPosition;
+	if (faceDirection)
+		liquidPlane.wallForward = *faceDirection;
+}
+
+glm::vec3 WaterPlaneEnt::GetPosition() const
+{
+	return liquidPlane.position;
 }

@@ -20,6 +20,9 @@ public:
 	glm::vec3 force;
 	glm::vec3 velocity;
 	glm::vec3 move;
+	glm::quat angularForce;
+	glm::quat angularVelocity;
+	glm::quat angularMove;
 	
 	//Set by the physics engine
 	glm::vec3 pushForce;
@@ -44,6 +47,10 @@ private:
 	int collisionDepth = 0;
 	bool hasCopiedParentMove = false;
 	bool needsFlippedWinding = false;
+	bool firstFrame = true;
+	
+	glm::vec3 lockedDisplayPosition;
+	float timeUntilLockDisplayPosition = 0;
 };
 
 class PhysicsEngine

@@ -2,7 +2,6 @@
 #include "World/PrepareDrawArgs.hpp"
 #include "Graphics/Materials/MeshDrawArgs.hpp"
 #include "Graphics/RenderSettings.hpp"
-#include "Graphics/PlanarReflectionsManager.hpp"
 #include "Graphics/Materials/GravityCornerLightMaterial.hpp"
 #include "Graphics/Materials/GravitySwitchVolLightMaterial.hpp"
 #include "Settings.hpp"
@@ -96,8 +95,12 @@ void MainGameState::DoDeferredRendering(bool useLightProbes, DeferredRenderer::R
 		m_renderCtx->renderer.BeginGeometry(renderTarget);
 		
 		m_world->Draw();
-		
 		mDrawArgs.drawMode = MeshDrawMode::Game;
+		m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
+		
+		m_renderCtx->renderer.BeginGeometryFlags(renderTarget);
+		
+		mDrawArgs.drawMode = MeshDrawMode::ObjectFlags;
 		m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
 	}
 	
@@ -118,7 +121,6 @@ void MainGameState::DoDeferredRendering(bool useLightProbes, DeferredRenderer::R
 		
 		m_renderCtx->renderer.BeginLighting(renderTarget, m_waterSimulator.NumParticles() > 0);
 		
-		m_renderCtx->renderer.DrawReflectionPlaneLighting(renderTarget, m_prepareDrawArgs.reflectionPlanes);
 		m_renderCtx->renderer.DrawSpotLights(renderTarget, m_prepareDrawArgs.spotLights);
 		m_renderCtx->renderer.DrawPointLights(renderTarget, m_prepareDrawArgs.pointLights);
 		
@@ -138,27 +140,6 @@ void MainGameState::DoDeferredRendering(bool useLightProbes, DeferredRenderer::R
 		
 		m_renderCtx->renderer.DrawWater(renderTarget, m_waterSimulator.GetPositionsBuffer(), m_waterSimulator.NumParticles());
 	}
-}
-
-void MainGameState::RenderPlanarReflections(const ReflectionPlane& plane, eg::FramebufferRef framebuffer)
-{
-	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = framebuffer.handle;
-	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
-	rpBeginInfo.colorAttachments[0].clearValue = eg::ColorLin(eg::Color::Black);
-	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Clear;
-	rpBeginInfo.depthClearValue = 1.0f;
-	
-	eg::DC.BeginRenderPass(rpBeginInfo);
-	
-	m_world->DrawPlanarReflections(plane.plane);
-	
-	MeshDrawArgs mDrawArgs;
-	mDrawArgs.drawMode = MeshDrawMode::PlanarReflection;
-	mDrawArgs.reflectionPlane = plane.plane;
-	m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
-	
-	eg::DC.EndRenderPass();
 }
 
 void MainGameState::RunFrame(float dt)
@@ -264,7 +245,6 @@ void MainGameState::RunFrame(float dt)
 	{
 		m_projection.SetFieldOfViewDeg(settings.fieldOfViewDeg);
 		
-		m_planarReflectionsManager.SetQuality(settings.reflectionsQuality);
 		m_plShadowMapper.SetQuality(settings.shadowQuality);
 		
 		GravitySwitchVolLightMaterial::SetQuality(settings.lightingQuality);
@@ -347,22 +327,6 @@ void MainGameState::RunFrame(float dt)
 	cpuTimerPrepare.Stop();
 	
 	m_particleManager.Step(dt, frustum, m_player.Rotation() * glm::vec3(0, 0, -1));
-	
-	auto cpuTimerPlanarRefl = eg::StartCPUTimer("Planar Reflections");
-	auto gpuTimerPlanarRefl = eg::StartGPUTimer("Planar Reflections");
-	
-	m_planarReflectionsManager.BeginFrame();
-	for (ReflectionPlane* reflectionPlane : m_prepareDrawArgs.reflectionPlanes)
-	{
-		m_planarReflectionsManager.RenderPlanarReflections(*reflectionPlane,
-			[&] (const ReflectionPlane& plane, eg::FramebufferRef framebuffer)
-		{
-			RenderPlanarReflections(plane, framebuffer);
-		});
-	}
-	
-	cpuTimerPlanarRefl.Stop();
-	gpuTimerPlanarRefl.Stop();
 	
 	m_plShadowMapper.UpdateShadowMaps(m_prepareDrawArgs.pointLights, [this] (const PointLightShadowRenderArgs& args)
 	{
@@ -452,7 +416,6 @@ void MainGameState::DrawOverlay(float dt)
 void MainGameState::SetResolution(int width, int height)
 {
 	m_projection.SetResolution(width, height);
-	m_planarReflectionsManager.ResolutionChanged();
 }
 
 bool MainGameState::ReloadLevel()

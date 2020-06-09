@@ -10,7 +10,6 @@
 #include "Entities/EntityManager.hpp"
 #include "Collision.hpp"
 #include "../Graphics/Vertex.hpp"
-#include "../Graphics/PlanarReflectionsManager.hpp"
 #include "PhysicsEngine.hpp"
 #include "../Graphics/GraphicsCommon.hpp"
 
@@ -68,7 +67,6 @@ public:
 	
 	void Draw();
 	void DrawEditor();
-	void DrawPlanarReflections(const eg::Plane& plane);
 	void DrawPointLightShadows(const struct PointLightShadowRenderArgs& renderArgs);
 	
 	bool IsGravityCorner(const glm::ivec3& cornerPos, Dir cornerDir) const;

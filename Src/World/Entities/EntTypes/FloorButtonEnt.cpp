@@ -11,11 +11,15 @@ static eg::IMaterial* s_material;
 static size_t s_padMeshIndex;
 static size_t s_lightsMeshIndex;
 
-static eg::CollisionMesh frameCollisionMesh;
-static eg::CollisionMesh buttonCollisionMesh;
+static eg::CollisionMesh s_ringCollisionMesh;
+static eg::CollisionMesh s_padCollisionMesh;
 
 static void OnInit()
 {
+	eg::Model& collisionModel = eg::GetAsset<eg::Model>("Models/ButtonCol.obj");
+	s_ringCollisionMesh = collisionModel.MakeCollisionMesh(collisionModel.GetMeshIndex("CollisionRing"));
+	s_padCollisionMesh = collisionModel.MakeCollisionMesh(collisionModel.GetMeshIndex("CollisionPad"));
+	
 	s_model = &eg::GetAsset<eg::Model>("Models/Button.obj");
 	s_material = &eg::GetAsset<StaticPropMaterial>("Materials/Button.yaml");
 	
@@ -23,14 +27,7 @@ static void OnInit()
 	{
 		if (s_model->GetMesh(i).name.find("Pad") != std::string::npos)
 		{
-			auto meshData = s_model->GetMeshData<eg::StdVertex, uint32_t>(i);
-			buttonCollisionMesh = eg::CollisionMesh::Create(meshData.vertices, meshData.indices);
 			s_padMeshIndex = i;
-		}
-		else if (s_model->GetMesh(i).name.find("Circle") != std::string::npos)
-		{
-			auto meshData = s_model->GetMeshData<eg::StdVertex, uint32_t>(i);
-			frameCollisionMesh = eg::CollisionMesh::Create(meshData.vertices, meshData.indices);
 		}
 		else if (s_model->GetMesh(i).name.find("Lights") != std::string::npos)
 		{
@@ -41,32 +38,58 @@ static void OnInit()
 
 EG_ON_INIT(OnInit)
 
-constexpr float PUSH_ANIMATION_TIME = 0.5f;
+constexpr float LIGHT_ANIMATION_TIME = 0.1f;
 constexpr float MAX_PUSH_DST = 0.07f;
 constexpr float ACTIVATE_PUSH_DST = MAX_PUSH_DST * 0.8f;
 
 FloorButtonEnt::FloorButtonEnt()
 {
-	m_physicsObject.canBePushed = false;
-	m_physicsObject.owner = this;
-	m_physicsObject.debugColor = 0x12b81a;
-	m_physicsObject.shape = frameCollisionMesh.BoundingBox();
+	m_ringPhysicsObject.canBePushed = false;
+	m_ringPhysicsObject.owner = this;
+	m_ringPhysicsObject.debugColor = 0x12b81a;
+	m_ringPhysicsObject.shouldCollide = &FloorButtonEnt::ShouldCollide;
+	m_ringPhysicsObject.shape = &s_ringCollisionMesh;
+	
+	m_padPhysicsObject.canBePushed = true;
+	m_padPhysicsObject.owner = this;
+	m_padPhysicsObject.debugColor = 0xcf24cf;
+	m_padPhysicsObject.shape = &s_padCollisionMesh;
+	m_padPhysicsObject.shouldCollide = &FloorButtonEnt::ShouldCollide;
+	m_padPhysicsObject.constrainMove = &FloorButtonEnt::ConstrainMove;
+}
+
+bool FloorButtonEnt::ShouldCollide(const PhysicsObject& self, const PhysicsObject& other)
+{
+	//Disables collision between the button ring and cubes
+	if (!self.canBePushed && std::holds_alternative<Ent*>(other.owner) &&
+	    std::get<Ent*>(other.owner)->TypeID() == EntTypeID::Cube)
+	{
+		return false;
+	}
+	
+	return self.owner != other.owner;
+}
+
+glm::vec3 FloorButtonEnt::ConstrainMove(const PhysicsObject& object, const glm::vec3& move)
+{
+	FloorButtonEnt& ent = *(FloorButtonEnt*)std::get<Ent*>(object.owner);
+	glm::vec3 moveDir = ent.GetRotationMatrix(ent.m_direction) * glm::vec3(0, -1, 0);
+	
+	float posSlideTime = glm::dot(object.position - ent.GetPosition(), moveDir) / glm::length2(moveDir);
+	float slideDist = glm::dot(move, moveDir) / glm::length2(moveDir);
+	
+	return moveDir * glm::clamp(slideDist, -posSlideTime, MAX_PUSH_DST - posSlideTime);
 }
 
 void FloorButtonEnt::CommonDraw(const EntDrawArgs& args)
 {
 	for (size_t i = 0; i < s_model->NumMeshes(); i++)
 	{
-		glm::mat4 transform = GetTransform(1);
-		if (i == s_padMeshIndex)
-		{
-			transform = transform * glm::translate(glm::mat4(1), glm::vec3(0, -m_padPushDist, 0));
-		}
+		glm::vec3 displayPosition = (i == s_padMeshIndex ? m_padPhysicsObject : m_ringPhysicsObject).displayPosition;
+		glm::mat4 transform = glm::translate(glm::mat4(1), displayPosition) * glm::mat4(GetRotationMatrix(m_direction));
 		
 		if (i == s_lightsMeshIndex)
 		{
-			float a = glm::clamp(m_padPushDist / ACTIVATE_PUSH_DST, 0.0f, 1.0f);
-			
 			glm::vec3 colorD = {
 				ActivationLightStripEnt::DEACTIVATED_COLOR.r,
 				ActivationLightStripEnt::DEACTIVATED_COLOR.g,
@@ -80,7 +103,7 @@ void FloorButtonEnt::CommonDraw(const EntDrawArgs& args)
 			
 			EmissiveMaterial::InstanceData instanceData;
 			instanceData.transform = transform;
-			instanceData.color = glm::vec4(glm::mix(colorD, colorA, a), 1.0f);
+			instanceData.color = glm::vec4(glm::mix(colorD, colorA, glm::smoothstep(0.0f, 1.0f, m_lightColor)), 1.0f);
 			args.meshBatch->AddModelMesh(*s_model, i, EmissiveMaterial::instance, instanceData);
 		}
 		else
@@ -92,25 +115,18 @@ void FloorButtonEnt::CommonDraw(const EntDrawArgs& args)
 
 void FloorButtonEnt::Update(const WorldUpdateArgs& args)
 {
-	if (glm::dot(m_physicsObject.pushForce, glm::vec3(DirectionVector(m_direction))) < 0)
-	{
-		m_timeSincePushed = 0.05f;
-	}
-	else
-	{
-		m_timeSincePushed = std::max(m_timeSincePushed - args.dt, 0.0f);
-	}
-	
-	if (m_timeSincePushed > 0)
+	float pushDist = glm::distance(m_padPhysicsObject.position, GetPosition());
+	if (pushDist > ACTIVATE_PUSH_DST)
 	{
 		m_activator.Activate();
-		m_padPushDist += args.dt * (MAX_PUSH_DST / PUSH_ANIMATION_TIME);
+		m_lightColor = std::min(m_lightColor + args.dt / LIGHT_ANIMATION_TIME, 1.0f);
 	}
 	else
 	{
-		m_padPushDist -= args.dt * (MAX_PUSH_DST / PUSH_ANIMATION_TIME);
+		m_lightColor = std::max(m_lightColor - args.dt / LIGHT_ANIMATION_TIME, 0.0f);
 	}
-	m_padPushDist = glm::clamp(m_padPushDist, 0.0f, MAX_PUSH_DST);
+	
+	m_padPhysicsObject.move += GetRotationMatrix(m_direction) * glm::vec3(0, 0.1f * args.dt, 0);
 	
 	m_activator.Update(args);
 }
@@ -127,7 +143,7 @@ void FloorButtonEnt::Serialize(std::ostream& stream) const
 	gravity_pb::FloorButtonEntity buttonPB;
 	
 	buttonPB.set_dir((gravity_pb::Dir)m_direction);
-	SerializePos(buttonPB);
+	SerializePos(buttonPB, m_ringPhysicsObject.position);
 	
 	buttonPB.set_allocated_activator(m_activator.SaveProtobuf(nullptr));
 	
@@ -140,10 +156,11 @@ void FloorButtonEnt::Deserialize(std::istream& stream)
 	buttonPB.ParseFromIstream(&stream);
 	
 	m_direction = (Dir)buttonPB.dir();
-	DeserializePos(buttonPB);
+	m_ringPhysicsObject.displayPosition = m_ringPhysicsObject.position =
+	m_padPhysicsObject.displayPosition = m_padPhysicsObject.position =
+		DeserializePos(buttonPB);
 	
-	m_physicsObject.position = m_position;
-	m_physicsObject.rotation = glm::quat_cast(GetRotationMatrix());
+	m_ringPhysicsObject.rotation = m_padPhysicsObject.rotation = glm::quat_cast(GetRotationMatrix(m_direction));
 	
 	if (buttonPB.has_activator())
 	{
@@ -160,10 +177,17 @@ static float* floorButtonAABBScale = eg::TweakVarFloat("fbtn_aabb_scale", 1.0f, 
 
 eg::AABB FloorButtonEnt::GetAABB() const
 {
-	return Ent::GetAABB(*floorButtonAABBScale, 0.2f);
+	return Ent::GetAABB(*floorButtonAABBScale, 0.2f, m_direction);
 }
 
 void FloorButtonEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 {
-	physicsEngine.RegisterObject(&m_physicsObject);
+	physicsEngine.RegisterObject(&m_ringPhysicsObject);
+	physicsEngine.RegisterObject(&m_padPhysicsObject);
+}
+
+void FloorButtonEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+{
+	m_padPhysicsObject.displayPosition = m_padPhysicsObject.position = newPosition;
+	m_ringPhysicsObject.displayPosition = m_ringPhysicsObject.position = newPosition;
 }

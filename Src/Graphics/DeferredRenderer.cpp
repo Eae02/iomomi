@@ -1,7 +1,6 @@
 #include "DeferredRenderer.hpp"
 #include "Lighting/LightMeshes.hpp"
 #include "RenderSettings.hpp"
-#include "PlanarReflectionsManager.hpp"
 #include "../Settings.hpp"
 
 const eg::FramebufferFormatHint DeferredRenderer::GEOMETRY_FB_FORMAT =
@@ -58,15 +57,6 @@ std::pair<uint32_t, uint32_t> SSR_SAMPLES[] =
 
 void DeferredRenderer::CreatePipelines()
 {
-	eg::StencilState ambientStencilState;
-	ambientStencilState.failOp = eg::StencilOp::Keep;
-	ambientStencilState.passOp = eg::StencilOp::Keep;
-	ambientStencilState.depthFailOp = eg::StencilOp::Keep;
-	ambientStencilState.compareOp = eg::CompareOp::Equal;
-	ambientStencilState.writeMask = 0;
-	ambientStencilState.compareMask = 1;
-	ambientStencilState.reference = 0;
-	
 	eg::SpecializationConstantEntry ambientSpecConstEntries[2];
 	ambientSpecConstEntries[0].constantID = 0;
 	ambientSpecConstEntries[0].size = sizeof(uint32_t);
@@ -82,9 +72,6 @@ void DeferredRenderer::CreatePipelines()
 	ambientPipelineCI.fragmentShader.specConstants = ambientSpecConstEntries;
 	ambientPipelineCI.fragmentShader.specConstantsData = &SSR_SAMPLES[(int)settings.reflectionsQuality];
 	ambientPipelineCI.fragmentShader.specConstantsDataSize = sizeof(SSR_SAMPLES[0]);
-	ambientPipelineCI.frontStencilState = ambientStencilState;
-	ambientPipelineCI.backStencilState = ambientStencilState;
-	ambientPipelineCI.enableStencilTest = true;
 	m_ambientPipeline = eg::Pipeline::Create(ambientPipelineCI);
 	m_ambientPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
 	m_ambientPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
@@ -125,44 +112,6 @@ void DeferredRenderer::CreatePipelines()
 	m_pointLightPipelineHardShadows = eg::Pipeline::Create(plPipelineCI);
 	m_pointLightPipelineHardShadows.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
 	m_pointLightPipelineHardShadows.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
-	
-	const eg::ShaderModuleAsset& reflPlaneFS = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/ReflectionPlane.fs.glsl");
-	
-	eg::StencilState reflPlaneStencilState;
-	reflPlaneStencilState.failOp = eg::StencilOp::Keep;
-	reflPlaneStencilState.passOp = eg::StencilOp::Keep;
-	reflPlaneStencilState.depthFailOp = eg::StencilOp::Keep;
-	reflPlaneStencilState.compareOp = eg::CompareOp::Equal;
-	reflPlaneStencilState.writeMask = 0;
-	reflPlaneStencilState.compareMask = 1;
-	reflPlaneStencilState.reference = 1;
-	
-	eg::GraphicsPipelineCreateInfo reflPlanePipelineCI;
-	reflPlanePipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/ReflectionPlane.vs.glsl").DefaultVariant();
-	reflPlanePipelineCI.fragmentShader = reflPlaneFS.DefaultVariant();
-	reflPlanePipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
-	reflPlanePipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 2, 0 };
-	reflPlanePipelineCI.vertexBindings[0] = { sizeof(float) * 2, eg::InputRate::Vertex };
-	reflPlanePipelineCI.cullMode = eg::CullMode::None;
-	reflPlanePipelineCI.topology = eg::Topology::TriangleStrip;
-	reflPlanePipelineCI.enableStencilTest = true;
-	reflPlanePipelineCI.frontStencilState = reflPlaneStencilState;
-	reflPlanePipelineCI.backStencilState = reflPlaneStencilState;
-	m_reflectionPlanePipeline = eg::Pipeline::Create(reflPlanePipelineCI);
-	m_reflectionPlanePipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
-	m_reflectionPlanePipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
-	
-	constexpr float REFLECTION_PLANE_SIZE = 10000;
-	const float reflectionPlaneVertices[] =
-	{
-		-REFLECTION_PLANE_SIZE, -REFLECTION_PLANE_SIZE,
-		 REFLECTION_PLANE_SIZE, -REFLECTION_PLANE_SIZE,
-		-REFLECTION_PLANE_SIZE,  REFLECTION_PLANE_SIZE,
-		 REFLECTION_PLANE_SIZE,  REFLECTION_PLANE_SIZE,
-	};
-	m_reflectionPlaneVertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer,
-		sizeof(reflectionPlaneVertices), reflectionPlaneVertices);
-	m_reflectionPlaneVertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
 }
 
 DeferredRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height,
@@ -192,11 +141,23 @@ DeferredRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height,
 	m_gbDepthTexture = eg::Texture::Create2D(depthTexCreateInfo);
 	
 	eg::FramebufferAttachment gbColorAttachments[] = { m_gbColor1Texture.handle, m_gbColor2Texture.handle };
-	
 	eg::FramebufferCreateInfo gbFramebufferCI;
 	gbFramebufferCI.colorAttachments = gbColorAttachments;
 	gbFramebufferCI.depthStencilAttachment = m_gbDepthTexture.handle;
 	m_gbFramebuffer = eg::Framebuffer(gbFramebufferCI);
+	
+	
+	eg::TextureCreateInfo flagsTexCreateInfo;
+	flagsTexCreateInfo.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample;
+	flagsTexCreateInfo.width = m_width;
+	flagsTexCreateInfo.height = m_height;
+	flagsTexCreateInfo.mipLevels = 1;
+	flagsTexCreateInfo.format = FLAGS_FORMAT;
+	flagsTexCreateInfo.defaultSamplerDescription = &s_attachmentSamplerDesc;
+	m_flagsTexture = eg::Texture::Create2D(flagsTexCreateInfo);
+	
+	eg::FramebufferAttachment flagsTextureAttachment(m_flagsTexture.handle);
+	m_flagsFramebuffer = eg::Framebuffer({ &flagsTextureAttachment, 1 }, m_gbDepthTexture.handle);
 	
 	
 	eg::TextureCreateInfo waterInputTexCreateInfo;
@@ -210,10 +171,10 @@ DeferredRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height,
 	
 	
 	eg::FramebufferAttachment lightFBAttachments[1] = { m_lightingOutputTexture.handle };
-	m_lightingFramebuffer = eg::Framebuffer(lightFBAttachments, m_gbDepthTexture.handle);
+	m_lightingFramebuffer = eg::Framebuffer(lightFBAttachments);
 	
 	eg::FramebufferAttachment lightFBAttachmentsNoWater[1] = { outputTexture.handle };
-	m_lightingFramebufferNoWater = eg::Framebuffer(lightFBAttachmentsNoWater, m_gbDepthTexture.handle);
+	m_lightingFramebufferNoWater = eg::Framebuffer(lightFBAttachmentsNoWater);
 	
 	eg::FramebufferCreateInfo emissiveFramebufferCI;
 	eg::FramebufferCreateInfo emissiveFramebufferNoWaterCI;
@@ -251,6 +212,19 @@ void DeferredRenderer::BeginGeometry(RenderTarget& target) const
 	eg::DC.BeginRenderPass(rpBeginInfo);
 }
 
+void DeferredRenderer::BeginGeometryFlags(RenderTarget& target) const
+{
+	eg::DC.EndRenderPass();
+	
+	eg::RenderPassBeginInfo rpBeginInfo;
+	rpBeginInfo.framebuffer = target.m_flagsFramebuffer.handle;
+	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Load;
+	rpBeginInfo.depthClearValue = 1.0f;
+	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
+	rpBeginInfo.colorAttachments[0].clearValue = eg::ColorSRGB(0, 0, 0, 0);
+	eg::DC.BeginRenderPass(rpBeginInfo);
+}
+
 void DeferredRenderer::BeginEmissive(DeferredRenderer::RenderTarget& target, bool hasWater)
 {
 	eg::DC.EndRenderPass();
@@ -271,12 +245,11 @@ void DeferredRenderer::BeginLighting(RenderTarget& target, bool hasWater) const
 	target.m_gbColor1Texture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 	target.m_gbColor2Texture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 	target.m_gbDepthTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
+	target.m_flagsTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
 	rpBeginInfo.framebuffer = hasWater ? target.m_lightingFramebuffer.handle : target.m_lightingFramebufferNoWater.handle;
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Load;
-	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Load;
-	rpBeginInfo.sampledDepthStencil = true;
 	
 	eg::DC.BeginRenderPass(rpBeginInfo);
 	
@@ -291,6 +264,7 @@ void DeferredRenderer::BeginLighting(RenderTarget& target, bool hasWater) const
 	eg::DC.BindTexture(target.m_gbColor1Texture, 0, 1);
 	eg::DC.BindTexture(target.m_gbColor2Texture, 0, 2);
 	eg::DC.BindTexture(target.m_gbDepthTexture, 0, 3);
+	eg::DC.BindTexture(target.m_flagsTexture, 0, 4);
 	
 	eg::DC.PushConstants(0, sizeof(float) * 3, &ambientColor.r);
 	
@@ -331,6 +305,7 @@ void DeferredRenderer::DrawSpotLights(RenderTarget& target, const std::vector<Sp
 	eg::DC.BindTexture(target.m_gbColor1Texture, 0, 1);
 	eg::DC.BindTexture(target.m_gbColor2Texture, 0, 2);
 	eg::DC.BindTexture(target.m_gbDepthTexture, 0, 3);
+	eg::DC.BindTexture(target.m_flagsTexture, 0, 4);
 	
 	for (const SpotLightDrawData& spotLight : spotLights)
 	{
@@ -356,45 +331,14 @@ void DeferredRenderer::DrawPointLights(RenderTarget& target, const std::vector<P
 	eg::DC.BindTexture(target.m_gbColor1Texture, 0, 1);
 	eg::DC.BindTexture(target.m_gbColor2Texture, 0, 2);
 	eg::DC.BindTexture(target.m_gbDepthTexture, 0, 3);
+	eg::DC.BindTexture(target.m_flagsTexture, 0, 4);
 	
 	for (const PointLightDrawData& pointLight : pointLights)
 	{
-		eg::DC.BindTexture(pointLight.shadowMap, 0, 4, &m_shadowMapSampler);
+		eg::DC.BindTexture(pointLight.shadowMap, 0, 5, &m_shadowMapSampler);
 		
 		eg::DC.PushConstants(0, pointLight.pc);
 		
 		eg::DC.DrawIndexed(0, POINT_LIGHT_MESH_INDICES, 0, 0, 1);
-	}
-}
-
-void DeferredRenderer::DrawReflectionPlaneLighting(RenderTarget& target, const std::vector<ReflectionPlane*>& planes)
-{
-	if (planes.empty() || unlit)
-		return;
-	
-	eg::DC.BindPipeline(m_reflectionPlanePipeline);
-	
-	eg::DC.BindVertexBuffer(0, m_reflectionPlaneVertexBuffer, 0);
-	
-	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
-	
-	eg::DC.BindTexture(target.m_gbColor1Texture, 0, 1);
-	eg::DC.BindTexture(target.m_gbColor2Texture, 0, 2);
-	eg::DC.BindTexture(target.m_gbDepthTexture, 0, 3);
-	eg::DC.BindTexture(m_brdfIntegMap.GetTexture(), 0, 4);
-	
-	for (const ReflectionPlane* plane : planes)
-	{
-		eg::DC.BindTexture(plane->texture, 0, 5);
-		
-		float pc[4];
-		pc[0] = plane->plane.GetNormal().x;
-		pc[1] = plane->plane.GetNormal().y;
-		pc[2] = plane->plane.GetNormal().z;
-		pc[3] = plane->plane.GetDistance();
-		
-		eg::DC.PushConstants(0, sizeof(pc), pc);
-		
-		eg::DC.Draw(0, 4, 0, 1);
 	}
 }

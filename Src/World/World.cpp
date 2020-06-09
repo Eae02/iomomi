@@ -345,18 +345,6 @@ void World::DrawPointLightShadows(const struct PointLightShadowRenderArgs& rende
 	eg::DC.DrawIndexed(0, m_numVoxelIndices, 0, 0, 1);
 }
 
-void World::DrawPlanarReflections(const eg::Plane& plane)
-{
-	if (!m_canDraw)
-		return;
-	
-	BindWallShaderPlanarReflections(plane);
-	
-	eg::DC.BindVertexBuffer(0, m_voxelVertexBuffer.buffer, 0);
-	eg::DC.BindIndexBuffer(eg::IndexType::UInt32, m_voxelIndexBuffer.buffer, 0);
-	eg::DC.DrawIndexed(0, m_numVoxelIndices, 0, 0, 1);
-}
-
 void World::DrawEditor()
 {
 	if (!m_canDraw)

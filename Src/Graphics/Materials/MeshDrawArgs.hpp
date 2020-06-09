@@ -6,10 +6,10 @@
 enum class MeshDrawMode
 {
 	Game,
+	ObjectFlags,
 	Emissive,
 	Transparent,
 	Editor,
-	PlanarReflection,
 	PointLightShadow,
 	SpotLightShadow
 };
@@ -17,7 +17,12 @@ enum class MeshDrawMode
 struct MeshDrawArgs
 {
 	MeshDrawMode drawMode;
-	eg::Plane reflectionPlane;
 	const DeferredRenderer::RenderTarget* renderTarget;
 	const PointLightShadowRenderArgs* plShadowRenderArgs;
+};
+
+enum ObjectRenderFlags : uint32_t
+{
+	Unlit = 0x1,
+	NoSSR = 0x2
 };

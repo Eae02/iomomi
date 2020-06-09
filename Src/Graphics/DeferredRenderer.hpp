@@ -39,6 +39,9 @@ public:
 		eg::Texture m_gbDepthTexture;
 		eg::Framebuffer m_gbFramebuffer;
 		
+		eg::Texture m_flagsTexture;
+		eg::Framebuffer m_flagsFramebuffer;
+		
 		eg::Texture m_emissiveTexture;
 		
 		eg::Framebuffer m_lightingFramebuffer;
@@ -57,11 +60,11 @@ public:
 	
 	void BeginGeometry(RenderTarget& target) const;
 	
+	void BeginGeometryFlags(RenderTarget& target) const;
+	
 	void BeginEmissive(RenderTarget& target, bool hasWater);
 	
 	void BeginLighting(RenderTarget& target, bool hasWater) const;
-	
-	void DrawReflectionPlaneLighting(RenderTarget& target, const std::vector<struct ReflectionPlane*>& planes);
 	
 	void DrawSpotLights(RenderTarget& target, const std::vector<SpotLightDrawData>& spotLights) const;
 	void DrawPointLights(RenderTarget& target, const std::vector<PointLightDrawData>& pointLights) const;
@@ -74,12 +77,8 @@ public:
 	
 	void PollSettingsChanged();
 	
-	static eg::StencilState MakeStencilState(uint32_t reference)
-	{
-		return { eg::StencilOp::Keep, eg::StencilOp::Replace, eg::StencilOp::Keep, eg::CompareOp::Always, 0, 0xFF, reference };
-	}
-	
-	static constexpr eg::Format DEPTH_FORMAT = eg::Format::Depth24Stencil8;
+	static constexpr eg::Format DEPTH_FORMAT = eg::Format::Depth32;
+	static constexpr eg::Format FLAGS_FORMAT = eg::Format::R8_UInt;
 	static constexpr eg::Format LIGHT_COLOR_FORMAT_LDR = eg::Format::R8G8B8A8_UNorm;
 	static constexpr eg::Format LIGHT_COLOR_FORMAT_HDR = eg::Format::R16G16B16A16_Float;
 	
@@ -92,10 +91,7 @@ private:
 	
 	QualityLevel m_currentReflectionQualityLevel = (QualityLevel)-1;
 	
-	eg::Buffer m_reflectionPlaneVertexBuffer;
-	
 	eg::Pipeline m_ambientPipeline;
-	eg::Pipeline m_reflectionPlanePipeline;
 	eg::Pipeline m_spotLightPipeline;
 	eg::Pipeline m_pointLightPipelineSoftShadows;
 	eg::Pipeline m_pointLightPipelineHardShadows;

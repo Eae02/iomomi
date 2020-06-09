@@ -63,6 +63,7 @@ private:
 	std::vector<EditorComponent*> m_componentsForTool[EDITOR_NUM_TOOLS]; 
 	
 	std::vector<EditorIcon> m_icons;
+	int m_hoveredIcon = -1;
 	std::vector<std::weak_ptr<Ent>> m_selectedEntities;
 	
 	bool m_levelSettingsOpen = false;

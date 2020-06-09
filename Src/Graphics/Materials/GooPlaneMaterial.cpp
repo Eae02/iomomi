@@ -7,9 +7,7 @@ constexpr float NM_ANGLES[NM_SAMPLES] = { 0.25f * eg::TWO_PI, 0.5f * eg::TWO_PI,
 constexpr float NM_SCALES[NM_SAMPLES] = { 1.2f, 1.0f, 0.8f };
 constexpr float NM_SPEED[NM_SAMPLES] = { 0.75f, 1.0f, 1.25f };
 
-eg::Pipeline GooPlaneMaterial::s_pipelineReflEnabled;
-eg::Pipeline GooPlaneMaterial::s_pipelineReflDisabled;
-//eg::Pipeline GooPlaneMaterial::s_emissivePipeline;
+eg::Pipeline GooPlaneMaterial::s_pipeline;
 eg::Buffer GooPlaneMaterial::s_textureTransformsBuffer;
 eg::DescriptorSet GooPlaneMaterial::s_descriptorSet;
 
@@ -17,27 +15,18 @@ static glm::vec3 waterColor;
 
 void GooPlaneMaterial::OnInit()
 {
-	eg::ShaderModuleAsset& fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GooPlane.fs.glsl");
-	
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GooPlane.vs.glsl").DefaultVariant();
-	pipelineCI.fragmentShader = fragmentShader.GetVariant("VDefault");
-	pipelineCI.enableDepthWrite = false;
-	pipelineCI.enableDepthTest = true;
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GooPlane.fs.glsl").DefaultVariant();
 	pipelineCI.cullMode = eg::CullMode::Back;
 	pipelineCI.frontFaceCCW = true;
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
-	pipelineCI.setBindModes[1] = eg::BindMode::Dynamic;
 	pipelineCI.vertexBindings[0] = { sizeof(glm::vec3), eg::InputRate::Vertex };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
 	pipelineCI.blendStates[0] = eg::AlphaBlend;
+	s_pipeline = eg::Pipeline::Create(pipelineCI);
 	
-	s_pipelineReflEnabled = eg::Pipeline::Create(pipelineCI);
-	
-	pipelineCI.fragmentShader = fragmentShader.GetVariant("VNoRefl");
-	s_pipelineReflDisabled = eg::Pipeline::Create(pipelineCI);
-	
-	s_descriptorSet = eg::DescriptorSet(s_pipelineReflEnabled, 0);
+	s_descriptorSet = eg::DescriptorSet(s_pipeline, 0);
 	
 	struct
 	{
@@ -66,9 +55,7 @@ void GooPlaneMaterial::OnInit()
 
 void GooPlaneMaterial::OnShutdown()
 {
-	GooPlaneMaterial::s_pipelineReflEnabled = { };
-	GooPlaneMaterial::s_pipelineReflDisabled = { };
-	//GooPlaneMaterial::s_emissivePipeline = { };
+	GooPlaneMaterial::s_pipeline = { };
 	GooPlaneMaterial::s_descriptorSet = { };
 	GooPlaneMaterial::s_textureTransformsBuffer = { };
 }
@@ -78,10 +65,7 @@ EG_ON_SHUTDOWN(GooPlaneMaterial::OnShutdown)
 
 size_t GooPlaneMaterial::PipelineHash() const
 {
-	size_t h = typeid(GooPlaneMaterial).hash_code();
-	if (m_reflectionPlane.texture.handle == nullptr)
-		h++;
-	return h;
+	return typeid(GooPlaneMaterial).hash_code();
 }
 
 bool GooPlaneMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const
@@ -90,10 +74,7 @@ bool GooPlaneMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) 
 	if (meshDrawArgs.drawMode != MeshDrawMode::Transparent)
 		return false;
 	
-	if (m_reflectionPlane.texture.handle)
-		cmdCtx.BindPipeline(s_pipelineReflEnabled);
-	else
-		cmdCtx.BindPipeline(s_pipelineReflDisabled);
+	cmdCtx.BindPipeline(s_pipeline);
 	
 	cmdCtx.BindDescriptorSet(s_descriptorSet, 0);
 	
@@ -104,11 +85,5 @@ bool GooPlaneMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) 
 
 bool GooPlaneMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
-	if (static_cast<MeshDrawArgs*>(drawArgs)->drawMode == MeshDrawMode::Transparent &&
-		m_reflectionPlane.texture.handle != nullptr)
-	{
-		cmdCtx.BindTexture(m_reflectionPlane.texture, 1, 1);
-	}
-	
 	return true;
 }

@@ -7,7 +7,6 @@
 #include "World/Player.hpp"
 #include "World/PrepareDrawArgs.hpp"
 #include "Graphics/PostProcessor.hpp"
-#include "Graphics/PlanarReflectionsManager.hpp"
 #include "Graphics/ParticleRenderer.hpp"
 #include "World/GravityGun.hpp"
 #include "Graphics/WaterSimulator.hpp"
@@ -32,8 +31,6 @@ public:
 private:
 	void DoDeferredRendering(bool useLightProbes, DeferredRenderer::RenderTarget& renderTarget);
 	
-	void RenderPlanarReflections(const ReflectionPlane& plane, eg::FramebufferRef framebuffer);
-	
 #ifndef NDEBUG
 	void DrawOverlay(float dt);
 #endif
@@ -53,7 +50,6 @@ private:
 	PointLightShadowMapper m_plShadowMapper;
 	std::unique_ptr<eg::BloomRenderer> m_bloomRenderer;
 	PostProcessor m_postProcessor;
-	PlanarReflectionsManager m_planarReflectionsManager;
 	
 	ParticleRenderer m_particleRenderer;
 	eg::ParticleManager m_particleManager;
