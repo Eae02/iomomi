@@ -226,7 +226,7 @@ alignas(16) static const float gravities[6][4] =
 	{ 0, 0, -GRAVITY, 0 }
 };
 
-void WSI_Simulate(WaterSimulatorImpl* impl, float dt)
+void WSI_Simulate(WaterSimulatorImpl* impl, float dt, int changeGravityParticle, Dir newGravity)
 {
 	std::memset(impl->cellNumParticles.data(), 0, impl->cellNumParticles.size() * sizeof(uint16_t));
 	
@@ -281,7 +281,7 @@ void WSI_Simulate(WaterSimulatorImpl* impl, float dt)
 		}
 		impl->numCloseParticles[p] = numClose;
 	});
-	/*
+	
 	//Changes gravity for particles.
 	// This is done by running a DFS across the graph of close particles, starting at the changed particle.
 	if (changeGravityParticle != -1)
@@ -308,7 +308,7 @@ void WSI_Simulate(WaterSimulatorImpl* impl, float dt)
 				}
 			}
 		}
-	}*/
+	}
 	
 	//Computes number density
 	for (size_t a = 0; a < impl->numParticles; a++)

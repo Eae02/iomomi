@@ -20,7 +20,7 @@ int WSI_Query(WaterSimulatorImpl* impl, const eg::AABB& aabb, glm::vec3& waterVe
 
 void WSI_SwapBuffers(WaterSimulatorImpl* impl);
 
-void WSI_Simulate(WaterSimulatorImpl* impl, float dt);
+void WSI_Simulate(WaterSimulatorImpl* impl, float dt, int changeGravityParticle, Dir newGravity);
 
 WaterSimulator::WaterSimulator()
 {
@@ -161,7 +161,7 @@ void WaterSimulator::ThreadTarget()
 			}
 		}
 		
-		WSI_Simulate(m_impl, 1.0f / stepsPerSecond);
+		WSI_Simulate(m_impl, 1.0f / stepsPerSecond, changeGravityParticle, newGravity);
 		
 		for (const std::shared_ptr<QueryAABB>& qaabb : m_queryAABBsBT)
 		{
