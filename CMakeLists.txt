@@ -57,6 +57,7 @@ target_link_libraries(Gravity EGame yaml-cpp)
 function (fixIncludes TARGET)
 	get_target_property(INC ${TARGET} INTERFACE_INCLUDE_DIRECTORIES)
 	list(REMOVE_ITEM INC "/usr/x86_64-w64-mingw32/include")
+	list(REMOVE_ITEM INC "/usr/include")
 	set_target_properties(${TARGET} PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${INC}")
 endfunction()
 
@@ -67,10 +68,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
 	target_link_libraries(Gravity ${PROTOBUF_DIR}/libprotobuf.a)
 	target_include_directories(Gravity SYSTEM PRIVATE ${PROTOBUF_DIR}/include)
 else()
-	set(Protobuf_USE_STATIC_LIBS ON)
-	
 	find_package(Protobuf REQUIRED)
-	
 	fixIncludes(protobuf::libprotobuf)
 	
 	target_link_libraries(Gravity protobuf::libprotobuf)
