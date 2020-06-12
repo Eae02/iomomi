@@ -190,4 +190,8 @@ void FloorButtonEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir
 {
 	m_padPhysicsObject.displayPosition = m_padPhysicsObject.position = newPosition;
 	m_ringPhysicsObject.displayPosition = m_ringPhysicsObject.position = newPosition;
+	if (faceDirection)
+	{
+		m_direction = *faceDirection;
+	}
 }

@@ -10,17 +10,27 @@ void WallDragEditorComponent::Update(float dt, const EditorState& editorState)
 
 bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorState)
 {
+	WallRayIntersectResult pickResult;// = editorState.world->RayIntersectWall(editorState.viewRay);
+	bool hasPickResult = false;
+	auto DoWallRayIntersect = [&] ()
+	{
+		if (!hasPickResult)
+		{
+			pickResult = editorState.world->RayIntersectWall(editorState.viewRay);
+			hasPickResult = true;
+		}
+	};
+	
 	//Handles mouse move events
 	if (eg::IsButtonDown(eg::Button::MouseLeft) && eg::WasButtonDown(eg::Button::MouseLeft) &&
 	    eg::CursorPos() != eg::PrevCursorPos())
 	{
-		WallRayIntersectResult pickResult = editorState.world->RayIntersectWall(editorState.viewRay);
-		
 		int selDim = (int)m_selectionNormal / 2;
 		if (m_selState == SelState::Selecting)
 		{
 			//Updates the current selection if the new hovered voxel is
 			// in the same plane as the voxel where the selection started.
+			DoWallRayIntersect();
 			if (pickResult.intersected && pickResult.voxelPosition[selDim] == m_selection1[selDim])
 			{
 				m_selection2 = pickResult.voxelPosition;
@@ -147,28 +157,32 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 				}
 			}
 		}
-		else if (m_selState == SelState::SelectDone && pickResult.intersected &&
-		    pickResult.voxelPosition.x >= std::min(m_selection1.x, m_selection2.x) && 
-		    pickResult.voxelPosition.x <= std::max(m_selection1.x, m_selection2.x) && 
-		    pickResult.voxelPosition.y >= std::min(m_selection1.y, m_selection2.y) && 
-		    pickResult.voxelPosition.y <= std::max(m_selection1.y, m_selection2.y) && 
-		    pickResult.voxelPosition.z >= std::min(m_selection1.z, m_selection2.z) && 
-		    pickResult.voxelPosition.z <= std::max(m_selection1.z, m_selection2.z))
+		else
 		{
-			//Starts a drag operation
-			m_selState = SelState::Dragging;
-			m_dragStartPos = pickResult.intersectPosition;
-			m_dragDistance = 0;
-			m_dragAirMode = 0;
-			m_dragDir = 0;
-		}
-		else if (pickResult.intersected)
-		{
-			//Starts a new selection
-			m_selState = SelState::Selecting;
-			m_selection1 = pickResult.voxelPosition;
-			m_selection2Anim = m_selection1;
-			m_selectionNormal = pickResult.normalDir;
+			DoWallRayIntersect();
+			if (m_selState == SelState::SelectDone && pickResult.intersected &&
+				pickResult.voxelPosition.x >= std::min(m_selection1.x, m_selection2.x) && 
+				pickResult.voxelPosition.x <= std::max(m_selection1.x, m_selection2.x) && 
+				pickResult.voxelPosition.y >= std::min(m_selection1.y, m_selection2.y) && 
+				pickResult.voxelPosition.y <= std::max(m_selection1.y, m_selection2.y) && 
+				pickResult.voxelPosition.z >= std::min(m_selection1.z, m_selection2.z) && 
+				pickResult.voxelPosition.z <= std::max(m_selection1.z, m_selection2.z))
+			{
+				//Starts a drag operation
+				m_selState = SelState::Dragging;
+				m_dragStartPos = pickResult.intersectPosition;
+				m_dragDistance = 0;
+				m_dragAirMode = 0;
+				m_dragDir = 0;
+			}
+			else if (pickResult.intersected)
+			{
+				//Starts a new selection
+				m_selState = SelState::Selecting;
+				m_selection1 = pickResult.voxelPosition;
+				m_selection2Anim = m_selection1;
+				m_selectionNormal = pickResult.normalDir;
+			}
 		}
 	}
 	

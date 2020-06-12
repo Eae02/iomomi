@@ -13,18 +13,18 @@ class PhysicsObject
 public:
 	friend class PhysicsEngine;
 	
-	//Set by objects
+	//Set by the physics engine and externally
 	glm::vec3 position;
 	glm::quat rotation;
 	glm::vec3 gravity;
-	glm::vec3 force;
+	glm::vec3 force; //reset after each frame
 	glm::vec3 velocity;
-	glm::vec3 move;
-	glm::quat angularForce;
+	glm::vec3 move; //reset after each frame
+	glm::quat angularForce; //reset after each frame
 	glm::quat angularVelocity;
-	glm::quat angularMove;
+	glm::quat angularMove; //reset after each frame
 	
-	//Set by the physics engine
+	//Set only by the physics engine
 	glm::vec3 pushForce;
 	glm::vec3 actualMove;
 	glm::vec3 displayPosition;
