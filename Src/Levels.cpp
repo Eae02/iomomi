@@ -23,6 +23,9 @@ static const std::string_view levelsOrder[] =
 	"button_2",
 	"button_3",
 	
+	"gravbarrier_ng0",
+	"gravbarrier_ng1",
+	
 	"gravgun_0",
 	"gravgun_1",
 	"gravgun_2",
@@ -31,17 +34,21 @@ static const std::string_view levelsOrder[] =
 	"gravgun_5",
 	"gravgun_6",
 	
-	"forcefield_1",
-	"forcefield_2",
-	"forcefield_3",
+	"gravbarrier_1",
+	"gravbarrier_2",
 	
 	"water_0",
 	"water_1",
 	"water_2",
 	
-	"gravbarrier_0",
-	"gravbarrier_1",
-	"gravbarrier_2"
+	"gravbarrier_3",
+	"gravbarrier_4",
+	
+	"forcefield_1",
+	"forcefield_2",
+	"forcefield_3",
+	
+	"water_4",
 };
 
 void UpgradeLevelsCommand(eg::Span<const std::string_view> args)
