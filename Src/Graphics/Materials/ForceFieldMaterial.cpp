@@ -1,4 +1,5 @@
 #include "ForceFieldMaterial.hpp"
+#include "MeshDrawArgs.hpp"
 #include "../RenderSettings.hpp"
 
 ForceFieldMaterial::ForceFieldMaterial()
@@ -16,6 +17,8 @@ ForceFieldMaterial::ForceFieldMaterial()
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.topology = eg::Topology::TriangleStrip;
 	pipelineCI.cullMode = eg::CullMode::None;
+	pipelineCI.enableDepthWrite = false;
+	pipelineCI.enableDepthTest = true;
 	pipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::OneMinusSrcAlpha);
 	m_pipeline = eg::Pipeline::Create(pipelineCI);
 	
@@ -37,6 +40,11 @@ size_t ForceFieldMaterial::PipelineHash() const
 
 bool ForceFieldMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
+	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
+	
+	if (mDrawArgs->drawMode != MeshDrawMode::Emissive)
+		return false;
+	
 	cmdCtx.BindPipeline(m_pipeline);
 	
 	cmdCtx.BindDescriptorSet(m_descriptorSet, 0);

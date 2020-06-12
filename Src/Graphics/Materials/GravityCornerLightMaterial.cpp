@@ -73,8 +73,6 @@ static constexpr float ACT_ANIMATION_INTENSITY = 20.0f;
 
 bool GravityCornerLightMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
-	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
-	
 	float pc[4];
 	pc[0] = m_activationPos.x;
 	pc[1] = m_activationPos.y;

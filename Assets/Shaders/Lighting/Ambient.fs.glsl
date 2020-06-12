@@ -12,8 +12,6 @@ layout(push_constant) uniform PC
 layout(constant_id=0) const int ssrLinearSamples = 8;
 layout(constant_id=1) const int ssrBinarySamples = 8;
 
-
-
 vec3 ndc;
 vec2 sampleTC;
 bool behindDepthBuffer(vec3 worldPos)
@@ -70,6 +68,9 @@ vec3 calcReflection(vec3 surfacePos, vec3 dirToEye, vec3 normal)
 
 vec3 CalculateLighting(GBData gbData)
 {
+	if ((gbData.flags & RF_NO_LIGHTING) != 0)
+		return gbData.albedo;
+	
 	vec3 toEye = normalize(renderSettings.cameraPosition - gbData.worldPos);
 	vec3 fresnel = calcFresnel(gbData, toEye);
 	vec3 kd = (1.0 - fresnel) * (1.0 - gbData.metallic);

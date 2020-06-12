@@ -12,6 +12,12 @@ public:
 			: transform(glm::transpose(_transform)), textureScale(_textureScale) { }
 	};
 	
+	struct FlagsPipelinePushConstantData
+	{
+		glm::mat4 viewProj;
+		uint32_t flags;
+	};
+	
 	size_t PipelineHash() const override;
 	
 	bool BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const override;
@@ -21,6 +27,9 @@ public:
 	static void InitAssetTypes();
 	
 	static bool AssetLoader(const eg::AssetLoadContext& loadContext);
+	
+	static eg::PipelineRef FlagsPipelineBackCull;
+	static eg::PipelineRef FlagsPipelineNoCull;
 	
 private:
 	const eg::Texture* m_albedoTexture;

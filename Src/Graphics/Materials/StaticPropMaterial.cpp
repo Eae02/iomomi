@@ -70,6 +70,9 @@ static eg::Pipeline staticPropPipelineGame[2];
 static eg::Pipeline staticPropPipelineFlags[2];
 static eg::Pipeline staticPropPipelinePLShadow[2];
 
+eg::PipelineRef StaticPropMaterial::FlagsPipelineBackCull;
+eg::PipelineRef StaticPropMaterial::FlagsPipelineNoCull;
+
 static void OnInit()
 {
 	eg::GraphicsPipelineCreateInfo pipelineCI;
@@ -112,7 +115,7 @@ static void OnInit()
 	flagsPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/ObjectFlags.fs.glsl").DefaultVariant();
 	flagsPipelineCI.enableDepthTest = true;
 	flagsPipelineCI.enableDepthWrite = false;
-	flagsPipelineCI.depthCompare = eg::CompareOp::Equal;
+	flagsPipelineCI.depthCompare = eg::CompareOp::LessOrEqual;
 	flagsPipelineCI.cullMode = eg::CullMode::Back;
 	flagsPipelineCI.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
 	flagsPipelineCI.vertexBindings[1] = { sizeof(StaticPropMaterial::InstanceData), eg::InputRate::Instance };
@@ -127,6 +130,9 @@ static void OnInit()
 	flagsPipelineCI.cullMode = eg::CullMode::None;
 	flagsPipelineCI.label = "StaticPropFlagsNoCull";
 	staticPropPipelineFlags[0] = eg::Pipeline::Create(flagsPipelineCI);
+	
+	StaticPropMaterial::FlagsPipelineNoCull = staticPropPipelineFlags[0];
+	StaticPropMaterial::FlagsPipelineBackCull = staticPropPipelineFlags[1];
 	
 	
 	eg::GraphicsPipelineCreateInfo plsPipelineCI;
@@ -275,11 +281,7 @@ bool StaticPropMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs
 	}
 	else if (mDrawArgs->drawMode == MeshDrawMode::ObjectFlags)
 	{
-		struct
-		{
-			glm::mat4 viewProj;
-			uint32_t flags;
-		} pc = { RenderSettings::instance->viewProjection, m_objectFlags };
+		FlagsPipelinePushConstantData pc = { RenderSettings::instance->viewProjection, m_objectFlags };
 		
 		cmdCtx.PushConstants(0, sizeof(pc), &pc);
 	}

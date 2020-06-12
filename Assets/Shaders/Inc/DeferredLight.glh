@@ -24,8 +24,6 @@ void main()
 {
 	ivec2 screenCoord = ivec2(gl_FragCoord.xy);
 	uint flags = texelFetch(gbFlagsSampler, ivec2(gl_FragCoord.xy), 0).r;
-	if ((flags & RF_NO_LIGHTING) != 0)
-		discard;
 	
 	texSize = vec2(textureSize(gbColor1Sampler, 0).xy);
 	vec2 screenCoord01 = vec2(screenCoord) / texSize;

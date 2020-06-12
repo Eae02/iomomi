@@ -31,6 +31,9 @@ const float DEPTH_BIAS = 0.001;
 
 vec3 CalculateLighting(GBData gbData)
 {
+	if ((gbData.flags & RF_NO_LIGHTING) != 0)
+		discard;
+	
 	vec3 toLight = pc.position - gbData.worldPos;
 	float dist = length(toLight);
 	toLight = normalize(toLight);
