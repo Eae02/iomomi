@@ -15,6 +15,7 @@ std::vector<Level> levels;
 
 static const std::string_view levelsOrder[] = 
 {
+	//PART 1
 	"intro_0",
 	"intro_1",
 	"intro_2",
@@ -28,6 +29,11 @@ static const std::string_view levelsOrder[] =
     "gravbarrier_ng2",
 	"gravbarrier_ng3",
 	
+	"water_ng0",
+	"water_ng1",
+	"water_ng2",
+	
+	//PART 2
 	"gravgun_0",
 	"gravgun_1",
 	"gravgun_2",
@@ -36,19 +42,19 @@ static const std::string_view levelsOrder[] =
 	"gravgun_5",
 	"gravgun_6",
 	
+	"forcefield_1",
+	"forcefield_2",
+	"forcefield_3",
+	
+	//PART 3
 	"gravbarrier_1",
 	"gravbarrier_2",
+	"gravbarrier_3",
+	"gravbarrier_4",
 	
 	"water_0",
 	"water_1",
 	"water_2",
-	
-	"gravbarrier_3",
-	"gravbarrier_4",
-	
-	"forcefield_1",
-	"forcefield_2",
-	"forcefield_3",
 	
 	"water_4",
 };

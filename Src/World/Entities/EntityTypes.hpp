@@ -18,6 +18,7 @@ enum class EntTypeID
 	Ramp                 = 13,
 	Window               = 14,
 	Mesh                 = 15,
+	WaterWall            = 16,
 	MAX
 };
  

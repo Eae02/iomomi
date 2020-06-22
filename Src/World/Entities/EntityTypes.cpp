@@ -16,6 +16,7 @@
 #include "EntTypes/GravityBarrierEnt.hpp"
 #include "EntTypes/RampEnt.hpp"
 #include "EntTypes/WindowEnt.hpp"
+#include "EntTypes/WaterWallEnt.hpp"
 
 const EntTypeID entUpdateOrder[NUM_UPDATABLE_ENTITY_TYPES] =
 {
@@ -63,4 +64,5 @@ void InitEntityTypes()
 	DefineEntityType<GravityBarrierEnt>("GravityBarrier", "Gravity Barrier");
 	DefineEntityType<RampEnt>("Ramp", "Ramp");
 	DefineEntityType<WindowEnt>("Window", "Window");
+	DefineEntityType<WaterWallEnt>("WaterWall", "Water Wall");
 }
