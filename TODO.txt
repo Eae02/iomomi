@@ -1,0 +1,36 @@
+fixes:
+ - velocity is too high after moving down ramp
+ - water should be affected by force fields
+ - physics object rotation
+ - gravity barriers still have collision when disabled
+ - standing on button is awkward
+
+graphics fixes:
+ - decal rendering is broken
+ - fix order of rendering transparents with water
+ - fix hidden water still rendering when underwater
+ - gun should be rendered after ssr
+ - ssr should be done later (so that transparents are reflected)
+
+textures and models:
+ - textures in level change room
+ - textures for ramps
+ - better side model for gravity barriers
+ - texture and model for cube spawner
+ - different graphics for pushable platforms
+ - more window types
+ - make objects glow when gravity has been changed
+ - particles (or other visuals) to show current gravity of objects
+ - particles when water splashes
+ - decorative mesh entities
+
+features:
+ - zero gravity mode
+ - barriers that prevent falling
+ - levers
+ - activatable force fields
+ - moving force fields
+
+editor:
+ - undo stack
+ - double click to select area

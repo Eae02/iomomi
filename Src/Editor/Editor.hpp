@@ -67,6 +67,8 @@ private:
 	std::vector<std::weak_ptr<Ent>> m_selectedEntities;
 	
 	bool m_levelSettingsOpen = false;
+	
+	int m_previousSumOfWaterBlockedVersion = -1;
 };
 
 extern Editor* editor;

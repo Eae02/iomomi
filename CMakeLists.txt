@@ -47,8 +47,6 @@ target_compile_options(Gravity PRIVATE -DIMGUI_USER_CONFIG="../../Inc/ImGuiConfi
 
 target_include_directories(Gravity SYSTEM PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/Inc
-	${CMAKE_CURRENT_SOURCE_DIR}/Deps/utfcpp/source
-	${CMAKE_CURRENT_SOURCE_DIR}/Deps/json/include
 	${CMAKE_CURRENT_SOURCE_DIR}/Deps/imgui
 )
 

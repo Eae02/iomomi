@@ -55,9 +55,9 @@ std::vector<glm::vec3> ActivatableComp::GetConnectionPoints(const Ent& entity) c
 Ent* ActivatableComp::FindByName(EntityManager& entityManager, uint32_t name)
 {
 	Ent* result = nullptr;
-	entityManager.ForEachWithFlag(EntTypeFlags::Activatable, [&] (Ent& entity)
+	entityManager.ForEachWithComponent<ActivatableComp>([&] (Ent& entity)
 	{
-		const ActivatableComp* activatable = entity.GetComponent<ActivatableComp>();
+		const auto* activatable = entity.GetComponent<ActivatableComp>();
 		if (activatable && activatable->m_name == name)
 			result = &entity;
 	});

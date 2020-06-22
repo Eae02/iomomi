@@ -13,8 +13,6 @@ public:
 	static constexpr EntTypeID TypeID = EntTypeID::Ramp;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::HasPhysics;
 	
-	void Spawned(bool isEditor) override;
-	
 	void Serialize(std::ostream& stream) const override;
 	
 	void Deserialize(std::istream& stream) override;
@@ -28,7 +26,7 @@ public:
 	glm::vec3 GetPosition() const override { return m_position; }
 	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
-	int m_yaw = 0;
+	int m_rotation = 0;
 	bool m_flipped = false;
 	
 	glm::vec3 m_size { 1.0f };

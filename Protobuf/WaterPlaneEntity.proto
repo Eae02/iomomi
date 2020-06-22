@@ -9,4 +9,5 @@ message WaterPlaneEntity {
 	float posY = 2;
 	float posZ = 3;
 	Dir wall_dir = 4;
+	fixed32 density_boost = 5;
 }

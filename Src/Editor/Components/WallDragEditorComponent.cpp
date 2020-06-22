@@ -91,6 +91,7 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 					{
 						auto UpdateIsAir = [&] ()
 						{
+							editorState.InvalidateWater();
 							for (int x = mn.x; x <= mx.x; x++)
 							{
 								for (int y = mn.y; y <= mx.y; y++)

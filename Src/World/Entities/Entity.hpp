@@ -38,9 +38,8 @@ enum class EntTypeFlags
 	Drawable        = 0x4,
 	EditorDrawable  = 0x8,
 	Interactable    = 0x10,
-	Activatable     = 0x20,
-	DisableClone    = 0x40,
-	HasPhysics      = 0x80
+	DisableClone    = 0x20,
+	HasPhysics      = 0x40
 };
 
 class Ent : public std::enable_shared_from_this<Ent>

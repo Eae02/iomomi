@@ -1,5 +1,6 @@
 #include "EditorComponent.hpp"
 #include "../Graphics/RenderSettings.hpp"
+#include "../World/Entities/Components/LiquidPlaneComp.hpp"
 
 static constexpr float ICON_SIZE = 32;
 
@@ -25,4 +26,12 @@ bool EditorState::IsEntitySelected(const Ent& entity) const
 			return true;
 	}
 	return false;
+}
+
+void EditorState::InvalidateWater() const
+{
+	world->entManager.ForEachWithComponent<LiquidPlaneComp>([&] (Ent& entity)
+	{
+		entity.GetComponentMut<LiquidPlaneComp>()->MarkOutOfDate();
+	});
 }

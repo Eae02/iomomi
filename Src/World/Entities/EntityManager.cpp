@@ -1,8 +1,13 @@
 #include "EntityManager.hpp"
+#include "Components/ActivatableComp.hpp"
+#include "Components/WaterBlockComp.hpp"
+#include "Components/LiquidPlaneComp.hpp"
 
 void EntityManager::AddEntity(std::shared_ptr<Ent> entity)
 {
-	for (FlagTracker& tracker : m_trackers)
+	for (FlagTracker& tracker : m_flagTrackers)
+		tracker.MaybeAdd(entity);
+	for (ComponentTracker& tracker : m_componentTrackers)
 		tracker.MaybeAdd(entity);
 	
 	entity->Spawned(isEditor);
@@ -13,11 +18,14 @@ void EntityManager::AddEntity(std::shared_ptr<Ent> entity)
 
 EntityManager::EntityManager()
 {
-	m_trackers[0].flags = EntTypeFlags::Drawable;
-	m_trackers[1].flags = EntTypeFlags::EditorDrawable;
-	m_trackers[2].flags = EntTypeFlags::Interactable;
-	m_trackers[3].flags = EntTypeFlags::Activatable;
-	m_trackers[4].flags = EntTypeFlags::HasPhysics;
+	m_flagTrackers[0].flags = EntTypeFlags::Drawable;
+	m_flagTrackers[1].flags = EntTypeFlags::EditorDrawable;
+	m_flagTrackers[2].flags = EntTypeFlags::Interactable;
+	m_flagTrackers[3].flags = EntTypeFlags::HasPhysics;
+	
+	m_componentTrackers[0].componentType = &typeid(ActivatableComp);
+	m_componentTrackers[1].componentType = &typeid(WaterBlockComp);
+	m_componentTrackers[2].componentType = &typeid(LiquidPlaneComp);
 }
 
 void EntityManager::Update(const struct WorldUpdateArgs& args)
@@ -39,7 +47,15 @@ void EntityManager::Update(const struct WorldUpdateArgs& args)
 
 void EntityManager::FlagTracker::MaybeAdd(const std::shared_ptr<Ent>& entity)
 {
-	if ((int)entity->TypeFlags() & (int)flags)
+	if ((uint32_t)entity->TypeFlags() & (uint32_t)flags)
+	{
+		entities.emplace_back(entity);
+	}
+}
+
+void EntityManager::ComponentTracker::MaybeAdd(const std::shared_ptr<Ent>& entity)
+{
+	if (entity->GetComponent(*componentType))
 	{
 		entities.emplace_back(entity);
 	}

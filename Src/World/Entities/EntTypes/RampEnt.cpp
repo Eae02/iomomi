@@ -25,18 +25,13 @@ void RampEnt::RenderSettings()
 	
 	if (ImGui::DragFloat3("Size", &m_size.x))
 		m_vertexBufferOutOfDate = true;
-	if (ImGui::SliderInt("Yaw", &m_yaw, 0, 3))
+	if (ImGui::SliderInt("Rotation", &m_rotation, 0, 5))
 		m_vertexBufferOutOfDate = true;
-	if (ImGui::Checkbox("Flipped", &m_flipped))
+	if (ImGui::Button("Flip Normal"))
+	{
+		m_flipped = !m_flipped;
 		m_vertexBufferOutOfDate = true;
-}
-
-void RampEnt::Spawned(bool isEditor)
-{
-	//if (isEditor)
-	//{
-	//	m_position += glm::vec3(DirectionVector(m_direction)) * 0.5f;
-	//}
+	}
 }
 
 void RampEnt::CommonDraw(const EntDrawArgs& args)
@@ -91,18 +86,31 @@ void RampEnt::InitializeVertexBuffer()
 std::array<glm::vec3, 4> RampEnt::GetTransformedVertices() const
 {
 	glm::vec3 size = 0.5f * m_size;
-	if (m_flipped)
-		size.y = -size.y;
 	
-	glm::mat4 transformMatrix =
-		glm::rotate(glm::mat4(1), (float)m_yaw * eg::HALF_PI, glm::vec3(0, 1, 0)) *
-		glm::scale(glm::mat4(1), size);
+	glm::mat4 rotationMatrix;
+	if (m_rotation < 4)
+	{
+		rotationMatrix = glm::rotate(glm::mat4(1), (float)m_rotation * eg::HALF_PI, glm::vec3(0, 1, 0));
+	}
+	else if (m_rotation == 4)
+	{
+		rotationMatrix = glm::rotate(glm::mat4(1), -eg::HALF_PI, glm::vec3(0, 0, 1));
+	}
+	else if (m_rotation == 5)
+	{
+		rotationMatrix = glm::rotate(glm::mat4(1), eg::HALF_PI, glm::vec3(0, 0, 1));
+	}
+	
+	glm::mat4 transformMatrix = rotationMatrix * glm::scale(glm::mat4(1), size);
 	
 	std::array<glm::vec3, 4> transformedPos;
 	for (int i = 0; i < 4; i++)
 	{
 		transformedPos[i] = transformMatrix * glm::vec4(untransformedPositions[i], 1.0f);
 	}
+	if (m_flipped)
+		std::swap(transformedPos[0], transformedPos[3]);
+	
 	return transformedPos;
 }
 
@@ -112,7 +120,7 @@ void RampEnt::Serialize(std::ostream& stream) const
 	
 	SerializePos(rampPB, m_position);
 	
-	rampPB.set_yaw(m_yaw);
+	rampPB.set_yaw(m_rotation);
 	rampPB.set_flipped(m_flipped);
 	rampPB.set_scalex(m_size.x);
 	rampPB.set_scaley(m_size.y);
@@ -126,7 +134,7 @@ void RampEnt::Deserialize(std::istream& stream)
 	gravity_pb::RampEntity rampPB;
 	rampPB.ParseFromIstream(&stream);
 	
-	m_yaw = rampPB.yaw();
+	m_rotation = rampPB.yaw();
 	m_flipped = rampPB.flipped();
 	m_size.x = rampPB.scalex();
 	m_size.y = rampPB.scaley();
@@ -157,7 +165,7 @@ std::shared_ptr<Ent> CloneEntity<RampEnt>(const Ent& entity)
 {
 	const RampEnt& src = static_cast<const RampEnt&>(entity);
 	std::shared_ptr<RampEnt> clone = Ent::Create<RampEnt>();
-	clone->m_yaw = src.m_yaw;
+	clone->m_rotation = src.m_rotation;
 	clone->m_flipped = src.m_flipped;
 	clone->m_size = src.m_size;
 	clone->m_position = src.m_position;

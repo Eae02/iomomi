@@ -4,7 +4,9 @@
 #include <future>
 #include <thread>
 #include <mutex>
+
 #include "../World/Dir.hpp"
+#include "WaterSimulatorImpl.hpp"
 
 class WaterSimulator
 {
@@ -44,7 +46,7 @@ public:
 		eg::AABB m_aabbBT;
 	};
 	
-	WaterSimulator();
+	WaterSimulator() = default;
 	
 	~WaterSimulator()
 	{
@@ -55,7 +57,7 @@ public:
 	
 	void Stop();
 	
-	void Update();
+	void Update(const World& world);
 	
 	//Finds an intersection between the given ray and the water.
 	// Returns a pair of distance and particleIndex.
@@ -103,6 +105,9 @@ private:
 	int m_changeGravityParticleMT = -1;
 	Dir m_newGravityMT;
 	std::vector<std::pair<int, Dir>> m_changeGravityParticles;
+	
+	std::vector<WaterBlocker> m_waterBlockersMT;
+	std::vector<WaterBlocker> m_waterBlockersShared;
 	
 	struct WaterSimulatorImpl* m_impl;
 	

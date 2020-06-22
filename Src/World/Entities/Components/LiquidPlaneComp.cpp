@@ -1,6 +1,8 @@
 #include "LiquidPlaneComp.hpp"
 #include "../../World.hpp"
 #include "../../../Vec3Compare.hpp"
+#include "WaterBlockComp.hpp"
+#include "AxisAlignedQuadComp.hpp"
 
 bool LiquidPlaneComp::IsUnderwater(const glm::ivec3& pos) const
 {
@@ -22,7 +24,7 @@ void LiquidPlaneComp::MaybeUpdate(const World& world)
 {
 	if (!m_outOfDate)
 		return;
-	m_outOfDate = true;
+	m_outOfDate = false;
 	
 	glm::vec3 startF = position + glm::vec3(DirectionVector(wallForward)) * 0.5f;
 	
@@ -40,19 +42,39 @@ void LiquidPlaneComp::MaybeUpdate(const World& world)
 		glm::ivec3(0, 0, 1), glm::ivec3(0, 0, -1)
 	};
 	
+	//Collects a list of voxels that are blocked by an entity
+	std::vector<glm::ivec3> blockedByEntity;
+	const_cast<EntityManager&>(world.entManager).ForEachWithComponent<WaterBlockComp>([&] (const Ent& entity)
+	{
+		const auto& waterBlockComp = *entity.GetComponent<WaterBlockComp>();
+		if (waterBlockComp.blockedGravities[(int)Dir::NegY])
+		{
+			blockedByEntity.insert(blockedByEntity.end(),
+				waterBlockComp.blockedVoxels.begin(), waterBlockComp.blockedVoxels.end());
+		}
+	});
+	std::sort(blockedByEntity.begin(), blockedByEntity.end(), Vec3Compare());
+	blockedByEntity.erase(std::unique(blockedByEntity.begin(), blockedByEntity.end()), blockedByEntity.end());
+	
 	while (!bfsQueue.empty())
 	{
 		glm::ivec3 pos = bfsQueue.front();
 		bfsQueue.pop();
 		
-		for (const glm::ivec3 d : deltas)
+		for (const glm::ivec3& delta : deltas)
 		{
-			glm::ivec3 next = pos + d;
-			if (next.y <= startI.y && world.IsAir(next) && visited.find(next) == visited.end())
-			{
-				visited.insert(next);
-				bfsQueue.push(next);
-			}
+			const glm::ivec3 next = pos + delta;
+			if (next.y > startI.y)
+				continue;
+			if (!world.IsAir(next))
+				continue;
+			if (eg::SortedContains(blockedByEntity, next, Vec3Compare()))
+				continue;
+			if (visited.count(next) != 0)
+				continue;
+			
+			visited.insert(next);
+			bfsQueue.push(next);
 		}
 	}
 	

@@ -301,11 +301,13 @@ void GravityBarrierEnt::RenderSettings()
 {
 	Ent::RenderSettings();
 	
-	ImGui::DragFloat2("Size", &m_aaQuad.radius.x, 0.5f);
+	bool geometryChanged = false;
 	
-	ImGui::Combo("Plane", &m_aaQuad.upPlane, "X\0Y\0Z\0");
+	geometryChanged |= ImGui::DragFloat2("Size", &m_aaQuad.radius.x, 0.5f);
 	
-	ImGui::Checkbox("Block Falling", &m_blockFalling);
+	geometryChanged |= ImGui::Combo("Plane", &m_aaQuad.upPlane, "X\0Y\0Z\0");
+	
+	geometryChanged |= ImGui::Checkbox("Block Falling", &m_blockFalling);
 	
 	int flowDir = flowDirection + 1;
 	if (ImGui::SliderInt("Flow Direction", &flowDir, 1, 4))
@@ -314,6 +316,11 @@ void GravityBarrierEnt::RenderSettings()
 	}
 	
 	ImGui::Combo("Activate Action", reinterpret_cast<int*>(&activateAction), "Disable\0Enable\0Rotate\0");
+	
+	if (geometryChanged)
+	{
+		InitWaterBlockComponent();
+	}
 }
 
 const void* GravityBarrierEnt::GetComponent(const std::type_info& type) const
@@ -322,7 +329,9 @@ const void* GravityBarrierEnt::GetComponent(const std::type_info& type) const
 		return &m_activatable;
 	if (type == typeid(AxisAlignedQuadComp))
 		return &m_aaQuad;
-	return Ent::GetComponent(type);
+	if (type == typeid(WaterBlockComp))
+		return &m_waterBlockComp;
+	return nullptr;
 }
 
 void GravityBarrierEnt::Update(const WorldUpdateArgs& args)
@@ -361,6 +370,12 @@ void GravityBarrierEnt::Update(const WorldUpdateArgs& args)
 			{
 				decOpacity = true;
 			}
+		}
+		
+		const int blockedAxis = BlockedAxis();
+		for (int i = 0; i < 6; i++)
+		{
+			m_waterBlockComp.blockedGravities[i] = blockedAxis == i / 2;
 		}
 		
 		constexpr float OPACITY_ANIMATION_TIME = 0.25f;
@@ -416,6 +431,8 @@ void GravityBarrierEnt::Spawned(bool isEditor)
 		m_physicsObject.shape = eg::AABB(-radius, radius);
 		m_physicsObject.position = m_position;
 	}
+	
+	InitWaterBlockComponent();
 }
 
 void GravityBarrierEnt::Serialize(std::ostream& stream) const
@@ -451,6 +468,8 @@ void GravityBarrierEnt::Deserialize(std::istream& stream)
 	m_aaQuad.radius = glm::vec2(gravBarrierPB.sizex(), gravBarrierPB.sizey());
 	activateAction = (ActivateAction)gravBarrierPB.activate_action();
 	m_blockFalling = gravBarrierPB.block_falling();
+	
+	InitWaterBlockComponent();
 }
 
 void GravityBarrierEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
@@ -461,4 +480,16 @@ void GravityBarrierEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, floa
 void GravityBarrierEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
 	m_position = newPosition;
+	InitWaterBlockComponent();
+}
+
+void GravityBarrierEnt::InitWaterBlockComponent()
+{
+	const int blockedAxis = BlockedAxis();
+	for (int i = 0; i < 6; i++)
+	{
+		m_waterBlockComp.blockedGravities[i] = blockedAxis == i / 2;
+	}
+	m_waterBlockComp.InitFromAAQuadComponent(m_aaQuad, m_position);
+	m_waterBlockComp.editorVersion++;
 }

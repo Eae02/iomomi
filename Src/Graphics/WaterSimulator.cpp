@@ -1,31 +1,13 @@
 #include "WaterSimulator.hpp"
+#include "WaterSimulatorImpl.hpp"
 #include "../World/World.hpp"
 #include "../World/Player.hpp"
 #include "../World/Entities/EntTypes/WaterPlaneEnt.hpp"
+#include "../World/Entities/Components/WaterBlockComp.hpp"
 #include "../Vec3Compare.hpp"
 
 #include <cstdlib>
 #include <execution>
-
-struct WaterSimulatorImpl;
-
-WaterSimulatorImpl* WSI_New(const glm::ivec3& minBounds, const glm::ivec3& maxBounds, uint8_t* isAirBuffer,
-	size_t numParticles, const float* particlePositions);
-
-void WSI_Delete(WaterSimulatorImpl* impl);
-
-void WSI_GetPositions(WaterSimulatorImpl* impl, void* destination);
-
-int WSI_Query(WaterSimulatorImpl* impl, const eg::AABB& aabb, glm::vec3& waterVelocity, glm::vec3& buoyancy);
-
-void WSI_SwapBuffers(WaterSimulatorImpl* impl);
-
-void WSI_Simulate(WaterSimulatorImpl* impl, float dt, int changeGravityParticle, Dir newGravity);
-
-WaterSimulator::WaterSimulator()
-{
-	
-}
 
 void WaterSimulator::Init(World& world)
 {
@@ -34,51 +16,43 @@ void WaterSimulator::Init(World& world)
 	auto [worldBoundsMin, worldBoundsMax] = world.CalculateBounds();
 	glm::ivec3 worldSize = worldBoundsMax - worldBoundsMin;
 	
-	//Generates a vector of all underwater cells
-	std::vector<glm::ivec3> underwaterCells;
-	world.entManager.ForEachOfType<WaterPlaneEnt>([&] (WaterPlaneEnt& waterPlaneEntity)
-	{
-		//Add all cells from this liquid plane to the vector
-		waterPlaneEntity.liquidPlane.MaybeUpdate(world);
-		for (glm::ivec3 cell : waterPlaneEntity.liquidPlane.UnderwaterCells())
-		{
-			underwaterCells.push_back(cell);
-		}
-	});
-	if (underwaterCells.empty())
-		return;
-	
-	//Removes duplicates from the list of underwater cells
-	std::sort(underwaterCells.begin(), underwaterCells.end(), IVec3Compare());
-	size_t lastCell = std::unique(underwaterCells.begin(), underwaterCells.end()) - underwaterCells.begin();
-	
-	//The number of particles to generate per underwater cell
-	const glm::ivec3 GEN_PER_VOXEL(3, 4, 3);
+	std::set<glm::ivec3, IVec3Compare> alreadyGenerated;
 	
 	std::uniform_real_distribution<float> offsetDist(0.3f, 0.7f);
 	
-	std::mt19937 rng(std::time(nullptr));
-	
-	//Generates particles
+	std::mt19937 rng(0);
 	std::vector<float> positions;
-	for (size_t i = 0; i < lastCell; i++)
+	
+	//Generates water
+	world.entManager.ForEachOfType<WaterPlaneEnt>([&] (WaterPlaneEnt& waterPlaneEntity)
 	{
-		glm::vec3 basePos(underwaterCells[i]);
-		for (int x = 0; x < GEN_PER_VOXEL.x; x++)
+		//The number of particles to generate per underwater cell
+		glm::ivec3 generatePerVoxel(3, 4 + waterPlaneEntity.densityBoost, 3);
+		
+		//Generates water for all underwater cells in this plane
+		waterPlaneEntity.liquidPlane.MaybeUpdate(world);
+		for (glm::ivec3 cell : waterPlaneEntity.liquidPlane.UnderwaterCells())
 		{
-			for (int y = 0; y < GEN_PER_VOXEL.y; y++)
+			if (alreadyGenerated.count(cell))
+				continue;
+			alreadyGenerated.insert(cell);
+			
+			for (int x = 0; x < generatePerVoxel.x; x++)
 			{
-				for (int z = 0; z < GEN_PER_VOXEL.z; z++)
+				for (int y = 0; y < generatePerVoxel.y; y++)
 				{
-					glm::vec3 pos = basePos + glm::vec3(x + offsetDist(rng), y + offsetDist(rng), z + offsetDist(rng)) / glm::vec3(GEN_PER_VOXEL);
-					positions.push_back(pos.x);
-					positions.push_back(pos.y);
-					positions.push_back(pos.z);
+					for (int z = 0; z < generatePerVoxel.z; z++)
+					{
+						glm::vec3 pos = glm::vec3(cell) +
+							glm::vec3(x + offsetDist(rng), y + offsetDist(rng), z + offsetDist(rng)) / glm::vec3(generatePerVoxel);
+						positions.push_back(pos.x);
+						positions.push_back(pos.y);
+						positions.push_back(pos.z);
+					}
 				}
 			}
 		}
-	}
-	
+	});
 	if (positions.empty())
 		return;
 	
@@ -97,7 +71,14 @@ void WaterSimulator::Init(World& world)
 	}
 	
 	m_numParticles = positions.size() / 3;
-	m_impl = WSI_New(worldBoundsMin, worldBoundsMax, isVoxelAir, m_numParticles, positions.data());
+	
+	WSINewArgs newArgs;
+	newArgs.minBounds = worldBoundsMin;
+	newArgs.maxBounds = worldBoundsMax;
+	newArgs.isAirBuffer = isVoxelAir;
+	newArgs.numParticles = m_numParticles;
+	newArgs.particlePositions = positions.data();
+	m_impl = WSI_New(newArgs);
 	
 	uint64_t bufferSize = sizeof(float) * 4 * m_numParticles;
 	m_positionsBuffer = eg::Buffer(eg::BufferFlags::CopyDst | eg::BufferFlags::VertexBuffer, bufferSize, nullptr);
@@ -134,12 +115,14 @@ void WaterSimulator::ThreadTarget()
 {
 	using Clock = std::chrono::high_resolution_clock;
 	
+	std::vector<WaterBlocker> waterBlockers;
+	
 	bool firstStep = true;
 	Clock::time_point lastStepEnd = Clock::now();
 	while (true)
 	{
-		int changeGravityParticle = -1;
-		Dir newGravity = Dir::PosX; 
+		WSISimulateArgs simulateArgs;
+		simulateArgs.changeGravityParticle = -1;
 		int stepsPerSecond;
 		
 		{
@@ -153,15 +136,20 @@ void WaterSimulator::ThreadTarget()
 				firstStep = false;
 			stepsPerSecond = *stepsPerSecondVar;
 			
+			waterBlockers = m_waterBlockersShared;
+			
 			if (!m_changeGravityParticles.empty())
 			{
-				changeGravityParticle = m_changeGravityParticles.back().first;
-				newGravity = m_changeGravityParticles.back().second;
+				simulateArgs.changeGravityParticle = m_changeGravityParticles.back().first;
+				simulateArgs.newGravity = m_changeGravityParticles.back().second;
 				m_changeGravityParticles.pop_back();
 			}
 		}
 		
-		WSI_Simulate(m_impl, 1.0f / stepsPerSecond, changeGravityParticle, newGravity);
+		simulateArgs.dt = 1.0f / stepsPerSecond;
+		simulateArgs.numWaterBlockers = waterBlockers.size();
+		simulateArgs.waterBlockers = waterBlockers.data();
+		WSI_Simulate(m_impl, simulateArgs);
 		
 		for (const std::shared_ptr<QueryAABB>& qaabb : m_queryAABBsBT)
 		{
@@ -187,7 +175,17 @@ eg::BufferRef WaterSimulator::GetPositionsBuffer() const
 	return m_positionsBuffer;
 }
 
-void WaterSimulator::Update()
+inline __m128 Vec3ToM128(const glm::vec3& v3)
+{
+	alignas(16) float data[4];
+	data[0] = v3.x;
+	data[1] = v3.y;
+	data[2] = v3.z;
+	data[3] = 0;
+	return _mm_load_ps(data);
+}
+
+void WaterSimulator::Update(const World& world)
 {
 	if (m_numParticles == 0)
 	{
@@ -202,6 +200,37 @@ void WaterSimulator::Update()
 		}
 		return;
 	}
+	
+	//Reads information about water blockers
+	m_waterBlockersMT.clear();
+	const_cast<EntityManager&>(world.entManager).ForEachWithComponent<WaterBlockComp>([&] (const Ent& entity)
+	{
+		const WaterBlockComp& component = *entity.GetComponent<WaterBlockComp>();
+		
+		float tangentLen = glm::length(component.tangent);
+		float biTangentLen = glm::length(component.biTangent);
+		glm::vec3 normal = glm::normalize(glm::cross(component.tangent, component.biTangent));
+		
+		WaterBlocker blocker;
+		blocker.tangent = Vec3ToM128(component.tangent / tangentLen);
+		blocker.biTangent = Vec3ToM128(component.biTangent / biTangentLen);
+		blocker.tangentLen = tangentLen;
+		blocker.biTangentLen = biTangentLen;
+		blocker.center = Vec3ToM128(component.center);
+		blocker.blockedGravities = 0;
+		for (int i = 0; i < 6; i++)
+		{
+			if (component.blockedGravities[i])
+				blocker.blockedGravities |= (uint8_t)(1 << i);
+		}
+		
+		for (int dir = -1; dir <= 1; dir += 2)
+		{
+			WaterBlocker& addedBlocker = m_waterBlockersMT.emplace_back(blocker);
+			addedBlocker.center = Vec3ToM128(component.center + normal * ((float)dir * 0.1f));
+			addedBlocker.normal = Vec3ToM128(normal * (float)dir);
+		}
+	});
 	
 	const uint64_t uploadBufferRange = m_numParticles * 4 * sizeof(float);
 	const uint64_t uploadBufferOffset = eg::CFrameIdx() * uploadBufferRange;
@@ -224,6 +253,8 @@ void WaterSimulator::Update()
 				m_queryAABBs.pop_back();
 			}
 		}
+		
+		m_waterBlockersShared = m_waterBlockersMT;
 		
 		if (m_changeGravityParticleMT != -1)
 		{

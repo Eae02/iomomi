@@ -13,7 +13,7 @@ public:
 	
 	static constexpr EntTypeID TypeID = EntTypeID::GravitySwitch;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
-		EntTypeFlags::Interactable | EntTypeFlags::EditorWallMove | EntTypeFlags::Activatable;
+		EntTypeFlags::Interactable | EntTypeFlags::EditorWallMove;
 	
 	void Serialize(std::ostream& stream) const override;
 	

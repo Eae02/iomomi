@@ -43,6 +43,11 @@ public:
 		return m_outOfDate;
 	}
 	
+	void MarkOutOfDate()
+	{
+		m_outOfDate = true;
+	}
+	
 	uint32_t NumIndices() const
 	{
 		return m_numIndices;

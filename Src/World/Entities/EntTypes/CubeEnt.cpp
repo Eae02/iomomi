@@ -214,10 +214,18 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 		m_physicsObject.gravity = DirectionVector(m_currentDown);
 		
 		//Water interaction
-		if (canFloat && m_waterQueryAABB != nullptr)
+		if (m_waterQueryAABB != nullptr)
 		{
 			WaterSimulator::QueryResults waterQueryRes = m_waterQueryAABB->GetResults();
-			m_physicsObject.force += waterQueryRes.buoyancy * *cubeBuoyancy;
+			//m_physicsObject.baseVelocity += waterQueryRes.waterVelocity * *cubeWaterVelFactor;
+			
+			glm::vec3 relVelocity = waterQueryRes.waterVelocity - m_physicsObject.velocity;
+			m_physicsObject.force += relVelocity * *cubeWaterDrag;
+			
+			if (canFloat)
+			{
+				m_physicsObject.force += waterQueryRes.buoyancy * *cubeBuoyancy;
+			}
 		}
 		/* code for moving the cube towards buttons, currently disabled
 		else
@@ -264,16 +272,13 @@ void CubeEnt::UpdatePostSim(const WorldUpdateArgs& args)
 	const glm::vec3 down(DirectionVector(m_currentDown));
 	const eg::AABB cubeAABB(m_physicsObject.position - RADIUS, m_physicsObject.position + RADIUS);
 	
-	if (canFloat)
+	if (m_waterQueryAABB == nullptr)
 	{
-		if (m_waterQueryAABB == nullptr)
-		{
-			m_waterQueryAABB = std::make_shared<WaterSimulator::QueryAABB>();
-			args.waterSim->AddQueryAABB(m_waterQueryAABB);
-		}
-		
-		m_waterQueryAABB->SetAABB(cubeAABB);
+		m_waterQueryAABB = std::make_shared<WaterSimulator::QueryAABB>();
+		args.waterSim->AddQueryAABB(m_waterQueryAABB);
 	}
+	
+	m_waterQueryAABB->SetAABB(cubeAABB);
 }
 
 void CubeEnt::Serialize(std::ostream& stream) const

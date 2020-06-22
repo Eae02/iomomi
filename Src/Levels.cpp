@@ -25,6 +25,8 @@ static const std::string_view levelsOrder[] =
 	
 	"gravbarrier_ng0",
 	"gravbarrier_ng1",
+    "gravbarrier_ng2",
+	"gravbarrier_ng3",
 	
 	"gravgun_0",
 	"gravgun_1",

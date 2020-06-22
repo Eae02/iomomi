@@ -21,6 +21,8 @@ struct EditorState
 	std::vector<std::weak_ptr<Ent>>* selectedEntities;
 	EditorTool tool;
 	
+	void InvalidateWater() const;
+	
 	bool IsEntitySelected(const Ent& entity) const;
 };
 

@@ -4,6 +4,7 @@
 #include "../Components/ActivatableComp.hpp"
 #include "../Components/AxisAlignedQuadComp.hpp"
 #include "../../PhysicsEngine.hpp"
+#include "../Components/WaterBlockComp.hpp"
 
 struct GravityBarrierInteractableComp
 {
@@ -14,8 +15,7 @@ class GravityBarrierEnt : public Ent
 {
 public:
 	static constexpr EntTypeID TypeID = EntTypeID::GravityBarrier;
-	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
-		EntTypeFlags::Activatable | EntTypeFlags::HasPhysics;
+	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::HasPhysics;
 	
 	GravityBarrierEnt();
 	
@@ -60,8 +60,11 @@ private:
 	
 	std::tuple<glm::vec3, glm::vec3> GetTangents() const;
 	
+	void InitWaterBlockComponent();
+	
 	ActivatableComp m_activatable;
 	AxisAlignedQuadComp m_aaQuad;
+	WaterBlockComp m_waterBlockComp;
 	
 	float m_opacity = 1;
 	bool m_enabled = true;

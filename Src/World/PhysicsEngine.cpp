@@ -1,4 +1,3 @@
-#include <netinet/in.h>
 #include "PhysicsEngine.hpp"
 #include "Collision.hpp"
 #include "../Editor/PrimitiveRenderer.hpp"
@@ -50,12 +49,13 @@ void PhysicsEngine::Simulate(float dt)
 	{
 		object->velocity += object->gravity * dt * *gravityMag;
 		object->velocity += object->force * dt;
-		object->move += object->velocity * dt;
+		object->move += (object->baseVelocity + object->velocity) * dt;
 		object->collisionDepth = 0;
 		object->hasCopiedParentMove = false;
 		object->childObjects.clear();
 		object->pushForce = { };
 		object->force = { };
+		object->baseVelocity = { };
 	}
 	
 	for (PhysicsObject* object : m_objects)
@@ -365,7 +365,7 @@ void PhysicsEngine::GetDebugRenderData(PhysicsDebugRenderData& dataOut) const
 {
 	for (const PhysicsObject* object : m_objects)
 	{
-		uint32_t color = htonl((object->debugColor << 8) | 0xFF);
+		uint32_t color = __builtin_bswap32((object->debugColor << 8) | 0xFF);
 		
 		std::visit([&] (const auto& shape)
 		{

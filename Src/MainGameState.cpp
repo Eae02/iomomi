@@ -236,7 +236,7 @@ void MainGameState::RunFrame(float dt)
 		
 		m_playerWaterAABB->SetAABB(m_player.GetAABB());
 		
-		m_waterSimulator.Update();
+		m_waterSimulator.Update(*m_world);
 	}
 	
 	eg::Frustum frustum(inverseViewProjMatrix);

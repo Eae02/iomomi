@@ -7,7 +7,7 @@ public:
 	
 	void Reset();
 	
-	void Update(float dt);
+	void Update(float dt, bool& canUpdateInput);
 	
 	void GetViewMatrix(glm::mat4& matrixOut, glm::mat4& inverseMatrixOut) const;
 	

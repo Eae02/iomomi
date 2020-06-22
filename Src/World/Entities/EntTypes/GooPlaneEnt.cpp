@@ -18,6 +18,7 @@ void GooPlaneEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> f
 	m_liquidPlane.position = newPosition;
 	if (faceDirection)
 		m_liquidPlane.wallForward = *faceDirection;
+	m_liquidPlane.MarkOutOfDate();
 }
 
 void GooPlaneEnt::GameDraw(const EntGameDrawArgs& args)

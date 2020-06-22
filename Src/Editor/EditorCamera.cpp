@@ -16,7 +16,7 @@ void EditorCamera::Reset()
 	UpdateRotationMatrix();
 }
 
-void EditorCamera::Update(float dt)
+void EditorCamera::Update(float dt, bool& canUpdateInput)
 {
 	auto YawSign = [&]
 	{
@@ -24,8 +24,9 @@ void EditorCamera::Update(float dt)
 		return (pitch1 - std::floor(pitch1)) > 0.5f ? -1 : 1;
 	};
 	
-	if (eg::IsButtonDown(eg::Button::MouseMiddle))
+	if (eg::IsButtonDown(eg::Button::MouseMiddle) || (eg::IsButtonDown(eg::Button::MouseRight) && eg::InputState::Current().IsAltDown()))
 	{
+		canUpdateInput = false;
 		eg::SetRelativeMouseMode(true);
 		if (eg::InputState::Current().IsShiftDown())
 		{

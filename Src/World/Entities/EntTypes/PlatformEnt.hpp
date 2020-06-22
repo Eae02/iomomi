@@ -10,7 +10,7 @@ class PlatformEnt : public Ent
 public:
 	static constexpr EntTypeID TypeID = EntTypeID::Platform;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
-		EntTypeFlags::EditorWallMove | EntTypeFlags::Activatable | EntTypeFlags::HasPhysics;
+		EntTypeFlags::EditorWallMove | EntTypeFlags::HasPhysics;
 	
 	PlatformEnt();
 	

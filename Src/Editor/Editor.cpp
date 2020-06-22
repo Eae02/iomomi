@@ -10,6 +10,7 @@
 #include "Components/GravityCornerEditorComponent.hpp"
 #include "Components/WallDragEditorComponent.hpp"
 #include "Components/AAQuadDragEditorComponent.hpp"
+#include "../World/Entities/Components/WaterBlockComp.hpp"
 
 #include <fstream>
 
@@ -161,6 +162,14 @@ void Editor::RunFrame(float dt)
 	
 	editorState.viewRay = eg::Ray::UnprojectScreen(RenderSettings::instance->invViewProjection, eg::CursorPos());
 	
+	for (int i = 0; i < EDITOR_NUM_TOOLS; i++)
+	{
+		if (eg::IsButtonDown((eg::Button)((int)eg::Button::F1 + i)))
+		{
+			m_tool = (EditorTool)i;
+		}
+	}
+	
 	
 	ImGui::SetNextWindowPos(ImVec2(0, eg::CurrentResolutionY() / 2.0f), ImGuiCond_Always, ImVec2(0, 0.5f));
 	ImGui::SetNextWindowSize(ImVec2(250, eg::CurrentResolutionY() * 0.5f), ImGuiCond_Once);
@@ -197,13 +206,16 @@ void Editor::RunFrame(float dt)
 	bool canUpdateInput = !ImGui::GetIO().WantCaptureMouse && !ImGui::GetIO().WantCaptureKeyboard && !eg::console::IsShown();
 	if (canUpdateInput)
 	{
-		m_camera.Update(dt);
-		for (EditorComponent* comp : m_componentsForTool[(int)m_tool])
+		m_camera.Update(dt, canUpdateInput);
+		if (canUpdateInput)
 		{
-			if (comp->UpdateInput(dt, editorState))
+			for (EditorComponent* comp : m_componentsForTool[(int)m_tool])
 			{
-				canUpdateInput = false;
-				break;
+				if (comp->UpdateInput(dt, editorState))
+				{
+					canUpdateInput = false;
+					break;
+				}
 			}
 		}
 	}
@@ -240,6 +252,18 @@ void Editor::RunFrame(float dt)
 		else if (shouldClearSelected)
 			m_selectedEntities.clear();
 	}
+	
+	//Invalidates water if the sum of all WaterBlockComp::editorVersion has changed
+	int sumOfWaterBlockedVersion = 0;
+	m_world->entManager.ForEachWithComponent<WaterBlockComp>([&] (const Ent& entity)
+	{
+		sumOfWaterBlockedVersion += entity.GetComponent<WaterBlockComp>()->editorVersion;
+	});
+	if (m_previousSumOfWaterBlockedVersion != -1 && m_previousSumOfWaterBlockedVersion != sumOfWaterBlockedVersion)
+	{
+		editorState.InvalidateWater();
+	}
+	m_previousSumOfWaterBlockedVersion = sumOfWaterBlockedVersion;
 	
 	DrawWorld();
 }

@@ -23,6 +23,15 @@ public:
 	template <typename CallbackTp>
 	void ForEachWithFlag(EntTypeFlags flags, CallbackTp callback);
 	
+	template <typename ComponentType, typename CallbackTp>
+	void ForEachWithComponent(CallbackTp callback)
+	{
+		ForEachWithComponent<CallbackTp>(typeid(ComponentType), callback);
+	}
+	
+	template <typename CallbackTp>
+	void ForEachWithComponent(const std::type_info& componentType, CallbackTp callback);
+	
 	template <typename CallbackTp>
 	void ForEach(CallbackTp callback);
 	
@@ -45,12 +54,21 @@ private:
 		std::vector<std::weak_ptr<Ent>> entities;
 		
 		void MaybeAdd(const std::shared_ptr<Ent>& entity);
-		
-		template <typename CallbackTp>
-		void ForEach(CallbackTp callback);
 	};
 	
-	std::array<FlagTracker, 5> m_trackers;
+	struct ComponentTracker
+	{
+		const std::type_info* componentType;
+		std::vector<std::weak_ptr<Ent>> entities;
+		
+		void MaybeAdd(const std::shared_ptr<Ent>& entity);
+	};
+	
+	template <typename CallbackTp>
+	static void ForEachInEntityVector(std::vector<std::weak_ptr<Ent>>& entities, CallbackTp callback);
+	
+	std::array<FlagTracker, 4> m_flagTrackers;
+	std::array<ComponentTracker, 3> m_componentTrackers;
 };
 
 #include "EntityManager.inl"

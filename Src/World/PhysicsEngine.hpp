@@ -19,6 +19,7 @@ public:
 	glm::vec3 gravity;
 	glm::vec3 force; //reset after each frame
 	glm::vec3 velocity;
+	glm::vec3 baseVelocity; //reset after each frame
 	glm::vec3 move; //reset after each frame
 	glm::quat angularForce; //reset after each frame
 	glm::quat angularVelocity;
