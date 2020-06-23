@@ -139,7 +139,7 @@ std::string_view CubeEnt::GetInteractDescription() const
 	return "Pick Up";
 }
 
-static float* cubeBuoyancy = eg::TweakVarFloat("cube_buoyancy", 0.25f, 0.0f);
+static float* cubeBuoyancy = eg::TweakVarFloat("cube_buoyancy", 0.22f, 0.0f);
 static float* cubeWaterDrag = eg::TweakVarFloat("cube_water_drag", 0.05f, 0.0f);
 static float* cubeButtonMinAttractDist = eg::TweakVarFloat("cube_ba_min_dist", 1E-3f, 0.0f);
 static float* cubeButtonMaxAttractDist = eg::TweakVarFloat("cube_ba_dist", 0.8f, 0.0f);

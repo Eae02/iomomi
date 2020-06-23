@@ -26,9 +26,6 @@ void WaterSimulator::Init(World& world)
 	//Generates water
 	world.entManager.ForEachOfType<WaterPlaneEnt>([&] (WaterPlaneEnt& waterPlaneEntity)
 	{
-		//The number of particles to generate per underwater cell
-		glm::ivec3 generatePerVoxel(3, 4 + waterPlaneEntity.densityBoost, 3);
-		
 		//Generates water for all underwater cells in this plane
 		waterPlaneEntity.liquidPlane.MaybeUpdate(world);
 		for (glm::ivec3 cell : waterPlaneEntity.liquidPlane.UnderwaterCells())
@@ -36,6 +33,10 @@ void WaterSimulator::Init(World& world)
 			if (alreadyGenerated.count(cell))
 				continue;
 			alreadyGenerated.insert(cell);
+			
+			glm::ivec3 generatePerVoxel(3, 4, 3);
+			if (waterPlaneEntity.liquidPlane.IsUnderwater(cell + glm::ivec3(0, 1, 0)))
+				generatePerVoxel.y += waterPlaneEntity.densityBoost;
 			
 			for (int x = 0; x < generatePerVoxel.x; x++)
 			{

@@ -226,8 +226,7 @@ void main()
 			}
 		}
 	}
-	
-	if (underwater)
+	else if (underwater)
 	{
 		vec2 screenNmSample = refractTexcoord / pixelSize;
 		for (int i = 0; i < normalMapPanDirs.length(); i++)
@@ -237,6 +236,7 @@ void main()
 			vec2 nmVal = texture(normalMapSampler, samplePos * 0.0001).xy * (255.0 / 128.0) - 1.0;
 			refractTexcoord += (nmVal * min(worldDepthL * 0.5, 3.0)) * pixelSize;
 		}
+		worldDepthH = texture(worldDepthSampler, refractTexcoord).r;
 	}
 	
 	//Updates variables with the new texture coordinate

@@ -287,6 +287,8 @@ void GravityBarrierEnt::CommonDraw(const EntDrawArgs& args)
 
 int GravityBarrierEnt::BlockedAxis() const
 {
+	if (!m_enabled)
+		return -1;
 	if (m_blockFalling)
 		return m_aaQuad.upPlane;
 	auto [tangent, bitangent] = GetTangents();
@@ -301,13 +303,11 @@ void GravityBarrierEnt::RenderSettings()
 {
 	Ent::RenderSettings();
 	
-	bool geometryChanged = false;
+	m_waterBlockComponentOutOfDate |= ImGui::DragFloat2("Size", &m_aaQuad.radius.x, 0.5f);
 	
-	geometryChanged |= ImGui::DragFloat2("Size", &m_aaQuad.radius.x, 0.5f);
+	m_waterBlockComponentOutOfDate |= ImGui::Combo("Plane", &m_aaQuad.upPlane, "X\0Y\0Z\0");
 	
-	geometryChanged |= ImGui::Combo("Plane", &m_aaQuad.upPlane, "X\0Y\0Z\0");
-	
-	geometryChanged |= ImGui::Checkbox("Block Falling", &m_blockFalling);
+	m_waterBlockComponentOutOfDate |= ImGui::Checkbox("Block Falling", &m_blockFalling);
 	
 	int flowDir = flowDirection + 1;
 	if (ImGui::SliderInt("Flow Direction", &flowDir, 1, 4))
@@ -316,11 +316,6 @@ void GravityBarrierEnt::RenderSettings()
 	}
 	
 	ImGui::Combo("Activate Action", reinterpret_cast<int*>(&activateAction), "Disable\0Enable\0Rotate\0");
-	
-	if (geometryChanged)
-	{
-		InitWaterBlockComponent();
-	}
 }
 
 const void* GravityBarrierEnt::GetComponent(const std::type_info& type) const
@@ -338,9 +333,9 @@ void GravityBarrierEnt::Update(const WorldUpdateArgs& args)
 {
 	if (args.player != nullptr)
 	{
+		//Updates enabled and flow direction depdending on whether the barrier is activated
 		m_enabled = true;
 		int newFlowDirectionOffset = 0;
-		
 		if (m_activatable.m_enabledConnections != 0)
 		{
 			bool activated = m_activatable.AllSourcesActive();
@@ -372,11 +367,7 @@ void GravityBarrierEnt::Update(const WorldUpdateArgs& args)
 			}
 		}
 		
-		const int blockedAxis = BlockedAxis();
-		for (int i = 0; i < 6; i++)
-		{
-			m_waterBlockComp.blockedGravities[i] = blockedAxis == i / 2;
-		}
+		m_waterBlockComponentOutOfDate = true;
 		
 		constexpr float OPACITY_ANIMATION_TIME = 0.25f;
 		if (decOpacity)
@@ -416,6 +407,19 @@ void GravityBarrierEnt::Update(const WorldUpdateArgs& args)
 	
 	eg::DC.UpdateBuffer(material->m_barrierDataBuffer, 0, sizeof(BarrierBufferData), &bufferData);
 	material->m_barrierDataBuffer.UsageHint(eg::BufferUsage::UniformBuffer, eg::ShaderAccessFlags::Fragment);
+	
+	if (m_waterBlockComponentOutOfDate)
+	{
+		m_waterBlockComponentOutOfDate = false;
+		const int blockedAxis = BlockedAxis();
+		for (int i = 0; i < 6; i++)
+		{
+			m_waterBlockComp.blockedGravities[i] = blockedAxis == i / 2;
+		}
+		m_waterBlockComp.InitFromAAQuadComponent(m_aaQuad, m_position);
+		if (args.player == nullptr)
+			m_waterBlockComp.editorVersion++;
+	}
 }
 
 std::tuple<glm::vec3, glm::vec3> GravityBarrierEnt::GetTangents() const
@@ -431,8 +435,6 @@ void GravityBarrierEnt::Spawned(bool isEditor)
 		m_physicsObject.shape = eg::AABB(-radius, radius);
 		m_physicsObject.position = m_position;
 	}
-	
-	InitWaterBlockComponent();
 }
 
 void GravityBarrierEnt::Serialize(std::ostream& stream) const
@@ -469,7 +471,12 @@ void GravityBarrierEnt::Deserialize(std::istream& stream)
 	activateAction = (ActivateAction)gravBarrierPB.activate_action();
 	m_blockFalling = gravBarrierPB.block_falling();
 	
-	InitWaterBlockComponent();
+	const int blockedAxis = BlockedAxis();
+	for (int i = 0; i < 6; i++)
+	{
+		m_waterBlockComp.blockedGravities[i] = blockedAxis == i / 2;
+	}
+	m_waterBlockComp.InitFromAAQuadComponent(m_aaQuad, m_position);
 }
 
 void GravityBarrierEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
@@ -480,16 +487,5 @@ void GravityBarrierEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, floa
 void GravityBarrierEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
 	m_position = newPosition;
-	InitWaterBlockComponent();
-}
-
-void GravityBarrierEnt::InitWaterBlockComponent()
-{
-	const int blockedAxis = BlockedAxis();
-	for (int i = 0; i < 6; i++)
-	{
-		m_waterBlockComp.blockedGravities[i] = blockedAxis == i / 2;
-	}
-	m_waterBlockComp.InitFromAAQuadComponent(m_aaQuad, m_position);
-	m_waterBlockComp.editorVersion++;
+	m_waterBlockComponentOutOfDate = true;
 }

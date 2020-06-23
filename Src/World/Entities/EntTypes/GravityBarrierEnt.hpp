@@ -49,7 +49,7 @@ public:
 	};
 	
 	int flowDirection = 0;
-	ActivateAction activateAction = ActivateAction::Disable;
+	ActivateAction activateAction = ActivateAction::Rotate;
 	
 private:
 	glm::vec3 m_position;
@@ -60,16 +60,15 @@ private:
 	
 	std::tuple<glm::vec3, glm::vec3> GetTangents() const;
 	
-	void InitWaterBlockComponent();
-	
 	ActivatableComp m_activatable;
 	AxisAlignedQuadComp m_aaQuad;
 	WaterBlockComp m_waterBlockComp;
 	
 	float m_opacity = 1;
+	int m_flowDirectionOffset = 0;
 	bool m_enabled = true;
 	bool m_blockFalling = false;
-	int m_flowDirectionOffset = 0;
+	bool m_waterBlockComponentOutOfDate = true;
 	
 	PhysicsObject m_physicsObject;
 };
