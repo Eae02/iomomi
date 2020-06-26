@@ -13,8 +13,6 @@ static eg::IMaterial* platformMaterial;
 static eg::Model* platformSliderModel;
 static eg::IMaterial* platformSliderMaterial;
 
-static constexpr float COLLIDER_HALF_HEIGHT = 0.2f;
-
 static void OnInit()
 {
 	platformModel = &eg::GetAsset<eg::Model>("Models/Platform.obj");
@@ -31,7 +29,6 @@ PlatformEnt::PlatformEnt()
 {
 	m_physicsObject.canBePushed = false;
 	m_physicsObject.canCarry = true;
-	m_physicsObject.shape = eg::AABB(-glm::vec3(1.0f, COLLIDER_HALF_HEIGHT, 1.0f), glm::vec3(1.0f, COLLIDER_HALF_HEIGHT, 1.0f));
 	m_physicsObject.owner = this;
 	m_physicsObject.debugColor = 0xcf24cf;
 	m_physicsObject.constrainMove = &ConstrainMove;
@@ -179,7 +176,7 @@ void PlatformEnt::Deserialize(std::istream& stream)
 	m_slideOffset = glm::vec2(platformPB.slide_offset_x(), platformPB.slide_offset_y());
 	m_slideTime = platformPB.slide_time();
 	m_launchSpeed = platformPB.launch_speed();
-	m_physicsObject.shape = eg::AABB(glm::vec3(-1, -0.4f, -2), glm::vec3(1, 0, 0)).TransformedBoundingBox(GetBaseTransform());
+	m_physicsObject.shape = eg::AABB(glm::vec3(-0.99, -0.1f, -1.99), glm::vec3(0.99, 0, -0.01)).TransformedBoundingBox(GetBaseTransform());
 	
 	ComputeLaunchVelocity();
 	

@@ -12,10 +12,9 @@
 static ForceFieldMaterial* forceFieldMaterial;
 static eg::Buffer* forceFieldQuadBuffer;
 
-static constexpr float PARTICLE_GRAVITY = 4.0f;
-static constexpr float PARTICLE_WIDTH = 0.02f;
-static constexpr float PARTICLE_EMIT_DELAY = 0.025f;
-static float particleHeight;
+static float* particleGravity = eg::TweakVarFloat("ffld_particle_grav", 4.0f, 0.0f);
+static float* particleWidth = eg::TweakVarFloat("ffld_particle_width", 0.02f, 0.0f);
+static float* particleEmitRate = eg::TweakVarFloat("ffld_particle_rate", 40.0f, 0.0f);
 
 static void OnInit()
 {
@@ -24,9 +23,6 @@ static void OnInit()
 	const float vertices[] = { -1, -1, -1, 1, 1, -1, 1, 1 };
 	forceFieldQuadBuffer = new eg::Buffer(eg::BufferFlags::VertexBuffer, sizeof(vertices), vertices);
 	forceFieldQuadBuffer->UsageHint(eg::BufferUsage::VertexBuffer);
-	
-	const eg::Texture& particleTex = eg::GetAsset<eg::Texture>("Textures/ForceFieldParticle.png");
-	particleHeight = particleTex.Height() * PARTICLE_WIDTH / particleTex.Width();
 }
 
 static void OnShutdown()
@@ -78,8 +74,8 @@ void ForceFieldEnt::GameDraw(const EntGameDrawArgs& args)
 	for (const ForceFieldParticle& particle : particles)
 	{
 		float trailTime = std::max(particle.elapsedTime - 0.1f, 0.0f);
-		float s1 = PARTICLE_GRAVITY * trailTime * trailTime;
-		float s2 = PARTICLE_GRAVITY * particle.elapsedTime * particle.elapsedTime;
+		float s1 = *particleGravity * trailTime * trailTime;
+		float s2 = *particleGravity * particle.elapsedTime * particle.elapsedTime;
 		glm::vec3 pos1 = particle.start + down * glm::clamp(s1, 0.0f, radDown * 2);
 		glm::vec3 pos2 = particle.start + down * glm::clamp(s2, 0.0f, radDown * 2);
 		
@@ -89,7 +85,7 @@ void ForceFieldEnt::GameDraw(const EntGameDrawArgs& args)
 		ForceFieldInstance instance;
 		instance.mode = FFMode::Particle;
 		instance.offset = center;
-		instance.transformX = MakeTransformVectorWithLen(glm::normalize(glm::cross(down, toCamera)) * PARTICLE_WIDTH * 0.5f);
+		instance.transformX = MakeTransformVectorWithLen(glm::normalize(glm::cross(down, toCamera)) * *particleWidth * 0.5f);
 		instance.transformY = MakeTransformVectorWithLen(pos2 - center);
 		
 		args.transparentMeshBatch->Add(mesh, *forceFieldMaterial, instance, DepthDrawOrder(instance.offset));
@@ -128,7 +124,7 @@ void ForceFieldEnt::Update(const WorldUpdateArgs& args)
 	for (int64_t i = particles.size() - 1; i >= 0; i--)
 	{
 		particles[i].elapsedTime += args.dt;
-		float s = PARTICLE_GRAVITY * particles[i].elapsedTime * particles[i].elapsedTime;
+		float s = *particleGravity * particles[i].elapsedTime * particles[i].elapsedTime;
 		if (s > maxS)
 		{
 			particles[i] = particles.back();
@@ -148,8 +144,10 @@ void ForceFieldEnt::Update(const WorldUpdateArgs& args)
 	tangent[tangentDir] = radius[tangentDir];
 	bitangent[bitangentDir] = radius[bitangentDir];
 	
+	const float emitDelay = 1.0f / *particleEmitRate;
+	
 	timeSinceEmission += args.dt;
-	while (timeSinceEmission > PARTICLE_EMIT_DELAY)
+	while (timeSinceEmission > emitDelay)
 	{
 		for (int x = 0; x < sectionsT; x++)
 		{
@@ -164,7 +162,7 @@ void ForceFieldEnt::Update(const WorldUpdateArgs& args)
 			}
 		}
 		
-		timeSinceEmission -= PARTICLE_EMIT_DELAY;
+		timeSinceEmission -= emitDelay;
 	}
 }
 

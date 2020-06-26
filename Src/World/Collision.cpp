@@ -1,8 +1,6 @@
 #include "Collision.hpp"
 #include "Dir.hpp"
 
-#pragma GCC optimize("Ofast")
-
 std::optional<glm::vec3> CheckCollisionAABBPolygon(const eg::AABB& aabb, eg::Span<const glm::vec3> polyVertices,
 	const glm::vec3& moveDir, float shiftAmount)
 {

@@ -8,7 +8,17 @@
 #include "ForceFieldEnt.hpp"
 #include <imgui.h>
 
-static constexpr float MASS = 50.0f;
+static float* cubeBuoyancyScale = eg::TweakVarFloat("cube_bcy_scale", 0.3f, 0.0f);
+static float* cubeBuoyancyLimit = eg::TweakVarFloat("cube_bcy_lim", 15.0f, 0.0f);
+static float* cubeWaterDrag = eg::TweakVarFloat("cube_water_drag", 0.5f, 0.0f);
+static float* cubeWaterPullLimit = eg::TweakVarFloat("cube_pull_lim", 2.0f, 0.0f);
+static float* cubeButtonMinAttractDist = eg::TweakVarFloat("cube_ba_min_dist", 1E-3f, 0.0f);
+static float* cubeButtonMaxAttractDist = eg::TweakVarFloat("cube_ba_dist", 0.8f, 0.0f);
+static float* cubeButtonAttractForce = eg::TweakVarFloat("cube_ba_force", 1.5f, 0.0f);
+static float* cubeMass = eg::TweakVarFloat("cube_mass", 50.0f, 0.0f);
+static float* cubeCarryDist = eg::TweakVarFloat("cube_carry_dist", 0.7f, 0.0f);
+static float* cubeDropDist = eg::TweakVarFloat("cube_drop_dist", 0.9f, 0.0f);
+static float* cubeMaxInteractDist = eg::TweakVarFloat("cube_max_interact_dist", 1.5f, 0.0f);
 
 static eg::Model* cubeModel;
 static eg::IMaterial* cubeMaterial;
@@ -30,7 +40,7 @@ CubeEnt::CubeEnt(const glm::vec3& position, bool _canFloat)
 	: canFloat(_canFloat)
 {
 	m_physicsObject.position = position;
-	m_physicsObject.mass = MASS;
+	m_physicsObject.mass = *cubeMass;
 	m_physicsObject.shape = eg::AABB(-glm::vec3(RADIUS), glm::vec3(RADIUS));
 	m_physicsObject.owner = this;
 	m_physicsObject.canCarry = true;
@@ -117,7 +127,6 @@ int CubeEnt::CheckInteraction(const Player& player, const class PhysicsEngine& p
 		return 0;
 	
 	static constexpr int PICK_UP_INTERACT_PRIORITY = 2;
-	static constexpr float MAX_INTERACT_DIST = 1.5f;
 	eg::Ray ray(player.EyePosition(), player.Forward());
 	
 	OrientedBox box;
@@ -126,7 +135,7 @@ int CubeEnt::CheckInteraction(const Player& player, const class PhysicsEngine& p
 	box.radius = glm::vec3(RADIUS);
 	auto [intersectObj, intersectDist] = physicsEngine.RayIntersect(ray, RAY_MASK_BLOCK_PICK_UP);
 	
-	if (intersectObj == &m_physicsObject && intersectDist < MAX_INTERACT_DIST)
+	if (intersectObj == &m_physicsObject && intersectDist < *cubeMaxInteractDist)
 	{
 		return PICK_UP_INTERACT_PRIORITY;
 	}
@@ -138,12 +147,6 @@ std::string_view CubeEnt::GetInteractDescription() const
 {
 	return "Pick Up";
 }
-
-static float* cubeBuoyancy = eg::TweakVarFloat("cube_buoyancy", 0.22f, 0.0f);
-static float* cubeWaterDrag = eg::TweakVarFloat("cube_water_drag", 0.05f, 0.0f);
-static float* cubeButtonMinAttractDist = eg::TweakVarFloat("cube_ba_min_dist", 1E-3f, 0.0f);
-static float* cubeButtonMaxAttractDist = eg::TweakVarFloat("cube_ba_dist", 0.8f, 0.0f);
-static float* cubeButtonAttractForce = eg::TweakVarFloat("cube_ba_force", 1.5f, 0.0f);
 
 bool CubeEnt::SetGravity(Dir newGravity)
 {
@@ -157,6 +160,8 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 {
 	if (!args.player)
 		return;
+	
+	m_physicsObject.mass = *cubeMass;
 	
 	eg::Sphere sphere(m_physicsObject.position, RADIUS);
 	
@@ -187,17 +192,17 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 	
 	if (m_isPickedUp)
 	{
-		constexpr float DIST_FROM_PLAYER = RADIUS + 0.7f; //Distance to the cube when carrying
-		constexpr float MAX_DIST_FROM_PLAYER = RADIUS + 0.9f; //Drop the cube if further away than this
+		const float distFromPlayer = RADIUS + *cubeCarryDist; //Distance to the cube when carrying
+		const float maxDistFromPlayer = RADIUS + *cubeDropDist; //Drop the cube if further away than this
 		
-		glm::vec3 desiredPosition = args.player->EyePosition() + args.player->Forward() * DIST_FROM_PLAYER;
+		glm::vec3 desiredPosition = args.player->EyePosition() + args.player->Forward() * distFromPlayer;
 		
 		eg::AABB desiredAABB(desiredPosition - RADIUS * 1.001f, desiredPosition + RADIUS * 1.001f);
 		
 		glm::vec3 deltaPos = desiredPosition - m_physicsObject.position;
 		m_physicsObject.gravity = { };
 		
-		if (glm::length2(deltaPos) > MAX_DIST_FROM_PLAYER * MAX_DIST_FROM_PLAYER)
+		if (glm::length2(deltaPos) > maxDistFromPlayer * maxDistFromPlayer)
 		{
 			//The cube has moved to far away from the player, so it should be dropped.
 			m_isPickedUp = false;
@@ -220,42 +225,25 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 			//m_physicsObject.baseVelocity += waterQueryRes.waterVelocity * *cubeWaterVelFactor;
 			
 			glm::vec3 relVelocity = waterQueryRes.waterVelocity - m_physicsObject.velocity;
-			m_physicsObject.force += relVelocity * *cubeWaterDrag;
+			glm::vec3 pullForce = relVelocity * *cubeWaterDrag;
+			float pullForceLen = glm::length(pullForce);
+			if (pullForceLen > *cubeWaterPullLimit)
+			{
+				pullForce *= *cubeWaterPullLimit / pullForceLen;
+			}
+			m_physicsObject.force += pullForce;
 			
 			if (canFloat)
 			{
-				m_physicsObject.force += waterQueryRes.buoyancy * *cubeBuoyancy;
+				glm::vec3 buoyancyForce = waterQueryRes.buoyancy * *cubeBuoyancyScale;
+				float buoyancyLen = glm::length(buoyancyForce);
+				if (buoyancyLen > *cubeBuoyancyLimit)
+				{
+					buoyancyForce *= *cubeBuoyancyLimit / buoyancyLen;
+				}
+				m_physicsObject.force += buoyancyForce;
 			}
 		}
-		/* code for moving the cube towards buttons, currently disabled
-		else
-		{
-			const float maxDist2 = *cubeButtonMaxAttractDist * *cubeButtonMaxAttractDist;
-			
-			const FloorButtonEnt* currentButton = nullptr;
-			args.world->entManager.ForEachOfType<FloorButtonEnt>([&] (const FloorButtonEnt& floorButton)
-			{
-				if (floorButton.Direction() == OppositeDir(m_currentDown) &&
-				    glm::distance2(floorButton.Pos(), m_physicsObject.position) < maxDist2)
-				{
-					currentButton = &floorButton;
-				}
-			});
-			
-			if (currentButton != nullptr)
-			{
-				const float minDist2 = *cubeButtonMinAttractDist * *cubeButtonMinAttractDist;
-				
-				glm::vec3 toCenter = currentButton->Pos() - m_physicsObject.position;
-				glm::vec3 buttonDir(glm::abs(DirectionVector(currentButton->Direction())));
-				toCenter -= buttonDir * glm::dot(toCenter, buttonDir);
-				if (glm::length2(toCenter) > minDist2)
-				{
-					toCenter = glm::normalize(toCenter) * *cubeButtonAttractForce;
-					m_physicsObject.force += toCenter;
-				}
-			}
-		}*/
 	}
 	
 	m_barrierInteractableComp.currentDown = m_currentDown;

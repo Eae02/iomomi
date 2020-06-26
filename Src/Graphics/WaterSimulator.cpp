@@ -54,7 +54,7 @@ void WaterSimulator::Init(World& world)
 			}
 		}
 	});
-	if (positions.empty())
+	if (positions.empty() && world.extraWaterParticles == 0)
 		return;
 	
 	//Copies voxel air data to isVoxelAir
@@ -71,13 +71,14 @@ void WaterSimulator::Init(World& world)
 		}
 	}
 	
-	m_numParticles = positions.size() / 3;
+	m_numParticles = (positions.size() / 3) + world.extraWaterParticles;
 	
 	WSINewArgs newArgs;
 	newArgs.minBounds = worldBoundsMin;
 	newArgs.maxBounds = worldBoundsMax;
 	newArgs.isAirBuffer = isVoxelAir;
-	newArgs.numParticles = m_numParticles;
+	newArgs.numParticles = positions.size() / 3;
+	newArgs.extraParticles = world.extraWaterParticles;
 	newArgs.particlePositions = positions.data();
 	m_impl = WSI_New(newArgs);
 	
@@ -233,8 +234,7 @@ void WaterSimulator::Update(const World& world)
 		}
 	});
 	
-	const uint64_t uploadBufferRange = m_numParticles * 4 * sizeof(float);
-	const uint64_t uploadBufferOffset = eg::CFrameIdx() * uploadBufferRange;
+	const uint64_t uploadBufferOffset = eg::CFrameIdx() * m_numParticles * 4 * sizeof(float);
 	
 	{
 		std::lock_guard<std::mutex> lock(m_mutex);
@@ -263,8 +263,10 @@ void WaterSimulator::Update(const World& world)
 			m_changeGravityParticleMT = -1;
 		}
 		
-		WSI_GetPositions(m_impl, m_positionsUploadBufferMemory + uploadBufferOffset);
+		m_numParticlesToDraw = WSI_GetPositions(m_impl, m_positionsUploadBufferMemory + uploadBufferOffset);
 	}
+	
+	const uint64_t uploadBufferRange = m_numParticlesToDraw * 4 * sizeof(float);
 	
 	m_changeGravityParticleMT = -1;
 	
@@ -281,7 +283,7 @@ std::pair<float, int> WaterSimulator::RayIntersect(const eg::Ray& ray) const
 	int particle = -1;
 	if (m_currentParticlePositions != nullptr)
 	{
-		for (uint32_t i = 0; i < m_numParticles; i++)
+		for (uint32_t i = 0; i < m_numParticlesToDraw; i++)
 		{
 			glm::vec3 posCopy(m_currentParticlePositions[i * 4],
 				m_currentParticlePositions[i * 4 + 1],

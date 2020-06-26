@@ -130,7 +130,7 @@ void PhysicsEngine::ApplyMovement(PhysicsObject& object, float dt, const Collisi
 	
 	constexpr float MAX_MOVE_LEN = 10;
 	constexpr float MAX_MOVE_PER_STEP = 0.5f;
-	constexpr int MAX_ITERATIONS = 10;
+	constexpr int MAX_ITERATIONS = 5;
 	for (int i = 0; i < MAX_ITERATIONS && didCollide; i++)
 	{
 		float moveLen = glm::length(object.move);
@@ -167,7 +167,7 @@ void PhysicsEngine::ApplyMovement(PhysicsObject& object, float dt, const Collisi
 						continue;
 				}
 				object.velocity -= colRes.correction * (glm::dot(colRes.correction, object.velocity) / glm::length2(colRes.correction));
-				object.move = partialMove + colRes.correction;
+				object.move = partialMove + colRes.correction * 1.01f;
 				
 				glm::vec3 relativeVel = object.velocity - colRes.other->velocity;
 				if (glm::length2(relativeVel) > 1E-6f)

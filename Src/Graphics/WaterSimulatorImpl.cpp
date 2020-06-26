@@ -31,6 +31,8 @@ static constexpr float SPEED_LIMIT = 30.0;
 static constexpr float AMBIENT_DENSITY = 0.5;
 static constexpr int CELL_GROUP_SIZE = 4;
 
+static std::uniform_real_distribution<float> radiusDist(MIN_PARTICLE_RADIUS, MAX_PARTICLE_RADIUS);
+
 struct WaterSimulatorImpl
 {
 	alignas(16) int32_t cellProcOffsets[4 * 3 * 3 * 3];
@@ -38,11 +40,12 @@ struct WaterSimulatorImpl
 	std::mt19937 rng;
 	
 	uint32_t numParticles;
+	uint32_t allocatedParticles;
 	
 	//Memory for particle data
 	void* dataMemory;
 	
-	//SoA particle data, points into memory
+	//SoA particle data, points into dataMemory
 	__m128* particlePos;
 	__m128* particlePos2;
 	__m128* particleVel;
@@ -99,6 +102,7 @@ WaterSimulatorImpl* WSI_New(const WSINewArgs& args)
 	impl->worldSize = args.maxBounds - args.minBounds;
 	impl->isVoxelAir = args.isAirBuffer;
 	impl->numParticles = args.numParticles;
+	impl->allocatedParticles = args.numParticles + args.extraParticles;
 	
 	constexpr int GRID_CELLS_MARGIN = 5;
 	impl->partGridMin = glm::ivec3(glm::floor(glm::vec3(args.minBounds) / INFLUENCE_RADIUS)) - GRID_CELLS_MARGIN;
@@ -109,29 +113,28 @@ WaterSimulatorImpl* WSI_New(const WSINewArgs& args)
 	impl->cellParticles.resize(impl->cellNumParticles.size());
 	
 	//Allocates memory for particle data
-	size_t memoryBytes = args.numParticles * (sizeof(__m128) * 5 + sizeof(uint8_t) + sizeof(float) + sizeof(glm::vec2));
+	size_t memoryBytes = impl->allocatedParticles * (sizeof(__m128) * 5 + sizeof(uint8_t) + sizeof(float) + sizeof(glm::vec2));
 	impl->dataMemory = aligned_alloc(alignof(__m128), memoryBytes);
 	
 	//Sets up SoA particle data
-	impl->particlePos     = reinterpret_cast<__m128*>(impl->dataMemory);
-	impl->particlePos2    = impl->particlePos + args.numParticles;
-	impl->particleVel     = impl->particlePos2 + args.numParticles;
-	impl->particleVel2    = impl->particleVel + args.numParticles;
-	impl->particleCells   = reinterpret_cast<__m128i*>(impl->particleVel2 + args.numParticles);
-	impl->particleGravity = reinterpret_cast<uint8_t*>(impl->particleCells + args.numParticles);
-	impl->particleRadius = reinterpret_cast<float*>(impl->particleGravity + args.numParticles);
-	impl->particleDensity = reinterpret_cast<glm::vec2*>(impl->particleRadius + args.numParticles);
-	if (reinterpret_cast<char*>(impl->particleDensity + impl->numParticles) != (char*)impl->dataMemory + memoryBytes)
+	impl->particlePos             = reinterpret_cast<__m128*>(impl->dataMemory);
+	impl->particlePos2            = impl->particlePos + impl->allocatedParticles;
+	impl->particleVel             = impl->particlePos2 + impl->allocatedParticles;
+	impl->particleVel2            = impl->particleVel + impl->allocatedParticles;
+	impl->particleCells           = reinterpret_cast<__m128i*>(impl->particleVel2 + impl->allocatedParticles);
+	impl->particleGravity         = reinterpret_cast<uint8_t*>(impl->particleCells + impl->allocatedParticles);
+	impl->particleRadius          = reinterpret_cast<float*>(impl->particleGravity + impl->allocatedParticles);
+	impl->particleDensity         = reinterpret_cast<glm::vec2*>(impl->particleRadius + impl->allocatedParticles);
+	if (reinterpret_cast<char*>(impl->particleDensity + impl->allocatedParticles) != (char*)impl->dataMemory + memoryBytes)
 		std::abort();
 	
 	//Generates random particle radii
-	std::uniform_real_distribution<float> radiusDist(MIN_PARTICLE_RADIUS, MAX_PARTICLE_RADIUS);
-	for (uint32_t i = 0; i < args.numParticles; i++)
+	for (uint32_t i = 0; i < impl->numParticles; i++)
 		impl->particleRadius[i] = radiusDist(impl->rng);
 	
-	std::fill_n(impl->particleGravity, args.numParticles, (uint8_t)Dir::NegY);
-	std::memset(impl->particleVel, 0, sizeof(float) * 4 * args.numParticles);
-	std::memset(impl->particlePos, 0, sizeof(float) * 4 * args.numParticles);
+	std::fill_n(impl->particleGravity, impl->numParticles, (uint8_t)Dir::NegY);
+	std::memset(impl->particleVel, 0, sizeof(float) * 4 * impl->numParticles);
+	std::memset(impl->particlePos, 0, sizeof(float) * 4 * impl->numParticles);
 	
 	//Copies particle positions to m_particlePos
 	for (size_t i = 0; i < args.numParticles; i++)
@@ -142,8 +145,8 @@ WaterSimulatorImpl* WSI_New(const WSINewArgs& args)
 		}
 	}
 	
-	impl->closeParticles.resize(args.numParticles);
-	impl->numCloseParticles.resize(args.numParticles);
+	impl->closeParticles.resize(impl->allocatedParticles);
+	impl->numCloseParticles.resize(impl->allocatedParticles);
 	
 	return impl;
 }
@@ -155,9 +158,10 @@ void WSI_Delete(WaterSimulatorImpl* impl)
 	delete impl;
 }
 
-void WSI_GetPositions(WaterSimulatorImpl* impl, void* destination)
+uint32_t WSI_GetPositions(WaterSimulatorImpl* impl, void* destination)
 {
 	std::memcpy(destination, impl->particlePos, impl->numParticles * sizeof(float) * 4);
+	return impl->numParticles;
 }
 
 void WSI_SwapBuffers(WaterSimulatorImpl* impl)
@@ -254,7 +258,6 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 	}
 	
 	//Detects close particles by scanning the surrounding grid cells for each particle.
-	impl->closeParticles.clear();
 	std::for_each_n(std::execution::par_unseq, impl->particlePos, impl->numParticles, [&] (__m128& particlePos)
 	{
 		uint32_t p = &particlePos - impl->particlePos;

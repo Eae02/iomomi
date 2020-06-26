@@ -32,6 +32,9 @@ static const std::string_view levelsOrder[] =
 	"water_ng0",
 	"water_ng1",
 	"water_ng2",
+	"water_ng3",
+	"water_ng4",
+	"water_ng5",
 	
 	//PART 2
 	"gravgun_0",

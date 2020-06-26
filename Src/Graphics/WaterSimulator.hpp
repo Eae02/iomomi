@@ -78,6 +78,11 @@ public:
 		return m_numParticles;
 	}
 	
+	uint32_t NumParticlesToDraw() const
+	{
+		return m_numParticlesToDraw;
+	}
+	
 	void AddQueryAABB(std::weak_ptr<QueryAABB> queryAABB)
 	{
 		m_queryAABBs.push_back(std::move(queryAABB));
@@ -101,6 +106,7 @@ private:
 	std::vector<std::shared_ptr<QueryAABB>> m_queryAABBsBT;
 	
 	uint32_t m_numParticles = 0;
+	uint32_t m_numParticlesToDraw = 0;
 	
 	int m_changeGravityParticleMT = -1;
 	Dir m_newGravityMT;

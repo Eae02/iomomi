@@ -30,6 +30,7 @@ features:
  - levers
  - activatable force fields
  - moving force fields
+ - water drains and emitters
 
 editor:
  - undo stack

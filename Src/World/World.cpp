@@ -19,7 +19,7 @@ World::World()
 	m_borderVertexBuffer.flags = eg::BufferFlags::VertexBuffer | eg::BufferFlags::CopyDst;
 }
 
-static const uint32_t CURRENT_VERSION = 6;
+static const uint32_t CURRENT_VERSION = 7;
 static char MAGIC[] = { (char)0xFF, 'G', 'W', 'D' };
 
 std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
@@ -39,7 +39,7 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 	{
 		world->LoadFormatSub5(stream, version, isEditor);
 	}
-	else if (version >= 5 && version <= 6)
+	else if (version >= 5 && version <= 7)
 	{
 		world->LoadFormatSup5(stream, version, isEditor);
 	}
@@ -153,6 +153,10 @@ void World::LoadFormatSup5(std::istream& stream, uint32_t version, bool isEditor
 		voxel.hasGravityCorner = std::bitset<12>(data.hasGravityCorner);
 	}
 	
+	if (version >= 7)
+	{
+		extraWaterParticles = eg::BinRead<uint32_t>(stream);
+	}
 	playerHasGravityGun = eg::BinRead<uint8_t>(stream);
 	title = eg::BinReadString(stream);
 	
@@ -180,6 +184,7 @@ void World::Save(std::ostream& outStream) const
 	
 	eg::WriteCompressedSection(outStream, voxelData.data(), voxelData.size() * sizeof(VoxelData));
 	
+	eg::BinWrite<uint32_t>(outStream, extraWaterParticles);
 	eg::BinWrite<uint8_t>(outStream, playerHasGravityGun);
 	eg::BinWriteString(outStream, title);
 	

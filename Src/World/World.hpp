@@ -85,6 +85,7 @@ public:
 	
 	bool playerHasGravityGun = true;
 	std::string title;
+	uint32_t extraWaterParticles = 0;
 	
 private:
 	void LoadFormatSub5(std::istream& stream, uint32_t version, bool isEditor);

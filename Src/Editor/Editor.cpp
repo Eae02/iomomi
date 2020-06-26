@@ -128,10 +128,15 @@ void Editor::RunFrame(float dt)
 	
 	if (m_levelSettingsOpen)
 	{
-		ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowSize(ImVec2(250, 0), ImGuiCond_FirstUseEver);
 		if (ImGui::Begin("Level Settings", &m_levelSettingsOpen))
 		{
 			ImGui::Checkbox("Has Gravity Gun", &m_world->playerHasGravityGun);
+			
+			int extraWaterParticles = m_world->extraWaterParticles;
+			if (ImGui::DragInt("Extra Water Particles", &extraWaterParticles))
+				m_world->extraWaterParticles = std::max(extraWaterParticles, 0);
+			
 			ImGui::InputText("Title", &m_world->title);
 		}
 		ImGui::End();

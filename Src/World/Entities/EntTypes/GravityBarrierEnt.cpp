@@ -9,7 +9,6 @@
 
 #include <imgui.h>
 
-static constexpr float OPACITY_SCALE = 0.0004;
 static constexpr int NUM_INTERACTABLES = 8;
 
 #pragma pack(push, 1)

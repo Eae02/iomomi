@@ -9,7 +9,8 @@ struct WSINewArgs
 	glm::ivec3 minBounds;
 	glm::ivec3 maxBounds;
 	uint8_t* isAirBuffer;
-	size_t numParticles;
+	uint32_t numParticles;
+	uint32_t extraParticles;
 	const float* particlePositions;
 };
 
@@ -39,7 +40,7 @@ WaterSimulatorImpl* WSI_New(const WSINewArgs& args);
 
 void WSI_Delete(WaterSimulatorImpl* impl);
 
-void WSI_GetPositions(WaterSimulatorImpl* impl, void* destination);
+uint32_t WSI_GetPositions(WaterSimulatorImpl* impl, void* destination);
 
 int WSI_Query(WaterSimulatorImpl* impl, const eg::AABB& aabb, glm::vec3& waterVelocity, glm::vec3& buoyancy);
 
