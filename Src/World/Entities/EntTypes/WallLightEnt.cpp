@@ -54,12 +54,17 @@ void WallLightEnt::GameDraw(const EntGameDrawArgs& args)
 	glm::vec3 lightPos = m_position + glm::vec3(DirectionVector(m_forwardDir)) * LIGHT_DIST;
 	args.pointLights->emplace_back(m_pointLight.GetDrawData(lightPos));
 	
-	args.meshBatch->AddModel(GetModel(), EmissiveMaterial::instance, GetInstanceData(4.0f));
+	DrawEmissiveModel(args, 4.0f);
 }
 
 void WallLightEnt::EditorDraw(const EntEditorDrawArgs& args)
 {
-	args.meshBatch->AddModel(GetModel(), EmissiveMaterial::instance, GetInstanceData(1.0f));
+	DrawEmissiveModel(args, 1.0f);
+}
+
+void WallLightEnt::DrawEmissiveModel(const EntDrawArgs& drawArgs, float colorScale) const
+{
+	drawArgs.meshBatch->AddModel(GetModel(), EmissiveMaterial::instance, GetInstanceData(colorScale));
 }
 
 void WallLightEnt::Serialize(std::ostream& stream) const

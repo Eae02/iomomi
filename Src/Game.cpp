@@ -4,6 +4,7 @@
 #include "Levels.hpp"
 #include "Editor/Editor.hpp"
 #include "Settings.hpp"
+#include "Graphics/GraphicsCommon.hpp"
 #include "Graphics/WallShader.hpp"
 
 #include <fstream>
@@ -67,7 +68,7 @@ void Game::RunFrame(float dt)
 {
 	m_imGuiInterface.NewFrame();
 	
-	m_renderCtx.renderer.PollSettingsChanged();
+	MaybeRecreateRenderTextures();
 	
 	DrawSettingsWindow();
 	

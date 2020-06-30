@@ -50,7 +50,7 @@ static void OnInit()
 		/* srcAlpha */ eg::BlendFactor::Zero,
 		/* dstColor */ eg::BlendFactor::OneMinusSrcAlpha,
 		/* dstAlpha */ eg::BlendFactor::OneMinusSrcAlpha);
-	pipelineCI.blendConstants[3] = 0.99f;
+	pipelineCI.blendConstants[3] = 1.0f;
 	pipelineCI.label = "DecalsGame";
 	decalsGamePipeline = eg::Pipeline::Create(pipelineCI);
 	
@@ -174,12 +174,6 @@ bool DecalMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) con
 		return false;
 	}
 	
-	float pc[2];
-	pc[0] = m_roughness;
-	pc[1] = m_opacity;
-	
-	cmdCtx.PushConstants(0, sizeof(pc), &pc);
-	
 	return true;
 }
 
@@ -195,6 +189,12 @@ bool DecalMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) con
 		
 		m_descriptorSetInitialized = true;
 	}
+	
+	float pc[2];
+	pc[0] = m_roughness;
+	pc[1] = m_opacity;
+	
+	cmdCtx.PushConstants(0, sizeof(pc), &pc);
 	
 	cmdCtx.BindDescriptorSet(m_descriptorSet, 0);
 	

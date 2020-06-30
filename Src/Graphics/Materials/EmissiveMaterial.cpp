@@ -12,8 +12,9 @@ static void OnInit()
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Emissive.vs.glsl").DefaultVariant();
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Emissive.fs.glsl").DefaultVariant();
-	pipelineCI.enableDepthWrite = true;
+	pipelineCI.enableDepthWrite = false;
 	pipelineCI.enableDepthTest = true;
+	pipelineCI.depthCompare = eg::CompareOp::LessOrEqual;
 	pipelineCI.cullMode = eg::CullMode::None;
 	pipelineCI.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
 	pipelineCI.vertexBindings[1] = { sizeof(EmissiveMaterial::InstanceData), eg::InputRate::Instance };
@@ -26,7 +27,6 @@ static void OnInit()
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.label = "EmissiveGame";
 	emissivePipelineGame = eg::Pipeline::Create(pipelineCI);
-	emissivePipelineGame.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT_HDR, DeferredRenderer::DEPTH_FORMAT);
 	
 	pipelineCI.label = "EmissiveEditor";
 	emissivePipelineEditor = eg::Pipeline::Create(pipelineCI);

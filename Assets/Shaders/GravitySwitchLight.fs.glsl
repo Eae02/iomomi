@@ -1,6 +1,6 @@
 #version 450 core
 
-#pragma variants VDefault VEditor VPlanarRefl
+#pragma variants VDefault VEditor
 
 #ifdef VDefault
 #include "Inc/DeferredGeom.glh"
@@ -41,10 +41,6 @@ void main()
 	float intensity = intensityScale * (cos(theta) * 0.5 + 0.5) / (a + 1);
 	
 	vec3 color = COLOR * mix(0.5, 2.0, intensity);
-	
-#ifdef VPlanarRefl
-	color_out = vec4(color, 1.0);
-#endif
 	
 #ifdef VEditor
 	color_out = vec4(color, 1.0);

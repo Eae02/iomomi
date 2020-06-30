@@ -6,8 +6,6 @@ fixes:
  - standing on button is awkward
 
 graphics fixes:
- - decal rendering is broken
- - fix order of rendering transparents with water
  - fix hidden water still rendering when underwater
  - gun should be rendered after ssr
  - ssr should be done later (so that transparents are reflected)

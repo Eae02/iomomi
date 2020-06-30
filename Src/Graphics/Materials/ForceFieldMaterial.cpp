@@ -42,7 +42,7 @@ bool ForceFieldMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs
 {
 	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
 	
-	if (mDrawArgs->drawMode != MeshDrawMode::Emissive)
+	if (mDrawArgs->drawMode != MeshDrawMode::TransparentAfterWater)
 		return false;
 	
 	cmdCtx.BindPipeline(m_pipeline);

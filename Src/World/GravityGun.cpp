@@ -5,6 +5,7 @@
 #include "../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../Graphics/Materials/MeshDrawArgs.hpp"
 #include "../Settings.hpp"
+#include "../Graphics/GraphicsCommon.hpp"
 #include "../Graphics/RenderSettings.hpp"
 #include "../Graphics/WaterSimulator.hpp"
 
@@ -31,8 +32,8 @@ GravityGun::MidMaterial::MidMaterial()
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.label = "GravityGunMid";
 	m_pipeline = eg::Pipeline::Create(pipelineCI);
-	m_pipeline.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT_HDR, DeferredRenderer::DEPTH_FORMAT);
-	m_pipeline.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT_LDR, DeferredRenderer::DEPTH_FORMAT);
+	m_pipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
+	m_pipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
 	m_pipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
 	m_descriptorSet = eg::DescriptorSet(m_pipeline, 0);
@@ -49,7 +50,7 @@ size_t GravityGun::MidMaterial::PipelineHash() const
 bool GravityGun::MidMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
 	MeshDrawArgs* mDrawArgs = reinterpret_cast<MeshDrawArgs*>(drawArgs);
-	if (mDrawArgs->drawMode != MeshDrawMode::Emissive)
+	if (mDrawArgs->drawMode != MeshDrawMode::TransparentAfterWater)
 		return false;
 	
 	cmdCtx.BindPipeline(m_pipeline);

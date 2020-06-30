@@ -1,13 +1,12 @@
 #include "DeferredRenderer.hpp"
 #include "Lighting/LightMeshes.hpp"
 #include "RenderSettings.hpp"
+#include "GraphicsCommon.hpp"
 #include "../Settings.hpp"
 
 const eg::FramebufferFormatHint DeferredRenderer::GEOMETRY_FB_FORMAT =
 {
-	1,
-	DeferredRenderer::DEPTH_FORMAT,
-	{ eg::Format::R8G8B8A8_UNorm, eg::Format::R8G8B8A8_UNorm }
+	1, GB_DEPTH_FORMAT, { GB_COLOR_FORMAT, GB_COLOR_FORMAT }
 };
 
 static eg::SamplerDescription s_attachmentSamplerDesc;
@@ -114,95 +113,10 @@ void DeferredRenderer::CreatePipelines()
 	m_pointLightPipelineHardShadows.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
 }
 
-DeferredRenderer::RenderTarget::RenderTarget(uint32_t width, uint32_t height,
-	eg::TextureRef outputTexture, uint32_t outputArrayLayer, QualityLevel waterQuality)
-{
-	m_width = width;
-	m_height = height;
-	m_waterOutputTexture = outputTexture;
-	
-	eg::TextureCreateInfo colorTexCreateInfo;
-	colorTexCreateInfo.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample;
-	colorTexCreateInfo.width = m_width;
-	colorTexCreateInfo.height = m_height;
-	colorTexCreateInfo.mipLevels = 1;
-	colorTexCreateInfo.format = eg::Format::R8G8B8A8_UNorm;
-	colorTexCreateInfo.defaultSamplerDescription = &s_attachmentSamplerDesc;
-	m_gbColor1Texture = eg::Texture::Create2D(colorTexCreateInfo);
-	m_gbColor2Texture = eg::Texture::Create2D(colorTexCreateInfo);
-	
-	eg::TextureCreateInfo depthTexCreateInfo;
-	depthTexCreateInfo.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample | eg::TextureFlags::CopySrc;
-	depthTexCreateInfo.width = m_width;
-	depthTexCreateInfo.height = m_height;
-	depthTexCreateInfo.mipLevels = 1;
-	depthTexCreateInfo.format = DEPTH_FORMAT;
-	depthTexCreateInfo.defaultSamplerDescription = &s_attachmentSamplerDesc;
-	m_gbDepthTexture = eg::Texture::Create2D(depthTexCreateInfo);
-	
-	eg::FramebufferAttachment gbColorAttachments[] = { m_gbColor1Texture.handle, m_gbColor2Texture.handle };
-	eg::FramebufferCreateInfo gbFramebufferCI;
-	gbFramebufferCI.colorAttachments = gbColorAttachments;
-	gbFramebufferCI.depthStencilAttachment = m_gbDepthTexture.handle;
-	m_gbFramebuffer = eg::Framebuffer(gbFramebufferCI);
-	
-	
-	eg::TextureCreateInfo flagsTexCreateInfo;
-	flagsTexCreateInfo.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample;
-	flagsTexCreateInfo.width = m_width;
-	flagsTexCreateInfo.height = m_height;
-	flagsTexCreateInfo.mipLevels = 1;
-	flagsTexCreateInfo.format = FLAGS_FORMAT;
-	flagsTexCreateInfo.defaultSamplerDescription = &s_attachmentSamplerDesc;
-	m_flagsTexture = eg::Texture::Create2D(flagsTexCreateInfo);
-	
-	eg::FramebufferAttachment flagsTextureAttachment(m_flagsTexture.handle);
-	m_flagsFramebuffer = eg::Framebuffer({ &flagsTextureAttachment, 1 }, m_gbDepthTexture.handle);
-	
-	
-	eg::TextureCreateInfo waterInputTexCreateInfo;
-	waterInputTexCreateInfo.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample;
-	waterInputTexCreateInfo.width = m_width;
-	waterInputTexCreateInfo.height = m_height;
-	waterInputTexCreateInfo.mipLevels = 1;
-	waterInputTexCreateInfo.format = DeferredRenderer::LIGHT_COLOR_FORMAT_HDR;
-	waterInputTexCreateInfo.defaultSamplerDescription = &s_attachmentSamplerDesc;
-	m_lightingOutputTexture = eg::Texture::Create2D(waterInputTexCreateInfo);
-	
-	
-	eg::FramebufferAttachment lightFBAttachments[1] = { m_lightingOutputTexture.handle };
-	m_lightingFramebuffer = eg::Framebuffer(lightFBAttachments);
-	
-	eg::FramebufferAttachment lightFBAttachmentsNoWater[1] = { outputTexture.handle };
-	m_lightingFramebufferNoWater = eg::Framebuffer(lightFBAttachmentsNoWater);
-	
-	eg::FramebufferCreateInfo emissiveFramebufferCI;
-	eg::FramebufferCreateInfo emissiveFramebufferNoWaterCI;
-	emissiveFramebufferCI.depthStencilAttachment = m_gbDepthTexture.handle;
-	emissiveFramebufferNoWaterCI.depthStencilAttachment = m_gbDepthTexture.handle;
-	emissiveFramebufferCI.colorAttachments = lightFBAttachments;
-	emissiveFramebufferNoWaterCI.colorAttachments = lightFBAttachmentsNoWater;
-	
-	m_emissiveFramebuffer = eg::Framebuffer(emissiveFramebufferCI);
-	m_emissiveFramebufferNoWater = eg::Framebuffer(emissiveFramebufferNoWaterCI);
-	
-	m_waterRT = WaterRenderer::RenderTarget(width, height, m_lightingOutputTexture,
-		DepthTexture(), outputTexture, outputArrayLayer, waterQuality);
-}
-
-void DeferredRenderer::PollSettingsChanged()
-{
-	if (settings.reflectionsQuality != m_currentReflectionQualityLevel)
-	{
-		m_currentReflectionQualityLevel = settings.reflectionsQuality;
-		CreatePipelines();
-	}
-}
-
-void DeferredRenderer::BeginGeometry(RenderTarget& target) const
+void DeferredRenderer::BeginGeometry() const
 {
 	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = target.m_gbFramebuffer.handle;
+	rpBeginInfo.framebuffer = GetFramebuffer(RenderTex::GBColor1, RenderTex::GBColor2, RenderTex::GBDepth);
 	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Clear;
 	rpBeginInfo.depthClearValue = 1.0f;
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
@@ -212,44 +126,60 @@ void DeferredRenderer::BeginGeometry(RenderTarget& target) const
 	eg::DC.BeginRenderPass(rpBeginInfo);
 }
 
-void DeferredRenderer::BeginGeometryFlags(RenderTarget& target) const
+void DeferredRenderer::BeginGeometryFlags() const
 {
 	eg::DC.EndRenderPass();
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = target.m_flagsFramebuffer.handle;
+	rpBeginInfo.framebuffer = GetFramebuffer(RenderTex::Flags, {}, RenderTex::GBDepth);
 	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Load;
-	rpBeginInfo.depthClearValue = 1.0f;
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
 	rpBeginInfo.colorAttachments[0].clearValue = eg::ColorSRGB(0, 0, 0, 0);
 	eg::DC.BeginRenderPass(rpBeginInfo);
 }
 
-void DeferredRenderer::BeginEmissive(DeferredRenderer::RenderTarget& target, bool hasWater)
+void DeferredRenderer::EndGeometry() const
 {
 	eg::DC.EndRenderPass();
 	
+	RenderTextureUsageHintFS(RenderTex::GBColor1);
+	RenderTextureUsageHintFS(RenderTex::GBColor2);
+	RenderTextureUsageHintFS(RenderTex::GBDepth);
+	RenderTextureUsageHintFS(RenderTex::Flags);
+}
+
+void DeferredRenderer::BeginTransparent(bool isBeforeWater)
+{
+	RenderTex colorTex = isBeforeWater ? RenderTex::LitWithoutWater : RenderTex::Lit;
+	
 	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = hasWater ? target.m_emissiveFramebuffer.handle : target.m_emissiveFramebufferNoWater.handle;
+	rpBeginInfo.framebuffer = GetFramebuffer(colorTex, {}, RenderTex::GBDepth);
 	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Load;
-	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
-	rpBeginInfo.colorAttachments[0].clearValue = eg::ColorLin(eg::Color::Black);
+	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Load;
 	
 	eg::DC.BeginRenderPass(rpBeginInfo);
 }
 
-void DeferredRenderer::BeginLighting(RenderTarget& target, bool hasWater) const
+void DeferredRenderer::EndTransparent(bool isBeforeWater)
 {
 	eg::DC.EndRenderPass();
-	
-	target.m_gbColor1Texture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
-	target.m_gbColor2Texture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
-	target.m_gbDepthTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
-	target.m_flagsTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
+	if (isBeforeWater)
+	{
+		RenderTextureUsageHintFS(RenderTex::GBDepth);
+	}
+}
+
+void DeferredRenderer::BeginLighting(bool hasWater)
+{
+	if (settings.reflectionsQuality != m_currentReflectionQualityLevel)
+	{
+		m_currentReflectionQualityLevel = settings.reflectionsQuality;
+		CreatePipelines();
+	}
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = hasWater ? target.m_lightingFramebuffer.handle : target.m_lightingFramebufferNoWater.handle;
-	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Load;
+	rpBeginInfo.framebuffer = GetFramebuffer(hasWater ? RenderTex::LitWithoutWater : RenderTex::Lit, {}, {});
+	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
 	
 	eg::DC.BeginRenderPass(rpBeginInfo);
 	
@@ -261,40 +191,28 @@ void DeferredRenderer::BeginLighting(RenderTarget& target, bool hasWater) const
 	
 	eg::DC.BindPipeline(m_ambientPipeline);
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
-	eg::DC.BindTexture(target.m_gbColor1Texture, 0, 1);
-	eg::DC.BindTexture(target.m_gbColor2Texture, 0, 2);
-	eg::DC.BindTexture(target.m_gbDepthTexture, 0, 3);
-	eg::DC.BindTexture(target.m_flagsTexture, 0, 4);
+	eg::DC.BindTexture(GetRenderTexture(RenderTex::GBColor1), 0, 1);
+	eg::DC.BindTexture(GetRenderTexture(RenderTex::GBColor2), 0, 2);
+	eg::DC.BindTexture(GetRenderTexture(RenderTex::GBDepth), 0, 3);
+	eg::DC.BindTexture(GetRenderTexture(RenderTex::Flags), 0, 4);
 	
 	eg::DC.PushConstants(0, sizeof(float) * 3, &ambientColor.r);
 	
 	eg::DC.Draw(0, 3, 0, 1);
 }
 
-void DeferredRenderer::End(RenderTarget& target) const
+void DeferredRenderer::End() const
 {
 	eg::DC.EndRenderPass();
 }
 
-void DeferredRenderer::DrawWaterBasic(eg::BufferRef positionsBuffer, uint32_t numParticles) const
-{
-	if (numParticles > 0)
-	{
-		m_waterRenderer.RenderBasic(positionsBuffer, numParticles);
-	}
-}
-
-void DeferredRenderer::DrawWater(RenderTarget& target, eg::BufferRef positionsBuffer, uint32_t numParticles)
-{
-	target.m_lightingOutputTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
-	
-	m_waterRenderer.Render(positionsBuffer, numParticles, target.m_waterRT);
-}
-
-void DeferredRenderer::DrawSpotLights(RenderTarget& target, const std::vector<SpotLightDrawData>& spotLights) const
+void DeferredRenderer::DrawSpotLights(const std::vector<SpotLightDrawData>& spotLights) const
 {
 	if (spotLights.empty() || unlit)
 		return;
+	
+	auto gpuTimer = eg::StartGPUTimer("Spot Lights");
+	auto cpuTimer = eg::StartCPUTimer("Spot Lights");
 	
 	eg::DC.BindPipeline(m_spotLightPipeline);
 	
@@ -302,10 +220,10 @@ void DeferredRenderer::DrawSpotLights(RenderTarget& target, const std::vector<Sp
 	
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 	
-	eg::DC.BindTexture(target.m_gbColor1Texture, 0, 1);
-	eg::DC.BindTexture(target.m_gbColor2Texture, 0, 2);
-	eg::DC.BindTexture(target.m_gbDepthTexture, 0, 3);
-	eg::DC.BindTexture(target.m_flagsTexture, 0, 4);
+	eg::DC.BindTexture(GetRenderTexture(RenderTex::GBColor1), 0, 1);
+	eg::DC.BindTexture(GetRenderTexture(RenderTex::GBColor2), 0, 2);
+	eg::DC.BindTexture(GetRenderTexture(RenderTex::GBDepth), 0, 3);
+	eg::DC.BindTexture(GetRenderTexture(RenderTex::Flags), 0, 4);
 	
 	for (const SpotLightDrawData& spotLight : spotLights)
 	{
@@ -315,10 +233,13 @@ void DeferredRenderer::DrawSpotLights(RenderTarget& target, const std::vector<Sp
 	}
 }
 
-void DeferredRenderer::DrawPointLights(RenderTarget& target, const std::vector<PointLightDrawData>& pointLights) const
+void DeferredRenderer::DrawPointLights(const std::vector<PointLightDrawData>& pointLights) const
 {
 	if (pointLights.empty() || unlit)
 		return;
+	
+	auto gpuTimer = eg::StartGPUTimer("Point Lights");
+	auto cpuTimer = eg::StartCPUTimer("Point Lights");
 	
 	bool softShadows = settings.shadowQuality >= QualityLevel::Medium;
 	
@@ -328,10 +249,10 @@ void DeferredRenderer::DrawPointLights(RenderTarget& target, const std::vector<P
 	
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 	
-	eg::DC.BindTexture(target.m_gbColor1Texture, 0, 1);
-	eg::DC.BindTexture(target.m_gbColor2Texture, 0, 2);
-	eg::DC.BindTexture(target.m_gbDepthTexture, 0, 3);
-	eg::DC.BindTexture(target.m_flagsTexture, 0, 4);
+	eg::DC.BindTexture(GetRenderTexture(RenderTex::GBColor1), 0, 1);
+	eg::DC.BindTexture(GetRenderTexture(RenderTex::GBColor2), 0, 2);
+	eg::DC.BindTexture(GetRenderTexture(RenderTex::GBDepth), 0, 3);
+	eg::DC.BindTexture(GetRenderTexture(RenderTex::Flags), 0, 4);
 	
 	for (const PointLightDrawData& pointLight : pointLights)
 	{

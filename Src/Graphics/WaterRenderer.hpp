@@ -57,7 +57,12 @@ public:
 	
 	void RenderBasic(eg::BufferRef positionsBuffer, uint32_t numParticles) const;
 	
-	void Render(eg::BufferRef positionsBuffer, uint32_t numParticles, RenderTarget& renderTarget);
+	void RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParticles);
+	void RenderPost();
+	
+	static eg::TextureRef GetDummyDepthTexture();
+	
+	static constexpr QualityLevel HighPrecisionMinQL = QualityLevel::Medium;
 	
 private:
 	void CreateDepthBlurPipelines(uint32_t samples);

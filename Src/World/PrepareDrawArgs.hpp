@@ -9,7 +9,6 @@ struct PrepareDrawArgs
 	const class Player* player;
 	std::vector<SpotLightDrawData> spotLights;
 	std::vector<PointLightDrawData> pointLights;
-	std::vector<struct ReflectionPlane*> reflectionPlanes;
 	eg::MeshBatch* meshBatch;
 	eg::MeshBatchOrdered* transparentMeshBatch;
 };

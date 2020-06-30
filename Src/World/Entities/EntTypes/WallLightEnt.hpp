@@ -31,6 +31,8 @@ public:
 private:
 	EmissiveMaterial::InstanceData GetInstanceData(float colorScale) const;
 	
+	void DrawEmissiveModel(const EntDrawArgs& drawArgs, float colorScale) const;
+	
 	Dir m_forwardDir;
 	glm::vec3 m_position;
 	

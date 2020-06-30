@@ -1,6 +1,7 @@
 #include "LightStripMaterial.hpp"
 #include "../DeferredRenderer.hpp"
 #include "MeshDrawArgs.hpp"
+#include "../GraphicsCommon.hpp"
 #include "../RenderSettings.hpp"
 
 static eg::Pipeline lightStripPipelineEditor;
@@ -26,8 +27,8 @@ static void OnInit()
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.label = "LightStripGame";
 	lightStripPipelineGame = eg::Pipeline::Create(pipelineCI);
-	lightStripPipelineGame.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT_LDR, DeferredRenderer::DEPTH_FORMAT);
-	lightStripPipelineGame.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT_HDR, DeferredRenderer::DEPTH_FORMAT);
+	lightStripPipelineGame.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
+	lightStripPipelineGame.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
 	
 	pipelineCI.cullMode = eg::CullMode::None;
 	pipelineCI.label = "LightStripEditor";

@@ -24,6 +24,8 @@ public:
 	
 	bool BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const override;
 	
+	virtual OrderRequirement GetOrderRequirement() const override { return OrderRequirement::OnlyUnordered; }
+	
 	static void InitAssetTypes();
 	
 	static bool AssetLoader(const eg::AssetLoadContext& loadContext);

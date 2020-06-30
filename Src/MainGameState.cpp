@@ -21,10 +21,6 @@ static int* physicsDebug = eg::TweakVarInt("phys_dbg_draw", 0, 0, 1);
 MainGameState::MainGameState(RenderContext& renderCtx)
 	: m_renderCtx(&renderCtx)
 {
-	m_prepareDrawArgs.isEditor = false;
-	m_prepareDrawArgs.meshBatch = &m_renderCtx->meshBatch;
-	m_prepareDrawArgs.transparentMeshBatch = &m_renderCtx->transparentMeshBatch;
-	m_prepareDrawArgs.player = &m_player;
 	m_projection.SetZNear(0.02f);
 	m_projection.SetZFar(200.0f);
 	
@@ -81,65 +77,6 @@ void MainGameState::LoadWorld(std::istream& stream, int64_t levelIndex, const En
 void MainGameState::OnDeactivate()
 {
 	m_waterSimulator.Stop();
-}
-
-void MainGameState::DoDeferredRendering(bool useLightProbes, DeferredRenderer::RenderTarget& renderTarget)
-{
-	MeshDrawArgs mDrawArgs;
-	mDrawArgs.renderTarget = m_renderTarget.get();
-	
-	{
-		auto gpuTimerGeom = eg::StartGPUTimer("Geometry");
-		auto cpuTimerGeom = eg::StartCPUTimer("Geometry");
-		
-		m_renderCtx->renderer.BeginGeometry(renderTarget);
-		
-		m_world->Draw();
-		mDrawArgs.drawMode = MeshDrawMode::Game;
-		m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
-		
-		m_renderCtx->renderer.BeginGeometryFlags(renderTarget);
-		
-		mDrawArgs.drawMode = MeshDrawMode::ObjectFlags;
-		m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
-	}
-	
-	{
-		auto gpuTimerEmi = eg::StartGPUTimer("Emissive");
-		auto cpuTimerEmi = eg::StartCPUTimer("Emissive");
-		
-		m_renderCtx->renderer.BeginEmissive(renderTarget, m_waterSimulator.NumParticles() > 0);
-		
-		mDrawArgs.drawMode = MeshDrawMode::Emissive;
-		m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
-		m_renderCtx->transparentMeshBatch.Draw(eg::DC, &mDrawArgs);
-	}
-	
-	{
-		auto gpuTimerLight = eg::StartGPUTimer("Lighting");
-		auto cpuTimerLight = eg::StartCPUTimer("Lighting");
-		
-		m_renderCtx->renderer.BeginLighting(renderTarget, m_waterSimulator.NumParticles() > 0);
-		
-		m_renderCtx->renderer.DrawSpotLights(renderTarget, m_prepareDrawArgs.spotLights);
-		m_renderCtx->renderer.DrawPointLights(renderTarget, m_prepareDrawArgs.pointLights);
-		
-		mDrawArgs.drawMode = MeshDrawMode::Transparent;
-		m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
-		m_renderCtx->transparentMeshBatch.Draw(eg::DC, &mDrawArgs);
-		
-		m_particleRenderer.Draw(m_particleManager, renderTarget.DepthTexture());
-		
-		m_renderCtx->renderer.End(renderTarget);
-	}
-	
-	if (m_waterSimulator.NumParticles() > 0)
-	{
-		auto gpuTimerWater = eg::StartGPUTimer("Draw Water");
-		auto cpuTimerWater = eg::StartCPUTimer("Draw Water");
-		
-		m_renderCtx->renderer.DrawWater(renderTarget, m_waterSimulator.GetPositionsBuffer(), m_waterSimulator.NumParticles());
-	}
 }
 
 void MainGameState::RunFrame(float dt)
@@ -254,37 +191,19 @@ void MainGameState::RunFrame(float dt)
 		if (m_lightingQuality != settings.lightingQuality)
 		{
 			m_lightingQuality = settings.lightingQuality;
-			m_renderTarget.reset();
 			m_bloomRenderTarget.reset();
-		}
-		
-		if (m_waterQuality != settings.waterQuality)
-		{
-			m_renderTarget.reset();
-			m_waterQuality = settings.waterQuality;
 		}
 	}
 	
 	GravityCornerLightMaterial::instance.Update(dt);
 	
-	if (m_renderTarget == nullptr || m_renderTarget->Width() != (uint32_t)eg::CurrentResolutionX() ||
-		m_renderTarget->Height() != (uint32_t)eg::CurrentResolutionY())
+	if (settings.BloomEnabled())
 	{
-		eg::TextureCreateInfo textureCI;
-		if (settings.HDREnabled())
-			textureCI.format = DeferredRenderer::LIGHT_COLOR_FORMAT_HDR;
-		else
-			textureCI.format = DeferredRenderer::LIGHT_COLOR_FORMAT_LDR;
-		textureCI.width = (uint32_t)eg::CurrentResolutionX();
-		textureCI.height = (uint32_t)eg::CurrentResolutionY();
-		textureCI.mipLevels = 1;
-		textureCI.flags = eg::TextureFlags::ShaderSample | eg::TextureFlags::FramebufferAttachment;
-		m_renderOutputTexture = eg::Texture::Create2D(textureCI);
+		bool outOfDate = m_bloomRenderTarget == nullptr ||
+			(int)m_bloomRenderTarget->OutputTexture().Width() != eg::CurrentResolutionX() ||
+			(int)m_bloomRenderTarget->OutputTexture().Height() != eg::CurrentResolutionY();
 		
-		m_renderTarget = std::make_unique<DeferredRenderer::RenderTarget>((uint32_t)eg::CurrentResolutionX(),
-			(uint32_t)eg::CurrentResolutionY(), m_renderOutputTexture, 0, m_waterQuality);
-		
-		if (settings.BloomEnabled())
+		if (outOfDate)
 		{
 			m_bloomRenderTarget = std::make_unique<eg::BloomRenderer::RenderTarget>(
 				(uint32_t)eg::CurrentResolutionX(), (uint32_t)eg::CurrentResolutionY(), 3);
@@ -311,13 +230,17 @@ void MainGameState::RunFrame(float dt)
 	m_renderCtx->meshBatch.Begin();
 	m_renderCtx->transparentMeshBatch.Begin();
 	
-	m_prepareDrawArgs.spotLights.clear();
-	m_prepareDrawArgs.pointLights.clear();
-	m_prepareDrawArgs.reflectionPlanes.clear();
-	m_world->PrepareForDraw(m_prepareDrawArgs);
+	PrepareDrawArgs prepareDrawArgs;
+	prepareDrawArgs.isEditor = false;
+	prepareDrawArgs.meshBatch = &m_renderCtx->meshBatch;
+	prepareDrawArgs.transparentMeshBatch = &m_renderCtx->transparentMeshBatch;
+	prepareDrawArgs.player = &m_player;
+	prepareDrawArgs.spotLights.clear();
+	prepareDrawArgs.pointLights.clear();
+	m_world->PrepareForDraw(prepareDrawArgs);
 	if (m_world->playerHasGravityGun)
 	{
-		m_gravityGun.CollectLights(m_prepareDrawArgs.pointLights);
+		m_gravityGun.CollectLights(prepareDrawArgs.pointLights);
 		m_gravityGun.Draw(m_renderCtx->meshBatch);
 	}
 	
@@ -328,32 +251,126 @@ void MainGameState::RunFrame(float dt)
 	
 	m_particleManager.Step(dt, frustum, m_player.Rotation() * glm::vec3(0, 0, -1));
 	
-	m_plShadowMapper.UpdateShadowMaps(m_prepareDrawArgs.pointLights, [this] (const PointLightShadowRenderArgs& args)
+	m_plShadowMapper.UpdateShadowMaps(prepareDrawArgs.pointLights, [this] (const PointLightShadowRenderArgs& args)
 	{
 		RenderPointLightShadows(args);
 	});
 	
-	DoDeferredRendering(true, *m_renderTarget);
+	MeshDrawArgs mDrawArgs;
+	if (m_waterSimulator.NumParticlesToDraw() > 0)
+	{
+		mDrawArgs.waterDepthTexture = GetRenderTexture(RenderTex::WaterDepthBlurred2);
+	}
+	else
+	{
+		mDrawArgs.waterDepthTexture = WaterRenderer::GetDummyDepthTexture();
+	}
+	
+	{
+		auto gpuTimerGeom = eg::StartGPUTimer("Geometry");
+		auto cpuTimerGeom = eg::StartCPUTimer("Geometry");
+		
+		m_renderCtx->renderer.BeginGeometry();
+		
+		m_world->Draw();
+		mDrawArgs.drawMode = MeshDrawMode::Game;
+		m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
+		
+		m_renderCtx->renderer.BeginGeometryFlags();
+		
+		mDrawArgs.drawMode = MeshDrawMode::ObjectFlags;
+		m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
+		
+		m_renderCtx->renderer.EndGeometry();
+	}
+	
+	if (m_waterSimulator.NumParticlesToDraw() > 0)
+	{
+		auto gpuTimerWater = eg::StartGPUTimer("Water (early)");
+		auto cpuTimerWater = eg::StartCPUTimer("Water (early)");
+		m_waterRenderer.RenderEarly(m_waterSimulator.GetPositionsBuffer(), m_waterSimulator.NumParticlesToDraw());
+	}
+	
+	{
+		auto gpuTimerLight = eg::StartGPUTimer("Lighting");
+		auto cpuTimerLight = eg::StartCPUTimer("Lighting");
+		
+		m_renderCtx->renderer.BeginLighting(m_waterSimulator.NumParticlesToDraw() > 0);
+		
+		m_renderCtx->renderer.DrawSpotLights(prepareDrawArgs.spotLights);
+		m_renderCtx->renderer.DrawPointLights(prepareDrawArgs.pointLights);
+		
+		m_particleRenderer.Draw(m_particleManager, GetRenderTexture(RenderTex::GBDepth));
+		
+		m_renderCtx->renderer.End();
+	}
+	
+	if (m_waterSimulator.NumParticlesToDraw() > 0)
+	{
+		auto gpuTimerTransparent = eg::StartGPUTimer("Transparent (pre-water)");
+		auto cpuTimerTransparent = eg::StartCPUTimer("Transparent (pre-water)");
+		
+		m_renderCtx->renderer.BeginTransparent(true);
+		
+		mDrawArgs.drawMode = MeshDrawMode::Emissive;
+		m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
+		
+		mDrawArgs.drawMode = MeshDrawMode::TransparentBeforeWater;
+		m_renderCtx->transparentMeshBatch.Draw(eg::DC, &mDrawArgs);
+		
+		m_renderCtx->renderer.EndTransparent(true);
+	}
+	
+	if (m_waterSimulator.NumParticlesToDraw() > 0)
+	{
+		RenderTextureUsageHintFS(RenderTex::LitWithoutWater);
+		
+		auto gpuTimerWater = eg::StartGPUTimer("Water (post)");
+		auto cpuTimerWater = eg::StartCPUTimer("Water (post)");
+		m_waterRenderer.RenderPost();
+	}
+	
+	{
+		auto gpuTimerTransparent = eg::StartGPUTimer("Transparent");
+		auto cpuTimerTransparent = eg::StartCPUTimer("Transparent");
+		
+		m_renderCtx->renderer.BeginTransparent(false);
+		
+		if (m_waterSimulator.NumParticlesToDraw() == 0)
+		{
+			mDrawArgs.drawMode = MeshDrawMode::Emissive;
+			m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
+		}
+		
+		mDrawArgs.drawMode = MeshDrawMode::TransparentAfterWater;
+		m_renderCtx->transparentMeshBatch.Draw(eg::DC, &mDrawArgs);
+		
+		m_renderCtx->renderer.EndTransparent(false);
+	}
+	
+	//TODO: Move SSR Here
+	
+	//TODO: Move gun rendering here
 	
 	if (*physicsDebug)
 	{
 		m_physicsDebugRenderer.Render(m_physicsEngine, viewProjMatrix,
-			m_renderOutputTexture, m_renderTarget->DepthTexture());
+			GetRenderTexture(RenderTex::Lit), GetRenderTexture(RenderTex::GBDepth));
 	}
 	
-	m_renderOutputTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
+	RenderTextureUsageHintFS(RenderTex::Lit);
 	
 	if (m_bloomRenderTarget != nullptr)
 	{
 		auto gpuTimerBloom = eg::StartGPUTimer("Bloom");
 		auto cpuTimerBloom = eg::StartCPUTimer("Bloom");
-		m_bloomRenderer->Render(glm::vec3(1.5f), m_renderOutputTexture, *m_bloomRenderTarget);
+		m_bloomRenderer->Render(glm::vec3(1.5f), GetRenderTexture(RenderTex::Lit), *m_bloomRenderTarget);
 	}
 	
 	{
 		auto gpuTimerPost = eg::StartGPUTimer("Post");
 		auto cpuTimerPost = eg::StartCPUTimer("Post");
-		m_postProcessor.Render(m_renderOutputTexture, m_bloomRenderTarget.get());
+		m_postProcessor.Render(GetRenderTexture(RenderTex::Lit), m_bloomRenderTarget.get());
 	}
 	
 	m_pausedMenu.Draw(eg::SpriteBatch::overlay);
@@ -406,7 +423,6 @@ void MainGameState::DrawOverlay(float dt)
 	ImGui::Text("Particles: %d", m_particleManager.ParticlesToDraw());
 	ImGui::Text("Water Spheres: %d", m_waterSimulator.NumParticles());
 	ImGui::Text("Water Update Time: %.2fms", m_waterSimulator.LastUpdateTime() / 1E6);
-	ImGui::Text("Reflection Planes: %d", (int)m_prepareDrawArgs.reflectionPlanes.size());
 	
 	ImGui::End();
 	ImGui::PopStyleVar();

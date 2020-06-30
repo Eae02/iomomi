@@ -11,6 +11,8 @@ public:
 	
 	bool BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const override;
 	
+	virtual OrderRequirement GetOrderRequirement() const override { return OrderRequirement::OnlyUnordered; }
+	
 	void Activate(const glm::vec3& position);
 	
 	void Update(float dt);

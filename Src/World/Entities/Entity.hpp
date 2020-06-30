@@ -13,7 +13,6 @@ struct EntDrawArgs
 
 struct EntGameDrawArgs : EntDrawArgs
 {
-	std::vector<struct ReflectionPlane*>* reflectionPlanes;
 	std::vector<PointLightDrawData>* pointLights;
 };
 

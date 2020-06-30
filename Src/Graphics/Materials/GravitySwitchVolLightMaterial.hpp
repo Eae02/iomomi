@@ -10,6 +10,8 @@ struct GravitySwitchVolLightMaterial : public eg::IMaterial
 	
 	bool BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const override;
 	
+	virtual OrderRequirement GetOrderRequirement() const override { return OrderRequirement::OnlyOrdered; }
+	
 	static void SetQuality(QualityLevel qualityLevel);
 	
 	static eg::MeshBatch::Mesh GetMesh();

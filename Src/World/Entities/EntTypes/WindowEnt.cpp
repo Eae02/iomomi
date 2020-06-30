@@ -1,7 +1,7 @@
 #include "WindowEnt.hpp"
-#include "../../../../Protobuf/Build/WindowEntity.pb.h"
-#include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../Collision.hpp"
+#include "../../../Graphics/Materials/StaticPropMaterial.hpp"
+#include "../../../../Protobuf/Build/WindowEntity.pb.h"
 
 #include <imgui.h>
 #include <glm/glm.hpp>
@@ -10,8 +10,20 @@ static constexpr float BOX_SHAPE_RADIUS = 0.03;
 
 static eg::Model* windowModel;
 
+struct WindowType
+{
+	const char* name;
+	const eg::IMaterial* material;
+	bool blocksGravityGun;
+	bool blocksWater;
+};
+
+static WindowType windowTypes[1];
+
 static void OnInit()
 {
+	windowTypes[0] = { "Grating", &eg::GetAsset<StaticPropMaterial>("Materials/Platform.yaml"), false, false };
+	
 	windowModel = &eg::GetAsset<eg::Model>("Models/Window.obj");
 }
 
@@ -19,8 +31,6 @@ EG_ON_INIT(OnInit)
 
 WindowEnt::WindowEnt()
 {
-	m_material = &eg::GetAsset<StaticPropMaterial>("Materials/Platform.yaml");
-	
 	m_physicsObject.canCarry = false;
 	m_physicsObject.canBePushed = false;
 	m_physicsObject.rayIntersectMask = RAY_MASK_BLOCK_PICK_UP;
@@ -35,6 +45,24 @@ void WindowEnt::RenderSettings()
 	ImGui::Combo("Plane", &m_aaQuad.upPlane, "X\0Y\0Z\0");
 	
 	ImGui::DragFloat("Texture Scale", &m_textureScale, 0.5f, 0.0f, INFINITY);
+	
+	if (ImGui::BeginCombo("Window Type", windowTypes[m_windowType].name))
+	{
+		for (uint32_t i = 0; i < std::size(windowTypes); i++)
+		{
+			if (ImGui::Selectable(windowTypes[i].name, m_windowType == i))
+			{
+				m_windowType = i;
+			}
+			if (ImGui::IsItemHovered())
+			{
+				static const char* noYes[] = {"no", "yes"};
+				ImGui::SetTooltip("Blocks Water: %s\nBlocks Gun: %s", noYes[windowTypes[i].blocksWater],
+				                  noYes[windowTypes[i].blocksGravityGun]);
+			}
+		}
+		ImGui::EndCombo();
+	}
 }
 
 void WindowEnt::CommonDraw(const EntDrawArgs& args)
@@ -48,13 +76,16 @@ void WindowEnt::CommonDraw(const EntDrawArgs& args)
 		glm::vec4(0, 0, 0, 1)
 	);
 	glm::vec2 textureScale = m_aaQuad.radius / m_textureScale;
-	args.meshBatch->AddModel(*windowModel, *m_material, StaticPropMaterial::InstanceData(transform, textureScale));
+	args.meshBatch->AddModel(*windowModel, *windowTypes[m_windowType].material,
+		StaticPropMaterial::InstanceData(transform, textureScale));
 }
 
 const void* WindowEnt::GetComponent(const std::type_info& type) const
 {
 	if (type == typeid(AxisAlignedQuadComp))
 		return &m_aaQuad;
+	if (type == typeid(WaterBlockComp) && windowTypes[m_windowType].blocksWater)
+		return &m_waterBlockComp;
 	return nullptr;
 }
 
@@ -68,6 +99,7 @@ void WindowEnt::Serialize(std::ostream& stream) const
 	windowPB.set_sizex(m_aaQuad.radius.x);
 	windowPB.set_sizey(m_aaQuad.radius.y);
 	windowPB.set_texture_scale(m_textureScale);
+	windowPB.set_window_type(m_windowType);
 	
 	windowPB.SerializeToOstream(&stream);
 }
@@ -82,6 +114,17 @@ void WindowEnt::Deserialize(std::istream& stream)
 	m_aaQuad.upPlane = windowPB.up_plane();
 	m_aaQuad.radius = glm::vec2(windowPB.sizex(), windowPB.sizey());
 	m_textureScale = windowPB.texture_scale();
+	m_windowType = windowPB.window_type();
+	if (m_windowType >= std::size(windowTypes))
+		m_windowType = 0;
+	
+	if (windowTypes[m_windowType].blocksGravityGun)
+	{
+		m_physicsObject.rayIntersectMask |= RAY_MASK_BLOCK_GUN;
+	}
+	
+	std::fill_n(m_waterBlockComp.blockedGravities, 6, true);
+	m_waterBlockComp.InitFromAAQuadComponent(m_aaQuad, m_physicsObject.position);
 	
 	auto [tangent, bitangent] = m_aaQuad.GetTangents(0);
 	glm::vec3 normal = m_aaQuad.GetNormal() * BOX_SHAPE_RADIUS;

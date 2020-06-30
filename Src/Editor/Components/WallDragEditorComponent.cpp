@@ -1,5 +1,6 @@
 #include "WallDragEditorComponent.hpp"
 #include "../PrimitiveRenderer.hpp"
+#include "../../Graphics/WallShader.hpp"
 
 #include <imgui.h>
 
@@ -255,27 +256,17 @@ void WallDragEditorComponent::IterateSelection(CallbackTp callback)
 	}
 }
 
-static const char* WALL_TEXTURE_NAMES[] =
-{
-	"No Draw",
-	"Tactile Gray",
-	"Clear Metal",
-	"Metal Grid",
-	"Cement",
-	"Panels 1",
-	"Panels 2",
-	"Panels 1 (Striped)",
-};
-
 void WallDragEditorComponent::RenderSettings(const EditorState& editorState)
 {
 	if (ImGui::CollapsingHeader("Textures", ImGuiTreeNodeFlags_DefaultOpen))
 	{
 		ImGui::BeginChildFrame(ImGui::GetID("TexturesList"), ImVec2(0, 300));
 		
-		for (size_t i = 0; i < eg::ArrayLen(WALL_TEXTURE_NAMES); i++)
+		for (size_t i = 0; i < MAX_WALL_MATERIALS; i++)
 		{
-			if (ImGui::Selectable(WALL_TEXTURE_NAMES[i], false) && m_selState == SelState::SelectDone)
+			if (!wallMaterials[i].initialized)
+				continue;
+			if (ImGui::Selectable(wallMaterials[i].name, false) && m_selState == SelState::SelectDone)
 			{
 				IterateSelection([&] (glm::ivec3 pos)
 				{

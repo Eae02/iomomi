@@ -25,6 +25,8 @@ public:
 	
 	bool BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const override;
 	
+	virtual OrderRequirement GetOrderRequirement() const override { return OrderRequirement::OnlyOrdered; }
+	
 private:
 	eg::Buffer m_meshBuffer;
 	eg::Pipeline m_pipeline;

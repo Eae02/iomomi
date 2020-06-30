@@ -16,7 +16,6 @@ layout(location=3) out vec3 tangent_out;
 
 layout(push_constant) uniform PC
 {
-	vec4 plane;
 	float roughness;
 	float globalAlpha;
 };

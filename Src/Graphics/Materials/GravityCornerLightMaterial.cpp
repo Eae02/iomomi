@@ -3,6 +3,7 @@
 #include "StaticPropMaterial.hpp"
 #include "../DeferredRenderer.hpp"
 #include "../RenderSettings.hpp"
+#include "../GraphicsCommon.hpp"
 
 GravityCornerLightMaterial GravityCornerLightMaterial::instance;
 
@@ -16,6 +17,7 @@ static void OnInit()
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityCornerLight.fs.glsl").DefaultVariant();
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.enableDepthTest = true;
+	pipelineCI.depthCompare = eg::CompareOp::LessOrEqual;
 	pipelineCI.cullMode = eg::CullMode::None;
 	pipelineCI.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
 	pipelineCI.vertexBindings[1] = { sizeof(StaticPropMaterial::InstanceData), eg::InputRate::Instance };
@@ -30,8 +32,8 @@ static void OnInit()
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.label = "GravityCornerLight";
 	gravityCornerPipeline = eg::Pipeline::Create(pipelineCI);
-	gravityCornerPipeline.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT_HDR, DeferredRenderer::DEPTH_FORMAT);
-	gravityCornerPipeline.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT_LDR, DeferredRenderer::DEPTH_FORMAT);
+	gravityCornerPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
+	gravityCornerPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
 	gravityCornerPipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
 	gravityCornerDescriptorSet = eg::DescriptorSet(gravityCornerPipeline, 0);

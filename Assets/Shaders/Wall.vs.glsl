@@ -14,9 +14,11 @@ layout(location=4) out vec2 roughnessRange_out;
 #define RENDER_SETTINGS_BINDING 0
 #include "Inc/RenderSettings.glh"
 
+layout(constant_id=1) const int MAX_MATERIALS = 8;
+
 layout(binding=1, std140) uniform MaterialSettingsUB
 {
-	vec4 matSettings[4]; 
+	vec4 matSettings[MAX_MATERIALS]; 
 };
 
 void main()

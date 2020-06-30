@@ -2,12 +2,14 @@
 #include "MeshDrawArgs.hpp"
 #include "../RenderSettings.hpp"
 #include "../DeferredRenderer.hpp"
+#include "../GraphicsCommon.hpp"
 #include "../../Settings.hpp"
 
 #include <random>
 #include <ctime>
 
-static eg::Pipeline gsVolLightPipeline;
+static eg::Pipeline gsVolLightPipelineBeforeWater;
+static eg::Pipeline gsVolLightPipelineAfterWater;
 
 //These values define the bounds of the AABB through which the ray will be traced. YMIN/YMAX define the bounds in the
 // dimension that is normal to the gravity switch. SIZE defines the radius of the AABB in the other two dimensions.
@@ -60,6 +62,11 @@ static eg::DescriptorSet lightVolDescriptorSet;
 
 static void OnInit()
 {
+	eg::SpecializationConstantEntry waterModeSpecConstant;
+	waterModeSpecConstant.constantID = WATER_MODE_CONST_ID;
+	waterModeSpecConstant.size = sizeof(int32_t);
+	waterModeSpecConstant.offset = 0;
+	
 	//Creates the volumetric light pipeline
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravitySwitchVolLight.vs.glsl").DefaultVariant();
@@ -71,11 +78,21 @@ static void OnInit()
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.vertexBindings[0] = { sizeof(float) * 3, eg::InputRate::Vertex };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
-	pipelineCI.label = "GravSwitchVolLight";
 	pipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
-	gsVolLightPipeline = eg::Pipeline::Create(pipelineCI);
-	gsVolLightPipeline.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT_LDR, DeferredRenderer::DEPTH_FORMAT);
-	gsVolLightPipeline.FramebufferFormatHint(DeferredRenderer::LIGHT_COLOR_FORMAT_HDR, DeferredRenderer::DEPTH_FORMAT);
+	pipelineCI.fragmentShader.specConstants = { &waterModeSpecConstant, 1 };
+	pipelineCI.fragmentShader.specConstantsDataSize = sizeof(int32_t);
+	
+	pipelineCI.label = "GravSwitchVolLight[BeforeWater]";
+	pipelineCI.fragmentShader.specConstantsData = const_cast<int32_t*>(&WATER_MODE_BEFORE);
+	gsVolLightPipelineBeforeWater = eg::Pipeline::Create(pipelineCI);
+	gsVolLightPipelineBeforeWater.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
+	gsVolLightPipelineBeforeWater.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
+	
+	pipelineCI.label = "GravSwitchVolLight[AfterWater]";
+	pipelineCI.fragmentShader.specConstantsData = const_cast<int32_t*>(&WATER_MODE_AFTER);
+	gsVolLightPipelineAfterWater = eg::Pipeline::Create(pipelineCI);
+	gsVolLightPipelineAfterWater.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
+	gsVolLightPipelineAfterWater.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
 	
 	//Creates the light data uniform buffer
 	eg::BufferCreateInfo lightDataBufferCreateInfo;
@@ -95,7 +112,7 @@ static void OnInit()
 	
 	cubeVertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
 	
-	lightVolDescriptorSet = eg::DescriptorSet(gsVolLightPipeline, 0);
+	lightVolDescriptorSet = eg::DescriptorSet(gsVolLightPipelineBeforeWater, 0);
 	lightVolDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
 	lightVolDescriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/GravitySwitchVolEmi.png"), 1);
 	lightVolDescriptorSet.BindUniformBuffer(lightDataBuffer, 2, 0, sizeof(LightDataBuffer));
@@ -103,7 +120,8 @@ static void OnInit()
 
 static void OnShutdown()
 {
-	gsVolLightPipeline.Destroy();
+	gsVolLightPipelineBeforeWater.Destroy();
+	gsVolLightPipelineAfterWater.Destroy();
 	cubeVertexBuffer.Destroy();
 	lightDataBuffer.Destroy();
 	lightVolDescriptorSet.Destroy();
@@ -154,14 +172,20 @@ void GravitySwitchVolLightMaterial::SetQuality(QualityLevel qualityLevel)
 
 bool GravitySwitchVolLightMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
-	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
-	
-	//Volumetric lighting should be rendered in emissive mode, and only if the quality level is high enough. 
-	if (mDrawArgs->drawMode != MeshDrawMode::Emissive || currentQualityLevel < QualityLevel::Medium)
+	if (currentQualityLevel < QualityLevel::Medium)
 		return false;
 	
-	cmdCtx.BindPipeline(gsVolLightPipeline);
+	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
+	
+	if (mDrawArgs->drawMode == MeshDrawMode::TransparentBeforeWater)
+		cmdCtx.BindPipeline(gsVolLightPipelineBeforeWater);
+	else if (mDrawArgs->drawMode == MeshDrawMode::TransparentAfterWater)
+		cmdCtx.BindPipeline(gsVolLightPipelineAfterWater);
+	else
+		return false;
+	
 	cmdCtx.BindDescriptorSet(lightVolDescriptorSet, 0);
+	cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 1, 0);
 	
 	return true;
 }

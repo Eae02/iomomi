@@ -1,9 +1,10 @@
 #include "ActivationLightStripEnt.hpp"
+#include "../Components/ActivatorComp.hpp"
+#include "../Components/ActivatableComp.hpp"
 #include "../../World.hpp"
 #include "../../../Vec3Compare.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
-#include "../Components/ActivatorComp.hpp"
-#include "../Components/ActivatableComp.hpp"
+#include "../../../Graphics/RenderSettings.hpp"
 
 #include <unordered_map>
 #include <tuple>

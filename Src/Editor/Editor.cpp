@@ -2,6 +2,8 @@
 #include "../Levels.hpp"
 #include "../MainGameState.hpp"
 #include "../Graphics/Materials/MeshDrawArgs.hpp"
+#include "../Graphics/WaterRenderer.hpp"
+#include "../World/Entities/Components/WaterBlockComp.hpp"
 #include "../World/Entities/Components/ActivatorComp.hpp"
 #include "../World/Entities/Components/ActivatableComp.hpp"
 #include "Components/EntityEditorComponent.hpp"
@@ -10,7 +12,6 @@
 #include "Components/GravityCornerEditorComponent.hpp"
 #include "Components/WallDragEditorComponent.hpp"
 #include "Components/AAQuadDragEditorComponent.hpp"
-#include "../World/Entities/Components/WaterBlockComp.hpp"
 
 #include <fstream>
 
@@ -39,6 +40,7 @@ Editor::Editor(RenderContext& renderCtx)
 {
 	m_prepareDrawArgs.isEditor = true;
 	m_prepareDrawArgs.meshBatch = &renderCtx.meshBatch;
+	m_prepareDrawArgs.transparentMeshBatch = &renderCtx.transparentMeshBatch;
 	m_prepareDrawArgs.player = nullptr;
 	
 	m_projection.SetFieldOfViewDeg(75.0f);
@@ -282,7 +284,6 @@ void Editor::DrawWorld()
 	
 	m_prepareDrawArgs.spotLights.clear();
 	m_prepareDrawArgs.pointLights.clear();
-	m_prepareDrawArgs.reflectionPlanes.clear();
 	m_world->PrepareForDraw(m_prepareDrawArgs);
 	
 	for (EditorComponent* comp : m_componentsForTool[(int)m_tool])
@@ -352,6 +353,7 @@ void Editor::DrawWorld()
 	m_world->DrawEditor();
 	
 	MeshDrawArgs mDrawArgs;
+	mDrawArgs.waterDepthTexture = WaterRenderer::GetDummyDepthTexture();
 	mDrawArgs.drawMode = MeshDrawMode::Editor;
 	m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
 	

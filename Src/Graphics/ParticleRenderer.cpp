@@ -29,6 +29,9 @@ void ParticleRenderer::Draw(const eg::ParticleManager& particleManager, eg::Text
 	if (particleManager.ParticlesToDraw() == 0)
 		return;
 	
+	auto gpuTimerTransparent = eg::StartGPUTimer("Particles");
+	auto cpuTimerTransparent = eg::StartCPUTimer("Particles");
+	
 	eg::DC.BindPipeline(m_pipeline);
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 	eg::DC.BindTexture(*m_texture, 0, 1);

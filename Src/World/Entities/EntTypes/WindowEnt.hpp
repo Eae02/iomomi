@@ -1,9 +1,8 @@
 #pragma once
 
-#include <optional>
-#include <EGame/AABB.hpp>
 #include "../Entity.hpp"
 #include "../Components/AxisAlignedQuadComp.hpp"
+#include "../Components/WaterBlockComp.hpp"
 #include "../../PhysicsEngine.hpp"
 
 class WindowEnt : public Ent
@@ -32,9 +31,10 @@ public:
 	glm::vec3 GetPosition() const override;
 	
 private:
-	const eg::IMaterial* m_material;
+	uint32_t m_windowType = 0;
 	float m_textureScale = 1;
 	AxisAlignedQuadComp m_aaQuad;
+	WaterBlockComp m_waterBlockComp;
 	
 	PhysicsObject m_physicsObject;
 };

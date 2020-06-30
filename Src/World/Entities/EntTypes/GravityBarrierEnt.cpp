@@ -2,119 +2,13 @@
 #include "../../World.hpp"
 #include "../../Player.hpp"
 #include "../../../Graphics/RenderSettings.hpp"
+#include "../../../Graphics/Materials/GravityBarrierMaterial.hpp"
 #include "../../../Graphics/Materials/MeshDrawArgs.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../../Protobuf/Build/GravityBarrierEntity.pb.h"
 #include "CubeEnt.hpp"
 
 #include <imgui.h>
-
-static constexpr int NUM_INTERACTABLES = 8;
-
-#pragma pack(push, 1)
-struct BarrierBufferData
-{
-	uint32_t iaDownAxis[NUM_INTERACTABLES];
-	glm::vec4 iaPosition[NUM_INTERACTABLES];
-	float gameTime;
-};
-
-struct InstanceData
-{
-	glm::vec3 position;
-	uint8_t opacity;
-	uint8_t blockedAxis;
-	uint8_t _p1;
-	uint8_t _p2;
-	glm::vec3 tangent;
-	float tangentMag;
-	glm::vec3 bitangent;
-	float bitangentMag;
-};
-#pragma pack(pop)
-
-struct GravityBarrierMaterial : eg::IMaterial
-{
-	GravityBarrierMaterial()
-	{
-		const auto& fs = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityBarrier.fs.glsl");
-		
-		eg::GraphicsPipelineCreateInfo pipelineCI;
-		pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityBarrier.vs.glsl").DefaultVariant();
-		pipelineCI.fragmentShader = fs.GetVariant("VGame");
-		pipelineCI.vertexBindings[0] = { 2, eg::InputRate::Vertex };
-		pipelineCI.vertexBindings[1] = { sizeof(InstanceData), eg::InputRate::Instance };
-		pipelineCI.vertexAttributes[0] = { 0, eg::DataType::UInt8Norm, 2, 0 };
-		pipelineCI.vertexAttributes[1] = { 1, eg::DataType::Float32, 3, offsetof(InstanceData, position) };
-		pipelineCI.vertexAttributes[2] = { 1, eg::DataType::UInt8, 2, offsetof(InstanceData, opacity) };
-		pipelineCI.vertexAttributes[3] = { 1, eg::DataType::Float32, 4, offsetof(InstanceData, tangent) };
-		pipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 4, offsetof(InstanceData, bitangent) };
-		pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
-		pipelineCI.topology = eg::Topology::TriangleStrip;
-		pipelineCI.cullMode = eg::CullMode::None;
-		pipelineCI.enableDepthTest = true;
-		pipelineCI.enableDepthWrite = false;
-		pipelineCI.depthCompare = eg::CompareOp::Less;
-		pipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::OneMinusSrcAlpha);
-		
-		m_pipelineGame = eg::Pipeline::Create(pipelineCI);
-		
-		pipelineCI.fragmentShader = fs.GetVariant("VEditor");
-		m_pipelineEditor = eg::Pipeline::Create(pipelineCI);
-		
-		m_barrierDataBuffer = eg::Buffer(eg::BufferFlags::Update | eg::BufferFlags::UniformBuffer,
-			sizeof(BarrierBufferData), nullptr);
-		
-		const eg::Texture& lineNoiseTex = eg::GetAsset<eg::Texture>("Textures/LineNoise.png");
-		
-		m_descriptorSetGame = eg::DescriptorSet(m_pipelineGame, 0);
-		m_descriptorSetGame.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
-		m_descriptorSetGame.BindTexture(lineNoiseTex, 1);
-		m_descriptorSetGame.BindUniformBuffer(m_barrierDataBuffer, 2, 0, sizeof(BarrierBufferData));
-		
-		m_descriptorSetEditor = eg::DescriptorSet(m_pipelineEditor, 0);
-		m_descriptorSetEditor.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
-		m_descriptorSetEditor.BindTexture(lineNoiseTex, 1);
-	}
-	
-	size_t PipelineHash() const override
-	{
-		return typeid(GravityBarrierMaterial).hash_code();
-	}
-	
-	bool BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const override
-	{
-		MeshDrawArgs* mDrawArgs = reinterpret_cast<MeshDrawArgs*>(drawArgs);
-		
-		if (mDrawArgs->drawMode == MeshDrawMode::Emissive)
-		{
-			cmdCtx.BindPipeline(m_pipelineGame);
-			cmdCtx.BindDescriptorSet(m_descriptorSetGame, 0);
-			return true;
-		}
-		if (mDrawArgs->drawMode == MeshDrawMode::Editor)
-		{
-			cmdCtx.BindPipeline(m_pipelineEditor);
-			cmdCtx.BindDescriptorSet(m_descriptorSetEditor, 0);
-			return true;
-		}
-		
-		return false;
-	}
-	
-	bool BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const override
-	{
-		return true;
-	}
-	
-	eg::Pipeline m_pipelineGame;
-	eg::Buffer m_barrierDataBuffer;
-	eg::DescriptorSet m_descriptorSetGame;
-	
-	eg::Pipeline m_pipelineEditor;
-	eg::DescriptorSet m_descriptorSetEditor;
-};
-
 
 static GravityBarrierMaterial* material;
 static eg::Buffer vertexBuffer;
@@ -238,7 +132,7 @@ void GravityBarrierEnt::CommonDraw(const EntDrawArgs& args)
 	
 	constexpr float TIME_SCALE = 0.25f;
 	
-	InstanceData instanceData;
+	GravityBarrierMaterial::InstanceData instanceData;
 	instanceData.position = m_position;
 	instanceData.opacity = 255 * glm::smoothstep(0.0f, 1.0f, m_opacity);
 	instanceData.blockedAxis = BlockedAxis();
@@ -375,7 +269,7 @@ void GravityBarrierEnt::Update(const WorldUpdateArgs& args)
 			m_opacity = std::min(m_opacity + args.dt / OPACITY_ANIMATION_TIME, 1.0f);
 	}
 	
-	BarrierBufferData bufferData;
+	GravityBarrierMaterial::BarrierBufferData bufferData;
 	bufferData.gameTime = RenderSettings::instance->gameTime;
 	int itemsWritten = 0;
 	
@@ -389,7 +283,7 @@ void GravityBarrierEnt::Update(const WorldUpdateArgs& args)
 	args.world->entManager.ForEachWithFlag(EntTypeFlags::Interactable, [&](const Ent& entity)
 	{
 		auto* comp = entity.GetComponent<GravityBarrierInteractableComp>();
-		if (comp != nullptr && itemsWritten < NUM_INTERACTABLES)
+		if (comp != nullptr && itemsWritten < GravityBarrierMaterial::NUM_INTERACTABLES)
 		{
 			bufferData.iaDownAxis[itemsWritten] = (int)comp->currentDown / 2;
 			bufferData.iaPosition[itemsWritten] = glm::vec4(entity.GetPosition(), 0.0f);
@@ -397,14 +291,14 @@ void GravityBarrierEnt::Update(const WorldUpdateArgs& args)
 		}
 	});
 	
-	while (itemsWritten < NUM_INTERACTABLES)
+	while (itemsWritten < GravityBarrierMaterial::NUM_INTERACTABLES)
 	{
 		bufferData.iaDownAxis[itemsWritten] = 3;
 		bufferData.iaPosition[itemsWritten] = glm::vec4(0.0f);
 		itemsWritten++;
 	}
 	
-	eg::DC.UpdateBuffer(material->m_barrierDataBuffer, 0, sizeof(BarrierBufferData), &bufferData);
+	eg::DC.UpdateBuffer(material->m_barrierDataBuffer, 0, sizeof(GravityBarrierMaterial::BarrierBufferData), &bufferData);
 	material->m_barrierDataBuffer.UsageHint(eg::BufferUsage::UniformBuffer, eg::ShaderAccessFlags::Fragment);
 	
 	if (m_waterBlockComponentOutOfDate)

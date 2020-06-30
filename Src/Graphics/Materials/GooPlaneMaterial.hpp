@@ -13,6 +13,8 @@ public:
 	
 	bool BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const override;
 	
+	virtual OrderRequirement GetOrderRequirement() const override { return OrderRequirement::OnlyOrdered; }
+	
 	static void OnInit();
 	static void OnShutdown();
 	

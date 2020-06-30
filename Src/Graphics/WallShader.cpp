@@ -20,27 +20,25 @@ struct
 	eg::DescriptorSet editorDescriptorSet;
 } wr;
 
-struct MaterialSettings
-{
-	float textureScale;
-	float minRoughness;
-	float maxRoughness;
-	float _padding;
-};
+WallMaterial wallMaterials[MAX_WALL_MATERIALS];
 
-static MaterialSettings materialSettings[] =
+static inline void InitializeMaterials()
 {
-	{ 2.0f, 0.6f, 1.0f },
-	{ 4.0f, 0.3f, 0.5f },
-	{ 2.5f, 0.3f, 0.8f },
-	{ 2.0f, 0.6f, 0.8f },
-	{ 2.0f, 0.5f, 1.0f },
-	{ 1.0f, 0.2f, 0.5f },
-	{ 2.0f, 0.5f, 1.0f }
-};
+	//                   true, editor name,       texscale, rmin, rmax                
+	wallMaterials[0] = { true, "No Draw",             2.0f, 0.6f, 1.0f };
+	wallMaterials[1] = { true, "Tactile Gray",        2.0f, 0.6f, 1.0f };
+	wallMaterials[2] = { true, "Clear Metal",         4.0f, 0.3f, 0.5f };
+	wallMaterials[3] = { true, "Metal Grid",          2.5f, 0.3f, 0.8f };
+	wallMaterials[4] = { true, "Cement",              2.0f, 0.6f, 0.8f };
+	wallMaterials[5] = { true, "Concrete Panels",     2.0f, 0.5f, 1.0f };
+	wallMaterials[6] = { true, "Smooth Panels",       1.0f, 0.2f, 0.5f };
+	wallMaterials[7] = { true, "Concrete Panels (S)", 2.0f, 0.5f, 1.0f };
+}
 
 void InitializeWallShader()
 {
+	InitializeMaterials();
+	
 	//Creates the game pipeline
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall.vs.glsl").DefaultVariant();
@@ -110,6 +108,16 @@ void InitializeWallShader()
 	wr.miscMapTexture = &eg::GetAsset<eg::Texture>("Textures/Voxel/MiscMap");
 	wr.gridTexture = &eg::GetAsset<eg::Texture>("Textures/Grid.png");
 	wr.noDrawTexture = &eg::GetAsset<eg::Texture>("Textures/NoDraw.png");
+	
+	float materialSettings[(MAX_WALL_MATERIALS - 1) * 4];
+	for (size_t i = 1; i < MAX_WALL_MATERIALS; i++)
+	{
+		float* settingsDst = materialSettings + (i - 1) * 4;
+		settingsDst[0] = wallMaterials[i].textureScale;
+		settingsDst[1] = wallMaterials[i].minRoughness;
+		settingsDst[2] = wallMaterials[i].maxRoughness;
+		settingsDst[3] = 0;
+	}
 	
 	wr.materialSettingsBuffer = eg::Buffer(eg::BufferFlags::UniformBuffer, sizeof(materialSettings), materialSettings);
 	wr.materialSettingsBuffer.UsageHint(eg::BufferUsage::UniformBuffer, eg::ShaderAccessFlags::Vertex);

@@ -3,9 +3,10 @@
 #include "Entities/EntTypes/EntranceExitEnt.hpp"
 #include "Entities/Components/ActivatorComp.hpp"
 #include "Entities/EntTypes/CubeEnt.hpp"
+#include "Entities/EntTypes/WallLightEnt.hpp"
 #include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
 #include "../Graphics/WallShader.hpp"
-#include "Entities/EntTypes/WallLightEnt.hpp"
+#include "../Graphics/RenderSettings.hpp"
 
 #include <yaml-cpp/yaml.h>
 
@@ -320,7 +321,6 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 		entDrawArgs.world = this;
 		entDrawArgs.meshBatch = args.meshBatch;
 		entDrawArgs.transparentMeshBatch = args.transparentMeshBatch;
-		entDrawArgs.reflectionPlanes = &args.reflectionPlanes;
 		entDrawArgs.pointLights = &args.pointLights;
 		entManager.ForEachWithFlag(EntTypeFlags::Drawable, [&] (Ent& entity) { entity.GameDraw(entDrawArgs); });
 	}

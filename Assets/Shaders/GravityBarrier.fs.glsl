@@ -44,12 +44,22 @@ layout(binding=2, std140) uniform BarrierSettingsUB
 	vec4 iaPosition[NUM_INTERACTABLES];
 	float gameTime;
 };
+
+layout(binding=3) uniform sampler2D waterDepth;
+#include "Water/WaterTransparent.glh"
 #else
+bool CheckWaterDiscard() { return false; }
 const float gameTime = 0;
 #endif
 
 void main()
 {
+	if (CheckWaterDiscard())
+	{
+		color_out = vec4(0);
+		return;
+	}
+	
 	float tx = texCoord_in.x;
 	float negScale = 0;
 	

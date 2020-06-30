@@ -29,6 +29,9 @@ layout(binding=2, std140) uniform LightSettingsUB
 	vec4 samplePoints[10];
 };
 
+layout(set=1, binding=0) uniform sampler2D waterDepth;
+#include "Water/WaterTransparent.glh"
+
 const float MESH_SCALE = 0.6;
 const float EMI_MAP_SCALE = 0.5;
 const float ANIMATION_SPEED = 0.75;
@@ -73,6 +76,12 @@ vec3 volLight(vec3 worldPos)
 
 void main()
 {
+	if (CheckWaterDiscard())
+	{
+		color_out = vec4(0);
+		return;
+	}
+	
 	vec3 toEye = renderSettings.cameraPosition - worldPos_in;
 	float distToEye = length(toEye);
 	toEye /= distToEye;

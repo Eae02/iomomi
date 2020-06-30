@@ -1,0 +1,29 @@
+#ifndef WATER_TRANSPARENT_H
+#define WATER_TRANSPARENT_H
+
+#include "WaterCommon.glh"
+#include "../Inc/Depth.glh"
+
+const int WATERMODE_BEFORE = 0;
+const int WATERMODE_AFTER = 1;
+
+layout(constant_id=150) const int WATER_MODE = 0; 
+
+bool CheckWaterDiscard()
+{
+	vec2 screenCoord = ivec2(gl_FragCoord.xy) / vec2(textureSize(waterDepth, 0).xy);
+	vec3 waterDepth3 = texture(waterDepth, screenCoord).rgb;
+	
+	bool underwater = waterDepth3.r < UNDERWATER_DEPTH;
+	float waterDepthL = underwater ? waterDepth3.b : waterDepth3.r;
+	float waterDepthH = hyperDepth(waterDepthL);
+	
+	if (WATER_MODE == WATERMODE_BEFORE)
+		return gl_FragCoord.z < waterDepthH;
+	else if (WATER_MODE == WATERMODE_AFTER)
+		return gl_FragCoord.z > waterDepthH;
+	
+	return false;
+}
+
+#endif

@@ -1,4 +1,5 @@
 #include "GooPlaneMaterial.hpp"
+#include "../GraphicsCommon.hpp"
 
 constexpr int NM_SAMPLES = 3;
 constexpr float NM_SCALE_GLOBAL = 3.5f;
@@ -71,14 +72,14 @@ size_t GooPlaneMaterial::PipelineHash() const
 bool GooPlaneMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
 	MeshDrawArgs& meshDrawArgs = *static_cast<MeshDrawArgs*>(drawArgs);
-	if (meshDrawArgs.drawMode != MeshDrawMode::Transparent)
+	if (meshDrawArgs.drawMode != MeshDrawMode::TransparentAfterWater)
 		return false;
 	
 	cmdCtx.BindPipeline(s_pipeline);
 	
 	cmdCtx.BindDescriptorSet(s_descriptorSet, 0);
 	
-	cmdCtx.BindTexture(meshDrawArgs.renderTarget->DepthTexture(), 1, 0);
+	cmdCtx.BindTexture(GetRenderTexture(RenderTex::GBDepth), 1, 0);
 	
 	return true;
 }

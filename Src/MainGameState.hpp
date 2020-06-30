@@ -29,8 +29,6 @@ public:
 	void OnDeactivate() override;
 	
 private:
-	void DoDeferredRendering(bool useLightProbes, DeferredRenderer::RenderTarget& renderTarget);
-	
 #ifndef NDEBUG
 	void DrawOverlay(float dt);
 #endif
@@ -45,8 +43,8 @@ private:
 	
 	eg::PerspectiveProjection m_projection;
 	RenderContext* m_renderCtx;
+	WaterRenderer m_waterRenderer;
 	
-	PrepareDrawArgs m_prepareDrawArgs;
 	PointLightShadowMapper m_plShadowMapper;
 	std::unique_ptr<eg::BloomRenderer> m_bloomRenderer;
 	PostProcessor m_postProcessor;
@@ -58,9 +56,7 @@ private:
 	std::shared_ptr<WaterSimulator::QueryAABB> m_playerWaterAABB;
 	
 	QualityLevel m_lightingQuality = QualityLevel::Low;
-	QualityLevel m_waterQuality = QualityLevel::Low;
 	
-	std::unique_ptr<DeferredRenderer::RenderTarget> m_renderTarget;
 	std::unique_ptr<eg::BloomRenderer::RenderTarget> m_bloomRenderTarget;
 	eg::Texture m_renderOutputTexture;
 	

@@ -7,8 +7,9 @@ enum class MeshDrawMode
 {
 	Game,
 	ObjectFlags,
+	TransparentBeforeWater,
+	TransparentAfterWater,
 	Emissive,
-	Transparent,
 	Editor,
 	PointLightShadow,
 	SpotLightShadow
@@ -17,8 +18,8 @@ enum class MeshDrawMode
 struct MeshDrawArgs
 {
 	MeshDrawMode drawMode;
-	const DeferredRenderer::RenderTarget* renderTarget;
 	const PointLightShadowRenderArgs* plShadowRenderArgs;
+	eg::TextureRef waterDepthTexture;
 };
 
 enum ObjectRenderFlags : uint32_t
