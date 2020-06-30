@@ -269,6 +269,7 @@ void MainGameState::RunFrame(float dt)
 	{
 		auto gpuTimerGeom = eg::StartGPUTimer("Geometry");
 		auto cpuTimerGeom = eg::StartCPUTimer("Geometry");
+		eg::DC.DebugLabelBegin("Geometry");
 		
 		m_renderCtx->renderer.BeginGeometry();
 		
@@ -276,24 +277,31 @@ void MainGameState::RunFrame(float dt)
 		mDrawArgs.drawMode = MeshDrawMode::Game;
 		m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
 		
+		eg::DC.DebugLabelEnd();
+		eg::DC.DebugLabelBegin("Geometry Flags");
+		
 		m_renderCtx->renderer.BeginGeometryFlags();
 		
 		mDrawArgs.drawMode = MeshDrawMode::ObjectFlags;
 		m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
 		
 		m_renderCtx->renderer.EndGeometry();
+		eg::DC.DebugLabelEnd();
 	}
 	
 	if (m_waterSimulator.NumParticlesToDraw() > 0)
 	{
 		auto gpuTimerWater = eg::StartGPUTimer("Water (early)");
 		auto cpuTimerWater = eg::StartCPUTimer("Water (early)");
+		eg::DC.DebugLabelBegin("Water (early)");
 		m_waterRenderer.RenderEarly(m_waterSimulator.GetPositionsBuffer(), m_waterSimulator.NumParticlesToDraw());
+		eg::DC.DebugLabelEnd();
 	}
 	
 	{
 		auto gpuTimerLight = eg::StartGPUTimer("Lighting");
 		auto cpuTimerLight = eg::StartCPUTimer("Lighting");
+		eg::DC.DebugLabelBegin("Lighting");
 		
 		m_renderCtx->renderer.BeginLighting(m_waterSimulator.NumParticlesToDraw() > 0);
 		
@@ -303,12 +311,14 @@ void MainGameState::RunFrame(float dt)
 		m_particleRenderer.Draw(m_particleManager, GetRenderTexture(RenderTex::GBDepth));
 		
 		m_renderCtx->renderer.End();
+		eg::DC.DebugLabelEnd();
 	}
 	
 	if (m_waterSimulator.NumParticlesToDraw() > 0)
 	{
 		auto gpuTimerTransparent = eg::StartGPUTimer("Transparent (pre-water)");
 		auto cpuTimerTransparent = eg::StartCPUTimer("Transparent (pre-water)");
+		eg::DC.DebugLabelBegin("Transparent (pre-water)");
 		
 		m_renderCtx->renderer.BeginTransparent(true);
 		
@@ -319,6 +329,7 @@ void MainGameState::RunFrame(float dt)
 		m_renderCtx->transparentMeshBatch.Draw(eg::DC, &mDrawArgs);
 		
 		m_renderCtx->renderer.EndTransparent(true);
+		eg::DC.DebugLabelEnd();
 	}
 	
 	if (m_waterSimulator.NumParticlesToDraw() > 0)
@@ -327,12 +338,15 @@ void MainGameState::RunFrame(float dt)
 		
 		auto gpuTimerWater = eg::StartGPUTimer("Water (post)");
 		auto cpuTimerWater = eg::StartCPUTimer("Water (post)");
+		eg::DC.DebugLabelBegin("Water (post)");
 		m_waterRenderer.RenderPost();
+		eg::DC.DebugLabelEnd();
 	}
 	
 	{
 		auto gpuTimerTransparent = eg::StartGPUTimer("Transparent");
 		auto cpuTimerTransparent = eg::StartCPUTimer("Transparent");
+		eg::DC.DebugLabelBegin("Transparent");
 		
 		m_renderCtx->renderer.BeginTransparent(false);
 		
@@ -346,6 +360,7 @@ void MainGameState::RunFrame(float dt)
 		m_renderCtx->transparentMeshBatch.Draw(eg::DC, &mDrawArgs);
 		
 		m_renderCtx->renderer.EndTransparent(false);
+		eg::DC.DebugLabelEnd();
 	}
 	
 	//TODO: Move SSR Here
@@ -360,6 +375,8 @@ void MainGameState::RunFrame(float dt)
 	
 	RenderTextureUsageHintFS(RenderTex::Lit);
 	
+	eg::DC.DebugLabelBegin("Post");
+	
 	if (m_bloomRenderTarget != nullptr)
 	{
 		auto gpuTimerBloom = eg::StartGPUTimer("Bloom");
@@ -372,6 +389,8 @@ void MainGameState::RunFrame(float dt)
 		auto cpuTimerPost = eg::StartCPUTimer("Post");
 		m_postProcessor.Render(GetRenderTexture(RenderTex::Lit), m_bloomRenderTarget.get());
 	}
+	
+	eg::DC.DebugLabelEnd();
 	
 	m_pausedMenu.Draw(eg::SpriteBatch::overlay);
 	if (m_pausedMenu.shouldRestartLevel)

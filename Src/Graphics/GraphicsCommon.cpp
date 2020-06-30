@@ -151,6 +151,7 @@ static inline void InitFramebufferEntry(FramebufferEntry& entry)
 	}
 	
 	eg::FramebufferCreateInfo framebufferCI = { };
+	framebufferCI.label = entry.label;
 	framebufferCI.colorAttachments = eg::Span<eg::FramebufferAttachment>(colorAttachments, numColorAttachments);
 	if (entry.depthTexture.has_value())
 	{

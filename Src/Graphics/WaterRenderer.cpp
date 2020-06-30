@@ -142,7 +142,7 @@ struct WaterBlurPC
 };
 #pragma pack(pop)
 
-static float* blurRadius          = eg::TweakVarFloat("wblur_radius", 1.0f, 0.0f);
+static float* blurRadius          = eg::TweakVarFloat("wblur_radius", 2.0f, 0.0f);
 static float* blurDistanceFalloff = eg::TweakVarFloat("wblur_distfall", 0.5f, 0.0f);
 static float* blurDepthFalloff    = eg::TweakVarFloat("wblur_depthfall", 0.01f, 0.0f);
 static int* blurSinglePass        = eg::TweakVarInt("wblur_singlepass", 0, 0, 1);
@@ -179,9 +179,10 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 	
 	eg::MultiStageGPUTimer timer;
 	timer.StartStage("Depth");
+	eg::DC.DebugLabelBegin("Depth");
 	
 	eg::RenderPassBeginInfo depthMinRPBeginInfo;
-	depthMinRPBeginInfo.framebuffer = GetFramebuffer({}, {}, RenderTex::WaterMinDepth);
+	depthMinRPBeginInfo.framebuffer = GetFramebuffer({}, {}, RenderTex::WaterMinDepth, "WaterMinDepth");
 	depthMinRPBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Clear;
 	depthMinRPBeginInfo.depthClearValue = 1;
 	eg::DC.BeginRenderPass(depthMinRPBeginInfo);
@@ -195,6 +196,7 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 	eg::DC.Draw(0, 4, 0, numParticles);
 	
 	eg::DC.EndRenderPass();
+	eg::DC.DebugLabelEnd();
 	
 	RenderTextureUsageHintFS(RenderTex::WaterMinDepth);
 	
@@ -203,9 +205,10 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 	//This pass renders all water particles additively to get the water travel depth.
 	
 	timer.StartStage("Additive Depth");
+	eg::DC.DebugLabelBegin("Additive Depth");
 	
 	eg::RenderPassBeginInfo additiveRPBeginInfo;
-	additiveRPBeginInfo.framebuffer = GetFramebuffer(RenderTex::WaterTravelDepth, {}, {});
+	additiveRPBeginInfo.framebuffer = GetFramebuffer(RenderTex::WaterTravelDepth, {}, {}, "WaterTravelDepth");
 	additiveRPBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
 	additiveRPBeginInfo.colorAttachments[0].clearValue = eg::ColorLin(0, 0, 0, 0);
 	eg::DC.BeginRenderPass(additiveRPBeginInfo);
@@ -219,6 +222,7 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 	eg::DC.Draw(0, 4, 0, numParticles);
 	
 	eg::DC.EndRenderPass();
+	eg::DC.DebugLabelEnd();
 	
 	RenderTextureUsageHintFS(RenderTex::WaterTravelDepth);
 	
@@ -227,9 +231,10 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 	// to a depth buffer. Greater compare mode is used to get the maximum depth bounds.
 	// This is used to render the water surface from below.
 	timer.StartStage("Depth Max");
+	eg::DC.DebugLabelBegin("Depth Max");
 	
 	eg::RenderPassBeginInfo depthMaxRPBeginInfo;
-	depthMaxRPBeginInfo.framebuffer = GetFramebuffer({}, {}, RenderTex::WaterMaxDepth);
+	depthMaxRPBeginInfo.framebuffer = GetFramebuffer({}, {}, RenderTex::WaterMaxDepth, "WaterMaxDepth");
 	depthMaxRPBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Clear;
 	depthMaxRPBeginInfo.depthClearValue = 0;
 	eg::DC.BeginRenderPass(depthMaxRPBeginInfo);
@@ -244,17 +249,19 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 	eg::DC.Draw(0, 4, 0, numParticles);
 	
 	eg::DC.EndRenderPass();
+	eg::DC.DebugLabelEnd();
 	
 	RenderTextureUsageHintFS(RenderTex::WaterMaxDepth);
 	
 	
 	timer.StartStage("Blur");
+	eg::DC.DebugLabelBegin("Blur");
 	
 	if (*blurSinglePass)
 	{
 		// ** Single pass depth blur **
 		eg::RenderPassBeginInfo depthBlurBeginInfo;
-		depthBlurBeginInfo.framebuffer = GetFramebuffer(RenderTex::WaterDepthBlurred2, {}, {});
+		depthBlurBeginInfo.framebuffer = GetFramebuffer(RenderTex::WaterDepthBlurred2, {}, {}, "WaterDepthBlurred2");
 		depthBlurBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
 		eg::DC.BeginRenderPass(depthBlurBeginInfo);
 		
@@ -276,7 +283,7 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 	{
 		// ** Depth blur pass 1 **
 		eg::RenderPassBeginInfo depthBlur1RPBeginInfo;
-		depthBlur1RPBeginInfo.framebuffer = GetFramebuffer(RenderTex::WaterDepthBlurred1, {}, {});
+		depthBlur1RPBeginInfo.framebuffer = GetFramebuffer(RenderTex::WaterDepthBlurred1, {}, {}, "WaterDepthBlurred1");
 		depthBlur1RPBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
 		eg::DC.BeginRenderPass(depthBlur1RPBeginInfo);
 		
@@ -299,7 +306,7 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 		
 		// ** Depth blur pass 2 **
 		eg::RenderPassBeginInfo depthBlurBeginInfo;
-		depthBlurBeginInfo.framebuffer = GetFramebuffer(RenderTex::WaterDepthBlurred2, {}, {});
+		depthBlurBeginInfo.framebuffer = GetFramebuffer(RenderTex::WaterDepthBlurred2, {}, {}, "WaterDepthBlurred2");
 		depthBlurBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
 		eg::DC.BeginRenderPass(depthBlurBeginInfo);
 		
@@ -316,6 +323,8 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 		eg::DC.EndRenderPass();
 	}
 	
+	eg::DC.DebugLabelEnd();
+	
 	RenderTextureUsageHintFS(RenderTex::WaterDepthBlurred2);
 }
 
@@ -326,7 +335,7 @@ void WaterRenderer::RenderPost()
 	eg::GPUTimer timer = eg::StartGPUTimer("Water Post");
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = GetFramebuffer(RenderTex::Lit, {}, {});
+	rpBeginInfo.framebuffer = GetFramebuffer(RenderTex::Lit, {}, {}, "WaterPost");
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
 	rpBeginInfo.colorAttachments[0].clearValue = eg::ColorSRGB::FromHex(0x0c2b46);
 	eg::DC.BeginRenderPass(rpBeginInfo);

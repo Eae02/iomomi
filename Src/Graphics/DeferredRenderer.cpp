@@ -116,7 +116,7 @@ void DeferredRenderer::CreatePipelines()
 void DeferredRenderer::BeginGeometry() const
 {
 	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = GetFramebuffer(RenderTex::GBColor1, RenderTex::GBColor2, RenderTex::GBDepth);
+	rpBeginInfo.framebuffer = GetFramebuffer(RenderTex::GBColor1, RenderTex::GBColor2, RenderTex::GBDepth, "Geometry");
 	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Clear;
 	rpBeginInfo.depthClearValue = 1.0f;
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
@@ -131,7 +131,7 @@ void DeferredRenderer::BeginGeometryFlags() const
 	eg::DC.EndRenderPass();
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = GetFramebuffer(RenderTex::Flags, {}, RenderTex::GBDepth);
+	rpBeginInfo.framebuffer = GetFramebuffer(RenderTex::Flags, {}, RenderTex::GBDepth, "GeometryFlags");
 	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Load;
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
 	rpBeginInfo.colorAttachments[0].clearValue = eg::ColorSRGB(0, 0, 0, 0);
@@ -153,7 +153,7 @@ void DeferredRenderer::BeginTransparent(bool isBeforeWater)
 	RenderTex colorTex = isBeforeWater ? RenderTex::LitWithoutWater : RenderTex::Lit;
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = GetFramebuffer(colorTex, {}, RenderTex::GBDepth);
+	rpBeginInfo.framebuffer = GetFramebuffer(colorTex, {}, RenderTex::GBDepth, "Transparent");
 	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Load;
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Load;
 	
@@ -178,7 +178,7 @@ void DeferredRenderer::BeginLighting(bool hasWater)
 	}
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = GetFramebuffer(hasWater ? RenderTex::LitWithoutWater : RenderTex::Lit, {}, {});
+	rpBeginInfo.framebuffer = GetFramebuffer(hasWater ? RenderTex::LitWithoutWater : RenderTex::Lit, {}, {}, "Lighting");
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
 	
 	eg::DC.BeginRenderPass(rpBeginInfo);

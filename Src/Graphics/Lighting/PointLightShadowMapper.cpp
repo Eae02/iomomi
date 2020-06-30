@@ -63,6 +63,8 @@ void PointLightShadowMapper::UpdateShadowMaps(std::vector<PointLightDrawData>& p
 	if (pointLights.empty())
 		return;
 	
+	eg::DC.DebugLabelBegin("PL Shadows");
+	
 	//Updates which shadow maps are available
 	for (ShadowMap& shadowMap : m_shadowMaps)
 	{
@@ -107,6 +109,8 @@ void PointLightShadowMapper::UpdateShadowMaps(std::vector<PointLightDrawData>& p
 			UpdateShadowMap(shadowMapIndex, renderCallback);
 		}
 	}
+	
+	eg::DC.DebugLabelEnd();
 }
 
 static void InitShadowMatrices(const eg::Sphere& lightSphere, void* memory)
@@ -130,6 +134,9 @@ static void InitShadowMatrices(const eg::Sphere& lightSphere, void* memory)
 
 void PointLightShadowMapper::UpdateShadowMap(size_t index, const RenderCallback& renderCallback)
 {
+	std::string debugLabel = "Update SM " + std::to_string(index);
+	eg::DC.DebugLabelBegin(debugLabel.c_str());
+	
 	eg::UploadBuffer uploadBuffer = eg::GetTemporaryUploadBuffer(BUFFER_SIZE);
 	InitShadowMatrices(m_shadowMaps[index].sphere, uploadBuffer.Map());
 	
@@ -155,6 +162,8 @@ void PointLightShadowMapper::UpdateShadowMap(size_t index, const RenderCallback&
 	m_shadowMaps[index].inUse = true;
 	m_shadowMaps[index].outOfDate = false;
 	m_shadowMaps[index].lastUpdateFrame = eg::FrameIdx();
+	
+	eg::DC.DebugLabelEnd();
 }
 
 size_t PointLightShadowMapper::AddShadowMap()

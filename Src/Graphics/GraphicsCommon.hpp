@@ -72,4 +72,4 @@ eg::FramebufferHandle GetFramebuffer(
 	std::optional<RenderTex> colorTexture1,
 	std::optional<RenderTex> colorTexture2,
 	std::optional<RenderTex> depthTexture,
-	const char* label = nullptr);
+	const char* label);
