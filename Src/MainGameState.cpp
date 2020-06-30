@@ -24,11 +24,11 @@ MainGameState::MainGameState(RenderContext& renderCtx)
 	m_projection.SetZNear(0.02f);
 	m_projection.SetZFar(200.0f);
 	
-	eg::console::AddCommand("reload", 0, [this] (eg::Span<const std::string_view> args)
+	eg::console::AddCommand("reload", 0, [this] (eg::Span<const std::string_view> args, eg::console::Writer& writer)
 	{
 		if (!ReloadLevel())
 		{
-			eg::Log(eg::LogLevel::Error, "lvl", "No level to reload");
+			writer.WriteLine(eg::console::ErrorColor, "No level to reload");
 		}
 		else
 		{

@@ -18,18 +18,19 @@ Game::Game()
 	SetCurrentGS(editor);
 #endif
 	
-	eg::console::AddCommand("ed", 0, [&] (eg::Span<const std::string_view> args)
+	eg::console::AddCommand("ed", 0, [&] (eg::Span<const std::string_view> args, eg::console::Writer& writer)
 	{
 		SetCurrentGS(editor);
 		eg::console::Hide();
 	});
 	
-	eg::console::AddCommand("play", 1, [this] (eg::Span<const std::string_view> args)
+	eg::console::AddCommand("play", 1, [this] (eg::Span<const std::string_view> args, eg::console::Writer& writer)
 	{
 		int64_t levelIndex = FindLevel(args[0]);
 		if (levelIndex == -1)
 		{
-			eg::Log(eg::LogLevel::Error, "lvl", "Level not found: {0}", args[0]);
+			writer.Write(eg::console::ErrorColor.ScaleRGB(0.8f), "Level not found: ");
+			writer.WriteLine(eg::console::ErrorColor, args[0]);
 			return;
 		}
 		

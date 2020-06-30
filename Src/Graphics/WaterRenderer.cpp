@@ -13,7 +13,7 @@ static void CreateDummyDepthTexture()
 	dummyDepthTextureCI.height = 1;
 	dummyDepthTextureCI.format = eg::Format::R32G32B32A32_Float;
 	dummyDepthTextureCI.mipLevels = 1;
-	dummyDepthTextureCI.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample;
+	dummyDepthTextureCI.flags = eg::TextureFlags::CopyDst | eg::TextureFlags::ShaderSample;
 	dummyDepthTextureCI.defaultSamplerDescription = &dummyDepthTextureSamplerDesc;
 	
 	dummyWaterDepthTexture = eg::Texture::Create2D(dummyDepthTextureCI);

@@ -24,8 +24,6 @@ void DecodeQualityLevel(std::string_view name, QualityLevel& def)
 		eg::Log(eg::LogLevel::Error, "opt", "Unknwon quality level '{0}'", name);
 }
 
-eg::TextureQuality initialTextureQuality;
-
 void LoadSettings()
 {
 #ifndef __EMSCRIPTEN__
@@ -44,7 +42,6 @@ void LoadSettings()
 		settings.textureQuality = eg::TextureQuality::Medium;
 	else if (textureQualStr == "high")
 		settings.textureQuality = eg::TextureQuality::High;
-	initialTextureQuality = settings.textureQuality;
 	
 	DecodeQualityLevel(settingsNode["reflectionsQuality"].as<std::string>("medium"), settings.reflectionsQuality);
 	DecodeQualityLevel(settingsNode["shadowQuality"].as<std::string>("medium"), settings.shadowQuality);
@@ -100,16 +97,21 @@ void SettingsChanged()
 	settingsGeneration++;
 }
 
-void OptCommand(eg::Span<const std::string_view> args)
+void OptCommand(eg::Span<const std::string_view> args, eg::console::Writer& writer)
 {
 	std::string qualityLevelStrings[] = { "Very Low", "Low", "Medium", "High", "Very High" };
+	
+	auto WriteSettingValue = [&] (std::string_view message, std::string_view value)
+	{
+		writer.Write(eg::console::InfoColor, message);
+		writer.WriteLine(eg::console::InfoColorSpecial, value);
+	};
 	
 	if (args[0] == "reflQuality")
 	{
 		if (args.size() == 1)
 		{
-			eg::Log(eg::LogLevel::Info, "opt", "Reflections Quality: {0}",
-			        qualityLevelStrings[(int)settings.reflectionsQuality]);
+			WriteSettingValue("Reflections Quality: ", qualityLevelStrings[(int)settings.reflectionsQuality]);
 		}
 		else
 		{
@@ -121,8 +123,7 @@ void OptCommand(eg::Span<const std::string_view> args)
 	{
 		if (args.size() == 1)
 		{
-			eg::Log(eg::LogLevel::Info, "opt", "Shadow Quality: {0}",
-			        qualityLevelStrings[(int)settings.shadowQuality]);
+			WriteSettingValue("Shadow Quality: ", qualityLevelStrings[(int)settings.shadowQuality]);
 		}
 		else
 		{
@@ -134,8 +135,7 @@ void OptCommand(eg::Span<const std::string_view> args)
 	{
 		if (args.size() == 1)
 		{
-			eg::Log(eg::LogLevel::Info, "opt", "Lighting Quality: {0}",
-			        qualityLevelStrings[(int)settings.lightingQuality]);
+			WriteSettingValue("Lighting Quality: ", qualityLevelStrings[(int)settings.lightingQuality]);
 		}
 		else
 		{
@@ -147,8 +147,7 @@ void OptCommand(eg::Span<const std::string_view> args)
 	{
 		if (args.size() == 1)
 		{
-			eg::Log(eg::LogLevel::Info, "opt", "Water Quality: {0}",
-			        qualityLevelStrings[(int)settings.waterQuality]);
+			WriteSettingValue("Water Quality: ", qualityLevelStrings[(int)settings.waterQuality]);
 		}
 		else
 		{
@@ -160,7 +159,7 @@ void OptCommand(eg::Span<const std::string_view> args)
 	{
 		if (args.size() == 1)
 		{
-			eg::Log(eg::LogLevel::Info, "opt", "Field of View: {0}", settings.fieldOfViewDeg);
+			WriteSettingValue("Field of View: ", std::to_string(settings.fieldOfViewDeg));
 		}
 		else
 		{
@@ -172,7 +171,7 @@ void OptCommand(eg::Span<const std::string_view> args)
 	{
 		if (args.size() == 1)
 		{
-			eg::Log(eg::LogLevel::Info, "opt", "Exposure: {0}", settings.exposure);
+			WriteSettingValue("Exposure: ", std::to_string(settings.exposure));
 		}
 		else
 		{
@@ -184,7 +183,7 @@ void OptCommand(eg::Span<const std::string_view> args)
 	{
 		if (args.size() == 1)
 		{
-			eg::Log(eg::LogLevel::Info, "opt", "Mouse Sensitivity: {0}", settings.lookSensitivityMS);
+			WriteSettingValue("Mouse Sensitivity: ", std::to_string(settings.lookSensitivityMS));
 		}
 		else
 		{
@@ -196,7 +195,7 @@ void OptCommand(eg::Span<const std::string_view> args)
 	{
 		if (args.size() == 1)
 		{
-			eg::Log(eg::LogLevel::Info, "opt", "Gamepad Sensitivity: {0}", settings.lookSensitivityGP);
+			WriteSettingValue("Gamepad Sensitivity: ", std::to_string(settings.lookSensitivityGP));
 		}
 		else
 		{
@@ -208,7 +207,7 @@ void OptCommand(eg::Span<const std::string_view> args)
 	{
 		if (args.size() == 1)
 		{
-			eg::Log(eg::LogLevel::Info, "opt", "Invert Y: {0}", settings.lookInvertY);
+			WriteSettingValue("Invert Y: ", settings.lookInvertY ? "yes" : "no");
 		}
 		else
 		{
@@ -220,7 +219,7 @@ void OptCommand(eg::Span<const std::string_view> args)
 	{
 		if (args.size() == 1)
 		{
-			eg::Log(eg::LogLevel::Info, "opt", "FXAA: {0}", settings.enableFXAA);
+			WriteSettingValue("FXAA: ", settings.enableFXAA ? "on" : "off");
 		}
 		else
 		{
@@ -258,7 +257,7 @@ void OptCommandCompleter2(eg::Span<const std::string_view> words, eg::console::C
 
 bool settingsWindowVisible = false;
 
-void OptWndCommand(eg::Span<const std::string_view> args)
+void OptWndCommand(eg::Span<const std::string_view> args, eg::console::Writer&)
 {
 	settingsWindowVisible = true;
 }

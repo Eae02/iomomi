@@ -49,11 +49,11 @@ void SaveSettings();
 
 void SettingsChanged();
 
-void OptCommand(eg::Span<const std::string_view> args);
+void OptCommand(eg::Span<const std::string_view> args, eg::console::Writer& writer);
 
 void OptCommandCompleter1(eg::Span<const std::string_view> words, eg::console::CompletionsList& list);
 void OptCommandCompleter2(eg::Span<const std::string_view> words, eg::console::CompletionsList& list);
 
-void OptWndCommand(eg::Span<const std::string_view> args);
+void OptWndCommand(eg::Span<const std::string_view> args, eg::console::Writer& writer);
 
 void DrawSettingsWindow();
