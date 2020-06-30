@@ -40,6 +40,7 @@ assets:
   - name: Shaders/Lighting/PointLight.fs.glsl
   - name: Shaders/PointLightShadow.gs.glsl
   - name: Shaders/PointLightShadow.fs.glsl
+  - name: Shaders/SSR.fs.glsl
   - name: Shaders/GravitySwitchLight.fs.glsl
   - name: Shaders/GravitySwitchVolLight.vs.glsl
   - name: Shaders/GravitySwitchVolLight.fs.glsl

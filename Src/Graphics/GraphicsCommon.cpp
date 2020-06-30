@@ -105,6 +105,7 @@ eg::Format GetFormatForRenderTexture(RenderTex texture)
 		return eg::Format::R16G16B16A16_Float;
 		
 	case RenderTex::LitWithoutWater:
+	case RenderTex::LitWithoutSSR:
 	case RenderTex::Lit:
 		return settings.HDREnabled() ? LIGHT_COLOR_FORMAT_HDR : LIGHT_COLOR_FORMAT_LDR;
 		
@@ -114,6 +115,8 @@ eg::Format GetFormatForRenderTexture(RenderTex texture)
 }
 
 static eg::Texture renderTextures[(size_t)RenderTex::MAX];
+
+static int renderTexturesRedirect[(size_t)RenderTex::MAX];
 
 struct FramebufferEntry
 {
@@ -168,58 +171,73 @@ static bool wasWaterHighPrecision = false;
 
 void MaybeRecreateRenderTextures()
 {
-	const bool waterHighPrecision = settings.waterQuality >= WaterRenderer::HighPrecisionMinQL;
-	
-	if (eg::CurrentResolutionX() == oldScreenResX &&
-		eg::CurrentResolutionY() == oldScreenResY &&
-		settings.HDREnabled() == wasHDREnabled &&
-		waterHighPrecision == wasWaterHighPrecision)
-	{
-		return;
-	}
-	
-	oldScreenResX = eg::CurrentResolutionX();
-	oldScreenResY = eg::CurrentResolutionY();
-	wasHDREnabled = settings.HDREnabled();
-	wasWaterHighPrecision = waterHighPrecision;
-	
-	DestroyRenderTextures();
-	
-	eg::SamplerDescription samplerDesc;
-	samplerDesc.wrapU = eg::WrapMode::ClampToEdge;
-	samplerDesc.wrapV = eg::WrapMode::ClampToEdge;
-	samplerDesc.wrapW = eg::WrapMode::ClampToEdge;
-	samplerDesc.minFilter = eg::TextureFilter::Linear;
-	samplerDesc.magFilter = eg::TextureFilter::Linear;
-	
 	for (int i = 0; i < (int)RenderTex::MAX; i++)
 	{
-		std::string label = eg::Concat({"RenderTex::", magic_enum::enum_name((RenderTex)i)});
-		
-		eg::TextureCreateInfo textureCI;
-		textureCI.format = GetFormatForRenderTexture((RenderTex)i);
-		textureCI.width = eg::CurrentResolutionX();
-		textureCI.height = eg::CurrentResolutionY();
-		textureCI.mipLevels = 1;
-		textureCI.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample;
-		textureCI.defaultSamplerDescription = &samplerDesc;
-		textureCI.label = label.c_str();
-		
-		renderTextures[i] = eg::Texture::Create2D(textureCI);
+		renderTexturesRedirect[i] = i;
 	}
 	
-	for (FramebufferEntry& entry : framebuffers)
-		InitFramebufferEntry(entry);
+	const bool waterHighPrecision = settings.waterQuality >= WaterRenderer::HighPrecisionMinQL;
+	
+	if (eg::CurrentResolutionX() != oldScreenResX ||
+		eg::CurrentResolutionY() != oldScreenResY ||
+		settings.HDREnabled() != wasHDREnabled ||
+		waterHighPrecision != wasWaterHighPrecision)
+	{
+		oldScreenResX = eg::CurrentResolutionX();
+		oldScreenResY = eg::CurrentResolutionY();
+		wasHDREnabled = settings.HDREnabled();
+		wasWaterHighPrecision = waterHighPrecision;
+		
+		DestroyRenderTextures();
+		
+		eg::SamplerDescription samplerDesc;
+		samplerDesc.wrapU = eg::WrapMode::ClampToEdge;
+		samplerDesc.wrapV = eg::WrapMode::ClampToEdge;
+		samplerDesc.wrapW = eg::WrapMode::ClampToEdge;
+		samplerDesc.minFilter = eg::TextureFilter::Linear;
+		samplerDesc.magFilter = eg::TextureFilter::Linear;
+		
+		for (int i = 0; i < (int)RenderTex::MAX; i++)
+		{
+			std::string label = eg::Concat({"RenderTex::", magic_enum::enum_name((RenderTex)i)});
+			
+			eg::TextureCreateInfo textureCI;
+			textureCI.format = GetFormatForRenderTexture((RenderTex)i);
+			textureCI.width = eg::CurrentResolutionX();
+			textureCI.height = eg::CurrentResolutionY();
+			textureCI.mipLevels = 1;
+			textureCI.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample;
+			textureCI.defaultSamplerDescription = &samplerDesc;
+			textureCI.label = label.c_str();
+			
+			renderTextures[i] = eg::Texture::Create2D(textureCI);
+		}
+		
+		for (FramebufferEntry& entry : framebuffers)
+			InitFramebufferEntry(entry);
+	}
+}
+
+static inline RenderTex ResolveRedirects(RenderTex renderTex)
+{
+	if (renderTexturesRedirect[(int)renderTex] == (int)renderTex)
+		return renderTex;
+	return ResolveRedirects((RenderTex)renderTexturesRedirect[(int)renderTex]);
+}
+
+void RedirectRenderTexture(RenderTex texture, RenderTex actual)
+{
+	renderTexturesRedirect[(int)ResolveRedirects(texture)] = (int)actual;
 }
 
 void RenderTextureUsageHint(RenderTex texture, eg::TextureUsage usage, eg::ShaderAccessFlags accessFlags)
 {
-	renderTextures[(int)texture].UsageHint(usage, accessFlags);
+	renderTextures[(int)ResolveRedirects(texture)].UsageHint(usage, accessFlags);
 }
 
 eg::TextureRef GetRenderTexture(RenderTex texture)
 {
-	return renderTextures[(int)texture];
+	return renderTextures[(int)ResolveRedirects(texture)];
 }
 
 eg::FramebufferHandle GetFramebuffer(
@@ -228,6 +246,13 @@ eg::FramebufferHandle GetFramebuffer(
 	std::optional<RenderTex> depthTexture,
 	const char* label)
 {
+	if (colorTexture1.has_value())
+		colorTexture1 = ResolveRedirects(*colorTexture1);
+	if (colorTexture2.has_value())
+		colorTexture2 = ResolveRedirects(*colorTexture2);
+	if (depthTexture.has_value())
+		depthTexture = ResolveRedirects(*depthTexture);
+	
 	for (const FramebufferEntry& entry : framebuffers)
 	{
 		if (entry.colorTexture1 == colorTexture1 && entry.colorTexture2 == colorTexture2 &&

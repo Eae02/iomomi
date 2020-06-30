@@ -17,9 +17,6 @@ vec2 texSize;
 
 vec3 CalculateLighting(GBData data);
 
-const uint RF_NO_LIGHTING = 0x1;
-const uint RF_NO_SSR = 0x2;
-
 void main()
 {
 	ivec2 screenCoord = ivec2(gl_FragCoord.xy);

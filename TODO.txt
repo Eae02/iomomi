@@ -8,7 +8,6 @@ fixes:
 graphics fixes:
  - fix hidden water still rendering when underwater
  - gun should be rendered after ssr
- - ssr should be done later (so that transparents are reflected)
 
 textures and models:
  - textures in level change room

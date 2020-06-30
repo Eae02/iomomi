@@ -41,36 +41,16 @@ DeferredRenderer::DeferredRenderer()
 	shadowMapSamplerDesc.enableCompare = true;
 	shadowMapSamplerDesc.compareOp = eg::CompareOp::Less;
 	m_shadowMapSampler = eg::Sampler(shadowMapSamplerDesc);
+	
+	CreatePipelines();
 }
-
-//Stores a pair of two SSR sample counts (for the linear search and the binary search respectively)
-// for each each reflection quality level. 0 means SSR is disabled
-std::pair<uint32_t, uint32_t> SSR_SAMPLES[] = 
-{
-	/* VeryLow  */ { 0, 0 },
-	/* Low      */ { 0, 0 },
-	/* Medium   */ { 4, 6 },
-	/* High     */ { 6, 6 },
-	/* VeryHigh */ { 8, 8 }
-};
 
 void DeferredRenderer::CreatePipelines()
 {
-	eg::SpecializationConstantEntry ambientSpecConstEntries[2];
-	ambientSpecConstEntries[0].constantID = 0;
-	ambientSpecConstEntries[0].size = sizeof(uint32_t);
-	ambientSpecConstEntries[0].offset = offsetof(std::decay_t<decltype(SSR_SAMPLES[0])>, first);
-	ambientSpecConstEntries[1].constantID = 1;
-	ambientSpecConstEntries[1].size = sizeof(uint32_t);
-	ambientSpecConstEntries[1].offset = offsetof(std::decay_t<decltype(SSR_SAMPLES[0])>, second);
-	
 	eg::GraphicsPipelineCreateInfo ambientPipelineCI;
 	ambientPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
 	ambientPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/Ambient.fs.glsl").DefaultVariant();
 	ambientPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
-	ambientPipelineCI.fragmentShader.specConstants = ambientSpecConstEntries;
-	ambientPipelineCI.fragmentShader.specConstantsData = &SSR_SAMPLES[(int)settings.reflectionsQuality];
-	ambientPipelineCI.fragmentShader.specConstantsDataSize = sizeof(SSR_SAMPLES[0]);
 	m_ambientPipeline = eg::Pipeline::Create(ambientPipelineCI);
 	m_ambientPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
 	m_ambientPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
@@ -148,37 +128,25 @@ void DeferredRenderer::EndGeometry() const
 	RenderTextureUsageHintFS(RenderTex::Flags);
 }
 
-void DeferredRenderer::BeginTransparent(bool isBeforeWater)
+void DeferredRenderer::BeginTransparent(RenderTex destinationTexture)
 {
-	RenderTex colorTex = isBeforeWater ? RenderTex::LitWithoutWater : RenderTex::Lit;
-	
 	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = GetFramebuffer(colorTex, {}, RenderTex::GBDepth, "Transparent");
+	rpBeginInfo.framebuffer = GetFramebuffer(destinationTexture, {}, RenderTex::GBDepth, "Transparent");
 	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Load;
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Load;
 	
 	eg::DC.BeginRenderPass(rpBeginInfo);
 }
 
-void DeferredRenderer::EndTransparent(bool isBeforeWater)
+void DeferredRenderer::EndTransparent()
 {
 	eg::DC.EndRenderPass();
-	if (isBeforeWater)
-	{
-		RenderTextureUsageHintFS(RenderTex::GBDepth);
-	}
 }
 
-void DeferredRenderer::BeginLighting(bool hasWater)
+void DeferredRenderer::BeginLighting()
 {
-	if (settings.reflectionsQuality != m_currentReflectionQualityLevel)
-	{
-		m_currentReflectionQualityLevel = settings.reflectionsQuality;
-		CreatePipelines();
-	}
-	
 	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = GetFramebuffer(hasWater ? RenderTex::LitWithoutWater : RenderTex::Lit, {}, {}, "Lighting");
+	rpBeginInfo.framebuffer = GetFramebuffer(RenderTex::LitWithoutWater, {}, {}, "Lighting");
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
 	
 	eg::DC.BeginRenderPass(rpBeginInfo);

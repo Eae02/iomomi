@@ -11,6 +11,7 @@
 #include "World/GravityGun.hpp"
 #include "Graphics/WaterSimulator.hpp"
 #include "Gui/PausedMenu.hpp"
+#include "Graphics/SSR.hpp"
 #include "Graphics/PhysicsDebugRenderer.hpp"
 
 #include <EGame/Graphics/BloomRenderer.hpp>
@@ -44,6 +45,7 @@ private:
 	eg::PerspectiveProjection m_projection;
 	RenderContext* m_renderCtx;
 	WaterRenderer m_waterRenderer;
+	SSR m_ssr;
 	
 	PointLightShadowMapper m_plShadowMapper;
 	std::unique_ptr<eg::BloomRenderer> m_bloomRenderer;

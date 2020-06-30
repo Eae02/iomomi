@@ -37,6 +37,7 @@ enum class RenderTex
 	WaterDepthBlurred1,
 	WaterDepthBlurred2,
 	LitWithoutWater,
+	LitWithoutSSR,
 	Lit,
 	
 	MAX
@@ -56,6 +57,8 @@ eg::Format GetFormatForRenderTexture(RenderTex texture);
 //Recreates render textures if the resolution or certain graphics settings have changed.
 // Called at the start of each frame.
 void MaybeRecreateRenderTextures();
+
+void RedirectRenderTexture(RenderTex texture, RenderTex actual);
 
 void RenderTextureUsageHint(RenderTex texture, eg::TextureUsage usage, eg::ShaderAccessFlags accessFlags);
 

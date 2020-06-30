@@ -22,8 +22,6 @@ layout(set=0, binding=1, std140) uniform NMTransformsUB
 
 layout(set=0, binding=2) uniform sampler2D normalMap;
 
-layout(set=1, binding=0) uniform sampler2D depthBuffer;
-
 const float ROUGHNESS = 0.2;
 const float DISTORT_INTENSITY = 0.1;
 
@@ -31,12 +29,12 @@ void main()
 {
 	const float VISIBILITY_DEPTH = 1.5;
 	
-	vec2 screenCoord = vec2(gl_FragCoord.xy) / vec2(textureSize(depthBuffer, 0).xy);
-	float hDepth = texture(depthBuffer, screenCoord).r;
+	//vec2 screenCoord = vec2(gl_FragCoord.xy) / vec2(textureSize(depthBuffer, 0).xy);
+	float hDepth = 1;//texture(depthBuffer, screenCoord).r;
 	
-	vec3 geomWorldPos = WorldPosFromDepth(hDepth, screenCoord, renderSettings.invViewProjection);
+	//vec3 geomWorldPos = WorldPosFromDepth(hDepth, screenCoord, renderSettings.invViewProjection);
 	
-	float depth = distance(worldPos_in, geomWorldPos);
+	float depth = 100;//distance(worldPos_in, geomWorldPos);
 	float alpha = mix(0.1, 1.0, depth / VISIBILITY_DEPTH);
 	
 	vec3 normal = vec3(0.0);

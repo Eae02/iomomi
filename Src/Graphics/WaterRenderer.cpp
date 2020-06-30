@@ -335,7 +335,7 @@ void WaterRenderer::RenderPost()
 	eg::GPUTimer timer = eg::StartGPUTimer("Water Post");
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = GetFramebuffer(RenderTex::Lit, {}, {}, "WaterPost");
+	rpBeginInfo.framebuffer = GetFramebuffer(RenderTex::LitWithoutSSR, {}, {}, "WaterPost");
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
 	rpBeginInfo.colorAttachments[0].clearValue = eg::ColorSRGB::FromHex(0x0c2b46);
 	eg::DC.BeginRenderPass(rpBeginInfo);

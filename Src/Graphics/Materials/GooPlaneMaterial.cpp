@@ -19,6 +19,9 @@ void GooPlaneMaterial::OnInit()
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GooPlane.vs.glsl").DefaultVariant();
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GooPlane.fs.glsl").DefaultVariant();
+	pipelineCI.enableDepthWrite = true;
+	pipelineCI.enableDepthTest = true;
+	pipelineCI.cullMode = eg::CullMode::Back;
 	pipelineCI.cullMode = eg::CullMode::Back;
 	pipelineCI.frontFaceCCW = true;
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
@@ -78,8 +81,6 @@ bool GooPlaneMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) 
 	cmdCtx.BindPipeline(s_pipeline);
 	
 	cmdCtx.BindDescriptorSet(s_descriptorSet, 0);
-	
-	cmdCtx.BindTexture(GetRenderTexture(RenderTex::GBDepth), 1, 0);
 	
 	return true;
 }

@@ -27,6 +27,11 @@ struct Settings
 		return lightingQuality >= QualityLevel::Low;
 	}
 	
+	bool SSREnabled() const
+	{
+		return reflectionsQuality >= QualityLevel::Low;
+	}
+	
 	bool BloomEnabled() const
 	{
 		return (lightingQuality >= QualityLevel::Medium) && eg::GetGraphicsDeviceInfo().computeShader;

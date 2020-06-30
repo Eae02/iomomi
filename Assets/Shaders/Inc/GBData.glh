@@ -1,6 +1,9 @@
 #ifndef GB_DATA_H
 #define GB_DATA_H
 
+const uint RF_NO_LIGHTING = 0x1;
+const uint RF_NO_SSR = 0x2;
+
 struct GBData
 {
 	float hDepth;

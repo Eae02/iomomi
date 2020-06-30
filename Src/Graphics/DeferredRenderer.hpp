@@ -3,6 +3,7 @@
 #include "Lighting/SpotLight.hpp"
 #include "Lighting/PointLight.hpp"
 #include "WaterRenderer.hpp"
+#include "GraphicsCommon.hpp"
 
 class DeferredRenderer
 {
@@ -13,10 +14,10 @@ public:
 	void BeginGeometryFlags() const;
 	void EndGeometry() const;
 	
-	void BeginTransparent(bool isBeforeWater);
+	void BeginTransparent(RenderTex destinationTexture);
 	
-	void BeginLighting(bool hasWater);
-	void EndTransparent(bool isBeforeWater);
+	void BeginLighting();
+	void EndTransparent();
 	
 	void DrawSpotLights(const std::vector<SpotLightDrawData>& spotLights) const;
 	void DrawPointLights(const std::vector<PointLightDrawData>& pointLights) const;
@@ -29,8 +30,6 @@ private:
 	void CreatePipelines();
 	
 	eg::Sampler m_shadowMapSampler;
-	
-	QualityLevel m_currentReflectionQualityLevel = (QualityLevel)-1;
 	
 	eg::Pipeline m_ambientPipeline;
 	eg::Pipeline m_spotLightPipeline;

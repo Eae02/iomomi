@@ -12,7 +12,7 @@ static void OnInit()
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Emissive.vs.glsl").DefaultVariant();
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Emissive.fs.glsl").DefaultVariant();
-	pipelineCI.enableDepthWrite = false;
+	pipelineCI.enableDepthWrite = true;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.depthCompare = eg::CompareOp::LessOrEqual;
 	pipelineCI.cullMode = eg::CullMode::None;

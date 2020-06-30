@@ -264,6 +264,12 @@ void MainGameState::RunFrame(float dt)
 	else
 	{
 		mDrawArgs.waterDepthTexture = WaterRenderer::GetDummyDepthTexture();
+		RedirectRenderTexture(RenderTex::LitWithoutWater, RenderTex::LitWithoutSSR);
+	}
+	
+	if (!settings.SSREnabled())
+	{
+		RedirectRenderTexture(RenderTex::LitWithoutSSR, RenderTex::Lit);
 	}
 	
 	{
@@ -303,7 +309,7 @@ void MainGameState::RunFrame(float dt)
 		auto cpuTimerLight = eg::StartCPUTimer("Lighting");
 		eg::DC.DebugLabelBegin("Lighting");
 		
-		m_renderCtx->renderer.BeginLighting(m_waterSimulator.NumParticlesToDraw() > 0);
+		m_renderCtx->renderer.BeginLighting();
 		
 		m_renderCtx->renderer.DrawSpotLights(prepareDrawArgs.spotLights);
 		m_renderCtx->renderer.DrawPointLights(prepareDrawArgs.pointLights);
@@ -320,7 +326,7 @@ void MainGameState::RunFrame(float dt)
 		auto cpuTimerTransparent = eg::StartCPUTimer("Transparent (pre-water)");
 		eg::DC.DebugLabelBegin("Transparent (pre-water)");
 		
-		m_renderCtx->renderer.BeginTransparent(true);
+		m_renderCtx->renderer.BeginTransparent(RenderTex::LitWithoutWater);
 		
 		mDrawArgs.drawMode = MeshDrawMode::Emissive;
 		m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
@@ -328,7 +334,8 @@ void MainGameState::RunFrame(float dt)
 		mDrawArgs.drawMode = MeshDrawMode::TransparentBeforeWater;
 		m_renderCtx->transparentMeshBatch.Draw(eg::DC, &mDrawArgs);
 		
-		m_renderCtx->renderer.EndTransparent(true);
+		m_renderCtx->renderer.EndTransparent();
+		RenderTextureUsageHintFS(RenderTex::GBDepth);
 		eg::DC.DebugLabelEnd();
 	}
 	
@@ -342,28 +349,38 @@ void MainGameState::RunFrame(float dt)
 		m_waterRenderer.RenderPost();
 		eg::DC.DebugLabelEnd();
 	}
+	else
+	{
+		m_renderCtx->renderer.BeginTransparent(RenderTex::LitWithoutSSR);
+		
+		mDrawArgs.drawMode = MeshDrawMode::Emissive;
+		m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
+		
+		m_renderCtx->renderer.EndTransparent();
+		RenderTextureUsageHintFS(RenderTex::GBDepth);
+	}
+	
+	//TODO: Move SSR Here
+	if (settings.SSREnabled())
+	{
+		RenderTextureUsageHintFS(RenderTex::LitWithoutSSR);
+		
+		m_ssr.Render(mDrawArgs.waterDepthTexture);
+	}
 	
 	{
 		auto gpuTimerTransparent = eg::StartGPUTimer("Transparent");
 		auto cpuTimerTransparent = eg::StartCPUTimer("Transparent");
 		eg::DC.DebugLabelBegin("Transparent");
 		
-		m_renderCtx->renderer.BeginTransparent(false);
-		
-		if (m_waterSimulator.NumParticlesToDraw() == 0)
-		{
-			mDrawArgs.drawMode = MeshDrawMode::Emissive;
-			m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
-		}
+		m_renderCtx->renderer.BeginTransparent(RenderTex::Lit);
 		
 		mDrawArgs.drawMode = MeshDrawMode::TransparentAfterWater;
 		m_renderCtx->transparentMeshBatch.Draw(eg::DC, &mDrawArgs);
 		
-		m_renderCtx->renderer.EndTransparent(false);
+		m_renderCtx->renderer.EndTransparent();
 		eg::DC.DebugLabelEnd();
 	}
-	
-	//TODO: Move SSR Here
 	
 	//TODO: Move gun rendering here
 	
