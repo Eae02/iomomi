@@ -114,9 +114,11 @@ eg::Format GetFormatForRenderTexture(RenderTex texture)
 	}
 }
 
-static eg::Texture renderTextures[(size_t)RenderTex::MAX];
+static constexpr int NUM_RENDER_TEXTURES = magic_enum::enum_count<RenderTex>();
 
-static int renderTexturesRedirect[(size_t)RenderTex::MAX];
+static eg::Texture renderTextures[NUM_RENDER_TEXTURES];
+
+static RenderTex renderTexturesRedirect[NUM_RENDER_TEXTURES];
 
 struct FramebufferEntry
 {
@@ -171,9 +173,9 @@ static bool wasWaterHighPrecision = false;
 
 void MaybeRecreateRenderTextures()
 {
-	for (int i = 0; i < (int)RenderTex::MAX; i++)
+	for (int i = 0; i < NUM_RENDER_TEXTURES; i++)
 	{
-		renderTexturesRedirect[i] = i;
+		renderTexturesRedirect[i] = (RenderTex)i;
 	}
 	
 	const bool waterHighPrecision = settings.waterQuality >= WaterRenderer::HighPrecisionMinQL;
@@ -197,7 +199,7 @@ void MaybeRecreateRenderTextures()
 		samplerDesc.minFilter = eg::TextureFilter::Linear;
 		samplerDesc.magFilter = eg::TextureFilter::Linear;
 		
-		for (int i = 0; i < (int)RenderTex::MAX; i++)
+		for (int i = 0; i < NUM_RENDER_TEXTURES; i++)
 		{
 			std::string label = eg::Concat({"RenderTex::", magic_enum::enum_name((RenderTex)i)});
 			
@@ -220,14 +222,16 @@ void MaybeRecreateRenderTextures()
 
 static inline RenderTex ResolveRedirects(RenderTex renderTex)
 {
-	if (renderTexturesRedirect[(int)renderTex] == (int)renderTex)
-		return renderTex;
-	return ResolveRedirects((RenderTex)renderTexturesRedirect[(int)renderTex]);
+	while (renderTexturesRedirect[(int)renderTex] != renderTex)
+	{
+		renderTex = renderTexturesRedirect[(int)renderTex];
+	}
+	return renderTex;
 }
 
 void RedirectRenderTexture(RenderTex texture, RenderTex actual)
 {
-	renderTexturesRedirect[(int)ResolveRedirects(texture)] = (int)actual;
+	renderTexturesRedirect[(int)ResolveRedirects(texture)] = actual;
 }
 
 void RenderTextureUsageHint(RenderTex texture, eg::TextureUsage usage, eg::ShaderAccessFlags accessFlags)
@@ -261,6 +265,17 @@ eg::FramebufferHandle GetFramebuffer(
 			return entry.framebuffer.handle;
 		}
 	}
+	
+#ifndef NDEBUG
+	auto GetNameForOptRenderTexture = [] (std::optional<RenderTex> texture) -> std::string_view
+	{
+		return texture.has_value() ? magic_enum::enum_name(*texture) : "-";
+	};
+	eg::Log(eg::LogLevel::Info, "fb", "Added framebuffer ({0} {1} {2})",
+		GetNameForOptRenderTexture(colorTexture1),
+		GetNameForOptRenderTexture(colorTexture2),
+		GetNameForOptRenderTexture(depthTexture));
+#endif
 	
 	EG_ASSERT(framebuffers.size() < 100);
 	

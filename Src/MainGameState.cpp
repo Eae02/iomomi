@@ -200,8 +200,8 @@ void MainGameState::RunFrame(float dt)
 	if (settings.BloomEnabled())
 	{
 		bool outOfDate = m_bloomRenderTarget == nullptr ||
-			(int)m_bloomRenderTarget->OutputTexture().Width() != eg::CurrentResolutionX() ||
-			(int)m_bloomRenderTarget->OutputTexture().Height() != eg::CurrentResolutionY();
+			(int)m_bloomRenderTarget->InputWidth() != eg::CurrentResolutionX() ||
+			(int)m_bloomRenderTarget->InputHeight() != eg::CurrentResolutionY();
 		
 		if (outOfDate)
 		{
@@ -324,19 +324,24 @@ void MainGameState::RunFrame(float dt)
 	{
 		auto gpuTimerTransparent = eg::StartGPUTimer("Transparent (pre-water)");
 		auto cpuTimerTransparent = eg::StartCPUTimer("Transparent (pre-water)");
-		eg::DC.DebugLabelBegin("Transparent (pre-water)");
 		
 		m_renderCtx->renderer.BeginTransparent(RenderTex::LitWithoutWater);
+		
+		eg::DC.DebugLabelBegin("Emissive");
 		
 		mDrawArgs.drawMode = MeshDrawMode::Emissive;
 		m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
 		
+		eg::DC.DebugLabelEnd();
+		eg::DC.DebugLabelBegin("Transparent (pre-water)");
+		
 		mDrawArgs.drawMode = MeshDrawMode::TransparentBeforeWater;
 		m_renderCtx->transparentMeshBatch.Draw(eg::DC, &mDrawArgs);
 		
+		eg::DC.DebugLabelEnd();
+		
 		m_renderCtx->renderer.EndTransparent();
 		RenderTextureUsageHintFS(RenderTex::GBDepth);
-		eg::DC.DebugLabelEnd();
 	}
 	
 	if (m_waterSimulator.NumParticlesToDraw() > 0)
@@ -351,6 +356,10 @@ void MainGameState::RunFrame(float dt)
 	}
 	else
 	{
+		auto gpuTimerTransparent = eg::StartGPUTimer("Emissive");
+		auto cpuTimerTransparent = eg::StartCPUTimer("Emissive");
+		eg::DC.DebugLabelBegin("Emissive");
+		
 		m_renderCtx->renderer.BeginTransparent(RenderTex::LitWithoutSSR);
 		
 		mDrawArgs.drawMode = MeshDrawMode::Emissive;
@@ -358,14 +367,20 @@ void MainGameState::RunFrame(float dt)
 		
 		m_renderCtx->renderer.EndTransparent();
 		RenderTextureUsageHintFS(RenderTex::GBDepth);
+		
+		eg::DC.DebugLabelEnd();
 	}
 	
-	//TODO: Move SSR Here
 	if (settings.SSREnabled())
 	{
 		RenderTextureUsageHintFS(RenderTex::LitWithoutSSR);
 		
+		auto gpuTimerTransparent = eg::StartGPUTimer("SSR");
+		eg::DC.DebugLabelBegin("SSR");
+		
 		m_ssr.Render(mDrawArgs.waterDepthTexture);
+		
+		eg::DC.DebugLabelEnd();
 	}
 	
 	{

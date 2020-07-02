@@ -2,6 +2,8 @@
 #include "../Graphics/RenderSettings.hpp"
 #include "../World/Entities/Components/LiquidPlaneComp.hpp"
 
+#include <magic_enum.hpp>
+
 static constexpr float ICON_SIZE = 32;
 
 EditorIcon::EditorIcon(const glm::vec3& worldPos, std::function<void()> callback)
@@ -35,3 +37,5 @@ void EditorState::InvalidateWater() const
 		entity.GetComponentMut<LiquidPlaneComp>()->MarkOutOfDate();
 	});
 }
+
+static_assert(EDITOR_NUM_TOOLS == magic_enum::enum_count<EditorTool>());

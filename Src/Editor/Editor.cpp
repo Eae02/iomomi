@@ -1,20 +1,18 @@
 #include "Editor.hpp"
-#include "../Levels.hpp"
-#include "../MainGameState.hpp"
-#include "../Graphics/Materials/MeshDrawArgs.hpp"
-#include "../Graphics/WaterRenderer.hpp"
-#include "../World/Entities/Components/WaterBlockComp.hpp"
-#include "../World/Entities/Components/ActivatorComp.hpp"
-#include "../World/Entities/Components/ActivatableComp.hpp"
 #include "Components/EntityEditorComponent.hpp"
 #include "Components/SpawnEntityEditorComponent.hpp"
 #include "Components/LightStripEditorComponent.hpp"
 #include "Components/GravityCornerEditorComponent.hpp"
 #include "Components/WallDragEditorComponent.hpp"
 #include "Components/AAQuadDragEditorComponent.hpp"
+#include "../Levels.hpp"
+#include "../MainGameState.hpp"
+#include "../Graphics/Materials/MeshDrawArgs.hpp"
+#include "../World/Entities/Components/WaterBlockComp.hpp"
+#include "../World/Entities/Components/ActivatorComp.hpp"
 
 #include <fstream>
-
+#include <magic_enum.hpp>
 #include <imgui.h>
 #include <misc/cpp/imgui_stdlib.h>
 
@@ -169,7 +167,7 @@ void Editor::RunFrame(float dt)
 	
 	editorState.viewRay = eg::Ray::UnprojectScreen(RenderSettings::instance->invViewProjection, eg::CursorPos());
 	
-	for (int i = 0; i < EDITOR_NUM_TOOLS; i++)
+	for (int i = 0; i < (int)EDITOR_NUM_TOOLS; i++)
 	{
 		if (eg::IsButtonDown((eg::Button)((int)eg::Button::F1 + i)))
 		{

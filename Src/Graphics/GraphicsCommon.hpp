@@ -38,9 +38,7 @@ enum class RenderTex
 	WaterDepthBlurred2,
 	LitWithoutWater,
 	LitWithoutSSR,
-	Lit,
-	
-	MAX
+	Lit
 };
 
 constexpr eg::Format GB_DEPTH_FORMAT = eg::Format::Depth32;
