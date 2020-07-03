@@ -151,6 +151,11 @@ void World::LoadFormatSup5(std::istream& stream, uint32_t version, bool isEditor
 	{
 		AirVoxel& voxel = m_voxels.emplace(glm::ivec3(data.x, data.y, data.z), AirVoxel()).first->second;
 		std::copy_n(data.materials, 6, voxel.materials);
+		for (int i = 0; i < 6; i++)
+		{
+			if (voxel.materials[i] >= MAX_WALL_MATERIALS || !wallMaterials[voxel.materials[i]].initialized)
+				voxel.materials[i] = 0;
+		}
 		voxel.hasGravityCorner = std::bitset<12>(data.hasGravityCorner);
 	}
 	

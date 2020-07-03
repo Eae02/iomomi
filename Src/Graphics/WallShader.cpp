@@ -24,7 +24,7 @@ WallMaterial wallMaterials[MAX_WALL_MATERIALS];
 
 static inline void InitializeMaterials()
 {
-	//                   true, editor name,       texscale, rmin, rmax                
+	//                   true, editor name,       texscale, rmin, rmax
 	wallMaterials[0] = { true, "No Draw",             2.0f, 0.6f, 1.0f };
 	wallMaterials[1] = { true, "Tactile Gray",        2.0f, 0.6f, 1.0f };
 	wallMaterials[2] = { true, "Clear Metal",         4.0f, 0.3f, 0.5f };
@@ -103,9 +103,9 @@ void InitializeWallShader()
 	plsFormatHint.depthStencilFormat = PointLightShadowMapper::SHADOW_MAP_FORMAT;
 	wr.pipelinePLShadow.FramebufferFormatHint(plsFormatHint);
 	
-	wr.diffuseTexture = &eg::GetAsset<eg::Texture>("Textures/Voxel/Diffuse");
-	wr.normalMapTexture = &eg::GetAsset<eg::Texture>("Textures/Voxel/NormalMap");
-	wr.miscMapTexture = &eg::GetAsset<eg::Texture>("Textures/Voxel/MiscMap");
+	wr.diffuseTexture = &eg::GetAsset<eg::Texture>("WallTextures/Albedo");
+	wr.normalMapTexture = &eg::GetAsset<eg::Texture>("WallTextures/NormalMap");
+	wr.miscMapTexture = &eg::GetAsset<eg::Texture>("WallTextures/MiscMap");
 	wr.gridTexture = &eg::GetAsset<eg::Texture>("Textures/Grid.png");
 	wr.noDrawTexture = &eg::GetAsset<eg::Texture>("Textures/NoDraw.png");
 	

@@ -38,7 +38,7 @@ const char* DecalEnt::GetMaterialName() const
 
 void DecalEnt::UpdateMaterialPointer()
 {
-	std::string fullName = eg::Concat({ "Materials/Decals/", decalMaterials[m_decalMaterialIndex], ".yaml" });
+	std::string fullName = eg::Concat({ "Decals/", decalMaterials[m_decalMaterialIndex], ".yaml" });
 	
 	m_material = &eg::GetAsset<DecalMaterial>(fullName);
 }

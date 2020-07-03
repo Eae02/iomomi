@@ -4,91 +4,20 @@ mipShift: &MipShift
   high: 0
 
 assets:
-  - name: Shaders/ImGui.vs.glsl
-  - name: Shaders/ImGui.fs.glsl
-  - name: Shaders/Common3D.vs.glsl
-  - name: Shaders/Common3D-PLShadow.vs.glsl
-  - name: Shaders/GravityCornerLight.fs.glsl
-  - name: Shaders/Primitive.vs.glsl
-  - name: Shaders/Primitive.fs.glsl
-  - name: Shaders/Screen.fs.glsl
-  - name: Shaders/Post.vs.glsl
-  - name: Shaders/Post.fs.glsl
-  - name: Shaders/StaticModel.fs.glsl
-  - name: Shaders/StaticModel-Editor.fs.glsl
-  - name: Shaders/ObjectFlags.vs.glsl
-  - name: Shaders/ObjectFlags.fs.glsl
-  - name: Shaders/LiquidPlaneEditor.vs.glsl
-  - name: Shaders/LiquidPlaneEditor.fs.glsl
-  - name: Shaders/GooPlane.vs.glsl
-  - name: Shaders/GooPlane.fs.glsl
-  - name: Shaders/Wall.vs.glsl
-  - name: Shaders/Wall.fs.glsl
-  - name: Shaders/Wall-Editor.fs.glsl
-  - name: Shaders/Wall-Border.vs.glsl
-  - name: Shaders/Wall-Border.fs.glsl
-  - name: Shaders/Wall-PLShadow.vs.glsl
-  - name: Shaders/Wall-PLShadow.gs.glsl
-  - name: Shaders/Emissive.vs.glsl
-  - name: Shaders/Emissive.fs.glsl
-  - name: Shaders/LightStrip.vs.glsl
-  - name: Shaders/LightStrip.fs.glsl
-  - name: Shaders/Lighting/Ambient.fs.glsl
-  - name: Shaders/Lighting/SpotLight.vs.glsl
-  - name: Shaders/Lighting/SpotLight.fs.glsl
-  - name: Shaders/Lighting/PointLight.vs.glsl
-  - name: Shaders/Lighting/PointLight.fs.glsl
-  - name: Shaders/PointLightShadow.gs.glsl
-  - name: Shaders/PointLightShadow.fs.glsl
-  - name: Shaders/SSR.fs.glsl
-  - name: Shaders/GravitySwitchLight.fs.glsl
-  - name: Shaders/GravitySwitchVolLight.vs.glsl
-  - name: Shaders/GravitySwitchVolLight.fs.glsl
-  - name: Shaders/GravityGunMid.fs.glsl
-  - name: Shaders/Decal.vs.glsl
-  - name: Shaders/Decal.fs.glsl
-  - name: Shaders/GravityBarrier.vs.glsl
-  - name: Shaders/GravityBarrier.fs.glsl
-  - name: Shaders/ForceField.vs.glsl
-  - name: Shaders/ForceField.fs.glsl
-  - name: Shaders/Particle.vs.glsl
-  - name: Shaders/Particle.fs.glsl
-  - name: Shaders/GooPlane.vs.glsl
-  - name: Shaders/GooPlane.fs.glsl
-  - name: Shaders/Water/WaterSphere.vs.glsl
-  - name: Shaders/Water/WaterSphereBasic.fs.glsl
-  - name: Shaders/Water/WaterSphereDepth.fs.glsl
-  - name: Shaders/Water/WaterSphereAdd.fs.glsl
-  - name: Shaders/Water/WaterPost.fs.glsl
-  - name: Shaders/Water/DepthBlur1P.fs.glsl
-  - name: Shaders/Water/DepthBlur2P.fs.glsl
-
-  - name: Models/GravityCornerConvex.obj
-  - name: Models/GravitySwitch.obj
-  - name: Models/EnterRoom.obj
   - name: Models/EnterRoomCol.obj
     access: cpu
     flipWinding: true
-  - name: Models/EditorExit.obj
-  - name: Models/EditorEntrance.obj
-  - name: Models/WallLight.obj
-  - name: Models/Cube.obj
-  - name: Models/WoodCube.obj
-  - name: Models/Button.obj
     removeNameSuffix: true
   - name: Models/ButtonCol.obj
     access: cpu
     flipWinding: true
     removeNameSuffix: true
-  - name: Models/Platform.obj
-  - name: Models/PlatformSlider.obj
-  - name: Models/GravityGun.obj
-  - name: Models/ActivationStripStraight.obj
-  - name: Models/ActivationStripBend.obj
-  - name: Models/ActivationStripCorner.obj
-  - name: Models/GravityBarrierBorder.obj
   - name: Models/Window.obj
     flipWinding: true
+    removeNameSuffix: true
+    
+  - regex: "Models/.*\\.obj"
+    removeNameSuffix: true
   
   - name: Particles/BlueOrb.ype
   
@@ -96,6 +25,18 @@ assets:
     size: 24
   - name: GameFont.ttf
     size: 64
+    
+  #Decal materials
+  - name: "Decals/.*\\.yaml"
+    generator: DecalMaterial
+    loader: DecalMaterial
+    
+  - regex: "Shaders/.*\\.glsl"
+    
+  #Materials
+  - regex: "Materials/.*\\.yaml"
+    generator: StaticPropMaterial
+    loader: StaticPropMaterial
   
   #Textures:
   - name: Textures/EntityIcons.png
@@ -112,111 +53,12 @@ assets:
     srgb: true
     format: bc1
     
-  - name: Textures/Decals/Stain0.png
-    mipShift: *MipShift
-    srgb: true
-    format: bc3
-  - name: Textures/Decals/Stain1.png
-    mipShift: *MipShift
-    srgb: true
-    format: bc3
-  - name: Textures/Decals/Stain2.png
-    mipShift: *MipShift
-    srgb: true
-    format: bc3
-  - name: Textures/Decals/Arrow.png
-    mipShift: *MipShift
-    srgb: true
-    format: bc3
-
   - name: Textures/Particles.png
     mipLevels: 8
     srgb: true
     format: bc3
   - name: Textures/ForceFieldParticle.png
     format: bc4
-    
-  - name: Textures/Entrance/FloorA.png
-    mipShift: *MipShift
-    srgb: true
-    format: bc1
-  - name: Textures/Entrance/FloorN.png
-    mipShift: *MipShift
-    srgb: false
-    format: bc5
-  - name: Textures/Entrance/FloorM.png
-    mipShift: *MipShift
-    srgb: false
-    format: bc1
-    
-  - name: Textures/ActivationStripA.png
-    mipShift: *MipShift
-    srgb: true
-    format: bc1
-  - name: Textures/ActivationStripM.png
-    mipShift: *MipShift
-    srgb: false
-    format: bc1
-    
-  - name: Textures/Entrance/Door1A.png
-    mipShift: *MipShift
-    srgb: true
-    format: bc1
-  - name: Textures/Entrance/Door2A.png
-    mipShift: *MipShift
-    srgb: true
-    format: bc1
-  - name: Textures/Entrance/DoorN.png
-    mipShift: *MipShift
-    srgb: false
-    format: bc5
-  - name: Textures/Entrance/Door1M.png
-    mipShift: *MipShift
-    srgb: false
-    format: bc1
-  - name: Textures/Entrance/Door2M.png
-    mipShift: *MipShift
-    srgb: false
-    format: bc1
-
-  - name: Textures/GravityGunMainA.png
-    mipShift: *MipShift
-    srgb: true
-    format: bc1
-  - name: Textures/GravityGunMainN.png
-    mipShift: *MipShift
-    srgb: false
-    format: bc5
-  - name: Textures/GravityGunMainM.png
-    mipShift: *MipShift
-    srgb: false
-    format: bc1
-    
-  - name: Textures/Entrance/DoorFrameA.png
-    mipShift: *MipShift
-    srgb: true
-    format: bc1
-  - name: Textures/Entrance/DoorFrameN.png
-    mipShift: *MipShift
-    srgb: false
-    format: bc5
-  - name: Textures/Entrance/DoorFrameM.png
-    mipShift: *MipShift
-    srgb: false
-    format: bc1
-    
-  - name: Textures/Entrance/PaddingA.png
-    mipShift: *MipShift
-    srgb: true
-    format: bc1
-  - name: Textures/Entrance/PaddingN.png
-    mipShift: *MipShift
-    srgb: false
-    format: bc5
-  - name: Textures/Entrance/PaddingM.png
-    mipShift: *MipShift
-    srgb: false
-    format: bc1
     
   - name: Textures/DefaultA.png
     srgb: true
@@ -228,19 +70,6 @@ assets:
     srgb: false
     format: rgba8
     
-  - name: Textures/ButtonA.png
-    mipShift: *MipShift
-    srgb: true
-    format: bc1
-  - name: Textures/ButtonN.png
-    mipShift: *MipShift
-    srgb: false
-    format: bc5
-  - name: Textures/ButtonM.png
-    mipShift: *MipShift
-    srgb: false
-    format: bc1
-
   - name: Textures/GravityCornerA.png
     mipShift:
       low: 1
@@ -260,98 +89,11 @@ assets:
     srgb: false
     format: bc4
     
-  - name: Textures/Pipe1A.png
-    mipShift: *MipShift
-    srgb: true
-    format: bc1
-  - name: Textures/Pipe1N.png
-    mipShift: *MipShift
-    srgb: false
-    format: bc5
-  - name: Textures/Pipe1M.png
-    mipShift: *MipShift
-    srgb: false
-    format: bc1
-    
-  - name: Textures/Pipe2A.png
-    mipShift: *MipShift
-    srgb: true
-    format: bc1
-  - name: Textures/Pipe2N.png
-    mipShift: *MipShift
-    srgb: false
-    format: bc5
-  - name: Textures/Pipe2M.png
-    mipShift: *MipShift
-    srgb: false
-    format: bc1
-    
   - name: Textures/SlimeN.png
     mipShift: *MipShift
     srgb: false
     format: rgba8
     
-  - name: Textures/CubeA.png
-    mipShift: *MipShift
-    srgb: true
-    format: bc1
-  - name: Textures/CubeM.png
-    mipShift: *MipShift
-    srgb: false
-    format: bc1
-  - name: Textures/WoodCubeA.png
-    mipShift: *MipShift
-    srgb: true
-    format: bc1
-  - name: Textures/WoodCubeN.png
-    mipShift: *MipShift
-    srgb: false
-    format: bc5
-  - name: Textures/WoodCubeM.png
-    mipShift: *MipShift
-    srgb: false
-    format: bc1
-
-  - name: Textures/WaterN.png
-    mipShift: *MipShift
-    srgb: false
-    format: bc5
-    
-  - name: Textures/GravitySwitchA.png
-    mipShift: *MipShift
-    srgb: true
-    format: bc1
-  - name: Textures/GravitySwitchN.png
-    mipShift: *MipShift
-    srgb: false
-    format: bc5
-  - name: Textures/GravitySwitchM.png
-    mipShift: *MipShift
-    srgb: false
-    format: bc1
-
-  - name: Textures/PlatformSliderA.png
-    mipShift: *MipShift
-    srgb: true
-    format: bc1
-  - name: Textures/PlatformSliderM.png
-    mipShift: *MipShift
-    srgb: false
-    format: bc1
-
-  - name: Textures/PlatformA.png
-    mipShift: *MipShift
-    srgb: true
-    format: bc3
-  - name: Textures/PlatformN.png
-    mipShift: *MipShift
-    srgb: false
-    format: bc5
-  - name: Textures/PlatformM.png
-    mipShift: *MipShift
-    srgb: false
-    format: bc1
-
   - name: Textures/Hex.png
     srgb: false
     format: bc5
@@ -370,121 +112,67 @@ assets:
     format: rgba8
     filtering: linear
     
-  - name: Textures/Voxel/Diffuse
+  - regex: "Textures/Decals/.*\\.png"
+    mipShift: *MipShift
+    srgb: true
+    format: bc3
+  - regex: "Textures/.*A\\.png"
+    mipShift: *MipShift
+    srgb: true
+    format: bc1
+  - regex: "Textures/.*AT\\.png"
+    mipShift: *MipShift
+    srgb: true
+    format: bc3
+  - regex: "Textures/.*N\\.png"
+    mipShift: *MipShift
+    srgb: false
+    format: bc5
+  - regex: "Textures/.*M\\.png"
+    mipShift: *MipShift
+    srgb: false
+    format: bc1
+    
+    
+  - name: WallTextures/Albedo
     generator: Texture2DArray
     loader: Texture2D
     mipShift: *MipShift
     srgb: true
     format: bc1
     layers:
-      - Textures/Voxel/TactileGrayA.png
-      - Textures/Voxel/Metal1A.png
-      - Textures/Voxel/MetalGridA.png
-      - Textures/Voxel/CementA.png
-      - Textures/Voxel/Panels1A.png
-      - Textures/Voxel/Panels2A.png
-      - Textures/Voxel/Panels1StripedA.png
-  - name: Textures/Voxel/NormalMap
+      - WallTextures/TactileGrayA.png
+      - WallTextures/Metal1A.png
+      - WallTextures/MetalGridA.png
+      - WallTextures/CementA.png
+      - WallTextures/Panels1A.png
+      - WallTextures/Panels2A.png
+      - WallTextures/Panels1StripedA.png
+  - name: WallTextures/NormalMap
     generator: Texture2DArray
     loader: Texture2D
     mipShift: *MipShift
     srgb: false
     format: bc5
     layers:
-      - Textures/Voxel/TactileGrayN.png
-      - Textures/Voxel/Metal1N.png
-      - Textures/Voxel/MetalGridN.png
-      - Textures/Voxel/CementN.png
-      - Textures/Voxel/Panels1N.png
-      - Textures/Voxel/Panels2N.png
-      - Textures/Voxel/Panels1N.png
-  - name: Textures/Voxel/MiscMap
+      - WallTextures/TactileGrayN.png
+      - WallTextures/Metal1N.png
+      - WallTextures/MetalGridN.png
+      - WallTextures/CementN.png
+      - WallTextures/Panels1N.png
+      - WallTextures/Panels2N.png
+      - WallTextures/Panels1N.png
+  - name: WallTextures/MiscMap
     generator: Texture2DArray
     loader: Texture2D
     mipShift: *MipShift
     srgb: false
     format: bc1
     layers:
-      - Textures/Voxel/TactileGrayM.png
-      - Textures/Voxel/Metal1M.png
-      - Textures/Voxel/MetalGridM.png
-      - Textures/Voxel/CementM.png
-      - Textures/Voxel/Panels1M.png
-      - Textures/Voxel/Panels2M.png
-      - Textures/Voxel/Panels1M.png
-
-    #Decal materials
-  - name: Materials/Decals/Stain0.yaml
-    generator: DecalMaterial
-    loader: DecalMaterial
-  - name: Materials/Decals/Stain1.yaml
-    generator: DecalMaterial
-    loader: DecalMaterial
-  - name: Materials/Decals/Stain2.yaml
-    generator: DecalMaterial
-    loader: DecalMaterial
-  - name: Materials/Decals/Arrow.yaml
-    generator: DecalMaterial
-    loader: DecalMaterial
-    
-    #Materials
-  - name: Materials/Default.yaml
-    generator: StaticPropMaterial
-    loader: StaticPropMaterial
-  - name: Materials/Cube.yaml
-    generator: StaticPropMaterial
-    loader: StaticPropMaterial
-  - name: Materials/WoodCube.yaml
-    generator: StaticPropMaterial
-    loader: StaticPropMaterial
-  - name: Materials/ActivationStrip.yaml
-    generator: StaticPropMaterial
-    loader: StaticPropMaterial
-  - name: Materials/GravityGunMain.yaml
-    generator: StaticPropMaterial
-    loader: StaticPropMaterial
-  - name: Materials/GravityGunMid.yaml
-    generator: StaticPropMaterial
-    loader: StaticPropMaterial
-  - name: Materials/GravitySwitch.yaml
-    generator: StaticPropMaterial
-    loader: StaticPropMaterial
-  - name: Materials/Entrance/Floor.yaml
-    generator: StaticPropMaterial
-    loader: StaticPropMaterial
-  - name: Materials/Entrance/Door1.yaml
-    generator: StaticPropMaterial
-    loader: StaticPropMaterial
-  - name: Materials/Entrance/Door2.yaml
-    generator: StaticPropMaterial
-    loader: StaticPropMaterial
-  - name: Materials/Entrance/DoorFrame.yaml
-    generator: StaticPropMaterial
-    loader: StaticPropMaterial
-  - name: Materials/Entrance/Padding.yaml
-    generator: StaticPropMaterial
-    loader: StaticPropMaterial
-  - name: Materials/Entrance/EditorEntrance.yaml
-    generator: StaticPropMaterial
-    loader: StaticPropMaterial
-  - name: Materials/Entrance/EditorExit.yaml
-    generator: StaticPropMaterial
-    loader: StaticPropMaterial
-  - name: Materials/Pipe1.yaml
-    generator: StaticPropMaterial
-    loader: StaticPropMaterial
-  - name: Materials/Pipe2.yaml
-    generator: StaticPropMaterial
-    loader: StaticPropMaterial
-  - name: Materials/Button.yaml
-    generator: StaticPropMaterial
-    loader: StaticPropMaterial
-  - name: Materials/GravityCorner.yaml
-    generator: StaticPropMaterial
-    loader: StaticPropMaterial
-  - name: Materials/Platform.yaml
-    generator: StaticPropMaterial
-    loader: StaticPropMaterial  
-  - name: Materials/PlatformSlider.yaml
-    generator: StaticPropMaterial
-    loader: StaticPropMaterial  
+      - WallTextures/TactileGrayM.png
+      - WallTextures/Metal1M.png
+      - WallTextures/MetalGridM.png
+      - WallTextures/CementM.png
+      - WallTextures/Panels1M.png
+      - WallTextures/Panels2M.png
+      - WallTextures/Panels1M.png

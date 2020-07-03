@@ -3,17 +3,14 @@
 
 struct MeshType
 {
-	const char* name;
+	std::string_view name;
 	const eg::Model* model;
-	const eg::IMaterial* material;
+	std::vector<const eg::IMaterial*> materials;
 	
-	MeshType(const char* _name, const char* modelName, const char* materialName)
-		: name(_name)
+	MeshType(std::string_view _name, std::string_view modelName)
+		: name(_name), model(&eg::GetAsset<eg::Model>(modelName))
 	{
-		std::string fullModelName = std::string("Models/") + modelName + ".obj";
-		std::string fullMaterialName = std::string("Materials/") + modelName + ".yaml";
-		model = &eg::GetAsset<eg::Model>(modelName);
-		material = &eg::GetAsset<StaticPropMaterial>(materialName);
+		materials.resize(model->NumMaterials(), &eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml"));
 	}
 };
 
@@ -21,7 +18,7 @@ std::vector<MeshType> meshTypes;
 
 static void OnInit()
 {
-	//meshTypes.emplace_back("");
+	
 }
 
 EG_ON_INIT(OnInit)

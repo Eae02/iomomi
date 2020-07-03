@@ -1,4 +1,4 @@
-albedo: ../Textures/PlatformA.png
+albedo: ../Textures/PlatformAT.png
 normalMap: ../Textures/PlatformN.png
 miscMap: ../Textures/PlatformM.png
 roughnessMin: 0.2
