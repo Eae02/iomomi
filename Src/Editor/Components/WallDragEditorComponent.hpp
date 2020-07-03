@@ -15,7 +15,9 @@ public:
 	
 private:
 	template <typename CallbackTp>
-	void IterateSelection(CallbackTp callback);
+	void IterateSelection(CallbackTp callback, int minOffsetSelDir, int maxOffsetSelDir);
+	
+	void FillSelection(const World& world, const glm::ivec3& pos, Dir normalDir);
 	
 	enum class SelState
 	{
@@ -35,4 +37,8 @@ private:
 	glm::ivec3 m_selection2;
 	glm::vec3 m_selection2Anim;
 	Dir m_selectionNormal;
+	
+	float m_timeSinceLastClick = 0;
+	
+	std::vector<glm::ivec3> m_finishedSelection;
 };

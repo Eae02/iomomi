@@ -31,4 +31,3 @@ features:
 
 editor:
  - undo stack
- - double click to select area
