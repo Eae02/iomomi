@@ -62,33 +62,13 @@ int main(int argc, char** argv)
 	}
 	
 	eg::RunConfig runConfig;
-	bool vSync = true;
-	bool dev = true;
-#ifdef NDEBUG
-	dev = false;
+	runConfig.flags = eg::RunFlags::VSync;
+#ifndef NDEBUG
+	runConfig.flags |= eg::RunFlags::DevMode;
 #endif
-	for (int i = 1; i < argc; i++)
-	{
-		std::string_view arg = argv[i];
-		if (arg == "--gl")
-			runConfig.graphicsAPI = eg::GraphicsAPI::OpenGL;
-		else if (arg == "--vk")
-			runConfig.graphicsAPI = eg::GraphicsAPI::Vulkan;
-		else if (arg == "--nodev")
-			dev = false;
-		else if (arg == "--dev")
-			dev = true;
-		else if (arg == "--novsync")
-			vSync = false;
-	}
-	if (dev)
-	{
-		runConfig.flags |= eg::RunFlags::DevMode;
-	}
-	if (vSync)
-	{
-		runConfig.flags |= eg::RunFlags::VSync;
-	}
+	
+	eg::ParseCommandLineArgs(runConfig, argc, argv);
+	
 	Start(runConfig);
 	
 	SaveSettings();

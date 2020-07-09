@@ -60,6 +60,8 @@ private:
 	
 	std::tuple<glm::vec3, glm::vec3> GetTangents() const;
 	
+	void UpdateWaterBlockedGravities();
+	
 	ActivatableComp m_activatable;
 	AxisAlignedQuadComp m_aaQuad;
 	WaterBlockComp m_waterBlockComp;
@@ -69,6 +71,7 @@ private:
 	bool m_enabled = true;
 	bool m_blockFalling = false;
 	bool m_waterBlockComponentOutOfDate = true;
+	bool m_neverBlockWater = false;
 	
 	PhysicsObject m_physicsObject;
 };

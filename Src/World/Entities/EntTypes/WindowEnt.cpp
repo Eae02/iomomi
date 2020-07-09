@@ -1,6 +1,8 @@
 #include "WindowEnt.hpp"
 #include "../../Collision.hpp"
+#include "../../../Graphics/RenderSettings.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
+#include "../../../Graphics/Materials/BlurredGlassMaterial.hpp"
 #include "../../../../Protobuf/Build/WindowEntity.pb.h"
 
 #include <imgui.h>
@@ -16,13 +18,29 @@ struct WindowType
 	const eg::IMaterial* material;
 	bool blocksGravityGun;
 	bool blocksWater;
+	bool needsBlurredTextures = false;
 };
 
-static WindowType windowTypes[1];
+static std::array<WindowType, 4> windowTypes;
+
+static int windowTypeDisplayOrder[] = { 0, 3, 1, 2 };
+static_assert(std::size(windowTypeDisplayOrder) == windowTypes.size());
+
+BlurredGlassMaterial blurryGlassMaterial;
+BlurredGlassMaterial clearGlassMaterial;
 
 static void OnInit()
 {
+	blurryGlassMaterial.color = clearGlassMaterial.color =
+		eg::ColorLin(eg::ColorSRGB::FromHex(0xbed6eb).ScaleAlpha(0.5f));
+	
+	blurryGlassMaterial.isBlurry = true;
+	clearGlassMaterial.isBlurry = false;
+	
 	windowTypes[0] = { "Grating", &eg::GetAsset<StaticPropMaterial>("Materials/Platform.yaml"), false, false };
+	windowTypes[1] = { "Blurred Glass", &blurryGlassMaterial, true, true, true };
+	windowTypes[2] = { "Clear Glass", &clearGlassMaterial, true, true };
+	windowTypes[3] = { "Grating 2", &eg::GetAsset<StaticPropMaterial>("Materials/Grating2.yaml"), false, false };
 	
 	windowModel = &eg::GetAsset<eg::Model>("Models/Window.obj");
 }
@@ -46,13 +64,22 @@ void WindowEnt::RenderSettings()
 	
 	ImGui::DragFloat("Texture Scale", &m_textureScale, 0.5f, 0.0f, INFINITY);
 	
+	static const char* blockWaterStrAutoYes = "Auto (yes)\0Never\0Always\0";
+	static const char* blockWaterStrAutoNo = "Auto (no)\0Never\0Always\0";
+	if (ImGui::Combo("Block Water", reinterpret_cast<int*>(&m_waterBlockMode),
+		windowTypes[m_windowType].blocksWater ? blockWaterStrAutoYes : blockWaterStrAutoNo))
+	{
+		UpdateWaterBlock();
+	}
+	
 	if (ImGui::BeginCombo("Window Type", windowTypes[m_windowType].name))
 	{
-		for (uint32_t i = 0; i < std::size(windowTypes); i++)
+		for (int i : windowTypeDisplayOrder)
 		{
-			if (ImGui::Selectable(windowTypes[i].name, m_windowType == i))
+			if (ImGui::Selectable(windowTypes[i].name, (int)m_windowType == i))
 			{
 				m_windowType = i;
+				UpdateWaterBlock();
 			}
 			if (ImGui::IsItemHovered())
 			{
@@ -63,6 +90,22 @@ void WindowEnt::RenderSettings()
 		}
 		ImGui::EndCombo();
 	}
+}
+
+void WindowEnt::UpdateWaterBlock()
+{
+	m_waterBlockComp.editorVersion++;
+	bool shouldBlock = windowTypes[m_windowType].blocksWater;
+	if (m_waterBlockMode == WaterBlockMode::Never)
+		shouldBlock = false;
+	if (m_waterBlockMode == WaterBlockMode::Always)
+		shouldBlock = true;
+	std::fill_n(m_waterBlockComp.blockedGravities, 6, shouldBlock);
+}
+
+bool WindowEnt::NeedsBlurredTextures() const
+{
+	return windowTypes[m_windowType].needsBlurredTextures;
 }
 
 void WindowEnt::CommonDraw(const EntDrawArgs& args)
@@ -76,15 +119,25 @@ void WindowEnt::CommonDraw(const EntDrawArgs& args)
 		glm::vec4(0, 0, 0, 1)
 	);
 	glm::vec2 textureScale = m_aaQuad.radius / m_textureScale;
-	args.meshBatch->AddModel(*windowModel, *windowTypes[m_windowType].material,
-		StaticPropMaterial::InstanceData(transform, textureScale));
+	
+	StaticPropMaterial::InstanceData instanceData(transform, textureScale);
+	
+	if (windowTypes[m_windowType].material->GetOrderRequirement() == eg::IMaterial::OrderRequirement::OnlyOrdered)
+	{
+		args.transparentMeshBatch->AddModel(*windowModel, *windowTypes[m_windowType].material, instanceData,
+			DepthDrawOrder(glm::vec3(transform[3])));
+	}
+	else
+	{
+		args.meshBatch->AddModel(*windowModel, *windowTypes[m_windowType].material, instanceData);
+	}
 }
 
 const void* WindowEnt::GetComponent(const std::type_info& type) const
 {
 	if (type == typeid(AxisAlignedQuadComp))
 		return &m_aaQuad;
-	if (type == typeid(WaterBlockComp) && windowTypes[m_windowType].blocksWater)
+	if (type == typeid(WaterBlockComp))
 		return &m_waterBlockComp;
 	return nullptr;
 }
@@ -100,6 +153,7 @@ void WindowEnt::Serialize(std::ostream& stream) const
 	windowPB.set_sizey(m_aaQuad.radius.y);
 	windowPB.set_texture_scale(m_textureScale);
 	windowPB.set_window_type(m_windowType);
+	windowPB.set_water_block_mode((int)m_waterBlockMode);
 	
 	windowPB.SerializeToOstream(&stream);
 }
@@ -113,9 +167,10 @@ void WindowEnt::Deserialize(std::istream& stream)
 	
 	m_aaQuad.upPlane = windowPB.up_plane();
 	m_aaQuad.radius = glm::vec2(windowPB.sizex(), windowPB.sizey());
+	m_waterBlockMode = (WaterBlockMode)windowPB.water_block_mode();
 	m_textureScale = windowPB.texture_scale();
 	m_windowType = windowPB.window_type();
-	if (m_windowType >= std::size(windowTypes))
+	if (m_windowType >= windowTypes.size())
 		m_windowType = 0;
 	
 	if (windowTypes[m_windowType].blocksGravityGun)
@@ -123,7 +178,7 @@ void WindowEnt::Deserialize(std::istream& stream)
 		m_physicsObject.rayIntersectMask |= RAY_MASK_BLOCK_GUN;
 	}
 	
-	std::fill_n(m_waterBlockComp.blockedGravities, 6, true);
+	UpdateWaterBlock();
 	m_waterBlockComp.InitFromAAQuadComponent(m_aaQuad, m_physicsObject.position);
 	
 	auto [tangent, bitangent] = m_aaQuad.GetTangents(0);
@@ -141,6 +196,8 @@ void WindowEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 void WindowEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
 	m_physicsObject.position = newPosition;
+	m_waterBlockComp.InitFromAAQuadComponent(m_aaQuad, m_physicsObject.position);
+	m_waterBlockComp.editorVersion++;
 }
 
 glm::vec3 WindowEnt::GetPosition() const

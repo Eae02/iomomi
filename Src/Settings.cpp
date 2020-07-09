@@ -53,6 +53,7 @@ void LoadSettings()
 	settings.lookSensitivityGP = settingsNode["lookSensitivityGP"].as<float>(2.0f);
 	settings.lookInvertY = settingsNode["lookInvertY"].as<bool>(false);
 	settings.enableFXAA = settingsNode["fxaa"].as<bool>(true);
+	settings.enableBloom = settingsNode["bloom"].as<bool>(true);
 #endif
 }
 
@@ -75,6 +76,7 @@ void SaveSettings()
 	emitter << YAML::Key << "lookSensitivityGP" << YAML::Value << settings.lookSensitivityGP;
 	emitter << YAML::Key << "lookInvertY" << YAML::Value << settings.lookInvertY;
 	emitter << YAML::Key << "fxaa" << YAML::Value << settings.enableFXAA;
+	emitter << YAML::Key << "bloom" << YAML::Value << settings.enableBloom;
 	emitter << YAML::EndMap;
 	
 	std::ofstream settingsStream(settingsPath);
@@ -227,12 +229,24 @@ void OptCommand(eg::Span<const std::string_view> args, eg::console::Writer& writ
 			SettingsChanged();
 		}
 	}
+	else if (args[0] == "bloom")
+	{
+		if (args.size() == 1)
+		{
+			WriteSettingValue("BLOOM: ", settings.enableBloom ? "on" : "off");
+		}
+		else
+		{
+			settings.enableBloom = args[1] == "true";
+			SettingsChanged();
+		}
+	}
 }
 
 static const char* commands[] =
 {
 	"reflQuality", "shadowQuality", "lightingQuality", "waterQuality", "fov", "exposure", "lookSensitivityMS",
-	"lookSensMS", "lookSensitivityGP", "lookSensGP", "lookInvY", "fxaa"
+	"lookSensMS", "lookSensitivityGP", "lookSensGP", "lookInvY", "fxaa", "bloom"
 };
 
 static const char* qualityCommands[] =
@@ -305,6 +319,7 @@ void DrawSettingsWindow()
 				SettingsChanged();
 			}
 			ImGui::Checkbox("FXAA", &settings.enableFXAA);
+			ImGui::Checkbox("Bloom", &settings.enableBloom);
 		}
 		
 		if (ImGui::CollapsingHeader("Input", ImGuiTreeNodeFlags_DefaultOpen))

@@ -27,7 +27,7 @@ assets:
     size: 64
     
   #Decal materials
-  - name: "Decals/.*\\.yaml"
+  - regex: "Decals/.*\\.yaml"
     generator: DecalMaterial
     loader: DecalMaterial
     
@@ -97,6 +97,9 @@ assets:
   - name: Textures/Hex.png
     srgb: false
     format: bc5
+  - name: Textures/GlassHex.png
+    srgb: false
+    format: r8
   - name: Textures/LineNoise.png
     srgb: false
     format: bc4

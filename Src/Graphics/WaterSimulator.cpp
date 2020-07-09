@@ -209,6 +209,9 @@ void WaterSimulator::Update(const World& world)
 	{
 		const WaterBlockComp& component = *entity.GetComponent<WaterBlockComp>();
 		
+		if (!eg::Contains(component.blockedGravities, true))
+			return;
+		
 		float tangentLen = glm::length(component.tangent);
 		float biTangentLen = glm::length(component.biTangent);
 		glm::vec3 normal = glm::normalize(glm::cross(component.tangent, component.biTangent));

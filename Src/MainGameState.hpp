@@ -13,6 +13,7 @@
 #include "Gui/PausedMenu.hpp"
 #include "Graphics/SSR.hpp"
 #include "Graphics/PhysicsDebugRenderer.hpp"
+#include "Graphics/GlassBlurRenderer.hpp"
 
 #include <EGame/Graphics/BloomRenderer.hpp>
 
@@ -46,6 +47,7 @@ private:
 	RenderContext* m_renderCtx;
 	WaterRenderer m_waterRenderer;
 	SSR m_ssr;
+	GlassBlurRenderer m_glassBlurRenderer;
 	
 	PointLightShadowMapper m_plShadowMapper;
 	std::unique_ptr<eg::BloomRenderer> m_bloomRenderer;
@@ -68,6 +70,7 @@ private:
 	std::unique_ptr<World> m_world;
 	Player m_player;
 	GravityGun m_gravityGun;
+	bool m_blurredTexturesNeeded = false;
 	
 	PausedMenu m_pausedMenu;
 	

@@ -21,6 +21,7 @@ struct Settings
 	float lookSensitivityGP = 2.0f;
 	bool lookInvertY        = false;
 	bool enableFXAA         = true;
+	bool enableBloom        = false;
 	
 	bool HDREnabled() const
 	{
@@ -34,7 +35,7 @@ struct Settings
 	
 	bool BloomEnabled() const
 	{
-		return (lightingQuality >= QualityLevel::Medium) && eg::GetGraphicsDeviceInfo().computeShader;
+		return enableBloom && HDREnabled() && eg::GetGraphicsDeviceInfo().computeShader;
 	}
 };
 

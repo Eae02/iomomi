@@ -26,6 +26,8 @@ public:
 	
 	virtual OrderRequirement GetOrderRequirement() const override { return OrderRequirement::OnlyUnordered; }
 	
+	static void InitializeForCommon3DVS(eg::GraphicsPipelineCreateInfo& pipelineCI);
+	
 	static void InitAssetTypes();
 	
 	static bool AssetLoader(const eg::AssetLoadContext& loadContext);

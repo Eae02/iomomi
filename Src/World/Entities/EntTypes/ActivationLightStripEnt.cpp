@@ -74,9 +74,14 @@ void ActivationLightStripEnt::Update(const WorldUpdateArgs& args)
 	const float TRANSITION_MARGIN = 0.5f;
 	const float REVERT_MARGIN = 2.0f;
 	
-	const ActivatorComp* activator = nullptr;
-	if (std::shared_ptr<Ent> activatorEnt = m_activator.lock())
-		activator = activatorEnt->GetComponent<ActivatorComp>();
+	std::shared_ptr<Ent> activatorEnt = m_activator.lock();
+	if (activatorEnt == nullptr)
+	{
+		args.world->entManager.RemoveEntity(*this);
+		return;
+	}
+	
+	const ActivatorComp* activator = activatorEnt->GetComponent<ActivatorComp>();
 	bool activated = activator && activator->IsActivated();
 	
 	if (m_transitionDirection == 0 || m_transitionProgress < REVERT_MARGIN ||

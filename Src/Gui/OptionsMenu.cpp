@@ -36,6 +36,7 @@ void InitOptionsMenu()
 	optWidgetList.AddWidget(InitSettingsCB(&Settings::reflectionsQuality, "Reflections:"));
 	optWidgetList.AddWidget(InitSettingsCB(&Settings::lightingQuality, "Lighting:"));
 	optWidgetList.AddWidget(InitSettingsCB(&Settings::waterQuality, "Water:"));
+	optWidgetList.AddWidget(InitSettingsCB(&Settings::enableBloom, "Bloom:"));
 	optWidgetList.AddWidget(InitSettingsCB(&Settings::enableFXAA, "FXAA:"));
 	
 	optWidgetList.AddWidget(SubtitleWidget("Input"));

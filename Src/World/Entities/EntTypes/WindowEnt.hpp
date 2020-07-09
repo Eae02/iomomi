@@ -30,9 +30,21 @@ public:
 	
 	glm::vec3 GetPosition() const override;
 	
+	bool NeedsBlurredTextures() const;
+	
 private:
+	void UpdateWaterBlock();
+	
+	enum class WaterBlockMode
+	{
+		Auto = 0,
+		Never = 1,
+		Always = 2
+	};
+	
 	uint32_t m_windowType = 0;
 	float m_textureScale = 1;
+	WaterBlockMode m_waterBlockMode = WaterBlockMode::Auto;
 	AxisAlignedQuadComp m_aaQuad;
 	WaterBlockComp m_waterBlockComp;
 	

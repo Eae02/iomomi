@@ -1,4 +1,4 @@
-albedo: ../../Textures/Decals/Stain0.png
-normalMap: ../../Textures/DefaultN.png
+albedo: ../Textures/Decals/Stain0.png
+normalMap: ../Textures/DefaultN.png
 roughness: 0.7
 opacity: 1.0

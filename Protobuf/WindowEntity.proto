@@ -11,4 +11,5 @@ message WindowEntity {
 	fixed32 up_plane = 6;
 	float texture_scale = 7;
 	fixed32 window_type = 8;
+	fixed32 water_block_mode = 10;
 }

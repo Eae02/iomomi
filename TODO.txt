@@ -1,5 +1,5 @@
 fixes:
- - velocity is too high after moving down ramp
+ - velocity is too high after moving down a ramp
  - water should be affected by force fields
  - physics object rotation
  - gravity barriers still have collision when disabled
@@ -15,7 +15,6 @@ textures and models:
  - better side model for gravity barriers
  - texture and model for cube spawner
  - different graphics for pushable platforms
- - more window types
  - make objects glow when gravity has been changed
  - particles (or other visuals) to show current gravity of objects
  - particles when water splashes

@@ -75,7 +75,7 @@ size_t GooPlaneMaterial::PipelineHash() const
 bool GooPlaneMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
 	MeshDrawArgs& meshDrawArgs = *static_cast<MeshDrawArgs*>(drawArgs);
-	if (meshDrawArgs.drawMode != MeshDrawMode::TransparentAfterWater)
+	if (meshDrawArgs.drawMode != MeshDrawMode::Emissive)
 		return false;
 	
 	cmdCtx.BindPipeline(s_pipeline);

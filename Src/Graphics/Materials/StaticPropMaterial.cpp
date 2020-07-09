@@ -73,14 +73,10 @@ static eg::Pipeline staticPropPipelinePLShadow[2];
 eg::PipelineRef StaticPropMaterial::FlagsPipelineBackCull;
 eg::PipelineRef StaticPropMaterial::FlagsPipelineNoCull;
 
-static void OnInit()
+void StaticPropMaterial::InitializeForCommon3DVS(eg::GraphicsPipelineCreateInfo& pipelineCI)
 {
-	eg::GraphicsPipelineCreateInfo pipelineCI;
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Common3D.vs.glsl").DefaultVariant();
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/StaticModel.fs.glsl").DefaultVariant();
-	pipelineCI.enableDepthWrite = true;
-	pipelineCI.enableDepthTest = true;
-	pipelineCI.cullMode = eg::CullMode::Back;
+	
 	pipelineCI.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
 	pipelineCI.vertexBindings[1] = { sizeof(StaticPropMaterial::InstanceData), eg::InputRate::Instance };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(eg::StdVertex, position) };
@@ -91,6 +87,16 @@ static void OnInit()
 	pipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 4, offsetof(StaticPropMaterial::InstanceData, transform) + 16 };
 	pipelineCI.vertexAttributes[6] = { 1, eg::DataType::Float32, 4, offsetof(StaticPropMaterial::InstanceData, transform) + 32 };
 	pipelineCI.vertexAttributes[7] = { 1, eg::DataType::Float32, 2, offsetof(StaticPropMaterial::InstanceData, textureScale) };
+}
+
+static void OnInit()
+{
+	eg::GraphicsPipelineCreateInfo pipelineCI;
+	StaticPropMaterial::InitializeForCommon3DVS(pipelineCI);
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/StaticModel.fs.glsl").DefaultVariant();
+	pipelineCI.enableDepthWrite = true;
+	pipelineCI.enableDepthTest = true;
+	pipelineCI.cullMode = eg::CullMode::Back;
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.numColorAttachments = 2;
 	pipelineCI.label = "StaticPropGame";

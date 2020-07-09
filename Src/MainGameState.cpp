@@ -9,6 +9,7 @@
 #include "World/Entities/EntTypes/EntranceExitEnt.hpp"
 #include "World/Entities/EntTypes/ActivationLightStripEnt.hpp"
 #include "World/Entities/EntTypes/CubeEnt.hpp"
+#include "World/Entities/EntTypes/WindowEnt.hpp"
 
 #include <fstream>
 #include <imgui.h>
@@ -72,6 +73,13 @@ void MainGameState::LoadWorld(std::istream& stream, int64_t levelIndex, const En
 	m_waterSimulator.Init(*m_world);
 	
 	m_plShadowMapper.InvalidateAll();
+	
+	m_blurredTexturesNeeded = false;
+	m_world->entManager.ForEachOfType<WindowEnt>([&] (const WindowEnt& windowEnt)
+	{
+		if (windowEnt.NeedsBlurredTextures())
+			m_blurredTexturesNeeded = true;
+	});
 }
 
 void MainGameState::OnDeactivate()
@@ -168,6 +176,26 @@ void MainGameState::RunFrame(float dt)
 		UpdateViewProjMatrices();
 	}
 	
+	if (settings.BloomEnabled())
+	{
+		bool outOfDate = m_bloomRenderTarget == nullptr ||
+			(int)m_bloomRenderTarget->InputWidth() != eg::CurrentResolutionX() ||
+			(int)m_bloomRenderTarget->InputHeight() != eg::CurrentResolutionY();
+		
+		if (outOfDate)
+		{
+			m_bloomRenderTarget = std::make_unique<eg::BloomRenderer::RenderTarget>(
+				(uint32_t)eg::CurrentResolutionX(), (uint32_t)eg::CurrentResolutionY(), 3);
+			
+			if (m_bloomRenderer == nullptr)
+			{
+				m_bloomRenderer = std::make_unique<eg::BloomRenderer>();
+			}
+		}
+	}
+	
+	m_glassBlurRenderer.MaybeUpdateResolution(eg::CurrentResolutionX(), eg::CurrentResolutionY());
+	
 	{
 		auto waterUpdateTimer = eg::StartCPUTimer("Water Update MT");
 		
@@ -196,24 +224,6 @@ void MainGameState::RunFrame(float dt)
 	}
 	
 	GravityCornerLightMaterial::instance.Update(dt);
-	
-	if (settings.BloomEnabled())
-	{
-		bool outOfDate = m_bloomRenderTarget == nullptr ||
-			(int)m_bloomRenderTarget->InputWidth() != eg::CurrentResolutionX() ||
-			(int)m_bloomRenderTarget->InputHeight() != eg::CurrentResolutionY();
-		
-		if (outOfDate)
-		{
-			m_bloomRenderTarget = std::make_unique<eg::BloomRenderer::RenderTarget>(
-				(uint32_t)eg::CurrentResolutionX(), (uint32_t)eg::CurrentResolutionY(), 3);
-			
-			if (m_bloomRenderer == nullptr)
-			{
-				m_bloomRenderer = std::make_unique<eg::BloomRenderer>();
-			}
-		}
-	}
 	
 	auto cpuTimerPrepare = eg::StartCPUTimer("Prepare Draw");
 	
@@ -379,6 +389,18 @@ void MainGameState::RunFrame(float dt)
 		eg::DC.DebugLabelBegin("SSR");
 		
 		m_ssr.Render(mDrawArgs.waterDepthTexture);
+		
+		eg::DC.DebugLabelEnd();
+	}
+	
+	if (m_blurredTexturesNeeded && settings.lightingQuality >= QualityLevel::Medium)
+	{
+		auto gpuTimerTransparent = eg::StartGPUTimer("Glass Blur");
+		eg::DC.DebugLabelBegin("Glass Blur");
+		
+		RenderTextureUsageHintFS(RenderTex::Lit);
+		m_glassBlurRenderer.Render(GetRenderTexture(RenderTex::Lit));
+		mDrawArgs.glassBlurTexture = m_glassBlurRenderer.OutputTexture();
 		
 		eg::DC.DebugLabelEnd();
 	}

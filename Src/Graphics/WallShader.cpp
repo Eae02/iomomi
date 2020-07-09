@@ -31,7 +31,7 @@ static inline void InitializeMaterials()
 	wallMaterials[3] = { true, "Metal Grid",          2.5f, 0.3f, 0.8f };
 	wallMaterials[4] = { true, "Cement",              2.0f, 0.6f, 0.8f };
 	wallMaterials[5] = { true, "Concrete Panels",     2.0f, 0.5f, 1.0f };
-	wallMaterials[6] = { true, "Smooth Panels",       1.0f, 0.2f, 0.5f };
+	wallMaterials[6] = { true, "Smooth Panels",       1.0f, 0.2f, 0.4f };
 	wallMaterials[7] = { true, "Concrete Panels (S)", 2.0f, 0.5f, 1.0f };
 }
 

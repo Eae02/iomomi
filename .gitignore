@@ -3,10 +3,9 @@
 .idea
 .vscode
 .vs
-Protobuf/Build
-Assets/.AssetCache
-Inc/Common.hpp.gch
-Data/Shaders/*
+/Protobuf/Build
+/Assets/.AssetCache
+/Inc/Common.hpp.gch
 *.blend1
-Bin
-Levels/test.gwd
+/Bin
+/Levels/test*.gwd
