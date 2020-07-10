@@ -44,16 +44,41 @@ const std::pair<uint32_t, uint32_t> cubeMesh::edges[12] =
 
 static eg::Sampler commonTextureSampler;
 
+eg::Texture whitePixelTexture;
+eg::Texture blackPixelTexture;
+
 static void OnInit()
 {
 	eg::SamplerDescription samplerDescription;
 	samplerDescription.maxAnistropy = 16;
 	commonTextureSampler = eg::Sampler(samplerDescription);
+	
+	eg::TextureCreateInfo whiteTextureCI;
+	whiteTextureCI.format = eg::Format::R8G8B8A8_UNorm;
+	whiteTextureCI.width = 1;
+	whiteTextureCI.height = 1;
+	whiteTextureCI.mipLevels = 1;
+	whiteTextureCI.flags = eg::TextureFlags::ShaderSample | eg::TextureFlags::CopyDst;
+	whiteTextureCI.defaultSamplerDescription = &samplerDescription;
+	
+	whiteTextureCI.label = "WhitePixel";
+	whitePixelTexture = eg::Texture::Create2D(whiteTextureCI);
+	
+	whiteTextureCI.label = "BlackPixel";
+	blackPixelTexture = eg::Texture::Create2D(whiteTextureCI);
+	
+	eg::DC.ClearColorTexture(whitePixelTexture, 0, eg::Color(1, 1, 1, 1));
+	whitePixelTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
+	
+	eg::DC.ClearColorTexture(blackPixelTexture, 0, eg::Color(0, 0, 0, 0));
+	blackPixelTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 }
 
 static void OnShutdown()
 {
 	commonTextureSampler = { };
+	whitePixelTexture.Destroy();
+	blackPixelTexture.Destroy();
 }
 
 EG_ON_INIT(OnInit)
@@ -86,12 +111,13 @@ eg::Format GetFormatForRenderTexture(RenderTex texture)
 {
 	switch (texture)
 	{
-	case RenderTex::GBDepth:       return GB_DEPTH_FORMAT;
-	case RenderTex::GBColor1:      return GB_COLOR_FORMAT;
-	case RenderTex::GBColor2:      return GB_COLOR_FORMAT;
-	case RenderTex::Flags:         return eg::Format::R8_UInt;
-	case RenderTex::WaterMinDepth: return eg::Format::Depth32;
-	case RenderTex::WaterMaxDepth: return eg::Format::Depth32;
+	case RenderTex::GBDepth:           return GB_DEPTH_FORMAT;
+	case RenderTex::GBColor1:          return GB_COLOR_FORMAT;
+	case RenderTex::GBColor2:          return GB_COLOR_FORMAT;
+	case RenderTex::Flags:             return eg::Format::R8_UInt;
+	case RenderTex::WaterMinDepth:     return eg::Format::Depth32;
+	case RenderTex::WaterMaxDepth:     return eg::Format::Depth32;
+	case RenderTex::BlurredGlassDepth: return GB_DEPTH_FORMAT;
 	
 	case RenderTex::WaterTravelDepth:
 		if (settings.waterQuality >= WaterRenderer::HighPrecisionMinQL)
@@ -105,12 +131,25 @@ eg::Format GetFormatForRenderTexture(RenderTex texture)
 		return eg::Format::R16G16B16A16_Float;
 		
 	case RenderTex::LitWithoutWater:
+	case RenderTex::LitWithoutBlurredGlass:
 	case RenderTex::LitWithoutSSR:
 	case RenderTex::Lit:
 		return settings.HDREnabled() ? LIGHT_COLOR_FORMAT_HDR : LIGHT_COLOR_FORMAT_LDR;
 		
 	default:
 		EG_UNREACHABLE;
+	}
+}
+
+static inline eg::TextureFlags GetFlagsForRenderTexture(RenderTex texture)
+{
+	switch (texture)
+	{
+	case RenderTex::Lit:
+		return eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample | eg::TextureFlags::CopySrc;
+	case RenderTex::LitWithoutBlurredGlass:
+		return eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample | eg::TextureFlags::CopyDst;
+	default: return eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample;
 	}
 }
 
@@ -208,7 +247,7 @@ void MaybeRecreateRenderTextures()
 			textureCI.width = eg::CurrentResolutionX();
 			textureCI.height = eg::CurrentResolutionY();
 			textureCI.mipLevels = 1;
-			textureCI.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample;
+			textureCI.flags = GetFlagsForRenderTexture((RenderTex)i);
 			textureCI.defaultSamplerDescription = &samplerDesc;
 			textureCI.label = label.c_str();
 			

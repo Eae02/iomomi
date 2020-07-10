@@ -4,6 +4,7 @@
 #include "FloorButtonEnt.hpp"
 #include "../../Player.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
+#include "../../../Settings.hpp"
 #include "../../../../Protobuf/Build/CubeEntity.pb.h"
 #include "ForceFieldEnt.hpp"
 #include <imgui.h>
@@ -251,9 +252,10 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 
 void CubeEnt::UpdatePostSim(const WorldUpdateArgs& args)
 {
-	if (glm::distance(m_previousPosition, m_physicsObject.position) > 1E-3f)
+	if (settings.shadowQuality >= QualityLevel::Medium &&
+		glm::distance(m_previousPosition, m_physicsObject.displayPosition) > 1E-3f)
 	{
-		m_previousPosition = m_physicsObject.position;
+		m_previousPosition = m_physicsObject.displayPosition;
 		args.invalidateShadows(GetSphere());
 	}
 	

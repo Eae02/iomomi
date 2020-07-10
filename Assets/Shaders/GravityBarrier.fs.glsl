@@ -35,7 +35,7 @@ float lineIntensity(float lx, float tx)
 	return 1.0 / ldist;
 }
 
-#ifdef VGame
+#if defined(VGame)
 const int NUM_INTERACTABLES = 8;
 
 layout(binding=2, std140) uniform BarrierSettingsUB
@@ -46,8 +46,12 @@ layout(binding=2, std140) uniform BarrierSettingsUB
 };
 
 layout(binding=3) uniform sampler2D waterDepth;
+layout(binding=4) uniform sampler2D blurredGlassDepth;
+
 #include "Water/WaterTransparent.glh"
-#else
+#endif
+
+#ifdef VEditor
 bool CheckWaterDiscard() { return false; }
 const float gameTime = 0;
 #endif
@@ -59,6 +63,12 @@ void main()
 		color_out = vec4(0);
 		return;
 	}
+	
+#ifdef VGame
+	vec2 screenCoord = ivec2(gl_FragCoord.xy) / vec2(textureSize(blurredGlassDepth, 0).xy);
+	if (gl_FragCoord.z < texture(blurredGlassDepth, screenCoord).r)
+		discard;
+#endif
 	
 	float tx = texCoord_in.x;
 	float negScale = 0;

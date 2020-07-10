@@ -43,6 +43,8 @@ extern Settings settings;
 
 extern bool settingsWindowVisible;
 
+void DecodeQualityLevel(std::string_view name, QualityLevel& def);
+
 int SettingsGeneration();
 
 void LoadSettings();

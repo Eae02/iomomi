@@ -39,7 +39,7 @@ public:
 	
 private:
 	eg::Pipeline m_pipelineGameBeforeWater;
-	eg::Pipeline m_pipelineGameAfterWater;
+	eg::Pipeline m_pipelineGameFinal;
 	eg::DescriptorSet m_descriptorSetGame;
 	
 	eg::Pipeline m_pipelineEditor;

@@ -9,7 +9,7 @@
 #include <ctime>
 
 static eg::Pipeline gsVolLightPipelineBeforeWater;
-static eg::Pipeline gsVolLightPipelineAfterWater;
+static eg::Pipeline gsVolLightPipelineFinal;
 
 //These values define the bounds of the AABB through which the ray will be traced. YMIN/YMAX define the bounds in the
 // dimension that is normal to the gravity switch. SIZE defines the radius of the AABB in the other two dimensions.
@@ -88,11 +88,11 @@ static void OnInit()
 	gsVolLightPipelineBeforeWater.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
 	gsVolLightPipelineBeforeWater.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
 	
-	pipelineCI.label = "GravSwitchVolLight[AfterWater]";
+	pipelineCI.label = "GravSwitchVolLight[Final]";
 	pipelineCI.fragmentShader.specConstantsData = const_cast<int32_t*>(&WATER_MODE_AFTER);
-	gsVolLightPipelineAfterWater = eg::Pipeline::Create(pipelineCI);
-	gsVolLightPipelineAfterWater.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
-	gsVolLightPipelineAfterWater.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
+	gsVolLightPipelineFinal = eg::Pipeline::Create(pipelineCI);
+	gsVolLightPipelineFinal.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
+	gsVolLightPipelineFinal.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
 	
 	//Creates the light data uniform buffer
 	eg::BufferCreateInfo lightDataBufferCreateInfo;
@@ -121,7 +121,7 @@ static void OnInit()
 static void OnShutdown()
 {
 	gsVolLightPipelineBeforeWater.Destroy();
-	gsVolLightPipelineAfterWater.Destroy();
+	gsVolLightPipelineFinal.Destroy();
 	cubeVertexBuffer.Destroy();
 	lightDataBuffer.Destroy();
 	lightVolDescriptorSet.Destroy();
@@ -179,8 +179,8 @@ bool GravitySwitchVolLightMaterial::BindPipeline(eg::CommandContext& cmdCtx, voi
 	
 	if (mDrawArgs->drawMode == MeshDrawMode::TransparentBeforeWater)
 		cmdCtx.BindPipeline(gsVolLightPipelineBeforeWater);
-	else if (mDrawArgs->drawMode == MeshDrawMode::TransparentAfterWater)
-		cmdCtx.BindPipeline(gsVolLightPipelineAfterWater);
+	else if (mDrawArgs->drawMode == MeshDrawMode::TransparentFinal)
+		cmdCtx.BindPipeline(gsVolLightPipelineFinal);
 	else
 		return false;
 	

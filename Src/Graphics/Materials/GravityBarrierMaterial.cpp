@@ -35,9 +35,9 @@ GravityBarrierMaterial::GravityBarrierMaterial()
 	pipelineCI.fragmentShader.specConstantsData = const_cast<int32_t*>(&WATER_MODE_BEFORE);
 	m_pipelineGameBeforeWater = eg::Pipeline::Create(pipelineCI);
 	
-	pipelineCI.label = "GravityBarrier[AfterWater]";
+	pipelineCI.label = "GravityBarrier[Final]";
 	pipelineCI.fragmentShader.specConstantsData = const_cast<int32_t*>(&WATER_MODE_AFTER);
-	m_pipelineGameAfterWater = eg::Pipeline::Create(pipelineCI);
+	m_pipelineGameFinal = eg::Pipeline::Create(pipelineCI);
 	
 	pipelineCI.label = "GravityBarrier[Editor]";
 	pipelineCI.fragmentShader = fs.GetVariant("VEditor");
@@ -63,15 +63,27 @@ bool GravityBarrierMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* draw
 		cmdCtx.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 0, 1);
 		cmdCtx.BindUniformBuffer(m_barrierDataBuffer, 0, 2, 0, sizeof(BarrierBufferData));
 		cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 0, 3);
+		cmdCtx.BindTexture(blackPixelTexture, 0, 4);
 		return true;
 	}
-	else if (mDrawArgs->drawMode == MeshDrawMode::TransparentAfterWater)
+	if (mDrawArgs->drawMode == MeshDrawMode::TransparentBeforeBlur)
 	{
-		cmdCtx.BindPipeline(m_pipelineGameAfterWater);
+		cmdCtx.BindPipeline(m_pipelineGameFinal);
 		cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 		cmdCtx.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 0, 1);
 		cmdCtx.BindUniformBuffer(m_barrierDataBuffer, 0, 2, 0, sizeof(BarrierBufferData));
 		cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 0, 3);
+		cmdCtx.BindTexture(GetRenderTexture(RenderTex::BlurredGlassDepth), 0, 4);
+		return true;
+	}
+	else if (mDrawArgs->drawMode == MeshDrawMode::TransparentFinal)
+	{
+		cmdCtx.BindPipeline(m_pipelineGameFinal);
+		cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
+		cmdCtx.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 0, 1);
+		cmdCtx.BindUniformBuffer(m_barrierDataBuffer, 0, 2, 0, sizeof(BarrierBufferData));
+		cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 0, 3);
+		cmdCtx.BindTexture(blackPixelTexture, 0, 4);
 		return true;
 	}
 	else if (mDrawArgs->drawMode == MeshDrawMode::Editor)

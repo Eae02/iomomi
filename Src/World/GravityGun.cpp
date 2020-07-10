@@ -50,7 +50,7 @@ size_t GravityGun::MidMaterial::PipelineHash() const
 bool GravityGun::MidMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
 	MeshDrawArgs* mDrawArgs = reinterpret_cast<MeshDrawArgs*>(drawArgs);
-	if (mDrawArgs->drawMode != MeshDrawMode::TransparentAfterWater)
+	if (mDrawArgs->drawMode != MeshDrawMode::TransparentFinal)
 		return false;
 	
 	cmdCtx.BindPipeline(m_pipeline);

@@ -4,6 +4,9 @@
 
 const eg::Sampler& GetCommonTextureSampler();
 
+extern eg::Texture whitePixelTexture;
+extern eg::Texture blackPixelTexture;
+
 namespace cubeMesh
 {
 	extern const glm::ivec3 vertices[8];
@@ -38,6 +41,8 @@ enum class RenderTex
 	WaterDepthBlurred2,
 	LitWithoutWater,
 	LitWithoutSSR,
+	BlurredGlassDepth,
+	LitWithoutBlurredGlass,
 	Lit
 };
 

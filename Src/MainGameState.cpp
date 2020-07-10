@@ -266,6 +266,8 @@ void MainGameState::RunFrame(float dt)
 		RenderPointLightShadows(args);
 	});
 	
+	const bool renderBlurredGlass = m_blurredTexturesNeeded && settings.lightingQuality >= QualityLevel::Medium;
+	
 	MeshDrawArgs mDrawArgs;
 	if (m_waterSimulator.NumParticlesToDraw() > 0)
 	{
@@ -388,31 +390,76 @@ void MainGameState::RunFrame(float dt)
 		auto gpuTimerTransparent = eg::StartGPUTimer("SSR");
 		eg::DC.DebugLabelBegin("SSR");
 		
-		m_ssr.Render(mDrawArgs.waterDepthTexture);
+		m_ssr.Render(mDrawArgs.waterDepthTexture, RenderTex::Lit);
 		
 		eg::DC.DebugLabelEnd();
 	}
 	
-	if (m_blurredTexturesNeeded && settings.lightingQuality >= QualityLevel::Medium)
+	if (renderBlurredGlass)
 	{
-		auto gpuTimerTransparent = eg::StartGPUTimer("Glass Blur");
-		eg::DC.DebugLabelBegin("Glass Blur");
+		{
+			auto gpuTimerTransparent = eg::StartGPUTimer("Blurred Glass DO");
+			eg::DC.DebugLabelBegin("Blurred Glass DO");
+			
+			eg::RenderPassBeginInfo rpBeginInfo;
+			rpBeginInfo.framebuffer = GetFramebuffer({}, {}, RenderTex::BlurredGlassDepth, "BlurredGlassDO");
+			rpBeginInfo.depthClearValue = 1;
+			rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Clear;
+			eg::DC.BeginRenderPass(rpBeginInfo);
+			
+			mDrawArgs.drawMode = MeshDrawMode::BlurredGlassDepthOnly;
+			m_renderCtx->transparentMeshBatch.Draw(eg::DC, &mDrawArgs);
+			
+			eg::DC.EndRenderPass();
+			
+			RenderTextureUsageHintFS(RenderTex::BlurredGlassDepth);
+			
+			eg::DC.DebugLabelEnd();
+		}
 		
-		RenderTextureUsageHintFS(RenderTex::Lit);
-		m_glassBlurRenderer.Render(GetRenderTexture(RenderTex::Lit));
-		mDrawArgs.glassBlurTexture = m_glassBlurRenderer.OutputTexture();
+		{
+			auto gpuTimerTransparent = eg::StartGPUTimer("Transparent (pre-blur)");
+			auto cpuTimerTransparent = eg::StartCPUTimer("Transparent (pre-blur)");
+			eg::DC.DebugLabelBegin("Transparent (pre-blur)");
+			
+			eg::TextureRange srcRange = { };
+			srcRange.sizeX = eg::CurrentResolutionX();
+			srcRange.sizeY = eg::CurrentResolutionY();
+			srcRange.sizeZ = 1;
+			
+			RenderTextureUsageHint(RenderTex::Lit, eg::TextureUsage::CopySrc, eg::ShaderAccessFlags::None);
+			eg::DC.CopyTexture(GetRenderTexture(RenderTex::Lit), GetRenderTexture(RenderTex::LitWithoutBlurredGlass),
+				srcRange, eg::TextureOffset());
+			
+			m_renderCtx->renderer.BeginTransparent(RenderTex::LitWithoutBlurredGlass);
+			
+			mDrawArgs.drawMode = MeshDrawMode::TransparentBeforeBlur;
+			m_renderCtx->transparentMeshBatch.Draw(eg::DC, &mDrawArgs);
+			
+			m_renderCtx->renderer.EndTransparent();
+			eg::DC.DebugLabelEnd();
+		}
 		
-		eg::DC.DebugLabelEnd();
+		{
+			auto gpuTimerTransparent = eg::StartGPUTimer("Glass Blur");
+			eg::DC.DebugLabelBegin("Glass Blur");
+			
+			RenderTextureUsageHintFS(RenderTex::LitWithoutBlurredGlass);
+			m_glassBlurRenderer.Render(GetRenderTexture(RenderTex::LitWithoutBlurredGlass));
+			mDrawArgs.glassBlurTexture = m_glassBlurRenderer.OutputTexture();
+			
+			eg::DC.DebugLabelEnd();
+		}
 	}
 	
 	{
-		auto gpuTimerTransparent = eg::StartGPUTimer("Transparent");
-		auto cpuTimerTransparent = eg::StartCPUTimer("Transparent");
-		eg::DC.DebugLabelBegin("Transparent");
+		auto gpuTimerTransparent = eg::StartGPUTimer("Transparent (final)");
+		auto cpuTimerTransparent = eg::StartCPUTimer("Transparent (final)");
+		eg::DC.DebugLabelBegin("Transparent (final)");
 		
 		m_renderCtx->renderer.BeginTransparent(RenderTex::Lit);
 		
-		mDrawArgs.drawMode = MeshDrawMode::TransparentAfterWater;
+		mDrawArgs.drawMode = MeshDrawMode::TransparentFinal;
 		m_renderCtx->transparentMeshBatch.Draw(eg::DC, &mDrawArgs);
 		
 		m_renderCtx->renderer.EndTransparent();
@@ -493,7 +540,10 @@ void MainGameState::DrawOverlay(float dt)
 	ImGui::Text("Graphics API: %s", graphicsAPIName);
 	ImGui::Separator();
 	m_player.DrawDebugOverlay();
+	ImGui::Separator();
 	ImGui::Text("Particles: %d", m_particleManager.ParticlesToDraw());
+	ImGui::Text("PSM Last Update: %ld/%ld", m_plShadowMapper.LastUpdateFrameIndex(), eg::FrameIdx());
+	ImGui::Text("PSM Updates: %ld", m_plShadowMapper.LastFrameUpdateCount());
 	ImGui::Text("Water Spheres: %d", m_waterSimulator.NumParticles());
 	ImGui::Text("Water Update Time: %.2fms", m_waterSimulator.LastUpdateTime() / 1E6);
 	

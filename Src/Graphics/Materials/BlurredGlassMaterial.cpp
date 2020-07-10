@@ -5,6 +5,7 @@
 
 static eg::Pipeline pipelineBlurry;
 static eg::Pipeline pipelineNotBlurry;
+static eg::Pipeline pipelineDepthOnly;
 
 static void OnInit()
 {
@@ -12,12 +13,16 @@ static void OnInit()
 	
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	StaticPropMaterial::InitializeForCommon3DVS(pipelineCI);
-	pipelineCI.enableDepthTest = true;
-	pipelineCI.enableDepthWrite = false;
 	pipelineCI.cullMode = eg::CullMode::Back;
 	pipelineCI.topology = eg::Topology::TriangleList;
+	pipelineCI.enableDepthTest = true;
 	
 	
+	pipelineCI.enableDepthWrite = true;
+	pipelineDepthOnly = eg::Pipeline::Create(pipelineCI);
+	
+	
+	pipelineCI.enableDepthWrite = false;
 	pipelineCI.label = "BlurredGlass[Blurry]";
 	pipelineCI.fragmentShader = fs.GetVariant("VBlur");
 	pipelineBlurry = eg::Pipeline::Create(pipelineCI);
@@ -28,6 +33,7 @@ static void OnInit()
 		/* dstColor */ eg::BlendFactor::SrcColor,
 		/* dstAlpha */ eg::BlendFactor::One);
 	pipelineCI.label = "BlurredGlass[NotBlurry]";
+	pipelineCI.enableDepthWrite = false;
 	pipelineCI.fragmentShader = fs.GetVariant("VNoBlur");
 	pipelineNotBlurry = eg::Pipeline::Create(pipelineCI);
 }
@@ -36,6 +42,7 @@ static void OnShutdown()
 {
 	pipelineBlurry.Destroy();
 	pipelineNotBlurry.Destroy();
+	pipelineDepthOnly.Destroy();
 }
 
 EG_ON_INIT(OnInit)
@@ -50,7 +57,9 @@ std::optional<bool> BlurredGlassMaterial::ShouldRenderBlurry(const MeshDrawArgs&
 {
 	if (meshDrawArgs.drawMode == MeshDrawMode::Editor)
 		return false;
-	if (meshDrawArgs.drawMode == MeshDrawMode::TransparentAfterWater)
+	if (meshDrawArgs.drawMode == MeshDrawMode::TransparentBeforeBlur)
+		return false;
+	if (meshDrawArgs.drawMode == MeshDrawMode::TransparentFinal)
 		return isBlurry && meshDrawArgs.glassBlurTexture.handle != nullptr;
 	return { };
 }
@@ -60,6 +69,14 @@ float* clearGlassHexAlpha = eg::TweakVarFloat("glass_hex_alpha", 0.8f, 0.0f, 1.0
 bool BlurredGlassMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
 	const MeshDrawArgs* mDrawArgs = reinterpret_cast<MeshDrawArgs*>(drawArgs);
+	
+	if (mDrawArgs->drawMode == MeshDrawMode::BlurredGlassDepthOnly && isBlurry)
+	{
+		cmdCtx.BindPipeline(pipelineDepthOnly);
+		cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
+		return true;
+	}
+	
 	std::optional<bool> blurry = ShouldRenderBlurry(*mDrawArgs);
 	if (!blurry.has_value())
 		return false;
@@ -85,6 +102,14 @@ bool BlurredGlassMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawAr
 	if (*blurry)
 	{
 		cmdCtx.BindTexture(mDrawArgs->glassBlurTexture, 0, 2);
+	}
+	else if (mDrawArgs->drawMode == MeshDrawMode::TransparentBeforeBlur)
+	{
+		cmdCtx.BindTexture(GetRenderTexture(RenderTex::BlurredGlassDepth), 0, 2);
+	}
+	else
+	{
+		cmdCtx.BindTexture(blackPixelTexture, 0, 2);
 	}
 	
 	return true;

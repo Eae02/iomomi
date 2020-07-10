@@ -35,7 +35,7 @@ void SSR::CreatePipeline()
 	m_pipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
 }
 
-void SSR::Render(eg::TextureRef waterDepth)
+void SSR::Render(eg::TextureRef waterDepth, RenderTex destinationTexture)
 {
 	if (settings.reflectionsQuality != m_currentReflectionQualityLevel)
 	{
@@ -44,7 +44,7 @@ void SSR::Render(eg::TextureRef waterDepth)
 	}
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = GetFramebuffer(RenderTex::Lit, {}, {}, "SSR");
+	rpBeginInfo.framebuffer = GetFramebuffer(destinationTexture, {}, {}, "SSR");
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
 	
 	eg::DC.BeginRenderPass(rpBeginInfo);

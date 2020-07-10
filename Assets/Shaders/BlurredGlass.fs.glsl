@@ -12,6 +12,10 @@ layout(binding=1) uniform sampler2D hexTexture;
 layout(binding=2) uniform sampler2D blurTexture;
 #endif
 
+#ifdef VNoBlur
+layout(binding=2) uniform sampler2D blurredGlassDepth;
+#endif
+
 layout(push_constant) uniform PC
 {
 	vec4 glassColor;
@@ -35,6 +39,10 @@ void main()
 #endif
 	
 #ifdef VNoBlur
+	vec2 screenCoord = ivec2(gl_FragCoord.xy) / vec2(textureSize(blurredGlassDepth, 0).xy);
+	if (gl_FragCoord.z <= texture(blurredGlassDepth, screenCoord).r + 1E-4)
+		discard;
+	
 	color_out = vec4(pc.glassColor.rgb * mix(1, pc.glassColor.a, hex), 1);
 #endif
 }

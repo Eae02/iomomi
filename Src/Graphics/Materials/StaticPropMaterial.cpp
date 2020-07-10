@@ -4,10 +4,11 @@
 #include "../GraphicsCommon.hpp"
 #include "../RenderSettings.hpp"
 #include "../Lighting/PointLightShadowMapper.hpp"
+#include "../../Settings.hpp"
 
 #include <fstream>
 
-static const eg::AssetFormat StaticPropMaterialAssetFormat { "StaticPropMaterial", 5 };
+static const eg::AssetFormat StaticPropMaterialAssetFormat { "StaticPropMaterial", 7 };
 
 class StaticPropMaterialGenerator : public eg::AssetGenerator
 {
@@ -30,6 +31,10 @@ public:
 		const bool backfaceCull = rootYaml["backfaceCull"].as<bool>(true);
 		const bool castShadows = rootYaml["castShadows"].as<bool>(true);
 		const bool enableSSR = rootYaml["enableSSR"].as<bool>(true);
+		
+		std::string minShadowQualityString = rootYaml["minShadowQuality"].as<std::string>("vlow");
+		QualityLevel minShadowQuality = QualityLevel::VeryLow;
+		DecodeQualityLevel(minShadowQualityString, minShadowQuality);
 		
 		std::string albedoPath = rootYaml["albedo"].as<std::string>(std::string());
 		std::string normalMapPath = rootYaml["normalMap"].as<std::string>(std::string());
@@ -56,6 +61,7 @@ public:
 		eg::BinWrite<uint8_t>(generateContext.outputStream, (uint8_t)backfaceCull);
 		eg::BinWrite<uint8_t>(generateContext.outputStream, (uint8_t)castShadows);
 		eg::BinWrite<uint8_t>(generateContext.outputStream, (uint8_t)objectFlags);
+		eg::BinWrite<uint8_t>(generateContext.outputStream, (uint8_t)minShadowQuality);
 		
 		generateContext.AddLoadDependency(std::move(albedoPath));
 		generateContext.AddLoadDependency(std::move(normalMapPath));
@@ -210,6 +216,7 @@ bool StaticPropMaterial::AssetLoader(const eg::AssetLoadContext& loadContext)
 	material.m_backfaceCull = eg::BinRead<uint8_t>(stream);
 	material.m_castShadows = eg::BinRead<uint8_t>(stream);
 	material.m_objectFlags = eg::BinRead<uint8_t>(stream);
+	material.m_minShadowQuality = (QualityLevel)eg::BinRead<uint8_t>(stream);
 	
 	return true;
 }
@@ -262,8 +269,10 @@ bool StaticPropMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs
 	
 	if (mDrawArgs->drawMode == MeshDrawMode::PointLightShadow)
 	{
+		if (!m_castShadows || settings.shadowQuality < m_minShadowQuality)
+			return false;
 		cmdCtx.BindTexture(*m_albedoTexture, 0, 1);
-		return m_castShadows;
+		return true;
 	}
 	
 	if (!m_descriptorsInitialized)

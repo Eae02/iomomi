@@ -1,13 +1,14 @@
 #pragma once
 
 #include "QualityLevel.hpp"
+#include "GraphicsCommon.hpp"
 
 class SSR
 {
 public:
 	SSR() = default;
 	
-	void Render(eg::TextureRef waterDepth);
+	void Render(eg::TextureRef waterDepth, RenderTex destinationTexture);
 	
 private:
 	void CreatePipeline();

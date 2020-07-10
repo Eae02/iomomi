@@ -54,11 +54,22 @@ void PointLightShadowMapper::SetQuality(QualityLevel quality)
 	m_shadowMaps.clear();
 }
 
+const int MAX_UPDATES_PER_FRAME[] = 
+{
+	/* VeryLow  */ 2,
+	/* Low      */ 2,
+	/* Medium   */ 3,
+	/* High     */ 4,
+	/* VeryHigh */ 5,
+};
+
 void PointLightShadowMapper::UpdateShadowMaps(std::vector<PointLightDrawData>& pointLights,
 	const RenderCallback& renderCallback)
 {
 	auto gpuTimer = eg::StartGPUTimer("PL Shadows");
 	auto cpuTimer = eg::StartCPUTimer("PL Shadows");
+	
+	m_lastFrameUpdateCount = 0;
 	
 	if (pointLights.empty())
 		return;
@@ -74,6 +85,9 @@ void PointLightShadowMapper::UpdateShadowMaps(std::vector<PointLightDrawData>& p
 			return pointLight.instanceID == shadowMap.currentLightID;
 		});
 	}
+	
+	std::vector<size_t> optionalUpdates;
+	int remainingUpdates = MAX_UPDATES_PER_FRAME[(int)m_qualityLevel];
 	
 	//Assigns a shadow map to each point light
 	for (PointLightDrawData& pointLight : pointLights)
@@ -104,10 +118,26 @@ void PointLightShadowMapper::UpdateShadowMaps(std::vector<PointLightDrawData>& p
 		pointLight.shadowMap = m_shadowMaps[shadowMapIndex].texture;
 		m_shadowMaps[shadowMapIndex].sphere = eg::Sphere(pointLight.pc.position, pointLight.pc.range);
 		m_shadowMaps[shadowMapIndex].currentLightID = pointLight.instanceID; //Problematic
-		if (m_shadowMaps[shadowMapIndex].outOfDate)
+		if (!m_shadowMaps[shadowMapIndex].inUse)
 		{
 			UpdateShadowMap(shadowMapIndex, renderCallback);
+			remainingUpdates--;
 		}
+		else if (m_shadowMaps[shadowMapIndex].outOfDate)
+		{
+			optionalUpdates.push_back(shadowMapIndex);
+		}
+	}
+	
+	std::sort(optionalUpdates.begin(), optionalUpdates.end(), [&] (size_t a, size_t b)
+	{
+		return m_shadowMaps[a].lastUpdateFrame < m_shadowMaps[b].lastUpdateFrame;
+	});
+	
+	for (size_t i = 0; i < optionalUpdates.size() && remainingUpdates > 0; i++)
+	{
+		UpdateShadowMap(optionalUpdates[i], renderCallback);
+		remainingUpdates--;
 	}
 	
 	eg::DC.DebugLabelEnd();
@@ -134,6 +164,9 @@ static void InitShadowMatrices(const eg::Sphere& lightSphere, void* memory)
 
 void PointLightShadowMapper::UpdateShadowMap(size_t index, const RenderCallback& renderCallback)
 {
+	m_lastUpdateFrameIndex = eg::FrameIdx();
+	m_lastFrameUpdateCount++;
+	
 	std::string debugLabel = "Update SM " + std::to_string(index);
 	eg::DC.DebugLabelBegin(debugLabel.c_str());
 	

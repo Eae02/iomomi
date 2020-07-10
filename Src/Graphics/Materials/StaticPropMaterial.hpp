@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../QualityLevel.hpp"
+
 class StaticPropMaterial : public eg::IMaterial
 {
 public:
@@ -47,5 +49,6 @@ private:
 	glm::vec2 m_textureScale;
 	bool m_backfaceCull = true;
 	bool m_castShadows = true;
+	QualityLevel m_minShadowQuality = QualityLevel::Medium;
 	uint32_t m_objectFlags = 0;
 };
