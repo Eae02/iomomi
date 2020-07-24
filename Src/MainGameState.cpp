@@ -37,7 +37,8 @@ MainGameState::MainGameState(RenderContext& renderCtx)
 		}
 	});
 	
-	m_particleManager.SetTextureSize(1024, 1024);
+	const eg::Texture& particlesTexture = eg::GetAsset<eg::Texture>("Textures/Particles.png");
+	m_particleManager.SetTextureSize(particlesTexture.Width(), particlesTexture.Height());
 	
 	m_playerWaterAABB = std::make_shared<WaterSimulator::QueryAABB>();
 	m_waterSimulator.AddQueryAABB(m_playerWaterAABB);
@@ -326,8 +327,6 @@ void MainGameState::RunFrame(float dt)
 		m_renderCtx->renderer.DrawSpotLights(prepareDrawArgs.spotLights);
 		m_renderCtx->renderer.DrawPointLights(prepareDrawArgs.pointLights);
 		
-		m_particleRenderer.Draw(m_particleManager, GetRenderTexture(RenderTex::GBDepth));
-		
 		m_renderCtx->renderer.End();
 		eg::DC.DebugLabelEnd();
 	}
@@ -354,10 +353,10 @@ void MainGameState::RunFrame(float dt)
 		
 		m_renderCtx->renderer.EndTransparent();
 		RenderTextureUsageHintFS(RenderTex::GBDepth);
-	}
-	
-	if (m_waterSimulator.NumParticlesToDraw() > 0)
-	{
+		
+		gpuTimerTransparent.Stop();
+		cpuTimerTransparent.Stop();
+		
 		RenderTextureUsageHintFS(RenderTex::LitWithoutWater);
 		
 		auto gpuTimerWater = eg::StartGPUTimer("Water (post)");
@@ -464,6 +463,19 @@ void MainGameState::RunFrame(float dt)
 		
 		m_renderCtx->renderer.EndTransparent();
 		eg::DC.DebugLabelEnd();
+	}
+	
+	if (m_particleManager.ParticlesToDraw() != 0)
+	{
+		RenderTextureUsageHintFS(RenderTex::GBDepth);
+		eg::RenderPassBeginInfo rpBeginInfo;
+		rpBeginInfo.framebuffer = GetFramebuffer(RenderTex::Lit, {}, {}, "Particles");
+		rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Load;
+		eg::DC.BeginRenderPass(rpBeginInfo);
+		
+		m_particleRenderer.Draw(m_particleManager, GetRenderTexture(RenderTex::GBDepth));
+		
+		eg::DC.EndRenderPass();
 	}
 	
 	//TODO: Move gun rendering here

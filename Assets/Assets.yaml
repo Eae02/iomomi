@@ -54,7 +54,6 @@ assets:
     format: bc1
     
   - name: Textures/Particles.png
-    mipLevels: 8
     srgb: true
     format: bc3
   - name: Textures/ForceFieldParticle.png

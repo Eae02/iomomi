@@ -54,8 +54,11 @@ private:
 		uint64_t lightInstanceID;
 		float lightIntensity = 0;
 		Dir newDown;
+		glm::mat3 rotationMatrix;
 		std::weak_ptr<EntGravityChargeable> entityToCharge;
 	};
+	
+	static void SetBeamInstanceTransform(BeamInstance& instance);
 	
 	std::vector<BeamInstance> m_beamInstances;
 };

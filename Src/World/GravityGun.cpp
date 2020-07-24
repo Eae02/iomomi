@@ -91,11 +91,16 @@ static float GUN_SCALE = 0.04f;
 static float GUN_BOB_SCALE = 0.3f;
 static float GUN_BOB_SPEED = 4.0f;
 
-static float ORB_SPEED = 40.0f;
+static float ORB_SPEED = 60.0f;
 
 static float LIGHT_INTENSITY_MAX = 20.0f;
 static float LIGHT_INTENSITY_FALL_TIME = 0.2f;
-static eg::ColorSRGB LIGHT_COLOR = eg::ColorSRGB::FromHex(0x19ebd8);
+static eg::ColorSRGB LIGHT_COLOR = eg::ColorSRGB::FromHex(0xb6fdff);
+
+void GravityGun::SetBeamInstanceTransform(BeamInstance& instance)
+{
+	instance.particleEmitter.SetTransform(glm::translate(glm::mat4(1), instance.beamPos) * glm::mat4(instance.rotationMatrix));
+}
 
 void GravityGun::Update(World& world, const PhysicsEngine& physicsEngine, WaterSimulator& waterSim,
 	eg::ParticleManager& particleManager, const Player& player, const glm::mat4& inverseViewProj, float dt)
@@ -148,15 +153,15 @@ void GravityGun::Update(World& world, const PhysicsEngine& physicsEngine, WaterS
 			if (std::shared_ptr<EntGravityChargeable> targetEntity = beamInstance.entityToCharge.lock())
 			{
 				targetEntity->SetGravity(beamInstance.newDown);
-				beamInstance.particleEmitter.Kill();
 			}
 			
 			beamInstance.lightIntensity -= dt / LIGHT_INTENSITY_FALL_TIME;
+			beamInstance.particleEmitter.Kill();
 		}
 		else
 		{
 			beamInstance.beamPos += beamInstance.direction * dt;
-			beamInstance.particleEmitter.SetTransform(glm::translate(glm::mat4(1), beamInstance.beamPos));
+			SetBeamInstanceTransform(beamInstance);
 		}
 	}
 	
@@ -198,7 +203,11 @@ void GravityGun::Update(World& world, const PhysicsEngine& physicsEngine, WaterS
 			beamInstance.lightIntensity = 1;
 			beamInstance.lightInstanceID = LightSource::NextInstanceID();
 			
-			beamInstance.particleEmitter.SetTransform(glm::translate(glm::mat4(1), start));
+			glm::vec3 rotationL = glm::normalize(glm::cross(beamInstance.direction, glm::vec3(0, 1, 0)));
+			glm::vec3 rotationU = glm::normalize(glm::cross(beamInstance.direction, rotationL));
+			beamInstance.rotationMatrix = glm::mat3(rotationL, rotationU, glm::normalize(beamInstance.direction));
+			
+			SetBeamInstanceTransform(beamInstance);
 			
 			m_fireAnimationTime = 1;
 			

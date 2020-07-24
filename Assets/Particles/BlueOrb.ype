@@ -1,4 +1,4 @@
-emissionRate: 10000
+emissionRate: 15000
 lifeTime: 0.3
 position:
   shape: sphere
@@ -6,8 +6,8 @@ position:
   offset: [ 0, 0, 0 ]
 velocity:
   shape: sphere
-  radius: 0.02
-  offset: [ 0, 0, 0 ]
+  radius: 0.1
+  offset: [ 0, 0, 0.2 ]
 blend: additive
 rotation: [0, 360]
 angularVelocity: [-200, 200]
