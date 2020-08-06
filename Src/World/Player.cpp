@@ -284,7 +284,8 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 	glm::vec3 moveY = velocityY * dt;
 	
 	m_radius = glm::vec3(WIDTH / 2, WIDTH / 2, WIDTH / 2);
-	m_radius[(int)m_down / 2] = HEIGHT / 2;
+	if (!underwater)
+		m_radius[(int)m_down / 2] = HEIGHT / 2;
 	
 	//Checks for intersections with gravity corners along the move (XZ) vector
 	if (m_gravityTransitionMode == TransitionMode::None && m_onGround && !m_isCarrying)
@@ -370,7 +371,6 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 	if (m_gravityTransitionMode == TransitionMode::None && forceFieldGravity.has_value() &&
 		m_down != *forceFieldGravity && !*noclipActive)
 	{
-		m_velocity = glm::vec3(0);
 		if (*forceFieldGravity == OppositeDir(m_down))
 		{
 			FlipDown();
@@ -380,6 +380,7 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 			m_down = *forceFieldGravity;
 			m_gravityTransitionMode = TransitionMode::Fall;
 			m_transitionTime = 0;
+			m_oldPosition = Position();
 			m_oldEyePosition = m_eyePosition;
 			m_oldRotation = m_rotation;
 			m_newRotation = GetRotation(m_rotationYaw, m_rotationPitch, m_down);
@@ -490,7 +491,7 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 	m_eyePosition = glm::round(m_eyePosition / *eyeRoundPrecision) * *eyeRoundPrecision;
 	if (m_gravityTransitionMode == TransitionMode::Fall)
 	{
-		m_eyePosition = glm::mix(m_oldEyePosition, m_eyePosition, TransitionInterpol());
+		m_eyePosition = glm::mix(m_oldEyePosition + Position() - m_oldPosition, m_eyePosition, TransitionInterpol());
 	}
 	
 	m_wasUnderwater = underwater;
@@ -506,8 +507,8 @@ void Player::FlipDown()
 	m_oldRotation = m_rotation;
 	m_newRotation = GetRotation(m_rotationYaw, m_rotationPitch, newDown);
 	
-	m_velocity = glm::vec3(0);
 	m_down = newDown;
+	m_oldPosition = Position();
 	m_oldEyePosition = m_eyePosition;
 	m_gravityTransitionMode = TransitionMode::Fall;
 	m_transitionTime = 0;

@@ -77,28 +77,31 @@ void PlatformEnt::RenderSettings()
 		m_launchSpeed = std::max(m_launchSpeed, 0.0f);
 }
 
-//static const glm::vec4 RIGID_BODY_OFFSET_LOCAL(0, -COLLIDER_HALF_HEIGHT, -1, 1);
-
-void PlatformEnt::Draw(eg::MeshBatch& meshBatch, const glm::mat4& transform) const
+void PlatformEnt::DrawSliderMesh(eg::MeshBatch& meshBatch,
+	const glm::vec3& start, const glm::vec3& toEnd, const glm::vec3& up, float scale)
 {
-	const float slideDist = glm::length(m_slideOffset);
+	const float slideDist = glm::length(toEnd);
+	const glm::vec3 normToEnd = toEnd / slideDist;
 	
-	constexpr float SLIDER_MODEL_SCALE = 0.5f;
 	constexpr float SLIDER_MODEL_LENGTH = 0.2f;
-	const int numSliderInstances = (int)std::round(slideDist / (SLIDER_MODEL_LENGTH * SLIDER_MODEL_SCALE));
+	const int numSliderInstances = (int)std::round(slideDist / (SLIDER_MODEL_LENGTH * scale));
 	
-	const glm::vec3 localFwd = glm::normalize(glm::vec3(m_slideOffset.y, 0, -m_slideOffset.x));
-	const glm::vec3 localUp(0, 1, 0);
-	const glm::mat4 sliderTransform =
-		glm::translate(glm::mat4(1), m_basePosition) *
-		glm::mat4(GetRotationMatrix(m_forwardDir)) *
-		glm::mat4(glm::mat3(glm::cross(localUp, localFwd), localUp, localFwd) * SLIDER_MODEL_SCALE);
+	const glm::mat4 commonTransform =
+		glm::translate(glm::mat4(1), start) *
+		glm::mat4(glm::mat3(glm::cross(up, normToEnd) * scale, up * scale, normToEnd * scale));
 	
 	for (int i = 1; i <= numSliderInstances; i++)
 	{
-		glm::mat4 partTransform = glm::translate(sliderTransform, glm::vec3(0, 0, SLIDER_MODEL_LENGTH * (float)i));
+		glm::mat4 partTransform = glm::translate(commonTransform, glm::vec3(0, 0, SLIDER_MODEL_LENGTH * (float)i));
 		meshBatch.AddModel(*platformSliderModel, *platformSliderMaterial, StaticPropMaterial::InstanceData(partTransform));
 	}
+}
+
+void PlatformEnt::Draw(eg::MeshBatch& meshBatch, const glm::mat4& transform) const
+{
+	const glm::vec3 localFwd(m_slideOffset.y, 0, -m_slideOffset.x);
+	glm::mat3 rotationMatrix = GetRotationMatrix(m_forwardDir);
+	DrawSliderMesh(meshBatch, m_basePosition, rotationMatrix * localFwd, rotationMatrix[1], 0.5f);
 	
 	meshBatch.AddModel(*platformModel, *platformMaterial, StaticPropMaterial::InstanceData(transform));
 }

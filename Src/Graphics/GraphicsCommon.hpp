@@ -2,7 +2,8 @@
 
 #include <optional>
 
-const eg::Sampler& GetCommonTextureSampler();
+extern eg::Sampler commonTextureSampler;
+extern eg::Sampler framebufferLinearSampler;
 
 extern eg::Texture whitePixelTexture;
 extern eg::Texture blackPixelTexture;

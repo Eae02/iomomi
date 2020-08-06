@@ -1,4 +1,5 @@
 #include "GlassBlurRenderer.hpp"
+#include "GraphicsCommon.hpp"
 
 GlassBlurRenderer::GlassBlurRenderer()
 {
@@ -69,7 +70,7 @@ void GlassBlurRenderer::DoBlurPass(const glm::vec2& blurVector, eg::TextureRef i
 	eg::TextureSubresource subresource;
 	subresource.firstMipLevel = inputLod;
 	subresource.numMipLevels = 1;
-	eg::DC.BindTexture(inputTexture, 0, 0, nullptr, subresource);
+	eg::DC.BindTexture(inputTexture, 0, 0, &framebufferLinearSampler, subresource);
 	
 	eg::DC.PushConstants(0, sizeof(float) * 2, &blurVector.x);
 	

@@ -31,10 +31,8 @@ void PhysicsEngine::CopyParentMove(PhysicsObject& object, float dt)
 		floor->childObjects.push_back(&object);
 		CopyParentMove(*floor, dt);
 		
-		object.collisionDepth = 10;
 		ApplyMovement(*floor, dt);
 		object.move += floor->actualMove;
-		object.collisionDepth = 0;
 	}
 }
 

@@ -125,15 +125,15 @@ void InitializeWallShader()
 	wr.gameDescriptorSet = { wr.pipelineDeferredGeom, 0 };
 	wr.gameDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
 	wr.gameDescriptorSet.BindUniformBuffer(wr.materialSettingsBuffer, 1, 0, sizeof(materialSettings));
-	wr.gameDescriptorSet.BindTexture(*wr.diffuseTexture, 2, &GetCommonTextureSampler());
-	wr.gameDescriptorSet.BindTexture(*wr.normalMapTexture, 3, &GetCommonTextureSampler());
-	wr.gameDescriptorSet.BindTexture(*wr.miscMapTexture, 4, &GetCommonTextureSampler());
+	wr.gameDescriptorSet.BindTexture(*wr.diffuseTexture, 2, &commonTextureSampler);
+	wr.gameDescriptorSet.BindTexture(*wr.normalMapTexture, 3, &commonTextureSampler);
+	wr.gameDescriptorSet.BindTexture(*wr.miscMapTexture, 4, &commonTextureSampler);
 	
 	wr.editorDescriptorSet = { wr.pipelineEditor, 0 };
 	wr.editorDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
 	wr.editorDescriptorSet.BindUniformBuffer(wr.materialSettingsBuffer, 1, 0, sizeof(materialSettings));
-	wr.editorDescriptorSet.BindTexture(*wr.diffuseTexture, 2, &GetCommonTextureSampler());
-	wr.editorDescriptorSet.BindTexture(*wr.normalMapTexture, 3, &GetCommonTextureSampler());
+	wr.editorDescriptorSet.BindTexture(*wr.diffuseTexture, 2, &commonTextureSampler);
+	wr.editorDescriptorSet.BindTexture(*wr.normalMapTexture, 3, &commonTextureSampler);
 	wr.editorDescriptorSet.BindTexture(*wr.gridTexture, 4);
 	wr.editorDescriptorSet.BindTexture(*wr.noDrawTexture, 5);
 }

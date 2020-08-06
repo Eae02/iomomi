@@ -35,6 +35,9 @@ public:
 	Dir GetFacingDirection() const override { return m_forwardDir; }
 	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
+	static void DrawSliderMesh(eg::MeshBatch& meshBatch, const glm::vec3& start,
+		const glm::vec3& toEnd, const glm::vec3& up, float scale);
+	
 private:
 	glm::mat4 GetBaseTransform() const;
 	

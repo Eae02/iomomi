@@ -14,6 +14,10 @@ layout(push_constant, std140) uniform PC
 	float range;
 	vec3 radiance;
 	float invRange;
+	float causticsScale;
+	float causticsColorOffset;
+	float causticsPanSpeed;
+	float causticsTexScale;
 } pc;
 
 void main()

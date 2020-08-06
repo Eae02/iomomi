@@ -325,7 +325,7 @@ void MainGameState::RunFrame(float dt)
 		m_renderCtx->renderer.BeginLighting();
 		
 		m_renderCtx->renderer.DrawSpotLights(prepareDrawArgs.spotLights);
-		m_renderCtx->renderer.DrawPointLights(prepareDrawArgs.pointLights);
+		m_renderCtx->renderer.DrawPointLights(prepareDrawArgs.pointLights, mDrawArgs.waterDepthTexture);
 		
 		m_renderCtx->renderer.End();
 		eg::DC.DebugLabelEnd();
@@ -534,9 +534,14 @@ void MainGameState::RenderPointLightShadows(const PointLightShadowRenderArgs& ar
 	m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
 }
 
+int* debugOverlay = eg::TweakVarInt("dbg_overlay", 1);
+
 #ifndef NDEBUG
 void MainGameState::DrawOverlay(float dt)
 {
+	if (!*debugOverlay)
+		return;
+	
 	ImGui::SetNextWindowPos(ImVec2(5, 5), ImGuiCond_Always);
 	ImGui::SetNextWindowSize(ImVec2(200, 0), ImGuiCond_Always);
 	ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.6f);

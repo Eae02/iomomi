@@ -282,9 +282,9 @@ bool StaticPropMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs
 		m_descriptorsInitialized = true;
 		
 		m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
-		m_descriptorSet.BindTexture(*m_albedoTexture, 1, &GetCommonTextureSampler());
-		m_descriptorSet.BindTexture(*m_normalMapTexture, 2, &GetCommonTextureSampler());
-		m_descriptorSet.BindTexture(*m_miscMapTexture, 3, &GetCommonTextureSampler());
+		m_descriptorSet.BindTexture(*m_albedoTexture, 1);
+		m_descriptorSet.BindTexture(*m_normalMapTexture, 2);
+		m_descriptorSet.BindTexture(*m_miscMapTexture, 3);
 	}
 	
 	if (mDrawArgs->drawMode == MeshDrawMode::Editor || mDrawArgs->drawMode == MeshDrawMode::Game)

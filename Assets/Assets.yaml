@@ -178,3 +178,27 @@ assets:
       - WallTextures/Panels1M.png
       - WallTextures/Panels2M.png
       - WallTextures/Panels1M.png
+  - name: Caustics
+    generator: Texture2DArray
+    loader: Texture2D
+    mipLevels: 1
+    srgb: false
+    format: r8
+    3d: true
+    layers:
+      - Caustics/01.png
+      - Caustics/02.png
+      - Caustics/03.png
+      - Caustics/04.png
+      - Caustics/05.png
+      - Caustics/06.png
+      - Caustics/07.png
+      - Caustics/08.png
+      - Caustics/09.png
+      - Caustics/10.png
+      - Caustics/11.png
+      - Caustics/12.png
+      - Caustics/13.png
+      - Caustics/14.png
+      - Caustics/15.png
+      - Caustics/16.png

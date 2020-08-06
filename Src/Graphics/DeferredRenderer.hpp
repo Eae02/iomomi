@@ -20,7 +20,7 @@ public:
 	void EndTransparent();
 	
 	void DrawSpotLights(const std::vector<SpotLightDrawData>& spotLights) const;
-	void DrawPointLights(const std::vector<PointLightDrawData>& pointLights) const;
+	void DrawPointLights(const std::vector<PointLightDrawData>& pointLights, eg::TextureRef waterDepthTexture) const;
 	
 	void End() const;
 	

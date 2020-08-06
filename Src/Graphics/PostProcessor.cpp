@@ -1,15 +1,12 @@
 #include "PostProcessor.hpp"
 #include "../Settings.hpp"
+#include "GraphicsCommon.hpp"
 
 static float* bloomIntensity = eg::TweakVarFloat("bloom_intensity", 0.5f, 0);
 
 PostProcessor::PostProcessor()
 {
-	eg::SamplerDescription samplerDescription;
-	samplerDescription.wrapU = eg::WrapMode::ClampToEdge;
-	samplerDescription.wrapV = eg::WrapMode::ClampToEdge;
-	samplerDescription.wrapW = eg::WrapMode::ClampToEdge;
-	m_inputSampler = eg::Sampler(samplerDescription);
+	
 }
 
 void PostProcessor::InitPipeline()
@@ -68,12 +65,10 @@ void PostProcessor::Render(eg::TextureRef input, const eg::BloomRenderer::Render
 	eg::DC.BindPipeline(m_pipeline);
 	eg::DC.PushConstants(0, sizeof(float) * 4, pc);
 	
-	if (bloomRenderTarget != nullptr)
-	{
-		eg::DC.BindTexture(bloomRenderTarget->OutputTexture(), 0, 1, &m_inputSampler);
-	}
+	eg::DC.BindTexture(input, 0, 0, &framebufferLinearSampler);
 	
-	eg::DC.BindTexture(input, 0, 0, &m_inputSampler);
+	eg::TextureRef bloomTexture = bloomRenderTarget ? bloomRenderTarget->OutputTexture() : blackPixelTexture;
+	eg::DC.BindTexture(bloomTexture, 0, 1, &framebufferLinearSampler);
 	
 	eg::DC.Draw(0, 3, 0, 1);
 	

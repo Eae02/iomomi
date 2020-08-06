@@ -91,6 +91,7 @@ private:
 	
 	TransitionMode m_gravityTransitionMode = TransitionMode::None;
 	float m_transitionTime;
+	glm::vec3 m_oldPosition;
 	glm::vec3 m_oldEyePosition;
 	glm::vec3 m_newPosition;
 	glm::quat m_oldRotation;

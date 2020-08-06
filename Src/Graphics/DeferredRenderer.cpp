@@ -201,7 +201,12 @@ void DeferredRenderer::DrawSpotLights(const std::vector<SpotLightDrawData>& spot
 	}
 }
 
-void DeferredRenderer::DrawPointLights(const std::vector<PointLightDrawData>& pointLights) const
+static float* causticsIntensity = eg::TweakVarFloat("cau_intensity", 10);
+static float* causticsColorOffset = eg::TweakVarFloat("cau_clr_offset", 1.5f);
+static float* causticsPanSpeed = eg::TweakVarFloat("cau_pan_speed", 0.05f);
+static float* causticsTexScale = eg::TweakVarFloat("cau_tex_scale", 0.5f);
+
+void DeferredRenderer::DrawPointLights(const std::vector<PointLightDrawData>& pointLights, eg::TextureRef waterDepthTexture) const
 {
 	if (pointLights.empty() || unlit)
 		return;
@@ -221,10 +226,21 @@ void DeferredRenderer::DrawPointLights(const std::vector<PointLightDrawData>& po
 	eg::DC.BindTexture(GetRenderTexture(RenderTex::GBColor2), 0, 2);
 	eg::DC.BindTexture(GetRenderTexture(RenderTex::GBDepth), 0, 3);
 	eg::DC.BindTexture(GetRenderTexture(RenderTex::Flags), 0, 4);
+	eg::DC.BindTexture(waterDepthTexture, 0, 5);
+	eg::DC.BindTexture(eg::GetAsset<eg::Texture>("Caustics"), 0, 6);
+	
+	const float causticsPC[] = 
+	{
+		*causticsIntensity,
+		*causticsColorOffset,
+		*causticsPanSpeed,
+		*causticsTexScale
+	};
+	eg::DC.PushConstants(sizeof(PointLightDrawData::pc), sizeof(causticsPC), causticsPC);
 	
 	for (const PointLightDrawData& pointLight : pointLights)
 	{
-		eg::DC.BindTexture(pointLight.shadowMap, 0, 5, &m_shadowMapSampler);
+		eg::DC.BindTexture(pointLight.shadowMap, 0, 7, &m_shadowMapSampler);
 		
 		eg::DC.PushConstants(0, pointLight.pc);
 		

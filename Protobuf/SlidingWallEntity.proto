@@ -1,0 +1,17 @@
+syntax="proto3";
+
+package gravity_pb;
+
+message SlidingWallEntity {
+  float posX = 1;
+  float posY = 2;
+  float posZ = 3;
+  float sizeX = 4;
+  float sizeY = 5;
+  fixed32 forward_plane = 6;
+  float slide_offset_x = 7;
+  float slide_offset_y = 8;
+  float slide_offset_z = 9;
+  bool never_block_water = 10;
+  fixed32 up_plane = 11;
+}

@@ -42,7 +42,8 @@ const std::pair<uint32_t, uint32_t> cubeMesh::edges[12] =
 	{ 6, 7 }
 };
 
-static eg::Sampler commonTextureSampler;
+eg::Sampler commonTextureSampler;
+eg::Sampler framebufferLinearSampler;
 
 eg::Texture whitePixelTexture;
 eg::Texture blackPixelTexture;
@@ -52,6 +53,14 @@ static void OnInit()
 	eg::SamplerDescription samplerDescription;
 	samplerDescription.maxAnistropy = 16;
 	commonTextureSampler = eg::Sampler(samplerDescription);
+	
+	eg::SamplerDescription framebufferLinearSamplerDesc;
+	framebufferLinearSamplerDesc.wrapU = eg::WrapMode::ClampToEdge;
+	framebufferLinearSamplerDesc.wrapV = eg::WrapMode::ClampToEdge;
+	framebufferLinearSamplerDesc.wrapW = eg::WrapMode::ClampToEdge;
+	framebufferLinearSamplerDesc.minFilter = eg::TextureFilter::Linear;
+	framebufferLinearSamplerDesc.magFilter = eg::TextureFilter::Linear;
+	framebufferLinearSampler = eg::Sampler(framebufferLinearSamplerDesc);
 	
 	eg::TextureCreateInfo whiteTextureCI;
 	whiteTextureCI.format = eg::Format::R8G8B8A8_UNorm;
@@ -77,17 +86,13 @@ static void OnInit()
 static void OnShutdown()
 {
 	commonTextureSampler = { };
+	framebufferLinearSampler = { };
 	whitePixelTexture.Destroy();
 	blackPixelTexture.Destroy();
 }
 
 EG_ON_INIT(OnInit)
 EG_ON_SHUTDOWN(OnShutdown)
-
-const eg::Sampler& GetCommonTextureSampler()
-{
-	return commonTextureSampler;
-}
 
 ResizableBuffer::ResizableBuffer()
 {
@@ -235,8 +240,8 @@ void MaybeRecreateRenderTextures()
 		samplerDesc.wrapU = eg::WrapMode::ClampToEdge;
 		samplerDesc.wrapV = eg::WrapMode::ClampToEdge;
 		samplerDesc.wrapW = eg::WrapMode::ClampToEdge;
-		samplerDesc.minFilter = eg::TextureFilter::Linear;
-		samplerDesc.magFilter = eg::TextureFilter::Linear;
+		samplerDesc.minFilter = eg::TextureFilter::Nearest;
+		samplerDesc.magFilter = eg::TextureFilter::Nearest;
 		
 		for (int i = 0; i < NUM_RENDER_TEXTURES; i++)
 		{

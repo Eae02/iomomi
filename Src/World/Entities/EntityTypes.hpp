@@ -19,10 +19,11 @@ enum class EntTypeID
 	Window               = 14,
 	Mesh                 = 15,
 	WaterWall            = 16,
+	SlidingWall          = 17,
 	MAX
 };
  
-constexpr size_t NUM_UPDATABLE_ENTITY_TYPES = 8;
+constexpr size_t NUM_UPDATABLE_ENTITY_TYPES = 9;
 
 extern const EntTypeID entUpdateOrder[NUM_UPDATABLE_ENTITY_TYPES];
 

@@ -16,5 +16,4 @@ private:
 	std::optional<bool> m_fxaaWasEnabled;
 	
 	eg::Pipeline m_pipeline;
-	eg::Sampler m_inputSampler;
 };

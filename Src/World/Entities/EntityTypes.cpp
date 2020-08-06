@@ -17,6 +17,7 @@
 #include "EntTypes/RampEnt.hpp"
 #include "EntTypes/WindowEnt.hpp"
 #include "EntTypes/WaterWallEnt.hpp"
+#include "EntTypes/SlidingWallEnt.hpp"
 
 const EntTypeID entUpdateOrder[NUM_UPDATABLE_ENTITY_TYPES] =
 {
@@ -27,7 +28,8 @@ const EntTypeID entUpdateOrder[NUM_UPDATABLE_ENTITY_TYPES] =
 	EntTypeID::CubeSpawner,
 	EntTypeID::Cube,
 	EntTypeID::Platform,
-	EntTypeID::GravitySwitch
+	EntTypeID::GravitySwitch,
+	EntTypeID::SlidingWall
 };
 
 template <typename T>
@@ -65,4 +67,5 @@ void InitEntityTypes()
 	DefineEntityType<RampEnt>("Ramp", "Ramp");
 	DefineEntityType<WindowEnt>("Window", "Window");
 	DefineEntityType<WaterWallEnt>("WaterWall", "Water Wall");
+	DefineEntityType<SlidingWallEnt>("SlidingWall", "Sliding Wall");
 }

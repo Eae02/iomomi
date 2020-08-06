@@ -1,6 +1,6 @@
 PROTOBUFS=Dir EntranceEntity WallLightEntity GravitySwitchEntity FloorButtonEntity \
 CubeEntity GooPlaneEntity WaterPlaneEntity DecalEntity PlatformEntity GravityBarrierEntity \
-Activator Vec CubeSpawnerEntity ForceFieldEntity Ramp WindowEntity WaterWallEntity
+Activator Vec CubeSpawnerEntity ForceFieldEntity Ramp WindowEntity WaterWallEntity SlidingWallEntity
 BUILD_DIR=Build
 
 all: $(BUILD_DIR) $(addprefix $(BUILD_DIR)/, $(addsuffix .pb.h, $(PROTOBUFS)))
