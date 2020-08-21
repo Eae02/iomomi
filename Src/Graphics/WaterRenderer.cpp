@@ -142,7 +142,7 @@ struct WaterBlurPC
 };
 #pragma pack(pop)
 
-static float* blurRadius          = eg::TweakVarFloat("wblur_radius", 2.0f, 0.0f);
+static float* blurRadius          = eg::TweakVarFloat("wblur_radius", 3.0f, 0.0f);
 static float* blurDistanceFalloff = eg::TweakVarFloat("wblur_distfall", 0.5f, 0.0f);
 static float* blurDepthFalloff    = eg::TweakVarFloat("wblur_depthfall", 0.01f, 0.0f);
 static int* blurSinglePass        = eg::TweakVarInt("wblur_singlepass", 0, 0, 1);
@@ -157,7 +157,7 @@ vhigh: 48 samples, 32-bit, HQ-Shader
 */
 
 static const int blurSamplesByQuality[] = { 4, 8, 16, 24, 32 };
-static const float baseBlurRadius[] = { 70.0f, 100.0f, 125.0f, 150.0f, 175.0f };
+static const float baseBlurRadius[] = { 70.0f, 80.0f, 100.0f, 125.0f, 150.0f };
 
 void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParticles)
 {
