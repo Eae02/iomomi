@@ -29,7 +29,7 @@ void LiquidPlaneRenderer::Prepare(World& world, eg::MeshBatchOrdered& meshBatch,
 		if (plane == nullptr)
 			return;
 		
-		plane->SetShouldGenerateMesh(true);
+		plane->shouldGenerateMesh = true;
 		plane->MaybeUpdate(world);
 		
 		if (plane->NumIndices() != 0)
@@ -56,7 +56,7 @@ void LiquidPlaneRenderer::Render() const
 		eg::DC.BindVertexBuffer(0, plane.VertexBuffer(), 0);
 		eg::DC.BindIndexBuffer(eg::IndexType::UInt16, plane.IndexBuffer(), 0);
 		
-		eg::DC.PushConstants(0, sizeof(float) * 4, &plane.EditorColor());
+		eg::DC.PushConstants(0, sizeof(float) * 4, &plane.editorColor);
 		
 		eg::DC.DrawIndexed(0, plane.NumIndices(), 0, 0, 1);
 	}

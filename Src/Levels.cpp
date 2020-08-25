@@ -28,6 +28,7 @@ static const std::string_view levelsOrder[] =
 	"gravbarrier_ng1",
     "gravbarrier_ng2",
 	"gravbarrier_ng3",
+	"gravbarrier_ng4",
 	
 	"water_ng0",
 	"water_ng1",
@@ -48,6 +49,7 @@ static const std::string_view levelsOrder[] =
 	"forcefield_1",
 	"forcefield_2",
 	"forcefield_3",
+	//"forcefield_4",
 	
 	//PART 3
 	"gravbarrier_1",
@@ -60,6 +62,8 @@ static const std::string_view levelsOrder[] =
 	"water_2",
 	
 	"water_4",
+	"water_5",
+	"water_6"
 };
 
 void UpgradeLevelsCommand(eg::Span<const std::string_view> args)

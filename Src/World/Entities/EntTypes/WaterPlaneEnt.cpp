@@ -5,8 +5,8 @@
 
 WaterPlaneEnt::WaterPlaneEnt()
 {
-	liquidPlane.SetShouldGenerateMesh(true);
-	liquidPlane.SetEditorColor(eg::ColorSRGB::FromRGBAHex(0x67BEEA98));
+	liquidPlane.shouldGenerateMesh = true;
+	liquidPlane.editorColor = eg::ColorSRGB::FromRGBAHex(0x67BEEA98);
 }
 
 const void* WaterPlaneEnt::GetComponent(const std::type_info& type) const

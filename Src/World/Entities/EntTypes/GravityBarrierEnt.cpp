@@ -77,7 +77,7 @@ bool GravityBarrierEnt::ShouldCollide(const PhysicsObject& self, const PhysicsOb
 	if (!selfBarrier.m_enabled)
 		return false;
 	
-	Dir otherDown;
+	Dir otherDown = Dir::PosX;
 	if (auto player = std::get_if<Player*>(&other.owner))
 	{
 		otherDown = (**player).CurrentDown();
@@ -132,7 +132,7 @@ void GravityBarrierEnt::CommonDraw(const EntDrawArgs& args)
 	
 	constexpr float TIME_SCALE = 0.25f;
 	
-	GravityBarrierMaterial::InstanceData instanceData;
+	GravityBarrierMaterial::InstanceData instanceData = {};
 	instanceData.position = m_position;
 	instanceData.opacity = 255 * glm::smoothstep(0.0f, 1.0f, m_opacity);
 	instanceData.blockedAxis = BlockedAxis();
@@ -306,7 +306,6 @@ void GravityBarrierEnt::Update(const WorldUpdateArgs& args)
 	if (m_waterBlockComponentOutOfDate)
 	{
 		m_waterBlockComponentOutOfDate = false;
-		const int blockedAxis = BlockedAxis();
 		UpdateWaterBlockedGravities();
 		m_waterBlockComp.InitFromAAQuadComponent(m_aaQuad, m_position);
 		m_waterBlockComp.editorVersion++;

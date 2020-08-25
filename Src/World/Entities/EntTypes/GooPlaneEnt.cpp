@@ -4,8 +4,8 @@
 
 GooPlaneEnt::GooPlaneEnt()
 {
-	m_liquidPlane.SetShouldGenerateMesh(true);
-	m_liquidPlane.SetEditorColor(eg::ColorSRGB::FromRGBAHex(0x619F4996));
+	m_liquidPlane.shouldGenerateMesh = true;
+	m_liquidPlane.editorColor = eg::ColorSRGB::FromRGBAHex(0x619F4996);
 }
 
 void GooPlaneEnt::RenderSettings()

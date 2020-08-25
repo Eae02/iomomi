@@ -82,7 +82,7 @@ void LiquidPlaneComp::MaybeUpdate(const World& world)
 	m_underwater.resize(visited.size());
 	std::copy(visited.begin(), visited.end(), m_underwater.begin());
 	
-	if (m_shouldGenerateMesh)
+	if (shouldGenerateMesh)
 		GenerateMesh();
 }
 

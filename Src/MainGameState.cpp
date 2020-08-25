@@ -37,6 +37,18 @@ MainGameState::MainGameState(RenderContext& renderCtx)
 		}
 	});
 	
+	eg::console::AddCommand("curlevel", 0, [this] (eg::Span<const std::string_view> args, eg::console::Writer& writer)
+	{
+		if (m_currentLevelIndex == -1)
+		{
+			writer.WriteLine(eg::console::ErrorColor, "No current level");
+		}
+		else
+		{
+			writer.WriteLine(eg::console::InfoColor, levels[m_currentLevelIndex].name);
+		}
+	});
+	
 	const eg::Texture& particlesTexture = eg::GetAsset<eg::Texture>("Textures/Particles.png");
 	m_particleManager.SetTextureSize(particlesTexture.Width(), particlesTexture.Height());
 	
