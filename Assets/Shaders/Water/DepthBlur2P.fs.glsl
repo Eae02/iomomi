@@ -6,7 +6,7 @@
 
 layout(location=0) in vec2 texCoord_in;
 
-layout(location=0) out vec3 depth_out;
+layout(location=0) out vec4 depth_out;
 
 layout(binding=0) uniform sampler2D depthSampler;
 
@@ -30,16 +30,18 @@ const float MAX_BLUR_RAMP = 3.0;
 
 void main()
 {
-	vec3 centerSample = texture(depthSampler, texCoord_in).rgb;
+	vec4 centerSample = texture(depthSampler, texCoord_in);
 	
 #ifdef V1
 	float centerDepth       = linearizeDepth(depthTo01(centerSample.x));
 	float centerTravelDepth = texture(travelDepthSampler, texCoord_in).x;
 	float centerDepthMax    = linearizeDepth(depthTo01(texture(depthMaxSampler, texCoord_in).r));
+	float oriDepthMax       = centerDepthMax;
 #else
 	float centerDepth       = centerSample.x;
 	float centerTravelDepth = centerSample.y;
 	float centerDepthMax    = centerSample.z;
+	float oriDepthMax       = centerSample.w;
 #endif
 	
 	float blurRamp = clamp((centerTravelDepth - BLUR_RAMP_BEGIN) / BLUR_RAMP_SIZE, 0, 1);
@@ -77,5 +79,5 @@ void main()
 	
 	sum /= max(wsum, vec3(0.001));
 	
-	depth_out = sum;
+	depth_out = vec4(sum, oriDepthMax);
 }

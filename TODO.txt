@@ -11,7 +11,6 @@ graphics fixes:
 
 textures and models:
  - textures in level change room
- - textures for ramps
  - better side model for gravity barriers
  - texture and model for cube spawner
  - different graphics for pushable platforms

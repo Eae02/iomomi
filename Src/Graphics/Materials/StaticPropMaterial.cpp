@@ -4,6 +4,7 @@
 #include "../GraphicsCommon.hpp"
 #include "../RenderSettings.hpp"
 #include "../Lighting/PointLightShadowMapper.hpp"
+#include "../WallShader.hpp"
 #include "../../Settings.hpp"
 
 #include <fstream>
@@ -75,6 +76,8 @@ static eg::Pipeline staticPropPipelineEditor;
 static eg::Pipeline staticPropPipelineGame[2];
 static eg::Pipeline staticPropPipelineFlags[2];
 static eg::Pipeline staticPropPipelinePLShadow[2];
+
+static std::array<std::unique_ptr<StaticPropMaterial>, MAX_WALL_MATERIALS> staticPropWallMaterials;
 
 eg::PipelineRef StaticPropMaterial::FlagsPipelineBackCull;
 eg::PipelineRef StaticPropMaterial::FlagsPipelineNoCull;
@@ -186,6 +189,7 @@ static void OnShutdown()
 	staticPropPipelineFlags[1].Destroy();
 	staticPropPipelinePLShadow[0].Destroy();
 	staticPropPipelinePLShadow[1].Destroy();
+	staticPropWallMaterials = { };
 }
 
 EG_ON_INIT(OnInit)
@@ -267,11 +271,13 @@ bool StaticPropMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs
 	if (mDrawArgs->drawMode == MeshDrawMode::ObjectFlags && m_objectFlags == 0)
 		return false;
 	
+	eg::TextureSubresource subresource = { 0, eg::REMAINING_SUBRESOURCE, m_textureLayer, 1 };
+	
 	if (mDrawArgs->drawMode == MeshDrawMode::PointLightShadow)
 	{
 		if (!m_castShadows || settings.shadowQuality < m_minShadowQuality)
 			return false;
-		cmdCtx.BindTexture(*m_albedoTexture, 0, 1);
+		cmdCtx.BindTexture(*m_albedoTexture, 0, 1, nullptr, subresource, eg::TextureBindFlags::ArrayLayerAsTexture2D);
 		return true;
 	}
 	
@@ -282,9 +288,9 @@ bool StaticPropMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs
 		m_descriptorsInitialized = true;
 		
 		m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
-		m_descriptorSet.BindTexture(*m_albedoTexture, 1);
-		m_descriptorSet.BindTexture(*m_normalMapTexture, 2);
-		m_descriptorSet.BindTexture(*m_miscMapTexture, 3);
+		m_descriptorSet.BindTexture(*m_albedoTexture, 1, nullptr, subresource, eg::TextureBindFlags::ArrayLayerAsTexture2D);
+		m_descriptorSet.BindTexture(*m_normalMapTexture, 2, nullptr, subresource, eg::TextureBindFlags::ArrayLayerAsTexture2D);
+		m_descriptorSet.BindTexture(*m_miscMapTexture, 3, nullptr, subresource, eg::TextureBindFlags::ArrayLayerAsTexture2D);
 	}
 	
 	if (mDrawArgs->drawMode == MeshDrawMode::Editor || mDrawArgs->drawMode == MeshDrawMode::Game)
@@ -302,4 +308,26 @@ bool StaticPropMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs
 	}
 	
 	return true;
+}
+
+bool StaticPropMaterial::CheckInstanceDataType(const std::type_info* instanceDataType) const
+{
+	return instanceDataType == &typeid(InstanceData);
+}
+
+const StaticPropMaterial& StaticPropMaterial::GetFromWallMaterial(uint32_t index)
+{
+	EG_ASSERT(index != 0);
+	if (staticPropWallMaterials[index] == nullptr)
+	{
+		staticPropWallMaterials[index] = std::make_unique<StaticPropMaterial>();
+		staticPropWallMaterials[index]->m_albedoTexture = &eg::GetAsset<eg::Texture>("WallTextures/Albedo");
+		staticPropWallMaterials[index]->m_normalMapTexture = &eg::GetAsset<eg::Texture>("WallTextures/NormalMap");
+		staticPropWallMaterials[index]->m_miscMapTexture = &eg::GetAsset<eg::Texture>("WallTextures/MiscMap");
+		staticPropWallMaterials[index]->m_textureLayer = index - 1;
+		staticPropWallMaterials[index]->m_roughnessMin = wallMaterials[index].minRoughness;
+		staticPropWallMaterials[index]->m_roughnessMax = wallMaterials[index].maxRoughness;
+		staticPropWallMaterials[index]->m_textureScale = glm::vec2(1.0f / wallMaterials[index].textureScale);
+	}
+	return *staticPropWallMaterials[index];
 }

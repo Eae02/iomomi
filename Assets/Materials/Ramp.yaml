@@ -1,0 +1,6 @@
+albedo: ../Textures/RampA.png
+normalMap: ../Textures/RampN.png
+miscMap: ../Textures/RampM.png
+roughnessMin: 0.4
+roughnessMax: 0.7
+castShadows: true

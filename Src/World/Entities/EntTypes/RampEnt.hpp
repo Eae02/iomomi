@@ -3,6 +3,7 @@
 #include <optional>
 #include <EGame/AABB.hpp>
 #include "../Entity.hpp"
+#include "../../../Graphics/Materials/DecalMaterial.hpp"
 #include "../../PhysicsEngine.hpp"
 
 class RampEnt : public Ent
@@ -28,6 +29,9 @@ public:
 	
 	int m_rotation = 0;
 	bool m_flipped = false;
+	bool m_hasEdgeDecals = true;
+	bool m_stretchTextureV = false;
+	float m_textureScale = 1;
 	
 	glm::vec3 m_size { 1.0f };
 	glm::vec3 m_position;
@@ -35,10 +39,16 @@ public:
 private:
 	void InitializeVertexBuffer();
 	
-	std::array<glm::vec3, 4> GetTransformedVertices() const;
+	glm::mat4 GetTransformationMatrix() const;
+	std::array<glm::vec3, 4> GetTransformedVertices(const glm::mat4& matrix) const;
 	
-	bool m_vertexBufferOutOfDate = false;
+	bool m_meshOutOfDate = false;
 	eg::Buffer m_vertexBuffer;
+	
+	uint32_t m_material = 0;
+	float m_rampLength = 0;
+	
+	std::vector<DecalMaterial::InstanceData> m_edgeDecalInstances;
 	
 	eg::CollisionMesh m_collisionMesh;
 	PhysicsObject m_physicsObject;

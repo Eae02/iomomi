@@ -116,13 +116,14 @@ layout(push_constant) uniform PC
 
 void main()
 {
-	vec3 waterDepth3 = texture(waterDepthSampler, texCoord_in).rgb;
+	vec4 waterDepth4 = texture(waterDepthSampler, texCoord_in);
 	
-	bool underwater = waterDepth3.r < UNDERWATER_DEPTH;
+	bool underwater = waterDepth4.r < UNDERWATER_DEPTH;
 	
 	vec3 worldColor = texture(worldColorSampler, texCoord_in).rgb;
 	
-	float waterDepthL = underwater ? waterDepth3.b : waterDepth3.r;
+	float waterDepthL = underwater ? waterDepth4.b : waterDepth4.r;
+	float waterDepthLUB = underwater ? waterDepth4.w : waterDepthL;
 	float waterDepthH = hyperDepth(waterDepthL);
 	float worldDepthH = texture(worldDepthSampler, texCoord_in).r;
 	
@@ -136,8 +137,8 @@ void main()
 	//Stores values without refraction applied for fading later
 	vec3 oriWorldColor = worldColor;
 	float worldDepthL = linearizeDepth(worldDepthH);
-	bool waterSurface = worldDepthL > waterDepthL + 1.0;
-	float fadeDepth = worldDepthL - waterDepthL;
+	bool waterSurface = worldDepthL > waterDepthLUB + 1.0;
+	float fadeDepth = worldDepthL - waterDepthLUB;
 	
 	vec3 surfacePos = WorldPosFromDepth(waterDepthH, texCoord_in, renderSettings.invViewProjection);
 	
@@ -242,7 +243,7 @@ void main()
 	//Updates variables with the new texture coordinate
 	worldColor = texture(worldColorSampler, refractTexcoord).rgb;
 	targetPos = WorldPosFromDepth(worldDepthH, refractTexcoord, renderSettings.invViewProjection);
-	waterDepth3 = texture(waterDepthSampler, refractTexcoord).rgb;
+	waterDepth4 = texture(waterDepthSampler, refractTexcoord);
 #endif
 	
 	float waterTravelDist;
@@ -250,7 +251,7 @@ void main()
 		waterTravelDist = min(distance(renderSettings.cameraPosition, targetPos), distance(renderSettings.cameraPosition, surfacePos));
 	else
 		waterTravelDist = distance(targetPos, surfacePos);
-	waterTravelDist = min(waterTravelDist, waterDepth3.g);
+	waterTravelDist = min(waterTravelDist, waterDepth4.g);
 	
 	vec3 reflectColor = underwater ? DEFAULT_REFLECT_COLOR : calcReflection(surfacePos, dirToEye, normal);
 	

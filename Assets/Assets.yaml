@@ -58,6 +58,9 @@ assets:
     format: bc3
   - name: Textures/ForceFieldParticle.png
     format: bc4
+  - name: Textures/RampEdgeA.png
+    srgb: true
+    format: bc3
     
   - name: Textures/DefaultA.png
     srgb: true

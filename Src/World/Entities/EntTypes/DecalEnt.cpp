@@ -67,7 +67,7 @@ void DecalEnt::RenderSettings()
 
 void DecalEnt::CommonDraw(const EntDrawArgs& args)
 {
-	args.meshBatch->Add(DecalMaterial::GetMesh(), *m_material, GetDecalTransform(), 1);
+	args.meshBatch->Add(DecalMaterial::GetMesh(), *m_material, DecalMaterial::InstanceData(GetDecalTransform()), 1);
 }
 
 void DecalEnt::Serialize(std::ostream& stream) const

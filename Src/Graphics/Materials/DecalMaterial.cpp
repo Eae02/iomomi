@@ -19,6 +19,10 @@ static float decalVertexData[] =
 	1, 1
 };
 
+static_assert(offsetof(DecalMaterial::InstanceData, transform) == 0);
+static_assert(offsetof(DecalMaterial::InstanceData, textureMin) == sizeof(float) * 12);
+static_assert(offsetof(DecalMaterial::InstanceData, textureMax) == sizeof(float) * 14);
+
 static void OnInit()
 {
 	const eg::ShaderModuleAsset& vs = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Decal.vs.glsl");
@@ -30,11 +34,11 @@ static void OnInit()
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.numColorAttachments = 2;
-	pipelineCI.cullMode = eg::CullMode::Back;
+	pipelineCI.cullMode = eg::CullMode::None;
 	pipelineCI.topology = eg::Topology::TriangleStrip;
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.vertexBindings[0] = { sizeof(float) * 2, eg::InputRate::Vertex };
-	pipelineCI.vertexBindings[1] = { sizeof(glm::mat4), eg::InputRate::Instance };
+	pipelineCI.vertexBindings[1] = { sizeof(DecalMaterial::InstanceData), eg::InputRate::Instance };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 2, 0 };
 	pipelineCI.vertexAttributes[1] = { 1, eg::DataType::Float32, 4, 0 * sizeof(float) * 4 };
 	pipelineCI.vertexAttributes[2] = { 1, eg::DataType::Float32, 4, 1 * sizeof(float) * 4 };
@@ -209,4 +213,9 @@ eg::MeshBatch::Mesh DecalMaterial::GetMesh()
 	mesh.numElements = 4;
 	mesh.vertexBuffer = decalVertexBuffer;
 	return mesh;
+}
+
+bool DecalMaterial::CheckInstanceDataType(const std::type_info* instanceDataType) const
+{
+	return instanceDataType == &typeid(InstanceData);
 }

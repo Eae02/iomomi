@@ -1,0 +1,5 @@
+albedo: ../Textures/RampEdgeA.png
+normalMap: ../Textures/RampEdgeN.png
+roughness: 0.7
+opacity: 1.0
+inheritNormals: false

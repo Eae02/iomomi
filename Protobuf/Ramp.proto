@@ -11,4 +11,8 @@ message RampEntity {
 	float scaleX = 6;
 	float scaleY = 7;
 	float scaleZ = 8;
+	float texture_scale = 9;
+	bool no_edge_decals = 10;
+	bool stretch_texture_v = 11;
+	fixed32 material = 12;
 }

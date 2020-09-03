@@ -26,7 +26,14 @@ public:
 	
 	bool BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const override;
 	
-	virtual OrderRequirement GetOrderRequirement() const override { return OrderRequirement::OnlyUnordered; }
+	OrderRequirement GetOrderRequirement() const override { return OrderRequirement::OnlyUnordered; }
+	
+	bool CheckInstanceDataType(const std::type_info* instanceDataType) const override;
+	
+	const eg::Texture& AlbedoTexture() const { return *m_albedoTexture; }
+	glm::vec2 TextureScale() const { return m_textureScale; }
+	
+	static const StaticPropMaterial& GetFromWallMaterial(uint32_t index);
 	
 	static void InitializeForCommon3DVS(eg::GraphicsPipelineCreateInfo& pipelineCI);
 	
@@ -41,6 +48,7 @@ private:
 	const eg::Texture* m_albedoTexture;
 	const eg::Texture* m_normalMapTexture;
 	const eg::Texture* m_miscMapTexture;
+	uint32_t m_textureLayer = 0;
 	mutable eg::DescriptorSet m_descriptorSet;
 	mutable eg::DescriptorSet m_descriptorSetEditor;
 	mutable bool m_descriptorsInitialized = false;

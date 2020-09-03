@@ -77,3 +77,8 @@ bool LightStripMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs
 	
 	return true;
 }
+
+bool LightStripMaterial::CheckInstanceDataType(const std::type_info* instanceDataType) const
+{
+	return instanceDataType == &typeid(InstanceData);
+}

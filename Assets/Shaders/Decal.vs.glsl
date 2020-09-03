@@ -3,7 +3,8 @@
 #pragma variants VDefault
 
 layout(location=0) in vec2 position_in;
-layout(location=1) in mat4 worldTransform_in;
+layout(location=1) in mat3x4 worldTransform_in;
+layout(location=4) in vec4 texTransform_in;
 
 layout(location=0) out vec3 worldPos_out;
 layout(location=1) out vec2 texCoord_out;
@@ -22,10 +23,12 @@ layout(push_constant) uniform PC
 
 void main()
 {
-	texCoord_out = position_in * 0.5 + 0.5;
-	worldPos_out = (worldTransform_in * vec4(position_in.x, 0.01, position_in.y, 1)).xyz;
-	normal_out = worldTransform_in[1].xyz;
-	tangent_out = worldTransform_in[0].xyz;
+	mat4 worldTransform = transpose(mat4(worldTransform_in));
+	
+	texCoord_out = mix(texTransform_in.xy, texTransform_in.zw, position_in * 0.5 + 0.5);
+	worldPos_out = (worldTransform * vec4(position_in.x, 0.01, position_in.y, 1)).xyz;
+	normal_out = worldTransform[1].xyz;
+	tangent_out = worldTransform[0].xyz;
 	
 	gl_Position = renderSettings.viewProjection * vec4(worldPos_out, 1);
 }
