@@ -42,7 +42,7 @@ static void Initialize()
 		"Grating", &eg::GetAsset<StaticPropMaterial>("Materials/Platform.yaml")
 	);
 	rampMaterials.emplace_back(
-		"Grating 2", &eg::GetAsset<StaticPropMaterial>("Materials/Grating2.yaml"), 3
+		"Grating 2", &eg::GetAsset<StaticPropMaterial>("Materials/Grating2.yaml")
 	);
 	
 	for (uint32_t i = 1; i < MAX_WALL_MATERIALS; i++)
