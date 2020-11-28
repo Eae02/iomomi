@@ -13,7 +13,9 @@ using namespace std::filesystem;
 
 std::vector<Level> levels;
 
-static const std::string_view levelsOrder[] = 
+int64_t firstLevelIndex = -1;
+
+const std::vector<std::string_view> levelsOrder = 
 {
 	//PART 1
 	"intro_0",
@@ -66,7 +68,7 @@ static const std::string_view levelsOrder[] =
 	"water_6"
 };
 
-void UpgradeLevelsCommand(eg::Span<const std::string_view> args)
+void UpgradeLevelsCommand(eg::Span<const std::string_view> args, eg::console::Writer& writer)
 {
 	int numUpgraded = 0;
 	for (const Level& level : levels)
@@ -77,7 +79,7 @@ void UpgradeLevelsCommand(eg::Span<const std::string_view> args)
 		if (!inputStream)
 		{
 			std::string message = "Could not open " + path + "!";
-			eg::console::Write(eg::console::InfoColor, message);
+			writer.WriteLine(eg::console::InfoColor, message);
 		}
 		else
 		{
@@ -88,7 +90,7 @@ void UpgradeLevelsCommand(eg::Span<const std::string_view> args)
 				continue;
 			
 			std::string text = "Upgrading " + path + "...";
-			eg::console::Write(eg::console::InfoColor, text);
+			writer.WriteLine(eg::console::InfoColor, text);
 			
 			std::ofstream outStream(path, std::ios::binary);
 			world->Save(outStream);
@@ -98,8 +100,23 @@ void UpgradeLevelsCommand(eg::Span<const std::string_view> args)
 	}
 	
 	std::string endMessage = "Upgraded " + std::to_string(numUpgraded) + " level(s)";
-	eg::console::Write(eg::console::InfoColor, endMessage);
+	writer.WriteLine(eg::console::InfoColor, endMessage);
 }
+
+void MarkLevelCompleted(Level& level)
+{
+	if (level.status != LevelStatus::Completed)
+	{
+		level.status = LevelStatus::Completed;
+		if (level.nextLevelIndex != -1 && levels[level.nextLevelIndex].status == LevelStatus::Locked)
+		{
+			levels[level.nextLevelIndex].status = LevelStatus::Unlocked;
+		}
+		SaveProgress();
+	}
+}
+
+static std::string progressPath;
 
 void InitLevels()
 {
@@ -128,15 +145,60 @@ void InitLevels()
 		return a.name < b.name;
 	});
 	
-	int64_t prevLevelIndex = FindLevel(levelsOrder[0]);
-	for (size_t i = 1; i < std::size(levelsOrder); i++)
+	//Sets the next level index
+	int64_t levelIndex = FindLevel(levelsOrder[0]);
+	for (size_t i = 0; i < std::size(levelsOrder); i++)
 	{
-		int64_t thisLevelIndex = FindLevel(levelsOrder[i]);
-		if (thisLevelIndex != -1 && prevLevelIndex != -1)
+		int64_t nextLevelIndex = i + 1 == std::size(levelsOrder) ? -1 : FindLevel(levelsOrder[i + 1]);
+		if (levelIndex == -1)
 		{
-			levels[prevLevelIndex].nextLevelIndex = thisLevelIndex;
+			eg::Log(eg::LogLevel::Error, "lvl", "Builtin level {0} not found", levelsOrder[i]);
 		}
-		prevLevelIndex = thisLevelIndex;
+		else
+		{
+			levels[levelIndex].status = i == 0 ? LevelStatus::Unlocked : LevelStatus::Locked;
+			levels[levelIndex].nextLevelIndex = nextLevelIndex;
+			levels[levelIndex].isExtra = false;
+		}
+		levelIndex = nextLevelIndex;
+	}
+	
+	//Loads the progress file if it exists
+	progressPath = eg::AppDataPath() + "EaeGravity/Progress.txt";
+	std::ifstream progressFileStream(progressPath);
+	if (progressFileStream)
+	{
+		std::string line;
+		while (std::getline(progressFileStream, line))
+		{
+			int64_t index = FindLevel(eg::TrimString(line));
+			if (index != -1)
+			{
+				levels[index].status = LevelStatus::Completed;
+				if (levels[index].nextLevelIndex != -1 && levels[levels[index].nextLevelIndex].status == LevelStatus::Locked)
+				{
+					levels[levels[index].nextLevelIndex].status = LevelStatus::Unlocked;
+				}
+			}
+		}
+	}
+}
+
+void SaveProgress()
+{
+	std::ofstream progressFileStream(progressPath);
+	if (!progressFileStream)
+	{
+		eg::Log(eg::LogLevel::Error, "io", "Failed to save progress!");
+		return;
+	}
+	
+	for (const Level& level : levels)
+	{
+		if (level.status == LevelStatus::Completed)
+		{
+			progressFileStream << level.name << "\n";
+		}
 	}
 }
 

@@ -1,5 +1,7 @@
 #include "PausedMenu.hpp"
 #include "OptionsMenu.hpp"
+#include "../GameState.hpp"
+#include "../MainMenuGameState.hpp"
 
 constexpr float BUTTON_W = 200;
 
@@ -7,10 +9,17 @@ PausedMenu::PausedMenu()
 	: m_widgetList(BUTTON_W)
 {
 	m_widgetList.AddWidget(Button("Resume", [&] { isPaused = false; }));
-	m_widgetList.AddWidget(Button("Restart Level", [&] { shouldRestartLevel = true; isPaused = false; }));
-	m_widgetList.AddWidget(Button("Return to Hub", nullptr));
+	m_widgetList.AddWidget(Button("Restart Level", [&]
+	{
+		shouldRestartLevel = true;
+		isPaused = false;
+	}));
 	m_widgetList.AddWidget(Button("Options", [&] { optionsMenuOpen = true; }));
-	m_widgetList.AddWidget(Button("Main Menu", nullptr));
+	m_widgetList.AddWidget(Button("Main Menu", [&]
+	{
+		mainMenuGameState->GoToMainScreen();
+		SetCurrentGS(mainMenuGameState);
+	}));
 	
 	m_widgetList.relativeOffset = glm::vec2(-0.5f, 0.5f);
 }
@@ -82,5 +91,7 @@ void PausedMenu::Draw(eg::SpriteBatch& spriteBatch) const
 	}
 	
 	if (ComboBox::current)
+	{
 		ComboBox::current->DrawOverlay(spriteBatch);
+	}
 }

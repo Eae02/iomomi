@@ -137,8 +137,8 @@ void PhysicsEngine::ApplyMovement(PhysicsObject& object, float dt, const Collisi
 		
 		if (moveLen > MAX_MOVE_LEN)
 		{
-			moveLen = MAX_MOVE_LEN;
 			object.move *= MAX_MOVE_LEN / moveLen;
+			moveLen = MAX_MOVE_LEN;
 		}
 		
 		didCollide = false;

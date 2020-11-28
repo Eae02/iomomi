@@ -7,7 +7,8 @@ class PostProcessor
 public:
 	PostProcessor();
 	
-	void Render(eg::TextureRef input, const eg::BloomRenderer::RenderTarget* bloomRenderTarget);
+	void Render(eg::TextureRef input, const eg::BloomRenderer::RenderTarget* bloomRenderTarget,
+		eg::FramebufferHandle output = nullptr);
 	
 private:
 	void InitPipeline();

@@ -62,6 +62,8 @@ void MainGameState::LoadWorld(std::istream& stream, int64_t levelIndex, const En
 	m_player.Reset();
 	m_gameTime = 0;
 	m_currentLevelIndex = levelIndex;
+	m_pausedMenu.isPaused = false;
+	m_pausedMenu.shouldRestartLevel = false;
 	
 	//Moves the player to the entrance entity for this level
 	newWorld->entManager.ForEachOfType<EntranceExitEnt>([&] (EntranceExitEnt& entity)
@@ -174,8 +176,10 @@ void MainGameState::RunFrame(float dt)
 				currentExit = &entity;
 		});
 		
+		//Moves to the next level
 		if (currentExit != nullptr && m_currentLevelIndex != -1 && levels[m_currentLevelIndex].nextLevelIndex != -1)
 		{
+			MarkLevelCompleted(levels[m_currentLevelIndex]);
 			int64_t nextLevelIndex = levels[m_currentLevelIndex].nextLevelIndex;
 			eg::Log(eg::LogLevel::Info, "lvl", "Going to next level '{0}'", levels[nextLevelIndex].name);
 			std::string path = GetLevelPath(levels[nextLevelIndex].name);

@@ -17,6 +17,7 @@ EditorIcon::EditorIcon(const glm::vec3& worldPos, std::function<void()> callback
 	
 	m_rectangle = eg::Rectangle::CreateCentered(screenPos, ICON_SIZE, ICON_SIZE);
 	m_depth = sp3.z;
+	m_behindScreen = sp4.w < 0;
 }
 
 bool EditorState::IsEntitySelected(const Ent& entity) const

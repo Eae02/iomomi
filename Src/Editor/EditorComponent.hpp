@@ -45,6 +45,7 @@ public:
 private:
 	eg::Rectangle m_rectangle;
 	float m_depth;
+	bool m_behindScreen;
 	std::function<void()> m_callback;
 };
 

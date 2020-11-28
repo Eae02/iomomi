@@ -6,6 +6,7 @@
 #include "Settings.hpp"
 #include "Graphics/GraphicsCommon.hpp"
 #include "Graphics/WallShader.hpp"
+#include "MainMenuGameState.hpp"
 
 #include <fstream>
 
@@ -13,15 +14,38 @@ Game::Game()
 {
 	editor = new Editor(m_renderCtx);
 	mainGameState = new MainGameState(m_renderCtx);
+	mainMenuGameState = new MainMenuGameState();
 	
-#ifndef NDEBUG
-	SetCurrentGS(editor);
-#endif
+	SetCurrentGS(mainMenuGameState);
 	
 	eg::console::AddCommand("ed", 0, [&] (eg::Span<const std::string_view> args, eg::console::Writer& writer)
 	{
 		SetCurrentGS(editor);
 		eg::console::Hide();
+	});
+	
+	eg::console::AddCommand("mm", 0, [&] (eg::Span<const std::string_view> args, eg::console::Writer& writer)
+	{
+		mainMenuGameState->GoToMainScreen();
+		SetCurrentGS(mainMenuGameState);
+		eg::console::Hide();
+	});
+	
+	eg::console::AddCommand("unlock", 1, [&] (eg::Span<const std::string_view> args, eg::console::Writer& writer)
+	{
+		for (Level& level : levels)
+		{
+			if ((level.name == args[0] || args[0] == "all") && level.status == LevelStatus::Locked)
+				level.status = LevelStatus::Unlocked;
+		}
+		SaveProgress();
+	});
+	
+	eg::console::SetCompletionProvider("unlock", 0, [] (eg::Span<const std::string_view> args, eg::console::CompletionsList& list)
+	{
+		for (const Level& level : levels)
+			list.Add(level.name);
+		list.Add("all");
 	});
 	
 	eg::console::AddCommand("play", 1, [this] (eg::Span<const std::string_view> args, eg::console::Writer& writer)
@@ -56,6 +80,7 @@ Game::~Game()
 {
 	delete editor;
 	delete mainGameState;
+	delete mainMenuGameState;
 	delete RenderSettings::instance;
 }
 

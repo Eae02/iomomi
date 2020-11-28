@@ -12,6 +12,8 @@ public:
 	void Update(float dt, bool allowInteraction);
 	void Draw(eg::SpriteBatch& spriteBatch) const;
 	
+	static void DrawBackground(eg::SpriteBatch& spriteBatch, const eg::Rectangle& rectangle, float highlightIntensity);
+	
 	std::string text;
 	
 	glm::vec2 position;
@@ -25,4 +27,5 @@ public:
 	
 private:
 	float m_highlightIntensity = 0;
+	uint64_t m_lastUpdateFrameIdx = 0;
 };

@@ -231,6 +231,7 @@ void Editor::RunFrame(float dt)
 		if (comp->CollectIcons(editorState, m_icons))
 			break;
 	}
+	m_icons.erase(std::remove_if(m_icons.begin(), m_icons.end(), [&] (const EditorIcon& icon) { return icon.m_behindScreen; }), m_icons.end());
 	std::sort(m_icons.begin(), m_icons.end(), [&] (const EditorIcon& a, const EditorIcon& b)
 	{
 		return a.m_depth > b.m_depth;

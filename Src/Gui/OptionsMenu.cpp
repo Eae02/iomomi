@@ -42,7 +42,11 @@ void InitOptionsMenu()
 	optWidgetList.AddWidget(SubtitleWidget("Input"));
 	optWidgetList.AddWidget(InitSettingsCB(&Settings::lookInvertY, "Look Invert Y:"));
 	
-	optWidgetList.AddWidget(Button("Back", [] { optionsMenuOpen = false; }));
+	optWidgetList.AddWidget(Button("Back", []
+	{
+		SaveSettings();
+		optionsMenuOpen = false;
+	}));
 	
 	optWidgetList.relativeOffset = glm::vec2(-0.5f, 0.5f);
 }

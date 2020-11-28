@@ -3,6 +3,10 @@
 
 void Button::Update(float dt, bool allowInteraction)
 {
+	if (eg::FrameIdx() - m_lastUpdateFrameIdx > 1)
+		m_highlightIntensity = 0;
+	m_lastUpdateFrameIdx = eg::FrameIdx();
+	
 	if (std::abs(eg::CursorDeltaX()) > 2 || std::abs(eg::CursorDeltaY()) > 2)
 		hasKeyboardFocus = false;
 	
@@ -26,20 +30,27 @@ void Button::Update(float dt, bool allowInteraction)
 void Button::Draw(eg::SpriteBatch& spriteBatch) const
 {
 	float inflate = m_highlightIntensity * style::ButtonInflatePercent;
-	float FONT_SCALE = 0.75f * (1 + inflate);
+	float fontScale = 0.75f * (1 + inflate);
 	
 	eg::Rectangle rect(position, width, height);
 	
-	glm::vec2 inflateSize = inflate * glm::vec2(width, height);
+	DrawBackground(spriteBatch, rect, m_highlightIntensity);
+	
+	glm::vec2 extents = glm::vec2(style::UIFont->GetTextExtents(text).x, style::UIFont->Size()) * fontScale;
+	
+	spriteBatch.DrawText(*style::UIFont, text, rect.Center() - extents / 2.0f, eg::ColorLin(eg::Color::White),
+	                     fontScale, nullptr, eg::TextFlags::NoPixelAlign);
+}
+
+void Button::DrawBackground(eg::SpriteBatch& spriteBatch, const eg::Rectangle& rect, float highlightIntensity)
+{
+	float inflate = highlightIntensity * style::ButtonInflatePercent;
+	
+	glm::vec2 inflateSize = inflate * rect.Size();
 	eg::Rectangle inflatedRect(
 		rect.x - inflateSize.x, rect.y - inflateSize.y, 
 		rect.w + inflateSize.x * 2, rect.h + inflateSize.y * 2);
 	
-	eg::ColorLin backColor = eg::ColorLin::Mix(style::ButtonColorDefault, style::ButtonColorHover, m_highlightIntensity);
+	eg::ColorLin backColor = eg::ColorLin::Mix(style::ButtonColorDefault, style::ButtonColorHover, highlightIntensity);
 	spriteBatch.DrawRect(inflatedRect, backColor);
-	
-	glm::vec2 extents = glm::vec2(style::UIFont->GetTextExtents(text).x, style::UIFont->Size()) * FONT_SCALE;
-	
-	spriteBatch.DrawText(*style::UIFont, text, inflatedRect.Center() - extents / 2.0f, eg::ColorLin(eg::Color::White),
-		FONT_SCALE, nullptr, eg::TextFlags::NoPixelAlign);
 }

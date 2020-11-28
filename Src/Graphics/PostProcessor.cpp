@@ -42,7 +42,7 @@ void PostProcessor::InitPipeline()
 	m_fxaaWasEnabled = settings.enableFXAA;
 }
 
-void PostProcessor::Render(eg::TextureRef input, const eg::BloomRenderer::RenderTarget* bloomRenderTarget)
+void PostProcessor::Render(eg::TextureRef input, const eg::BloomRenderer::RenderTarget* bloomRenderTarget, eg::FramebufferHandle output)
 {
 	if (m_bloomWasEnabled != settings.BloomEnabled() || m_fxaaWasEnabled != settings.enableFXAA)
 	{
@@ -50,7 +50,7 @@ void PostProcessor::Render(eg::TextureRef input, const eg::BloomRenderer::Render
 	}
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = nullptr;
+	rpBeginInfo.framebuffer = output;
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
 	
 	eg::DC.BeginRenderPass(rpBeginInfo);
