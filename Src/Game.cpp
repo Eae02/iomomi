@@ -38,7 +38,6 @@ Game::Game()
 			if ((level.name == args[0] || args[0] == "all") && level.status == LevelStatus::Locked)
 				level.status = LevelStatus::Unlocked;
 		}
-		SaveProgress();
 	});
 	
 	eg::console::SetCompletionProvider("unlock", 0, [] (eg::Span<const std::string_view> args, eg::console::CompletionsList& list)
