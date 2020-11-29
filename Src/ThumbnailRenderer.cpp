@@ -134,10 +134,11 @@ void EndUpdateLevelThumbnails(LevelThumbnailUpdate* update)
 		
 		thumbnail.downloadBuffer.Invalidate(0, THUMBNAIL_BYTES);
 		char* data = static_cast<char*>(thumbnail.downloadBuffer.Map(0, THUMBNAIL_BYTES));
-		if (!eg::WriteImageToStream(thumbnailStream, eg::WriteImageFormat::PNG, LEVEL_THUMBNAIL_RES_X, LEVEL_THUMBNAIL_RES_Y, 4, {data, THUMBNAIL_BYTES}))
+		if (!eg::WriteImageToStream(thumbnailStream, eg::WriteImageFormat::JPG, LEVEL_THUMBNAIL_RES_X, LEVEL_THUMBNAIL_RES_Y, 4, {data, THUMBNAIL_BYTES}))
 		{
 			continue;
 		}
+		thumbnailStream.close();
 		
 		LoadLevelThumbnail(*thumbnail.level);
 	}

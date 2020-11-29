@@ -86,6 +86,7 @@ void MainMenuGameState::DrawLevelSelect(float dt)
 	constexpr int SPACING_X = 15;
 	constexpr int SPACING_Y = 30;
 	constexpr int MARGIN_X = 100;
+	constexpr int INFLATE_PIXELS_Y = LEVEL_BOX_H * style::ButtonInflatePercent;
 	
 	int boxStartY = eg::CurrentResolutionY() - 200;
 	int boxEndY = 100;
@@ -97,7 +98,7 @@ void MainMenuGameState::DrawLevelSelect(float dt)
 	const eg::Texture& lockTexture = eg::GetAsset<eg::Texture>("Textures/Lock.png");
 	
 	//Draws the level boxes
-	eg::SpriteBatch::overlay.PushScissor(MARGIN_X, boxEndY, eg::CurrentResolutionX() - MARGIN_X * 2, visibleHeight);
+	eg::SpriteBatch::overlay.PushScissor(0, boxEndY - INFLATE_PIXELS_Y, eg::CurrentResolutionX(), visibleHeight + INFLATE_PIXELS_Y * 2);
 	for (size_t i = 0; i < levelIds->size(); i++)
 	{
 		const Level& level = levels[levelIds->at(i)];
