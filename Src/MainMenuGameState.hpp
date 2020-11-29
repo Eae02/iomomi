@@ -30,7 +30,8 @@ private:
 	WidgetList m_mainWidgetList;
 	
 	std::vector<float> m_levelHighlightIntensity;
-	int m_levelSelectScroll = 0;
+	float m_levelSelectScroll = 0;
+	float m_levelSelectScrollVel = 0;
 	bool m_inExtraLevelsTab = false;
 	
 	std::vector<int64_t> m_mainLevelIds;

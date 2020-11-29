@@ -42,7 +42,8 @@ void PostProcessor::InitPipeline()
 	m_fxaaWasEnabled = settings.enableFXAA;
 }
 
-void PostProcessor::Render(eg::TextureRef input, const eg::BloomRenderer::RenderTarget* bloomRenderTarget, eg::FramebufferHandle output)
+void PostProcessor::Render(eg::TextureRef input, const eg::BloomRenderer::RenderTarget* bloomRenderTarget,
+	eg::FramebufferHandle output, uint32_t outputResX, uint32_t outputResY)
 {
 	if (m_bloomWasEnabled != settings.BloomEnabled() || m_fxaaWasEnabled != settings.enableFXAA)
 	{
@@ -56,8 +57,8 @@ void PostProcessor::Render(eg::TextureRef input, const eg::BloomRenderer::Render
 	eg::DC.BeginRenderPass(rpBeginInfo);
 	
 	const float pc[] = {
-		1.0f / eg::CurrentResolutionX(),
-		1.0f / eg::CurrentResolutionY(),
+		1.0f / outputResX,
+		1.0f / outputResY,
 		settings.exposure,
 		*bloomIntensity
 	};

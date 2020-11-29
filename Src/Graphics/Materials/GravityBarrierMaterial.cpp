@@ -73,7 +73,7 @@ bool GravityBarrierMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* draw
 		cmdCtx.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 0, 1);
 		cmdCtx.BindUniformBuffer(m_barrierDataBuffer, 0, 2, 0, sizeof(BarrierBufferData));
 		cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 0, 3);
-		cmdCtx.BindTexture(GetRenderTexture(RenderTex::BlurredGlassDepth), 0, 4);
+		cmdCtx.BindTexture(mDrawArgs->rtManager->GetRenderTexture(RenderTex::BlurredGlassDepth), 0, 4);
 		return true;
 	}
 	else if (mDrawArgs->drawMode == MeshDrawMode::TransparentFinal)

@@ -109,6 +109,9 @@ void Editor::RunFrame(float dt)
 					if (std::unique_ptr<World> world = World::Load(stream, true))
 					{
 						m_world = std::move(world);
+						m_thumbnailCamera.SetView(m_world->thumbnailCameraPos,
+								m_world->thumbnailCameraPos + m_world->thumbnailCameraDir);
+						m_isUpdatingThumbnailView = false;
 						m_levelName = level.name;
 						InitWorld();
 					}
@@ -121,10 +124,49 @@ void Editor::RunFrame(float dt)
 		return;
 	}
 	
+	if (m_world != nullptr && m_isUpdatingThumbnailView)
+	{
+		if (eg::IsButtonDown(eg::Button::Escape) || eg::IsButtonDown(eg::Button::Space))
+		{
+			if (eg::IsButtonDown(eg::Button::Space))
+			{
+				m_world->thumbnailCameraPos = m_thumbnailCamera.Position();
+				m_world->thumbnailCameraDir = m_thumbnailCamera.Forward();
+			}
+			m_isUpdatingThumbnailView = false;
+		}
+		
+		if (!eg::console::IsShown())
+		{
+			eg::SetRelativeMouseMode(true);
+			m_thumbnailCamera.Update(dt);
+		}
+		
+		RenderSettings::instance->viewProjection = m_projection.Matrix() * m_thumbnailCamera.ViewMatrix();
+		RenderSettings::instance->invViewProjection = m_thumbnailCamera.InverseViewMatrix() * m_projection.InverseMatrix();
+		RenderSettings::instance->cameraPosition = m_thumbnailCamera.Position();
+		RenderSettings::instance->UpdateBuffer();
+		
+		std::string_view label = "Press space to set view\nPress escape to cancel";
+		eg::Rectangle labelRect(10, eg::CurrentResolutionY() - 60, 210, 50);
+		eg::SpriteBatch::overlay.DrawRect(labelRect, eg::ColorLin(0, 0, 0, 0.8f));
+		eg::SpriteBatch::overlay.DrawTextMultiline(eg::SpriteFont::DevFont(), label,
+			glm::vec2(labelRect.x + 5, labelRect.MaxY() - 5 - eg::SpriteFont::DevFont().LineHeight()),
+			eg::ColorLin(eg::ColorLin::White));
+		
+		m_icons.clear();
+		DrawWorld();
+		return;
+	}
+	
+	eg::SetRelativeMouseMode(false);
+	
 	DrawMenuBar();
 	
 	if (m_world == nullptr)
 		return;
+	
+	RenderSettings::instance->gameTime += dt;
 	
 	if (m_levelSettingsOpen)
 	{
@@ -162,7 +204,6 @@ void Editor::RunFrame(float dt)
 	RenderSettings::instance->viewProjection = m_projection.Matrix() * viewMatrix;
 	RenderSettings::instance->invViewProjection = inverseViewMatrix * m_projection.InverseMatrix();
 	RenderSettings::instance->cameraPosition = glm::vec3(inverseViewMatrix[3]);
-	RenderSettings::instance->gameTime += dt;
 	RenderSettings::instance->UpdateBuffer();
 	
 	editorState.viewRay = eg::Ray::UnprojectScreen(RenderSettings::instance->invViewProjection, eg::CursorPos());
@@ -231,6 +272,7 @@ void Editor::RunFrame(float dt)
 		if (comp->CollectIcons(editorState, m_icons))
 			break;
 	}
+	m_icons.emplace_back(m_world->thumbnailCameraPos, nullptr).iconIndex = 11;
 	m_icons.erase(std::remove_if(m_icons.begin(), m_icons.end(), [&] (const EditorIcon& icon) { return icon.m_behindScreen; }), m_icons.end());
 	std::sort(m_icons.begin(), m_icons.end(), [&] (const EditorIcon& a, const EditorIcon& b)
 	{
@@ -253,7 +295,8 @@ void Editor::RunFrame(float dt)
 		{
 			if (m_icons[m_hoveredIcon].shouldClearSelection && shouldClearSelected)
 				m_selectedEntities.clear();
-			m_icons[m_hoveredIcon].m_callback();
+			if (m_icons[m_hoveredIcon].m_callback)
+				m_icons[m_hoveredIcon].m_callback();
 		}
 		else if (shouldClearSelected)
 			m_selectedEntities.clear();
@@ -354,6 +397,7 @@ void Editor::DrawWorld()
 	MeshDrawArgs mDrawArgs;
 	mDrawArgs.waterDepthTexture = WaterRenderer::GetDummyDepthTexture();
 	mDrawArgs.drawMode = MeshDrawMode::Editor;
+	mDrawArgs.rtManager = nullptr;
 	m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
 	
 	m_primRenderer.Draw();
@@ -412,9 +456,14 @@ void Editor::DrawMenuBar()
 		
 		if (ImGui::BeginMenu("View"))
 		{
-			if (ImGui::MenuItem("Level Settings"))
+			if (ImGui::MenuItem("Level Settings", nullptr, false, m_world != nullptr))
 			{
 				m_levelSettingsOpen = true;
+			}
+			
+			if (ImGui::MenuItem("Update Thumbnail View", nullptr, false, m_world != nullptr))
+			{
+				m_isUpdatingThumbnailView = true;
 			}
 			
 			ImGui::EndMenu();

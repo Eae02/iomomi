@@ -40,6 +40,8 @@ assets:
   
   #Textures:
   - name: Textures/EntityIcons.png
+  - name: Textures/ThumbnailNA.png
+  - name: Textures/Lock.png
   - name: Textures/NoDraw.png
     mipShift: *MipShift
     srgb: true

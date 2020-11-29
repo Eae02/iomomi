@@ -11,8 +11,8 @@ public:
 	
 	void RenderBasic(eg::BufferRef positionsBuffer, uint32_t numParticles) const;
 	
-	void RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParticles);
-	void RenderPost();
+	void RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParticles, class RenderTexManager& rtManager);
+	void RenderPost(class RenderTexManager& rtManager);
 	
 	static eg::TextureRef GetDummyDepthTexture();
 	

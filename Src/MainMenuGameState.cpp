@@ -93,6 +93,9 @@ void MainMenuGameState::DrawLevelSelect(float dt)
 	int numPerRow = (eg::CurrentResolutionX() - MARGIN_X * 2 + SPACING_X) / (LEVEL_BOX_W + SPACING_X);
 	bool cursorInLevelsArea = eg::Rectangle(MARGIN_X, boxEndY, eg::CurrentResolutionX() - MARGIN_X * 2, visibleHeight).Contains(flippedCursorPos);
 	
+	const eg::Texture& thumbnailNaTexture = eg::GetAsset<eg::Texture>("Textures/ThumbnailNA.png");
+	const eg::Texture& lockTexture = eg::GetAsset<eg::Texture>("Textures/Lock.png");
+	
 	//Draws the level boxes
 	eg::SpriteBatch::overlay.PushScissor(MARGIN_X, boxEndY, eg::CurrentResolutionX() - MARGIN_X * 2, visibleHeight);
 	for (size_t i = 0; i < levelIds->size(); i++)
@@ -120,7 +123,27 @@ void MainMenuGameState::DrawLevelSelect(float dt)
 		else
 			highlightIntensity = std::max(highlightIntensity - dt / style::HoverAnimationTime, 0.0f);
 		
-		Button::DrawBackground(eg::SpriteBatch::overlay, rect, highlightIntensity);
+		const eg::Texture* texture = &thumbnailNaTexture;
+		if (level.thumbnail.handle != nullptr)
+			texture = &level.thumbnail;
+		
+		float inflate = level.status == LevelStatus::Locked ? 0 : highlightIntensity * style::ButtonInflatePercent;
+		glm::vec2 inflateSize = inflate * rect.Size();
+		eg::Rectangle inflatedRect(
+			rect.x - inflateSize.x, rect.y - inflateSize.y, 
+			rect.w + inflateSize.x * 2, rect.h + inflateSize.y * 2);
+		
+		float shade = glm::mix(0.8f, 1.0f, highlightIntensity);
+		if (level.status == LevelStatus::Locked)
+			shade *= 0.4f;
+		
+		eg::SpriteBatch::overlay.Draw(*texture, inflatedRect, eg::ColorLin(1, 1, 1, 1).ScaleRGB(shade), eg::SpriteFlags::None);
+		
+		if (level.status == LevelStatus::Locked)
+		{
+			eg::Rectangle lockTextureRect = eg::Rectangle::CreateCentered(inflatedRect.Center(), lockTexture.Width(), lockTexture.Height());
+			eg::SpriteBatch::overlay.Draw(lockTexture, lockTextureRect, eg::ColorLin(1, 1, 1, 1), eg::SpriteFlags::None);
+		}
 	}
 	eg::SpriteBatch::overlay.PopScissor();
 	
@@ -128,8 +151,11 @@ void MainMenuGameState::DrawLevelSelect(float dt)
 	int totalRows = levelIds->size() / numPerRow + 1;
 	int totalHeight = totalRows * LEVEL_BOX_H + (totalRows - 1) * SPACING_Y;
 	int maxScroll = std::max(totalHeight - visibleHeight, 0);
-	m_levelSelectScroll -= (eg::InputState::Current().scrollY - eg::InputState::Previous().scrollY) * 40;
-	m_levelSelectScroll = glm::clamp(m_levelSelectScroll, 0, maxScroll);
+	constexpr float MAX_SCROLL_VEL = 1000;
+	m_levelSelectScrollVel *= 1 - std::min(dt * 10.0f, 1.0f);
+	m_levelSelectScrollVel += (eg::InputState::Previous().scrollY - eg::InputState::Current().scrollY) * MAX_SCROLL_VEL * 0.5f;
+	m_levelSelectScrollVel = glm::clamp(m_levelSelectScrollVel, -MAX_SCROLL_VEL, MAX_SCROLL_VEL);
+	m_levelSelectScroll = glm::clamp(m_levelSelectScroll + m_levelSelectScrollVel * dt, 0.0f, (float)maxScroll);
 	
 	//Draws the scroll bar
 	if (maxScroll != 0)
@@ -139,7 +165,7 @@ void MainMenuGameState::DrawLevelSelect(float dt)
 		eg::SpriteBatch::overlay.DrawRect(scrollAreaRect, style::ButtonColorDefault);
 		
 		float barHeight = scrollAreaRect.h * (float)visibleHeight / (float)totalHeight;
-		float barYOffset = ((float)m_levelSelectScroll / (float)maxScroll) * (scrollAreaRect.h - barHeight);
+		float barYOffset = (m_levelSelectScroll / (float)maxScroll) * (scrollAreaRect.h - barHeight);
 		eg::Rectangle scrollBarRect(scrollAreaRect.x + 1, scrollAreaRect.y + scrollAreaRect.h - barYOffset - barHeight, SCROLL_BAR_W - 2, barHeight);
 		eg::SpriteBatch::overlay.DrawRect(scrollBarRect, style::ButtonColorHover);
 	}

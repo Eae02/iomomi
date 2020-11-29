@@ -18,9 +18,12 @@ World::World()
 	m_voxelVertexBuffer.flags = eg::BufferFlags::VertexBuffer | eg::BufferFlags::CopyDst;
 	m_voxelIndexBuffer.flags = eg::BufferFlags::IndexBuffer | eg::BufferFlags::CopyDst;
 	m_borderVertexBuffer.flags = eg::BufferFlags::VertexBuffer | eg::BufferFlags::CopyDst;
+	
+	thumbnailCameraPos = glm::vec3(0, 0, 0);
+	thumbnailCameraDir = glm::vec3(0, 0, 1);
 }
 
-static const uint32_t CURRENT_VERSION = 7;
+static const uint32_t CURRENT_VERSION = 8;
 static char MAGIC[] = { (char)0xFF, 'G', 'W', 'D' };
 
 std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
@@ -40,7 +43,7 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 	{
 		world->LoadFormatSub5(stream, version, isEditor);
 	}
-	else if (version >= 5 && version <= 7)
+	else if (version >= 5)
 	{
 		world->LoadFormatSup5(stream, version, isEditor);
 	}
@@ -48,6 +51,18 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 	{
 		eg::Log(eg::LogLevel::Error, "wd", "Unsupported world format");
 		return nullptr;
+	}
+	
+	if (version < 8)
+	{
+		world->entManager.ForEachOfType<EntranceExitEnt>([&] (EntranceExitEnt& ent)
+		{
+			if (ent.m_type == EntranceExitEnt::Type::Entrance)
+			{
+				world->thumbnailCameraDir = glm::vec3(DirectionVector(ent.GetFacingDirection()));
+				world->thumbnailCameraPos = ent.GetPosition() + world->thumbnailCameraDir * 0.1f;
+			}
+		});
 	}
 	
 	ActivatorComp::Initialize(world->entManager);
@@ -159,6 +174,16 @@ void World::LoadFormatSup5(std::istream& stream, uint32_t version, bool isEditor
 		voxel.hasGravityCorner = std::bitset<12>(data.hasGravityCorner);
 	}
 	
+	if (version >= 8)
+	{
+		thumbnailCameraPos.x = eg::BinRead<float>(stream);
+		thumbnailCameraPos.y = eg::BinRead<float>(stream);
+		thumbnailCameraPos.z = eg::BinRead<float>(stream);
+		thumbnailCameraDir.x = eg::BinRead<float>(stream);
+		thumbnailCameraDir.y = eg::BinRead<float>(stream);
+		thumbnailCameraDir.z = eg::BinRead<float>(stream);
+		thumbnailCameraDir = glm::normalize(thumbnailCameraDir);
+	}
 	if (version >= 7)
 	{
 		extraWaterParticles = eg::BinRead<uint32_t>(stream);
@@ -189,6 +214,13 @@ void World::Save(std::ostream& outStream) const
 	}
 	
 	eg::WriteCompressedSection(outStream, voxelData.data(), voxelData.size() * sizeof(VoxelData));
+	
+	eg::BinWrite<float>(outStream, thumbnailCameraPos.x);
+	eg::BinWrite<float>(outStream, thumbnailCameraPos.y);
+	eg::BinWrite<float>(outStream, thumbnailCameraPos.z);
+	eg::BinWrite<float>(outStream, thumbnailCameraDir.x);
+	eg::BinWrite<float>(outStream, thumbnailCameraDir.y);
+	eg::BinWrite<float>(outStream, thumbnailCameraDir.z);
 	
 	eg::BinWrite<uint32_t>(outStream, extraWaterParticles);
 	eg::BinWrite<uint8_t>(outStream, playerHasGravityGun);

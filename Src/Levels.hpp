@@ -28,6 +28,9 @@ void InitLevels();
 
 void SaveProgress();
 
+void LoadLevelThumbnail(Level& level);
+
 std::string GetLevelPath(std::string_view name);
+std::string GetLevelThumbnailPath(std::string_view name);
 
 int64_t FindLevel(std::string_view name);

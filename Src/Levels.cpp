@@ -7,6 +7,7 @@ using namespace std::experimental::filesystem;
 #else
 #include <filesystem>
 #include <fstream>
+#include <EGame/Graphics/ImageLoader.hpp>
 
 using namespace std::filesystem;
 #endif
@@ -68,6 +69,16 @@ const std::vector<std::string_view> levelsOrder =
 	"water_6"
 };
 
+static void OnShutdown()
+{
+	for (Level& level : levels)
+	{
+		level.thumbnail.Destroy();
+	}
+}
+
+EG_ON_SHUTDOWN(OnShutdown)
+
 void UpgradeLevelsCommand(eg::Span<const std::string_view> args, eg::console::Writer& writer)
 {
 	int numUpgraded = 0;
@@ -128,6 +139,9 @@ void InitLevels()
 		eg::ReleasePanic("Missing directory \"levels\".");
 	}
 	
+	std::string thumbnailsPath = levelsPath + "/img";
+	eg::CreateDirectory(thumbnailsPath.c_str());
+	
 	levels.clear();
 	
 	//Adds all gwd files in the levels directory to the levels list
@@ -161,6 +175,12 @@ void InitLevels()
 			levels[levelIndex].isExtra = false;
 		}
 		levelIndex = nextLevelIndex;
+	}
+	
+	//Loads thumbnails
+	for (Level& level : levels)
+	{
+		LoadLevelThumbnail(level);
 	}
 	
 	//Loads the progress file if it exists
@@ -217,4 +237,50 @@ int64_t FindLevel(std::string_view name)
 std::string GetLevelPath(std::string_view name)
 {
 	return eg::Concat({ eg::ExeDirPath(), "/levels/", name, ".gwd" });
+}
+
+std::string GetLevelThumbnailPath(std::string_view name)
+{
+	return eg::Concat({ eg::ExeDirPath(), "/levels/img/", name, ".jpg" });
+}
+
+void LoadLevelThumbnail(Level& level)
+{
+	std::string path = GetLevelThumbnailPath(level.name);
+	std::ifstream stream(path, std::ios::binary);
+	if (!stream)
+		return;
+	eg::ImageLoader loader(stream);
+	auto data = loader.Load(4);
+	stream.close();
+	if (!data)
+		return;
+	
+	eg::SamplerDescription samplerDesc;
+	samplerDesc.wrapU = eg::WrapMode::ClampToEdge;
+	samplerDesc.wrapV = eg::WrapMode::ClampToEdge;
+	samplerDesc.wrapW = eg::WrapMode::ClampToEdge;
+	
+	eg::TextureCreateInfo textureCI;
+	textureCI.width = loader.Width();
+	textureCI.height = loader.Height();
+	textureCI.depth = 1;
+	textureCI.mipLevels = eg::Texture::MaxMipLevels(std::max(loader.Width(), loader.Height()));
+	textureCI.flags = eg::TextureFlags::CopyDst | eg::TextureFlags::ShaderSample | eg::TextureFlags::GenerateMipmaps;
+	textureCI.format = eg::Format::R8G8B8A8_sRGB;
+	textureCI.defaultSamplerDescription = &samplerDesc;
+	
+	level.thumbnail = eg::Texture::Create2D(textureCI);
+	eg::UploadBuffer uploadBuffer = eg::GetTemporaryUploadBufferWith<uint8_t>({ data.get(), (size_t)(loader.Width() * loader.Height() * 4) });
+	
+	eg::TextureRange texRange = {};
+	
+	texRange.sizeX = loader.Width();
+	texRange.sizeY = loader.Height();
+	texRange.sizeZ = 1;
+	eg::DC.SetTextureData(level.thumbnail, texRange, uploadBuffer.buffer, uploadBuffer.offset);
+	
+	eg::DC.GenerateMipmaps(level.thumbnail);
+	
+	level.thumbnail.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 }

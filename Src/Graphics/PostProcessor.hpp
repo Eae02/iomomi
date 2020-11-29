@@ -8,7 +8,7 @@ public:
 	PostProcessor();
 	
 	void Render(eg::TextureRef input, const eg::BloomRenderer::RenderTarget* bloomRenderTarget,
-		eg::FramebufferHandle output = nullptr);
+		eg::FramebufferHandle output, uint32_t outputResX, uint32_t outputResY);
 	
 private:
 	void InitPipeline();

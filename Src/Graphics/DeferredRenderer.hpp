@@ -4,23 +4,24 @@
 #include "Lighting/PointLight.hpp"
 #include "WaterRenderer.hpp"
 #include "GraphicsCommon.hpp"
+#include "RenderTex.hpp"
 
 class DeferredRenderer
 {
 public:
 	DeferredRenderer();
 	
-	void BeginGeometry() const;
-	void BeginGeometryFlags() const;
-	void EndGeometry() const;
+	void BeginGeometry(RenderTexManager& rtManager) const;
+	void BeginGeometryFlags(RenderTexManager& rtManager) const;
+	void EndGeometry(RenderTexManager& rtManager) const;
 	
-	void BeginTransparent(RenderTex destinationTexture);
+	void BeginTransparent(RenderTex destinationTexture, RenderTexManager& rtManager);
 	
-	void BeginLighting();
+	void BeginLighting(RenderTexManager& rtManager);
 	void EndTransparent();
 	
-	void DrawSpotLights(const std::vector<SpotLightDrawData>& spotLights) const;
-	void DrawPointLights(const std::vector<PointLightDrawData>& pointLights, eg::TextureRef waterDepthTexture) const;
+	void DrawSpotLights(const std::vector<SpotLightDrawData>& spotLights, RenderTexManager& rtManager) const;
+	void DrawPointLights(const std::vector<PointLightDrawData>& pointLights, eg::TextureRef waterDepthTexture, RenderTexManager& rtManager) const;
 	
 	void End() const;
 	

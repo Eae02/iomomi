@@ -93,8 +93,8 @@ bool BlurredGlassMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawAr
 		color.g,
 		color.b,
 		*clearGlassHexAlpha,
-		1.0f / eg::CurrentResolutionX(),
-		1.0f / eg::CurrentResolutionY()
+		1.0f / (mDrawArgs->rtManager ? mDrawArgs->rtManager->ResX() : 1),
+		1.0f / (mDrawArgs->rtManager ? mDrawArgs->rtManager->ResY() : 1)
 	};
 	
 	cmdCtx.PushConstants(0, (*blurry ? 6 : 4) * sizeof(float), pcData);
@@ -105,7 +105,7 @@ bool BlurredGlassMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawAr
 	}
 	else if (mDrawArgs->drawMode == MeshDrawMode::TransparentBeforeBlur)
 	{
-		cmdCtx.BindTexture(GetRenderTexture(RenderTex::BlurredGlassDepth), 0, 2);
+		cmdCtx.BindTexture(mDrawArgs->rtManager->GetRenderTexture(RenderTex::BlurredGlassDepth), 0, 2);
 	}
 	else
 	{

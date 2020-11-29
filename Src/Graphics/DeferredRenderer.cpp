@@ -93,10 +93,10 @@ void DeferredRenderer::CreatePipelines()
 	m_pointLightPipelineHardShadows.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
 }
 
-void DeferredRenderer::BeginGeometry() const
+void DeferredRenderer::BeginGeometry(RenderTexManager& rtManager) const
 {
 	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = GetFramebuffer(RenderTex::GBColor1, RenderTex::GBColor2, RenderTex::GBDepth, "Geometry");
+	rpBeginInfo.framebuffer = rtManager.GetFramebuffer(RenderTex::GBColor1, RenderTex::GBColor2, RenderTex::GBDepth, "Geometry");
 	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Clear;
 	rpBeginInfo.depthClearValue = 1.0f;
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
@@ -106,32 +106,32 @@ void DeferredRenderer::BeginGeometry() const
 	eg::DC.BeginRenderPass(rpBeginInfo);
 }
 
-void DeferredRenderer::BeginGeometryFlags() const
+void DeferredRenderer::BeginGeometryFlags(RenderTexManager& rtManager) const
 {
 	eg::DC.EndRenderPass();
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = GetFramebuffer(RenderTex::Flags, {}, RenderTex::GBDepth, "GeometryFlags");
+	rpBeginInfo.framebuffer = rtManager.GetFramebuffer(RenderTex::Flags, {}, RenderTex::GBDepth, "GeometryFlags");
 	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Load;
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
 	rpBeginInfo.colorAttachments[0].clearValue = eg::ColorSRGB(0, 0, 0, 0);
 	eg::DC.BeginRenderPass(rpBeginInfo);
 }
 
-void DeferredRenderer::EndGeometry() const
+void DeferredRenderer::EndGeometry(RenderTexManager& rtManager) const
 {
 	eg::DC.EndRenderPass();
 	
-	RenderTextureUsageHintFS(RenderTex::GBColor1);
-	RenderTextureUsageHintFS(RenderTex::GBColor2);
-	RenderTextureUsageHintFS(RenderTex::GBDepth);
-	RenderTextureUsageHintFS(RenderTex::Flags);
+	rtManager.RenderTextureUsageHintFS(RenderTex::GBColor1);
+	rtManager.RenderTextureUsageHintFS(RenderTex::GBColor2);
+	rtManager.RenderTextureUsageHintFS(RenderTex::GBDepth);
+	rtManager.RenderTextureUsageHintFS(RenderTex::Flags);
 }
 
-void DeferredRenderer::BeginTransparent(RenderTex destinationTexture)
+void DeferredRenderer::BeginTransparent(RenderTex destinationTexture, RenderTexManager& rtManager)
 {
 	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = GetFramebuffer(destinationTexture, {}, RenderTex::GBDepth, "Transparent");
+	rpBeginInfo.framebuffer = rtManager.GetFramebuffer(destinationTexture, {}, RenderTex::GBDepth, "Transparent");
 	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Load;
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Load;
 	
@@ -143,10 +143,10 @@ void DeferredRenderer::EndTransparent()
 	eg::DC.EndRenderPass();
 }
 
-void DeferredRenderer::BeginLighting()
+void DeferredRenderer::BeginLighting(RenderTexManager& rtManager)
 {
 	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = GetFramebuffer(RenderTex::LitWithoutWater, {}, {}, "Lighting");
+	rpBeginInfo.framebuffer = rtManager.GetFramebuffer(RenderTex::LitWithoutWater, {}, {}, "Lighting");
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
 	
 	eg::DC.BeginRenderPass(rpBeginInfo);
@@ -159,10 +159,10 @@ void DeferredRenderer::BeginLighting()
 	
 	eg::DC.BindPipeline(m_ambientPipeline);
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
-	eg::DC.BindTexture(GetRenderTexture(RenderTex::GBColor1), 0, 1);
-	eg::DC.BindTexture(GetRenderTexture(RenderTex::GBColor2), 0, 2);
-	eg::DC.BindTexture(GetRenderTexture(RenderTex::GBDepth), 0, 3);
-	eg::DC.BindTexture(GetRenderTexture(RenderTex::Flags), 0, 4);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor1), 0, 1);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor2), 0, 2);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 3);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::Flags), 0, 4);
 	
 	eg::DC.PushConstants(0, sizeof(float) * 3, &ambientColor.r);
 	
@@ -174,7 +174,7 @@ void DeferredRenderer::End() const
 	eg::DC.EndRenderPass();
 }
 
-void DeferredRenderer::DrawSpotLights(const std::vector<SpotLightDrawData>& spotLights) const
+void DeferredRenderer::DrawSpotLights(const std::vector<SpotLightDrawData>& spotLights, RenderTexManager& rtManager) const
 {
 	if (spotLights.empty() || unlit)
 		return;
@@ -188,10 +188,10 @@ void DeferredRenderer::DrawSpotLights(const std::vector<SpotLightDrawData>& spot
 	
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 	
-	eg::DC.BindTexture(GetRenderTexture(RenderTex::GBColor1), 0, 1);
-	eg::DC.BindTexture(GetRenderTexture(RenderTex::GBColor2), 0, 2);
-	eg::DC.BindTexture(GetRenderTexture(RenderTex::GBDepth), 0, 3);
-	eg::DC.BindTexture(GetRenderTexture(RenderTex::Flags), 0, 4);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor1), 0, 1);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor2), 0, 2);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 3);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::Flags), 0, 4);
 	
 	for (const SpotLightDrawData& spotLight : spotLights)
 	{
@@ -206,7 +206,7 @@ static float* causticsColorOffset = eg::TweakVarFloat("cau_clr_offset", 1.5f);
 static float* causticsPanSpeed = eg::TweakVarFloat("cau_pan_speed", 0.05f);
 static float* causticsTexScale = eg::TweakVarFloat("cau_tex_scale", 0.5f);
 
-void DeferredRenderer::DrawPointLights(const std::vector<PointLightDrawData>& pointLights, eg::TextureRef waterDepthTexture) const
+void DeferredRenderer::DrawPointLights(const std::vector<PointLightDrawData>& pointLights, eg::TextureRef waterDepthTexture, RenderTexManager& rtManager) const
 {
 	if (pointLights.empty() || unlit)
 		return;
@@ -222,10 +222,10 @@ void DeferredRenderer::DrawPointLights(const std::vector<PointLightDrawData>& po
 	
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 	
-	eg::DC.BindTexture(GetRenderTexture(RenderTex::GBColor1), 0, 1);
-	eg::DC.BindTexture(GetRenderTexture(RenderTex::GBColor2), 0, 2);
-	eg::DC.BindTexture(GetRenderTexture(RenderTex::GBDepth), 0, 3);
-	eg::DC.BindTexture(GetRenderTexture(RenderTex::Flags), 0, 4);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor1), 0, 1);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor2), 0, 2);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 3);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::Flags), 0, 4);
 	eg::DC.BindTexture(waterDepthTexture, 0, 5);
 	eg::DC.BindTexture(eg::GetAsset<eg::Texture>("Caustics"), 0, 6);
 	

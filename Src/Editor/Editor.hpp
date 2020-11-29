@@ -10,6 +10,8 @@
 #include "../World/Entities/EntTypes/ActivationLightStripEnt.hpp"
 #include "EditorComponent.hpp"
 
+#include <EGame/FlyCamera.hpp>
+
 class Editor : public GameState
 {
 public:
@@ -69,6 +71,9 @@ private:
 	bool m_levelSettingsOpen = false;
 	
 	int m_previousSumOfWaterBlockedVersion = -1;
+	
+	bool m_isUpdatingThumbnailView = false;
+	eg::FlyCamera m_thumbnailCamera;
 };
 
 extern Editor* editor;

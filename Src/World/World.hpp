@@ -87,6 +87,9 @@ public:
 	std::string title;
 	uint32_t extraWaterParticles = 0;
 	
+	glm::vec3 thumbnailCameraPos;
+	glm::vec3 thumbnailCameraDir;
+	
 private:
 	void LoadFormatSub5(std::istream& stream, uint32_t version, bool isEditor);
 	void LoadFormatSup5(std::istream& stream, uint32_t version, bool isEditor);

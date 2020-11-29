@@ -7,6 +7,7 @@
 #include "Graphics/GraphicsCommon.hpp"
 #include "Graphics/WallShader.hpp"
 #include "MainMenuGameState.hpp"
+#include "ThumbnailRenderer.hpp"
 
 #include <fstream>
 
@@ -72,6 +73,12 @@ Game::Game()
 			list.Add(level.name);
 	});
 	
+	eg::console::AddCommand("updateThumbnails", 0, [&] (eg::Span<const std::string_view> args, eg::console::Writer& writer)
+	{
+		m_levelThumbnailUpdateFrameIdx = eg::FrameIdx();
+		m_levelThumbnailUpdate = BeginUpdateLevelThumbnails(m_renderCtx, writer);
+	});
+	
 	InitializeWallShader();
 }
 
@@ -86,14 +93,17 @@ Game::~Game()
 void Game::ResolutionChanged(int newWidth, int newHeight)
 {
 	editor->SetResolution(newWidth, newHeight);
-	mainGameState->SetResolution(newWidth, newHeight);
 }
 
 void Game::RunFrame(float dt)
 {
-	m_imGuiInterface.NewFrame();
+	if (m_levelThumbnailUpdate != nullptr && eg::FrameIdx() > m_levelThumbnailUpdateFrameIdx + 4)
+	{
+		EndUpdateLevelThumbnails(m_levelThumbnailUpdate);
+		m_levelThumbnailUpdate = nullptr;
+	}
 	
-	MaybeRecreateRenderTextures();
+	m_imGuiInterface.NewFrame();
 	
 	DrawSettingsWindow();
 	

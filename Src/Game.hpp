@@ -21,4 +21,7 @@ private:
 	ImGuiInterface m_imGuiInterface;
 	
 	RenderContext m_renderCtx;
+	
+	uint64_t m_levelThumbnailUpdateFrameIdx = 0;
+	struct LevelThumbnailUpdate* m_levelThumbnailUpdate = nullptr;
 };

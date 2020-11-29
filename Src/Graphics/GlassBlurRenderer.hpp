@@ -3,7 +3,7 @@
 class GlassBlurRenderer
 {
 public:
-	GlassBlurRenderer();
+	GlassBlurRenderer() = default;
 	
 	void MaybeUpdateResolution(uint32_t newWidth, uint32_t newHeight);
 	
@@ -23,9 +23,6 @@ private:
 	uint32_t m_inputWidth = 0;
 	uint32_t m_inputHeight = 0;
 	
-	eg::Sampler m_outputTextureSampler;
-	
-	eg::Pipeline m_blurPipeline;
 	eg::Texture m_blurTextureTmp;
 	eg::Texture m_blurTextureOut;
 	

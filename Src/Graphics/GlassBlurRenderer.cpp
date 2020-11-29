@@ -1,14 +1,24 @@
 #include "GlassBlurRenderer.hpp"
 #include "GraphicsCommon.hpp"
 
-GlassBlurRenderer::GlassBlurRenderer()
+static eg::Pipeline glassBlurPipeline;
+
+static void OnInit()
 {
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GlassBlur.fs.glsl").DefaultVariant();
 	pipelineCI.label = "GlassBlurPipeline";
-	m_blurPipeline = eg::Pipeline::Create(pipelineCI);
+	glassBlurPipeline = eg::Pipeline::Create(pipelineCI);
 }
+
+static void OnShutdown()
+{
+	glassBlurPipeline.Destroy();
+}
+
+EG_ON_INIT(OnInit)
+EG_ON_SHUTDOWN(OnShutdown)
 
 void GlassBlurRenderer::MaybeUpdateResolution(uint32_t newWidth, uint32_t newHeight)
 {
@@ -65,7 +75,7 @@ void GlassBlurRenderer::DoBlurPass(const glm::vec2& blurVector, eg::TextureRef i
 	rp1BeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
 	eg::DC.BeginRenderPass(rp1BeginInfo);
 	
-	eg::DC.BindPipeline(m_blurPipeline);
+	eg::DC.BindPipeline(glassBlurPipeline);
 	
 	eg::TextureSubresource subresource;
 	subresource.firstMipLevel = inputLod;

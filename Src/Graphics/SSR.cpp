@@ -35,7 +35,7 @@ void SSR::CreatePipeline()
 	m_pipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
 }
 
-void SSR::Render(eg::TextureRef waterDepth, RenderTex destinationTexture)
+void SSR::Render(eg::TextureRef waterDepth, RenderTex destinationTexture, RenderTexManager& rtManager)
 {
 	if (settings.reflectionsQuality != m_currentReflectionQualityLevel)
 	{
@@ -44,18 +44,18 @@ void SSR::Render(eg::TextureRef waterDepth, RenderTex destinationTexture)
 	}
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = GetFramebuffer(destinationTexture, {}, {}, "SSR");
+	rpBeginInfo.framebuffer = rtManager.GetFramebuffer(destinationTexture, {}, {}, "SSR");
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
 	
 	eg::DC.BeginRenderPass(rpBeginInfo);
 	
 	eg::DC.BindPipeline(m_pipeline);
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
-	eg::DC.BindTexture(GetRenderTexture(RenderTex::LitWithoutSSR), 0, 1);
-	eg::DC.BindTexture(GetRenderTexture(RenderTex::GBColor1), 0, 2);
-	eg::DC.BindTexture(GetRenderTexture(RenderTex::GBColor2), 0, 3);
-	eg::DC.BindTexture(GetRenderTexture(RenderTex::GBDepth), 0, 4);
-	eg::DC.BindTexture(GetRenderTexture(RenderTex::Flags), 0, 5);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::LitWithoutSSR), 0, 1);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor1), 0, 2);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor2), 0, 3);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 4);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::Flags), 0, 5);
 	eg::DC.BindTexture(waterDepth, 0, 6);
 	
 	eg::DC.Draw(0, 3, 0, 1);

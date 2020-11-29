@@ -15,6 +15,7 @@ PhysicsDebugRenderer::PhysicsDebugRenderer()
 	pipelineCI.cullMode = eg::CullMode::None;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.enableDepthWrite = false;
+	pipelineCI.depthCompare = eg::CompareOp::LessOrEqual;
 	pipelineCI.lineWidth = 2;
 	pipelineCI.blendStates[0] = eg::AlphaBlend;
 	
