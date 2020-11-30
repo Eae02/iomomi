@@ -1,6 +1,7 @@
 #include "WallDragEditorComponent.hpp"
 #include "../PrimitiveRenderer.hpp"
 #include "../../Graphics/WallShader.hpp"
+#include "../../ImGuiInterface.hpp"
 
 #include <imgui.h>
 
@@ -317,6 +318,12 @@ void WallDragEditorComponent::IterateSelection(CallbackTp callback,
 
 void WallDragEditorComponent::RenderSettings(const EditorState& editorState)
 {
+	constexpr float ITEM_HEIGHT = 40;
+	constexpr float ICON_PADDING = 3;
+	
+	eg::TextureRef albedoTex = eg::GetAsset<eg::Texture>("WallTextures/Albedo");
+	eg::TextureRef noDrawTex = eg::GetAsset<eg::Texture>("Textures/NoDraw.png");
+	
 	if (ImGui::CollapsingHeader("Textures", ImGuiTreeNodeFlags_DefaultOpen))
 	{
 		ImGui::BeginChildFrame(ImGui::GetID("TexturesList"), ImVec2(0, 300));
@@ -325,13 +332,27 @@ void WallDragEditorComponent::RenderSettings(const EditorState& editorState)
 		{
 			if (!wallMaterials[i].initialized)
 				continue;
-			if (ImGui::Selectable(wallMaterials[i].name, false) && m_selState == SelState::SelectDone)
+			
+			ImDrawList* drawList = ImGui::GetWindowDrawList();
+			glm::vec2 imguiCursorPos = ImGui::GetCursorScreenPos();
+			
+			ImGui::PushID(wallMaterials[i].name);
+			if (ImGui::Selectable("##sel", false, 0, ImVec2(0, ITEM_HEIGHT)) && m_selState == SelState::SelectDone)
 			{
-				IterateSelection([&] (glm::ivec3 pos)
+				IterateSelection([&](glm::ivec3 pos)
 				{
 					editorState.world->SetMaterialSafe(pos + DirectionVector(m_selectionNormal), m_selectionNormal, i);
 				}, 0, 0);
 			}
+			ImGui::PopID();
+			
+			drawList->AddImage(i ? MakeImTextureID(albedoTex, i - 1) : MakeImTextureID(noDrawTex),
+			                   ImVec2(imguiCursorPos.x + ICON_PADDING, imguiCursorPos.y + ICON_PADDING),
+			                   ImVec2(imguiCursorPos.x + ITEM_HEIGHT - ICON_PADDING,
+			                          imguiCursorPos.y + ITEM_HEIGHT - ICON_PADDING));
+			
+			drawList->AddText(ImVec2(imguiCursorPos.x + ITEM_HEIGHT + 10, imguiCursorPos.y + ITEM_HEIGHT / 2 - 8),
+			                  0xFFFFFFFFU, wallMaterials[i].name);
 		}
 		
 		ImGui::EndChildFrame();

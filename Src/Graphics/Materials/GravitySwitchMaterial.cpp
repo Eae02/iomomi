@@ -2,7 +2,6 @@
 #include "MeshDrawArgs.hpp"
 #include "StaticPropMaterial.hpp"
 #include "../RenderSettings.hpp"
-#include "../DeferredRenderer.hpp"
 
 static eg::Pipeline gravitySwitchPipelineEditor;
 static eg::Pipeline gravitySwitchPipelineGame;

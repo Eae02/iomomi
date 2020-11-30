@@ -105,6 +105,7 @@ void WaterSimulator::Stop()
 	m_thread = { };
 	WSI_Delete(m_impl);
 	m_numParticles = 0;
+	m_numParticlesToDraw = 0;
 	m_currentParticlePositions = nullptr;
 	m_positionsUploadBufferMemory = nullptr;
 	m_positionsUploadBuffer = { };

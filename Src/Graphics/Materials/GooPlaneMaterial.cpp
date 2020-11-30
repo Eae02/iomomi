@@ -1,5 +1,4 @@
 #include "GooPlaneMaterial.hpp"
-#include "../GraphicsCommon.hpp"
 
 constexpr int NM_SAMPLES = 3;
 constexpr float NM_SCALE_GLOBAL = 3.5f;

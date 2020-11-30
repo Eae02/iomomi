@@ -92,6 +92,7 @@ void MainGameState::LoadWorld(std::istream& stream, int64_t levelIndex, const En
 void MainGameState::OnDeactivate()
 {
 	m_renderer.m_waterSimulator.Stop();
+	m_world.reset();
 }
 
 void MainGameState::RunFrame(float dt)

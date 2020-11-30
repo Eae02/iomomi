@@ -1,7 +1,6 @@
 #include "DeferredRenderer.hpp"
 #include "Lighting/LightMeshes.hpp"
 #include "RenderSettings.hpp"
-#include "GraphicsCommon.hpp"
 #include "../Settings.hpp"
 
 const eg::FramebufferFormatHint DeferredRenderer::GEOMETRY_FB_FORMAT =

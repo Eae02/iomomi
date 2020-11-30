@@ -1,6 +1,5 @@
 #include "DecalMaterial.hpp"
 #include "MeshDrawArgs.hpp"
-#include "../GraphicsCommon.hpp"
 #include "../RenderSettings.hpp"
 
 #include <fstream>

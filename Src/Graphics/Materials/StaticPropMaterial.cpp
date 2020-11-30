@@ -1,9 +1,6 @@
 #include "StaticPropMaterial.hpp"
 #include "MeshDrawArgs.hpp"
-#include "../DeferredRenderer.hpp"
-#include "../GraphicsCommon.hpp"
 #include "../RenderSettings.hpp"
-#include "../Lighting/PointLightShadowMapper.hpp"
 #include "../WallShader.hpp"
 #include "../../Settings.hpp"
 

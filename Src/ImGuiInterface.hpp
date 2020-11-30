@@ -26,3 +26,5 @@ private:
 	ResizableBuffer m_vertexBuffer;
 	ResizableBuffer m_indexBuffer;
 };
+
+ImTextureID MakeImTextureID(eg::TextureRef texture, int layer = -1);

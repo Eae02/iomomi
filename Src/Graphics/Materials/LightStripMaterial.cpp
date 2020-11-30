@@ -1,7 +1,6 @@
 #include "LightStripMaterial.hpp"
-#include "../DeferredRenderer.hpp"
 #include "MeshDrawArgs.hpp"
-#include "../GraphicsCommon.hpp"
+#include "../DeferredRenderer.hpp"
 #include "../RenderSettings.hpp"
 
 static eg::Pipeline lightStripPipelineEditor;

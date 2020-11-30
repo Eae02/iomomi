@@ -2,6 +2,7 @@
 #include "StaticPropMaterial.hpp"
 #include "MeshDrawArgs.hpp"
 #include "../RenderSettings.hpp"
+#include "../GraphicsCommon.hpp"
 
 static eg::Pipeline pipelineBlurry;
 static eg::Pipeline pipelineNotBlurry;

@@ -1,7 +1,6 @@
 #include "GravitySwitchVolLightMaterial.hpp"
 #include "MeshDrawArgs.hpp"
 #include "../RenderSettings.hpp"
-#include "../DeferredRenderer.hpp"
 #include "../GraphicsCommon.hpp"
 #include "../../Settings.hpp"
 

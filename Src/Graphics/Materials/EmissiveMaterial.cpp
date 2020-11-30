@@ -1,8 +1,6 @@
 #include "EmissiveMaterial.hpp"
 #include "MeshDrawArgs.hpp"
-#include "../DeferredRenderer.hpp"
 #include "../RenderSettings.hpp"
-#include "../../Settings.hpp"
 
 static eg::Pipeline emissivePipelineEditor;
 static eg::Pipeline emissivePipelineGame;

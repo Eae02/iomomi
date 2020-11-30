@@ -1,6 +1,5 @@
 #include "ScreenMaterial.hpp"
 #include "MeshDrawArgs.hpp"
-#include "../DeferredRenderer.hpp"
 #include "../RenderSettings.hpp"
 
 static eg::Pipeline screenMatPipeline;
