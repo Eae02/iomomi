@@ -512,6 +512,7 @@ void Player::FlipDown()
 	m_oldEyePosition = m_eyePosition;
 	m_gravityTransitionMode = TransitionMode::Fall;
 	m_transitionTime = 0;
+	m_velocity = glm::vec3(0);
 }
 
 void Player::GetViewMatrix(glm::mat4& matrixOut, glm::mat4& inverseMatrixOut) const

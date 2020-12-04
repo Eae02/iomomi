@@ -85,10 +85,12 @@ void PhysicsDebugRenderer::Render(const PhysicsDebugRenderData& renderData, cons
 	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Load;
 	eg::DC.BeginRenderPass(rpBeginInfo);
 	
+	glm::mat4 updatedViewProj = glm::translate(glm::mat4(1), glm::vec3(0, 0, -0.0001f)) * viewProjTransform;
+	
 	if (numLineIndices != 0)
 	{
 		eg::DC.BindPipeline(m_linesPipeline);
-		eg::DC.PushConstants(0, viewProjTransform);
+		eg::DC.PushConstants(0, updatedViewProj);
 		eg::DC.BindVertexBuffer(0, m_vertexBuffer.buffer, 0);
 		eg::DC.BindIndexBuffer(eg::IndexType::UInt32, m_indexBuffer.buffer, 0);
 		eg::DC.DrawIndexed(0, numLineIndices, 0, 0, 1);
@@ -97,7 +99,7 @@ void PhysicsDebugRenderer::Render(const PhysicsDebugRenderData& renderData, cons
 	if (numTriangleIndices != 0)
 	{
 		eg::DC.BindPipeline(m_trianglePipeline);
-		eg::DC.PushConstants(0, viewProjTransform);
+		eg::DC.PushConstants(0, updatedViewProj);
 		eg::DC.BindVertexBuffer(0, m_vertexBuffer.buffer, 0);
 		eg::DC.BindIndexBuffer(eg::IndexType::UInt32, m_indexBuffer.buffer, 0);
 		eg::DC.DrawIndexed(numLineIndices, numTriangleIndices, 0, 0, 1);

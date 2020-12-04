@@ -121,6 +121,26 @@ void MainGameState::RunFrame(float dt)
 	{
 		auto worldUpdateCPUTimer = eg::StartCPUTimer("World Update");
 		
+		EntranceExitEnt* currentExit = nullptr;
+		
+		m_world->entManager.ForEachOfType<EntranceExitEnt>([&] (EntranceExitEnt& entity)
+		{
+			if (entity.ShouldSwitchEntrance())
+				currentExit = &entity;
+		});
+		
+		//Moves to the next level
+		if (currentExit != nullptr && m_currentLevelIndex != -1 && levels[m_currentLevelIndex].nextLevelIndex != -1)
+		{
+			MarkLevelCompleted(levels[m_currentLevelIndex]);
+			int64_t nextLevelIndex = levels[m_currentLevelIndex].nextLevelIndex;
+			eg::Log(eg::LogLevel::Info, "lvl", "Going to next level '{0}'", levels[nextLevelIndex].name);
+			std::string path = GetLevelPath(levels[nextLevelIndex].name);
+			std::ifstream stream(path, std::ios::binary);
+			LoadWorld(stream, nextLevelIndex, currentExit);
+			m_physicsEngine = {};
+		}
+		
 		WorldUpdateArgs updateArgs;
 		updateArgs.mode = WorldMode::Game;
 		updateArgs.dt = dt;
@@ -164,26 +184,6 @@ void MainGameState::RunFrame(float dt)
 		{
 			m_gravityGun.Update(*m_world, m_physicsEngine, m_renderer.m_waterSimulator, m_particleManager,
 			                    m_player, m_renderer.GetInverseViewProjMatrix(), dt);
-		}
-		
-		EntranceExitEnt* currentExit = nullptr;
-		
-		m_world->entManager.ForEachOfType<EntranceExitEnt>([&] (EntranceExitEnt& entity)
-		{
-			entity.Update(updateArgs);
-			if (entity.ShouldSwitchEntrance())
-				currentExit = &entity;
-		});
-		
-		//Moves to the next level
-		if (currentExit != nullptr && m_currentLevelIndex != -1 && levels[m_currentLevelIndex].nextLevelIndex != -1)
-		{
-			MarkLevelCompleted(levels[m_currentLevelIndex]);
-			int64_t nextLevelIndex = levels[m_currentLevelIndex].nextLevelIndex;
-			eg::Log(eg::LogLevel::Info, "lvl", "Going to next level '{0}'", levels[nextLevelIndex].name);
-			std::string path = GetLevelPath(levels[nextLevelIndex].name);
-			std::ifstream stream(path, std::ios::binary);
-			LoadWorld(stream, nextLevelIndex, currentExit);
 		}
 	}
 	else

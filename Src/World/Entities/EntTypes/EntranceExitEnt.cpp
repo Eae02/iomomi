@@ -93,9 +93,9 @@ static void OnInit()
 		auto meshData = colModel.GetMeshData<eg::StdVertex, uint32_t>(index);
 		return eg::CollisionMesh::Create(meshData.vertices, meshData.indices);
 	};
-	entrance.door1CollisionMesh = MakeCollisionMesh("Door1");
-	entrance.door2CollisionMesh = MakeCollisionMesh("Door2");
-	entrance.roomCollisionMesh = MakeCollisionMesh("Room");
+	entrance.door1CollisionMesh = MakeCollisionMesh("Door1C");
+	entrance.door2CollisionMesh = MakeCollisionMesh("Door2C");
+	entrance.roomCollisionMesh = MakeCollisionMesh("WallsC");
 }
 
 EG_ON_INIT(OnInit)
@@ -173,6 +173,9 @@ glm::mat4 EntranceExitEnt::GetTransform() const
 
 void EntranceExitEnt::Update(const WorldUpdateArgs& args)
 {
+	if (args.player == nullptr)
+		return;
+	
 	Dir direction = OppositeDir(m_direction);
 	
 	glm::vec3 toPlayer = args.player->Position() - m_position;

@@ -29,7 +29,8 @@ const EntTypeID entUpdateOrder[NUM_UPDATABLE_ENTITY_TYPES] =
 	EntTypeID::Cube,
 	EntTypeID::Platform,
 	EntTypeID::GravitySwitch,
-	EntTypeID::SlidingWall
+	EntTypeID::SlidingWall,
+	EntTypeID::EntranceExit
 };
 
 template <typename T>
