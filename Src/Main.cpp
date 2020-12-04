@@ -20,11 +20,20 @@ void Start(eg::RunConfig& runConfig)
 	LoadSettings();
 	eg::TextureAssetQuality = settings.textureQuality;
 	
+	if (settings.vsync)
+		runConfig.flags |= eg::RunFlags::VSync;
+	
 	runConfig.gameName = "Gravity Game";
 	runConfig.flags |= eg::RunFlags::DefaultFramebufferSRGB;
 	runConfig.defaultDepthStencilFormat = eg::Format::Depth32;
 	runConfig.initialize = []
 	{
+		if (!eg::Contains(eg::FullscreenDisplayModes(), settings.fullscreenDisplayMode))
+		{
+			settings.fullscreenDisplayMode = eg::FullscreenDisplayModes()[eg::NativeDisplayModeIndex()];
+		}
+		UpdateDisplayMode();
+		
 		eg::SpriteFont::LoadDevFont();
 		eg::console::Init();
 		eg::console::AddCommand("opt", 1, &OptCommand);
@@ -62,7 +71,6 @@ int main(int argc, char** argv)
 	}
 	
 	eg::RunConfig runConfig;
-	runConfig.flags = eg::RunFlags::VSync;
 #ifndef NDEBUG
 	runConfig.flags |= eg::RunFlags::DevMode;
 #endif

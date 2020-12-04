@@ -12,4 +12,6 @@ message ForceFieldEntity {
 	float radY = 5;
 	float radZ = 6;
 	Dir new_gravity = 7;
+	fixed32 activate_action = 8;
+	fixed32 name = 9;
 }

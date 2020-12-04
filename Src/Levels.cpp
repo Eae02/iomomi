@@ -40,7 +40,6 @@ const std::vector<std::string_view> levelsOrder =
 	"water_ng4",
 	"water_ng5",
 	
-	//PART 2
 	"gravgun_0",
 	"gravgun_1",
 	"gravgun_2",
@@ -52,9 +51,7 @@ const std::vector<std::string_view> levelsOrder =
 	"forcefield_1",
 	"forcefield_2",
 	"forcefield_3",
-	//"forcefield_4",
 	
-	//PART 3
 	"gravbarrier_1",
 	"gravbarrier_2",
 	"gravbarrier_3",
@@ -66,7 +63,10 @@ const std::vector<std::string_view> levelsOrder =
 	
 	"water_4",
 	"water_5",
-	"water_6"
+	"water_6",
+	
+	"cubeflip_0",
+	"cubeflip_2"
 };
 
 static void OnShutdown()

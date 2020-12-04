@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Entity.hpp"
+#include "../Components/ActivatableComp.hpp"
 #include "../../Dir.hpp"
 
 struct ForceFieldSetGravity
@@ -17,6 +18,8 @@ struct ForceFieldParticle
 class ForceFieldEnt : public Ent
 {
 public:
+	ForceFieldEnt();
+	
 	static constexpr EntTypeID TypeID = EntTypeID::ForceField;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable;
 	
@@ -35,15 +38,33 @@ public:
 	glm::vec3 GetPosition() const override { return m_position; }
 	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
+	const void* GetComponent(const std::type_info& type) const override;
+	
 	static std::optional<Dir> CheckIntersection(class EntityManager& entityManager, const eg::AABB& aabb);
 	
 	glm::vec3 radius { 1.0f };
 	
 	Dir newGravity;
 	
+	enum class ActivateAction
+	{
+		Enable,
+		Disable,
+		Flip
+	};
+	
+	ActivateAction activateAction = ActivateAction::Enable;
+	
 private:
+	static std::vector<glm::vec3> GetConnectionPoints(const Ent& entity);
+	
 	glm::vec3 m_position;
 	
-	std::vector<ForceFieldParticle> particles;
-	float timeSinceEmission = 0;
+	Dir m_effectiveNewGravity;
+	bool m_enabled = true;
+	
+	ActivatableComp m_activatable;
+	
+	std::vector<ForceFieldParticle> m_particles;
+	float m_timeSinceEmission = 0;
 };

@@ -294,13 +294,13 @@ static inline std::optional<float> RayIntersect(
 	return {};
 }
 
-std::pair<PhysicsObject*, float> PhysicsEngine::RayIntersect(const eg::Ray& ray, uint32_t mask) const
+std::pair<PhysicsObject*, float> PhysicsEngine::RayIntersect(const eg::Ray& ray, uint32_t mask, const PhysicsObject* ignoreObject) const
 {
 	float minIntersect = INFINITY;
 	PhysicsObject* intersectedObject = nullptr;
 	for (PhysicsObject* object : m_objects)
 	{
-		if (!(object->rayIntersectMask & mask))
+		if (!(object->rayIntersectMask & mask) || object == ignoreObject)
 			continue;
 		std::visit([&] (const auto& shape)
 		{

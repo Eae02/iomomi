@@ -72,7 +72,8 @@ public:
 	PhysicsObject* FindFloorObject(PhysicsObject& object, const glm::vec3& down) const;
 	
 	//Finds the closest object intersecting the ray. If no intersection, returns (nullptr, infinity)
-	std::pair<PhysicsObject*, float> RayIntersect(const eg::Ray& ray, uint32_t mask = 0xFF) const;
+	std::pair<PhysicsObject*, float> RayIntersect(const eg::Ray& ray, uint32_t mask = 0xFF,
+		const PhysicsObject* ignoreObject = nullptr) const;
 	
 	void GetDebugRenderData(struct PhysicsDebugRenderData& dataOut) const;
 	

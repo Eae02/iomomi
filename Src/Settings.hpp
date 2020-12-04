@@ -2,11 +2,20 @@
 
 #include "Graphics/QualityLevel.hpp"
 
+enum class DisplayMode
+{
+	Windowed,
+	Fullscreen,
+	FullscreenDesktop
+};
+
 struct Settings
 {
-	bool fullscreen = false;
-	int fullscreenResX = -1;
-	int fullscreenResY = -1;
+	bool vsync = true;
+	DisplayMode displayMode = DisplayMode::Windowed;
+	eg::FullscreenDisplayMode fullscreenDisplayMode = {};
+	
+	bool showExtraLevels = false;
 	
 	eg::TextureQuality textureQuality = eg::TextureQuality::High;
 	QualityLevel shadowQuality        = QualityLevel::Medium;
@@ -42,6 +51,8 @@ struct Settings
 extern Settings settings;
 
 extern bool settingsWindowVisible;
+
+void UpdateDisplayMode();
 
 void DecodeQualityLevel(std::string_view name, QualityLevel& def);
 

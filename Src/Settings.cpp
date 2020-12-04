@@ -24,6 +24,8 @@ void DecodeQualityLevel(std::string_view name, QualityLevel& def)
 		eg::Log(eg::LogLevel::Error, "opt", "Unknwon quality level '{0}'", name);
 }
 
+static std::string displayModeNames[] = { "windowed", "fullscreen", "fullscreenDesktop" };
+
 void LoadSettings()
 {
 #ifndef __EMSCRIPTEN__
@@ -54,6 +56,20 @@ void LoadSettings()
 	settings.lookInvertY = settingsNode["lookInvertY"].as<bool>(false);
 	settings.enableFXAA = settingsNode["fxaa"].as<bool>(true);
 	settings.enableBloom = settingsNode["bloom"].as<bool>(true);
+	settings.showExtraLevels = settingsNode["showExtraLevels"].as<bool>(false);
+	
+	std::string displayModeString = settingsNode["displayMode"].as<std::string>("");
+	for (int i = 0; i < 3; i++)
+	{
+		if (displayModeString == displayModeNames[i])
+			settings.displayMode = (DisplayMode)i;
+	}
+	
+	settings.fullscreenDisplayMode.resolutionX = settingsNode["resx"].as<uint32_t>(0);
+	settings.fullscreenDisplayMode.resolutionY = settingsNode["resy"].as<uint32_t>(0);
+	settings.fullscreenDisplayMode.refreshRate = settingsNode["refreshRate"].as<uint32_t>(0);
+	settings.vsync = settingsNode["vsync"].as<bool>(true);
+	
 #endif
 }
 
@@ -65,6 +81,7 @@ void SaveSettings()
 #ifndef __EMSCRIPTEN__
 	YAML::Emitter emitter;
 	emitter << YAML::BeginMap;
+	emitter << YAML::Key << "showExtraLevels" << YAML::Value << settings.showExtraLevels;
 	emitter << YAML::Key << "textureQuality" << YAML::Value << textureQualityNames[(int)settings.textureQuality];
 	emitter << YAML::Key << "reflectionsQuality" << YAML::Value << qualityNames[(int)settings.reflectionsQuality];
 	emitter << YAML::Key << "shadowQuality" << YAML::Value << qualityNames[(int)settings.shadowQuality];
@@ -77,6 +94,13 @@ void SaveSettings()
 	emitter << YAML::Key << "lookInvertY" << YAML::Value << settings.lookInvertY;
 	emitter << YAML::Key << "fxaa" << YAML::Value << settings.enableFXAA;
 	emitter << YAML::Key << "bloom" << YAML::Value << settings.enableBloom;
+	
+	emitter << YAML::Key << "displayMode" << YAML::Value << displayModeNames[(int)settings.displayMode];
+	emitter << YAML::Key << "resx" << YAML::Value << settings.fullscreenDisplayMode.resolutionX;
+	emitter << YAML::Key << "resy" << YAML::Value << settings.fullscreenDisplayMode.resolutionY;
+	emitter << YAML::Key << "refreshRate" << YAML::Value << settings.fullscreenDisplayMode.refreshRate;
+	emitter << YAML::Key << "vsync" << YAML::Value << settings.vsync;
+	
 	emitter << YAML::EndMap;
 	
 	std::ofstream settingsStream(settingsPath);
@@ -332,4 +356,20 @@ void DrawSettingsWindow()
 		}
 	}
 	ImGui::End();
+}
+
+void UpdateDisplayMode()
+{
+	switch (settings.displayMode)
+	{
+	case DisplayMode::Windowed:
+		eg::SetDisplayModeWindowed();
+		break;
+	case DisplayMode::Fullscreen:
+		eg::SetDisplayModeFullscreen(settings.fullscreenDisplayMode);
+		break;
+	case DisplayMode::FullscreenDesktop:
+		eg::SetDisplayModeFullscreenDesktop();
+		break;
+	}
 }

@@ -2,7 +2,7 @@
 #include "Widgets/WidgetList.hpp"
 #include "../Settings.hpp"
 
-static WidgetList optWidgetList(300);
+static WidgetList optWidgetList(400);
 
 bool optionsMenuOpen = false;
 
@@ -11,6 +11,7 @@ std::vector<std::string> settingsCBOptions;
 
 template <> std::vector<std::string> settingsCBOptions<eg::TextureQuality> { "Low", "Medium", "High" };
 template <> std::vector<std::string> settingsCBOptions<QualityLevel> { "Very Low", "Low", "Medium", "High", "Very High" };
+template <> std::vector<std::string> settingsCBOptions<DisplayMode> { "Windowed", "Fullscreen", "Fullscreen Windowed" };
 template <> std::vector<std::string> settingsCBOptions<bool> { "No", "Yes" };
 
 template <typename T>
@@ -28,9 +29,37 @@ ComboBox InitSettingsCB(T Settings::*member, std::string label)
 	return cb;
 }
 
+static int fullscreenDisplayModeIndex;
+
 void InitOptionsMenu()
 {
-	optWidgetList.AddWidget(SubtitleWidget("Graphics Quality"));
+	ComboBox resolutionCB;
+	resolutionCB.label = "Fullscreen Resolution";
+	fullscreenDisplayModeIndex = eg::NativeDisplayModeIndex();
+	for (int i = 0; i < (int)eg::FullscreenDisplayModes().size(); i++)
+	{
+		eg::FullscreenDisplayMode mode = eg::FullscreenDisplayModes()[i];
+		if (mode == settings.fullscreenDisplayMode)
+		{
+			fullscreenDisplayModeIndex = i;
+		}
+		resolutionCB.options.push_back(
+			std::to_string(mode.resolutionX) + "x" + std::to_string(mode.resolutionY) + " @" + std::to_string(mode.refreshRate) + "Hz"
+		);
+	}
+	resolutionCB.getValue = [] { return fullscreenDisplayModeIndex; };
+	resolutionCB.setValue = [] (int value)
+	{
+		fullscreenDisplayModeIndex = value;
+		settings.fullscreenDisplayMode = eg::FullscreenDisplayModes()[value];
+	};
+	
+	optWidgetList.AddWidget(SubtitleWidget("Display"));
+	optWidgetList.AddWidget(InitSettingsCB(&Settings::displayMode, "Display Mode:"));
+	optWidgetList.AddWidget(std::move(resolutionCB));
+	optWidgetList.AddWidget(InitSettingsCB(&Settings::vsync, "VSync:"));
+	
+	optWidgetList.AddWidget(SubtitleWidget("Graphics"));
 	optWidgetList.AddWidget(InitSettingsCB(&Settings::textureQuality, "Textures:"));
 	optWidgetList.AddWidget(InitSettingsCB(&Settings::shadowQuality, "Shadows:"));
 	optWidgetList.AddWidget(InitSettingsCB(&Settings::reflectionsQuality, "Reflections:"));
@@ -45,6 +74,7 @@ void InitOptionsMenu()
 	optWidgetList.AddWidget(Button("Back", []
 	{
 		SaveSettings();
+		UpdateDisplayMode();
 		optionsMenuOpen = false;
 	}));
 	

@@ -23,7 +23,6 @@ features:
  - zero gravity mode
  - barriers that prevent falling
  - levers
- - activatable force fields
  - moving force fields
  - water drains and emitters
 

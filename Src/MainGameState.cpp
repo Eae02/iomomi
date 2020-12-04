@@ -44,6 +44,11 @@ MainGameState::MainGameState(RenderContext& renderCtx) : m_renderer(renderCtx)
 		}
 	});
 	
+	eg::console::AddCommand("showExtraLevels", 0, [this] (eg::Span<const std::string_view>, eg::console::Writer&)
+	{
+		settings.showExtraLevels = true;
+	});
+	
 	const eg::Texture& particlesTexture = eg::GetAsset<eg::Texture>("Textures/Particles.png");
 	m_particleManager.SetTextureSize(particlesTexture.Width(), particlesTexture.Height());
 	

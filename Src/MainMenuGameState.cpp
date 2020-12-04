@@ -4,6 +4,7 @@
 #include "Levels.hpp"
 #include "Gui/GuiCommon.hpp"
 #include "MainGameState.hpp"
+#include "Settings.hpp"
 
 constexpr float BUTTON_W = 200;
 
@@ -172,7 +173,7 @@ void MainMenuGameState::DrawLevelSelect(float dt)
 	}
 	
 	//Draws and updates tabs
-	if (!m_extraLevelIds.empty())
+	if (settings.showExtraLevels && !m_extraLevelIds.empty())
 	{
 		int tabTextY = boxStartY + 30;
 		float tabTextX = MARGIN_X + 10;

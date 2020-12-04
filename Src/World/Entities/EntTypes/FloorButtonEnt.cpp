@@ -56,6 +56,8 @@ FloorButtonEnt::FloorButtonEnt()
 	m_padPhysicsObject.shape = &s_padCollisionMesh;
 	m_padPhysicsObject.shouldCollide = &FloorButtonEnt::ShouldCollide;
 	m_padPhysicsObject.constrainMove = &FloorButtonEnt::ConstrainMove;
+	
+	m_timeSinceActivated = 100;
 }
 
 bool FloorButtonEnt::ShouldCollide(const PhysicsObject& self, const PhysicsObject& other)
@@ -113,10 +115,22 @@ void FloorButtonEnt::CommonDraw(const EntDrawArgs& args)
 	}
 }
 
+static float* floorButtonAABBScale = eg::TweakVarFloat("fbtn_aabb_scale", 1.0f, 0.0f);
+static float* floorButtonLingerTime = eg::TweakVarFloat("fbtn_linger_time", 0.3f, 0.0f);
+
 void FloorButtonEnt::Update(const WorldUpdateArgs& args)
 {
 	float pushDist = glm::distance(m_padPhysicsObject.position, GetPosition());
 	if (pushDist > ACTIVATE_PUSH_DST)
+	{
+		m_timeSinceActivated = 0;
+	}
+	else
+	{
+		m_timeSinceActivated += args.dt;
+	}
+	
+	if (m_timeSinceActivated < *floorButtonLingerTime)
 	{
 		m_activator.Activate();
 		m_lightColor = std::min(m_lightColor + args.dt / LIGHT_ANIMATION_TIME, 1.0f);
@@ -126,7 +140,7 @@ void FloorButtonEnt::Update(const WorldUpdateArgs& args)
 		m_lightColor = std::max(m_lightColor - args.dt / LIGHT_ANIMATION_TIME, 0.0f);
 	}
 	
-	m_padPhysicsObject.move += GetRotationMatrix(m_direction) * glm::vec3(0, 0.1f * args.dt, 0);
+	m_padPhysicsObject.move += GetRotationMatrix(m_direction) * glm::vec3(0, args.dt * 0.5f, 0);
 	
 	m_activator.Update(args);
 }
@@ -172,8 +186,6 @@ void FloorButtonEnt::Deserialize(std::istream& stream)
 		m_activator.activatableName = buttonPB.target_name();
 	}
 }
-
-static float* floorButtonAABBScale = eg::TweakVarFloat("fbtn_aabb_scale", 1.0f, 0.0f);
 
 eg::AABB FloorButtonEnt::GetAABB() const
 {

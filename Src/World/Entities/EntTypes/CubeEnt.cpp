@@ -294,6 +294,7 @@ void CubeEnt::Deserialize(std::istream& stream)
 	
 	m_physicsObject.position = DeserializePos(cubePB);
 	m_physicsObject.rotation = glm::quat(cubePB.rotationw(), cubePB.rotationx(), cubePB.rotationy(), cubePB.rotationz());
+	m_physicsObject.displayPosition = m_physicsObject.position;
 	canFloat = cubePB.can_float();
 }
 
