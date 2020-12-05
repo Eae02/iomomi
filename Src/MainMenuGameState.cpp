@@ -197,7 +197,7 @@ void MainMenuGameState::DrawLevelSelect(float dt)
 				text,
 				glm::vec2(tabTextX, tabTextY),
 				eg::ColorLin(eg::Color::White).ScaleAlpha(opacity),
-				1, &extents);
+				1, &extents, eg::TextFlags::DropShadow);
 			if (eg::Rectangle(tabTextX, tabTextY, extents).Contains(flippedCursorPos) && clicked)
 				m_inExtraLevelsTab = mode;
 			tabTextX += extents.x + 20;

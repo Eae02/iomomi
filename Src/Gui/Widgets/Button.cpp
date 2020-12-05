@@ -39,7 +39,7 @@ void Button::Draw(eg::SpriteBatch& spriteBatch) const
 	glm::vec2 extents = glm::vec2(style::UIFont->GetTextExtents(text).x, style::UIFont->Size()) * fontScale;
 	
 	spriteBatch.DrawText(*style::UIFont, text, rect.Center() - extents / 2.0f, eg::ColorLin(eg::Color::White),
-	                     fontScale, nullptr, eg::TextFlags::NoPixelAlign);
+	                     fontScale, nullptr, eg::TextFlags::NoPixelAlign | eg::TextFlags::DropShadow);
 }
 
 void Button::DrawBackground(eg::SpriteBatch& spriteBatch, const eg::Rectangle& rect, float highlightIntensity)

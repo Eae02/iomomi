@@ -65,13 +65,13 @@ void ComboBox::Draw(eg::SpriteBatch& spriteBatch) const
 	float labelTextWidth = style::UIFont->GetTextExtents(label).x * FONT_SCALE;
 	glm::vec2 labelTextPos(m_rectangle.x - labelTextWidth - 15, m_rectangle.CenterY() - textHeight / 2.0f);
 	spriteBatch.DrawText(*style::UIFont, label, labelTextPos, eg::ColorLin(eg::Color::White.ScaleAlpha(0.7f)),
-		FONT_SCALE, nullptr);
+		FONT_SCALE, nullptr, eg::TextFlags::DropShadow);
 	
 	//Draws the current option text
 	const std::string& optionText = options[getValue()];
 	glm::vec2 textPos(m_rectangle.x + (m_rectangle.h - textHeight) / 2.0f, m_rectangle.CenterY() - textHeight / 2.0f);
 	spriteBatch.DrawText(*style::UIFont, optionText, textPos, eg::ColorLin(eg::Color::White),
-		FONT_SCALE, nullptr);
+		FONT_SCALE, nullptr, eg::TextFlags::DropShadow);
 }
 
 void ComboBox::DrawOverlay(eg::SpriteBatch& spriteBatch) const
@@ -108,7 +108,7 @@ void ComboBox::DrawOverlay(eg::SpriteBatch& spriteBatch) const
 		
 		glm::vec2 realTextPos = textPos;
 		realTextPos.x += glm::smoothstep(0.0f, 1.0f, m_optionHighlightIntensity[i]) * 3.0f;
-		spriteBatch.DrawText(*style::UIFont, options[i], realTextPos, eg::ColorLin(1, 1, 1, textA), FONT_SCALE);
+		spriteBatch.DrawText(*style::UIFont, options[i], realTextPos, eg::ColorLin(1, 1, 1, textA), FONT_SCALE, nullptr, eg::TextFlags::DropShadow);
 	}
 	
 	spriteBatch.PopScissor();
