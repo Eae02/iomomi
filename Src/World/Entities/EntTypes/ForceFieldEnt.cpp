@@ -126,7 +126,7 @@ static std::mt19937 particleRNG;
 
 void ForceFieldEnt::Update(const WorldUpdateArgs& args)
 {
-	if (args.player == nullptr)
+	if (args.mode == WorldMode::Editor)
 		return;
 	
 	//Updates enabled and gravity direction

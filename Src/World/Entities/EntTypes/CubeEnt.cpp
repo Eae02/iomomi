@@ -159,7 +159,7 @@ bool CubeEnt::SetGravity(Dir newGravity)
 
 void CubeEnt::Update(const WorldUpdateArgs& args)
 {
-	if (!args.player)
+	if (args.mode == WorldMode::Editor || args.mode == WorldMode::Thumbnail)
 		return;
 	
 	m_physicsObject.mass = *cubeMass;
@@ -252,6 +252,9 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 
 void CubeEnt::UpdatePostSim(const WorldUpdateArgs& args)
 {
+	if (args.mode == WorldMode::Editor || args.mode == WorldMode::Thumbnail)
+		return;
+	
 	if (settings.shadowQuality >= QualityLevel::Medium &&
 		glm::distance(m_previousPosition, m_physicsObject.displayPosition) > 1E-3f)
 	{

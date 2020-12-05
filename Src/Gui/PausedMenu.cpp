@@ -35,11 +35,11 @@ void PausedMenu::Update(float dt)
 	
 	if (!isPaused)
 	{
-		m_fadeIn = std::max(m_fadeIn - dt / FADE_IN_TIME, 0.0f);
+		fade = std::max(fade - dt / FADE_IN_TIME, 0.0f);
 		return;
 	}
 	
-	m_fadeIn = std::min(m_fadeIn + dt / FADE_IN_TIME, 1.0f);
+	fade = std::min(fade + dt / FADE_IN_TIME, 1.0f);
 	/*
 	auto ChangeKeyboardFocus = [&] (int delta)
 	{
@@ -71,13 +71,6 @@ void PausedMenu::Update(float dt)
 
 void PausedMenu::Draw(eg::SpriteBatch& spriteBatch) const
 {
-	if (m_fadeIn > 0.0f)
-	{
-		constexpr float OVERLAY_OPACITY = 0.5f;
-		spriteBatch.DrawRect(eg::Rectangle(0, 0, eg::CurrentResolutionX(), eg::CurrentResolutionY()),
-		                     eg::ColorLin(0, 0, 0, glm::smoothstep(0.0f, 1.0f, m_fadeIn) * OVERLAY_OPACITY));
-	}
-	
 	if (!isPaused)
 		return;
 	

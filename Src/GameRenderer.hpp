@@ -2,7 +2,7 @@
 
 #include <EGame/Graphics/BloomRenderer.hpp>
 #include "Graphics/RenderContext.hpp"
-#include "Graphics/GlassBlurRenderer.hpp"
+#include "Graphics/BlurRenderer.hpp"
 #include "Graphics/SSR.hpp"
 #include "Graphics/Lighting/PointLightShadowMapper.hpp"
 #include "Graphics/PostProcessor.hpp"
@@ -23,6 +23,7 @@ public:
 	}
 	
 	void SetViewMatrix(const glm::mat4& viewMatrix, const glm::mat4& viewMatrixInverse);
+	void SetViewMatrixFromThumbnailCamera(const class World& world);
 	
 	const glm::mat4& GetViewMatrix() const { return m_viewMatrix; }
 	const glm::mat4& GetInverseViewMatrix() const { return m_inverseViewMatrix; }
@@ -31,6 +32,8 @@ public:
 	
 	void Render(World& world, float gameTime, float dt, eg::FramebufferHandle outputFramebuffer, uint32_t outputResX, uint32_t outputResY);
 	
+	static GameRenderer* instance;
+	
 	class GravityGun* m_gravityGun = nullptr;
 	const class Player* m_player = nullptr;
 	eg::ParticleManager* m_particleManager = nullptr;
@@ -38,6 +41,7 @@ public:
 	class PhysicsDebugRenderer* m_physicsDebugRenderer = nullptr;
 	
 	WaterSimulator m_waterSimulator;
+	float postColorScale = 1;
 	
 private:
 	RenderTexManager m_rtManager;
@@ -46,7 +50,7 @@ private:
 	
 	eg::PerspectiveProjection m_projection;
 	RenderContext* m_renderCtx;
-	GlassBlurRenderer m_glassBlurRenderer;
+	BlurRenderer m_glassBlurRenderer;
 	
 	PointLightShadowMapper m_plShadowMapper;
 	std::unique_ptr<eg::BloomRenderer> m_bloomRenderer;

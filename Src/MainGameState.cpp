@@ -1,15 +1,8 @@
 #include "MainGameState.hpp"
-#include "World/PrepareDrawArgs.hpp"
-#include "Graphics/Materials/MeshDrawArgs.hpp"
-#include "Graphics/RenderSettings.hpp"
-#include "Graphics/Materials/GravityCornerLightMaterial.hpp"
-#include "Graphics/Materials/GravitySwitchVolLightMaterial.hpp"
 #include "Settings.hpp"
 #include "Levels.hpp"
 #include "World/Entities/EntTypes/EntranceExitEnt.hpp"
-#include "World/Entities/EntTypes/ActivationLightStripEnt.hpp"
-#include "World/Entities/EntTypes/CubeEnt.hpp"
-#include "World/Entities/EntTypes/WindowEnt.hpp"
+#include "MainMenuGameState.hpp"
 
 #include <fstream>
 #include <imgui.h>
@@ -18,7 +11,7 @@ MainGameState* mainGameState;
 
 static int* relativeMouseMode = eg::TweakVarInt("relms", 1, 0, 1);
 
-MainGameState::MainGameState(RenderContext& renderCtx) : m_renderer(renderCtx)
+MainGameState::MainGameState()
 {
 	eg::console::AddCommand("reload", 0, [this] (eg::Span<const std::string_view> args, eg::console::Writer& writer)
 	{
@@ -53,18 +46,11 @@ MainGameState::MainGameState(RenderContext& renderCtx) : m_renderer(renderCtx)
 	m_particleManager.SetTextureSize(particlesTexture.Width(), particlesTexture.Height());
 	
 	m_playerWaterAABB = std::make_shared<WaterSimulator::QueryAABB>();
-	m_renderer.m_waterSimulator.AddQueryAABB(m_playerWaterAABB);
-	
-	m_renderer.m_player = &m_player;
-	m_renderer.m_physicsDebugRenderer = &m_physicsDebugRenderer;
-	m_renderer.m_physicsEngine = &m_physicsEngine;
-	m_renderer.m_particleManager = &m_particleManager;
-	m_renderer.m_gravityGun = &m_gravityGun;
+	GameRenderer::instance->m_waterSimulator.AddQueryAABB(m_playerWaterAABB);
 }
 
-void MainGameState::LoadWorld(std::istream& stream, int64_t levelIndex, const EntranceExitEnt* exitEntity)
+void MainGameState::SetWorld(std::unique_ptr<World> newWorld, int64_t levelIndex, const EntranceExitEnt* exitEntity)
 {
-	auto newWorld = World::Load(stream, false);
 	m_player.Reset();
 	m_gameTime = 0;
 	m_currentLevelIndex = levelIndex;
@@ -89,19 +75,29 @@ void MainGameState::LoadWorld(std::istream& stream, int64_t levelIndex, const En
 	
 	m_world = std::move(newWorld);
 	
-	ActivationLightStripEnt::GenerateAll(*m_world);
+	GameRenderer::instance->WorldChanged(*m_world);
 	
-	m_renderer.WorldChanged(*m_world);
+	if (levelIndex != -1)
+	{
+		mainMenuGameState->backgroundLevel = &levels[levelIndex];
+	}
 }
 
 void MainGameState::OnDeactivate()
 {
-	m_renderer.m_waterSimulator.Stop();
+	GameRenderer::instance->m_waterSimulator.Stop();
 	m_world.reset();
 }
 
 void MainGameState::RunFrame(float dt)
 {
+	GameRenderer::instance->m_player = &m_player;
+	GameRenderer::instance->m_physicsDebugRenderer = &m_physicsDebugRenderer;
+	GameRenderer::instance->m_physicsEngine = &m_physicsEngine;
+	GameRenderer::instance->m_particleManager = &m_particleManager;
+	GameRenderer::instance->m_gravityGun = &m_gravityGun;
+	GameRenderer::instance->postColorScale = glm::mix(1.0f, 0.5f, m_pausedMenu.fade);
+	
 	constexpr float MAX_DT = 0.2f;
 	if (dt > MAX_DT)
 		dt = MAX_DT;
@@ -110,7 +106,7 @@ void MainGameState::RunFrame(float dt)
 	{
 		glm::mat4 viewMatrix, inverseViewMatrix;
 		m_player.GetViewMatrix(viewMatrix, inverseViewMatrix);
-		m_renderer.SetViewMatrix(viewMatrix, inverseViewMatrix);
+		GameRenderer::instance->SetViewMatrix(viewMatrix, inverseViewMatrix);
 	};
 	
 	m_pausedMenu.Update(dt);
@@ -135,9 +131,7 @@ void MainGameState::RunFrame(float dt)
 			MarkLevelCompleted(levels[m_currentLevelIndex]);
 			int64_t nextLevelIndex = levels[m_currentLevelIndex].nextLevelIndex;
 			eg::Log(eg::LogLevel::Info, "lvl", "Going to next level '{0}'", levels[nextLevelIndex].name);
-			std::string path = GetLevelPath(levels[nextLevelIndex].name);
-			std::ifstream stream(path, std::ios::binary);
-			LoadWorld(stream, nextLevelIndex, currentExit);
+			SetWorld(LoadLevelWorld(levels[nextLevelIndex], false), nextLevelIndex, currentExit);
 			m_physicsEngine = {};
 		}
 		
@@ -146,15 +140,14 @@ void MainGameState::RunFrame(float dt)
 		updateArgs.dt = dt;
 		updateArgs.player = &m_player;
 		updateArgs.world = m_world.get();
-		updateArgs.waterSim = &m_renderer.m_waterSimulator;
-		updateArgs.invalidateShadows = [this] (const eg::Sphere& sphere) { m_renderer.InvalidateShadows(sphere); };
+		updateArgs.waterSim = &GameRenderer::instance->m_waterSimulator;
+		updateArgs.physicsEngine = &m_physicsEngine;
+		updateArgs.invalidateShadows = [this] (const eg::Sphere& sphere) { GameRenderer::instance->InvalidateShadows(sphere); };
 		
 		eg::SetRelativeMouseMode(*relativeMouseMode);
 		
 		m_physicsEngine.BeginCollect();
-		
 		m_world->CollectPhysicsObjects(m_physicsEngine, dt);
-		
 		m_physicsEngine.EndCollect();
 		
 		{
@@ -163,27 +156,13 @@ void MainGameState::RunFrame(float dt)
 			m_player.Update(*m_world, m_physicsEngine, dt, underwater);
 		}
 		
-		updateArgs.dt = dt;
-		updateArgs.player = &m_player;
-		updateArgs.world = m_world.get();
-		updateArgs.physicsEngine = &m_physicsEngine;
-		m_world->Update(updateArgs);
-		
-		{
-			auto playerUpdateCPUTimer = eg::StartCPUTimer("Physics");
-			m_physicsEngine.Simulate(dt);
-		}
-		
-		m_world->entManager.ForEachOfType<CubeEnt>([&] (CubeEnt& cube)
-		{
-			cube.UpdatePostSim(updateArgs);
-		});
+		m_world->Update(updateArgs, &m_physicsEngine);
 		
 		UpdateViewProjMatrices();
 		if (m_world->playerHasGravityGun)
 		{
-			m_gravityGun.Update(*m_world, m_physicsEngine, m_renderer.m_waterSimulator, m_particleManager,
-			                    m_player, m_renderer.GetInverseViewProjMatrix(), dt);
+			m_gravityGun.Update(*m_world, m_physicsEngine, GameRenderer::instance->m_waterSimulator, m_particleManager,
+			                    m_player, GameRenderer::instance->GetInverseViewProjMatrix(), dt);
 		}
 	}
 	else
@@ -194,7 +173,13 @@ void MainGameState::RunFrame(float dt)
 	
 	m_playerWaterAABB->SetAABB(m_player.GetAABB());
 	
-	m_renderer.Render(*m_world, m_gameTime, dt, nullptr, eg::CurrentResolutionX(), eg::CurrentResolutionY());
+	GameRenderer::instance->Render(*m_world, m_gameTime, dt, nullptr, eg::CurrentResolutionX(), eg::CurrentResolutionY());
+	
+	const float CROSSHAIR_SIZE = 32;
+	const float CROSSHAIR_OPACITY = 0.75f;
+	eg::SpriteBatch::overlay.Draw(eg::GetAsset<eg::Texture>("Textures/Crosshair.png"),
+	    eg::Rectangle::CreateCentered(eg::CurrentResolutionX() / 2.0f, eg::CurrentResolutionY() / 2.0f, CROSSHAIR_SIZE, CROSSHAIR_SIZE),
+	    eg::ColorLin(eg::Color::White.ScaleAlpha(CROSSHAIR_OPACITY)), eg::SpriteFlags::None);
 	
 	m_pausedMenu.Draw(eg::SpriteBatch::overlay);
 	if (m_pausedMenu.shouldRestartLevel)
@@ -242,8 +227,8 @@ void MainGameState::DrawOverlay(float dt)
 	ImGui::Text("Particles: %d", m_particleManager.ParticlesToDraw());
 	//ImGui::Text("PSM Last Update: %ld/%ld", m_plShadowMapper.LastUpdateFrameIndex(), eg::FrameIdx());
 	//ImGui::Text("PSM Updates: %ld", m_plShadowMapper.LastFrameUpdateCount());
-	ImGui::Text("Water Spheres: %d", m_renderer.m_waterSimulator.NumParticles());
-	ImGui::Text("Water Update Time: %.2fms", m_renderer.m_waterSimulator.LastUpdateTime() / 1E6);
+	ImGui::Text("Water Spheres: %d", GameRenderer::instance->m_waterSimulator.NumParticles());
+	ImGui::Text("Water Update Time: %.2fms", GameRenderer::instance->m_waterSimulator.LastUpdateTime() / 1E6);
 	
 	ImGui::End();
 	ImGui::PopStyleVar();
@@ -254,10 +239,6 @@ bool MainGameState::ReloadLevel()
 {
 	if (m_currentLevelIndex == -1)
 		return false;
-	
-	std::string levelPath = GetLevelPath(levels[m_currentLevelIndex].name);
-	std::ifstream levelStream(levelPath, std::ios::binary);
-	LoadWorld(levelStream, m_currentLevelIndex);
-	
+	SetWorld(LoadLevelWorld(levels[m_currentLevelIndex], false), m_currentLevelIndex);
 	return true;
 }

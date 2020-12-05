@@ -13,8 +13,10 @@
 
 Game::Game()
 {
+	GameRenderer::instance = new GameRenderer(m_renderCtx);
+	
 	editor = new Editor(m_renderCtx);
-	mainGameState = new MainGameState(m_renderCtx);
+	mainGameState = new MainGameState;
 	mainMenuGameState = new MainMenuGameState();
 	
 	SetCurrentGS(mainMenuGameState);
@@ -58,11 +60,11 @@ Game::Game()
 			return;
 		}
 		
-		std::string levelPath = GetLevelPath(levels[levelIndex].name);
-		std::ifstream levelStream(levelPath, std::ios::binary);
-		
-		SetCurrentGS(mainGameState);
-		mainGameState->LoadWorld(levelStream, levelIndex);
+		if (std::unique_ptr<World> world = LoadLevelWorld(levels[levelIndex], false))
+		{
+			SetCurrentGS(mainGameState);
+			mainGameState->SetWorld(std::move(world), levelIndex);
+		}
 		
 		eg::console::Hide();
 	});
@@ -79,6 +81,16 @@ Game::Game()
 		m_levelThumbnailUpdate = BeginUpdateLevelThumbnails(m_renderCtx, writer);
 	});
 	
+	//Sets the main menu's background level to the last one unlocked
+	for (std::string_view levelName : levelsOrder)
+	{
+		int64_t index = FindLevel(levelName);
+		if (index != -1 && levels[index].status != LevelStatus::Locked)
+		{
+			mainMenuGameState->backgroundLevel = &levels[index];
+		}
+	}
+	
 	InitializeWallShader();
 }
 
@@ -88,6 +100,7 @@ Game::~Game()
 	delete mainGameState;
 	delete mainMenuGameState;
 	delete RenderSettings::instance;
+	delete GameRenderer::instance;
 }
 
 void Game::ResolutionChanged(int newWidth, int newHeight)

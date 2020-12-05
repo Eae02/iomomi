@@ -1,4 +1,4 @@
-#include "GlassBlurRenderer.hpp"
+#include "BlurRenderer.hpp"
 #include "GraphicsCommon.hpp"
 
 static eg::Pipeline glassBlurPipeline;
@@ -7,8 +7,8 @@ static void OnInit()
 {
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GlassBlur.fs.glsl").DefaultVariant();
-	pipelineCI.label = "GlassBlurPipeline";
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Blur.fs.glsl").DefaultVariant();
+	pipelineCI.label = "BlurPipeline";
 	glassBlurPipeline = eg::Pipeline::Create(pipelineCI);
 }
 
@@ -20,7 +20,7 @@ static void OnShutdown()
 EG_ON_INIT(OnInit)
 EG_ON_SHUTDOWN(OnShutdown)
 
-void GlassBlurRenderer::MaybeUpdateResolution(uint32_t newWidth, uint32_t newHeight)
+void BlurRenderer::MaybeUpdateResolution(uint32_t newWidth, uint32_t newHeight)
 {
 	if (newWidth == m_inputWidth && newHeight == m_inputHeight)
 		return;
@@ -29,7 +29,7 @@ void GlassBlurRenderer::MaybeUpdateResolution(uint32_t newWidth, uint32_t newHei
 	
 	m_blurTextureOut.Destroy();
 	m_blurTextureTmp.Destroy();
-	for (uint32_t i = 0; i < LEVELS; i++)
+	for (uint32_t i = 0; i < m_levels; i++)
 	{
 		m_framebuffersOut[i].Destroy();
 		m_framebuffersTmp[i].Destroy();
@@ -45,16 +45,16 @@ void GlassBlurRenderer::MaybeUpdateResolution(uint32_t newWidth, uint32_t newHei
 	eg::TextureCreateInfo textureCI;
 	textureCI.width = newWidth / 2;
 	textureCI.height = newHeight / 2;
-	textureCI.mipLevels = LEVELS;
+	textureCI.mipLevels = m_levels;
 	textureCI.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample | eg::TextureFlags::ManualBarrier;
-	textureCI.format = eg::Format::R16G16B16A16_Float;
+	textureCI.format = m_format;
 	textureCI.label = "GlassBlurDst";
 	textureCI.defaultSamplerDescription = &samplerDesc;
 	
 	m_blurTextureTmp = eg::Texture::Create2D(textureCI);
 	m_blurTextureOut = eg::Texture::Create2D(textureCI);
 	
-	for (uint32_t i = 0; i < LEVELS; i++)
+	for (uint32_t i = 0; i < m_levels; i++)
 	{
 		eg::FramebufferAttachment colorAttachment;
 		colorAttachment.subresource.mipLevel = i;
@@ -67,7 +67,7 @@ void GlassBlurRenderer::MaybeUpdateResolution(uint32_t newWidth, uint32_t newHei
 	}
 }
 
-void GlassBlurRenderer::DoBlurPass(const glm::vec2& blurVector, eg::TextureRef inputTexture,
+void BlurRenderer::DoBlurPass(const glm::vec2& blurVector, eg::TextureRef inputTexture,
                                    int inputLod, eg::FramebufferRef dstFramebuffer) const
 {
 	eg::RenderPassBeginInfo rp1BeginInfo;
@@ -101,11 +101,11 @@ static inline void ChangeUsageForShaderSample(eg::TextureRef texture, int mipLev
 	eg::DC.Barrier(texture, barrier);
 }
 
-void GlassBlurRenderer::Render(eg::TextureRef inputTexture) const
+void BlurRenderer::Render(eg::TextureRef inputTexture) const
 {
 	glm::vec2 pixelSize = 1.0f / glm::vec2(m_inputWidth, m_inputHeight);
 	
-	for (int i = 0; i < LEVELS; i++)
+	for (int i = 0; i < (int)m_levels; i++)
 	{
 		DoBlurPass(glm::vec2(pixelSize.x, 0), i != 0 ? eg::TextureRef(m_blurTextureOut) : inputTexture,
 			std::max(i - 1, 0), m_framebuffersTmp[i]);

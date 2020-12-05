@@ -22,4 +22,5 @@ void main()
 		color_out += texture(inputImage, texCoord_in + blurVector * i) * kernel[i];
 		color_out += texture(inputImage, texCoord_in - blurVector * i) * kernel[i];
 	}
+	color_out.a = 1;
 }

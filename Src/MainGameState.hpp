@@ -12,11 +12,11 @@
 class MainGameState : public GameState
 {
 public:
-	explicit MainGameState(RenderContext& renderCtx);
+	MainGameState();
 	
 	void RunFrame(float dt) override;
 	
-	void LoadWorld(std::istream& stream, int64_t levelIndex = -1, const class EntranceExitEnt* exitEntity = nullptr);
+	void SetWorld(std::unique_ptr<World> newWorld, int64_t levelIndex = -1, const class EntranceExitEnt* exitEntity = nullptr);
 	
 	void OnDeactivate() override;
 	
@@ -28,8 +28,6 @@ private:
 	bool ReloadLevel();
 	
 	int64_t m_currentLevelIndex = -1;
-	
-	GameRenderer m_renderer;
 	
 	float m_gameTime = 0;
 	

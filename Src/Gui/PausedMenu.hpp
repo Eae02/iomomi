@@ -12,10 +12,9 @@ public:
 	
 	bool isPaused = false;
 	bool shouldRestartLevel = false;
+	float fade = 0;
 	
 private:
-	float m_fadeIn = 0;
-	
 	int m_buttonKeyboardFocus = -1;
 	WidgetList m_widgetList;
 	

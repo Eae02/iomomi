@@ -72,7 +72,7 @@ void SlidingWallEnt::CommonDraw(const EntDrawArgs& args)
 
 void SlidingWallEnt::Update(const WorldUpdateArgs& args)
 {
-	if (args.player == nullptr)
+	if (args.mode != WorldMode::Game)
 	{
 		m_physicsObject.displayPosition = m_initialPosition;
 		UpdateShape();

@@ -43,7 +43,7 @@ void PostProcessor::InitPipeline()
 }
 
 void PostProcessor::Render(eg::TextureRef input, const eg::BloomRenderer::RenderTarget* bloomRenderTarget,
-	eg::FramebufferHandle output, uint32_t outputResX, uint32_t outputResY)
+	eg::FramebufferHandle output, uint32_t outputResX, uint32_t outputResY, float colorScale)
 {
 	if (m_bloomWasEnabled != settings.BloomEnabled() || m_fxaaWasEnabled != settings.enableFXAA)
 	{
@@ -60,11 +60,12 @@ void PostProcessor::Render(eg::TextureRef input, const eg::BloomRenderer::Render
 		1.0f / outputResX,
 		1.0f / outputResY,
 		settings.exposure,
-		*bloomIntensity
+		*bloomIntensity,
+		colorScale
 	};
 	
 	eg::DC.BindPipeline(m_pipeline);
-	eg::DC.PushConstants(0, sizeof(float) * 4, pc);
+	eg::DC.PushConstants(0, sizeof(pc), pc);
 	
 	eg::DC.BindTexture(input, 0, 0, &framebufferLinearSampler);
 	
@@ -74,10 +75,4 @@ void PostProcessor::Render(eg::TextureRef input, const eg::BloomRenderer::Render
 	eg::DC.Draw(0, 3, 0, 1);
 	
 	eg::DC.EndRenderPass();
-	
-	const float CROSSHAIR_SIZE = 32;
-	const float CROSSHAIR_OPACITY = 0.75f;
-	eg::SpriteBatch::overlay.Draw(eg::GetAsset<eg::Texture>("Textures/Crosshair.png"),
-	    eg::Rectangle::CreateCentered(eg::CurrentResolutionX() / 2.0f, eg::CurrentResolutionY() / 2.0f, CROSSHAIR_SIZE, CROSSHAIR_SIZE),
-	    eg::ColorLin(eg::Color::White.ScaleAlpha(CROSSHAIR_OPACITY)), eg::SpriteFlags::None);
 }

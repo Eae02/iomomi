@@ -2,6 +2,9 @@
 
 #include "GameState.hpp"
 #include "Gui/Widgets/WidgetList.hpp"
+#include "World/PhysicsEngine.hpp"
+#include "World/World.hpp"
+#include "Graphics/BlurRenderer.hpp"
 
 class MainMenuGameState : public GameState
 {
@@ -15,7 +18,13 @@ public:
 		m_screen = Screen::Main;
 	}
 	
+	void OnDeactivate() override;
+	
+	const struct Level* backgroundLevel = nullptr;
+	
 private:
+	void RenderWorld(float dt);
+	
 	void DrawLevelSelect(float dt);
 	
 	enum class Screen
@@ -26,6 +35,8 @@ private:
 	};
 	
 	Screen m_screen = Screen::Main;
+	
+	eg::SpriteBatch m_spriteBatch;
 	
 	WidgetList m_mainWidgetList;
 	
@@ -38,6 +49,13 @@ private:
 	std::vector<int64_t> m_extraLevelIds;
 	
 	Button m_levelSelectBackButton;
+	
+	PhysicsEngine m_physicsEngine;
+	std::unique_ptr<World> m_world;
+	BlurRenderer m_worldBlurRenderer;
+	eg::Framebuffer m_worldRenderFramebuffer;
+	eg::Texture m_worldRenderTexture;
+	float m_worldGameTime = 0;
 };
 
 extern MainMenuGameState* mainMenuGameState;

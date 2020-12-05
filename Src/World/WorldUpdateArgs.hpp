@@ -6,7 +6,8 @@ enum class WorldMode
 {
 	Game,
 	Editor,
-	Thumbnail
+	Thumbnail,
+	Menu
 };
 
 struct WorldUpdateArgs

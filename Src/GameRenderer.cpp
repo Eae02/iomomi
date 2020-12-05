@@ -9,8 +9,10 @@
 #include "World/GravityGun.hpp"
 #include "Graphics/Materials/GravityCornerLightMaterial.hpp"
 
+GameRenderer* GameRenderer::instance;
+
 GameRenderer::GameRenderer(RenderContext& renderCtx)
-	: m_renderCtx(&renderCtx)
+	: m_renderCtx(&renderCtx), m_glassBlurRenderer(4, eg::Format::R16G16B16A16_Float)
 {
 	m_projection.SetZNear(0.02f);
 	m_projection.SetZFar(200.0f);
@@ -36,6 +38,14 @@ void GameRenderer::SetViewMatrix(const glm::mat4& viewMatrix, const glm::mat4& i
 	m_inverseViewMatrix = inverseViewMatrix;
 	m_viewProjMatrix = m_projection.Matrix() * viewMatrix;
 	m_inverseViewProjMatrix = inverseViewMatrix * m_projection.InverseMatrix();
+}
+
+void GameRenderer::SetViewMatrixFromThumbnailCamera(const World& world)
+{
+	m_viewMatrix = glm::lookAt(world.thumbnailCameraPos, world.thumbnailCameraPos + world.thumbnailCameraDir, glm::vec3(0, 1, 0));
+	m_inverseViewMatrix = glm::inverse(m_viewMatrix);
+	m_viewProjMatrix = m_projection.Matrix() * m_viewMatrix;
+	m_inverseViewProjMatrix = m_inverseViewMatrix * m_projection.InverseMatrix();
 }
 
 static int* physicsDebug = eg::TweakVarInt("phys_dbg_draw", 0, 0, 1);
@@ -378,7 +388,7 @@ void GameRenderer::Render(World& world, float gameTime, float dt,
 		auto gpuTimerPost = eg::StartGPUTimer("Post");
 		auto cpuTimerPost = eg::StartCPUTimer("Post");
 		m_renderCtx->postProcessor.Render(m_rtManager.GetRenderTexture(RenderTex::Lit), m_bloomRenderTarget.get(),
-		                                  outputFramebuffer, outputResX, outputResY);
+		                                  outputFramebuffer, outputResX, outputResY, postColorScale);
 	}
 	
 	eg::DC.DebugLabelEnd();

@@ -12,7 +12,7 @@ void ActivatorComp::Activate()
 
 void ActivatorComp::Update(const WorldUpdateArgs& args)
 {
-	if (args.player == nullptr)
+	if (args.mode == WorldMode::Editor)
 		return;
 	
 	bool activated = m_lastActivatedFrame + ACTIVATED_FRAMES > eg::FrameIdx();

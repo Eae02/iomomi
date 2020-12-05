@@ -16,6 +16,7 @@ layout (push_constant) uniform PC
 	vec2 pixelSize;
 	float exposure;
 	float bloomIntensity;
+	float finalColorScale;
 };
 
 vec3 doFXAA()
@@ -26,10 +27,10 @@ vec3 doFXAA()
 	float REDUCE_MIN = 1 / 128.0;
 	float REDUCE_MUL = 1 / 8.0;
 	
-	float lumaTL = dot(luma, textureOffset(inputSampler, texCoord_in, ivec2(-1.0, -1.0)).xyz);
-	float lumaTR = dot(luma, textureOffset(inputSampler, texCoord_in, ivec2(1.0, -1.0)).xyz);
-	float lumaBL = dot(luma, textureOffset(inputSampler, texCoord_in, ivec2(-1.0, 1.0)).xyz);
-	float lumaBR = dot(luma, textureOffset(inputSampler, texCoord_in, ivec2(1.0, 1.0)).xyz);
+	float lumaTL = dot(luma, texture(inputSampler, texCoord_in - pixelSize).xyz);
+	float lumaTR = dot(luma, texture(inputSampler, texCoord_in + vec2(pixelSize.x, -pixelSize.y)).xyz);
+	float lumaBL = dot(luma, texture(inputSampler, texCoord_in + vec2(-pixelSize.x, pixelSize.y)).xyz);
+	float lumaBR = dot(luma, texture(inputSampler, texCoord_in + pixelSize).xyz);
 	float lumaMid = dot(luma, texture(inputSampler, texCoord_in).xyz);
 	
 	vec2 dir = vec2(0, 0);
@@ -74,5 +75,5 @@ void main()
 	}
 	
 	float vignette = pow(length(texCoord_in - 0.5) / length(vec2(0.55)), 2.0);
-	color_out = vec4((vec3(1.0) - exp(-exposure * color)) * (1.0 - vignette), 1.0);
+	color_out = vec4((vec3(1.0) - exp(-exposure * color)) * (1.0 - vignette) * finalColorScale, 1.0);
 }

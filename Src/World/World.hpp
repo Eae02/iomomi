@@ -61,7 +61,7 @@ public:
 	
 	void CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt);
 	
-	void Update(const WorldUpdateArgs& args);
+	void Update(const WorldUpdateArgs& args, PhysicsEngine* physicsEngine);
 	
 	void PrepareForDraw(struct PrepareDrawArgs& args);
 	

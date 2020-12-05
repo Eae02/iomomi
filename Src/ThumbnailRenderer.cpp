@@ -73,15 +73,13 @@ LevelThumbnailUpdate* BeginUpdateLevelThumbnails(RenderContext& renderContext, e
 		renderer->WorldChanged(*world);
 		
 		WorldUpdateArgs updateArgs = {};
-		updateArgs.mode = WorldMode::Thumbnail;
+		updateArgs.mode = WorldMode::Menu;
 		updateArgs.world = world.get();
 		updateArgs.waterSim = &renderer->m_waterSimulator;
 		updateArgs.invalidateShadows = [] (const eg::Sphere&) { };
-		world->Update(updateArgs);
+		world->Update(updateArgs, nullptr);
 		
-		glm::mat4 viewMatrix = glm::lookAt(world->thumbnailCameraPos, world->thumbnailCameraPos + world->thumbnailCameraDir, glm::vec3(0, 1, 0));
-		glm::mat4 invViewMatrix = glm::inverse(viewMatrix);
-		renderer->SetViewMatrix(viewMatrix, invViewMatrix);
+		renderer->SetViewMatrixFromThumbnailCamera(*world);
 		
 		LevelThumbnailEntry& entry = update->thumbnails.emplace_back();
 		entry.thumbnailPath = std::move(thumbnailPath);

@@ -57,7 +57,6 @@ void Editor::InitWorld()
 {
 	m_world->entManager.isEditor = true;
 	m_selectedEntities.clear();
-	ActivationLightStripEnt::GenerateAll(*m_world);
 }
 
 static constexpr int NEW_LEVEL_WALL_TEXTURE = 6;
@@ -187,7 +186,7 @@ void Editor::RunFrame(float dt)
 	WorldUpdateArgs entityUpdateArgs = { };
 	entityUpdateArgs.dt = dt;
 	entityUpdateArgs.world = m_world.get();
-	m_world->Update(entityUpdateArgs);
+	m_world->Update(entityUpdateArgs, nullptr);
 	
 	
 	EditorState editorState;
@@ -226,7 +225,7 @@ void Editor::RunFrame(float dt)
 		std::stringstream stream;
 		m_world->Save(stream);
 		stream.seekg(0, std::ios::beg);
-		mainGameState->LoadWorld(stream);
+		mainGameState->SetWorld(World::Load(stream, false));
 		SetCurrentGS(mainGameState);
 		ImGui::End();
 		return;

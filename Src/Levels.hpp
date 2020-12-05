@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string_view>
+#include "World/World.hpp"
 
 enum class LevelStatus
 {
@@ -21,6 +22,8 @@ struct Level
 extern std::vector<Level> levels;
 
 extern const std::vector<std::string_view> levelsOrder;
+
+std::unique_ptr<World> LoadLevelWorld(const Level& level, bool isEditor);
 
 void MarkLevelCompleted(Level& level);
 

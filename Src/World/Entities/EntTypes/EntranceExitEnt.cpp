@@ -173,7 +173,7 @@ glm::mat4 EntranceExitEnt::GetTransform() const
 
 void EntranceExitEnt::Update(const WorldUpdateArgs& args)
 {
-	if (args.player == nullptr)
+	if (args.mode != WorldMode::Game)
 		return;
 	
 	Dir direction = OppositeDir(m_direction);

@@ -17,7 +17,7 @@ void CubeSpawnerEnt::RenderSettings()
 
 void CubeSpawnerEnt::Update(const WorldUpdateArgs& args)
 {
-	if (args.player == nullptr)
+	if (args.mode != WorldMode::Game)
 		return;
 	
 	bool activated = m_activatable.AllSourcesActive();

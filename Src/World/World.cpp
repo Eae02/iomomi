@@ -77,6 +77,8 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 	
 	world->m_isLatestVersion = version == CURRENT_VERSION;
 	
+	ActivationLightStripEnt::GenerateAll(*world);
+	
 	return world;
 }
 
@@ -304,9 +306,17 @@ void World::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 	});
 }
 
-void World::Update(const WorldUpdateArgs& args)
+void World::Update(const WorldUpdateArgs& args, PhysicsEngine* physicsEngine)
 {
 	entManager.Update(args);
+	
+	if (physicsEngine != nullptr)
+	{
+		auto physicsUpdateCPUTimer = eg::StartCPUTimer("Physics");
+		physicsEngine->Simulate(args.dt);
+	}
+	
+	entManager.ForEachOfType<CubeEnt>([&] (CubeEnt& cube) { cube.UpdatePostSim(args); });
 }
 
 void World::PrepareForDraw(PrepareDrawArgs& args)

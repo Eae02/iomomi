@@ -114,6 +114,13 @@ void UpgradeLevelsCommand(eg::Span<const std::string_view> args, eg::console::Wr
 	writer.WriteLine(eg::console::InfoColor, endMessage);
 }
 
+std::unique_ptr<World> LoadLevelWorld(const Level& level, bool isEditor)
+{
+	std::string levelPath = GetLevelPath(level.name);
+	std::ifstream levelStream(levelPath, std::ios::binary);
+	return World::Load(levelStream, isEditor);
+}
+
 void MarkLevelCompleted(Level& level)
 {
 	if (level.status != LevelStatus::Completed)

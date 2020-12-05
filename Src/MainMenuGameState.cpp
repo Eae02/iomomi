@@ -1,17 +1,19 @@
-#include <fstream>
 #include "MainMenuGameState.hpp"
 #include "Gui/OptionsMenu.hpp"
-#include "Levels.hpp"
 #include "Gui/GuiCommon.hpp"
+#include "Levels.hpp"
 #include "MainGameState.hpp"
 #include "Settings.hpp"
+
+#include <fstream>
 
 constexpr float BUTTON_W = 200;
 
 MainMenuGameState* mainMenuGameState;
 
 MainMenuGameState::MainMenuGameState()
-	: m_mainWidgetList(BUTTON_W), m_levelHighlightIntensity(levels.size(), 0.0f)
+	: m_mainWidgetList(BUTTON_W), m_levelHighlightIntensity(levels.size(), 0.0f),
+	  m_worldBlurRenderer(2, eg::Format::R8G8B8A8_UNorm)
 {
 	m_mainWidgetList.AddWidget(Button("Play", [&] { m_screen = Screen::LevelSelect; }));
 	m_mainWidgetList.AddWidget(Button("Options", [&] { m_screen = Screen::Options; optionsMenuOpen = true; }));
@@ -38,6 +40,10 @@ MainMenuGameState::MainMenuGameState()
 
 void MainMenuGameState::RunFrame(float dt)
 {
+	m_spriteBatch.Begin();
+	
+	RenderWorld(dt);
+	
 	if (m_levelHighlightIntensity.size() < levels.size())
 	{
 		m_levelHighlightIntensity.resize(levels.size(), 0.0f);
@@ -51,12 +57,12 @@ void MainMenuGameState::RunFrame(float dt)
 	{
 		m_mainWidgetList.position = glm::vec2(eg::CurrentResolutionX(), eg::CurrentResolutionY()) / 2.0f;
 		m_mainWidgetList.Update(dt, m_screen == Screen::Main);
-		m_mainWidgetList.Draw(eg::SpriteBatch::overlay);
+		m_mainWidgetList.Draw(m_spriteBatch);
 	}
 	else if (m_screen == Screen::Options)
 	{
 		UpdateOptionsMenu(dt);
-		DrawOptionsMenu(eg::SpriteBatch::overlay);
+		DrawOptionsMenu(m_spriteBatch);
 		
 		if (!optionsMenuOpen)
 		{
@@ -70,8 +76,12 @@ void MainMenuGameState::RunFrame(float dt)
 	
 	if (ComboBox::current)
 	{
-		ComboBox::current->DrawOverlay(eg::SpriteBatch::overlay);
+		ComboBox::current->DrawOverlay(m_spriteBatch);
 	}
+	
+	eg::RenderPassBeginInfo rpBeginInfo;
+	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Load;
+	m_spriteBatch.End(eg::CurrentResolutionX(), eg::CurrentResolutionY(), rpBeginInfo);
 }
 
 void MainMenuGameState::DrawLevelSelect(float dt)
@@ -99,7 +109,7 @@ void MainMenuGameState::DrawLevelSelect(float dt)
 	const eg::Texture& lockTexture = eg::GetAsset<eg::Texture>("Textures/Lock.png");
 	
 	//Draws the level boxes
-	eg::SpriteBatch::overlay.PushScissor(0, boxEndY - INFLATE_PIXELS_Y, eg::CurrentResolutionX(), visibleHeight + INFLATE_PIXELS_Y * 2);
+	m_spriteBatch.PushScissor(0, boxEndY - INFLATE_PIXELS_Y, eg::CurrentResolutionX(), visibleHeight + INFLATE_PIXELS_Y * 2);
 	for (size_t i = 0; i < levelIds->size(); i++)
 	{
 		const Level& level = levels[levelIds->at(i)];
@@ -113,10 +123,11 @@ void MainMenuGameState::DrawLevelSelect(float dt)
 		bool hovered = cursorInLevelsArea && rect.Contains(flippedCursorPos) && level.status != LevelStatus::Locked;
 		if (hovered && clicked)
 		{
-			std::string levelPath = GetLevelPath(level.name);
-			std::ifstream levelStream(levelPath, std::ios::binary);
-			SetCurrentGS(mainGameState);
-			mainGameState->LoadWorld(levelStream, levelIds->at(i));
+			if (std::unique_ptr<World> world = LoadLevelWorld(level, false))
+			{
+				SetCurrentGS(mainGameState);
+				mainGameState->SetWorld(std::move(world), levelIds->at(i));
+			}
 		}
 		
 		float& highlightIntensity = m_levelHighlightIntensity[levelIds->at(i)];
@@ -139,15 +150,15 @@ void MainMenuGameState::DrawLevelSelect(float dt)
 		if (level.status == LevelStatus::Locked)
 			shade *= 0.4f;
 		
-		eg::SpriteBatch::overlay.Draw(*texture, inflatedRect, eg::ColorLin(1, 1, 1, 1).ScaleRGB(shade), eg::SpriteFlags::None);
+		m_spriteBatch.Draw(*texture, inflatedRect, eg::ColorLin(1, 1, 1, 1).ScaleRGB(shade), eg::SpriteFlags::None);
 		
 		if (level.status == LevelStatus::Locked)
 		{
 			eg::Rectangle lockTextureRect = eg::Rectangle::CreateCentered(inflatedRect.Center(), lockTexture.Width(), lockTexture.Height());
-			eg::SpriteBatch::overlay.Draw(lockTexture, lockTextureRect, eg::ColorLin(1, 1, 1, 1), eg::SpriteFlags::None);
+			m_spriteBatch.Draw(lockTexture, lockTextureRect, eg::ColorLin(1, 1, 1, 1), eg::SpriteFlags::None);
 		}
 	}
-	eg::SpriteBatch::overlay.PopScissor();
+	m_spriteBatch.PopScissor();
 	
 	//Updates scroll
 	int totalRows = levelIds->size() / numPerRow + 1;
@@ -164,12 +175,12 @@ void MainMenuGameState::DrawLevelSelect(float dt)
 	{
 		constexpr int SCROLL_BAR_W = 6;
 		eg::Rectangle scrollAreaRect(eg::CurrentResolutionX() - MARGIN_X + 5, boxEndY, SCROLL_BAR_W, visibleHeight);
-		eg::SpriteBatch::overlay.DrawRect(scrollAreaRect, style::ButtonColorDefault);
+		m_spriteBatch.DrawRect(scrollAreaRect, style::ButtonColorDefault);
 		
 		float barHeight = scrollAreaRect.h * (float)visibleHeight / (float)totalHeight;
 		float barYOffset = (m_levelSelectScroll / (float)maxScroll) * (scrollAreaRect.h - barHeight);
 		eg::Rectangle scrollBarRect(scrollAreaRect.x + 1, scrollAreaRect.y + scrollAreaRect.h - barYOffset - barHeight, SCROLL_BAR_W - 2, barHeight);
-		eg::SpriteBatch::overlay.DrawRect(scrollBarRect, style::ButtonColorHover);
+		m_spriteBatch.DrawRect(scrollBarRect, style::ButtonColorHover);
 	}
 	
 	//Draws and updates tabs
@@ -181,7 +192,7 @@ void MainMenuGameState::DrawLevelSelect(float dt)
 		{
 			glm::vec2 extents;
 			float opacity = mode == m_inExtraLevelsTab ? 0.7f : 0.15f;
-			eg::SpriteBatch::overlay.DrawText(
+			m_spriteBatch.DrawText(
 				*style::UIFont,
 				text,
 				glm::vec2(tabTextX, tabTextY),
@@ -198,5 +209,78 @@ void MainMenuGameState::DrawLevelSelect(float dt)
 	
 	m_levelSelectBackButton.position = glm::vec2(MARGIN_X, boxEndY - 60);
 	m_levelSelectBackButton.Update(dt, true);
-	m_levelSelectBackButton.Draw(eg::SpriteBatch::overlay);
+	m_levelSelectBackButton.Draw(m_spriteBatch);
+}
+
+float* menuWorldColorScale = eg::TweakVarFloat("menu_world_color_scale", 0.6f, 0.0f, 1.0f);
+
+void MainMenuGameState::RenderWorld(float dt)
+{
+	if (m_world == nullptr)
+	{
+		if (backgroundLevel == nullptr)
+			return;
+		m_world = LoadLevelWorld(*backgroundLevel, false);
+		m_physicsEngine = {};
+		m_worldGameTime = 0;
+		GameRenderer::instance->WorldChanged(*m_world);
+	}
+	
+	eg::Format inputFormat = eg::Format::R8G8B8A8_UNorm;
+	if (m_worldRenderTexture.handle == nullptr || eg::CurrentResolutionX() != (int)m_worldRenderTexture.Width() ||
+		eg::CurrentResolutionY() != (int)m_worldRenderTexture.Height() || inputFormat != m_worldRenderTexture.Format())
+	{
+		eg::TextureCreateInfo textureCI;
+		textureCI.width = eg::CurrentResolutionX();
+		textureCI.height = eg::CurrentResolutionY();
+		textureCI.mipLevels = 1;
+		textureCI.format = inputFormat;
+		textureCI.flags = eg::TextureFlags::ShaderSample | eg::TextureFlags::FramebufferAttachment;
+		m_worldRenderTexture = eg::Texture::Create2D(textureCI);
+		
+		eg::FramebufferAttachment attachment(m_worldRenderTexture.handle);
+		m_worldRenderFramebuffer = eg::Framebuffer({ &attachment, 1 });
+	}
+	m_worldBlurRenderer.MaybeUpdateResolution(eg::CurrentResolutionX(), eg::CurrentResolutionY());   
+	
+	m_worldGameTime += dt;
+	
+	GameRenderer::instance->m_player = nullptr;
+	GameRenderer::instance->m_physicsDebugRenderer = nullptr;
+	GameRenderer::instance->m_physicsEngine = &m_physicsEngine;
+	GameRenderer::instance->m_particleManager = nullptr;
+	GameRenderer::instance->m_gravityGun = nullptr;
+	GameRenderer::instance->postColorScale = *menuWorldColorScale;
+	GameRenderer::instance->SetViewMatrixFromThumbnailCamera(*m_world);
+	
+	WorldUpdateArgs updateArgs = { };
+	updateArgs.mode = WorldMode::Menu;
+	updateArgs.dt = dt;
+	updateArgs.world = m_world.get();
+	updateArgs.waterSim = &GameRenderer::instance->m_waterSimulator;
+	updateArgs.physicsEngine = &m_physicsEngine;
+	updateArgs.invalidateShadows = [this] (const eg::Sphere& sphere) { GameRenderer::instance->InvalidateShadows(sphere); };
+	
+	m_physicsEngine.BeginCollect();
+	m_world->CollectPhysicsObjects(m_physicsEngine, dt);
+	m_physicsEngine.EndCollect();
+	
+	m_world->Update(updateArgs, &m_physicsEngine);
+	
+	GameRenderer::instance->Render(*m_world, m_worldGameTime, dt, m_worldRenderFramebuffer.handle,
+	                               eg::CurrentResolutionX(), eg::CurrentResolutionY());
+	
+	m_worldRenderTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
+	m_worldBlurRenderer.Render(m_worldRenderTexture);
+	
+	eg::Rectangle dstRect(0, eg::CurrentResolutionY(), eg::CurrentResolutionX(), -eg::CurrentResolutionY());
+	
+	m_spriteBatch.Draw(m_worldBlurRenderer.OutputTexture(), dstRect, eg::ColorLin(1, 1, 1, 1), eg::SpriteFlags::ForceLowestMipLevel);
+}
+
+void MainMenuGameState::OnDeactivate()
+{
+	GameRenderer::instance->m_waterSimulator.Stop();
+	m_physicsEngine = {};
+	m_world = {};
 }

@@ -2,22 +2,29 @@ fixes:
  - velocity is too high after moving down a ramp
  - water should be affected by force fields
  - physics object rotation
- - gravity barriers still have collision when disabled
  - standing on button is awkward
 
 graphics fixes:
  - fix hidden water still rendering when underwater
  - gun should be rendered after ssr
+ - force fields should be visible through blurred glass
+ - fix gun rendering
 
 textures and models:
  - textures in level change room
  - better side model for gravity barriers
  - texture and model for cube spawner
+ - make cube (re)spawn prettier
  - different graphics for pushable platforms
  - make objects glow when gravity has been changed
  - particles (or other visuals) to show current gravity of objects
  - particles when water splashes
  - decorative mesh entities
+ - wall overlay textures
+ - swim animation
+ - make doors not clip into the level change room's model
+ - outdoor light sources
+ - make cube snap to button
 
 features:
  - zero gravity mode
@@ -25,6 +32,34 @@ features:
  - levers
  - moving force fields
  - water drains and emitters
+ - the gun should be picked up rather than suddenly appearing
+ - placable doors
 
-editor:
- - undo stack
+sounds:
+ - walking
+ - landing
+ - shooting
+ - flipping gravity
+ - walking on a gravity corner
+ - swimming
+ - entering water
+ - water moving (?)
+ - door opening
+ - menu buttons
+
+ui:
+ - completed icon in level select screen
+ - level select screen title
+ - hints for controls
+ - hints for restart (?)
+ - checkbox / toggle control
+ - slider control
+ - options for keybindings
+ - option for fov
+ - option for sensitivity
+ - option for gamma / exposure
+ - option for hud
+   - crosshair (?)
+   - control hints
+ - indicate that textures and vsync require a restart
+ - control menus using keyboard / controller
