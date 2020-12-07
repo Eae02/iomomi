@@ -21,7 +21,7 @@ add_executable(Gravity ${SOURCE_FILES} ${IMGUI_FILES})
 #Adds compiler specific options
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 	target_compile_options(Gravity PRIVATE -Wall -Wextra -Wshadow -pedantic -msse4.1 --std=c++17 -Wno-unused-parameter -Wno-delete-non-virtual-dtor -Wno-missing-field-initializers)
-	set_source_files_properties(Src/Graphics/WaterSimulatorImpl.cpp PROPERTIES COMPILE_FLAGS "-O2 -g0")
+	set_source_files_properties(Src/Graphics/WaterSimulatorImpl.cpp PROPERTIES COMPILE_FLAGS "-O1 -g0")
 	set_source_files_properties(Src/World/Collision.cpp PROPERTIES COMPILE_FLAGS "-O3 -g0")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	target_compile_options(Gravity PRIVATE /wd4250 /wd4307 /wd4251 /wd4244 /wd4068 /wd4996 /wd4275 /D_CRT_SECURE_NO_WARNINGS

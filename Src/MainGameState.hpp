@@ -21,9 +21,7 @@ public:
 	void OnDeactivate() override;
 	
 private:
-#ifndef NDEBUG
 	void DrawOverlay(float dt);
-#endif
 	
 	bool ReloadLevel();
 	

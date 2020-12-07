@@ -187,12 +187,7 @@ void MainGameState::RunFrame(float dt)
 		ReloadLevel();
 	}
 	
-#ifndef NDEBUG
-	if (eg::DevMode())
-	{
-		DrawOverlay(dt);
-	}
-#endif
+	DrawOverlay(dt);
 	
 	if (!m_pausedMenu.isPaused)
 	{
@@ -202,10 +197,9 @@ void MainGameState::RunFrame(float dt)
 
 int* debugOverlay = eg::TweakVarInt("dbg_overlay", 1);
 
-#ifndef NDEBUG
 void MainGameState::DrawOverlay(float dt)
 {
-	if (!*debugOverlay)
+	if (!*debugOverlay && eg::DevMode())
 		return;
 	
 	ImGui::SetNextWindowPos(ImVec2(5, 5), ImGuiCond_Always);
@@ -233,7 +227,6 @@ void MainGameState::DrawOverlay(float dt)
 	ImGui::End();
 	ImGui::PopStyleVar();
 }
-#endif
 
 bool MainGameState::ReloadLevel()
 {

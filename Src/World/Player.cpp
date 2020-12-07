@@ -527,7 +527,6 @@ glm::vec3 Player::Forward() const
 	return m_rotation * glm::vec3(0, 0, -1);
 }
 
-#ifndef NDEBUG
 void Player::DrawDebugOverlay()
 {
 	ImGui::Text("Pos: %.2f, %.2f, %.2f", Position().x, Position().y, Position().z);
@@ -548,7 +547,6 @@ void Player::DrawDebugOverlay()
 	
 	ImGui::Text("On ground: %d", (int)m_onGround);
 }
-#endif
 
 void Player::Reset()
 {

@@ -12,9 +12,7 @@ public:
 	
 	void GetViewMatrix(glm::mat4& matrixOut, glm::mat4& inverseMatrixOut) const;
 	
-#ifndef NDEBUG
 	void DrawDebugOverlay();
-#endif
 	
 	const glm::vec3& EyePosition() const
 	{
