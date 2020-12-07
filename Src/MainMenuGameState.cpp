@@ -273,7 +273,11 @@ void MainMenuGameState::RenderWorld(float dt)
 	m_worldRenderTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 	m_worldBlurRenderer.Render(m_worldRenderTexture);
 	
-	eg::Rectangle dstRect(0, eg::CurrentResolutionY(), eg::CurrentResolutionX(), -eg::CurrentResolutionY());
+	eg::Rectangle dstRect;
+	if (eg::CurrentGraphicsAPI() == eg::GraphicsAPI::Vulkan)
+		dstRect = eg::Rectangle(0, 0, eg::CurrentResolutionX(), eg::CurrentResolutionY());
+	else
+		dstRect = eg::Rectangle(0, eg::CurrentResolutionY(), eg::CurrentResolutionX(), -eg::CurrentResolutionY());
 	
 	m_spriteBatch.Draw(m_worldBlurRenderer.OutputTexture(), dstRect, eg::ColorLin(1, 1, 1, 1), eg::SpriteFlags::ForceLowestMipLevel);
 }
