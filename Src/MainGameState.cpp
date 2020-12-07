@@ -199,7 +199,7 @@ int* debugOverlay = eg::TweakVarInt("dbg_overlay", 1);
 
 void MainGameState::DrawOverlay(float dt)
 {
-	if (!*debugOverlay && eg::DevMode())
+	if (!*debugOverlay || !eg::DevMode())
 		return;
 	
 	ImGui::SetNextWindowPos(ImVec2(5, 5), ImGuiCond_Always);
