@@ -172,7 +172,7 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 	
 	if (m_gravityTransitionMode == TransitionMode::None && !underwater && !*noclipActive)
 	{
-		if (glm::length(localVelPlane) > *walkSpeed * 1.1f)
+		if (glm::length(localVelPlane) > *walkSpeed * 1.1f && !m_onGround)
 		{
 			localVelPlane *= 1.0f - std::min(dt * 0.3f, 0.1f);
 		}

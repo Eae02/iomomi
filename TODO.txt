@@ -1,5 +1,4 @@
 fixes:
- - velocity is too high after moving down a ramp
  - water should be affected by force fields
  - physics object rotation
 
