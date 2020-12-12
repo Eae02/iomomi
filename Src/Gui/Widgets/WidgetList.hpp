@@ -4,8 +4,10 @@
 #include "ComboBox.hpp"
 #include "ToggleButton.hpp"
 #include "SubtitleWidget.hpp"
+#include "Slider.hpp"
+#include "KeyBindingWidget.hpp"
 
-using Widget = std::variant<Button, ComboBox, ToggleButton, SubtitleWidget>;
+using Widget = std::variant<Button, ComboBox, ToggleButton, KeyBindingWidget, Slider, SubtitleWidget>;
 
 class WidgetList
 {
@@ -39,6 +41,8 @@ public:
 	glm::vec2 relativeOffset;
 	
 	float maxHeight = INFINITY;
+	
+	static constexpr float WIDGET_SPACING = 10;
 	
 private:
 	float m_width;

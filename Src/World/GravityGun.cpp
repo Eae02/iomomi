@@ -178,9 +178,7 @@ void GravityGun::Update(World& world, const PhysicsEngine& physicsEngine, WaterS
 		}
 	}
 	
-	if ((eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft)) ||
-		(eg::IsButtonDown(eg::Button::CtrlrRightShoulder) && !eg::WasButtonDown(eg::Button::CtrlrRightShoulder)) ||
-		(eg::IsButtonDown(eg::Button::CtrlrLeftShoulder) && !eg::WasButtonDown(eg::Button::CtrlrLeftShoulder)))
+	if (settings.keyShoot.IsDown() && !settings.keyShoot.WasDown())
 	{
 		eg::Ray viewRay = eg::Ray::UnprojectNDC(inverseViewProj, glm::vec2(0.0f));
 		auto[intersectObject, intersectDist] = physicsEngine.RayIntersect(viewRay, RAY_MASK_BLOCK_GUN);

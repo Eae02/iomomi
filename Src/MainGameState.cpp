@@ -113,7 +113,7 @@ void MainGameState::RunFrame(float dt)
 	if (m_world == nullptr)
 		return;
 	
-	if (!eg::console::IsShown() && !settingsWindowVisible && !m_pausedMenu.isPaused)
+	if (!eg::console::IsShown() && !m_pausedMenu.isPaused)
 	{
 		auto worldUpdateCPUTimer = eg::StartCPUTimer("World Update");
 		

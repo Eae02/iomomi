@@ -2,6 +2,7 @@
 #include "OptionsMenu.hpp"
 #include "../GameState.hpp"
 #include "../MainMenuGameState.hpp"
+#include "../Settings.hpp"
 
 constexpr float BUTTON_W = 200;
 
@@ -35,7 +36,7 @@ void PausedMenu::Update(float dt)
 {
 	shouldRestartLevel = false;
 	
-	if (eg::IsButtonDown(eg::Button::Escape) && !eg::WasButtonDown(eg::Button::Escape))
+	if (settings.keyMenu.IsDown() && !settings.keyMenu.WasDown() && !KeyBindingWidget::anyKeyBindingPickingKey)
 	{
 		isPaused = !isPaused;
 		optionsMenuOpen = false;

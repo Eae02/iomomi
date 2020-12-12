@@ -61,6 +61,13 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 {
 	const glm::vec3 up = -DirectionVector(m_down);
 	
+	glm::vec2 rotationAnalogValue = eg::InputState::Current().RightAnalogValue();
+	glm::vec2 movementAnalogValue = eg::InputState::Current().LeftAnalogValue();
+	if (settings.flipJoysticks)
+	{
+		std::swap(rotationAnalogValue, movementAnalogValue);
+	}
+	
 	auto TransitionInterpol = [&]
 	{ return glm::smoothstep(0.0f, 1.0f, m_transitionTime); };
 	
@@ -89,7 +96,7 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 	{
 		glm::vec2 rotationDelta = glm::vec2(eg::CursorPosDelta()) * -settings.lookSensitivityMS;
 		
-		rotationDelta -= eg::InputState::Current().RightAnalogValue() * (settings.lookSensitivityGP * dt);
+		rotationDelta -= rotationAnalogValue * (settings.lookSensitivityGP * dt);
 		
 		if (settings.lookInvertY)
 			rotationDelta.y = -rotationDelta.y;
@@ -119,11 +126,11 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 	const glm::vec3 forward = m_rotation * glm::vec3(0, 0, -1);
 	const glm::vec3 right = m_rotation * glm::vec3(1, 0, 0);
 	
-	const bool moveForward = eg::IsButtonDown(eg::Button::W) || eg::IsButtonDown(eg::Button::CtrlrDPadUp);
-	const bool moveBack = eg::IsButtonDown(eg::Button::S) || eg::IsButtonDown(eg::Button::CtrlrDPadDown);
-	const bool moveLeft = eg::IsButtonDown(eg::Button::A) || eg::IsButtonDown(eg::Button::CtrlrDPadLeft);
-	const bool moveRight = eg::IsButtonDown(eg::Button::D) || eg::IsButtonDown(eg::Button::CtrlrDPadRight);
-	const bool moveUp = eg::IsButtonDown(eg::Button::Space) || eg::IsButtonDown(eg::Button::CtrlrA);
+	const bool moveForward = settings.keyMoveF.IsDown();
+	const bool moveBack    = settings.keyMoveB.IsDown();
+	const bool moveLeft    = settings.keyMoveL.IsDown();
+	const bool moveRight   = settings.keyMoveR.IsDown();
+	const bool moveUp      = settings.keyJump.IsDown();
 	
 	if (underwater || *noclipActive)
 	{
@@ -168,7 +175,7 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 	//Finds the velocity vector in local space
 	float localVelVertical = glm::dot(up, m_velocity);
 	glm::vec2 localVelPlane(glm::dot(forwardPlane, m_velocity), glm::dot(rightPlane, m_velocity));
-	glm::vec2 localAccPlane(-eg::AxisValue(eg::ControllerAxis::LeftY), eg::AxisValue(eg::ControllerAxis::LeftX));
+	glm::vec2 localAccPlane(-movementAnalogValue.y, movementAnalogValue.x);
 	
 	if (m_gravityTransitionMode == TransitionMode::None && !underwater && !*noclipActive)
 	{
@@ -351,8 +358,7 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 		
 		if (interactableEntity != nullptr)
 		{
-			if ((eg::IsButtonDown(eg::Button::E) && !eg::WasButtonDown(eg::Button::E)) ||
-				(eg::IsButtonDown(eg::Button::CtrlrX) && !eg::WasButtonDown(eg::Button::CtrlrX)))
+			if (settings.keyInteract.IsDown() && !settings.keyInteract.WasDown())
 			{
 				interactableEntity->Interact(*this);
 			}

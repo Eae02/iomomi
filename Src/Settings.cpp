@@ -2,7 +2,6 @@
 
 #include <yaml-cpp/yaml.h>
 #include <fstream>
-#include <imgui.h>
 
 std::string settingsPath;
 
@@ -28,7 +27,6 @@ static std::string displayModeNames[] = { "windowed", "fullscreen", "fullscreenD
 
 void LoadSettings()
 {
-#ifndef __EMSCRIPTEN__
 	settingsPath = eg::AppDataPath() + "EaeGravity/Settings.yaml";
 	
 	std::ifstream settingsStream(settingsPath);
@@ -70,7 +68,24 @@ void LoadSettings()
 	settings.fullscreenDisplayMode.refreshRate = settingsNode["refreshRate"].as<uint32_t>(0);
 	settings.vsync = settingsNode["vsync"].as<bool>(true);
 	
-#endif
+	auto ReadKeyBinding = [&] (const char* name, KeyBinding& binding)
+	{
+		std::string value = settingsNode[name].as<std::string>("");
+		size_t spacePos = value.find(' ');
+		if (spacePos != std::string::npos)
+		{
+			binding.kbmButton = eg::ButtonFromString(std::string_view(value.data(), spacePos));
+			binding.controllerButton = eg::ButtonFromString(std::string_view(value.data() + spacePos + 1));
+		}
+	};
+	ReadKeyBinding("keyMoveF", settings.keyMoveF);
+	ReadKeyBinding("keyMoveB", settings.keyMoveB);
+	ReadKeyBinding("keyMoveL", settings.keyMoveL);
+	ReadKeyBinding("keyMoveR", settings.keyMoveR);
+	ReadKeyBinding("keyJump", settings.keyJump);
+	ReadKeyBinding("keyInteract", settings.keyInteract);
+	ReadKeyBinding("keyMenu", settings.keyMenu);
+	ReadKeyBinding("keyShoot", settings.keyShoot);
 }
 
 static const char* textureQualityNames[] = { "low", "medium", "high" };
@@ -78,8 +93,8 @@ static const char* qualityNames[] = { "veryLow", "low", "medium", "high", "veryH
 
 void SaveSettings()
 {
-#ifndef __EMSCRIPTEN__
 	YAML::Emitter emitter;
+	
 	emitter << YAML::BeginMap;
 	emitter << YAML::Key << "showExtraLevels" << YAML::Value << settings.showExtraLevels;
 	emitter << YAML::Key << "textureQuality" << YAML::Value << textureQualityNames[(int)settings.textureQuality];
@@ -92,6 +107,7 @@ void SaveSettings()
 	emitter << YAML::Key << "lookSensitivityMS" << YAML::Value << settings.lookSensitivityMS;
 	emitter << YAML::Key << "lookSensitivityGP" << YAML::Value << settings.lookSensitivityGP;
 	emitter << YAML::Key << "lookInvertY" << YAML::Value << settings.lookInvertY;
+	emitter << YAML::Key << "flipJoysticks" << YAML::Value << settings.flipJoysticks;
 	emitter << YAML::Key << "fxaa" << YAML::Value << settings.enableFXAA;
 	emitter << YAML::Key << "bloom" << YAML::Value << settings.enableBloom;
 	
@@ -101,6 +117,20 @@ void SaveSettings()
 	emitter << YAML::Key << "refreshRate" << YAML::Value << settings.fullscreenDisplayMode.refreshRate;
 	emitter << YAML::Key << "vsync" << YAML::Value << settings.vsync;
 	
+	auto WriteKeyBinding = [&] (const char* name, const KeyBinding& binding)
+	{
+		std::string value = eg::Concat({ eg::ButtonToString(binding.kbmButton), " ", eg::ButtonToString(binding.controllerButton) });
+		emitter << YAML::Key << name << YAML::Value << value;
+	};
+	WriteKeyBinding("keyMoveF", settings.keyMoveF);
+	WriteKeyBinding("keyMoveB", settings.keyMoveB);
+	WriteKeyBinding("keyMoveL", settings.keyMoveL);
+	WriteKeyBinding("keyMoveR", settings.keyMoveR);
+	WriteKeyBinding("keyJump", settings.keyJump);
+	WriteKeyBinding("keyInteract", settings.keyInteract);
+	WriteKeyBinding("keyMenu", settings.keyMenu);
+	WriteKeyBinding("keyShoot", settings.keyShoot);
+	
 	emitter << YAML::EndMap;
 	
 	std::ofstream settingsStream(settingsPath);
@@ -108,7 +138,6 @@ void SaveSettings()
 	{
 		settingsStream << emitter.c_str();
 	}
-#endif
 }
 
 int settingsGeneration = 0;
@@ -128,241 +157,6 @@ void SettingsChanged()
 	}
 	
 	settingsGeneration++;
-}
-
-void OptCommand(eg::Span<const std::string_view> args, eg::console::Writer& writer)
-{
-	std::string qualityLevelStrings[] = { "Very Low", "Low", "Medium", "High", "Very High" };
-	
-	auto WriteSettingValue = [&] (std::string_view message, std::string_view value)
-	{
-		writer.Write(eg::console::InfoColor, message);
-		writer.WriteLine(eg::console::InfoColorSpecial, value);
-	};
-	
-	if (args[0] == "reflQuality")
-	{
-		if (args.size() == 1)
-		{
-			WriteSettingValue("Reflections Quality: ", qualityLevelStrings[(int)settings.reflectionsQuality]);
-		}
-		else
-		{
-			DecodeQualityLevel(args[1], settings.reflectionsQuality);
-			SettingsChanged();
-		}
-	}
-	else if (args[0] == "shadowQuality")
-	{
-		if (args.size() == 1)
-		{
-			WriteSettingValue("Shadow Quality: ", qualityLevelStrings[(int)settings.shadowQuality]);
-		}
-		else
-		{
-			DecodeQualityLevel(args[1], settings.shadowQuality);
-			SettingsChanged();
-		}
-	}
-	else if (args[0] == "lightingQuality")
-	{
-		if (args.size() == 1)
-		{
-			WriteSettingValue("Lighting Quality: ", qualityLevelStrings[(int)settings.lightingQuality]);
-		}
-		else
-		{
-			DecodeQualityLevel(args[1], settings.lightingQuality);
-			SettingsChanged();
-		}
-	}
-	else if (args[0] == "waterQuality")
-	{
-		if (args.size() == 1)
-		{
-			WriteSettingValue("Water Quality: ", qualityLevelStrings[(int)settings.waterQuality]);
-		}
-		else
-		{
-			DecodeQualityLevel(args[1], settings.waterQuality);
-			SettingsChanged();
-		}
-	}
-	else if (args[0] == "fov")
-	{
-		if (args.size() == 1)
-		{
-			WriteSettingValue("Field of View: ", std::to_string(settings.fieldOfViewDeg));
-		}
-		else
-		{
-			settings.fieldOfViewDeg = glm::clamp(std::stof(std::string(args[1])), 60.0f, 90.0f);
-			SettingsChanged();
-		}
-	}
-	else if (args[0] == "exposure")
-	{
-		if (args.size() == 1)
-		{
-			WriteSettingValue("Exposure: ", std::to_string(settings.exposure));
-		}
-		else
-		{
-			settings.exposure = std::stof(std::string(args[1]));
-			SettingsChanged();
-		}
-	}
-	else if (args[0] == "lookSensitivityMS" || args[0] == "lookSensMS")
-	{
-		if (args.size() == 1)
-		{
-			WriteSettingValue("Mouse Sensitivity: ", std::to_string(settings.lookSensitivityMS));
-		}
-		else
-		{
-			settings.lookSensitivityMS = std::stof(std::string(args[1]));
-			SettingsChanged();
-		}
-	}
-	else if (args[0] == "lookSensitivityGP" || args[0] == "lookSensGP")
-	{
-		if (args.size() == 1)
-		{
-			WriteSettingValue("Gamepad Sensitivity: ", std::to_string(settings.lookSensitivityGP));
-		}
-		else
-		{
-			settings.lookSensitivityGP = std::stof(std::string(args[1]));
-			SettingsChanged();
-		}
-	}
-	else if (args[0] == "lookInvY")
-	{
-		if (args.size() == 1)
-		{
-			WriteSettingValue("Invert Y: ", settings.lookInvertY ? "yes" : "no");
-		}
-		else
-		{
-			settings.lookInvertY = args[1] == "true";
-			SettingsChanged();
-		}
-	}
-	else if (args[0] == "fxaa")
-	{
-		if (args.size() == 1)
-		{
-			WriteSettingValue("FXAA: ", settings.enableFXAA ? "on" : "off");
-		}
-		else
-		{
-			settings.enableFXAA = args[1] == "true";
-			SettingsChanged();
-		}
-	}
-	else if (args[0] == "bloom")
-	{
-		if (args.size() == 1)
-		{
-			WriteSettingValue("BLOOM: ", settings.enableBloom ? "on" : "off");
-		}
-		else
-		{
-			settings.enableBloom = args[1] == "true";
-			SettingsChanged();
-		}
-	}
-}
-
-static const char* commands[] =
-{
-	"reflQuality", "shadowQuality", "lightingQuality", "waterQuality", "fov", "exposure", "lookSensitivityMS",
-	"lookSensMS", "lookSensitivityGP", "lookSensGP", "lookInvY", "fxaa", "bloom"
-};
-
-static const char* qualityCommands[] =
-{
-	"reflQuality", "shadowQuality", "lightingQuality", "waterQuality"
-};
-
-void OptCommandCompleter1(eg::Span<const std::string_view> words, eg::console::CompletionsList& list)
-{
-	for (const char* cmd : commands)
-		list.Add(cmd);
-}
-
-void OptCommandCompleter2(eg::Span<const std::string_view> words, eg::console::CompletionsList& list)
-{
-	if (eg::Contains(qualityCommands, words[1]))
-	{
-		for (const char* quality : qualityNames)
-			list.Add(quality);
-	}
-}
-
-bool settingsWindowVisible = false;
-
-void OptWndCommand(eg::Span<const std::string_view> args, eg::console::Writer&)
-{
-	settingsWindowVisible = true;
-}
-
-void DrawSettingsWindow()
-{
-	if (!settingsWindowVisible)
-		return;
-	
-	static const char* QUALITY_SETTINGS_STR = "Very Low\0Low\0Medium\0High\0Very High\0";
-	static const char* TEXTURE_QUALITY_STR = "Low\0Medium\0High\0";
-	
-	ImGui::SetNextWindowSize(ImVec2(200, 250), ImGuiCond_FirstUseEver);
-	ImGui::SetNextWindowSizeConstraints(ImVec2(100, 100), ImVec2(INFINITY, INFINITY));
-	if (ImGui::Begin("Options", &settingsWindowVisible))
-	{
-		if (ImGui::CollapsingHeader("Graphics Quality", ImGuiTreeNodeFlags_DefaultOpen))
-		{
-			ImGui::Combo("Texture Quality", reinterpret_cast<int*>(&settings.textureQuality), TEXTURE_QUALITY_STR);
-			if (ImGui::IsItemHovered())
-			{
-				ImGui::SetTooltip("Requires restart");
-			}
-			
-			if (ImGui::Combo("Shadow Quality", reinterpret_cast<int*>(&settings.shadowQuality), QUALITY_SETTINGS_STR))
-				SettingsChanged();
-			if (ImGui::Combo("Reflections Quality", reinterpret_cast<int*>(&settings.reflectionsQuality), QUALITY_SETTINGS_STR))
-				SettingsChanged();
-			if (ImGui::Combo("Lighting Quality", reinterpret_cast<int*>(&settings.lightingQuality), QUALITY_SETTINGS_STR))
-				SettingsChanged();
-			if (ImGui::Combo("Water Quality", reinterpret_cast<int*>(&settings.waterQuality), QUALITY_SETTINGS_STR))
-				SettingsChanged();
-		}
-		
-		if (ImGui::CollapsingHeader("Graphics", ImGuiTreeNodeFlags_DefaultOpen))
-		{
-			if (ImGui::SliderFloat("Field of View", &settings.fieldOfViewDeg, 70.0f, 100.0f))
-			{
-				settings.fieldOfViewDeg = glm::clamp(settings.fieldOfViewDeg, 70.0f, 100.0f);
-				SettingsChanged();
-			}
-			if (ImGui::SliderFloat("Exposure", &settings.exposure, 0.5f, 1.5f))
-			{
-				settings.exposure = std::max(settings.exposure, 0.5f);
-				SettingsChanged();
-			}
-			ImGui::Checkbox("FXAA", &settings.enableFXAA);
-			ImGui::Checkbox("Bloom", &settings.enableBloom);
-		}
-		
-		if (ImGui::CollapsingHeader("Input", ImGuiTreeNodeFlags_DefaultOpen))
-		{
-			if (ImGui::SliderFloat("Mouse Sensitivity", &settings.lookSensitivityMS, 0.001f, 0.01f))
-				settings.lookSensitivityMS = std::max(settings.lookSensitivityMS, 0.0f);
-			if (ImGui::SliderFloat("Gamepad Sensitivity", &settings.lookSensitivityGP, 0.1f, 4.0f))
-				settings.lookSensitivityGP = std::max(settings.lookSensitivityGP, 0.0f);
-			ImGui::Checkbox("Look Invert Y", &settings.lookInvertY);
-		}
-	}
-	ImGui::End();
 }
 
 void UpdateDisplayMode()

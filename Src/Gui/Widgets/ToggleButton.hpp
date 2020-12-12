@@ -1,8 +1,9 @@
 #pragma once
 
 #include <functional>
+#include "OptionWidgetBase.hpp"
 
-class ToggleButton
+class ToggleButton : public OptionWidgetBase
 {
 public:
 	ToggleButton() = default;
@@ -16,13 +17,6 @@ public:
 	std::string trueString;
 	std::string falseString;
 	
-	std::string label;
-	glm::vec2 position;
-	float width;
-	
-	static constexpr float height = 30;
-	
 private:
-	eg::Rectangle m_rectangle;
 	float m_highlightIntensity = 0;
 };

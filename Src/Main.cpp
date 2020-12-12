@@ -26,6 +26,8 @@ void Start(eg::RunConfig& runConfig)
 	runConfig.gameName = "Gravity Game";
 	runConfig.flags |= eg::RunFlags::DefaultFramebufferSRGB;
 	runConfig.defaultDepthStencilFormat = eg::Format::Depth32;
+	runConfig.minWindowW = 1000;
+	runConfig.minWindowH = 700;
 	runConfig.initialize = []
 	{
 		if (!eg::Contains(eg::FullscreenDisplayModes(), settings.fullscreenDisplayMode))
@@ -36,10 +38,6 @@ void Start(eg::RunConfig& runConfig)
 		
 		eg::SpriteFont::LoadDevFont();
 		eg::console::Init();
-		eg::console::AddCommand("opt", 1, &OptCommand);
-		eg::console::SetCompletionProvider("opt", 0, &OptCommandCompleter1);
-		eg::console::SetCompletionProvider("opt", 1, &OptCommandCompleter2);
-		eg::console::AddCommand("optwnd", 0, &OptWndCommand);
 		InitEntityTypes();
 		StaticPropMaterial::InitAssetTypes();
 		DecalMaterial::InitAssetTypes();

@@ -1,7 +1,5 @@
 #include "WidgetList.hpp"
 
-static constexpr float WIDGET_SPACING = 10;
-
 size_t WidgetList::AddWidget(Widget widget)
 {
 	float y = m_nextY;

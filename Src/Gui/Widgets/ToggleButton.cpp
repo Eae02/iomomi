@@ -1,19 +1,15 @@
 #include "ToggleButton.hpp"
-#include "ComboBox.hpp"
 #include "../GuiCommon.hpp"
 
 static constexpr float FONT_SCALE = 0.6f;
 
 void ToggleButton::Update(float dt, bool allowInteraction)
 {
-	m_rectangle = eg::Rectangle(position.x + width / 2, position.y, width / 2, height);
+	UpdateBase(allowInteraction);
 	
-	glm::vec2 flippedCursorPos(eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY());
-	bool hovered = allowInteraction && m_rectangle.Contains(flippedCursorPos);
+	AnimateProperty(m_highlightIntensity, dt, style::HoverAnimationTime, m_hovered);
 	
-	AnimateProperty(m_highlightIntensity, dt, style::HoverAnimationTime, hovered);
-	
-	if (hovered && eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft))
+	if (m_hovered && eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft))
 	{
 		setValue(!getValue());
 	}
@@ -21,5 +17,5 @@ void ToggleButton::Update(float dt, bool allowInteraction)
 
 void ToggleButton::Draw(eg::SpriteBatch& spriteBatch) const
 {
-	ComboBox::DrawButton(spriteBatch, m_rectangle, m_highlightIntensity, label, getValue() ? trueString : falseString);
+	DrawBase(spriteBatch, m_highlightIntensity, getValue() ? trueString : falseString);
 }

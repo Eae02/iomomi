@@ -118,8 +118,6 @@ void Game::RunFrame(float dt)
 	
 	m_imGuiInterface.NewFrame();
 	
-	DrawSettingsWindow();
-	
 	if (CurrentGS() != nullptr)
 	{
 		CurrentGS()->RunFrame(dt);

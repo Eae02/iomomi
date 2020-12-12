@@ -9,6 +9,20 @@ enum class DisplayMode
 	FullscreenDesktop
 };
 
+struct KeyBinding
+{
+	eg::Button kbmButton;
+	eg::Button controllerButton;
+	eg::Button kbmDefault;
+	eg::Button controllerDefault;
+	
+	KeyBinding(eg::Button kbm, eg::Button controller)
+		: kbmButton(kbm), controllerButton(controller), kbmDefault(kbm), controllerDefault(controller) { }
+	
+	bool IsDown() { return eg::IsButtonDown(kbmButton) || eg::IsButtonDown(controllerButton); }
+	bool WasDown() { return eg::WasButtonDown(kbmButton) || eg::WasButtonDown(controllerButton); }
+};
+
 struct Settings
 {
 	bool vsync = true;
@@ -18,19 +32,29 @@ struct Settings
 	bool showExtraLevels = false;
 	
 	eg::TextureQuality textureQuality = eg::TextureQuality::High;
-	QualityLevel shadowQuality        = QualityLevel::Medium;
+	QualityLevel shadowQuality        = QualityLevel::High;
 	QualityLevel reflectionsQuality   = QualityLevel::Medium;
-	QualityLevel lightingQuality      = QualityLevel::Medium;
+	QualityLevel lightingQuality      = QualityLevel::High;
 	QualityLevel waterQuality         = QualityLevel::Medium;
 	float fieldOfViewDeg              = 80.0f;
 	
-	float exposure = 1.2f;
+	float exposure = 0.9f;
 	
+	bool enableFXAA         = true;
+	bool enableBloom        = true;
+	
+	KeyBinding keyMoveF { eg::Button::W, eg::Button::CtrlrDPadUp };
+	KeyBinding keyMoveB { eg::Button::S, eg::Button::CtrlrDPadDown };
+	KeyBinding keyMoveL { eg::Button::A, eg::Button::CtrlrDPadLeft };
+	KeyBinding keyMoveR { eg::Button::D, eg::Button::CtrlrDPadRight };
+	KeyBinding keyJump { eg::Button::Space, eg::Button::CtrlrA };
+	KeyBinding keyInteract { eg::Button::E, eg::Button::CtrlrX };
+	KeyBinding keyMenu { eg::Button::Escape, eg::Button::CtrlrStart };
+	KeyBinding keyShoot { eg::Button::MouseLeft, eg::Button::CtrlrB };
 	float lookSensitivityMS = 0.005f;
 	float lookSensitivityGP = 2.0f;
+	bool flipJoysticks      = false;
 	bool lookInvertY        = false;
-	bool enableFXAA         = true;
-	bool enableBloom        = false;
 	
 	bool HDREnabled() const
 	{
@@ -62,12 +86,3 @@ void LoadSettings();
 void SaveSettings();
 
 void SettingsChanged();
-
-void OptCommand(eg::Span<const std::string_view> args, eg::console::Writer& writer);
-
-void OptCommandCompleter1(eg::Span<const std::string_view> words, eg::console::CompletionsList& list);
-void OptCommandCompleter2(eg::Span<const std::string_view> words, eg::console::CompletionsList& list);
-
-void OptWndCommand(eg::Span<const std::string_view> args, eg::console::Writer& writer);
-
-void DrawSettingsWindow();

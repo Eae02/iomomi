@@ -5,23 +5,14 @@ ComboBox* ComboBox::current;
 
 static constexpr int DROP_DOWN_HEIGHT = 25;
 static constexpr int OPTION_HEIGHT = 25;
-static constexpr float FONT_SCALE = 0.6f;
 
-static float textHeight = 0;
+
 
 void ComboBox::Update(float dt, bool allowInteraction)
 {
-	if (textHeight == 0)
-	{
-		textHeight = (float)style::UIFont->Size() * FONT_SCALE;
-	}
+	UpdateBase(allowInteraction);
 	
-	m_rectangle = eg::Rectangle(position.x + width / 2, position.y, width / 2, height);
-	
-	glm::vec2 flippedCursorPos(eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY());
-	bool hovered = allowInteraction && m_rectangle.Contains(flippedCursorPos);
-	
-	AnimateProperty(m_highlightIntensity, dt, style::HoverAnimationTime, hovered || current == this);
+	AnimateProperty(m_highlightIntensity, dt, style::HoverAnimationTime, m_hovered || current == this);
 	
 	bool clicked = eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft) && allowInteraction;
 	
@@ -32,7 +23,7 @@ void ComboBox::Update(float dt, bool allowInteraction)
 		for (size_t i = 0; i < options.size(); i++)
 		{
 			optionRect.y -= DROP_DOWN_HEIGHT;
-			bool optHovered = allowInteraction && optionRect.Contains(flippedCursorPos);
+			bool optHovered = allowInteraction && optionRect.Contains(glm::vec2(eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY()));
 			AnimateProperty(m_optionHighlightIntensity[i], dt, style::HoverAnimationTime, optHovered);
 			if (optHovered && clicked)
 				setValue(i);
@@ -45,7 +36,7 @@ void ComboBox::Update(float dt, bool allowInteraction)
 		{
 			current = nullptr;
 		}
-		else if (hovered)
+		else if (m_hovered)
 		{
 			current = this;
 			m_optionHighlightIntensity.assign(options.size(), 0.0f);
@@ -55,28 +46,9 @@ void ComboBox::Update(float dt, bool allowInteraction)
 	AnimateProperty(m_expandProgress, dt, 0.1f, current == this);
 }
 
-void ComboBox::DrawButton(eg::SpriteBatch& spriteBatch, const eg::Rectangle& rectangle, float highlightIntensity,
-                          std::string_view label, std::string_view optionText)
-{
-	//Draws the background rectangle
-	eg::ColorLin backColor = eg::ColorLin::Mix(style::ButtonColorDefault, style::ButtonColorHover, highlightIntensity);
-	spriteBatch.DrawRect(rectangle, backColor);
-	
-	//Draws the label text
-	float labelTextWidth = style::UIFont->GetTextExtents(label).x * FONT_SCALE;
-	glm::vec2 labelTextPos(rectangle.x - labelTextWidth - 15, rectangle.CenterY() - textHeight / 2.0f);
-	spriteBatch.DrawText(*style::UIFont, label, labelTextPos, eg::ColorLin(eg::Color::White.ScaleAlpha(0.7f)),
-		FONT_SCALE, nullptr, eg::TextFlags::DropShadow);
-	
-	//Draws the current option text
-	glm::vec2 textPos(rectangle.x + (rectangle.h - textHeight) / 2.0f, rectangle.CenterY() - textHeight / 2.0f);
-	spriteBatch.DrawText(*style::UIFont, optionText, textPos, eg::ColorLin(eg::Color::White),
-		FONT_SCALE, nullptr, eg::TextFlags::DropShadow);
-}
-
 void ComboBox::Draw(eg::SpriteBatch& spriteBatch) const
 {
-	DrawButton(spriteBatch, m_rectangle, m_highlightIntensity, label, options[getValue()]);
+	DrawBase(spriteBatch, m_highlightIntensity, options[getValue()]);
 	
 	if (!warning.empty())
 	{
