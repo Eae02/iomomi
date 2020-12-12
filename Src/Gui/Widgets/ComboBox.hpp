@@ -10,6 +10,9 @@ public:
 	void Update(float dt, bool allowInteraction);
 	void Draw(eg::SpriteBatch& spriteBatch) const;
 	
+	static void DrawButton(eg::SpriteBatch& spriteBatch, const eg::Rectangle& rectangle, float highlightIntensity,
+                           std::string_view label, std::string_view optionText);
+	
 	void DrawOverlay(eg::SpriteBatch& spriteBatch) const;
 	
 	std::vector<std::string> options;
@@ -20,6 +23,7 @@ public:
 	static ComboBox* current;
 	
 	std::string label;
+	std::string warning;
 	glm::vec2 position;
 	float width;
 	

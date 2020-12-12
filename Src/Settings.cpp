@@ -112,6 +112,7 @@ void SaveSettings()
 }
 
 int settingsGeneration = 0;
+std::optional<bool> prevVSyncState;
 
 int SettingsGeneration()
 {
@@ -120,6 +121,12 @@ int SettingsGeneration()
 
 void SettingsChanged()
 {
+	if (!prevVSyncState.has_value() || *prevVSyncState != settings.vsync)
+	{
+		eg::gal::SetEnableVSync(settings.vsync);
+		prevVSyncState = settings.vsync;
+	}
+	
 	settingsGeneration++;
 }
 

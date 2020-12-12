@@ -1,8 +1,8 @@
 #include "WidgetList.hpp"
 
-static constexpr float WIDGET_SPACING = 15;
+static constexpr float WIDGET_SPACING = 10;
 
-void WidgetList::AddWidget(Widget widget)
+size_t WidgetList::AddWidget(Widget widget)
 {
 	float y = m_nextY;
 	std::visit([&] (auto& widgetVis) {
@@ -12,6 +12,7 @@ void WidgetList::AddWidget(Widget widget)
 	}, widget);
 	m_widgets.emplace_back(std::move(widget), y);
 	m_height = m_nextY - WIDGET_SPACING;
+	return m_widgets.size() - 1;
 }
 
 bool WidgetList::Update(float dt, bool allowInteraction)

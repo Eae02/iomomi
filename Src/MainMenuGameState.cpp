@@ -11,11 +11,35 @@ constexpr float BUTTON_W = 200;
 
 MainMenuGameState* mainMenuGameState;
 
+static int64_t FindContinueLevel()
+{
+	for (std::string_view levelName : levelsOrder)
+	{
+		int64_t level = FindLevel(levelName);
+		if (level != -1 && levels[level].status == LevelStatus::Unlocked)
+			return level;
+	}
+	return -1;
+}
+
+void MainMenuGameState::ContinueClicked()
+{
+	int64_t level = FindContinueLevel();
+	if (level == -1)
+		return;
+	if (std::unique_ptr<World> world = LoadLevelWorld(levels[level], false))
+	{
+		SetCurrentGS(mainGameState);
+		mainGameState->SetWorld(std::move(world), level);
+	}
+}
+
 MainMenuGameState::MainMenuGameState()
 	: m_mainWidgetList(BUTTON_W), m_levelHighlightIntensity(levels.size(), 0.0f),
 	  m_worldBlurRenderer(2, eg::Format::R8G8B8A8_UNorm)
 {
-	m_mainWidgetList.AddWidget(Button("Play", [&] { m_screen = Screen::LevelSelect; }));
+	m_mainWidgetList.AddWidget(Button("Continue", [&] { ContinueClicked(); }));
+	m_mainWidgetList.AddWidget(Button("Select Level", [&] { m_screen = Screen::LevelSelect; }));
 	m_mainWidgetList.AddWidget(Button("Options", [&] { m_screen = Screen::Options; optionsMenuOpen = true; }));
 	m_mainWidgetList.AddWidget(Button("Quit", [&] { eg::Close(); }));
 	
@@ -40,9 +64,22 @@ MainMenuGameState::MainMenuGameState()
 
 void MainMenuGameState::RunFrame(float dt)
 {
+	int64_t continueLevel = FindContinueLevel();
+	Button& continueButton = std::get<Button>(m_mainWidgetList.GetWidget(0));
+	if (continueLevel != -1 && levels[continueLevel].name == levelsOrder[0])
+		continueButton.text = "Start Game";
+	else
+		continueButton.text = "Continue";
+	continueButton.enabled = continueLevel != -1;
+	
 	m_spriteBatch.Begin();
 	
 	RenderWorld(dt);
+	
+	if (eg::IsButtonDown(eg::Button::Escape) && !eg::WasButtonDown(eg::Button::Escape))
+	{
+		m_screen = Screen::Main;
+	}
 	
 	if (m_levelHighlightIntensity.size() < levels.size())
 	{

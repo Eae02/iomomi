@@ -17,6 +17,4 @@ public:
 private:
 	int m_buttonKeyboardFocus = -1;
 	WidgetList m_widgetList;
-	
-	bool m_inOptionsMenu = false;
 };

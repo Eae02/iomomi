@@ -55,23 +55,37 @@ void ComboBox::Update(float dt, bool allowInteraction)
 	AnimateProperty(m_expandProgress, dt, 0.1f, current == this);
 }
 
-void ComboBox::Draw(eg::SpriteBatch& spriteBatch) const
+void ComboBox::DrawButton(eg::SpriteBatch& spriteBatch, const eg::Rectangle& rectangle, float highlightIntensity,
+                          std::string_view label, std::string_view optionText)
 {
 	//Draws the background rectangle
-	eg::ColorLin backColor = eg::ColorLin::Mix(style::ButtonColorDefault, style::ButtonColorHover, m_highlightIntensity);
-	spriteBatch.DrawRect(m_rectangle, backColor);
+	eg::ColorLin backColor = eg::ColorLin::Mix(style::ButtonColorDefault, style::ButtonColorHover, highlightIntensity);
+	spriteBatch.DrawRect(rectangle, backColor);
 	
 	//Draws the label text
 	float labelTextWidth = style::UIFont->GetTextExtents(label).x * FONT_SCALE;
-	glm::vec2 labelTextPos(m_rectangle.x - labelTextWidth - 15, m_rectangle.CenterY() - textHeight / 2.0f);
+	glm::vec2 labelTextPos(rectangle.x - labelTextWidth - 15, rectangle.CenterY() - textHeight / 2.0f);
 	spriteBatch.DrawText(*style::UIFont, label, labelTextPos, eg::ColorLin(eg::Color::White.ScaleAlpha(0.7f)),
 		FONT_SCALE, nullptr, eg::TextFlags::DropShadow);
 	
 	//Draws the current option text
-	const std::string& optionText = options[getValue()];
-	glm::vec2 textPos(m_rectangle.x + (m_rectangle.h - textHeight) / 2.0f, m_rectangle.CenterY() - textHeight / 2.0f);
+	glm::vec2 textPos(rectangle.x + (rectangle.h - textHeight) / 2.0f, rectangle.CenterY() - textHeight / 2.0f);
 	spriteBatch.DrawText(*style::UIFont, optionText, textPos, eg::ColorLin(eg::Color::White),
 		FONT_SCALE, nullptr, eg::TextFlags::DropShadow);
+}
+
+void ComboBox::Draw(eg::SpriteBatch& spriteBatch) const
+{
+	DrawButton(spriteBatch, m_rectangle, m_highlightIntensity, label, options[getValue()]);
+	
+	if (!warning.empty())
+	{
+		glm::vec2 textExtents = style::UIFont->GetTextExtents(warning) * FONT_SCALE;
+		glm::vec2 textPos(m_rectangle.MaxX() - textExtents.x - 5, m_rectangle.CenterY() - textHeight / 2.0f);
+		
+		eg::ColorLin textColor(eg::ColorSRGB::FromHex(0xe8b29a));
+		spriteBatch.DrawText(*style::UIFont, warning, textPos, textColor, FONT_SCALE, nullptr, eg::TextFlags::DropShadow);
+	}
 }
 
 void ComboBox::DrawOverlay(eg::SpriteBatch& spriteBatch) const

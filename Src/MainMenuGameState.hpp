@@ -23,6 +23,8 @@ public:
 	const struct Level* backgroundLevel = nullptr;
 	
 private:
+	void ContinueClicked();
+	
 	void RenderWorld(float dt);
 	
 	void DrawLevelSelect(float dt);

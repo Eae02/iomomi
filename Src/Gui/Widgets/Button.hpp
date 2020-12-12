@@ -12,12 +12,15 @@ public:
 	void Update(float dt, bool allowInteraction);
 	void Draw(eg::SpriteBatch& spriteBatch) const;
 	
-	static void DrawBackground(eg::SpriteBatch& spriteBatch, const eg::Rectangle& rectangle, float highlightIntensity);
+	static void DrawBackground(eg::SpriteBatch& spriteBatch, const eg::Rectangle& rectangle,
+		float highlightIntensity, bool enabled = true);
 	
 	std::string text;
 	
 	glm::vec2 position;
 	float width;
+	
+	bool enabled = true;
 	
 	static constexpr float height = 40;
 	

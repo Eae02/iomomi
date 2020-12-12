@@ -13,7 +13,7 @@ void Button::Update(float dt, bool allowInteraction)
 	eg::Rectangle rect(position, width, height);
 	
 	glm::vec2 flippedCursorPos(eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY());
-	bool hovered = allowInteraction && (rect.Contains(flippedCursorPos) || hasKeyboardFocus);
+	bool hovered = enabled && allowInteraction && (rect.Contains(flippedCursorPos) || hasKeyboardFocus);
 	bool clicked = hovered &&
 		((eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft)) || 
 			(hasKeyboardFocus && eg::IsButtonDown(eg::Button::Enter)));
@@ -34,15 +34,18 @@ void Button::Draw(eg::SpriteBatch& spriteBatch) const
 	
 	eg::Rectangle rect(position, width, height);
 	
-	DrawBackground(spriteBatch, rect, m_highlightIntensity);
+	DrawBackground(spriteBatch, rect, m_highlightIntensity, enabled);
 	
 	glm::vec2 extents = glm::vec2(style::UIFont->GetTextExtents(text).x, style::UIFont->Size()) * fontScale;
+	eg::ColorLin textColor(eg::Color::White);
+	if (!enabled)
+		textColor.a *= 0.5f;
 	
-	spriteBatch.DrawText(*style::UIFont, text, rect.Center() - extents / 2.0f, eg::ColorLin(eg::Color::White),
+	spriteBatch.DrawText(*style::UIFont, text, rect.Center() - extents / 2.0f, textColor,
 	                     fontScale, nullptr, eg::TextFlags::NoPixelAlign | eg::TextFlags::DropShadow);
 }
 
-void Button::DrawBackground(eg::SpriteBatch& spriteBatch, const eg::Rectangle& rect, float highlightIntensity)
+void Button::DrawBackground(eg::SpriteBatch& spriteBatch, const eg::Rectangle& rect, float highlightIntensity, bool enabled)
 {
 	float inflate = highlightIntensity * style::ButtonInflatePercent;
 	
@@ -52,5 +55,8 @@ void Button::DrawBackground(eg::SpriteBatch& spriteBatch, const eg::Rectangle& r
 		rect.w + inflateSize.x * 2, rect.h + inflateSize.y * 2);
 	
 	eg::ColorLin backColor = eg::ColorLin::Mix(style::ButtonColorDefault, style::ButtonColorHover, highlightIntensity);
+	if (!enabled)
+		backColor.a *= 0.5f;
+	
 	spriteBatch.DrawRect(inflatedRect, backColor);
 }

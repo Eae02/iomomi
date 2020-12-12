@@ -29,7 +29,24 @@ ComboBox InitSettingsCB(T Settings::*member, std::string label)
 	return cb;
 }
 
+ToggleButton InitSettingsToggleButton(bool Settings::*member, std::string label, std::string trueString, std::string falseString)
+{
+	ToggleButton button;
+	button.label = std::move(label);
+	button.trueString = std::move(trueString);
+	button.falseString = std::move(falseString);
+	button.getValue = [member] { return settings.*member; };
+	button.setValue = [member] (bool value)
+	{
+		settings.*member = value;
+		SettingsChanged();
+	};
+	return button;
+}
+
 static int fullscreenDisplayModeIndex;
+static size_t textureQualityWidgetIndex;
+static eg::TextureQuality initialTextureQuality;
 
 void InitOptionsMenu()
 {
@@ -57,19 +74,19 @@ void InitOptionsMenu()
 	optWidgetList.AddWidget(SubtitleWidget("Display"));
 	optWidgetList.AddWidget(InitSettingsCB(&Settings::displayMode, "Display Mode:"));
 	optWidgetList.AddWidget(std::move(resolutionCB));
-	optWidgetList.AddWidget(InitSettingsCB(&Settings::vsync, "VSync:"));
+	optWidgetList.AddWidget(InitSettingsToggleButton(&Settings::vsync, "VSync:", "On", "Off"));
 	
 	optWidgetList.AddWidget(SubtitleWidget("Graphics"));
-	optWidgetList.AddWidget(InitSettingsCB(&Settings::textureQuality, "Textures:"));
+	textureQualityWidgetIndex = optWidgetList.AddWidget(InitSettingsCB(&Settings::textureQuality, "Textures:"));
 	optWidgetList.AddWidget(InitSettingsCB(&Settings::shadowQuality, "Shadows:"));
 	optWidgetList.AddWidget(InitSettingsCB(&Settings::reflectionsQuality, "Reflections:"));
 	optWidgetList.AddWidget(InitSettingsCB(&Settings::lightingQuality, "Lighting:"));
 	optWidgetList.AddWidget(InitSettingsCB(&Settings::waterQuality, "Water:"));
-	optWidgetList.AddWidget(InitSettingsCB(&Settings::enableBloom, "Bloom:"));
-	optWidgetList.AddWidget(InitSettingsCB(&Settings::enableFXAA, "FXAA:"));
+	optWidgetList.AddWidget(InitSettingsToggleButton(&Settings::enableBloom, "Bloom:", "On", "Off"));
+	optWidgetList.AddWidget(InitSettingsToggleButton(&Settings::enableFXAA, "FXAA:", "On", "Off"));
 	
 	optWidgetList.AddWidget(SubtitleWidget("Input"));
-	optWidgetList.AddWidget(InitSettingsCB(&Settings::lookInvertY, "Look Invert Y:"));
+	optWidgetList.AddWidget(InitSettingsToggleButton(&Settings::lookInvertY, "Look Invert Y:", "Yes", "No"));
 	
 	optWidgetList.AddWidget(Button("Back", []
 	{
@@ -79,6 +96,8 @@ void InitOptionsMenu()
 	}));
 	
 	optWidgetList.relativeOffset = glm::vec2(-0.5f, 0.5f);
+	
+	initialTextureQuality = settings.textureQuality;
 }
 
 EG_ON_INIT(InitOptionsMenu)
@@ -87,6 +106,14 @@ void UpdateOptionsMenu(float dt)
 {
 	optWidgetList.position = glm::vec2(eg::CurrentResolutionX(), eg::CurrentResolutionY()) / 2.0f;
 	optWidgetList.Update(dt, true);
+	
+	ComboBox& textureQualityCB = std::get<ComboBox>(optWidgetList.GetWidget(textureQualityWidgetIndex));
+	const bool hasTextureWarning = !textureQualityCB.warning.empty();
+	const bool shouldHaveTextureWarning = settings.textureQuality != initialTextureQuality;
+	if (hasTextureWarning != shouldHaveTextureWarning)
+	{
+		textureQualityCB.warning = shouldHaveTextureWarning ? "Requires restart" : "";
+	}
 }
 
 void DrawOptionsMenu(eg::SpriteBatch& spriteBatch)

@@ -2,9 +2,10 @@
 
 #include "Button.hpp"
 #include "ComboBox.hpp"
+#include "ToggleButton.hpp"
 #include "SubtitleWidget.hpp"
 
-using Widget = std::variant<Button, ComboBox, SubtitleWidget>;
+using Widget = std::variant<Button, ComboBox, ToggleButton, SubtitleWidget>;
 
 class WidgetList
 {
@@ -20,7 +21,7 @@ public:
 		m_nextY += spacing;
 	}
 	
-	void AddWidget(Widget widget);
+	size_t AddWidget(Widget widget);
 	
 	template <typename CallbackTp>
 	void AddWidgetFn(CallbackTp fn)
@@ -30,6 +31,9 @@ public:
 	
 	bool Update(float dt, bool allowInteraction);
 	void Draw(eg::SpriteBatch& spriteBatch) const;
+	
+	Widget& GetWidget(size_t index) { return m_widgets[index].first; }
+	const Widget& GetWidget(size_t index) const { return m_widgets[index].first; }
 	
 	glm::vec2 position;
 	glm::vec2 relativeOffset;

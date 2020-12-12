@@ -8,11 +8,16 @@ constexpr float BUTTON_W = 200;
 PausedMenu::PausedMenu()
 	: m_widgetList(BUTTON_W)
 {
-	m_widgetList.AddWidget(Button("Resume", [&] { isPaused = false; }));
+	m_widgetList.AddWidget(Button("Resume", [&]
+	{
+		isPaused = false;
+		optionsMenuOpen = false;
+	}));
 	m_widgetList.AddWidget(Button("Restart Level", [&]
 	{
 		shouldRestartLevel = true;
 		isPaused = false;
+		optionsMenuOpen = false;
 	}));
 	m_widgetList.AddWidget(Button("Options", [&] { optionsMenuOpen = true; }));
 	m_widgetList.AddWidget(Button("Main Menu", [&]
@@ -31,7 +36,10 @@ void PausedMenu::Update(float dt)
 	shouldRestartLevel = false;
 	
 	if (eg::IsButtonDown(eg::Button::Escape) && !eg::WasButtonDown(eg::Button::Escape))
+	{
 		isPaused = !isPaused;
+		optionsMenuOpen = false;
+	}
 	
 	if (!isPaused)
 	{

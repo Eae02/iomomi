@@ -50,7 +50,6 @@ ui:
  - level select screen title
  - hints for controls
  - hints for restart (?)
- - checkbox / toggle control
  - slider control
  - options for keybindings
  - option for fov
@@ -59,5 +58,4 @@ ui:
  - option for hud
    - crosshair (?)
    - control hints
- - indicate that textures and vsync require a restart
  - control menus using keyboard / controller
