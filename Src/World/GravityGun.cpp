@@ -223,6 +223,8 @@ void GravityGun::Update(World& world, const PhysicsEngine& physicsEngine, WaterS
 
 void GravityGun::CollectLights(std::vector<PointLightDrawData>& pointLightsOut) const
 {
+	if (!settings.gunFlash)
+		return;
 	for (const BeamInstance& instance : m_beamInstances)
 	{
 		PointLight pointLight(LIGHT_COLOR, instance.lightIntensity * LIGHT_INTENSITY_MAX);

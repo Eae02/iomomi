@@ -55,6 +55,7 @@ void LoadSettings()
 	settings.enableFXAA = settingsNode["fxaa"].as<bool>(true);
 	settings.enableBloom = settingsNode["bloom"].as<bool>(true);
 	settings.showExtraLevels = settingsNode["showExtraLevels"].as<bool>(false);
+	settings.gunFlash = settingsNode["gunFlash"].as<bool>(false);
 	
 	std::string displayModeString = settingsNode["displayMode"].as<std::string>("");
 	for (int i = 0; i < 3; i++)
@@ -110,6 +111,7 @@ void SaveSettings()
 	emitter << YAML::Key << "flipJoysticks" << YAML::Value << settings.flipJoysticks;
 	emitter << YAML::Key << "fxaa" << YAML::Value << settings.enableFXAA;
 	emitter << YAML::Key << "bloom" << YAML::Value << settings.enableBloom;
+	emitter << YAML::Key << "gunFlash" << YAML::Value << settings.gunFlash;
 	
 	emitter << YAML::Key << "displayMode" << YAML::Value << displayModeNames[(int)settings.displayMode];
 	emitter << YAML::Key << "resx" << YAML::Value << settings.fullscreenDisplayMode.resolutionX;

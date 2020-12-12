@@ -42,6 +42,7 @@ struct Settings
 	
 	bool enableFXAA         = true;
 	bool enableBloom        = true;
+	bool gunFlash           = true;
 	
 	KeyBinding keyMoveF { eg::Button::W, eg::Button::CtrlrDPadUp };
 	KeyBinding keyMoveB { eg::Button::S, eg::Button::CtrlrDPadDown };

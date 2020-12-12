@@ -102,13 +102,14 @@ void InitOptionsMenu()
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::waterQuality, "Water:"));
 	leftWidgetList.AddWidget(InitSettingsToggleButton(&Settings::enableBloom, "Bloom:", "On", "Off"));
 	leftWidgetList.AddWidget(InitSettingsToggleButton(&Settings::enableFXAA, "FXAA:", "On", "Off"));
+	leftWidgetList.AddWidget(InitSettingsToggleButton(&Settings::gunFlash, "Gun Flash:", "Enabled", "Disabled"));
 	leftWidgetList.AddWidget(InitSettingsSlider(&Settings::exposure, "Brightness:", 0.5f, 1.2f));
 	Slider fovSlider = InitSettingsSlider(&Settings::fieldOfViewDeg, "Field of View:", 60, 100);
 	fovSlider.displayValue = true;
 	fovSlider.valueSuffix = u8"°";
 	leftWidgetList.AddWidget(std::move(fovSlider));
 	
-	leftWidgetList.AddSpacing(50);
+	leftWidgetList.AddSpacing(20);
 	leftWidgetList.AddWidget(Button("Back", []
 	{
 		SaveSettings();
