@@ -73,7 +73,7 @@ LevelThumbnailUpdate* BeginUpdateLevelThumbnails(RenderContext& renderContext, e
 		renderer->WorldChanged(*world);
 		
 		WorldUpdateArgs updateArgs = {};
-		updateArgs.mode = WorldMode::Menu;
+		updateArgs.mode = WorldMode::Thumbnail;
 		updateArgs.world = world.get();
 		updateArgs.waterSim = &renderer->m_waterSimulator;
 		updateArgs.invalidateShadows = [] (const eg::Sphere&) { };

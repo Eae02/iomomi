@@ -184,6 +184,7 @@ void Editor::RunFrame(float dt)
 	}
 	
 	WorldUpdateArgs entityUpdateArgs = { };
+	entityUpdateArgs.mode = WorldMode::Editor;
 	entityUpdateArgs.dt = dt;
 	entityUpdateArgs.world = m_world.get();
 	m_world->Update(entityUpdateArgs, nullptr);

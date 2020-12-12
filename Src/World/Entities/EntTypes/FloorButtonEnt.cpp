@@ -39,7 +39,7 @@ static void OnInit()
 EG_ON_INIT(OnInit)
 
 constexpr float LIGHT_ANIMATION_TIME = 0.1f;
-constexpr float MAX_PUSH_DST = 0.07f;
+constexpr float MAX_PUSH_DST = 0.09f;
 constexpr float ACTIVATE_PUSH_DST = MAX_PUSH_DST * 0.8f;
 
 FloorButtonEnt::FloorButtonEnt()

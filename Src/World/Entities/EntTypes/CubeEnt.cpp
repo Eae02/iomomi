@@ -52,8 +52,8 @@ CubeEnt::CubeEnt(const glm::vec3& position, bool _canFloat)
 bool CubeEnt::ShouldCollide(const PhysicsObject& self, const PhysicsObject& other)
 {
 	CubeEnt* cube = (CubeEnt*)std::get<Ent*>(self.owner);
-	if (cube->m_isPickedUp && std::holds_alternative<Player*>(other.owner))
-		return false;
+	//if (cube->m_isPickedUp && std::holds_alternative<Player*>(other.owner))
+	//	return false;
 	return true;
 }
 
