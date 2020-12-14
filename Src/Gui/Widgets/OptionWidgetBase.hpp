@@ -18,11 +18,10 @@ protected:
 	
 	void DrawBase(eg::SpriteBatch& spriteBatch, float highlightIntensity, std::string_view valueText) const;
 	
+	glm::vec2 GetTextPos() const;
+	
 	eg::Rectangle m_rectangle;
 	bool m_hovered = false;
 	
 	static float textHeight;
-	
-private:
-	
 };

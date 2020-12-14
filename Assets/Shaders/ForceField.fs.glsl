@@ -17,8 +17,19 @@ const float INTENSITY_SCALE = 1.0;
 
 layout(binding=1) uniform sampler2D particleSampler;
 
+layout(binding=2) uniform sampler2D waterDepth;
+layout(binding=3) uniform sampler2D blurredGlassDepth;
+#include "Water/WaterTransparent.glh"
+
 void main()
 {
+	if (CheckWaterDiscard())
+		discard;
+	
+	vec2 screenCoord = ivec2(gl_FragCoord.xy) / vec2(textureSize(blurredGlassDepth, 0).xy);
+	if (gl_FragCoord.z < texture(blurredGlassDepth, screenCoord).r)
+		discard;
+	
 	if (mode_in == MODE_BOX)
 	{
 		vec2 fromEdge = size_in - abs(pos2_in * size_in);

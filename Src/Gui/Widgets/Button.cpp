@@ -41,7 +41,8 @@ void Button::Draw(eg::SpriteBatch& spriteBatch) const
 	if (!enabled)
 		textColor.a *= 0.5f;
 	
-	spriteBatch.DrawText(*style::UIFont, text, rect.Center() - extents / 2.0f, textColor,
+	glm::vec2 textPos = rect.Center() - extents / 2.0f + glm::vec2(0, 3);
+	spriteBatch.DrawText(*style::UIFont, text, textPos, textColor,
 	                     fontScale, nullptr, eg::TextFlags::NoPixelAlign | eg::TextFlags::DropShadow);
 }
 

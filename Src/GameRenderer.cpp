@@ -133,7 +133,7 @@ void GameRenderer::Render(World& world, float gameTime, float dt,
 	if (world.playerHasGravityGun && m_gravityGun != nullptr)
 	{
 		m_gravityGun->CollectLights(prepareDrawArgs.pointLights);
-		m_gravityGun->Draw(m_renderCtx->meshBatch);
+		m_gravityGun->Draw(m_renderCtx->meshBatch, m_renderCtx->transparentMeshBatch);
 	}
 	
 	m_renderCtx->transparentMeshBatch.End(eg::DC);

@@ -5,8 +5,6 @@ fixes:
 graphics fixes:
  - fix hidden water still rendering when underwater
  - gun should be rendered after ssr
- - force fields should be visible through blurred glass
- - fix gun rendering
 
 textures and models:
  - textures in level change room

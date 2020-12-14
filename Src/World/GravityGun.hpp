@@ -12,7 +12,7 @@ public:
 	void Update(class World& world, const class PhysicsEngine& physicsEngine, class WaterSimulator& waterSim,
 		eg::ParticleManager& particleManager, const class Player& player, const glm::mat4& inverseViewProj, float dt);
 	
-	void Draw(eg::MeshBatch& meshBatch);
+	void Draw(eg::MeshBatch& meshBatch, eg::MeshBatchOrdered& transparentMeshBatch);
 	
 	void CollectLights(std::vector<PointLightDrawData>& pointLightsOut) const;
 	
@@ -24,6 +24,7 @@ private:
 		size_t PipelineHash() const override;
 		bool BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const override;
 		bool BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const override;
+		OrderRequirement GetOrderRequirement() const override { return OrderRequirement::OnlyOrdered; }
 		
 		eg::Pipeline m_pipeline;
 		eg::DescriptorSet m_descriptorSet;

@@ -1,6 +1,6 @@
 #include "GuiCommon.hpp"
 
-const eg::ColorLin style::ButtonColorDefault(eg::ColorSRGB::FromRGBAHex(0x63696cA0));
+const eg::ColorLin style::ButtonColorDefault(eg::ColorSRGB::FromRGBAHex(0x516a76B0));
 const eg::ColorLin style::ButtonColorHover(eg::ColorSRGB::FromRGBAHex(0x33a8e6c0));
 
 const eg::SpriteFont* style::UIFont;

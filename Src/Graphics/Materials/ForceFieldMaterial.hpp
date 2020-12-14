@@ -28,8 +28,9 @@ public:
 	virtual OrderRequirement GetOrderRequirement() const override { return OrderRequirement::OnlyOrdered; }
 	
 private:
+	eg::Pipeline m_pipelineBeforeWater;
+	eg::Pipeline m_pipelineFinal;
+	
 	eg::Buffer m_meshBuffer;
-	eg::Pipeline m_pipeline;
 	eg::Sampler m_particleSampler;
-	eg::DescriptorSet m_descriptorSet;
 };

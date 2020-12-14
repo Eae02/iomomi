@@ -28,8 +28,15 @@ void OptionWidgetBase::DrawBase(eg::SpriteBatch& spriteBatch, float highlightInt
 	spriteBatch.DrawText(*style::UIFont, label, labelTextPos, eg::ColorLin(eg::Color::White.ScaleAlpha(0.8f)),
 		FONT_SCALE, nullptr, eg::TextFlags::DropShadow);
 	
-	//Draws the current option text
-	glm::vec2 textPos(m_rectangle.x + (m_rectangle.h - textHeight) / 2.0f, m_rectangle.CenterY() - textHeight / 2.0f);
-	spriteBatch.DrawText(*style::UIFont, valueText, textPos, eg::ColorLin(eg::Color::White),
-		FONT_SCALE, nullptr, eg::TextFlags::DropShadow);
+	//Draws the current value text
+	if (!valueText.empty())
+	{
+		spriteBatch.DrawText(*style::UIFont, valueText, GetTextPos(), eg::ColorLin(eg::Color::White),
+		                     FONT_SCALE, nullptr, eg::TextFlags::DropShadow);
+	}
+}
+
+glm::vec2 OptionWidgetBase::GetTextPos() const
+{
+	return glm::vec2(m_rectangle.x + (m_rectangle.h - textHeight) / 2.0f, m_rectangle.CenterY() - textHeight / 2.0f + 1);
 }

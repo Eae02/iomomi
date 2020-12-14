@@ -5,7 +5,6 @@
 #include "../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../Graphics/Materials/MeshDrawArgs.hpp"
 #include "../Settings.hpp"
-#include "../Graphics/GraphicsCommon.hpp"
 #include "../Graphics/RenderSettings.hpp"
 #include "../Graphics/WaterSimulator.hpp"
 
@@ -232,11 +231,12 @@ void GravityGun::CollectLights(std::vector<PointLightDrawData>& pointLightsOut) 
 	}
 }
 
-void GravityGun::Draw(eg::MeshBatch& meshBatch)
+void GravityGun::Draw(eg::MeshBatch& meshBatch, eg::MeshBatchOrdered& transparentMeshBatch)
 {
 	constexpr float KICK_BACK_TIME = 0.08f;
-	constexpr float KICK_RESTORE_TIME = 0.5f;
+	constexpr float KICK_RESTORE_TIME = 0.7f;
 	constexpr float KICK_BACK_DIST_MAX = 0.3f;
+	constexpr float KICK_BACK_DIST_MAX_FRONT = 0.5f;
 	constexpr float ANIMATION_END = 1 - KICK_BACK_TIME - KICK_RESTORE_TIME;
 	float kickBackDist = 0;
 	if (m_fireAnimationTime > 1 - KICK_BACK_TIME)
@@ -248,15 +248,22 @@ void GravityGun::Draw(eg::MeshBatch& meshBatch)
 		kickBackDist = glm::smoothstep(0.0f, 1.0f, (m_fireAnimationTime - ANIMATION_END) / (KICK_RESTORE_TIME));
 	}
 	
-	
 	for (size_t m = 0; m < m_model->NumMeshes(); m++)
 	{
 		glm::mat4 transform = m_gunTransform;
-		if (m_meshIsPartOfFront[m])
+		float dstForThisMesh = m_meshIsPartOfFront[m] ? KICK_BACK_DIST_MAX_FRONT : KICK_BACK_DIST_MAX;
+		transform = glm::translate(transform, glm::vec3(0, 0, -kickBackDist * dstForThisMesh));
+		
+		StaticPropMaterial::InstanceData instanceData(transform);
+		
+		const eg::IMaterial* material = m_materials[m_model->GetMesh(m).materialIndex];
+		if (material->GetOrderRequirement() == eg::IMaterial::OrderRequirement::OnlyOrdered)
 		{
-			transform = glm::translate(transform, glm::vec3(0, 0, -kickBackDist * KICK_BACK_DIST_MAX));
+			transparentMeshBatch.AddModelMesh(*m_model, m, *material, instanceData, INFINITY);
 		}
-		meshBatch.AddModelMesh(*m_model, m, *m_materials[m_model->GetMesh(m).materialIndex],
-			StaticPropMaterial::InstanceData(transform), -1);
+		else
+		{
+			meshBatch.AddModelMesh(*m_model, m, *material, instanceData, -1);
+		}
 	}
 }

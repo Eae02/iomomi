@@ -19,4 +19,6 @@ public:
 	
 private:
 	float m_highlightIntensity = 0;
+	float m_textSwapProgress = 0;
+	uint64_t m_prevFrameUpdated = 0;
 };
