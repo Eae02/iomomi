@@ -8,20 +8,17 @@
 
 #include <imgui.h>
 
-static float* walkSpeed       = eg::TweakVarFloat("pl_walk_speed",        4.0f,  0.0f);
-static float* swimSpeed       = eg::TweakVarFloat("pl_swim_speed",        5.0f,  0.0f);
-static float* noclipSpeed     = eg::TweakVarFloat("pl_noclip_speed",      8.0f,  0.0f);
-static float* walkAccelTime   = eg::TweakVarFloat("pl_walk_atime",        0.1f,  0.0f);
-static float* swimAccelTime   = eg::TweakVarFloat("pl_swim_atime",        0.4f,  0.0f);
-static float* walkDeaccelTime = eg::TweakVarFloat("pl_walk_datime",       0.05f, 0.0f);
-static float* swimDrag        = eg::TweakVarFloat("pl_swim_drag",         5.0f,  0.0f);
-static float* playerGravity   = eg::TweakVarFloat("pl_gravity",           20.0f, 0.0f);
-static float* jumpHeight      = eg::TweakVarFloat("pl_jump_height",       1.1f,  0.0f);
-static float* fallGravityRamp = eg::TweakVarFloat("pl_fall_gravity_ramp", 0.1f,  0.0f);
-static float* maxYSpeed       = eg::TweakVarFloat("pl_max_yspeed",        300,   0.0f);
-static float* colCorrectExtra = eg::TweakVarFloat("pl_cc_extra",          0.001f, 0.0f);
-static float* eyeRoundPrecision = eg::TweakVarFloat("pl_eye_round_prec",  0.01f, 0);
-static int* noclipActive      = eg::TweakVarInt("noclip", 0, 0, 1);
+static float* walkSpeed         = eg::TweakVarFloat("pl_walk_speed",        4.0f,  0.0f);
+static float* swimSpeed         = eg::TweakVarFloat("pl_swim_speed",        5.0f,  0.0f);
+static float* noclipSpeed       = eg::TweakVarFloat("pl_noclip_speed",      8.0f,  0.0f);
+static float* walkAccelTime     = eg::TweakVarFloat("pl_walk_atime",        0.1f,  0.0f);
+static float* swimAccelTime     = eg::TweakVarFloat("pl_swim_atime",        0.4f,  0.0f);
+static float* walkDeaccelTime   = eg::TweakVarFloat("pl_walk_datime",       0.05f, 0.0f);
+static float* swimDrag          = eg::TweakVarFloat("pl_swim_drag",         5.0f,  0.0f);
+static float* playerGravity     = eg::TweakVarFloat("pl_gravity",           20.0f, 0.0f);
+static float* jumpHeight        = eg::TweakVarFloat("pl_jump_height",       1.1f,  0.0f);
+static float* eyeRoundPrecision = eg::TweakVarFloat("pl_eye_round_prec",  0.005f, 0);
+static int* noclipActive        = eg::TweakVarInt("noclip", 0, 0, 1);
 
 static constexpr float EYE_OFFSET = Player::EYE_HEIGHT - Player::HEIGHT / 2;
 
