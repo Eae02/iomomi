@@ -18,7 +18,6 @@ int64_t firstLevelIndex = -1;
 
 const std::vector<std::string_view> levelsOrder = 
 {
-	//PART 1
 	"intro_0",
 	"intro_1",
 	"intro_2",
@@ -31,7 +30,6 @@ const std::vector<std::string_view> levelsOrder =
 	"gravbarrier_ng1",
     "gravbarrier_ng2",
 	"gravbarrier_ng3",
-	"gravbarrier_ng4",
 	
 	"water_ng0",
 	"water_ng1",
@@ -39,6 +37,10 @@ const std::vector<std::string_view> levelsOrder =
 	"water_ng3",
 	"water_ng4",
 	"water_ng5",
+	
+	"gravbarrier_ng4",
+	"gravbarrier_ng5",
+	"gravbarrier_ng6",
 	
 	"gravgun_0",
 	"gravgun_1",
