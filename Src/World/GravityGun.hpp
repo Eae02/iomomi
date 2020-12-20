@@ -16,6 +16,8 @@ public:
 	
 	void CollectLights(std::vector<PointLightDrawData>& pointLightsOut) const;
 	
+	bool shouldShowControlHint = false;
+	
 private:
 	struct MidMaterial : eg::IMaterial
 	{

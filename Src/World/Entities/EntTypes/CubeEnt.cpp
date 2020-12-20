@@ -52,8 +52,8 @@ CubeEnt::CubeEnt(const glm::vec3& position, bool _canFloat)
 bool CubeEnt::ShouldCollide(const PhysicsObject& self, const PhysicsObject& other)
 {
 	CubeEnt* cube = (CubeEnt*)std::get<Ent*>(self.owner);
-	//if (cube->m_isPickedUp && std::holds_alternative<Player*>(other.owner))
-	//	return false;
+	if (cube->m_isPickedUp && std::holds_alternative<Player*>(other.owner))
+		return false;
 	return true;
 }
 
@@ -62,14 +62,7 @@ void CubeEnt::RenderSettings()
 	Ent::RenderSettings();
 	
 	ImGui::Checkbox("Float", &canFloat);
-}
-
-void CubeEnt::Spawned(bool isEditor)
-{
-	//if (isEditor)
-	//{
-	//	m_physicsObject.position += glm::vec3(DirectionVector(m_direction)) * (RADIUS + 0.01f);
-	//}
+	ImGui::Checkbox("Gravity control hint", &m_showChangeGravityControlHint);
 }
 
 void CubeEnt::Draw(eg::MeshBatch& meshBatch, const glm::mat4& transform) const
@@ -144,9 +137,13 @@ int CubeEnt::CheckInteraction(const Player& player, const class PhysicsEngine& p
 	return 0;
 }
 
-std::string_view CubeEnt::GetInteractDescription() const
+std::optional<InteractControlHint> CubeEnt::GetInteractControlHint() const
 {
-	return "Pick Up";
+	InteractControlHint hint;
+	hint.keyBinding = &settings.keyInteract;
+	hint.message = m_isPickedUp ? "Drop" : "Pick Up";
+	hint.type = ControlHintType::PickUpCube;
+	return hint;
 }
 
 bool CubeEnt::SetGravity(Dir newGravity)
@@ -155,6 +152,11 @@ bool CubeEnt::SetGravity(Dir newGravity)
 		return false;
 	m_currentDown = newGravity;
 	return true;
+}
+
+bool CubeEnt::ShouldShowGravityBeamControlHint(Dir newGravity)
+{
+	return !m_isPickedUp && newGravity != m_currentDown && m_showChangeGravityControlHint;
 }
 
 void CubeEnt::Update(const WorldUpdateArgs& args)
@@ -285,6 +287,7 @@ void CubeEnt::Serialize(std::ostream& stream) const
 	cubePB.set_rotationz(m_physicsObject.rotation.z);
 	cubePB.set_rotationw(m_physicsObject.rotation.w);
 	
+	cubePB.set_show_change_gravity_control_hint(m_showChangeGravityControlHint);
 	cubePB.set_can_float(canFloat);
 	
 	cubePB.SerializeToOstream(&stream);
@@ -299,6 +302,7 @@ void CubeEnt::Deserialize(std::istream& stream)
 	m_physicsObject.rotation = glm::quat(cubePB.rotationw(), cubePB.rotationx(), cubePB.rotationy(), cubePB.rotationz());
 	m_physicsObject.displayPosition = m_physicsObject.position;
 	canFloat = cubePB.can_float();
+	m_showChangeGravityControlHint = cubePB.show_change_gravity_control_hint();
 }
 
 void CubeEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)

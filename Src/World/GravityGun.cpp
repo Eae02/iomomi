@@ -177,12 +177,23 @@ void GravityGun::Update(World& world, const PhysicsEngine& physicsEngine, WaterS
 		}
 	}
 	
+	eg::Ray viewRay = eg::Ray::UnprojectNDC(inverseViewProj, glm::vec2(0.0f));
+	auto[intersectObject, intersectDist] = physicsEngine.RayIntersect(viewRay, RAY_MASK_BLOCK_GUN);
+	
+	shouldShowControlHint = false;
+	std::shared_ptr<EntGravityChargeable> entGravityChargeable;
+	if (intersectObject && std::holds_alternative<Ent*>(intersectObject->owner))
+	{
+		entGravityChargeable = std::dynamic_pointer_cast<EntGravityChargeable>(std::get<Ent*>(intersectObject->owner)->shared_from_this());
+		if (entGravityChargeable)
+		{
+			shouldShowControlHint = entGravityChargeable->ShouldShowGravityBeamControlHint(player.CurrentDown());
+		}
+	}
+	
 	if (settings.keyShoot.IsDown() && !settings.keyShoot.WasDown())
 	{
-		eg::Ray viewRay = eg::Ray::UnprojectNDC(inverseViewProj, glm::vec2(0.0f));
-		auto[intersectObject, intersectDist] = physicsEngine.RayIntersect(viewRay, RAY_MASK_BLOCK_GUN);
 		auto[waterIntersectDst, waterIntersectParticle] = waterSim.RayIntersect(viewRay);
-		
 		if (intersectObject || waterIntersectParticle != -1)
 		{
 			BeamInstance& beamInstance = m_beamInstances.emplace_back();
@@ -212,9 +223,9 @@ void GravityGun::Update(World& world, const PhysicsEngine& physicsEngine, WaterS
 			{
 				waterSim.ChangeGravity(waterIntersectParticle, player.CurrentDown());
 			}
-			else if (auto entityDP = std::get_if<Ent*>(&intersectObject->owner))
+			else
 			{
-				beamInstance.entityToCharge = std::dynamic_pointer_cast<EntGravityChargeable>((**entityDP).shared_from_this());
+				beamInstance.entityToCharge = entGravityChargeable;
 			}
 		}
 	}

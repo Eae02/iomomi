@@ -4,6 +4,7 @@
 #include "../../../Graphics/Materials/GravitySwitchMaterial.hpp"
 #include "../../../../Protobuf/Build/GravitySwitchEntity.pb.h"
 #include "../../../Graphics/RenderSettings.hpp"
+#include "../../../Settings.hpp"
 
 static eg::Model* s_model;
 static eg::IMaterial* s_material;
@@ -109,9 +110,13 @@ int GravitySwitchEnt::CheckInteraction(const Player& player, const class Physics
 	return canInteract ? INTERACT_PRIORITY : 0;
 }
 
-std::string_view GravitySwitchEnt::GetInteractDescription() const
+std::optional<InteractControlHint> GravitySwitchEnt::GetInteractControlHint() const
 {
-	return "Flip Gravity";
+	InteractControlHint hint;
+	hint.keyBinding = &settings.keyInteract;
+	hint.message = "Flip Gravity";
+	hint.type = ControlHintType::FlipGravity;
+	return hint;
 }
 
 void GravitySwitchEnt::Serialize(std::ostream& stream) const

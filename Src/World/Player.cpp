@@ -338,6 +338,7 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 	}
 	
 	//Checks for interactable entities
+	interactControlHint = {};
 	if (m_gravityTransitionMode == TransitionMode::None)
 	{
 		EntInteractable* interactableEntity = nullptr;
@@ -361,7 +362,7 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 			}
 			else
 			{
-				//TODO: Show help text
+				interactControlHint = interactableEntity->GetInteractControlHint();
 			}
 		}
 	}

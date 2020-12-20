@@ -176,3 +176,27 @@ void UpdateDisplayMode()
 		break;
 	}
 }
+
+static const eg::Button controllerButtons[] = 
+{
+	eg::Button::CtrlrA,
+	eg::Button::CtrlrB,
+	eg::Button::CtrlrX,
+	eg::Button::CtrlrY,
+	eg::Button::CtrlrBack,
+	eg::Button::CtrlrGuide,
+	eg::Button::CtrlrStart,
+	eg::Button::CtrlrLeftStick,
+	eg::Button::CtrlrRightStick,
+	eg::Button::CtrlrLeftShoulder,
+	eg::Button::CtrlrRightShoulder,
+	eg::Button::CtrlrDPadUp,
+	eg::Button::CtrlrDPadDown,
+	eg::Button::CtrlrDPadLeft,
+	eg::Button::CtrlrDPadRight,
+};
+
+bool IsControllerButton(eg::Button button)
+{
+	return eg::Contains(controllerButtons, button);
+}

@@ -6,7 +6,7 @@
 #include "Entities/EntTypes/WallLightEnt.hpp"
 #include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
 #include "../Graphics/WallShader.hpp"
-#include "../Graphics/RenderSettings.hpp"
+#include "../../Protobuf/Build/World.pb.h"
 
 #include <yaml-cpp/yaml.h>
 
@@ -23,7 +23,7 @@ World::World()
 	thumbnailCameraDir = glm::vec3(0, 0, 1);
 }
 
-static const uint32_t CURRENT_VERSION = 8;
+static const uint32_t CURRENT_VERSION = 9;
 static char MAGIC[] = { (char)0xFF, 'G', 'W', 'D' };
 
 std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
@@ -176,22 +176,46 @@ void World::LoadFormatSup5(std::istream& stream, uint32_t version, bool isEditor
 		voxel.hasGravityCorner = std::bitset<12>(data.hasGravityCorner);
 	}
 	
-	if (version >= 8)
+	if (version >= 9)
 	{
-		thumbnailCameraPos.x = eg::BinRead<float>(stream);
-		thumbnailCameraPos.y = eg::BinRead<float>(stream);
-		thumbnailCameraPos.z = eg::BinRead<float>(stream);
-		thumbnailCameraDir.x = eg::BinRead<float>(stream);
-		thumbnailCameraDir.y = eg::BinRead<float>(stream);
-		thumbnailCameraDir.z = eg::BinRead<float>(stream);
+		uint64_t dataSize = eg::BinRead<uint64_t>(stream);
+		std::vector<char> data(dataSize);
+		stream.read(data.data(), dataSize);
+		
+		gravity_pb::World worldPB;
+		worldPB.ParseFromArray(data.data(), dataSize);
+		
+		thumbnailCameraPos = glm::vec3(worldPB.thumbnail_camera_x(), worldPB.thumbnail_camera_y(), worldPB.thumbnail_camera_z());
+		thumbnailCameraDir = glm::vec3(worldPB.thumbnail_camera_dx(), worldPB.thumbnail_camera_dy(), worldPB.thumbnail_camera_dz());
 		thumbnailCameraDir = glm::normalize(thumbnailCameraDir);
+		extraWaterParticles = worldPB.extra_water_particles();
+		playerHasGravityGun = worldPB.player_has_gravity_gun();
+		title = worldPB.title();
+		
+		for (int i = 0; i < std::min(worldPB.control_hints_size(), NUM_CONTROL_HINTS); i++)
+		{
+			showControlHint[i] = worldPB.control_hints(i);
+		}
 	}
-	if (version >= 7)
+	else
 	{
-		extraWaterParticles = eg::BinRead<uint32_t>(stream);
+		if (version >= 8)
+		{
+			thumbnailCameraPos.x = eg::BinRead<float>(stream);
+			thumbnailCameraPos.y = eg::BinRead<float>(stream);
+			thumbnailCameraPos.z = eg::BinRead<float>(stream);
+			thumbnailCameraDir.x = eg::BinRead<float>(stream);
+			thumbnailCameraDir.y = eg::BinRead<float>(stream);
+			thumbnailCameraDir.z = eg::BinRead<float>(stream);
+			thumbnailCameraDir = glm::normalize(thumbnailCameraDir);
+		}
+		if (version >= 7)
+		{
+			extraWaterParticles = eg::BinRead<uint32_t>(stream);
+		}
+		playerHasGravityGun = eg::BinRead<uint8_t>(stream);
+		title = eg::BinReadString(stream);
 	}
-	playerHasGravityGun = eg::BinRead<uint8_t>(stream);
-	title = eg::BinReadString(stream);
 	
 	entManager = EntityManager::Deserialize(stream);
 }
@@ -217,16 +241,23 @@ void World::Save(std::ostream& outStream) const
 	
 	eg::WriteCompressedSection(outStream, voxelData.data(), voxelData.size() * sizeof(VoxelData));
 	
-	eg::BinWrite<float>(outStream, thumbnailCameraPos.x);
-	eg::BinWrite<float>(outStream, thumbnailCameraPos.y);
-	eg::BinWrite<float>(outStream, thumbnailCameraPos.z);
-	eg::BinWrite<float>(outStream, thumbnailCameraDir.x);
-	eg::BinWrite<float>(outStream, thumbnailCameraDir.y);
-	eg::BinWrite<float>(outStream, thumbnailCameraDir.z);
+	gravity_pb::World worldPB;
+	worldPB.set_thumbnail_camera_x(thumbnailCameraPos.x);
+	worldPB.set_thumbnail_camera_y(thumbnailCameraPos.y);
+	worldPB.set_thumbnail_camera_z(thumbnailCameraPos.z);
+	worldPB.set_thumbnail_camera_dx(thumbnailCameraDir.x);
+	worldPB.set_thumbnail_camera_dy(thumbnailCameraDir.y);
+	worldPB.set_thumbnail_camera_dz(thumbnailCameraDir.z);
+	worldPB.set_title(title);
+	worldPB.set_extra_water_particles(extraWaterParticles);
+	worldPB.set_player_has_gravity_gun(playerHasGravityGun);
+	for (bool controlHint : showControlHint)
+	{
+		worldPB.add_control_hints(controlHint);
+	}
 	
-	eg::BinWrite<uint32_t>(outStream, extraWaterParticles);
-	eg::BinWrite<uint8_t>(outStream, playerHasGravityGun);
-	eg::BinWriteString(outStream, title);
+	eg::BinWrite<uint64_t>(outStream, worldPB.ByteSizeLong());
+	worldPB.SerializeToOstream(&outStream);
 	
 	entManager.Serialize(outStream);
 }

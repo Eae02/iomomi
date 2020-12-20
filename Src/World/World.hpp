@@ -38,6 +38,15 @@ struct GravityCorner
 	glm::mat3 MakeRotationMatrix() const;
 };
 
+enum class ControlHintType
+{
+	Movement,
+	FlipGravity,
+	PickUpCube
+};
+
+constexpr int NUM_CONTROL_HINTS = 3;
+
 class World
 {
 public:
@@ -89,6 +98,8 @@ public:
 	
 	glm::vec3 thumbnailCameraPos;
 	glm::vec3 thumbnailCameraDir;
+	
+	bool showControlHint[NUM_CONTROL_HINTS] = {};
 	
 private:
 	void LoadFormatSub5(std::istream& stream, uint32_t version, bool isEditor);

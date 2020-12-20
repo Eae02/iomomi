@@ -87,3 +87,5 @@ void LoadSettings();
 void SaveSettings();
 
 void SettingsChanged();
+
+bool IsControllerButton(eg::Button button);

@@ -2,6 +2,7 @@
 
 #include "World.hpp"
 #include "Dir.hpp"
+#include "Entities/EntInteractable.hpp"
 
 class Player
 {
@@ -71,6 +72,8 @@ public:
 	float m_rotationPitch = 0;
 	
 	bool m_isCarrying = false;
+	
+	std::optional<InteractControlHint> interactControlHint;
 	
 private:
 	Dir m_down = Dir::NegY;

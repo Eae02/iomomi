@@ -23,7 +23,13 @@ public:
 private:
 	void DrawOverlay(float dt);
 	
+	void UpdateAndDrawHud(float dt);
+	
 	bool ReloadLevel();
+	
+	float m_controlHintAlpha = 0;
+	std::string_view m_controlHintMessage;
+	eg::Button m_controlHintButton;
 	
 	int64_t m_currentLevelIndex = -1;
 	

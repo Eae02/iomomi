@@ -36,7 +36,7 @@ void OptionWidgetBase::DrawBase(eg::SpriteBatch& spriteBatch, float highlightInt
 	}
 }
 
-glm::vec2 OptionWidgetBase::GetTextPos() const
+glm::vec2 OptionWidgetBase::GetTextPos(const eg::Rectangle& rectangle)
 {
-	return glm::vec2(m_rectangle.x + (m_rectangle.h - textHeight) / 2.0f, m_rectangle.CenterY() - textHeight / 2.0f + 1);
+	return glm::vec2(rectangle.x + (rectangle.h - textHeight) / 2.0f, rectangle.CenterY() - textHeight / 2.0f + 1);
 }

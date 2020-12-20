@@ -1,5 +1,14 @@
 #pragma once
 
+#include "../World.hpp"
+
+struct InteractControlHint
+{
+	std::string_view message;
+	ControlHintType type;
+	const struct KeyBinding* keyBinding;
+};
+
 class EntInteractable
 {
 public:
@@ -11,5 +20,5 @@ public:
 	// interactable entities, the one with the greatest return value from this function will be selected.
 	virtual int CheckInteraction(const class Player& player, const class PhysicsEngine& physicsEngine) const = 0;
 	
-	virtual std::string_view GetInteractDescription() const = 0;
+	virtual std::optional<InteractControlHint> GetInteractControlHint() const = 0;
 };

@@ -179,6 +179,16 @@ void Editor::RunFrame(float dt)
 				m_world->extraWaterParticles = std::max(extraWaterParticles, 0);
 			
 			ImGui::InputText("Title", &m_world->title);
+			
+			if (ImGui::CollapsingHeader("Control Hints", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				static const char* controlHintLabels[] = { "Movement", "Flip gravity", "Pick up cube" };
+				static_assert(std::size(controlHintLabels) == NUM_CONTROL_HINTS);
+				for (int i = 0; i < NUM_CONTROL_HINTS; i++)
+				{
+					ImGui::Checkbox(controlHintLabels[i], &m_world->showControlHint[i]);
+				}
+			}
 		}
 		ImGui::End();
 	}

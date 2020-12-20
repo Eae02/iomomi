@@ -27,8 +27,6 @@ public:
 	
 	void Deserialize(std::istream& stream) override;
 	
-	void Spawned(bool isEditor) override;
-	
 	void RenderSettings() override;
 	
 	void GameDraw(const EntGameDrawArgs& args) override;
@@ -41,12 +39,13 @@ public:
 	
 	void Interact(class Player& player) override;
 	int CheckInteraction(const class Player& player, const PhysicsEngine& physicsEngine) const override;
+	std::optional<InteractControlHint> GetInteractControlHint() const override;
 	
 	bool SetGravity(Dir newGravity) override;
 	
-	Dir CurrentDown() const { return m_currentDown; }
+	bool ShouldShowGravityBeamControlHint(Dir newGravity) override;
 	
-	std::string_view GetInteractDescription() const override;
+	Dir CurrentDown() const { return m_currentDown; }
 	
 	void CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt) override;
 	
@@ -68,6 +67,7 @@ private:
 	PhysicsObject m_physicsObject;
 	GravityBarrierInteractableComp m_barrierInteractableComp;
 	
+	bool m_showChangeGravityControlHint = false;
 	bool m_isPickedUp = false;
 	Dir m_currentDown = Dir::NegY;
 	

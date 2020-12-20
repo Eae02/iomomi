@@ -11,4 +11,5 @@ message CubeEntity {
 	float rotationZ = 6;
 	float rotationW = 7;
 	bool can_float = 8;
+	bool show_change_gravity_control_hint = 9;
 }

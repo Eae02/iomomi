@@ -18,4 +18,7 @@ private:
 	KeyBinding* m_binding;
 	bool m_isPickingKey = false;
 	float m_highlightIntensity = 0;
+	float m_cancelButtonAlpha = 0;
+	float m_cancelHighlightIntensity = 0;
+	eg::Rectangle m_cancelRectangle;
 };

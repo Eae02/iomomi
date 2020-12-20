@@ -28,7 +28,7 @@ public:
 	
 	int CheckInteraction(const class Player& player, const class PhysicsEngine& physicsEngine) const override;
 	
-	std::string_view GetInteractDescription() const override;
+	std::optional<InteractControlHint> GetInteractControlHint() const override;
 	
 	const void* GetComponent(const std::type_info& type) const override;
 	

@@ -1,0 +1,16 @@
+syntax="proto3";
+
+package gravity_pb;
+
+message World {
+  float thumbnail_camera_x = 1;
+  float thumbnail_camera_y = 2;
+  float thumbnail_camera_z = 3;
+  float thumbnail_camera_dx = 4;
+  float thumbnail_camera_dy = 5;
+  float thumbnail_camera_dz = 6;
+  int32 extra_water_particles = 7;
+  string title = 8;
+  bool player_has_gravity_gun = 9;
+  repeated bool control_hints = 10;
+}

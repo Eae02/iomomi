@@ -3,6 +3,7 @@
 #include "Levels.hpp"
 #include "World/Entities/EntTypes/EntranceExitEnt.hpp"
 #include "MainMenuGameState.hpp"
+#include "Gui/GuiCommon.hpp"
 
 #include <fstream>
 #include <imgui.h>
@@ -161,6 +162,7 @@ void MainGameState::RunFrame(float dt)
 		UpdateViewProjMatrices();
 		if (m_world->playerHasGravityGun)
 		{
+			auto gunUpdateCPUTimer = eg::StartCPUTimer("Gun Update");
 			m_gravityGun.Update(*m_world, m_physicsEngine, GameRenderer::instance->m_waterSimulator, m_particleManager,
 			                    m_player, GameRenderer::instance->GetInverseViewProjMatrix(), dt);
 		}
@@ -175,11 +177,7 @@ void MainGameState::RunFrame(float dt)
 	
 	GameRenderer::instance->Render(*m_world, m_gameTime, dt, nullptr, eg::CurrentResolutionX(), eg::CurrentResolutionY());
 	
-	const float CROSSHAIR_SIZE = 32;
-	const float CROSSHAIR_OPACITY = 0.75f;
-	eg::SpriteBatch::overlay.Draw(eg::GetAsset<eg::Texture>("Textures/Crosshair.png"),
-	    eg::Rectangle::CreateCentered(eg::CurrentResolutionX() / 2.0f, eg::CurrentResolutionY() / 2.0f, CROSSHAIR_SIZE, CROSSHAIR_SIZE),
-	    eg::ColorLin(eg::Color::White.ScaleAlpha(CROSSHAIR_OPACITY)), eg::SpriteFlags::None);
+	UpdateAndDrawHud(dt);
 	
 	m_pausedMenu.Draw(eg::SpriteBatch::overlay);
 	if (m_pausedMenu.shouldRestartLevel)
@@ -193,6 +191,81 @@ void MainGameState::RunFrame(float dt)
 	{
 		m_gameTime += dt;
 	}
+}
+
+void MainGameState::UpdateAndDrawHud(float dt)
+{
+	float controlHintTargetAlpha = 0;
+	auto SetControlHint = [&] (std::string_view message, const KeyBinding& binding)
+	{
+		m_controlHintMessage = message;
+		m_controlHintButton = IsControllerButton(eg::InputState::Current().PressedButton()) ? binding.controllerButton : binding.kbmButton;
+		controlHintTargetAlpha = 1;
+	};
+	
+	if (m_player.interactControlHint && m_world->showControlHint[(int)m_player.interactControlHint->type])
+	{
+		SetControlHint(m_player.interactControlHint->message, *m_player.interactControlHint->keyBinding);
+	}
+	else if (m_gravityGun.shouldShowControlHint)
+	{
+		SetControlHint("Change Gravitation", settings.keyShoot);
+	}
+	//For jump hint in intro_2:
+	else if (levels[m_currentLevelIndex].name == "intro_2" && m_player.OnGround() && m_player.CurrentDown() == Dir::NegX)
+	{
+		const glm::vec3 controlHintMin(8, 5, -9);
+		const glm::vec3 controlHintMax(11, 7, -4);
+		if (controlHintMin.x <= m_player.Position().x && m_player.Position().x <= controlHintMax.x &&
+			controlHintMin.y <= m_player.Position().y && m_player.Position().y <= controlHintMax.y &&
+			controlHintMin.z <= m_player.Position().z && m_player.Position().z <= controlHintMax.z)
+		{
+			SetControlHint("Jump", settings.keyJump);
+		}
+	}
+	
+	constexpr float CONTROL_HINT_ANIMATION_TIME = 0.1f;
+	m_controlHintAlpha = eg::AnimateTo(m_controlHintAlpha, controlHintTargetAlpha, dt / CONTROL_HINT_ANIMATION_TIME);
+	
+	//Draws the control hint
+	if (m_controlHintAlpha > 0)
+	{
+		constexpr float FONT_SCALE = 1.0f;
+		constexpr float BUTTON_BORDER_PADDING = 10;
+		constexpr float BUTTON_MESSAGE_SPACING = 30;
+		
+		const std::string_view buttonName = eg::ButtonDisplayName(m_controlHintButton);
+		const float buttonNameLen = style::UIFont->GetTextExtents(buttonName).x * FONT_SCALE;
+		const float messageLen = style::UIFont->GetTextExtents(m_controlHintMessage).x * FONT_SCALE;
+		const float buttonBoxSize = std::max(buttonNameLen, style::UIFont->LineHeight() * FONT_SCALE);
+		
+		const float totalLen = buttonBoxSize + BUTTON_MESSAGE_SPACING + messageLen;
+		glm::vec2 leftPos((eg::CurrentResolutionX() - totalLen) / 2.0f, eg::CurrentResolutionY() * 0.15f);
+		
+		eg::ColorLin color(1, 1, 1, m_controlHintAlpha);
+		
+		eg::Rectangle buttonRect(
+			leftPos.x + buttonNameLen / 2.0f - BUTTON_BORDER_PADDING - buttonBoxSize / 2.0f + 1,
+			leftPos.y - BUTTON_BORDER_PADDING - 3,
+			BUTTON_BORDER_PADDING * 2 + buttonBoxSize,
+			BUTTON_BORDER_PADDING * 2 + style::UIFont->LineHeight() * FONT_SCALE
+		);
+		
+		eg::SpriteBatch::overlay.DrawRect(buttonRect, eg::ColorLin(0, 0, 0, m_controlHintAlpha * 0.3f));
+		eg::SpriteBatch::overlay.DrawRectBorder(buttonRect, color, 1);
+		eg::SpriteBatch::overlay.DrawText(*style::UIFont, buttonName, leftPos, color, FONT_SCALE, nullptr, eg::TextFlags::DropShadow);
+		eg::SpriteBatch::overlay.DrawText(
+			*style::UIFont, m_controlHintMessage, glm::vec2(leftPos.x + buttonBoxSize + BUTTON_MESSAGE_SPACING, leftPos.y),
+			color, FONT_SCALE, nullptr, eg::TextFlags::DropShadow);
+	}
+	
+	//Draws the crosshair
+	const float CROSSHAIR_SIZE = 32;
+	const float CROSSHAIR_OPACITY = 0.75f;
+	eg::SpriteBatch::overlay.Draw(
+		eg::GetAsset<eg::Texture>("Textures/Crosshair.png"),
+	    eg::Rectangle::CreateCentered(eg::CurrentResolutionX() / 2.0f, eg::CurrentResolutionY() / 2.0f, CROSSHAIR_SIZE, CROSSHAIR_SIZE),
+	    eg::ColorLin(eg::Color::White.ScaleAlpha(CROSSHAIR_OPACITY)), eg::SpriteFlags::None);
 }
 
 int* debugOverlay = eg::TweakVarInt("dbg_overlay", 1);
