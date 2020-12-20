@@ -144,6 +144,7 @@ void MainMenuGameState::DrawLevelSelect(float dt)
 	
 	const eg::Texture& thumbnailNaTexture = eg::GetAsset<eg::Texture>("Textures/ThumbnailNA.png");
 	const eg::Texture& lockTexture = eg::GetAsset<eg::Texture>("Textures/Lock.png");
+	const eg::Texture& completedTexture = eg::GetAsset<eg::Texture>("Textures/LevelCompleted.png");
 	
 	//Draws the level boxes
 	m_spriteBatch.PushScissor(0, boxEndY - INFLATE_PIXELS_Y, eg::CurrentResolutionX(), visibleHeight + INFLATE_PIXELS_Y * 2);
@@ -187,12 +188,18 @@ void MainMenuGameState::DrawLevelSelect(float dt)
 		if (level.status == LevelStatus::Locked)
 			shade *= 0.4f;
 		
-		m_spriteBatch.Draw(*texture, inflatedRect, eg::ColorLin(1, 1, 1, 1).ScaleRGB(shade), eg::SpriteFlags::None);
+		m_spriteBatch.Draw(*texture, inflatedRect, eg::ColorLin(1, 1, 1, 1).ScaleRGB(shade));
 		
 		if (level.status == LevelStatus::Locked)
 		{
 			eg::Rectangle lockTextureRect = eg::Rectangle::CreateCentered(inflatedRect.Center(), lockTexture.Width(), lockTexture.Height());
-			m_spriteBatch.Draw(lockTexture, lockTextureRect, eg::ColorLin(1, 1, 1, 1), eg::SpriteFlags::None);
+			m_spriteBatch.Draw(lockTexture, lockTextureRect, eg::ColorLin(1, 1, 1, 1));
+		}
+		else if (level.status == LevelStatus::Completed)
+		{
+			glm::vec2 texSize = glm::vec2(completedTexture.Width(), completedTexture.Height()) * (1 + inflate);
+			eg::Rectangle completeddTextureRect = eg::Rectangle(inflatedRect.Max() - texSize - 5.0f, texSize);
+			m_spriteBatch.Draw(completedTexture, completeddTextureRect, eg::ColorLin(1, 1, 1, shade));
 		}
 	}
 	m_spriteBatch.PopScissor();
