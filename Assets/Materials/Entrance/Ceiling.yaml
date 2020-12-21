@@ -1,0 +1,6 @@
+albedo: ../../Textures/Entrance/CeilingA.png
+normalMap: ../../Textures/Entrance/CeilingN.png
+miscMap: ../../Textures/Entrance/CeilingM.png
+roughnessMin: 0.5
+roughnessMax: 0.8
+enableSSR: false

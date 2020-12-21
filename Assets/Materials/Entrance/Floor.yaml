@@ -1,5 +1,5 @@
 albedo: ../../Textures/Entrance/FloorA.png
 normalMap: ../../Textures/Entrance/FloorN.png
 miscMap: ../../Textures/Entrance/FloorM.png
-roughnessMin: 0.4
-roughnessMax: 0.8
+roughnessMin: 0.2
+roughnessMax: 0.5

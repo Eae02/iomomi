@@ -56,6 +56,8 @@ static void OnInit()
 	AssignMaterial("Door1",       "Materials/Entrance/Door1.yaml");
 	AssignMaterial("Door2",       "Materials/Entrance/Door2.yaml");
 	AssignMaterial("DoorFrame",   "Materials/Entrance/DoorFrame.yaml");
+	AssignMaterial("Walls",       "Materials/Entrance/WallPanels.yaml");
+	AssignMaterial("Ceiling",     "Materials/Entrance/Ceiling.yaml");
 	
 	entrance.floorLightMaterialIdx = entrance.model->GetMaterialIndex("FloorLight");
 	entrance.ceilLightMaterialIdx = entrance.model->GetMaterialIndex("Light");

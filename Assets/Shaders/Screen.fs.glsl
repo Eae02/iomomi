@@ -17,7 +17,7 @@ void main()
 {
 	float texOffset = pow(max(0, abs(fract(texCoord_in.y - renderSettings.gameTime * 0.3) - 0.5) - 0.4), 4);
 	
-	vec3 albedo = texture(colorSampler, texCoord_in + vec2(texOffset, 0)).rgb;
+	vec3 albedo = texture(colorSampler, vec2(texCoord_in.x + texOffset, EG_FLIPGL(texCoord_in.y))).rgb;
 	
 	DeferredOut(albedo, normal_in, 0.5, 0.0, 1.0);
 }

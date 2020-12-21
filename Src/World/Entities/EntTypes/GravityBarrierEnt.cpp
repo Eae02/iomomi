@@ -7,6 +7,7 @@
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../../Protobuf/Build/GravityBarrierEntity.pb.h"
 #include "CubeEnt.hpp"
+#include "../../../Graphics/Materials/EmissiveMaterial.hpp"
 
 #include <imgui.h>
 
@@ -16,6 +17,10 @@ static eg::MeshBatch::Mesh barrierMesh;
 static eg::CollisionMesh barrierCollisionMesh;
 
 static eg::Model* barrierBorderModel;
+static size_t meshIndexBody;
+static size_t meshIndexEmissive;
+
+static eg::IMaterial* borderMaterial;
 
 static void OnInit()
 {
@@ -50,6 +55,10 @@ static void OnInit()
 	barrierCollisionMesh = eg::CollisionMesh::CreateV3<uint32_t>(colVertices, colIndices);
 	
 	barrierBorderModel = &eg::GetAsset<eg::Model>("Models/GravityBarrierBorder.obj");
+	meshIndexBody = barrierBorderModel->GetMeshIndex("Body");
+	meshIndexEmissive = barrierBorderModel->GetMeshIndex("Lights");
+	
+	borderMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/GravityBarrierBorder.yaml");
 }
 
 static void OnShutdown()
@@ -123,6 +132,10 @@ glm::mat4 GravityBarrierEnt::GetTransform() const
 		glm::vec4(m_position, 1));
 }
 
+constexpr glm::vec4 gravityBarrierLightColor = glm::vec4(0.1, 0.7, 0.9, 0.0f);
+constexpr float LIGHT_INTENSITY_MIN = 1.0f;
+constexpr float LIGHT_INTENSITY_MAX = 5.0f;
+
 void GravityBarrierEnt::CommonDraw(const EntDrawArgs& args)
 {
 	auto [tangent, bitangent] = GetTangents();
@@ -147,13 +160,14 @@ void GravityBarrierEnt::CommonDraw(const EntDrawArgs& args)
 	glm::vec3 bitangentNorm = bitangent / bitangentLen;
 	glm::vec3 tcb = glm::cross(tangentNorm, bitangentNorm);
 	
-	auto AddBorderModelInstance = [&] (const glm::mat4& transform)
+	auto AddBorderModelInstance = [&] (const glm::mat4& transform, float lightIntensity)
 	{
-		eg::IMaterial* borderMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml");
-		for (size_t m = 0; m < barrierBorderModel->NumMeshes(); m++)
-		{
-			args.meshBatch->AddModelMesh(*barrierBorderModel, m, *borderMaterial, StaticPropMaterial::InstanceData(transform));
-		}
+		args.meshBatch->AddModelMesh(*barrierBorderModel, meshIndexBody, *borderMaterial,
+							   StaticPropMaterial::InstanceData(transform));
+		
+		const float intensity = glm::mix(LIGHT_INTENSITY_MIN, LIGHT_INTENSITY_MAX, lightIntensity);
+		args.meshBatch->AddModelMesh(*barrierBorderModel, meshIndexEmissive, EmissiveMaterial::instance,
+							   EmissiveMaterial::InstanceData { transform, gravityBarrierLightColor * intensity });
 	};
 	
 	int tangentLenI = (int)std::round(tangentLen);
@@ -162,19 +176,19 @@ void GravityBarrierEnt::CommonDraw(const EntDrawArgs& args)
 	for (int i = -tangentLenI; i < tangentLenI; i++)
 	{
 		glm::vec3 translation1 = instanceData.position + bitangent * 0.5f + tangentNorm * ((i + 0.5f) * 0.5f);
-		AddBorderModelInstance(glm::mat4x3(tcb, -bitangentNorm, tangentNorm, translation1));
+		AddBorderModelInstance(glm::mat4x3(tcb, -bitangentNorm, tangentNorm, translation1), m_opacity);
 		
 		glm::vec3 translation2 = instanceData.position - bitangent * 0.5f + tangentNorm * ((i + 0.5f) * 0.5f);
-		AddBorderModelInstance(glm::mat4x3(-tcb, bitangentNorm, tangentNorm, translation2));
+		AddBorderModelInstance(glm::mat4x3(-tcb, bitangentNorm, tangentNorm, translation2), m_opacity);
 	}
 	
 	for (int i = -bitangentLenI; i < bitangentLenI; i++)
 	{
 		glm::vec3 translation1 = instanceData.position + tangent * 0.5f + bitangentNorm * ((i + 0.5f) * 0.5f);
-		AddBorderModelInstance(glm::mat4x3(-tcb, -tangentNorm, bitangentNorm, translation1));
+		AddBorderModelInstance(glm::mat4x3(-tcb, -tangentNorm, bitangentNorm, translation1), 0);
 		
 		glm::vec3 translation2 = instanceData.position - tangent * 0.5f + bitangentNorm * ((i + 0.5f) * 0.5f);
-		AddBorderModelInstance(glm::mat4x3(tcb, tangentNorm, bitangentNorm, translation2));
+		AddBorderModelInstance(glm::mat4x3(tcb, tangentNorm, bitangentNorm, translation2), 0);
 	}
 }
 

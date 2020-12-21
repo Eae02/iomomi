@@ -1,5 +1,5 @@
 # Blender MTL File: 'EnterRoomMirrored.blend'
-# Material Count: 12
+# Material Count: 14
 
 newmtl CeilPipe
 Ns 225.000000
@@ -11,6 +11,17 @@ Ni 1.450000
 d 1.000000
 illum 2
 
+newmtl Ceiling
+Ns 225.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd /home/erik/dev/cpp/gravity/Assets/Textures/Entrance/CeilingA.png
+
 newmtl Door1
 Ns 225.000000
 Ka 1.000000 1.000000 1.000000
@@ -20,7 +31,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd /home/erik/Desktop/AssetsSrc/Textures/Entrance/Door1A.png
+map_Kd /home/erik/Documents/AssetsSrc/Textures/Entrance/Door1A.png
 
 newmtl Door2
 Ns 225.000000
@@ -41,6 +52,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
+map_Kd /home/erik/dev/cpp/gravity/Assets/Textures/Entrance/DoorFrameA.png
 
 newmtl FanGrating
 Ns 225.000000
@@ -61,9 +73,9 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 3
-map_Bump /home/erik/Desktop/AssetsSrc/Models/EntranceFloorN.png
-map_Kd /home/erik/Desktop/AssetsSrc/Models/EntranceFloorA.tga
-refl /home/erik/Desktop/AssetsSrc/Models/EntranceFloorM.png
+map_Bump /home/erik/Documents/AssetsSrc/Models/EntranceFloorN.png
+map_Kd /home/erik/dev/cpp/gravity/Assets/Textures/Entrance/FloorA.png
+refl /home/erik/Documents/AssetsSrc/Models/EntranceFloorM.png
 
 newmtl FloorLight
 Ns 225.000000
@@ -84,6 +96,17 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
+
+newmtl None
+Ns 225.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd /home/erik/dev/cpp/gravity/Assets/Textures/DefaultA.png
 
 newmtl Screen
 Ns 225.000000
@@ -115,7 +138,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd /home/erik/Desktop/AssetsSrc/Models/PaddingA.png
+map_Kd /home/erik/dev/cpp/gravity/Assets/Textures/Entrance/PaddingA.png
 
 newmtl Walls
 Ns 225.000000
@@ -126,3 +149,4 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
+map_Kd /home/erik/dev/cpp/gravity/Assets/Textures/Entrance/WallPanelsA.png

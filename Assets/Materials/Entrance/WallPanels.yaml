@@ -1,0 +1,7 @@
+albedo: ../../Textures/Entrance/WallPanelsA.png
+normalMap: ../../Textures/Entrance/WallPanelsN.png
+miscMap: ../../Textures/Entrance/WallPanelsM.png
+roughnessMin: 0.5
+roughnessMax: 0.7
+textureScaleX: 1
+textureScaleY: -1
