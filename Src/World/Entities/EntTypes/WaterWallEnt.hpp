@@ -27,8 +27,12 @@ public:
 	
 	glm::vec3 GetPosition() const override;
 	
+	void Update(const struct WorldUpdateArgs& args) override;
+
 private:
 	glm::vec3 m_position;
 	AxisAlignedQuadComp m_aaQuad;
 	WaterBlockComp m_waterBlockComp;
+	bool m_onlyInitially = false;
+	float m_timeUntilDisable = 0;
 };

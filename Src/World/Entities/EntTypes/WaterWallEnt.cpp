@@ -1,6 +1,8 @@
 #include "WaterWallEnt.hpp"
+#include "../../WorldUpdateArgs.hpp"
 #include "../../../Editor/PrimitiveRenderer.hpp"
 #include "../../../../Protobuf/Build/WaterWallEntity.pb.h"
+
 #include <imgui.h>
 
 WaterWallEnt::WaterWallEnt()
@@ -15,6 +17,8 @@ void WaterWallEnt::RenderSettings()
 	geometryChanged |= ImGui::DragFloat2("Size", &m_aaQuad.radius.x, 0.5f);
 	
 	geometryChanged |= ImGui::Combo("Plane", &m_aaQuad.upPlane, "X\0Y\0Z\0");
+	
+	ImGui::Checkbox("Only Initially", &m_onlyInitially);
 	
 	if (geometryChanged)
 	{
@@ -37,6 +41,18 @@ void WaterWallEnt::EditorDraw(const EntEditorDrawArgs& args)
 	};
 	
 	args.primitiveRenderer->AddQuad(vertices, eg::ColorSRGB::FromRGBAHex(0x7034DA99));
+}
+
+void WaterWallEnt::Update(const WorldUpdateArgs& args)
+{
+	if (args.mode == WorldMode::Game && m_timeUntilDisable > 0)
+	{
+		m_timeUntilDisable -= args.dt;
+		if (m_timeUntilDisable <= 0)
+		{
+			std::fill_n(m_waterBlockComp.blockedGravities, 6, false);
+		}
+	}
 }
 
 const void* WaterWallEnt::GetComponent(const std::type_info& type) const
@@ -62,26 +78,32 @@ glm::vec3 WaterWallEnt::GetPosition() const
 
 void WaterWallEnt::Serialize(std::ostream& stream) const
 {
-	gravity_pb::WaterWallEntity windowPB;
+	gravity_pb::WaterWallEntity waterWallPB;
 	
-	SerializePos(windowPB, m_position);
+	SerializePos(waterWallPB, m_position);
 	
-	windowPB.set_up_plane(m_aaQuad.upPlane);
-	windowPB.set_sizex(m_aaQuad.radius.x);
-	windowPB.set_sizey(m_aaQuad.radius.y);
+	waterWallPB.set_up_plane(m_aaQuad.upPlane);
+	waterWallPB.set_sizex(m_aaQuad.radius.x);
+	waterWallPB.set_sizey(m_aaQuad.radius.y);
+	waterWallPB.set_only_initially(m_onlyInitially);
 	
-	windowPB.SerializeToOstream(&stream);
+	waterWallPB.SerializeToOstream(&stream);
 }
 
 void WaterWallEnt::Deserialize(std::istream& stream)
 {
-	gravity_pb::WaterWallEntity windowPB;
-	windowPB.ParseFromIstream(&stream);
+	gravity_pb::WaterWallEntity waterWallPB;
+	waterWallPB.ParseFromIstream(&stream);
 	
-	m_position = DeserializePos(windowPB);
+	m_position = DeserializePos(waterWallPB);
 	
-	m_aaQuad.upPlane = windowPB.up_plane();
-	m_aaQuad.radius = glm::vec2(windowPB.sizex(), windowPB.sizey());
+	m_aaQuad.upPlane = waterWallPB.up_plane();
+	m_aaQuad.radius = glm::vec2(waterWallPB.sizex(), waterWallPB.sizey());
+	m_onlyInitially = waterWallPB.only_initially();
+	if (m_onlyInitially)
+	{
+		m_timeUntilDisable = 2;
+	}
 	
 	m_waterBlockComp.InitFromAAQuadComponent(m_aaQuad, m_position);
 }

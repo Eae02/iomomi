@@ -33,7 +33,6 @@ private:
 	eg::Pipeline m_pipelineBlurPass1;
 	eg::Pipeline m_pipelineBlurPass2;
 	eg::Pipeline m_pipelineBlurSinglePass;
-	eg::Pipeline m_pipelinePostLowQual;
 	eg::Pipeline m_pipelinePostStdQual;
 	eg::Pipeline m_pipelinePostHighQual;
 	eg::PipelineRef m_pipelinesRefPost[5];

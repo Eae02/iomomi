@@ -212,7 +212,8 @@ void MainGameState::UpdateAndDrawHud(float dt)
 		SetControlHint("Change Gravitation", settings.keyShoot);
 	}
 	//For jump hint in intro_2:
-	else if (levels[m_currentLevelIndex].name == "intro_2" && m_player.OnGround() && m_player.CurrentDown() == Dir::NegX)
+	else if (m_currentLevelIndex != -1 && levels[m_currentLevelIndex].name == "intro_2" &&
+	         m_player.OnGround() && m_player.CurrentDown() == Dir::NegX)
 	{
 		const glm::vec3 controlHintMin(8, 5, -9);
 		const glm::vec3 controlHintMax(11, 7, -4);

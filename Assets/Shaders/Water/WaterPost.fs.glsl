@@ -1,6 +1,6 @@
 #version 450 core
 
-#pragma variants VLowQual VStdQual VHighQual
+#pragma variants VStdQual VHighQual
 
 #include <EGame.glh>
 #include <Deferred.glh>
@@ -20,9 +20,7 @@ layout(binding=1) uniform sampler2D waterDepthSampler;
 layout(binding=2) uniform sampler2D worldColorSampler;
 layout(binding=3) uniform sampler2D worldDepthSampler;
 
-#ifndef VLowQual
 layout(binding=4) uniform sampler2D normalMapSampler;
-#endif
 
 const float R0 = 0.03;
 
@@ -30,7 +28,7 @@ const vec3 color = pow(vec3(13, 184, 250) / 255.0, vec3(2.2));
 
 const vec3 colorSurface = vec3(0.04, 0.59, 0.77);
 const vec3 colorDeep = vec3(0.01, 0.03, 0.35);
-const float visibility = 15;
+const float visibility = 10;
 const vec3 colorExtinction = vec3(0.7, 3.0, 4.0) * 10;
 
 const float indexOfRefraction = 0.6;
@@ -137,7 +135,7 @@ void main()
 	//Stores values without refraction applied for fading later
 	vec3 oriWorldColor = worldColor;
 	float worldDepthL = linearizeDepth(worldDepthH);
-	bool waterSurface = worldDepthL > waterDepthLUB + 1.0;
+	bool waterSurface = worldDepthL > waterDepthL - 0.2;
 	float fadeDepth = worldDepthL - waterDepthLUB;
 	
 	vec3 surfacePos = WorldPosFromDepth(waterDepthH, texCoord_in, renderSettings.invViewProjection);
@@ -164,9 +162,6 @@ void main()
 	//Uses the view space differences to approximate the normal
 	vec3 plainNormal = normalize((renderSettings.invViewMatrix * vec4(cross(ddy, ddx), 0.0)).xyz);
 	
-#ifdef VLowQual
-	vec3 normal = plainNormal;
-#else
 	vec3 plainTangent = normalize((renderSettings.invViewMatrix * vec4(ddy, 0.0)).xyz);
 	mat3 tbnMatrix = mat3(plainTangent, cross(plainTangent, plainNormal), plainNormal);
 	
@@ -183,18 +178,15 @@ void main()
 			normalTS += vec3(nmVal, sqrt(1 - (nmVal.x * nmVal.x + nmVal.y * nmVal.y))) * abs(plainNormal[d]);
 		}
 	}
-	const float nmStrength = 0.3;
+	const float nmStrength = 0.8;
 	normalTS.xy *= nmStrength;
 	vec3 normal = normalize(tbnMatrix * normalTS);
-#endif
 	
 	vec3 dirToEye = normalize(renderSettings.cameraPosition - surfacePos);
 	
 	vec3 targetPos = WorldPosFromDepth(worldDepthH, texCoord_in, renderSettings.invViewProjection);
 	
-#ifndef VLowQual
 	//Refraction
-	
 	vec2 refractTexcoord = texCoord_in;
 	
 	if (!underwater || waterSurface)
@@ -244,7 +236,6 @@ void main()
 	worldColor = texture(worldColorSampler, refractTexcoord).rgb;
 	targetPos = WorldPosFromDepth(worldDepthH, refractTexcoord, renderSettings.invViewProjection);
 	waterDepth4 = texture(waterDepthSampler, refractTexcoord);
-#endif
 	
 	float waterTravelDist;
 	if (underwater)
@@ -268,17 +259,13 @@ void main()
 	}
 	else
 	{
-		const float FOAM_FADE_MAX = 0.7;
-		const float FOAM_FADE_BEGIN = 1.5;
+		const float FOAM_FADE_MAX = 0.4;
+		const float FOAM_FADE_BEGIN = 0.5;
 		float foam = clamp((fadeDepth - FOAM_FADE_MAX) / (FOAM_FADE_BEGIN - FOAM_FADE_MAX), 0.0, 1.0);
 		
-#ifdef VLowQual
-		float shore = 1;
-#else
-		const float SHORE_FADE_MAX = 0.4;
-		const float SHORE_FADE_BEGIN = 0.6;
+		const float SHORE_FADE_MAX = 0.2;
+		const float SHORE_FADE_BEGIN = 0.3;
 		float shore = clamp((fadeDepth - SHORE_FADE_MAX) / (SHORE_FADE_BEGIN - SHORE_FADE_MAX), 0.0, 1.0);
-#endif
 		
 		vec3 foamColor = vec3(1.0);
 		

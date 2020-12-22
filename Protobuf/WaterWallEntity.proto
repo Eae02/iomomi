@@ -9,4 +9,5 @@ message WaterWallEntity {
 	float sizeX = 4;
 	float sizeY = 5;
 	fixed32 up_plane = 6;
+	bool only_initially = 7;
 }

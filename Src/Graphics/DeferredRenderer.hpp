@@ -35,6 +35,4 @@ private:
 	eg::Pipeline m_spotLightPipeline;
 	eg::Pipeline m_pointLightPipelineSoftShadows;
 	eg::Pipeline m_pointLightPipelineHardShadows;
-	
-	eg::BRDFIntegrationMap m_brdfIntegMap;
 };

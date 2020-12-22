@@ -1,14 +1,31 @@
 #version 450 core
 
-#include "WaterCommon.glh"
+#define RENDER_SETTINGS_BINDING 0
+#include "../Inc/RenderSettings.glh"
 
 layout(location=0) in vec2 spritePos_in;
 layout(location=1) in vec3 eyePos_in;
 
+#define DEFINE_SPHERE_TO_NDC
+#include "WaterCommon.glh"
+
 layout(location=0) out float color_out;
+
+layout(binding=1) uniform sampler2D geometryDepthSampler;
 
 void main()
 {
 	float r2 = dot(spritePos_in, spritePos_in);
-	color_out = sqrt(1.0 - min(r2, 1.0)) * PARTICLE_RADIUS * 2 * TRAVEL_DIST_SCALE;
+	if (r2 > 1.0)
+		discard;
+	
+	vec3 ndcFront = sphereToNDC(r2, 1);
+	vec3 ndcBack = sphereToNDC(r2, -1);
+
+	vec2 scrPos = ndcFront.xy * vec2(0.5, EG_OPENGL ? 0.5 : -0.5) + 0.5;
+	float inputDepth = texture(geometryDepthSampler, scrPos).r;
+	
+	float travelDepth = linearizeDepth(min(inputDepth, ndcBack.z)) - linearizeDepth(min(inputDepth, ndcFront.z));
+	
+	color_out = max(travelDepth, 0);
 }

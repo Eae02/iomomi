@@ -19,15 +19,14 @@ static constexpr uint32_t MAX_CLOSE = 512;
 
 static constexpr float ELASTICITY = 0.2;
 static constexpr float IMPACT_COEFFICIENT = 1.0 + ELASTICITY;
-static constexpr float MIN_PARTICLE_RADIUS = 0.2;
-static constexpr float MAX_PARTICLE_RADIUS = 0.3;
+static constexpr float MIN_PARTICLE_RADIUS = 0.1;
+static constexpr float MAX_PARTICLE_RADIUS = 0.4;
 static constexpr float INFLUENCE_RADIUS = 0.6;
 static constexpr float CORE_RADIUS = 0.001;
 static constexpr float RADIAL_VISCOSITY_GAIN = 0.25;
 static constexpr float TARGET_NUMBER_DENSITY = 2.5;
 static constexpr float STIFFNESS = 20.0;
 static constexpr float NEAR_TO_FAR = 2.0;
-static constexpr float SPEED_LIMIT = 30.0;
 static constexpr float AMBIENT_DENSITY = 0.5;
 static constexpr int CELL_GROUP_SIZE = 4;
 
@@ -385,21 +384,39 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 		impl->particleVel[a] = _mm_add_ps(impl->particleVel[a], _mm_mul_ps(accel, dt4));
 	});
 	
-	alignas(16) static const int32_t voxelNormals[][4] =
+	alignas(16) static const int32_t voxelNormalsI[][4] =
+	{
+		{ -1, 0, 0, 0}, { 1, 0, 0, 0 },
+		{ 0, -1, 0, 0}, { 0, 1, 0, 0 },
+		{ 0, 0, -1, 0}, { 0, 0, 1, 0 }
+	};
+	alignas(16) static const float voxelNormalsF[][4] =
 	{
 		{ -1, 0, 0, 0}, { 1, 0, 0, 0 },
 		{ 0, -1, 0, 0}, { 0, 1, 0, 0 },
 		{ 0, 0, -1, 0}, { 0, 0, 1, 0 }
 	};
 	
-	alignas(16) static const float voxelTangents[][4] =
+	alignas(16) static const int32_t voxelTangentsI[][4] =
+	{
+		{ 0, 0, 1, 0 }, { 0, 0, 1, 0 },
+		{ 1, 0, 0, 0 }, { 1, 0, 0, 0 },
+		{ 0, 1, 0, 0 }, { 0, 1, 0, 0 }
+	};
+	alignas(16) static const float voxelTangentsF[][4] =
 	{
 		{ 0, 0, 1, 0 }, { 0, 0, 1, 0 },
 		{ 1, 0, 0, 0 }, { 1, 0, 0, 0 },
 		{ 0, 1, 0, 0 }, { 0, 1, 0, 0 }
 	};
 	
-	alignas(16) static const float voxelBitangents[][4] =
+	alignas(16) static const int32_t voxelBitangentsI[][4] =
+	{
+		{ 0, 0, 1, 0 }, { 0, 0, 1, 0 },
+		{ 1, 0, 0, 0 }, { 1, 0, 0, 0 },
+		{ 0, 1, 0, 0 }, { 0, 1, 0, 0 }
+	};
+	alignas(16) static const float voxelBitangentsF[][4] =
 	{
 		{ 0, 1, 0, 0 }, { 0, 1, 0, 0 },
 		{ 0, 0, 1, 0 }, { 0, 0, 1, 0 },
@@ -441,7 +458,7 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 		
 		//Applies the velocity to the particle's position
 		const float VEL_SCALE = 0.998f;
-		const float MAX_MOVE = 0.1f;
+		const float MAX_MOVE = 0.2f;
 		vel = _mm_mul_ps(vel, _mm_load1_ps(&VEL_SCALE));
 		__m128 move = _mm_mul_ps(vel, dt4);
 		float moveDistSquared = _mm_cvtss_f32(_mm_dp_ps(move, move, 0xFF));
@@ -480,7 +497,7 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 					//Checks that the intersection actually happened on the voxel's face
 					if (std::abs(iDotT) <= tangentLen && std::abs(iDotBT) <= biTangentLen && std::abs(iDotN) < 0.8f)
 					{
-						minDist = distE;
+						minDist = distE - 0.001f;
 						displaceNormal = normal;
 					}
 				}
@@ -510,14 +527,15 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 						if (IsVoxelAir(impl, voxelCoordSolid))
 							continue;
 						
-						for (size_t n = 0; n < std::size(voxelNormals); n++)
+						for (size_t n = 0; n < std::size(voxelNormalsI); n++)
 						{
-							__m128i normal = *reinterpret_cast<const __m128i*>(voxelNormals[n]);
-							__m128 normalF = _mm_cvtepi32_ps(normal);
+							__m128i normal = *reinterpret_cast<const __m128i*>(voxelNormalsI[n]);
 							
 							//This voxel cannot be solid
 							if (!IsVoxelAir(impl, _mm_add_epi32(voxelCoordSolid, normal)))
 								continue;
+							
+							__m128 normalF = *reinterpret_cast<const __m128*>(voxelNormalsF[n]);
 							
 							//A point on the plane going through this face
 							__m128 planePoint = _mm_add_ps(
@@ -525,19 +543,30 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 								_mm_mul_ps(normalF, halfM)
 							);
 							
-							CheckFace(planePoint, normalF, *reinterpret_cast<const __m128*>(voxelTangents[n]),
-							          *reinterpret_cast<const __m128*>(voxelBitangents[n]), 0.5f, 0.5f, -INFINITY);
+							__m128i tangent = *reinterpret_cast<const __m128i*>(voxelTangentsI[n]);
+							__m128i bitangent = *reinterpret_cast<const __m128i*>(voxelBitangentsI[n]);
+							float tangentLen =
+								!IsVoxelAir(impl, _mm_add_epi32(voxelCoordSolid, tangent)) &&
+								!IsVoxelAir(impl, _mm_sub_epi32(voxelCoordSolid, tangent)) ? 0.6f : 0.5f;
+							float bitangentLen =
+								!IsVoxelAir(impl, _mm_add_epi32(voxelCoordSolid, bitangent)) &&
+								!IsVoxelAir(impl, _mm_sub_epi32(voxelCoordSolid, bitangent)) ? 0.6f : 0.5f;
+							
+							CheckFace(planePoint, normalF,
+				                      *reinterpret_cast<const __m128*>(voxelTangentsF[n]),
+			                          *reinterpret_cast<const __m128*>(voxelBitangentsF[n]),
+			                          tangentLen, bitangentLen, -INFINITY);
 						}
 					}
 				}
 			}
 			
 			//Applies an impulse to the velocity
-			if (minDist < 0.0f)
+			if (minDist < 0)
 			{
-				float impulseScale = _mm_cvtss_f32(_mm_dp_ps(vel, displaceNormal, 0xFF)) * minDist * IMPACT_COEFFICIENT;
-				__m128 impulse = _mm_mul_ps(displaceNormal, _mm_load1_ps(&impulseScale));
-				vel = _mm_add_ps(vel, impulse);
+				float vDotDisplace = _mm_cvtss_f32(_mm_dp_ps(vel, displaceNormal, 0xFF)) * IMPACT_COEFFICIENT;
+				__m128 impulse = _mm_mul_ps(displaceNormal, _mm_load1_ps(&vDotDisplace));
+				vel = _mm_sub_ps(vel, impulse);
 			}
 			
 			//Applies collision correction
