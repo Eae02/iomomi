@@ -13,4 +13,5 @@ message FloorButtonEntity {
 	fixed32 target_name = 5;
 	fixed32 source_index = 6;
 	Activator activator = 7;
+	float linger_time = 8;
 }

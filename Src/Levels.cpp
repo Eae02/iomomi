@@ -14,8 +14,6 @@ using namespace std::filesystem;
 
 std::vector<Level> levels;
 
-int64_t firstLevelIndex = -1;
-
 const std::vector<std::string_view> levelsOrder = 
 {
 	"intro_0",
@@ -46,13 +44,6 @@ const std::vector<std::string_view> levelsOrder =
 	"gravgun_1",
 	"gravgun_2",
 	"gravgun_3",
-	"gravgun_4",
-	"gravgun_5",
-	"gravgun_6",
-	
-	"forcefield_1",
-	"forcefield_2",
-	"forcefield_3",
 	
 	"gravbarrier_1",
 	"gravbarrier_2",
@@ -62,12 +53,19 @@ const std::vector<std::string_view> levelsOrder =
 	"water_0",
 	"water_1",
 	"water_2",
-	
 	"water_4",
 	"water_5",
 	"water_6",
 	
+	"forcefield_1",
 	"cubeflip_0",
+	"forcefield_2",
+	"forcefield_3",
+	
+	"gravgun_4",
+	"gravgun_5",
+	//"gravgun_6",
+	
 	"cubeflip_2"
 };
 

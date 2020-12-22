@@ -4,7 +4,9 @@
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../Graphics/Materials/EmissiveMaterial.hpp"
 #include "../../../../Protobuf/Build/FloorButtonEntity.pb.h"
+
 #include <iomanip>
+#include <imgui.h>
 
 static eg::Model* s_model;
 static eg::IMaterial* s_material;
@@ -58,6 +60,13 @@ FloorButtonEnt::FloorButtonEnt()
 	m_padPhysicsObject.constrainMove = &FloorButtonEnt::ConstrainMove;
 	
 	m_timeSinceActivated = 100;
+}
+
+void FloorButtonEnt::RenderSettings()
+{
+	ImGui::SliderFloat("Linger Time", &m_lingerTime, 0.0f, 2.0f, "%.2f s");
+	
+	Ent::RenderSettings();
 }
 
 bool FloorButtonEnt::ShouldCollide(const PhysicsObject& self, const PhysicsObject& other)
@@ -116,7 +125,6 @@ void FloorButtonEnt::CommonDraw(const EntDrawArgs& args)
 }
 
 static float* floorButtonAABBScale = eg::TweakVarFloat("fbtn_aabb_scale", 1.0f, 0.0f);
-static float* floorButtonLingerTime = eg::TweakVarFloat("fbtn_linger_time", 0.3f, 0.0f);
 
 void FloorButtonEnt::Update(const WorldUpdateArgs& args)
 {
@@ -130,7 +138,7 @@ void FloorButtonEnt::Update(const WorldUpdateArgs& args)
 		m_timeSinceActivated += args.dt;
 	}
 	
-	if (m_timeSinceActivated < *floorButtonLingerTime)
+	if (m_timeSinceActivated <= m_lingerTime)
 	{
 		m_activator.Activate();
 		m_lightColor = std::min(m_lightColor + args.dt / LIGHT_ANIMATION_TIME, 1.0f);
@@ -160,6 +168,7 @@ void FloorButtonEnt::Serialize(std::ostream& stream) const
 	SerializePos(buttonPB, m_ringPhysicsObject.position);
 	
 	buttonPB.set_allocated_activator(m_activator.SaveProtobuf(nullptr));
+	buttonPB.set_linger_time(m_lingerTime);
 	
 	buttonPB.SerializeToOstream(&stream);
 }
@@ -175,6 +184,7 @@ void FloorButtonEnt::Deserialize(std::istream& stream)
 		DeserializePos(buttonPB);
 	
 	m_ringPhysicsObject.rotation = m_padPhysicsObject.rotation = glm::quat_cast(GetRotationMatrix(m_direction));
+	m_lingerTime = buttonPB.linger_time();
 	
 	if (buttonPB.has_activator())
 	{

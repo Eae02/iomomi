@@ -13,6 +13,8 @@ public:
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
 		EntTypeFlags::EditorWallMove | EntTypeFlags::HasPhysics;
 	
+	void RenderSettings() override;
+	
 	Dir GetFacingDirection() const override { return m_direction; }
 	glm::vec3 GetPosition() const override { return m_ringPhysicsObject.position; }
 	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
@@ -48,4 +50,5 @@ private:
 	
 	float m_timeSinceActivated = 0;
 	float m_lightColor = 0;
+	float m_lingerTime = 0;
 };

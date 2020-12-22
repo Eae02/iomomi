@@ -13,6 +13,8 @@
 static_assert(sizeof(int) == 4);
 static_assert(sizeof(float) == 4);
 
+const char* version = __DATE__;
+
 void Start(eg::RunConfig& runConfig)
 {
 	GOOGLE_PROTOBUF_VERIFY_VERSION;

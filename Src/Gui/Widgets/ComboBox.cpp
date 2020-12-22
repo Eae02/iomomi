@@ -6,10 +6,10 @@ ComboBox* ComboBox::current;
 static constexpr int DROP_DOWN_HEIGHT = 25;
 static constexpr int OPTION_HEIGHT = 25;
 
-
-
 void ComboBox::Update(float dt, bool allowInteraction)
 {
+	m_lastFrameUpdated = eg::FrameIdx();
+	
 	UpdateBase(allowInteraction);
 	
 	AnimateProperty(m_highlightIntensity, dt, style::HoverAnimationTime, m_hovered || current == this);
@@ -62,6 +62,12 @@ void ComboBox::Draw(eg::SpriteBatch& spriteBatch) const
 
 void ComboBox::DrawOverlay(eg::SpriteBatch& spriteBatch) const
 {
+	if (m_lastFrameUpdated != eg::FrameIdx())
+	{
+		ComboBox::current = nullptr;
+		return;
+	}
+	
 	float expandProgress = glm::smoothstep(0.0f, 1.0f, m_expandProgress);
 	int dropDownHeight = (int)std::round(std::min(DROP_DOWN_HEIGHT, (int)options.size()) * OPTION_HEIGHT * expandProgress);
 	spriteBatch.PushScissor((int)m_rectangle.x, (int)m_rectangle.y - dropDownHeight, (int)m_rectangle.w, dropDownHeight);

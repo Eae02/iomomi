@@ -24,4 +24,5 @@ private:
 	float m_highlightIntensity = 0;
 	float m_expandProgress = 0;
 	std::vector<float> m_optionHighlightIntensity;
+	uint64_t m_lastFrameUpdated = 0;
 };

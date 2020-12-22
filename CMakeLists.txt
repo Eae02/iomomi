@@ -44,7 +44,8 @@ set_target_properties(Gravity PROPERTIES
 	OUTPUT_NAME "gravity"
 )
 
-target_compile_options(Gravity PRIVATE -DIMGUI_USER_CONFIG="../../Inc/ImGuiConfig.hpp")
+string(TIMESTAMP BUILD_DATE "%y-%m-%d")
+target_compile_options(Gravity PRIVATE -DIMGUI_USER_CONFIG="../../Inc/ImGuiConfig.hpp" -DBUILD_DATE="${BUILD_DATE}")
 
 target_include_directories(Gravity SYSTEM PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/Inc

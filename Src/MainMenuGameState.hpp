@@ -58,6 +58,8 @@ private:
 	eg::Framebuffer m_worldRenderFramebuffer;
 	eg::Texture m_worldRenderTexture;
 	float m_worldGameTime = 0;
+	
+	std::string_view m_versionString;
 };
 
 extern MainMenuGameState* mainMenuGameState;

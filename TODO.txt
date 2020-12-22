@@ -3,12 +3,9 @@ fixes:
  - physics object rotation
 
 graphics fixes:
- - fix hidden water still rendering when underwater
  - gun should be rendered after ssr
 
 textures and models:
- - textures in level change room
- - better side model for gravity barriers
  - texture and model for cube spawner
  - make cube (re)spawn prettier
  - different graphics for pushable platforms
@@ -44,9 +41,7 @@ sounds:
  - menu buttons
 
 ui:
- - completed icon in level select screen
  - level select screen title
- - hints for controls
  - hints for restart (?)
  - option for hud
    - crosshair (?)
