@@ -20,12 +20,12 @@ void main()
 		discard;
 	
 	vec3 ndcFront = sphereToNDC(r2, 1);
-	vec3 ndcBack = sphereToNDC(r2, -1);
-
+	
 	vec2 scrPos = ndcFront.xy * vec2(0.5, EG_OPENGL ? 0.5 : -0.5) + 0.5;
 	float inputDepth = texture(geometryDepthSampler, scrPos).r;
+
+	float depthFront = linearizeDepth(min(inputDepth, ndcFront.z));
+	float depthBack = linearizeDepth(min(inputDepth, sphereToNDC(r2, -1).z));
 	
-	float travelDepth = linearizeDepth(min(inputDepth, ndcBack.z)) - linearizeDepth(min(inputDepth, ndcFront.z));
-	
-	color_out = max(travelDepth, 0);
+	color_out = max(depthBack - depthFront, 0);
 }

@@ -28,7 +28,7 @@ void main()
 	float inputDepth = texture(geometryDepthSampler, scrPos).r;
 	if (EG_OPENGL)
 		inputDepth = inputDepth * 2 - 1;
-	if (linearizeDepth(ndcBack.z) > linearizeDepth(inputDepth) + PARTICLE_RADIUS)
+	if (linearizeDepth(ndcBack.z) > linearizeDepth(inputDepth) + 0.6)
 		discard;
 	gl_FragDepth = min(ndcBack.z, inputDepth);
 #else

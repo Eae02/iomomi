@@ -311,6 +311,11 @@ void MainMenuGameState::RenderWorld(float dt)
 	
 	m_world->Update(updateArgs, &m_physicsEngine);
 	
+	{
+		auto waterUpdateTimer = eg::StartCPUTimer("Water Update MT");
+		GameRenderer::instance->m_waterSimulator.Update(*m_world, false);
+	}
+	
 	GameRenderer::instance->Render(*m_world, m_worldGameTime, dt, m_worldRenderFramebuffer.handle,
 	                               eg::CurrentResolutionX(), eg::CurrentResolutionY());
 	

@@ -3,6 +3,7 @@
 #include "../../../Graphics/Materials/EmissiveMaterial.hpp"
 #include "../../../YAMLUtils.hpp"
 #include "../../../../Protobuf/Build/EntranceEntity.pb.h"
+#include "../../../Settings.hpp"
 
 #include <imgui.h>
 
@@ -18,12 +19,15 @@ struct
 {
 	const eg::Model* model;
 	std::vector<const eg::IMaterial*> materials;
+	std::vector<bool> onlyRenderIfInside;
 	
 	int floorLightMaterialIdx;
 	int ceilLightMaterialIdx;
 	int screenMaterialIdx;
 	
 	size_t doorMeshIndices[2][2];
+	
+	size_t fanMeshIndex;
 	
 	const eg::Model* editorEntModel;
 	const eg::Model* editorExitModel;
@@ -58,6 +62,8 @@ static void OnInit()
 	AssignMaterial("DoorFrame",   "Materials/Entrance/DoorFrame.yaml");
 	AssignMaterial("Walls",       "Materials/Entrance/WallPanels.yaml");
 	AssignMaterial("Ceiling",     "Materials/Entrance/Ceiling.yaml");
+	AssignMaterial("Pillars",     "Materials/Entrance/Pillars.yaml");
+	AssignMaterial("Fan",         "Materials/Entrance/Fan.yaml");
 	
 	entrance.floorLightMaterialIdx = entrance.model->GetMaterialIndex("FloorLight");
 	entrance.ceilLightMaterialIdx = entrance.model->GetMaterialIndex("Light");
@@ -65,6 +71,19 @@ static void OnInit()
 	
 	entrance.editorEntMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Entrance/EditorEntrance.yaml");
 	entrance.editorExitMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Entrance/EditorExit.yaml");
+	
+	entrance.fanMeshIndex = entrance.model->GetMeshIndex("Fan");
+	
+	entrance.onlyRenderIfInside.resize(entrance.model->NumMeshes(), true);
+	
+	int doorFrameMaterialIndex = entrance.model->GetMaterialIndex("DoorFrame");
+	for (size_t m = 0; m < entrance.model->NumMeshes(); m++)
+	{
+		if (eg::StringStartsWith(entrance.model->GetMesh(m).name, "Wall") && entrance.model->GetMesh(m).materialIndex == doorFrameMaterialIndex)
+		{
+			entrance.onlyRenderIfInside[m] = false;
+		}
+	}
 	
 	for (int d = 0; d < 2; d++)
 	{
@@ -79,6 +98,7 @@ static void OnInit()
 				if (eg::StringStartsWith(entrance.model->GetMesh(m).name, prefixSV))
 				{
 					entrance.doorMeshIndices[d][h] = m;
+					entrance.onlyRenderIfInside[m] = false;
 					found = true;
 					break;
 				}
@@ -124,12 +144,13 @@ std::vector<glm::vec3> EntranceExitEnt::GetConnectionPoints(const Ent& entity)
 	return connectionPoints;
 }
 
-static const eg::ColorLin ScreenTextColor(eg::ColorSRGB::FromHex(0x0b1a21));
-static const eg::ColorLin ScreenBackColor(eg::ColorSRGB::FromHex(0xd8f3ff));
+static const eg::ColorLin ScreenTextColor(eg::ColorSRGB::FromHex(0x485156));
+static const eg::ColorLin ScreenBackColor(eg::ColorSRGB::FromHex(0x485156));
 
 EntranceExitEnt::EntranceExitEnt()
 	: m_activatable(&EntranceExitEnt::GetConnectionPoints),
-	  m_pointLight(eg::ColorSRGB::FromHex(0xD1F8FE), 20.0f),
+	  m_pointLight(eg::ColorSRGB::FromHex(0xfed8d3), 5.0f),
+	  m_fanPointLight(eg::ColorSRGB::FromHex(0xfed8d3), 60.0f),
 	  m_screenMaterial(500, 200)
 {
 	m_roomPhysicsObject.canBePushed = false;
@@ -144,7 +165,7 @@ EntranceExitEnt::EntranceExitEnt()
 		if (m_type == Type::Exit)
 			return;
 		auto& font = eg::GetAsset<eg::SpriteFont>("GameFont.ttf");
-		spriteBatch.DrawText(font, m_levelTitle, glm::vec2(10, 10), ScreenTextColor);
+		spriteBatch.DrawText(font, "", glm::vec2(10, 10), ScreenTextColor);
 	};
 }
 
@@ -173,8 +194,17 @@ glm::mat4 EntranceExitEnt::GetTransform() const
 	return glm::translate(glm::mat4(1.0f), translation) * glm::mat4(rotation);
 }
 
+static const glm::vec3 fanRotationCenter = glm::vec3(0, 1.47092f, 2.31192f);
+
+static const glm::vec3 pointLightPos = glm::vec3(0, 2.0f, 1.0f);
+
+static float* fanSpeed = eg::TweakVarFloat("entfan_speed", -2);
+static float* fanLightYOffset = eg::TweakVarFloat("entfan_ly", -0.25f);
+static float* fanLightZOffset = eg::TweakVarFloat("entfan_lz", 1.1f);
+
 void EntranceExitEnt::Update(const WorldUpdateArgs& args)
 {
+	m_fanRotation += args.dt * *fanSpeed;
 	if (args.mode != WorldMode::Game)
 		return;
 	
@@ -212,28 +242,31 @@ void EntranceExitEnt::Update(const WorldUpdateArgs& args)
 		args.invalidateShadows(eg::Sphere(m_position, DOOR_RADIUS));
 	}
 	
-	m_shouldSwitchEntrance = false;
-	if (m_type == Type::Exit && m_doorOpenProgress == 0 && glm::dot(toPlayer, openDirToPlayer) < -0.5f)
-	{
-		glm::vec3 diag(1.8f);
-		diag[(int)direction / 2] = 0.0f;
-		
-		glm::vec3 midEnd = m_position + glm::vec3(DirectionVector(direction)) * MESH_LENGTH * 2.0f;
-		
-		eg::AABB targetAABB(m_position - diag, midEnd + diag);
-		
-		if (targetAABB.Intersects(args.player->GetAABB()))
-			m_shouldSwitchEntrance = true;
-	}
+	glm::vec3 diag(1.8f);
+	diag[(int)direction / 2] = 0.0f;
+	glm::vec3 towardsAABBEnd = glm::vec3(DirectionVector(direction)) * MESH_LENGTH * 2.0f;
+	eg::AABB targetAABB(m_position - diag, m_position + towardsAABBEnd + diag);
+	m_isPlayerInside = targetAABB.Intersects(args.player->GetAABB()) || m_doorOpenProgress != 0;
+	
+	m_shouldSwitchEntrance =
+		m_isPlayerInside && m_doorHasOpened && m_doorOpenProgress == 0 &&
+		m_type == Type::Exit && glm::dot(toPlayer, openDirToPlayer) < -0.5f;
 	
 	bool doorOpen = m_doorOpenProgress > 0.1f;
 	m_door1Open = doorOpen && m_type == Type::Exit;
 	m_door2Open = doorOpen && m_type == Type::Entrance;
+	m_doorHasOpened |= doorOpen;
 }
 
 void EntranceExitEnt::GameDraw(const EntGameDrawArgs& args)
 {
 	std::vector<glm::mat4> transforms(entrance.model->NumMeshes(), GetTransform());
+	
+	transforms[entrance.fanMeshIndex] =
+		transforms[entrance.fanMeshIndex] *
+		glm::translate(glm::mat4(1), fanRotationCenter) *
+		glm::rotate(glm::mat4(1), m_fanRotation, glm::vec3(0, 0, 1)) *
+		glm::translate(glm::mat4(1), -fanRotationCenter);
 	
 	float doorMoveDist = glm::smoothstep(0.0f, 1.0f, m_doorOpenProgress) * 1.2f;
 	for (int h = 0; h < 2; h++)
@@ -253,6 +286,9 @@ void EntranceExitEnt::GameDraw(const EntGameDrawArgs& args)
 	
 	for (size_t i = 0; i < entrance.model->NumMeshes(); i++)
 	{
+		if (!m_isPlayerInside && entrance.onlyRenderIfInside[i])
+			continue;
+		
 		int materialIndex = entrance.model->GetMesh(i).materialIndex;
 		if (materialIndex == entrance.floorLightMaterialIdx)
 		{
@@ -275,7 +311,20 @@ void EntranceExitEnt::GameDraw(const EntGameDrawArgs& args)
 		}
 	}
 	
-	args.pointLights->emplace_back(m_pointLight.GetDrawData(glm::vec3(GetTransform() * glm::vec4(0, 2.0f, 1.0f, 1.0f))));
+	if (m_isPlayerInside)
+	{
+		args.pointLights->push_back(
+			m_pointLight.GetDrawData(glm::vec3(GetTransform() * glm::vec4(pointLightPos, 1.0f))));
+		
+		if (settings.shadowQuality >= QualityLevel::Medium)
+		{
+			glm::vec4 lightPos4(fanRotationCenter.x, fanRotationCenter.y + *fanLightYOffset,
+			                    fanRotationCenter.z + *fanLightZOffset, 1.0f);
+			PointLightDrawData lightDrawData = m_fanPointLight.GetDrawData(glm::vec3(GetTransform() * lightPos4));
+			lightDrawData.invalidate = true;
+			args.pointLights->push_back(lightDrawData);
+		}
+	}
 	
 	m_levelTitle = args.world->title;
 	m_screenMaterial.RenderTexture(ScreenBackColor);

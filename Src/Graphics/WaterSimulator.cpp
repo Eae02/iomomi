@@ -100,6 +100,8 @@ void WaterSimulator::Stop()
 		if (!m_run)
 			return;
 		m_run = false;
+		m_pausedSH = false;
+		m_unpausedSignal.notify_one();
 	}
 	m_thread.join();
 	m_thread = { };
@@ -129,7 +131,12 @@ void WaterSimulator::ThreadTarget()
 		int stepsPerSecond;
 		
 		{
-			std::lock_guard<std::mutex> lock(m_mutex);
+			std::unique_lock<std::mutex> lock(m_mutex);
+			while (m_pausedSH)
+			{
+				m_unpausedSignal.wait(lock);
+			}
+			
 			if (!m_run)
 				break;
 			
@@ -139,7 +146,7 @@ void WaterSimulator::ThreadTarget()
 				firstStep = false;
 			stepsPerSecond = *stepsPerSecondVar;
 			
-			waterBlockers = m_waterBlockersShared;
+			waterBlockers = m_waterBlockersSH;
 			
 			if (!m_changeGravityParticles.empty())
 			{
@@ -188,7 +195,7 @@ inline __m128 Vec3ToM128(const glm::vec3& v3)
 	return _mm_load_ps(data);
 }
 
-void WaterSimulator::Update(const World& world)
+void WaterSimulator::Update(const World& world, bool paused)
 {
 	if (m_numParticles == 0)
 	{
@@ -259,7 +266,7 @@ void WaterSimulator::Update(const World& world)
 			}
 		}
 		
-		m_waterBlockersShared = m_waterBlockersMT;
+		m_waterBlockersSH = m_waterBlockersMT;
 		
 		if (m_changeGravityParticleMT != -1)
 		{
@@ -267,7 +274,13 @@ void WaterSimulator::Update(const World& world)
 			m_changeGravityParticleMT = -1;
 		}
 		
+		m_pausedSH = paused;
 		m_numParticlesToDraw = WSI_GetPositions(m_impl, m_positionsUploadBufferMemory + uploadBufferOffset);
+	}
+	
+	if (!paused)
+	{
+		m_unpausedSignal.notify_one();
 	}
 	
 	const uint64_t uploadBufferRange = m_numParticlesToDraw * 4 * sizeof(float);

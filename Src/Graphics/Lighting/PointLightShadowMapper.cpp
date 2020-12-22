@@ -110,11 +110,12 @@ void PointLightShadowMapper::UpdateShadowMaps(std::vector<PointLightDrawData>& p
 		{
 			shadowMapIndex = AddShadowMap();
 		}
-		else if (glm::distance2(m_shadowMaps[shadowMapIndex].sphere.position, pointLight.pc.position) > 0.01f)
+		else if (glm::distance2(m_shadowMaps[shadowMapIndex].sphere.position, pointLight.pc.position) > 0.01f || pointLight.invalidate)
 		{
 			m_shadowMaps[shadowMapIndex].outOfDate = true;
 		}
 		
+		pointLight.invalidate = false;
 		pointLight.shadowMap = m_shadowMaps[shadowMapIndex].texture;
 		m_shadowMaps[shadowMapIndex].sphere = eg::Sphere(pointLight.pc.position, pointLight.pc.range);
 		m_shadowMaps[shadowMapIndex].currentLightID = pointLight.instanceID; //Problematic

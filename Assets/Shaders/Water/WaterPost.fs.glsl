@@ -136,7 +136,7 @@ void main()
 	vec3 oriWorldColor = worldColor;
 	float worldDepthL = linearizeDepth(worldDepthH);
 	bool waterSurface = worldDepthL > waterDepthL - 0.2;
-	float fadeDepth = worldDepthL - waterDepthLUB;
+	float fadeDepth = worldDepthL - waterDepthL;
 	
 	vec3 surfacePos = WorldPosFromDepth(waterDepthH, texCoord_in, renderSettings.invViewProjection);
 	
@@ -259,12 +259,12 @@ void main()
 	}
 	else
 	{
-		const float FOAM_FADE_MAX = 0.4;
-		const float FOAM_FADE_BEGIN = 0.5;
+		const float FOAM_FADE_MAX = 0.3;
+		const float FOAM_FADE_BEGIN = 0.35;
 		float foam = clamp((fadeDepth - FOAM_FADE_MAX) / (FOAM_FADE_BEGIN - FOAM_FADE_MAX), 0.0, 1.0);
 		
-		const float SHORE_FADE_MAX = 0.2;
-		const float SHORE_FADE_BEGIN = 0.3;
+		const float SHORE_FADE_MAX = 0.15;
+		const float SHORE_FADE_BEGIN = 0.25;
 		float shore = clamp((fadeDepth - SHORE_FADE_MAX) / (SHORE_FADE_BEGIN - SHORE_FADE_MAX), 0.0, 1.0);
 		
 		vec3 foamColor = vec3(1.0);

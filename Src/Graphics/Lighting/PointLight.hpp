@@ -15,7 +15,8 @@ struct PointLightDrawData
 #pragma pack(pop)
 	eg::TextureRef shadowMap;
 	uint64_t instanceID;
-	bool castsShadows;
+	bool castsShadows = true;
+	bool invalidate = false;
 };
 
 class PointLight : public LightSource

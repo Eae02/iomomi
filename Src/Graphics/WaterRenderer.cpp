@@ -156,7 +156,7 @@ vhigh: 26 samples, 32-bit, HQ-Shader
 */
 
 static const int blurSamplesByQuality[] = { 6, 10, 10, 16, 24 };
-static const float baseBlurRadius[] = { 50.0f, 50.0f, 60.0f, 70.0f, 70.0f };
+static const float baseBlurRadius[] = { 60.0f, 60.0f, 80.0f, 100.0f, 100.0f };
 
 void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParticles, RenderTexManager& rtManager)
 {

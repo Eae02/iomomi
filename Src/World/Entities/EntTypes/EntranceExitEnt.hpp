@@ -62,6 +62,11 @@ public:
 		return m_shouldSwitchEntrance;
 	}
 	
+	bool IsPlayerInside() const
+	{
+		return m_isPlayerInside;
+	}
+	
 private:
 	std::tuple<glm::mat3, glm::vec3> GetTransformParts() const;
 	glm::mat4 GetTransform() const;
@@ -75,6 +80,7 @@ private:
 	ActivatableComp m_activatable;
 	
 	PointLight m_pointLight;
+	PointLight m_fanPointLight;
 	
 	mutable ScreenMaterial m_screenMaterial;
 	
@@ -82,9 +88,13 @@ private:
 	float m_doorOpenProgress = 0;
 	float m_timeBeforeClose = 0;
 	
+	float m_fanRotation = 0;
+	
+	bool m_isPlayerInside = false;
 	bool m_shouldSwitchEntrance = false;
 	bool m_door1Open = false;
 	bool m_door2Open = false;
+	bool m_doorHasOpened = false;
 	
 	std::string_view m_levelTitle;
 };

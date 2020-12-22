@@ -76,11 +76,6 @@ void GameRenderer::Render(World& world, float gameTime, float dt,
 	
 	m_glassBlurRenderer.MaybeUpdateResolution(outputResX, outputResY);
 	
-	{
-		auto waterUpdateTimer = eg::StartCPUTimer("Water Update MT");
-		m_waterSimulator.Update(world);
-	}
-	
 	eg::Frustum frustum(m_inverseViewProjMatrix);
 	
 	if (m_lastSettingsGeneration != SettingsGeneration())

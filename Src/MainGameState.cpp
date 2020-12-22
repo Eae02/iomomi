@@ -175,6 +175,11 @@ void MainGameState::RunFrame(float dt)
 	
 	m_playerWaterAABB->SetAABB(m_player.GetAABB());
 	
+	{
+		auto waterUpdateTimer = eg::StartCPUTimer("Water Update MT");
+		GameRenderer::instance->m_waterSimulator.Update(*m_world, m_pausedMenu.isPaused);
+	}
+	
 	GameRenderer::instance->Render(*m_world, m_gameTime, dt, nullptr, eg::CurrentResolutionX(), eg::CurrentResolutionY());
 	
 	UpdateAndDrawHud(dt);

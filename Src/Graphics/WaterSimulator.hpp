@@ -57,7 +57,7 @@ public:
 	
 	void Stop();
 	
-	void Update(const World& world);
+	void Update(const World& world, bool paused);
 	
 	//Finds an intersection between the given ray and the water.
 	// Returns a pair of distance and particleIndex.
@@ -113,7 +113,10 @@ private:
 	std::vector<std::pair<int, Dir>> m_changeGravityParticles;
 	
 	std::vector<WaterBlocker> m_waterBlockersMT;
-	std::vector<WaterBlocker> m_waterBlockersShared;
+	std::vector<WaterBlocker> m_waterBlockersSH;
+	
+	bool m_pausedSH = false;
+	std::condition_variable m_unpausedSignal;
 	
 	struct WaterSimulatorImpl* m_impl;
 	

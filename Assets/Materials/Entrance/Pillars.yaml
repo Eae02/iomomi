@@ -1,0 +1,6 @@
+albedo: ../../Textures/Entrance/PillarsA.png
+normalMap: ../../Textures/Entrance/PillarsN.png
+miscMap: ../../Textures/Entrance/PillarsM.png
+roughnessMin: 0.2
+roughnessMax: 0.7
+textureScale: 0.5

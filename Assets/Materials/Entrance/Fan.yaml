@@ -1,0 +1,7 @@
+albedo: ../../Textures/Entrance/DoorFrameA.png
+normalMap: ../../Textures/Entrance/DoorFrameN.png
+miscMap: ../../Textures/Entrance/DoorFrameM.png
+roughnessMin: 0.2
+roughnessMax: 0.8
+backfaceCull: false
+minShadowQuality: medium
