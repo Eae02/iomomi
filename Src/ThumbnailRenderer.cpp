@@ -92,7 +92,7 @@ LevelThumbnailUpdate* BeginUpdateLevelThumbnails(RenderContext& renderContext, e
 		framebufferAttachment.texture = entry.texture.handle;
 		entry.framebuffer = eg::Framebuffer(eg::Span<const eg::FramebufferAttachment>(&framebufferAttachment, 1));
 		
-		GameRenderer::instance->m_waterSimulator.Update(*world, false);
+		renderer->m_waterSimulator.Update(*world, false);
 		
 		renderer->Render(*world, 0, 0, entry.framebuffer.handle, LEVEL_THUMBNAIL_RES_X, LEVEL_THUMBNAIL_RES_Y);
 		

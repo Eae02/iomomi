@@ -81,16 +81,6 @@ Game::Game()
 		m_levelThumbnailUpdate = BeginUpdateLevelThumbnails(m_renderCtx, writer);
 	});
 	
-	//Sets the main menu's background level to the last one unlocked
-	for (std::string_view levelName : levelsOrder)
-	{
-		int64_t index = FindLevel(levelName);
-		if (index != -1 && levels[index].status != LevelStatus::Locked)
-		{
-			mainMenuGameState->backgroundLevel = &levels[index];
-		}
-	}
-	
 	InitializeWallShader();
 }
 

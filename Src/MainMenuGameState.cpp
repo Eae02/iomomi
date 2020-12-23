@@ -38,6 +38,12 @@ MainMenuGameState::MainMenuGameState()
 	: m_mainWidgetList(BUTTON_W), m_levelHighlightIntensity(levels.size(), 0.0f),
 	  m_worldBlurRenderer(2, eg::Format::R8G8B8A8_UNorm)
 {
+	int64_t continueLevel = FindContinueLevel();
+	if (continueLevel != -1)
+	{
+		backgroundLevel = &levels[continueLevel];
+	}
+	
 	m_mainWidgetList.AddWidget(Button("Continue", [&] { ContinueClicked(); }));
 	m_mainWidgetList.AddWidget(Button("Select Level", [&] { m_screen = Screen::LevelSelect; }));
 	m_mainWidgetList.AddWidget(Button("Options", [&] { m_screen = Screen::Options; optionsMenuOpen = true; }));
