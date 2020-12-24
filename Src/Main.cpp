@@ -19,6 +19,8 @@ void Start(eg::RunConfig& runConfig)
 {
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
 	
+	
+	
 	LoadSettings();
 	eg::TextureAssetQuality = settings.textureQuality;
 	
@@ -30,6 +32,7 @@ void Start(eg::RunConfig& runConfig)
 	runConfig.defaultDepthStencilFormat = eg::Format::Depth32;
 	runConfig.minWindowW = 1000;
 	runConfig.minWindowH = 700;
+	//runConfig.framerateCap = 20;
 	runConfig.initialize = []
 	{
 		if (!eg::Contains(eg::FullscreenDisplayModes(), settings.fullscreenDisplayMode))

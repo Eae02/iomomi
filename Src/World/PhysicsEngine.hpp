@@ -77,6 +77,8 @@ public:
 	
 	void GetDebugRenderData(struct PhysicsDebugRenderData& dataOut) const;
 	
+	PhysicsObject* CheckCollision(const eg::AABB& aabb, const PhysicsObject* ignoreObject) const;
+	
 private:
 	void CopyParentMove(PhysicsObject& object, float dt);
 	

@@ -255,10 +255,30 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 		}
 	}
 	
+	glm::vec3 velocityXZ = localVelPlane.x * forwardPlane + localVelPlane.y * rightPlane;
+	
 	//Vertical movement
 	if (!*noclipActive)
 	{
 		const float jumpAccel = std::sqrt(2.0f * *jumpHeight * *playerGravity);
+		
+		if (m_wasUnderwater && !underwater && localVelVertical > 0 && glm::length2(velocityXZ) > 0.001f)
+		{
+			glm::vec3 xzShift = glm::normalize(velocityXZ) * 0.1f;
+			eg::AABB aabbNeedsIntersect = GetAABB();
+			aabbNeedsIntersect.min += xzShift;
+			aabbNeedsIntersect.max += xzShift;
+			
+			eg::AABB aabbNoIntersect = aabbNeedsIntersect;
+			aabbNoIntersect.min += up;
+			aabbNoIntersect.max += up;
+			
+			if (physicsEngine.CheckCollision(aabbNeedsIntersect, &m_physicsObject) &&
+			    !physicsEngine.CheckCollision(aabbNoIntersect, &m_physicsObject))
+			{
+				localVelVertical = jumpAccel;
+			}
+		}
 		
 		//Applies gravity
 		localVelVertical -= ((underwater ? 0.2f : 1.0f) * *playerGravity) * dt;
@@ -272,17 +292,10 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 			m_onGroundLinger = 0;
 			m_physicsObject.position += up * 0.01f;
 		}
-		
-		if (m_wasUnderwater && !underwater && localVelVertical > 0)
-		{
-			localVelVertical = jumpAccel;
-		}
 	}
 	
 	//Reconstructs the world velocity vector
-	glm::vec3 velocityXZ = localVelPlane.x * forwardPlane + localVelPlane.y * rightPlane;
 	glm::vec3 velocityY = localVelVertical * up;
-	
 	m_velocity = velocityXZ + velocityY;
 	glm::vec3 moveXZ = velocityXZ * dt;
 	glm::vec3 moveY = velocityY * dt;

@@ -317,6 +317,33 @@ std::pair<PhysicsObject*, float> PhysicsEngine::RayIntersect(const eg::Ray& ray,
 	return { intersectedObject, minIntersect };
 }
 
+PhysicsObject* PhysicsEngine::CheckCollision(const eg::AABB& aabb, const PhysicsObject* ignoreObject) const
+{
+	for (PhysicsObject* object : m_objects)
+	{
+		if (object == ignoreObject)
+			continue;
+		if (const eg::CollisionMesh* const* mesh = std::get_if<const eg::CollisionMesh*>(&object->shape))
+		{
+			glm::mat4 meshTransform = glm::translate(glm::mat4(1.0f), object->position) * glm::mat4_cast(object->rotation);
+			if (CheckCollisionAABBTriangleMesh(aabb, glm::vec3(0), **mesh, meshTransform, object->needsFlippedWinding))
+			{
+				return object;
+			}
+		}
+		else if (const eg::AABB* otherAABB = std::get_if<eg::AABB>(&object->shape))
+		{
+			OrientedBox otherOBB;
+			otherOBB.center = object->rotation * otherAABB->Center() + object->position;
+			otherOBB.radius = otherAABB->Size() / 2.0f;
+			otherOBB.rotation = object->rotation;
+			if (CheckCollisionAABBOrientedBox(aabb, otherOBB, glm::vec3(0)))
+				return object;
+		}
+	}
+	return nullptr;
+}
+
 void GetDebugRenderDataForShape(PhysicsDebugRenderData& dataOut, const PhysicsObject& obj,
 	const eg::CollisionMesh* mesh, uint32_t color)
 {
