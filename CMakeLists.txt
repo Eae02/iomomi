@@ -9,7 +9,6 @@ if(${CMAKE_CXX_COMPILER} MATCHES "emcc$")
 endif()
 
 set(BUILD_ID "" CACHE STRING "Build id to be included in the main menu.")
-option(EGAME_STATIC "Whether or not to link EGame statically." OFF)
 
 include("${EGAME_CMAKE_DIR}/EGameTargets.cmake")
 
@@ -32,11 +31,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 endif()
 
 target_link_libraries(Gravity stdc++fs tbb yaml-cpp)
-if (EGAME_STATIC)
-	target_link_libraries(Gravity EGameStatic yaml-cpp)
-else()
-	target_link_libraries(Gravity EGameShared yaml-cpp)
-endif()
+target_link_libraries(Gravity EGame yaml-cpp)
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 	set_target_properties(Gravity PROPERTIES
