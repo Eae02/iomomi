@@ -262,9 +262,9 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 	{
 		const float jumpAccel = std::sqrt(2.0f * *jumpHeight * *playerGravity);
 		
-		if (m_wasUnderwater && !underwater && localVelVertical > 0 && glm::length2(velocityXZ) > 0.001f)
+		if (m_wasUnderwater && !underwater && localVelVertical > 0)
 		{
-			glm::vec3 xzShift = glm::normalize(velocityXZ) * 0.1f;
+			glm::vec3 xzShift = forwardPlane * 0.1f;
 			eg::AABB aabbNeedsIntersect = GetAABB();
 			aabbNeedsIntersect.min += xzShift;
 			aabbNeedsIntersect.max += xzShift;
