@@ -47,15 +47,15 @@ void LoadSettings()
 	DecodeQualityLevel(settingsNode["shadowQuality"].as<std::string>("medium"), settings.shadowQuality);
 	DecodeQualityLevel(settingsNode["lightingQuality"].as<std::string>("medium"), settings.lightingQuality);
 	DecodeQualityLevel(settingsNode["waterQuality"].as<std::string>("medium"), settings.waterQuality);
-	settings.fieldOfViewDeg = settingsNode["fieldOfView"].as<float>(80.0f);
-	settings.exposure = settingsNode["exposure"].as<float>(1.2f);
-	settings.lookSensitivityMS = settingsNode["lookSensitivityMS"].as<float>(0.005f);
-	settings.lookSensitivityGP = settingsNode["lookSensitivityGP"].as<float>(2.0f);
+	settings.fieldOfViewDeg = settingsNode["fieldOfView"].as<float>(settings.fieldOfViewDeg);
+	settings.exposure = settingsNode["exposure"].as<float>(settings.exposure);
+	settings.lookSensitivityMS = settingsNode["lookSensitivityMS"].as<float>(settings.lookSensitivityMS);
+	settings.lookSensitivityGP = settingsNode["lookSensitivityGP"].as<float>(settings.lookSensitivityGP);
 	settings.lookInvertY = settingsNode["lookInvertY"].as<bool>(false);
 	settings.enableFXAA = settingsNode["fxaa"].as<bool>(true);
 	settings.enableBloom = settingsNode["bloom"].as<bool>(true);
 	settings.showExtraLevels = settingsNode["showExtraLevels"].as<bool>(false);
-	settings.gunFlash = settingsNode["gunFlash"].as<bool>(false);
+	settings.gunFlash = settingsNode["gunFlash"].as<bool>(true);
 	
 	std::string displayModeString = settingsNode["displayMode"].as<std::string>("");
 	for (int i = 0; i < 3; i++)

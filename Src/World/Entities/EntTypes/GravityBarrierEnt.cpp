@@ -132,7 +132,7 @@ glm::mat4 GravityBarrierEnt::GetTransform() const
 		glm::vec4(m_position, 1));
 }
 
-constexpr glm::vec4 gravityBarrierLightColor = glm::vec4(0.1, 0.7, 0.9, 0.0f);
+static const glm::vec4 gravityBarrierLightColor = glm::vec4(0.1, 0.7, 0.9, 0.0f);
 constexpr float LIGHT_INTENSITY_MIN = 1.0f;
 constexpr float LIGHT_INTENSITY_MAX = 5.0f;
 

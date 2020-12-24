@@ -193,7 +193,7 @@ inline bool IsVoxelAir(WaterSimulatorImpl* impl, __m128i voxel)
 	int32_t* rVoxelI = reinterpret_cast<int32_t*>(&rVoxel);
 	
 	if (rVoxelI[0] < 0 || rVoxelI[1] < 0 || rVoxelI[2] < 0 ||
-	    rVoxelI[0] >= impl->worldSize[0] || rVoxelI[1] >= impl->worldSize[1] || rVoxelI[2] >= impl->worldSize[2])
+	    rVoxelI[0] >= impl->worldSize.x || rVoxelI[1] >= impl->worldSize.y || rVoxelI[2] >= impl->worldSize.z)
 	{
 		return false;
 	}

@@ -66,14 +66,6 @@ MainMenuGameState::MainMenuGameState()
 	m_levelSelectBackButton.text = "Back";
 	m_levelSelectBackButton.width = 200;
 	m_levelSelectBackButton.onClick = [&] { m_screen = Screen::Main; };
-	
-#ifdef BUILD_DATE
-#ifdef NDEBUG
-	m_versionString = BUILD_DATE " opt";
-#else
-	m_versionString = BUILD_DATE " debug";
-#endif
-#endif
 }
 
 void MainMenuGameState::RunFrame(float dt)
@@ -125,11 +117,15 @@ void MainMenuGameState::RunFrame(float dt)
 		DrawLevelSelect(dt);
 	}
 	
-	if (!m_versionString.empty())
-	{
-		m_spriteBatch.DrawText(*style::UIFont, m_versionString, glm::vec2(5, 5), eg::ColorLin(1, 1, 1, 0.5f),
-						 0.5f, nullptr, eg::TextFlags::DropShadow);
-	}
+#if !defined(NDEBUG)
+	std::string_view infoLine = "debug";
+#elif defined(BUILD_ID)
+	std::string_view infoLine = BUILD_ID " " BUILD_DATE;
+#else
+	std::string_view infoLine = BUILD_DATE;
+#endif
+	m_spriteBatch.DrawText(*style::UIFont, infoLine, glm::vec2(5), eg::ColorLin(1, 1, 1, 0.2f), 0.5f,
+	                       nullptr, eg::TextFlags::DropShadow);
 	
 	if (ComboBox::current)
 	{
