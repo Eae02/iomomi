@@ -13,7 +13,7 @@ class CubeEnt : public Ent, public EntInteractable, public EntGravityChargeable
 public:
 	static constexpr EntTypeID TypeID = EntTypeID::Cube;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
-		EntTypeFlags::Interactable | EntTypeFlags::HasPhysics;
+		EntTypeFlags::ShadowDrawableD | EntTypeFlags::Interactable | EntTypeFlags::HasPhysics;
 	static constexpr int EditorIconIndex = 4;
 	
 	CubeEnt() : CubeEnt(glm::vec3(0.0f), false) { }

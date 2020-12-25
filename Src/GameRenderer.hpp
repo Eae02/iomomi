@@ -17,12 +17,7 @@ public:
 	
 	void WorldChanged(class World& world);
 	
-	void InvalidateShadows(const eg::Sphere& sphere)
-	{
-		m_plShadowMapper.Invalidate(sphere);
-	}
-	
-	void SetViewMatrix(const glm::mat4& viewMatrix, const glm::mat4& viewMatrixInverse);
+	void SetViewMatrix(const glm::mat4& viewMatrix, const glm::mat4& viewMatrixInverse, bool updateFrustum = true);
 	void SetViewMatrixFromThumbnailCamera(const class World& world);
 	
 	const glm::mat4& GetViewMatrix() const { return m_viewMatrix; }
@@ -40,6 +35,7 @@ public:
 	class PhysicsEngine* m_physicsEngine = nullptr;
 	class PhysicsDebugRenderer* m_physicsDebugRenderer = nullptr;
 	
+	PointLightShadowMapper m_plShadowMapper;
 	WaterSimulator m_waterSimulator;
 	float postColorScale = 1;
 	
@@ -52,7 +48,6 @@ private:
 	RenderContext* m_renderCtx;
 	BlurRenderer m_glassBlurRenderer;
 	
-	PointLightShadowMapper m_plShadowMapper;
 	std::unique_ptr<eg::BloomRenderer> m_bloomRenderer;
 	
 	QualityLevel m_lightingQuality = QualityLevel::Low;
@@ -66,4 +61,9 @@ private:
 	glm::mat4 m_inverseViewMatrix;
 	glm::mat4 m_viewProjMatrix;
 	glm::mat4 m_inverseViewProjMatrix;
+	
+	std::vector<std::shared_ptr<PointLight>> m_pointLights;
+	std::vector<eg::MeshBatch> m_pointLightMeshBatches;
+	
+	eg::Frustum m_frustum;
 };

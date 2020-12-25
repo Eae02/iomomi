@@ -149,7 +149,6 @@ static void OnInit()
 	
 	eg::GraphicsPipelineCreateInfo plsPipelineCI;
 	plsPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Common3D-PLShadow.vs.glsl").DefaultVariant();
-	plsPipelineCI.geometryShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLightShadow.gs.glsl").DefaultVariant();
 	plsPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLightShadow.fs.glsl").GetVariant("VAlbedo");
 	plsPipelineCI.enableDepthWrite = true;
 	plsPipelineCI.enableDepthTest = true;
@@ -256,7 +255,7 @@ bool StaticPropMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs
 	
 	if (mDrawArgs->drawMode == MeshDrawMode::PointLightShadow)
 	{
-		cmdCtx.BindUniformBuffer(mDrawArgs->plShadowRenderArgs->matricesBuffer, 0, 0, 0, PointLightShadowMapper::BUFFER_SIZE);
+		mDrawArgs->plShadowRenderArgs->SetPushConstants();
 	}
 	
 	return true;

@@ -334,8 +334,6 @@ void Editor::DrawWorld()
 	m_renderCtx->meshBatch.Begin();
 	m_renderCtx->transparentMeshBatch.Begin();
 	
-	m_prepareDrawArgs.spotLights.clear();
-	m_prepareDrawArgs.pointLights.clear();
 	m_world->PrepareForDraw(m_prepareDrawArgs);
 	
 	for (EditorComponent* comp : m_componentsForTool[(int)m_tool])
@@ -365,13 +363,16 @@ void Editor::DrawWorld()
 			CreateSrcRectangle(m_icons[i].iconIndex), eg::SpriteFlags::None);
 	}
 	
+	eg::Frustum frustum(RenderSettings::instance->invViewProjection);
+	
 	//Sends the editor draw message to entities
-	EntEditorDrawArgs drawArgs;
+	EntEditorDrawArgs drawArgs = {};
 	drawArgs.spriteBatch = &m_spriteBatch;
 	drawArgs.primitiveRenderer = &m_primRenderer;
 	drawArgs.meshBatch = &m_renderCtx->meshBatch;
 	drawArgs.transparentMeshBatch = &m_renderCtx->transparentMeshBatch;
 	drawArgs.world = m_world.get();
+	drawArgs.frustum = &frustum;
 	drawArgs.getDrawMode = [this] (const Ent* entity) -> EntEditorDrawMode
 	{
 		for (const std::weak_ptr<Ent>& selEnt : m_selectedEntities)

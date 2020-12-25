@@ -34,8 +34,6 @@ public:
 	
 	static uint64_t NextInstanceID();
 	
-	void RenderRadianceSettings();
-	
 private:
 	float m_range;
 	uint64_t m_instanceID;

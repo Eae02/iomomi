@@ -76,7 +76,6 @@ LevelThumbnailUpdate* BeginUpdateLevelThumbnails(RenderContext& renderContext, e
 		updateArgs.mode = WorldMode::Thumbnail;
 		updateArgs.world = world.get();
 		updateArgs.waterSim = &renderer->m_waterSimulator;
-		updateArgs.invalidateShadows = [] (const eg::Sphere&) { };
 		world->Update(updateArgs, nullptr);
 		
 		renderer->SetViewMatrixFromThumbnailCamera(*world);

@@ -28,6 +28,8 @@ public:
 	Dir GetFacingDirection() const override { return m_forwardDir; }
 	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
+	void CollectPointLights(std::vector<std::shared_ptr<PointLight>>& lights) override;
+
 private:
 	EmissiveMaterial::InstanceData GetInstanceData(float colorScale) const;
 	
@@ -35,6 +37,6 @@ private:
 	
 	Dir m_forwardDir;
 	glm::vec3 m_position;
-	
-	PointLight m_pointLight;
+	eg::ColorSRGB m_color;
+	float m_intensity;
 };

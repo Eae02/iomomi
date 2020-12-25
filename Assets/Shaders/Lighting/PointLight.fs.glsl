@@ -16,6 +16,7 @@ layout(push_constant, std140) uniform PC
 	float causticsColorOffset;
 	float causticsPanSpeed;
 	float causticsTexScale;
+	float shadowSampleDist;
 } pc;
 
 layout(location=1) noperspective in vec2 screenCoord_in;
@@ -35,7 +36,6 @@ const vec3 SAMPLE_OFFSETS[] = vec3[]
 	vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
 );
 
-const float SAMPLE_DIST = 0.005;
 const float DEPTH_BIAS = 0.001;
 
 float sampleCaustics(vec2 pos)
@@ -64,7 +64,7 @@ vec3 CalculateLighting(GBData gbData)
 	{
 		for (int i = 0; i < SAMPLE_OFFSETS.length(); i++)
 		{
-			vec3 samplePos = -toLight + SAMPLE_OFFSETS[i] * SAMPLE_DIST;
+			vec3 samplePos = -toLight + SAMPLE_OFFSETS[i] * pc.shadowSampleDist;
 			shadow += texture(shadowMap, vec4(samplePos, compare)).r;
 		}
 		shadow /= float(SAMPLE_OFFSETS.length());

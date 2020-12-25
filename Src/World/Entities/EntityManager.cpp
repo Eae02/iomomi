@@ -22,6 +22,8 @@ EntityManager::EntityManager()
 	m_flagTrackers[1].flags = EntTypeFlags::EditorDrawable;
 	m_flagTrackers[2].flags = EntTypeFlags::Interactable;
 	m_flagTrackers[3].flags = EntTypeFlags::HasPhysics;
+	m_flagTrackers[4].flags = EntTypeFlags::ShadowDrawableD;
+	m_flagTrackers[5].flags = EntTypeFlags::ShadowDrawableS;
 	
 	m_componentTrackers[0].componentType = &typeid(ActivatableComp);
 	m_componentTrackers[1].componentType = &typeid(WaterBlockComp);

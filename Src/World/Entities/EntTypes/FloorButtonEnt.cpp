@@ -96,8 +96,15 @@ void FloorButtonEnt::CommonDraw(const EntDrawArgs& args)
 {
 	for (size_t i = 0; i < s_model->NumMeshes(); i++)
 	{
+		if ((i == s_padMeshIndex || i == s_lightsMeshIndex) && args.shadowDrawArgs)
+			continue;
+		
 		glm::vec3 displayPosition = (i == s_padMeshIndex ? m_padPhysicsObject : m_ringPhysicsObject).displayPosition;
 		glm::mat4 transform = glm::translate(glm::mat4(1), displayPosition) * glm::mat4(GetRotationMatrix(m_direction));
+		
+		const eg::AABB aabb = s_model->GetMesh(i).boundingAABB->TransformedBoundingBox(transform);
+		if (!args.frustum->Intersects(aabb))
+			continue;
 		
 		if (i == s_lightsMeshIndex)
 		{

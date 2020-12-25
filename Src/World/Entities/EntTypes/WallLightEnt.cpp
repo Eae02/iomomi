@@ -14,19 +14,20 @@ void WallLightEnt::RenderSettings()
 	
 	ImGui::Separator();
 	
-	m_pointLight.RenderRadianceSettings();
+	ImGui::ColorPicker3("Color", &m_color.r);
+	ImGui::DragFloat("Intensity", &m_intensity, 0.1f);
 	
 	if (ImGui::Button("Set Color Light Blue"))
-		m_pointLight.SetRadiance(eg::ColorSRGB::FromHex(0xD1F8FE), m_pointLight.Intensity());
+		m_color = eg::ColorSRGB::FromHex(0xD1F8FE);
 	if (ImGui::Button("Set Color Orange"))
-		m_pointLight.SetRadiance(eg::ColorSRGB::FromHex(0xEED8BA), m_pointLight.Intensity());
+		m_color = eg::ColorSRGB::FromHex(0xEED8BA);
 	if (ImGui::Button("Set Color Green"))
-		m_pointLight.SetRadiance(eg::ColorSRGB::FromHex(0x68E427), m_pointLight.Intensity());
+		m_color = eg::ColorSRGB::FromHex(0x68E427);
 }
 
 EmissiveMaterial::InstanceData WallLightEnt::GetInstanceData(float colorScale) const
 {
-	eg::ColorLin color = eg::ColorLin(m_pointLight.GetColor()).ScaleRGB(colorScale);
+	eg::ColorLin color = eg::ColorLin(m_color).ScaleRGB(colorScale);
 	
 	EmissiveMaterial::InstanceData instanceData;
 	instanceData.transform =
@@ -49,11 +50,14 @@ static eg::Model& GetModel()
 	return *model;
 }
 
-void WallLightEnt::GameDraw(const EntGameDrawArgs& args)
+void WallLightEnt::CollectPointLights(std::vector<std::shared_ptr<PointLight>>& lights)
 {
 	glm::vec3 lightPos = m_position + glm::vec3(DirectionVector(m_forwardDir)) * LIGHT_DIST;
-	args.pointLights->emplace_back(m_pointLight.GetDrawData(lightPos));
-	
+	lights.push_back(std::make_shared<PointLight>(lightPos, m_color, m_intensity));
+}
+
+void WallLightEnt::GameDraw(const EntGameDrawArgs& args)
+{
 	DrawEmissiveModel(args, 4.0f);
 }
 
@@ -74,10 +78,10 @@ void WallLightEnt::Serialize(std::ostream& stream) const
 	wallLightPB.set_dir((gravity_pb::Dir)m_forwardDir);
 	SerializePos(wallLightPB, m_position);
 	
-	wallLightPB.set_colorr(m_pointLight.GetColor().r);
-	wallLightPB.set_colorg(m_pointLight.GetColor().g);
-	wallLightPB.set_colorb(m_pointLight.GetColor().b);
-	wallLightPB.set_intensity(m_pointLight.Intensity());
+	wallLightPB.set_colorr(m_color.r);
+	wallLightPB.set_colorg(m_color.g);
+	wallLightPB.set_colorb(m_color.b);
+	wallLightPB.set_intensity(m_intensity);
 	
 	wallLightPB.SerializeToOstream(&stream);
 }
@@ -90,18 +94,20 @@ void WallLightEnt::Deserialize(std::istream& stream)
 	m_forwardDir = (Dir)wallLightPB.dir();
 	m_position = DeserializePos(wallLightPB);
 	
-	eg::ColorSRGB color(wallLightPB.colorr(), wallLightPB.colorg(), wallLightPB.colorb());
-	m_pointLight.SetRadiance(color, wallLightPB.intensity());
+	m_color = eg::ColorSRGB(wallLightPB.colorr(), wallLightPB.colorg(), wallLightPB.colorb());
+	m_intensity = wallLightPB.intensity();
 }
 
 void WallLightEnt::HalfLightIntensity()
 {
-	m_pointLight.SetRadiance(m_pointLight.GetColor(), m_pointLight.Intensity() / 2);
+	m_intensity /= 2;
 }
 
 void WallLightEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
 	m_position = newPosition;
 	if (faceDirection)
+	{
 		m_forwardDir = *faceDirection;
+	}
 }

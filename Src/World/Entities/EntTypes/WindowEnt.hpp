@@ -11,8 +11,7 @@ public:
 	WindowEnt();
 	
 	static constexpr EntTypeID TypeID = EntTypeID::Window;
-	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
-		EntTypeFlags::HasPhysics;
+	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::ShadowDrawableS | EntTypeFlags::HasPhysics;
 	
 	void Serialize(std::ostream& stream) const override;
 	

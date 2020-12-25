@@ -173,39 +173,14 @@ void DeferredRenderer::End() const
 	eg::DC.EndRenderPass();
 }
 
-void DeferredRenderer::DrawSpotLights(const std::vector<SpotLightDrawData>& spotLights, RenderTexManager& rtManager) const
-{
-	if (spotLights.empty() || unlit)
-		return;
-	
-	auto gpuTimer = eg::StartGPUTimer("Spot Lights");
-	auto cpuTimer = eg::StartCPUTimer("Spot Lights");
-	
-	eg::DC.BindPipeline(m_spotLightPipeline);
-	
-	BindSpotLightMesh();
-	
-	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
-	
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor1), 0, 1);
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor2), 0, 2);
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 3);
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::Flags), 0, 4);
-	
-	for (const SpotLightDrawData& spotLight : spotLights)
-	{
-		eg::DC.PushConstants(0, spotLight);
-		
-		eg::DC.DrawIndexed(0, SPOT_LIGHT_MESH_INDICES, 0, 0, 1);
-	}
-}
-
 static float* causticsIntensity = eg::TweakVarFloat("cau_intensity", 10);
 static float* causticsColorOffset = eg::TweakVarFloat("cau_clr_offset", 1.5f);
 static float* causticsPanSpeed = eg::TweakVarFloat("cau_pan_speed", 0.05f);
 static float* causticsTexScale = eg::TweakVarFloat("cau_tex_scale", 0.5f);
+static float* shadowSoftness = eg::TweakVarFloat("shadow_softness", 2.5f);
 
-void DeferredRenderer::DrawPointLights(const std::vector<PointLightDrawData>& pointLights, eg::TextureRef waterDepthTexture, RenderTexManager& rtManager) const
+void DeferredRenderer::DrawPointLights(const std::vector<std::shared_ptr<PointLight>>& pointLights,
+	eg::TextureRef waterDepthTexture, RenderTexManager& rtManager, uint32_t shadowResolution) const
 {
 	if (pointLights.empty() || unlit)
 		return;
@@ -228,20 +203,38 @@ void DeferredRenderer::DrawPointLights(const std::vector<PointLightDrawData>& po
 	eg::DC.BindTexture(waterDepthTexture, 0, 5);
 	eg::DC.BindTexture(eg::GetAsset<eg::Texture>("Caustics"), 0, 6);
 	
-	const float causticsPC[] = 
+	struct PointLightPC
 	{
-		*causticsIntensity,
-		*causticsColorOffset,
-		*causticsPanSpeed,
-		*causticsTexScale
+		glm::vec3 position;
+		float range;
+		glm::vec3 radiance;
+		float invRange;
+		float causticsScale;
+		float causticsColorOffset;
+		float causticsPanSpeed;
+		float causticsTexScale;
+		float shadowSampleDist;
 	};
-	eg::DC.PushConstants(sizeof(PointLightDrawData::pc), sizeof(causticsPC), causticsPC);
 	
-	for (const PointLightDrawData& pointLight : pointLights)
+	PointLightPC pc;
+	pc.causticsScale = *causticsIntensity;
+	pc.causticsColorOffset = *causticsColorOffset;
+	pc.causticsPanSpeed = *causticsPanSpeed;
+	pc.causticsTexScale = *causticsTexScale;
+	pc.shadowSampleDist = *shadowSoftness / shadowResolution;
+	
+	for (const std::shared_ptr<PointLight>& light : pointLights)
 	{
-		eg::DC.BindTexture(pointLight.shadowMap, 0, 7, &m_shadowMapSampler);
+		if (!light->enabled || light->shadowMap.handle == nullptr)
+			continue;
 		
-		eg::DC.PushConstants(0, pointLight.pc);
+		pc.position = light->position;
+		pc.range = light->Range();
+		pc.radiance = light->Radiance();
+		pc.invRange = 1.0f / pc.range;
+		eg::DC.PushConstants(0, pc);
+		
+		eg::DC.BindTexture(light->shadowMap, 0, 7, &m_shadowMapSampler);
 		
 		eg::DC.DrawIndexed(0, POINT_LIGHT_MESH_INDICES, 0, 0, 1);
 	}

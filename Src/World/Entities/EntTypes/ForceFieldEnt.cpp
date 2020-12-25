@@ -58,6 +58,9 @@ static inline glm::vec4 MakeTransformVectorWithLen(const glm::vec3& v)
 
 void ForceFieldEnt::GameDraw(const EntGameDrawArgs& args)
 {
+	if (!args.transparentMeshBatch)
+		return;
+	
 	eg::MeshBatch::Mesh mesh = { };
 	mesh.vertexBuffer = *forceFieldQuadBuffer;
 	mesh.numElements = 4;

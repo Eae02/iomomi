@@ -10,7 +10,7 @@ class PlatformEnt : public Ent
 public:
 	static constexpr EntTypeID TypeID = EntTypeID::Platform;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
-		EntTypeFlags::EditorWallMove | EntTypeFlags::HasPhysics;
+		EntTypeFlags::ShadowDrawableD | EntTypeFlags::EditorWallMove | EntTypeFlags::HasPhysics;
 	
 	PlatformEnt();
 	
@@ -35,17 +35,17 @@ public:
 	Dir GetFacingDirection() const override { return m_forwardDir; }
 	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
-	static void DrawSliderMesh(eg::MeshBatch& meshBatch, const glm::vec3& start,
-		const glm::vec3& toEnd, const glm::vec3& up, float scale);
+	static void DrawSliderMesh(eg::MeshBatch& meshBatch, const eg::Frustum& frustum,
+		const glm::vec3& start, const glm::vec3& toEnd, const glm::vec3& up, float scale);
 	
 private:
+	void DrawSliderMesh(eg::MeshBatch& meshBatch, const eg::Frustum& frustum) const;
+	
 	glm::mat4 GetBaseTransform() const;
 	
 	static glm::vec3 ConstrainMove(const PhysicsObject& object, const glm::vec3& move);
 	
 	static std::vector<glm::vec3> GetConnectionPoints(const Ent& entity);
-	
-	void Draw(eg::MeshBatch& meshBatch, const glm::mat4& transform) const;
 	
 	void ComputeLaunchVelocity();
 	
@@ -55,6 +55,8 @@ private:
 	PhysicsObject m_physicsObject;
 	ActivatableComp m_activatable;
 	AxisAlignedQuadComp m_aaQuadComp;
+	
+	std::optional<glm::vec3> m_prevShadowInvalidatePos;
 	
 	float m_slideTime = 1.0f;
 	float m_launchSpeed = 0.0f;

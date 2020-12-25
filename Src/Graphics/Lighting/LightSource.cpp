@@ -23,19 +23,6 @@ void LightSource::SetRadiance(const eg::ColorSRGB& color, float intensity)
 	m_intensity = intensity;
 }
 
-void LightSource::RenderRadianceSettings()
-{
-	bool radianceChanged = false;
-	
-	radianceChanged |= ImGui::ColorPicker3("Color", &m_color.r);
-	radianceChanged |= ImGui::DragFloat("Intensity", &m_intensity, 0.1f);
-	
-	if (radianceChanged)
-	{
-		SetRadiance(m_color, std::max(m_intensity, 0.0f));
-	}
-}
-
 uint64_t LightSource::NextInstanceID()
 {
 	return nextInstanceID++;

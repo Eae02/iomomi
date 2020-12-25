@@ -7,14 +7,13 @@
 struct EntDrawArgs
 {
 	eg::MeshBatch* meshBatch;
-	eg::MeshBatchOrdered* transparentMeshBatch;
+	eg::MeshBatchOrdered* transparentMeshBatch; //maybe nullptr!
 	class World* world;
+	const eg::Frustum* frustum;
+	const PointLightShadowDrawArgs* shadowDrawArgs; //maybe nullptr!
 };
 
-struct EntGameDrawArgs : EntDrawArgs
-{
-	std::vector<PointLightDrawData>* pointLights;
-};
+struct EntGameDrawArgs : EntDrawArgs { };
 
 enum class EntEditorDrawMode
 {
@@ -32,13 +31,15 @@ struct EntEditorDrawArgs : EntDrawArgs
 
 enum class EntTypeFlags
 {
-	EditorInvisible = 0x1,
-	EditorWallMove  = 0x2,
-	Drawable        = 0x4,
-	EditorDrawable  = 0x8,
-	Interactable    = 0x10,
-	DisableClone    = 0x20,
-	HasPhysics      = 0x40
+	EditorInvisible  = 0x1,
+	EditorWallMove   = 0x2,
+	Drawable         = 0x4,
+	EditorDrawable   = 0x8,
+	ShadowDrawableD  = 0x10,
+	ShadowDrawableS  = 0x20,
+	Interactable     = 0x40,
+	DisableClone     = 0x80,
+	HasPhysics       = 0x100
 };
 
 class Ent : public std::enable_shared_from_this<Ent>
@@ -71,6 +72,7 @@ public:
 	virtual void Update(const struct WorldUpdateArgs& args);
 	
 	virtual void CollectPhysicsObjects(class PhysicsEngine& physicsEngine, float dt) { }
+	virtual void CollectPointLights(std::vector<std::shared_ptr<PointLight>>& lights) { }
 	
 	static glm::mat3 GetRotationMatrix(Dir dir);
 	

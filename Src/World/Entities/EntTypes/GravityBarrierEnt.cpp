@@ -145,16 +145,25 @@ void GravityBarrierEnt::CommonDraw(const EntDrawArgs& args)
 	
 	constexpr float TIME_SCALE = 0.25f;
 	
-	GravityBarrierMaterial::InstanceData instanceData = {};
-	instanceData.position = m_position;
-	instanceData.opacity = 255 * glm::smoothstep(0.0f, 1.0f, m_opacity);
-	instanceData.blockedAxis = BlockedAxis();
-	instanceData.tangent = tangent;
-	instanceData.bitangent = bitangent;
-	instanceData.tangentMag = glm::length(tangentLen);
-	instanceData.bitangentMag = glm::length(bitangentLen) * TIME_SCALE;
+	eg::AABB aabb = std::get<eg::AABB>(m_physicsObject.shape);
+	aabb.min += m_position;
+	aabb.max += m_position;
+	if (!args.frustum->Intersects(aabb))
+		return;
 	
-	args.transparentMeshBatch->Add(barrierMesh, *material, instanceData, DepthDrawOrder(instanceData.position));
+	if (args.transparentMeshBatch)
+	{
+		GravityBarrierMaterial::InstanceData instanceData = { };
+		instanceData.position = m_position;
+		instanceData.opacity = 255 * glm::smoothstep(0.0f, 1.0f, m_opacity);
+		instanceData.blockedAxis = BlockedAxis();
+		instanceData.tangent = tangent;
+		instanceData.bitangent = bitangent;
+		instanceData.tangentMag = glm::length(tangentLen);
+		instanceData.bitangentMag = glm::length(bitangentLen) * TIME_SCALE;
+		
+		args.transparentMeshBatch->Add(barrierMesh, *material, instanceData, DepthDrawOrder(instanceData.position));
+	}
 	
 	glm::vec3 tangentNorm = tangent / tangentLen;
 	glm::vec3 bitangentNorm = bitangent / bitangentLen;
@@ -162,6 +171,10 @@ void GravityBarrierEnt::CommonDraw(const EntDrawArgs& args)
 	
 	auto AddBorderModelInstance = [&] (const glm::mat4& transform, float lightIntensity)
 	{
+		eg::AABB aabb = barrierBorderModel->GetMesh(meshIndexBody).boundingAABB->TransformedBoundingBox(transform);
+		if (!args.frustum->Intersects(aabb))
+			return;
+		
 		args.meshBatch->AddModelMesh(*barrierBorderModel, meshIndexBody, *borderMaterial,
 							   StaticPropMaterial::InstanceData(transform));
 		
@@ -175,19 +188,19 @@ void GravityBarrierEnt::CommonDraw(const EntDrawArgs& args)
 	
 	for (int i = -tangentLenI; i < tangentLenI; i++)
 	{
-		glm::vec3 translation1 = instanceData.position + bitangent * 0.5f + tangentNorm * ((i + 0.5f) * 0.5f);
+		glm::vec3 translation1 = m_position + bitangent * 0.5f + tangentNorm * ((i + 0.5f) * 0.5f);
 		AddBorderModelInstance(glm::mat4x3(tcb, -bitangentNorm, tangentNorm, translation1), m_opacity);
 		
-		glm::vec3 translation2 = instanceData.position - bitangent * 0.5f + tangentNorm * ((i + 0.5f) * 0.5f);
+		glm::vec3 translation2 = m_position - bitangent * 0.5f + tangentNorm * ((i + 0.5f) * 0.5f);
 		AddBorderModelInstance(glm::mat4x3(-tcb, bitangentNorm, tangentNorm, translation2), m_opacity);
 	}
 	
 	for (int i = -bitangentLenI; i < bitangentLenI; i++)
 	{
-		glm::vec3 translation1 = instanceData.position + tangent * 0.5f + bitangentNorm * ((i + 0.5f) * 0.5f);
+		glm::vec3 translation1 = m_position + tangent * 0.5f + bitangentNorm * ((i + 0.5f) * 0.5f);
 		AddBorderModelInstance(glm::mat4x3(-tcb, -tangentNorm, bitangentNorm, translation1), 0);
 		
-		glm::vec3 translation2 = instanceData.position - tangent * 0.5f + bitangentNorm * ((i + 0.5f) * 0.5f);
+		glm::vec3 translation2 = m_position - tangent * 0.5f + bitangentNorm * ((i + 0.5f) * 0.5f);
 		AddBorderModelInstance(glm::mat4x3(tcb, tangentNorm, bitangentNorm, translation2), 0);
 	}
 }

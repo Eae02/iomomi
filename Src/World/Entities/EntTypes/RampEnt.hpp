@@ -12,7 +12,7 @@ public:
 	RampEnt();
 	
 	static constexpr EntTypeID TypeID = EntTypeID::Ramp;
-	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::HasPhysics;
+	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::ShadowDrawableS | EntTypeFlags::HasPhysics;
 	
 	void Serialize(std::ostream& stream) const override;
 	

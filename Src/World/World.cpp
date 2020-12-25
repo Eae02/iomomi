@@ -383,23 +383,28 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 				            glm::scale(glm::mat4(1.0f), glm::vec3(1, 1, -1));
 			}
 			
-			glm::mat4 transformLight = transform * glm::translate(glm::mat4(1.0f), glm::vec3(0.01f, 0.01f, 0));
+			const int meshIndex = corner.isEnd[s] ? endMeshIndex : midMeshIndex;
 			
-			int meshIndex = corner.isEnd[s] ? endMeshIndex : midMeshIndex;
-			args.meshBatch->AddModelMesh(gravityCornerModel, meshIndex, GravityCornerLightMaterial::instance,
-				StaticPropMaterial::InstanceData(transformLight));
-			args.meshBatch->AddModelMesh(gravityCornerModel, meshIndex, gravityCornerMat,
-				StaticPropMaterial::InstanceData(transform));
+			const eg::AABB aabb = gravityCornerModel.GetMesh(meshIndex).boundingAABB->TransformedBoundingBox(transform);
+			if (args.frustum->Intersects(aabb))
+			{
+				const glm::mat4 transformLight = transform * glm::translate(glm::mat4(1.0f), glm::vec3(0.01f, 0.01f, 0));
+				args.meshBatch->AddModelMesh(gravityCornerModel, meshIndex, GravityCornerLightMaterial::instance,
+				                             StaticPropMaterial::InstanceData(transformLight));
+				
+				args.meshBatch->AddModelMesh(gravityCornerModel, meshIndex, gravityCornerMat,
+				                             StaticPropMaterial::InstanceData(transform));
+			}
 		}
 	}
 	
 	if (!args.isEditor)
 	{
-		EntGameDrawArgs entDrawArgs;
+		EntGameDrawArgs entDrawArgs = {};
 		entDrawArgs.world = this;
 		entDrawArgs.meshBatch = args.meshBatch;
 		entDrawArgs.transparentMeshBatch = args.transparentMeshBatch;
-		entDrawArgs.pointLights = &args.pointLights;
+		entDrawArgs.frustum = args.frustum;
 		entManager.ForEachWithFlag(EntTypeFlags::Drawable, [&] (Ent& entity) { entity.GameDraw(entDrawArgs); });
 	}
 }
@@ -416,7 +421,7 @@ void World::Draw()
 	eg::DC.DrawIndexed(0, m_numVoxelIndices, 0, 0, 1);
 }
 
-void World::DrawPointLightShadows(const struct PointLightShadowRenderArgs& renderArgs)
+void World::DrawPointLightShadows(const struct PointLightShadowDrawArgs& renderArgs)
 {
 	if (!m_canDraw)
 		return;

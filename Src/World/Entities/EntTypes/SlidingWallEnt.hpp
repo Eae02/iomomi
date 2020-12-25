@@ -10,7 +10,7 @@ class SlidingWallEnt : public Ent, public EntGravityChargeable
 {
 public:
 	static constexpr EntTypeID TypeID = EntTypeID::SlidingWall;
-	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::HasPhysics;
+	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::ShadowDrawableD | EntTypeFlags::HasPhysics;
 	
 	SlidingWallEnt();
 	

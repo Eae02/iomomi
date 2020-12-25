@@ -3,26 +3,23 @@
 #include "PointLight.hpp"
 #include "../QualityLevel.hpp"
 
-struct PointLightShadowRenderArgs
-{
-	eg::Sphere lightSphere;
-	eg::BufferRef matricesBuffer;
-};
-
 class PointLightShadowMapper
 {
 public:
-	using RenderCallback = std::function<void(const PointLightShadowRenderArgs&)>;
+	using RenderCallback = std::function<void(const PointLightShadowDrawArgs&)>;
 	
 	PointLightShadowMapper();
 	
 	void SetQuality(QualityLevel quality);
 	
-	void Invalidate(const eg::Sphere& sphere);
+	void Invalidate(const eg::Sphere& sphere, const PointLight* onlyThisLight = nullptr);
 	
-	void InvalidateAll();
+	void SetLightSources(const std::vector<std::shared_ptr<PointLight>>& lights);
 	
-	void UpdateShadowMaps(std::vector<PointLightDrawData>& pointLights, const RenderCallback& renderCallback);
+	void UpdateShadowMaps(const RenderCallback& prepareCallback, const RenderCallback& renderCallback,
+		const eg::Frustum& viewFrustum);
+	
+	uint32_t Resolution() const { return m_resolution; }
 	
 	uint64_t LastUpdateFrameIndex() const { return m_lastUpdateFrameIndex; }
 	uint64_t LastFrameUpdateCount() const { return m_lastFrameUpdateCount; }
@@ -31,9 +28,26 @@ public:
 	static constexpr uint32_t BUFFER_SIZE = sizeof(glm::mat4) * 6 + sizeof(float) * 4;
 	
 private:
-	size_t AddShadowMap();
+	struct ShadowMap
+	{
+		eg::Texture texture;
+		eg::Framebuffer framebuffers[6];
+		bool inUse;
+	};
 	
-	void UpdateShadowMap(size_t index, const RenderCallback& renderCallback);
+	struct LightEntry
+	{
+		std::shared_ptr<PointLight> light;
+		int staticShadowMap;
+		int dynamicShadowMap;
+		bool faceInvalidated[6];
+		glm::vec3 previousPosition;
+		float previousRange;
+		
+		bool HasMoved() const;
+	};
+	
+	int AllocateShadowMap();
 	
 	QualityLevel m_qualityLevel = QualityLevel::Medium;
 	uint32_t m_resolution = 256;
@@ -41,18 +55,13 @@ private:
 	uint64_t m_lastUpdateFrameIndex = 0;
 	uint64_t m_lastFrameUpdateCount = 0;
 	
-	struct ShadowMap
-	{
-		eg::Texture texture;
-		eg::Framebuffer framebuffer;
-		eg::Sphere sphere;
-		uint64_t currentLightID;
-		uint64_t lastUpdateFrame;
-		bool outOfDate;
-		bool inUse;
-	};
+	size_t m_dynamicLightUpdatePos = 0;
 	
 	std::vector<ShadowMap> m_shadowMaps;
 	
-	eg::Buffer m_matricesBuffer;
+	std::vector<LightEntry> m_lights;
+	
+	std::array<glm::vec3, 4> m_frustumPlanes[6];
+	
+	eg::Pipeline m_depthCopyPipeline;
 };

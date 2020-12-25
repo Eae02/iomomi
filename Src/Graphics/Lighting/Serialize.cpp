@@ -24,25 +24,3 @@ void DeserializePointLight(const YAML::Node& node, PointLight& pointLight)
 {
 	DeserializeLightSource(node, pointLight);
 }
-
-void SerializeSpotLight(YAML::Emitter& emitter, const SpotLight& spotLight)
-{
-	SerializeLightSource(emitter, spotLight);
-	
-	emitter << YAML::Key << "cutoff" << YAML::Value << spotLight.CutoffAngle()
-	        << YAML::Key << "penumbra" << YAML::Value << spotLight.PenumbraAngle();
-	
-	WriteYAMLVec3(emitter, "dir", spotLight.Direction());
-}
-
-void DeserializeSpotLight(const YAML::Node& node, SpotLight& spotLight)
-{
-	DeserializeLightSource(node, spotLight);
-	
-	spotLight.SetCutoff(node["cutoff"].as<float>(eg::PI / 4), node["penumbra"].as<float>(eg::PI / 16));
-	
-	if (const YAML::Node& dirNode = node["dir"])
-	{
-		spotLight.SetDirection(ReadYAMLVec3(dirNode));
-	}
-}

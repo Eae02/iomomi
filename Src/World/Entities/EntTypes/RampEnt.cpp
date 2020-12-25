@@ -119,7 +119,7 @@ void RampEnt::CommonDraw(const EntDrawArgs& args)
 	args.meshBatch->Add(mesh, *rampMaterials[m_material].material,
 		StaticPropMaterial::InstanceData(glm::mat4(1), textureScale));
 	
-	if (m_hasEdgeDecals)
+	if (m_hasEdgeDecals && args.shadowDrawArgs == nullptr)
 	{
 		for (const DecalMaterial::InstanceData& decalInstance : m_edgeDecalInstances)
 		{

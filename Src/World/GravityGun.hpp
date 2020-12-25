@@ -14,7 +14,7 @@ public:
 	
 	void Draw(eg::MeshBatch& meshBatch, eg::MeshBatchOrdered& transparentMeshBatch);
 	
-	void CollectLights(std::vector<PointLightDrawData>& pointLightsOut) const;
+	std::shared_ptr<PointLight> light;
 	
 	bool shouldShowControlHint = false;
 	

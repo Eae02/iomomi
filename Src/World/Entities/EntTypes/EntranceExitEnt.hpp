@@ -18,7 +18,7 @@ public:
 	
 	static constexpr EntTypeID TypeID = EntTypeID::EntranceExit;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
-		EntTypeFlags::EditorWallMove | EntTypeFlags::HasPhysics;
+		EntTypeFlags::ShadowDrawableS | EntTypeFlags::ShadowDrawableD | EntTypeFlags::EditorWallMove | EntTypeFlags::HasPhysics;
 	
 	EntranceExitEnt();
 	
@@ -41,6 +41,8 @@ public:
 	const void* GetComponent(const std::type_info& type) const override;
 	
 	void CollectPhysicsObjects(class PhysicsEngine& physicsEngine, float dt) override;
+	
+	void CollectPointLights(std::vector<std::shared_ptr<PointLight>>& lights) override;
 	
 	Door GetDoorDescription() const;
 	
@@ -79,8 +81,8 @@ private:
 	
 	ActivatableComp m_activatable;
 	
-	PointLight m_pointLight;
-	PointLight m_fanPointLight;
+	std::shared_ptr<PointLight> m_pointLight;
+	std::shared_ptr<PointLight> m_fanPointLight;
 	
 	mutable ScreenMaterial m_screenMaterial;
 	

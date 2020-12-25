@@ -20,7 +20,7 @@ enum class MeshDrawMode
 struct MeshDrawArgs
 {
 	MeshDrawMode drawMode;
-	const PointLightShadowRenderArgs* plShadowRenderArgs;
+	const PointLightShadowDrawArgs* plShadowRenderArgs;
 	eg::TextureRef waterDepthTexture;
 	eg::TextureRef glassBlurTexture;
 	RenderTexManager* rtManager;

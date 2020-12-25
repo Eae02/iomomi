@@ -3,6 +3,7 @@
 #include "../../WorldUpdateArgs.hpp"
 #include "../../World.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
+#include "../../../Graphics/Lighting/PointLightShadowMapper.hpp"
 #include "../../../../Protobuf/Build/PlatformEntity.pb.h"
 
 #include <imgui.h>
@@ -77,7 +78,7 @@ void PlatformEnt::RenderSettings()
 		m_launchSpeed = std::max(m_launchSpeed, 0.0f);
 }
 
-void PlatformEnt::DrawSliderMesh(eg::MeshBatch& meshBatch,
+void PlatformEnt::DrawSliderMesh(eg::MeshBatch& meshBatch, const eg::Frustum& frustum,
 	const glm::vec3& start, const glm::vec3& toEnd, const glm::vec3& up, float scale)
 {
 	const float slideDist = glm::length(toEnd);
@@ -92,28 +93,42 @@ void PlatformEnt::DrawSliderMesh(eg::MeshBatch& meshBatch,
 	
 	for (int i = 1; i <= numSliderInstances; i++)
 	{
-		glm::mat4 partTransform = glm::translate(commonTransform, glm::vec3(0, 0, SLIDER_MODEL_LENGTH * (float)i));
-		meshBatch.AddModel(*platformSliderModel, *platformSliderMaterial, StaticPropMaterial::InstanceData(partTransform));
+		const glm::mat4 partTransform = glm::translate(commonTransform, glm::vec3(0, 0, SLIDER_MODEL_LENGTH * (float)i));
+		const eg::AABB aabb = platformSliderModel->GetMesh(0).boundingAABB->TransformedBoundingBox(partTransform);
+		if (frustum.Intersects(aabb))
+		{
+			meshBatch.AddModel(*platformSliderModel, *platformSliderMaterial,
+			                   StaticPropMaterial::InstanceData(partTransform));
+		}
 	}
 }
 
-void PlatformEnt::Draw(eg::MeshBatch& meshBatch, const glm::mat4& transform) const
+void PlatformEnt::DrawSliderMesh(eg::MeshBatch& meshBatch, const eg::Frustum& frustum) const
 {
 	const glm::vec3 localFwd(m_slideOffset.y, 0, -m_slideOffset.x);
-	glm::mat3 rotationMatrix = GetRotationMatrix(m_forwardDir);
-	DrawSliderMesh(meshBatch, m_basePosition, rotationMatrix * localFwd, rotationMatrix[1], 0.5f);
-	
-	meshBatch.AddModel(*platformModel, *platformMaterial, StaticPropMaterial::InstanceData(transform));
+	const glm::mat3 rotationMatrix = GetRotationMatrix(m_forwardDir);
+	DrawSliderMesh(meshBatch, frustum, m_basePosition, rotationMatrix * localFwd, rotationMatrix[1], 0.5f);
 }
 
 void PlatformEnt::GameDraw(const EntGameDrawArgs& args)
 {
-	Draw(*args.meshBatch, glm::translate(glm::mat4(1), m_physicsObject.position) * GetBaseTransform());
+	if (args.shadowDrawArgs == nullptr)
+	{
+		DrawSliderMesh(*args.meshBatch, *args.frustum);
+	}
+	
+	const glm::mat4 transform = glm::translate(glm::mat4(1), m_physicsObject.position) * GetBaseTransform();
+	const eg::AABB aabb = platformModel->GetMesh(0).boundingAABB->TransformedBoundingBox(transform);
+	if (args.frustum->Intersects(aabb))
+	{
+		args.meshBatch->AddModel(*platformModel, *platformMaterial, StaticPropMaterial::InstanceData(transform));
+	}
 }
 
 void PlatformEnt::EditorDraw(const EntEditorDrawArgs& args)
 {
-	Draw(*args.meshBatch, GetBaseTransform());
+	DrawSliderMesh(*args.meshBatch, *args.frustum);
+	args.meshBatch->AddModel(*platformModel, *platformMaterial, StaticPropMaterial::InstanceData(GetBaseTransform()));
 }
 
 glm::vec3 PlatformEnt::ConstrainMove(const PhysicsObject& object, const glm::vec3& move)
@@ -129,12 +144,16 @@ glm::vec3 PlatformEnt::ConstrainMove(const PhysicsObject& object, const glm::vec
 
 void PlatformEnt::Update(const WorldUpdateArgs& args)
 {
-	if (m_physicsObject.didMove)
+	if (args.plShadowMapper)
 	{
-		eg::AABB aabb = std::get<eg::AABB>(m_physicsObject.shape);
-		aabb.min += m_physicsObject.position;
-		aabb.max += m_physicsObject.position;
-		args.invalidateShadows(eg::Sphere::CreateEnclosing(aabb));
+		if (!m_prevShadowInvalidatePos || glm::distance2(m_physicsObject.position, *m_prevShadowInvalidatePos) > 0.001f)
+		{
+			m_prevShadowInvalidatePos = m_physicsObject.position;
+			eg::AABB aabb = std::get<eg::AABB>(m_physicsObject.shape);
+			aabb.min += m_physicsObject.position;
+			aabb.max += m_physicsObject.position;
+			args.plShadowMapper->Invalidate(eg::Sphere::CreateEnclosing(aabb));
+		}
 	}
 }
 

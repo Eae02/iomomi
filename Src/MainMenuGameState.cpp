@@ -319,7 +319,7 @@ void MainMenuGameState::RenderWorld(float dt)
 	updateArgs.world = m_world.get();
 	updateArgs.waterSim = &GameRenderer::instance->m_waterSimulator;
 	updateArgs.physicsEngine = &m_physicsEngine;
-	updateArgs.invalidateShadows = [this] (const eg::Sphere& sphere) { GameRenderer::instance->InvalidateShadows(sphere); };
+	updateArgs.plShadowMapper = &GameRenderer::instance->m_plShadowMapper;
 	
 	m_physicsEngine.BeginCollect();
 	m_world->CollectPhysicsObjects(m_physicsEngine, dt);

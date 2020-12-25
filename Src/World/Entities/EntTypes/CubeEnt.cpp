@@ -4,6 +4,7 @@
 #include "FloorButtonEnt.hpp"
 #include "../../Player.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
+#include "../../../Graphics/Lighting/PointLightShadowMapper.hpp"
 #include "../../../Settings.hpp"
 #include "../../../../Protobuf/Build/CubeEntity.pb.h"
 #include "ForceFieldEnt.hpp"
@@ -74,9 +75,12 @@ void CubeEnt::Draw(eg::MeshBatch& meshBatch, const glm::mat4& transform) const
 
 void CubeEnt::GameDraw(const EntGameDrawArgs& args)
 {
-	glm::mat4 worldMatrix = glm::translate(glm::mat4(1), m_physicsObject.displayPosition);
-	worldMatrix *= glm::scale(glm::mat4(1), glm::vec3(RADIUS));
-	Draw(*args.meshBatch, worldMatrix);
+	if (args.frustum->Intersects(GetSphere()))
+	{
+		glm::mat4 worldMatrix = glm::translate(glm::mat4(1), m_physicsObject.displayPosition);
+		worldMatrix *= glm::scale(glm::mat4(1), glm::vec3(RADIUS));
+		Draw(*args.meshBatch, worldMatrix);
+	}
 }
 
 void CubeEnt::EditorDraw(const EntEditorDrawArgs& args)
@@ -261,7 +265,10 @@ void CubeEnt::UpdatePostSim(const WorldUpdateArgs& args)
 		glm::distance(m_previousPosition, m_physicsObject.displayPosition) > 1E-3f)
 	{
 		m_previousPosition = m_physicsObject.displayPosition;
-		args.invalidateShadows(GetSphere());
+		if (args.plShadowMapper)
+		{
+			args.plShadowMapper->Invalidate(GetSphere());
+		}
 	}
 	
 	const glm::vec3 down(DirectionVector(m_currentDown));

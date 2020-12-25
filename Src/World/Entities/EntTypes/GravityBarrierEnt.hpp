@@ -15,7 +15,8 @@ class GravityBarrierEnt : public Ent
 {
 public:
 	static constexpr EntTypeID TypeID = EntTypeID::GravityBarrier;
-	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::HasPhysics;
+	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
+		EntTypeFlags::ShadowDrawableS | EntTypeFlags::HasPhysics;
 	
 	GravityBarrierEnt();
 	

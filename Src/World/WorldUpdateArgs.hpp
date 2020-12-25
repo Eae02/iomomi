@@ -15,8 +15,8 @@ struct WorldUpdateArgs
 	float dt;
 	WorldMode mode;
 	class World* world;
+	class PointLightShadowMapper* plShadowMapper;
 	const class PhysicsEngine* physicsEngine;
 	class Player* player;
 	class WaterSimulator* waterSim;
-	std::function<void(const eg::Sphere&)> invalidateShadows;
 };

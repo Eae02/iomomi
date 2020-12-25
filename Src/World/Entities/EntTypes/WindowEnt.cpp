@@ -124,8 +124,11 @@ void WindowEnt::CommonDraw(const EntDrawArgs& args)
 	
 	if (windowTypes[m_windowType].material->GetOrderRequirement() == eg::IMaterial::OrderRequirement::OnlyOrdered)
 	{
-		args.transparentMeshBatch->AddModel(*windowModel, *windowTypes[m_windowType].material, instanceData,
-			DepthDrawOrder(glm::vec3(transform[3])));
+		if (args.transparentMeshBatch)
+		{
+			args.transparentMeshBatch->AddModel(*windowModel, *windowTypes[m_windowType].material, instanceData,
+			                                    DepthDrawOrder(glm::vec3(transform[3])));
+		}
 	}
 	else
 	{

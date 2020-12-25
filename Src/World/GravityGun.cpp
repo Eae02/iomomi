@@ -81,6 +81,11 @@ GravityGun::GravityGun()
 		std::string_view name = m_model->GetMesh(i).name;
 		m_meshIsPartOfFront[i] = (eg::StringStartsWith(name, "Front") || eg::StringStartsWith(name, "EnergyCyl"));
 	}
+	
+	light = std::make_shared<PointLight>();
+	light->enabled = false;
+	light->castsShadows = true;
+	light->willMoveEveryFrame = true;
 }
 
 static glm::vec3 GUN_POSITION(2.44f, -2.16f, -6.5f);
@@ -143,6 +148,7 @@ void GravityGun::Update(World& world, const PhysicsEngine& physicsEngine, WaterS
 	m_midMaterial.m_intensityBoost = glm::smoothstep(0.0f, 1.0f, m_fireAnimationTime) * 1;
 	
 	//Updates beam instances
+	BeamInstance* lightBeamInstance = nullptr;
 	for (BeamInstance& beamInstance : m_beamInstances)
 	{
 		beamInstance.timeRemaining -= dt;
@@ -162,6 +168,18 @@ void GravityGun::Update(World& world, const PhysicsEngine& physicsEngine, WaterS
 			beamInstance.beamPos += beamInstance.direction * dt;
 			SetBeamInstanceTransform(beamInstance);
 		}
+		
+		if (lightBeamInstance == nullptr || beamInstance.timeRemaining < lightBeamInstance->timeRemaining)
+		{
+			lightBeamInstance = &beamInstance;
+		}
+	}
+	
+	light->enabled = settings.gunFlash && lightBeamInstance != nullptr;
+	if (lightBeamInstance != nullptr)
+	{
+		light->position = lightBeamInstance->beamPos;
+		light->SetRadiance(LIGHT_COLOR, lightBeamInstance->lightIntensity * LIGHT_INTENSITY_MAX);
 	}
 	
 	//Removes dead beam instances
@@ -228,17 +246,6 @@ void GravityGun::Update(World& world, const PhysicsEngine& physicsEngine, WaterS
 				beamInstance.entityToCharge = entGravityChargeable;
 			}
 		}
-	}
-}
-
-void GravityGun::CollectLights(std::vector<PointLightDrawData>& pointLightsOut) const
-{
-	if (!settings.gunFlash)
-		return;
-	for (const BeamInstance& instance : m_beamInstances)
-	{
-		PointLight pointLight(LIGHT_COLOR, instance.lightIntensity * LIGHT_INTENSITY_MAX);
-		pointLightsOut.push_back(pointLight.GetDrawData(instance.beamPos));
 	}
 }
 

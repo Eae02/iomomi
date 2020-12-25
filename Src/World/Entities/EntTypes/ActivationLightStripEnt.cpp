@@ -32,6 +32,8 @@ void ActivationLightStripEnt::RenderSettings()
 	Ent::RenderSettings();
 }
 
+const float MODEL_SCALE = 0.25f;
+
 void ActivationLightStripEnt::CommonDraw(const EntDrawArgs& args)
 {
 	if (m_transitionDirection == -1)
@@ -54,6 +56,12 @@ void ActivationLightStripEnt::CommonDraw(const EntDrawArgs& args)
 			int lightMaterialIndex = s_models[v]->GetMaterialIndex("Light");
 			for (size_t i = 0; i < s_models[v]->NumMeshes(); i++)
 			{
+				eg::Sphere sphere = *s_models[v]->GetMesh(i).boundingSphere;
+				sphere.radius *= MODEL_SCALE;
+				sphere.position += glm::vec3(instanceData.transform[3]);
+				if (!args.frustum->Intersects(sphere))
+					continue;
+				
 				if (s_models[v]->GetMesh(i).materialIndex == lightMaterialIndex)
 				{
 					args.meshBatch->AddModelMesh(*s_models[v], i, m_material, instanceData);
@@ -403,8 +411,7 @@ void ActivationLightStripEnt::Generate(const World& world, eg::Span<const WayPoi
 		
 		if (instanceData != nullptr)
 		{
-			const float SCALE = 0.25f;
-			glm::mat3 rotationScaleMatrix(rotationX * SCALE, rotationY * SCALE, rotationZ * SCALE);
+			glm::mat3 rotationScaleMatrix(rotationX * MODEL_SCALE, rotationY * MODEL_SCALE, rotationZ * MODEL_SCALE);
 			instanceData->transform = glm::translate(glm::mat4(1), translation) * glm::mat4(rotationScaleMatrix);
 			instanceData->lightProgress = accDistance;
 			accDistance++;

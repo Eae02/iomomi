@@ -76,7 +76,7 @@ public:
 	
 	void Draw();
 	void DrawEditor();
-	void DrawPointLightShadows(const struct PointLightShadowRenderArgs& renderArgs);
+	void DrawPointLightShadows(const struct PointLightShadowDrawArgs& renderArgs);
 	
 	bool IsGravityCorner(const glm::ivec3& cornerPos, Dir cornerDir) const;
 	void SetIsGravityCorner(const glm::ivec3& cornerPos, Dir cornerDir, bool value);

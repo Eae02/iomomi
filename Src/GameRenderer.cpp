@@ -22,7 +22,17 @@ void GameRenderer::WorldChanged(World& world)
 {
 	m_waterSimulator.Init(world);
 	
-	m_plShadowMapper.InvalidateAll();
+	m_pointLights.clear();
+	world.entManager.ForEach([&] (Ent& entity)
+	{
+		entity.CollectPointLights(m_pointLights);
+	});
+	if (world.playerHasGravityGun && m_gravityGun)
+	{
+		m_pointLights.push_back(m_gravityGun->light);
+	}
+	
+	m_plShadowMapper.SetLightSources(m_pointLights);
 	
 	m_blurredTexturesNeeded = false;
 	world.entManager.ForEachOfType<WindowEnt>([&] (const WindowEnt& windowEnt)
@@ -32,12 +42,16 @@ void GameRenderer::WorldChanged(World& world)
 	});
 }
 
-void GameRenderer::SetViewMatrix(const glm::mat4& viewMatrix, const glm::mat4& inverseViewMatrix)
+void GameRenderer::SetViewMatrix(const glm::mat4& viewMatrix, const glm::mat4& inverseViewMatrix, bool updateFrustum)
 {
 	m_viewMatrix = viewMatrix;
 	m_inverseViewMatrix = inverseViewMatrix;
 	m_viewProjMatrix = m_projection.Matrix() * viewMatrix;
 	m_inverseViewProjMatrix = inverseViewMatrix * m_projection.InverseMatrix();
+	if (updateFrustum)
+	{
+		m_frustum = eg::Frustum(m_inverseViewProjMatrix);
+	}
 }
 
 void GameRenderer::SetViewMatrixFromThumbnailCamera(const World& world)
@@ -76,8 +90,6 @@ void GameRenderer::Render(World& world, float gameTime, float dt,
 	
 	m_glassBlurRenderer.MaybeUpdateResolution(outputResX, outputResY);
 	
-	eg::Frustum frustum(m_inverseViewProjMatrix);
-	
 	if (m_lastSettingsGeneration != SettingsGeneration())
 	{
 		m_projection.SetFieldOfViewDeg(settings.fieldOfViewDeg);
@@ -97,7 +109,7 @@ void GameRenderer::Render(World& world, float gameTime, float dt,
 	
 	if (m_particleManager && m_player)
 	{
-		m_particleManager->Step(dt, frustum, m_player->Rotation() * glm::vec3(0, 0, -1));
+		m_particleManager->Step(dt, m_frustum, m_player->Rotation() * glm::vec3(0, 0, -1));
 	}
 	
 	GravityCornerLightMaterial::instance.Update(dt);
@@ -122,12 +134,10 @@ void GameRenderer::Render(World& world, float gameTime, float dt,
 	prepareDrawArgs.meshBatch = &m_renderCtx->meshBatch;
 	prepareDrawArgs.transparentMeshBatch = &m_renderCtx->transparentMeshBatch;
 	prepareDrawArgs.player = m_player;
-	prepareDrawArgs.spotLights.clear();
-	prepareDrawArgs.pointLights.clear();
+	prepareDrawArgs.frustum = &m_frustum;
 	world.PrepareForDraw(prepareDrawArgs);
 	if (world.playerHasGravityGun && m_gravityGun != nullptr)
 	{
-		m_gravityGun->CollectLights(prepareDrawArgs.pointLights);
 		m_gravityGun->Draw(m_renderCtx->meshBatch, m_renderCtx->transparentMeshBatch);
 	}
 	
@@ -136,16 +146,59 @@ void GameRenderer::Render(World& world, float gameTime, float dt,
 	
 	cpuTimerPrepare.Stop();
 	
-	m_plShadowMapper.UpdateShadowMaps(prepareDrawArgs.pointLights, [&] (const PointLightShadowRenderArgs& args)
+	size_t numPointLightMeshBatchesUsed = 0;
+	
+	m_plShadowMapper.UpdateShadowMaps([&] (const PointLightShadowDrawArgs& args)
 	{
-		world.DrawPointLightShadows(args);
+		if (numPointLightMeshBatchesUsed == m_pointLightMeshBatches.size())
+		{
+			m_pointLightMeshBatches.emplace_back();
+		}
+		
+		eg::MeshBatch& meshBatch = m_pointLightMeshBatches[numPointLightMeshBatchesUsed];
+		meshBatch.Begin();
+		
+		EntGameDrawArgs entDrawArgs = {};
+		entDrawArgs.world = &world;
+		entDrawArgs.meshBatch = &meshBatch;
+		entDrawArgs.shadowDrawArgs = &args;
+		entDrawArgs.frustum = &args.frustum;
+		
+		if (args.renderStatic)
+		{
+			world.entManager.ForEachWithFlag(EntTypeFlags::ShadowDrawableS, [&] (Ent& entity)
+			{
+				entity.GameDraw(entDrawArgs);
+			});
+		}
+		if (args.renderDynamic)
+		{
+			world.entManager.ForEachWithFlag(EntTypeFlags::ShadowDrawableD, [&] (Ent& entity)
+			{
+				if (!(eg::HasFlag(entity.TypeFlags(), EntTypeFlags::ShadowDrawableS) && args.renderStatic))
+				{
+					entity.GameDraw(entDrawArgs);
+				}
+			});
+		}
+		
+		meshBatch.End(eg::DC);
+	},
+	[&] (const PointLightShadowDrawArgs& args)
+	{
+		if (args.renderStatic)
+		{
+			world.DrawPointLightShadows(args);
+		}
 		
 		MeshDrawArgs mDrawArgs;
 		mDrawArgs.drawMode = MeshDrawMode::PointLightShadow;
 		mDrawArgs.plShadowRenderArgs = &args;
 		mDrawArgs.rtManager = nullptr;
-		m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
-	});
+		m_pointLightMeshBatches[numPointLightMeshBatchesUsed].Draw(eg::DC, &mDrawArgs);
+		
+		numPointLightMeshBatchesUsed++;
+	}, m_frustum);
 	
 	const bool renderBlurredGlass = m_blurredTexturesNeeded && settings.lightingQuality >= QualityLevel::Medium;
 	
@@ -206,8 +259,7 @@ void GameRenderer::Render(World& world, float gameTime, float dt,
 		
 		m_renderCtx->renderer.BeginLighting(m_rtManager);
 		
-		m_renderCtx->renderer.DrawSpotLights(prepareDrawArgs.spotLights, m_rtManager);
-		m_renderCtx->renderer.DrawPointLights(prepareDrawArgs.pointLights, mDrawArgs.waterDepthTexture, m_rtManager);
+		m_renderCtx->renderer.DrawPointLights(m_pointLights, mDrawArgs.waterDepthTexture, m_rtManager, m_plShadowMapper.Resolution());
 		
 		m_renderCtx->renderer.End();
 		eg::DC.DebugLabelEnd();

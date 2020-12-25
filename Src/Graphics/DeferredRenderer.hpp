@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Lighting/SpotLight.hpp"
 #include "Lighting/PointLight.hpp"
 #include "WaterRenderer.hpp"
 #include "RenderTex.hpp"
@@ -19,8 +18,8 @@ public:
 	void BeginLighting(RenderTexManager& rtManager);
 	void EndTransparent();
 	
-	void DrawSpotLights(const std::vector<SpotLightDrawData>& spotLights, RenderTexManager& rtManager) const;
-	void DrawPointLights(const std::vector<PointLightDrawData>& pointLights, eg::TextureRef waterDepthTexture, RenderTexManager& rtManager) const;
+	void DrawPointLights(const std::vector<std::shared_ptr<PointLight>>& pointLights,
+		eg::TextureRef waterDepthTexture, RenderTexManager& rtManager, uint32_t shadowResolution) const;
 	
 	void End() const;
 	

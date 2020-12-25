@@ -2,21 +2,15 @@
 
 #include "LightSource.hpp"
 
-struct PointLightDrawData
+struct PointLightShadowDrawArgs
 {
-#pragma pack(push, 1)
-	struct
-	{
-		glm::vec3 position;
-		float range;
-		glm::vec3 radiance;
-		float invRange;
-	} pc;
-#pragma pack(pop)
-	eg::TextureRef shadowMap;
-	uint64_t instanceID;
-	bool castsShadows = true;
-	bool invalidate = false;
+	glm::mat4 lightMatrix;
+	eg::Sphere lightSphere;
+	eg::Frustum frustum;
+	bool renderStatic;
+	bool renderDynamic;
+	
+	void SetPushConstants() const;
 };
 
 class PointLight : public LightSource
@@ -25,10 +19,18 @@ public:
 	PointLight()
 		: LightSource(eg::ColorSRGB(1.0f, 1.0f, 1.0f), 20.0f) { }
 	
-	PointLight(const eg::ColorSRGB& color, float intensity)
-		: LightSource(color, intensity) { }
+	PointLight(const glm::vec3& pos, const eg::ColorSRGB& color, float intensity)
+		: LightSource(color, intensity), position(pos) { }
 	
-	PointLightDrawData GetDrawData(const glm::vec3& position) const;
+	eg::Sphere GetSphere() const
+	{
+		return eg::Sphere(position, Range());
+	}
 	
+	bool enabled = true;
 	bool castsShadows = true;
+	bool willMoveEveryFrame = false;
+	glm::vec3 position;
+	
+	eg::TextureRef shadowMap;
 };

@@ -86,7 +86,6 @@ void InitializeWallShader()
 	//Creates the point light shadow pipeline
 	eg::GraphicsPipelineCreateInfo plsPipelineCI;
 	plsPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall-PLShadow.vs.glsl").DefaultVariant();
-	plsPipelineCI.geometryShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall-PLShadow.gs.glsl").DefaultVariant();
 	plsPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLightShadow.fs.glsl").GetVariant("VDefault");
 	plsPipelineCI.enableDepthWrite = true;
 	plsPipelineCI.enableDepthTest = true;
@@ -159,11 +158,10 @@ void BindWallShaderEditor()
 	eg::DC.BindDescriptorSet(wr.editorDescriptorSet, 0);
 }
 
-void BindWallShaderPointLightShadow(const PointLightShadowRenderArgs& renderArgs)
+void BindWallShaderPointLightShadow(const PointLightShadowDrawArgs& renderArgs)
 {
 	eg::DC.BindPipeline(wr.pipelinePLShadow);
-	
-	eg::DC.BindUniformBuffer(renderArgs.matricesBuffer, 0, 0, 0, PointLightShadowMapper::BUFFER_SIZE);
+	renderArgs.SetPushConstants();
 }
 
 void DrawWallBordersEditor(eg::BufferRef vertexBuffer, uint32_t numVertices)

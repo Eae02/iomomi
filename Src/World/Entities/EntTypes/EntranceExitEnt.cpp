@@ -1,9 +1,10 @@
 #include "EntranceExitEnt.hpp"
 #include "../../Player.hpp"
 #include "../../../Graphics/Materials/EmissiveMaterial.hpp"
+#include "../../../Graphics/Lighting/PointLightShadowMapper.hpp"
 #include "../../../YAMLUtils.hpp"
-#include "../../../../Protobuf/Build/EntranceEntity.pb.h"
 #include "../../../Settings.hpp"
+#include "../../../../Protobuf/Build/EntranceEntity.pb.h"
 
 #include <imgui.h>
 
@@ -20,6 +21,7 @@ struct
 	const eg::Model* model;
 	std::vector<const eg::IMaterial*> materials;
 	std::vector<bool> onlyRenderIfInside;
+	std::vector<bool> dynamicShadows;
 	
 	int floorLightMaterialIdx;
 	int ceilLightMaterialIdx;
@@ -75,11 +77,15 @@ static void OnInit()
 	entrance.fanMeshIndex = entrance.model->GetMeshIndex("Fan");
 	
 	entrance.onlyRenderIfInside.resize(entrance.model->NumMeshes(), true);
+	entrance.dynamicShadows.resize(entrance.model->NumMeshes(), false);
+	entrance.dynamicShadows[entrance.fanMeshIndex] = true;
 	
+	//Door frames need to be rendered from outside
 	int doorFrameMaterialIndex = entrance.model->GetMaterialIndex("DoorFrame");
 	for (size_t m = 0; m < entrance.model->NumMeshes(); m++)
 	{
-		if (eg::StringStartsWith(entrance.model->GetMesh(m).name, "Wall") && entrance.model->GetMesh(m).materialIndex == doorFrameMaterialIndex)
+		if (eg::StringStartsWith(entrance.model->GetMesh(m).name, "Wall") &&
+			entrance.model->GetMesh(m).materialIndex == doorFrameMaterialIndex)
 		{
 			entrance.onlyRenderIfInside[m] = false;
 		}
@@ -99,6 +105,7 @@ static void OnInit()
 				{
 					entrance.doorMeshIndices[d][h] = m;
 					entrance.onlyRenderIfInside[m] = false;
+					entrance.dynamicShadows[m] = true;
 					found = true;
 					break;
 				}
@@ -149,8 +156,8 @@ static const eg::ColorLin ScreenBackColor(eg::ColorSRGB::FromHex(0x485156));
 
 EntranceExitEnt::EntranceExitEnt()
 	: m_activatable(&EntranceExitEnt::GetConnectionPoints),
-	  m_pointLight(eg::ColorSRGB::FromHex(0xfed8d3), 5.0f),
-	  m_fanPointLight(eg::ColorSRGB::FromHex(0xfed8d3), 60.0f),
+	  m_pointLight(std::make_shared<PointLight>(glm::vec3(0.0f), eg::ColorSRGB::FromHex(0xfed8d3), 5.0f)),
+	  m_fanPointLight(std::make_shared<PointLight>(glm::vec3(0.0f), eg::ColorSRGB::FromHex(0xfed8d3), 60.0f)),
 	  m_screenMaterial(500, 200)
 {
 	m_roomPhysicsObject.canBePushed = false;
@@ -204,6 +211,18 @@ static float* fanLightZOffset = eg::TweakVarFloat("entfan_lz", 1.1f);
 
 void EntranceExitEnt::Update(const WorldUpdateArgs& args)
 {
+	m_pointLight->position = GetTransform() * glm::vec4(pointLightPos, 1.0f);
+	m_pointLight->enabled = m_isPlayerInside;
+	
+	glm::vec3 fanLightPos(fanRotationCenter.x, fanRotationCenter.y + *fanLightYOffset, fanRotationCenter.z + *fanLightZOffset);
+	m_fanPointLight->position = GetTransform() * glm::vec4(fanLightPos, 1.0f);
+	m_fanPointLight->enabled = m_isPlayerInside && settings.shadowQuality >= QualityLevel::Medium;
+	if (args.plShadowMapper && m_fanPointLight->enabled)
+	{
+		glm::vec3 invalidatePos(GetTransform() * glm::vec4(fanRotationCenter, 1));
+		args.plShadowMapper->Invalidate(eg::Sphere(invalidatePos, 0.1f), m_fanPointLight.get());
+	}
+	
 	m_fanRotation += args.dt * *fanSpeed;
 	if (args.mode != WorldMode::Game)
 		return;
@@ -236,10 +255,10 @@ void EntranceExitEnt::Update(const WorldUpdateArgs& args)
 	}
 	
 	//Invalidates shadows if the open progress changed
-	if (std::abs(m_doorOpenProgress - oldOpenProgress) > 1E-6f && args.invalidateShadows)
+	if (std::abs(m_doorOpenProgress - oldOpenProgress) > 1E-6f && args.plShadowMapper)
 	{
 		constexpr float DOOR_RADIUS = 1.5f;
-		args.invalidateShadows(eg::Sphere(m_position, DOOR_RADIUS));
+		args.plShadowMapper->Invalidate(eg::Sphere(m_position, DOOR_RADIUS));
 	}
 	
 	glm::vec3 diag(1.8f);
@@ -281,12 +300,24 @@ void EntranceExitEnt::GameDraw(const EntGameDrawArgs& args)
 	static const eg::ColorLin FloorLightColor(eg::ColorSRGB::FromHex(0x16aa63));
 	static const glm::vec4 FloorLightColorV = 5.0f * glm::vec4(FloorLightColor.r, FloorLightColor.g, FloorLightColor.b, 1);
 	
-	const eg::ColorLin CeilLightColor(m_pointLight.GetColor());
+	const eg::ColorLin CeilLightColor(m_pointLight->GetColor());
 	const glm::vec4 CeilLightColorV = 5.0f * glm::vec4(CeilLightColor.r, CeilLightColor.g, CeilLightColor.b, 1);
 	
 	for (size_t i = 0; i < entrance.model->NumMeshes(); i++)
 	{
-		if (!m_isPlayerInside && entrance.onlyRenderIfInside[i])
+		if (args.shadowDrawArgs)
+		{
+			if (!args.shadowDrawArgs->renderDynamic && entrance.dynamicShadows[i])
+				continue;
+			if (!args.shadowDrawArgs->renderStatic && !entrance.dynamicShadows[i])
+				continue;
+		}
+		
+		if (!args.shadowDrawArgs && !m_isPlayerInside && entrance.onlyRenderIfInside[i])
+			continue;
+		
+		eg::AABB aabb = entrance.model->GetMesh(i).boundingAABB->TransformedBoundingBox(transforms[i]);
+		if (!args.frustum->Intersects(aabb))
 			continue;
 		
 		int materialIndex = entrance.model->GetMesh(i).materialIndex;
@@ -308,21 +339,6 @@ void EntranceExitEnt::GameDraw(const EntGameDrawArgs& args)
 			
 			StaticPropMaterial::InstanceData instanceData(transforms[i]);
 			args.meshBatch->AddModelMesh(*entrance.model, i, *mat, instanceData);
-		}
-	}
-	
-	if (m_isPlayerInside)
-	{
-		args.pointLights->push_back(
-			m_pointLight.GetDrawData(glm::vec3(GetTransform() * glm::vec4(pointLightPos, 1.0f))));
-		
-		if (settings.shadowQuality >= QualityLevel::Medium)
-		{
-			glm::vec4 lightPos4(fanRotationCenter.x, fanRotationCenter.y + *fanLightYOffset,
-			                    fanRotationCenter.z + *fanLightZOffset, 1.0f);
-			PointLightDrawData lightDrawData = m_fanPointLight.GetDrawData(glm::vec3(GetTransform() * lightPos4));
-			lightDrawData.invalidate = true;
-			args.pointLights->push_back(lightDrawData);
 		}
 	}
 	
@@ -438,6 +454,12 @@ void EntranceExitEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float 
 		physicsEngine.RegisterObject(&m_door1PhysicsObject);
 	if (!m_door2Open)
 		physicsEngine.RegisterObject(&m_door2PhysicsObject);
+}
+
+void EntranceExitEnt::CollectPointLights(std::vector<std::shared_ptr<PointLight>>& lights)
+{
+	lights.push_back(m_pointLight);
+	lights.push_back(m_fanPointLight);
 }
 
 template <>

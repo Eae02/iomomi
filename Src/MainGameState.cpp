@@ -76,6 +76,7 @@ void MainGameState::SetWorld(std::unique_ptr<World> newWorld, int64_t levelIndex
 	
 	m_world = std::move(newWorld);
 	
+	GameRenderer::instance->m_gravityGun = &m_gravityGun;
 	GameRenderer::instance->WorldChanged(*m_world);
 	
 	if (levelIndex != -1)
@@ -103,11 +104,13 @@ void MainGameState::RunFrame(float dt)
 	if (dt > MAX_DT)
 		dt = MAX_DT;
 	
+	bool frozenFrustum = eg::DevMode() && eg::IsButtonDown(eg::Button::F7);
+	
 	auto UpdateViewProjMatrices = [&] ()
 	{
 		glm::mat4 viewMatrix, inverseViewMatrix;
 		m_player.GetViewMatrix(viewMatrix, inverseViewMatrix);
-		GameRenderer::instance->SetViewMatrix(viewMatrix, inverseViewMatrix);
+		GameRenderer::instance->SetViewMatrix(viewMatrix, inverseViewMatrix, !frozenFrustum);
 	};
 	
 	m_pausedMenu.Update(dt);
@@ -143,7 +146,7 @@ void MainGameState::RunFrame(float dt)
 		updateArgs.world = m_world.get();
 		updateArgs.waterSim = &GameRenderer::instance->m_waterSimulator;
 		updateArgs.physicsEngine = &m_physicsEngine;
-		updateArgs.invalidateShadows = [this] (const eg::Sphere& sphere) { GameRenderer::instance->InvalidateShadows(sphere); };
+		updateArgs.plShadowMapper = &GameRenderer::instance->m_plShadowMapper;
 		
 		eg::SetRelativeMouseMode(*relativeMouseMode);
 		
@@ -298,8 +301,8 @@ void MainGameState::DrawOverlay(float dt)
 	m_player.DrawDebugOverlay();
 	ImGui::Separator();
 	ImGui::Text("Particles: %d", m_particleManager.ParticlesToDraw());
-	//ImGui::Text("PSM Last Update: %ld/%ld", m_plShadowMapper.LastUpdateFrameIndex(), eg::FrameIdx());
-	//ImGui::Text("PSM Updates: %ld", m_plShadowMapper.LastFrameUpdateCount());
+	ImGui::Text("PSM Last Update: %ld/%ld", GameRenderer::instance->m_plShadowMapper.LastUpdateFrameIndex(), eg::FrameIdx());
+	ImGui::Text("PSM Updates: %ld", GameRenderer::instance->m_plShadowMapper.LastFrameUpdateCount());
 	ImGui::Text("Water Spheres: %d", GameRenderer::instance->m_waterSimulator.NumParticles());
 	ImGui::Text("Water Update Time: %.2fms", GameRenderer::instance->m_waterSimulator.LastUpdateTime() / 1E6);
 	

@@ -67,7 +67,7 @@ private:
 	template <typename CallbackTp>
 	static void ForEachInEntityVector(std::vector<std::weak_ptr<Ent>>& entities, CallbackTp callback);
 	
-	std::array<FlagTracker, 4> m_flagTrackers;
+	std::array<FlagTracker, 6> m_flagTrackers;
 	std::array<ComponentTracker, 3> m_componentTrackers;
 };
 

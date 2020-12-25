@@ -18,6 +18,7 @@ layout(push_constant, std140) uniform PC
 	float causticsColorOffset;
 	float causticsPanSpeed;
 	float causticsTexScale;
+	float shadowSampleDist;
 } pc;
 
 void main()

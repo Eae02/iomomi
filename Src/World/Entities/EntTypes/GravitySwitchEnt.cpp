@@ -84,7 +84,7 @@ void GravitySwitchEnt::GameDraw(const EntGameDrawArgs& args)
 	m_centerMaterial.intensity = glm::mix(0.25f, 1.0f, m_enableAnimationTime);
 	Draw(*args.meshBatch);
 	
-	if (m_enableAnimationTime > 0.01f)
+	if (m_enableAnimationTime > 0.01f && args.transparentMeshBatch)
 	{
 		m_volLightMaterial.intensity = m_enableAnimationTime;
 		m_volLightMaterial.rotationMatrix = GetRotationMatrix(m_up);

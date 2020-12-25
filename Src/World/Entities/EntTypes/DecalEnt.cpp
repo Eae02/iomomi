@@ -67,7 +67,11 @@ void DecalEnt::RenderSettings()
 
 void DecalEnt::CommonDraw(const EntDrawArgs& args)
 {
-	args.meshBatch->Add(DecalMaterial::GetMesh(), *m_material, DecalMaterial::InstanceData(GetDecalTransform()), 1);
+	eg::Sphere sphere(m_position, std::max(scale, scale * m_material->AspectRatio()));
+	if (args.frustum->Intersects(sphere))
+	{
+		args.meshBatch->Add(DecalMaterial::GetMesh(), *m_material, DecalMaterial::InstanceData(GetDecalTransform()), 1);
+	}
 }
 
 void DecalEnt::Serialize(std::ostream& stream) const

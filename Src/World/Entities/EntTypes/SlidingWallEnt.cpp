@@ -1,8 +1,9 @@
 #include "SlidingWallEnt.hpp"
 #include "PlatformEnt.hpp"
 #include "../../WorldUpdateArgs.hpp"
-#include "../../../../Protobuf/Build/SlidingWallEntity.pb.h"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
+#include "../../../Graphics/Lighting/PointLightShadowMapper.hpp"
+#include "../../../../Protobuf/Build/SlidingWallEntity.pb.h"
 
 #include <imgui.h>
 
@@ -50,7 +51,7 @@ void SlidingWallEnt::CommonDraw(const EntDrawArgs& args)
 			eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml"),
 		    StaticPropMaterial::InstanceData(worldMatrix));
 	
-	if (glm::length2(m_slideOffset) > 1E-5f)
+	if (glm::length2(m_slideOffset) > 1E-5f && args.shadowDrawArgs == nullptr)
 	{
 		const glm::vec3 up = DirectionVector((Dir)(m_upPlane * 2));
 		float distToTrack = glm::dot(up, m_aabbRadius);
@@ -65,8 +66,8 @@ void SlidingWallEnt::CommonDraw(const EntDrawArgs& args)
 			trackDir += extraTrackVector * 2.0f;
 		}
 		
-		PlatformEnt::DrawSliderMesh(*args.meshBatch, trackStart - up * distToTrack, trackDir, up, 0.75f);
-		PlatformEnt::DrawSliderMesh(*args.meshBatch, trackStart + up * distToTrack, trackDir, -up, 0.75f);
+		PlatformEnt::DrawSliderMesh(*args.meshBatch, *args.frustum, trackStart - up * distToTrack, trackDir, up, 0.75f);
+		PlatformEnt::DrawSliderMesh(*args.meshBatch, *args.frustum, trackStart + up * distToTrack, trackDir, -up, 0.75f);
 	}
 }
 
@@ -82,7 +83,10 @@ void SlidingWallEnt::Update(const WorldUpdateArgs& args)
 		m_lastShadowUpdatePosition = m_physicsObject.displayPosition;
 		eg::Sphere sphere = eg::Sphere::CreateEnclosing(std::get<eg::AABB>(m_physicsObject.shape));
 		sphere.position += m_physicsObject.displayPosition;
-		args.invalidateShadows(sphere);
+		if (args.plShadowMapper)
+		{
+			args.plShadowMapper->Invalidate(sphere);
+		}
 	}
 	
 	m_physicsObject.gravity = DirectionVector(m_currentDown) * 2;
