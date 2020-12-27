@@ -29,6 +29,7 @@ void MarkLevelCompleted(Level& level);
 
 void InitLevels();
 
+void ResetProgress();
 void SaveProgress();
 
 void LoadLevelThumbnail(Level& level);

@@ -58,6 +58,8 @@ private:
 	
 	std::optional<glm::vec3> m_prevShadowInvalidatePos;
 	
+	std::vector<glm::vec3> m_editorLaunchTrajectory;
+	
 	float m_slideTime = 1.0f;
 	float m_launchSpeed = 0.0f;
 	glm::vec2 m_slideOffset;

@@ -8,6 +8,8 @@ using CollisionShape = std::variant<eg::AABB, const eg::CollisionMesh*>;
 constexpr uint32_t RAY_MASK_BLOCK_PICK_UP = 2;
 constexpr uint32_t RAY_MASK_BLOCK_GUN = 1;
 
+constexpr float GRAVITY_MAG = 20;
+
 class PhysicsObject
 {
 public:
@@ -19,7 +21,7 @@ public:
 	glm::vec3 gravity;
 	glm::vec3 force; //reset after each frame
 	glm::vec3 velocity;
-	glm::vec3 baseVelocity; //reset after each frame
+	glm::vec3 pendingVelocity; //reset after each frame
 	glm::vec3 move; //reset after each frame
 	glm::quat angularForce; //reset after each frame
 	glm::quat angularVelocity;
@@ -49,6 +51,8 @@ private:
 	bool hasCopiedParentMove = false;
 	bool needsFlippedWinding = false;
 	bool firstFrame = true;
+	
+	PhysicsObject* floor = nullptr;
 	
 	glm::vec3 lockedDisplayPosition;
 	float timeUntilLockDisplayPosition = 0;

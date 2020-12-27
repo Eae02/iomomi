@@ -27,7 +27,7 @@ private:
 	
 	void RenderWorld(float dt);
 	
-	void DrawLevelSelect(float dt);
+	void DrawLevelSelect(float dt, float xOffset);
 	
 	enum class Screen
 	{
@@ -42,13 +42,15 @@ private:
 	
 	WidgetList m_mainWidgetList;
 	
+	bool m_transitionToMainScreen = true;
+	float m_transitionProgress = 0;
+	
 	std::vector<float> m_levelHighlightIntensity;
 	float m_levelSelectScroll = 0;
 	float m_levelSelectScrollVel = 0;
-	bool m_inExtraLevelsTab = false;
 	
-	std::vector<int64_t> m_mainLevelIds;
-	std::vector<int64_t> m_extraLevelIds;
+	size_t m_numMainLevels = 0;
+	std::vector<int64_t> m_levelIds;
 	
 	Button m_levelSelectBackButton;
 	
@@ -58,6 +60,8 @@ private:
 	eg::Framebuffer m_worldRenderFramebuffer;
 	eg::Texture m_worldRenderTexture;
 	float m_worldGameTime = 0;
+	
+	uint64_t m_lastFrameIndex = 0;
 };
 
 extern MainMenuGameState* mainMenuGameState;

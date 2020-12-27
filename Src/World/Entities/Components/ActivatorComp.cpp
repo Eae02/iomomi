@@ -15,7 +15,7 @@ void ActivatorComp::Update(const WorldUpdateArgs& args)
 	if (args.mode == WorldMode::Editor)
 		return;
 	
-	bool activated = m_lastActivatedFrame + ACTIVATED_FRAMES > eg::FrameIdx();
+	bool activated = m_lastActivatedFrame.has_value() && *m_lastActivatedFrame + ACTIVATED_FRAMES > eg::FrameIdx();
 	if (activated != m_isActivated)
 	{
 		m_isActivated = activated;

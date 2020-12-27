@@ -27,7 +27,7 @@ public:
 	
 	const glm::vec3& Velocity() const
 	{
-		return m_velocity;
+		return m_physicsObject.velocity;
 	}
 	
 	glm::vec3 Forward() const;
@@ -79,6 +79,7 @@ private:
 	Dir m_down = Dir::NegY;
 	
 	float m_onGroundLinger = 0;
+	float m_planeMovementDisabledTimer = 0;
 	bool m_onGround = false;
 	bool m_wasOnGround = false;
 	bool m_wasUnderwater = false;
@@ -99,8 +100,6 @@ private:
 	glm::quat m_newRotation;
 	
 	glm::vec3 m_eyePosition;
-	glm::vec3 m_velocity;
-	glm::vec2 m_extraPlanarVelocity;
 	glm::quat m_rotation;
 	
 	std::array<std::tuple<glm::vec3, glm::quat, Dir>, 20> m_onGroundRingBuffer;

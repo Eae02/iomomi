@@ -161,16 +161,16 @@ void InitOptionsMenu()
 
 EG_ON_INIT(InitOptionsMenu)
 
-void UpdateOptionsMenu(float dt)
+void UpdateOptionsMenu(float dt, const glm::vec2& positionOffset, bool allowInteraction)
 {
 	KeyBindingWidget::anyKeyBindingPickingKey = false;
 	
 	constexpr float distFromCenter = WIDGET_LIST_SPACING / 2;
-	leftWidgetList.position = glm::vec2(eg::CurrentResolutionX() - distFromCenter, eg::CurrentResolutionY()) / 2.0f;
-	rightWidgetList.position = glm::vec2(eg::CurrentResolutionX() + distFromCenter, eg::CurrentResolutionY()) / 2.0f;
+	leftWidgetList.position = glm::vec2(eg::CurrentResolutionX() - distFromCenter, eg::CurrentResolutionY()) / 2.0f + positionOffset;
+	rightWidgetList.position = glm::vec2(eg::CurrentResolutionX() + distFromCenter, eg::CurrentResolutionY()) / 2.0f + positionOffset;
 	
-	leftWidgetList.Update(dt, true);
-	rightWidgetList.Update(dt, true);
+	leftWidgetList.Update(dt, allowInteraction);
+	rightWidgetList.Update(dt, allowInteraction);
 	
 	ComboBox& textureQualityCB = std::get<ComboBox>(leftWidgetList.GetWidget(textureQualityWidgetIndex));
 	const bool hasTextureWarning = !textureQualityCB.warning.empty();

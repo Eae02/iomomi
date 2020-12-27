@@ -145,10 +145,10 @@ void GravityBarrierEnt::CommonDraw(const EntDrawArgs& args)
 	
 	constexpr float TIME_SCALE = 0.25f;
 	
-	eg::AABB aabb = std::get<eg::AABB>(m_physicsObject.shape);
-	aabb.min += m_position;
-	aabb.max += m_position;
-	if (!args.frustum->Intersects(aabb))
+	eg::AABB wholeAABB = std::get<eg::AABB>(m_physicsObject.shape);
+	wholeAABB.min += m_position;
+	wholeAABB.max += m_position;
+	if (!args.frustum->Intersects(wholeAABB))
 		return;
 	
 	if (args.transparentMeshBatch)

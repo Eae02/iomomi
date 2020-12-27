@@ -60,6 +60,7 @@ void GameRenderer::SetViewMatrixFromThumbnailCamera(const World& world)
 	m_inverseViewMatrix = glm::inverse(m_viewMatrix);
 	m_viewProjMatrix = m_projection.Matrix() * m_viewMatrix;
 	m_inverseViewProjMatrix = m_inverseViewMatrix * m_projection.InverseMatrix();
+	m_frustum = eg::Frustum(m_inverseViewProjMatrix);
 }
 
 static int* physicsDebug = eg::TweakVarInt("phys_dbg_draw", 0, 0, 1);

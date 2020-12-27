@@ -4,6 +4,7 @@
 #include "../../World.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../Graphics/Lighting/PointLightShadowMapper.hpp"
+#include "../../../Editor/PrimitiveRenderer.hpp"
 #include "../../../../Protobuf/Build/PlatformEntity.pb.h"
 
 #include <imgui.h>
@@ -69,13 +70,21 @@ void PlatformEnt::RenderSettings()
 {
 	Ent::RenderSettings();
 	
-	ImGui::DragFloat2("Slide Offset", &m_slideOffset.x, 0.1f);
+	if (ImGui::DragFloat2("Slide Offset", &m_slideOffset.x, 0.1f))
+	{
+		m_editorLaunchTrajectory.clear();
+	}
 	
 	if (ImGui::DragFloat("Slide Time", &m_slideTime))
+	{
 		m_slideTime = std::max(m_slideTime, 0.0f);
+	}
 	
 	if (ImGui::DragFloat("Launch Speed", &m_launchSpeed, 0.1f, 0.0f, INFINITY))
+	{
 		m_launchSpeed = std::max(m_launchSpeed, 0.0f);
+		m_editorLaunchTrajectory.clear();
+	}
 }
 
 void PlatformEnt::DrawSliderMesh(eg::MeshBatch& meshBatch, const eg::Frustum& frustum,
@@ -125,10 +134,57 @@ void PlatformEnt::GameDraw(const EntGameDrawArgs& args)
 	}
 }
 
+static constexpr float LAUNCH_TIME = 0.8f;
+
 void PlatformEnt::EditorDraw(const EntEditorDrawArgs& args)
 {
 	DrawSliderMesh(*args.meshBatch, *args.frustum);
 	args.meshBatch->AddModel(*platformModel, *platformMaterial, StaticPropMaterial::InstanceData(GetBaseTransform()));
+	
+	if (m_launchSpeed > 0)
+	{
+		if (m_editorLaunchTrajectory.empty())
+		{
+			ComputeLaunchVelocity();
+			
+			glm::vec3 startPos = glm::mix(m_basePosition, FinalPosition(), LAUNCH_TIME) + glm::vec3(DirectionVector(m_forwardDir));
+			m_editorLaunchTrajectory.push_back(startPos);
+			auto posAt = [&] (float dst)
+			{
+				return glm::vec3(0, -0.5f * GRAVITY_MAG * dst * dst, 0) + m_launchVelocityToSet * dst + startPos;
+			};
+			
+			constexpr float STEP_SIZE = 0.05f;
+			for (float dst = STEP_SIZE; dst < 50; dst += STEP_SIZE)
+			{
+				glm::vec3 pos = posAt(dst);
+				if (!args.world->IsAir(glm::floor(pos)))
+				{
+					float lo = dst - STEP_SIZE;
+					float hi = dst;
+					for (int i = 0; i < 20; i++)
+					{
+						float mid = (lo + hi) / 2;
+						pos = posAt(mid);
+						if (args.world->IsAir(glm::floor(pos)))
+							lo = mid;
+						else
+							hi = mid;
+					}
+					m_editorLaunchTrajectory.push_back(pos);
+					break;
+				}
+				m_editorLaunchTrajectory.push_back(pos);
+			}
+		}
+		
+		static const eg::ColorSRGB color = eg::ColorSRGB::FromRGBAHex(0xde6e1faa);
+		
+		for (size_t i = 1; i < m_editorLaunchTrajectory.size(); i++)
+		{
+			args.primitiveRenderer->AddLine(m_editorLaunchTrajectory[i - 1], m_editorLaunchTrajectory[i], color, 0.05f);
+		}
+	}
 }
 
 glm::vec3 PlatformEnt::ConstrainMove(const PhysicsObject& object, const glm::vec3& move)
@@ -216,33 +272,36 @@ void PlatformEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 	if (m_activatable.m_enabledConnections)
 	{
 		m_physicsObject.canBePushed = false;
+		m_physicsObject.constrainMove = nullptr;
+		
 		const bool activated = m_activatable.AllSourcesActive();
 		const float slideDelta = dt / m_slideTime;
 		if (activated)
 			slideProgress = std::min(slideProgress + slideDelta, 1.0f);
 		else
 			slideProgress = std::max(slideProgress - slideDelta, 0.0f);
+		
+		glm::vec3 wantedPosition = moveDir * slideProgress;
+		//m_physicsObject.position = wantedPosition;
+		m_physicsObject.move = wantedPosition - m_physicsObject.position;
+		
+		if (oldSlideProgress < LAUNCH_TIME && slideProgress >= LAUNCH_TIME)
+			m_launchVelocity = m_launchVelocityToSet;
+		else
+			m_launchVelocity = { };
+		
+		if (!m_physicsObject.childObjects.empty() && glm::length2(m_launchVelocity) > 1E-3f)
+		{
+			for (PhysicsObject* object : m_physicsObject.childObjects)
+			{
+				object->velocity = m_launchVelocity;
+				object->position += glm::normalize(m_launchVelocity) * 0.5f;
+			}
+		}
 	}
 	else
 	{
 		m_physicsObject.canBePushed = true;
-	}
-	
-	m_physicsObject.move = moveDir * (slideProgress - oldSlideProgress);
-	
-	constexpr float LAUNCH_TIME = 0.8f;
-	
-	if (oldSlideProgress < LAUNCH_TIME && slideProgress >= LAUNCH_TIME)
-		m_launchVelocity = m_launchVelocityToSet;
-	else if (oldSlideProgress > 1 - LAUNCH_TIME && slideProgress <= 1 - LAUNCH_TIME)
-		m_launchVelocity = -m_launchVelocityToSet;
-	else
-		m_launchVelocity = { };
-	
-	if (!m_physicsObject.childObjects.empty() && glm::length2(m_launchVelocity) > 1E-3f)
-	{
-		for (PhysicsObject* object : m_physicsObject.childObjects)
-			object->velocity += m_launchVelocity;
 	}
 	
 	physicsEngine.RegisterObject(&m_physicsObject);
@@ -255,6 +314,7 @@ glm::vec3 PlatformEnt::FinalPosition() const
 
 void PlatformEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
+	m_editorLaunchTrajectory.clear();
 	m_basePosition = newPosition;
 	if (faceDirection)
 		m_forwardDir = *faceDirection;

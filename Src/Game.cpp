@@ -34,20 +34,45 @@ Game::Game()
 		eg::console::Hide();
 	});
 	
-	eg::console::AddCommand("unlock", 1, [&] (eg::Span<const std::string_view> args, eg::console::Writer& writer)
+	eg::console::AddCommand("compl", 1, [&] (eg::Span<const std::string_view> args, eg::console::Writer& writer)
 	{
-		for (Level& level : levels)
+		if (args[0] == "reset")
 		{
-			if ((level.name == args[0] || args[0] == "all") && level.status == LevelStatus::Locked)
-				level.status = LevelStatus::Unlocked;
+			for (Level& level : levels)
+			{
+				level.status = level.isExtra ? LevelStatus::Unlocked : LevelStatus::Locked;
+			}
+			levels[FindLevel(levelsOrder[0])].status = LevelStatus::Unlocked;
+			SaveProgress();
+		}
+		else if (args[0] == "all")
+		{
+			for (Level& level : levels)
+			{
+				level.status = LevelStatus::Completed;
+			}
+			SaveProgress();
+		}
+		else
+		{
+			int64_t levelIndex = FindLevel(args[0]);
+			if (levelIndex != -1)
+			{
+				MarkLevelCompleted(levels[levelIndex]);
+			}
+			else
+			{
+				writer.WriteLine(eg::console::ErrorColor, "Level not found");
+			}
 		}
 	});
 	
-	eg::console::SetCompletionProvider("unlock", 0, [] (eg::Span<const std::string_view> args, eg::console::CompletionsList& list)
+	eg::console::SetCompletionProvider("compl", 0, [] (eg::Span<const std::string_view> args, eg::console::CompletionsList& list)
 	{
 		for (const Level& level : levels)
 			list.Add(level.name);
 		list.Add("all");
+		list.Add("reset");
 	});
 	
 	eg::console::AddCommand("play", 1, [this] (eg::Span<const std::string_view> args, eg::console::Writer& writer)
@@ -100,6 +125,9 @@ void Game::ResolutionChanged(int newWidth, int newHeight)
 
 void Game::RunFrame(float dt)
 {
+	constexpr float MAX_DT = 1.0f / 20.0f;
+	dt = std::min(dt, MAX_DT);
+	
 	if (m_levelThumbnailUpdate != nullptr && eg::FrameIdx() > m_levelThumbnailUpdateFrameIdx + 4)
 	{
 		EndUpdateLevelThumbnails(m_levelThumbnailUpdate);

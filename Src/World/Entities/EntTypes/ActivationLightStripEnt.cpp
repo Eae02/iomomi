@@ -56,10 +56,8 @@ void ActivationLightStripEnt::CommonDraw(const EntDrawArgs& args)
 			int lightMaterialIndex = s_models[v]->GetMaterialIndex("Light");
 			for (size_t i = 0; i < s_models[v]->NumMeshes(); i++)
 			{
-				eg::Sphere sphere = *s_models[v]->GetMesh(i).boundingSphere;
-				sphere.radius *= MODEL_SCALE;
-				sphere.position += glm::vec3(instanceData.transform[3]);
-				if (!args.frustum->Intersects(sphere))
+				eg::AABB aabb = s_models[v]->GetMesh(i).boundingAABB->TransformedBoundingBox(instanceData.transform);
+				if (!args.frustum->Intersects(aabb))
 					continue;
 				
 				if (s_models[v]->GetMesh(i).materialIndex == lightMaterialIndex)

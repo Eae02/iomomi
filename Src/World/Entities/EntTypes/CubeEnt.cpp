@@ -10,13 +10,10 @@
 #include "ForceFieldEnt.hpp"
 #include <imgui.h>
 
-static float* cubeBuoyancyScale = eg::TweakVarFloat("cube_bcy_scale", 0.3f, 0.0f);
-static float* cubeBuoyancyLimit = eg::TweakVarFloat("cube_bcy_lim", 15.0f, 0.0f);
+static float* cubeBuoyancyScale = eg::TweakVarFloat("cube_bcy_scale", 0.5f, 0.0f);
+static float* cubeBuoyancyLimit = eg::TweakVarFloat("cube_bcy_lim", 25.0f, 0.0f);
 static float* cubeWaterDrag = eg::TweakVarFloat("cube_water_drag", 0.5f, 0.0f);
 static float* cubeWaterPullLimit = eg::TweakVarFloat("cube_pull_lim", 2.0f, 0.0f);
-static float* cubeButtonMinAttractDist = eg::TweakVarFloat("cube_ba_min_dist", 1E-3f, 0.0f);
-static float* cubeButtonMaxAttractDist = eg::TweakVarFloat("cube_ba_dist", 0.8f, 0.0f);
-static float* cubeButtonAttractForce = eg::TweakVarFloat("cube_ba_force", 1.5f, 0.0f);
 static float* cubeMass = eg::TweakVarFloat("cube_mass", 50.0f, 0.0f);
 static float* cubeCarryDist = eg::TweakVarFloat("cube_carry_dist", 0.7f, 0.0f);
 static float* cubeDropDist = eg::TweakVarFloat("cube_drop_dist", 0.9f, 0.0f);

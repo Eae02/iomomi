@@ -55,12 +55,17 @@ const std::vector<std::string_view> levelsOrder =
 	"water_2",
 	"water_4",
 	"water_5",
-	"water_6",
+	//"water_6",
+	
+	"launch_0",
+	"launch_1",
 	
 	"forcefield_1",
 	"cubeflip_0",
-	"forcefield_2",
+	"launch_2",
+	"forcefield_4",
 	"forcefield_3",
+	"forcefield_2",
 	
 	"gravgun_4",
 	"gravgun_5",
@@ -177,12 +182,13 @@ void InitLevels()
 		}
 		else
 		{
-			levels[levelIndex].status = i == 0 ? LevelStatus::Unlocked : LevelStatus::Locked;
 			levels[levelIndex].nextLevelIndex = nextLevelIndex;
 			levels[levelIndex].isExtra = false;
 		}
 		levelIndex = nextLevelIndex;
 	}
+	
+	ResetProgress();
 	
 	//Loads thumbnails
 	for (Level& level : levels)
@@ -209,6 +215,16 @@ void InitLevels()
 			}
 		}
 	}
+}
+
+void ResetProgress()
+{
+	for (Level& level : levels)
+	{
+		if (!level.isExtra)
+			level.status = LevelStatus::Locked;
+	}
+	levels[FindLevel(levelsOrder[0])].status = LevelStatus::Unlocked;
 }
 
 void SaveProgress()

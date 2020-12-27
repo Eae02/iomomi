@@ -1,10 +1,7 @@
 #include "PhysicsEngine.hpp"
 #include "Collision.hpp"
-#include "../Editor/PrimitiveRenderer.hpp"
 #include "../Graphics/PhysicsDebugRenderer.hpp"
-#include "../Graphics/GraphicsCommon.hpp"
 
-static float* gravityMag = eg::TweakVarFloat("gravity", 10, 0);
 static float* dispLockDist = eg::TweakVarFloat("phys_dlock_dist", 0.01f, 0);
 static float* dispLockTime = eg::TweakVarFloat("phys_dlock_time", 0.1f, 0);
 
@@ -25,14 +22,11 @@ void PhysicsEngine::CopyParentMove(PhysicsObject& object, float dt)
 		return;
 	object.hasCopiedParentMove = true;
 	
-	PhysicsObject* floor = FindFloorObject(object, object.gravity);
-	if (floor && floor->canCarry)
+	if (object.floor && object.floor->canCarry)
 	{
-		floor->childObjects.push_back(&object);
-		CopyParentMove(*floor, dt);
-		
-		ApplyMovement(*floor, dt);
-		object.move += floor->actualMove;
+		object.floor->childObjects.push_back(&object);
+		CopyParentMove(*object.floor, dt);
+		object.move += object.floor->move;
 	}
 }
 
@@ -45,15 +39,20 @@ void PhysicsEngine::Simulate(float dt)
 {
 	for (PhysicsObject* object : m_objects)
 	{
-		object->velocity += object->gravity * dt * *gravityMag;
+		object->velocity += object->gravity * dt * GRAVITY_MAG;
 		object->velocity += object->force * dt;
-		object->move += (object->baseVelocity + object->velocity) * dt;
+		object->move += object->velocity * dt;
 		object->collisionDepth = 0;
 		object->hasCopiedParentMove = false;
 		object->childObjects.clear();
 		object->pushForce = { };
 		object->force = { };
-		object->baseVelocity = { };
+		
+		object->floor = nullptr;
+		if (object->canBePushed && glm::length2(object->gravity) > 1E-3f)
+		{
+			object->floor = FindFloorObject(*object, object->gravity);
+		}
 	}
 	
 	for (PhysicsObject* object : m_objects)
@@ -90,6 +89,12 @@ void PhysicsEngine::Simulate(float dt)
 		}
 		
 		object->move = { };
+	}
+	
+	for (PhysicsObject* object : m_objects)
+	{
+		object->velocity += object->pendingVelocity;
+		object->pendingVelocity = glm::vec3(0);
 	}
 }
 

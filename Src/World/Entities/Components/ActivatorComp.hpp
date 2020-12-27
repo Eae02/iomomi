@@ -28,6 +28,6 @@ public:
 	std::vector<ActivationLightStripEnt::WayPoint> waypoints;
 	
 private:
-	uint64_t m_lastActivatedFrame = 0;
+	std::optional<uint64_t> m_lastActivatedFrame;
 	bool m_isActivated = false;
 };

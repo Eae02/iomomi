@@ -4,6 +4,7 @@
 #include "Levels.hpp"
 #include "MainGameState.hpp"
 #include "Settings.hpp"
+#include "ThumbnailRenderer.hpp"
 
 #include <fstream>
 
@@ -38,38 +39,63 @@ MainMenuGameState::MainMenuGameState()
 	: m_mainWidgetList(BUTTON_W), m_levelHighlightIntensity(levels.size(), 0.0f),
 	  m_worldBlurRenderer(2, eg::Format::R8G8B8A8_UNorm)
 {
+	for (std::string_view levelName : levelsOrder)
+	{
+		int64_t levelIndex = FindLevel(levelName);
+		if (levelIndex != -1)
+			m_levelIds.push_back(levelIndex);
+	}
+	m_numMainLevels = m_levelIds.size();
+	for (size_t i = 0; i < levels.size(); i++)
+	{
+		if (levels[i].isExtra)
+			m_levelIds.push_back(i);
+	}
+	
 	int64_t continueLevel = FindContinueLevel();
 	if (continueLevel != -1)
 	{
 		backgroundLevel = &levels[continueLevel];
 	}
+	else
+	{
+		backgroundLevel = &levels[time(nullptr) % m_numMainLevels];
+	}
 	
 	m_mainWidgetList.AddWidget(Button("Continue", [&] { ContinueClicked(); }));
-	m_mainWidgetList.AddWidget(Button("Select Level", [&] { m_screen = Screen::LevelSelect; }));
-	m_mainWidgetList.AddWidget(Button("Options", [&] { m_screen = Screen::Options; optionsMenuOpen = true; }));
+	m_mainWidgetList.AddWidget(Button("Select Level", [&]
+	{
+		m_screen = Screen::LevelSelect;
+		m_transitionToMainScreen = false;
+	}));
+	m_mainWidgetList.AddWidget(Button("Options", [&]
+	{
+		m_screen = Screen::Options;
+		optionsMenuOpen = true;
+		m_transitionToMainScreen = false;
+	}));
 	m_mainWidgetList.AddWidget(Button("Quit", [&] { eg::Close(); }));
 	
 	m_mainWidgetList.relativeOffset = glm::vec2(-0.5f, 0.5f);
 	
-	for (size_t i = 0; i < levels.size(); i++)
-	{
-		if (levels[i].isExtra)
-			m_extraLevelIds.push_back(i);
-	}
-	for (std::string_view levelName : levelsOrder)
-	{
-		int64_t levelIndex = FindLevel(levelName);
-		if (levelIndex != -1)
-			m_mainLevelIds.push_back(levelIndex);
-	}
-	
 	m_levelSelectBackButton.text = "Back";
 	m_levelSelectBackButton.width = 200;
-	m_levelSelectBackButton.onClick = [&] { m_screen = Screen::Main; };
+	m_levelSelectBackButton.onClick = [&] { m_transitionToMainScreen = true; };
 }
+
+static constexpr float TRANSITION_TIME = 0.1f;
+static constexpr float TRANSITION_SLIDE_DIST = 40;
 
 void MainMenuGameState::RunFrame(float dt)
 {
+	if (m_lastFrameIndex + 1 != eg::FrameIdx())
+	{
+		m_transitionToMainScreen = true;
+		m_screen = Screen::Main;
+		m_transitionProgress = 0;
+	}
+	m_lastFrameIndex = eg::FrameIdx();
+		
 	int64_t continueLevel = FindContinueLevel();
 	Button& continueButton = std::get<Button>(m_mainWidgetList.GetWidget(0));
 	if (continueLevel != -1 && levels[continueLevel].name == levelsOrder[0])
@@ -96,25 +122,46 @@ void MainMenuGameState::RunFrame(float dt)
 		std::fill(m_levelHighlightIntensity.begin(), m_levelHighlightIntensity.end(), 0.0f);
 	}
 	
-	if (m_screen == Screen::Main)
+	AnimateProperty(m_transitionProgress, dt, TRANSITION_TIME, !m_transitionToMainScreen);
+	float transitionSmooth = glm::smoothstep(0.0f, 1.0f, m_transitionProgress);
+	
+	if (m_transitionProgress == 0 && m_screen != Screen::Main)
+		m_screen = Screen::Main;
+	
+	m_mainWidgetList.position.x = eg::CurrentResolutionX() / 2.0f - transitionSmooth * TRANSITION_SLIDE_DIST;
+	m_mainWidgetList.position.y = eg::CurrentResolutionY() / 2.0f;
+	if (transitionSmooth < 1)
 	{
-		m_mainWidgetList.position = glm::vec2(eg::CurrentResolutionX(), eg::CurrentResolutionY()) / 2.0f;
-		m_mainWidgetList.Update(dt, m_screen == Screen::Main);
+		m_mainWidgetList.Update(dt, transitionSmooth == 0);
+		m_spriteBatch.opacityScale = 1 - transitionSmooth;
 		m_mainWidgetList.Draw(m_spriteBatch);
+		m_spriteBatch.opacityScale = 1;
 	}
-	else if (m_screen == Screen::Options)
+	
+	if (m_screen != Screen::Main)
 	{
-		UpdateOptionsMenu(dt);
-		DrawOptionsMenu(m_spriteBatch);
+		const float invXOffset = TRANSITION_SLIDE_DIST - transitionSmooth * TRANSITION_SLIDE_DIST;
+		m_spriteBatch.opacityScale = transitionSmooth;
 		
-		if (!optionsMenuOpen)
+		m_spriteBatch.DrawRect(
+			eg::Rectangle(0, 0, eg::CurrentResolutionX(), eg::CurrentResolutionY()),
+			eg::ColorLin(0, 0, 0, 0.5f));
+		
+		if (m_screen == Screen::Options)
 		{
-			m_screen = Screen::Main;
+			UpdateOptionsMenu(dt, glm::vec2(invXOffset, 0), m_transitionProgress == 1);
+			DrawOptionsMenu(m_spriteBatch);
+			
+			if (!optionsMenuOpen)
+			{
+				m_transitionToMainScreen = true;
+			}
 		}
-	}
-	else if (m_screen == Screen::LevelSelect)
-	{
-		DrawLevelSelect(dt);
+		else if (m_screen == Screen::LevelSelect)
+		{
+			DrawLevelSelect(dt, invXOffset);
+		}
+		m_spriteBatch.opacityScale = 1;
 	}
 	
 #if !defined(NDEBUG)
@@ -137,54 +184,71 @@ void MainMenuGameState::RunFrame(float dt)
 	m_spriteBatch.End(eg::CurrentResolutionX(), eg::CurrentResolutionY(), rpBeginInfo);
 }
 
-void MainMenuGameState::DrawLevelSelect(float dt)
+void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 {
-	const bool clicked = eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft);
-	
-	std::vector<int64_t>* levelIds = m_inExtraLevelsTab ? &m_extraLevelIds : &m_mainLevelIds;
+	const bool clicked = eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft) && xOffset == 0;
 	
 	glm::vec2 flippedCursorPos(eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY());
 	
-	constexpr int LEVEL_BOX_W = 150;
-	constexpr int LEVEL_BOX_H = 120;
-	constexpr int SPACING_X = 15;
-	constexpr int SPACING_Y = 30;
-	constexpr int MARGIN_X = 100;
-	constexpr int INFLATE_PIXELS_Y = LEVEL_BOX_H * style::ButtonInflatePercent;
+	const float marginX = 0.05f * eg::CurrentResolutionX();
+	const float levelBoxW = glm::clamp(eg::CurrentResolutionX() * 0.1f, 150.0f, (float)LEVEL_THUMBNAIL_RES_X);
+	const float levelBoxH = 0.8f * levelBoxW;
+	const float levelBoxSpacingX = levelBoxW * 0.1f;
+	const float levelBoxSpacingY = levelBoxSpacingX * 2;
+	const float inflatePixelsY = levelBoxH * style::ButtonInflatePercent;
 	
-	int boxStartY = eg::CurrentResolutionY() - 200;
-	int boxEndY = 100;
-	int visibleHeight = boxStartY - boxEndY;
-	int numPerRow = (eg::CurrentResolutionX() - MARGIN_X * 2 + SPACING_X) / (LEVEL_BOX_W + SPACING_X);
-	bool cursorInLevelsArea = eg::Rectangle(MARGIN_X, boxEndY, eg::CurrentResolutionX() - MARGIN_X * 2, visibleHeight).Contains(flippedCursorPos);
+	const float boxStartY = eg::CurrentResolutionY() - 200;
+	const float boxEndY = 100;
+	const float visibleHeight = boxStartY - boxEndY;
+	const int numPerRow = (eg::CurrentResolutionX() - marginX * 2 + levelBoxSpacingX) / (levelBoxW + levelBoxSpacingX);
+	const bool cursorInLevelsArea = eg::Rectangle(marginX, boxEndY, eg::CurrentResolutionX() - marginX * 2, visibleHeight).Contains(flippedCursorPos);
 	
 	const eg::Texture& thumbnailNaTexture = eg::GetAsset<eg::Texture>("Textures/ThumbnailNA.png");
 	const eg::Texture& lockTexture = eg::GetAsset<eg::Texture>("Textures/Lock.png");
 	const eg::Texture& completedTexture = eg::GetAsset<eg::Texture>("Textures/LevelCompleted.png");
 	
+	float totalHeight = 0;
+	
 	//Draws the level boxes
-	m_spriteBatch.PushScissor(0, boxEndY - INFLATE_PIXELS_Y, eg::CurrentResolutionX(), visibleHeight + INFLATE_PIXELS_Y * 2);
-	for (size_t i = 0; i < levelIds->size(); i++)
+	size_t numLevels = settings.showExtraLevels ? m_levelIds.size() : m_numMainLevels;
+	m_spriteBatch.PushScissor(0, boxEndY - inflatePixelsY, eg::CurrentResolutionX(), visibleHeight + inflatePixelsY * 2);
+	for (size_t i = 0; i < numLevels; i++)
 	{
-		const Level& level = levels[levelIds->at(i)];
+		const Level& level = levels[m_levelIds[i]];
 		
-		int gridX = i % numPerRow;
-		int gridY = i / numPerRow;
-		int x = MARGIN_X + gridX * (LEVEL_BOX_W + SPACING_X);
-		float y = (boxStartY - gridY * (LEVEL_BOX_H + SPACING_Y) - LEVEL_BOX_H) + m_levelSelectScroll;
+		size_t iForGridCalculation = i >= m_numMainLevels ? i - m_numMainLevels : i;
+		const float gridX = iForGridCalculation % numPerRow;
+		const float gridY = iForGridCalculation / numPerRow;
+		const float x = marginX + gridX * (levelBoxW + levelBoxSpacingX) + xOffset;
+		float yNoScroll = gridY * (levelBoxH + levelBoxSpacingY) + levelBoxH;
+		if (i >= m_numMainLevels)
+		{
+			yNoScroll += (levelBoxH + levelBoxSpacingY) * ((m_numMainLevels + numPerRow - 1) / numPerRow) + 40;
+		}
 		
-		eg::Rectangle rect(x, y, LEVEL_BOX_W, LEVEL_BOX_H);
-		bool hovered = cursorInLevelsArea && rect.Contains(flippedCursorPos) && level.status != LevelStatus::Locked;
+		totalHeight = std::max(yNoScroll, totalHeight);
+		const float y = boxStartY - yNoScroll + m_levelSelectScroll;
+		if (i == m_numMainLevels)
+		{
+			m_spriteBatch.DrawText(*style::UIFont, "Extra Levels", glm::vec2(x, y + levelBoxH + 20),
+						  eg::ColorLin(1, 1, 1, 0.75f), 1, nullptr, eg::TextFlags::DropShadow);
+			m_spriteBatch.DrawLine(glm::vec2(x, y + levelBoxH + 15),
+						  glm::vec2(eg::CurrentResolutionX() - marginX + xOffset, y + levelBoxH + 15),
+						  eg::ColorLin(1, 1, 1, 0.75f));
+		}
+		
+		eg::Rectangle rect(x, y, levelBoxW, levelBoxH);
+		bool hovered = cursorInLevelsArea && rect.Contains(flippedCursorPos) && level.status != LevelStatus::Locked && xOffset == 0;
 		if (hovered && clicked)
 		{
 			if (std::unique_ptr<World> world = LoadLevelWorld(level, false))
 			{
 				SetCurrentGS(mainGameState);
-				mainGameState->SetWorld(std::move(world), levelIds->at(i));
+				mainGameState->SetWorld(std::move(world), m_levelIds[i]);
 			}
 		}
 		
-		float& highlightIntensity = m_levelHighlightIntensity[levelIds->at(i)];
+		float& highlightIntensity = m_levelHighlightIntensity[m_levelIds[i]];
 		if (hovered)
 			highlightIntensity = std::min(highlightIntensity + dt / style::HoverAnimationTime, 1.0f);
 		else
@@ -221,20 +285,18 @@ void MainMenuGameState::DrawLevelSelect(float dt)
 	m_spriteBatch.PopScissor();
 	
 	//Updates scroll
-	int totalRows = levelIds->size() / numPerRow + 1;
-	int totalHeight = totalRows * LEVEL_BOX_H + (totalRows - 1) * SPACING_Y;
-	int maxScroll = std::max(totalHeight - visibleHeight, 0);
-	constexpr float MAX_SCROLL_VEL = 1000;
+	const float maxScroll = std::max(totalHeight - visibleHeight, 0.0f);
+	constexpr float SCROLL_SPEED = 1500;
 	m_levelSelectScrollVel *= 1 - std::min(dt * 10.0f, 1.0f);
-	m_levelSelectScrollVel += (eg::InputState::Previous().scrollY - eg::InputState::Current().scrollY) * MAX_SCROLL_VEL * 0.5f;
-	m_levelSelectScrollVel = glm::clamp(m_levelSelectScrollVel, -MAX_SCROLL_VEL, MAX_SCROLL_VEL);
+	m_levelSelectScrollVel += (eg::InputState::Previous().scrollY - eg::InputState::Current().scrollY) * SCROLL_SPEED * 0.5f;
+	m_levelSelectScrollVel = glm::clamp(m_levelSelectScrollVel, -SCROLL_SPEED, SCROLL_SPEED);
 	m_levelSelectScroll = glm::clamp(m_levelSelectScroll + m_levelSelectScrollVel * dt, 0.0f, (float)maxScroll);
 	
 	//Draws the scroll bar
-	if (maxScroll != 0)
+	if (maxScroll > 0)
 	{
 		constexpr int SCROLL_BAR_W = 6;
-		eg::Rectangle scrollAreaRect(eg::CurrentResolutionX() - MARGIN_X + 5, boxEndY, SCROLL_BAR_W, visibleHeight);
+		eg::Rectangle scrollAreaRect(eg::CurrentResolutionX() - marginX + 5 + xOffset, boxEndY, SCROLL_BAR_W, visibleHeight);
 		m_spriteBatch.DrawRect(scrollAreaRect, style::ButtonColorDefault);
 		
 		float barHeight = scrollAreaRect.h * (float)visibleHeight / (float)totalHeight;
@@ -243,31 +305,7 @@ void MainMenuGameState::DrawLevelSelect(float dt)
 		m_spriteBatch.DrawRect(scrollBarRect, style::ButtonColorHover);
 	}
 	
-	//Draws and updates tabs
-	if (settings.showExtraLevels && !m_extraLevelIds.empty())
-	{
-		int tabTextY = boxStartY + 30;
-		float tabTextX = MARGIN_X + 10;
-		auto DrawAndUpdateTab = [&] (std::string_view text, bool mode)
-		{
-			glm::vec2 extents;
-			float opacity = mode == m_inExtraLevelsTab ? 0.7f : 0.15f;
-			m_spriteBatch.DrawText(
-				*style::UIFont,
-				text,
-				glm::vec2(tabTextX, tabTextY),
-				eg::ColorLin(eg::Color::White).ScaleAlpha(opacity),
-				1, &extents, eg::TextFlags::DropShadow);
-			if (eg::Rectangle(tabTextX, tabTextY, extents).Contains(flippedCursorPos) && clicked)
-				m_inExtraLevelsTab = mode;
-			tabTextX += extents.x + 20;
-		};
-		
-		DrawAndUpdateTab("Main Levels", false);
-		DrawAndUpdateTab("Extra Levels", true);
-	}
-	
-	m_levelSelectBackButton.position = glm::vec2(MARGIN_X, boxEndY - 60);
+	m_levelSelectBackButton.position = glm::vec2(marginX, boxEndY - 60);
 	m_levelSelectBackButton.Update(dt, true);
 	m_levelSelectBackButton.Draw(m_spriteBatch);
 }

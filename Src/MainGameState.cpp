@@ -305,6 +305,7 @@ void MainGameState::DrawOverlay(float dt)
 	ImGui::Text("PSM Updates: %ld", GameRenderer::instance->m_plShadowMapper.LastFrameUpdateCount());
 	ImGui::Text("Water Spheres: %d", GameRenderer::instance->m_waterSimulator.NumParticles());
 	ImGui::Text("Water Update Time: %.2fms", GameRenderer::instance->m_waterSimulator.LastUpdateTime() / 1E6);
+	ImGui::Text("Level: %s", m_currentLevelIndex == -1 ? "?" : levels[m_currentLevelIndex].name.c_str());
 	
 	ImGui::End();
 	ImGui::PopStyleVar();

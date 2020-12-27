@@ -334,6 +334,9 @@ void Editor::DrawWorld()
 	m_renderCtx->meshBatch.Begin();
 	m_renderCtx->transparentMeshBatch.Begin();
 	
+	eg::Frustum frustum(RenderSettings::instance->invViewProjection);
+	m_prepareDrawArgs.frustum = &frustum;
+	
 	m_world->PrepareForDraw(m_prepareDrawArgs);
 	
 	for (EditorComponent* comp : m_componentsForTool[(int)m_tool])
@@ -362,8 +365,6 @@ void Editor::DrawWorld()
 		m_spriteBatch.Draw(iconsTexture, m_icons[i].m_rectangle, color,
 			CreateSrcRectangle(m_icons[i].iconIndex), eg::SpriteFlags::None);
 	}
-	
-	eg::Frustum frustum(RenderSettings::instance->invViewProjection);
 	
 	//Sends the editor draw message to entities
 	EntEditorDrawArgs drawArgs = {};

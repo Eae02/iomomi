@@ -48,7 +48,7 @@ private:
 	PhysicsObject m_ringPhysicsObject;
 	PhysicsObject m_padPhysicsObject;
 	
-	float m_timeSinceActivated = 0;
+	float m_timeSinceActivated = INFINITY;
 	float m_lightColor = 0;
 	float m_lingerTime = 0;
 };

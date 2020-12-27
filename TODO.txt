@@ -4,6 +4,7 @@ fixes:
 
 graphics fixes:
  - gun should be rendered after ssr
+ - ssr should be blurred slightly
 
 textures and models:
  - texture and model for cube spawner

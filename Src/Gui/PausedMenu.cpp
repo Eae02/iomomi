@@ -71,7 +71,7 @@ void PausedMenu::Update(float dt)
 	
 	if (optionsMenuOpen)
 	{
-		UpdateOptionsMenu(dt);
+		UpdateOptionsMenu(dt, glm::vec2(0));
 	}
 	
 	m_widgetList.position = glm::vec2(eg::CurrentResolutionX(), eg::CurrentResolutionY()) / 2.0f;

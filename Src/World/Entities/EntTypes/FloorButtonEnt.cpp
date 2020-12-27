@@ -58,8 +58,6 @@ FloorButtonEnt::FloorButtonEnt()
 	m_padPhysicsObject.shape = &s_padCollisionMesh;
 	m_padPhysicsObject.shouldCollide = &FloorButtonEnt::ShouldCollide;
 	m_padPhysicsObject.constrainMove = &FloorButtonEnt::ConstrainMove;
-	
-	m_timeSinceActivated = 100;
 }
 
 void FloorButtonEnt::RenderSettings()

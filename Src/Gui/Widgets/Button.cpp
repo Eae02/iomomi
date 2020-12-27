@@ -3,7 +3,7 @@
 
 void Button::Update(float dt, bool allowInteraction)
 {
-	if (eg::FrameIdx() - m_lastUpdateFrameIdx > 1)
+	if (m_lastUpdateFrameIdx + 1 != eg::FrameIdx())
 		m_highlightIntensity = 0;
 	m_lastUpdateFrameIdx = eg::FrameIdx();
 	
