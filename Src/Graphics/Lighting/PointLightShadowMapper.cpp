@@ -215,7 +215,7 @@ void PointLightShadowMapper::UpdateShadowMaps(const RenderCallback& prepareCallb
 			eg::TextureSubresource subresource;
 			subresource.firstArrayLayer = face;
 			subresource.numArrayLayers = 1;
-			eg::DC.BindTexture(m_shadowMaps[baseShadowMap].texture, 0, 0, &framebufferLinearSampler,
+			eg::DC.BindTexture(m_shadowMaps[baseShadowMap].texture, 0, 0, &framebufferNearestSampler,
 			                   subresource, eg::TextureBindFlags::ArrayLayerAsTexture2D);
 			
 			eg::DC.Draw(0, 3, 0, 1);

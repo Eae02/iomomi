@@ -2,14 +2,22 @@
 #include "MeshDrawArgs.hpp"
 #include "StaticPropMaterial.hpp"
 #include "../RenderSettings.hpp"
+#include "../GraphicsCommon.hpp"
 
 GravityCornerLightMaterial GravityCornerLightMaterial::instance;
 
 static eg::Pipeline gravityCornerPipeline;
 static eg::DescriptorSet gravityCornerDescriptorSet;
 
+static float DEPTH_OFFSET = 0.001f;
+
 static void OnInit()
 {
+	eg::SpecializationConstantEntry depthOffsetSpecConstant;
+	depthOffsetSpecConstant.constantID = COMMON_3D_DEPTH_OFFSET_CONST_ID;
+	depthOffsetSpecConstant.size = sizeof(float);
+	depthOffsetSpecConstant.offset = 0;
+	
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Common3D.vs.glsl").DefaultVariant();
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityCornerLight.fs.glsl").DefaultVariant();
@@ -17,6 +25,9 @@ static void OnInit()
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.depthCompare = eg::CompareOp::LessOrEqual;
 	pipelineCI.cullMode = eg::CullMode::None;
+	pipelineCI.vertexShader.specConstants = { &depthOffsetSpecConstant, 1 };
+	pipelineCI.vertexShader.specConstantsDataSize = sizeof(float);
+	pipelineCI.vertexShader.specConstantsData = &DEPTH_OFFSET;
 	pipelineCI.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
 	pipelineCI.vertexBindings[1] = { sizeof(StaticPropMaterial::InstanceData), eg::InputRate::Instance };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(eg::StdVertex, position) };

@@ -108,11 +108,6 @@ void MainMenuGameState::RunFrame(float dt)
 	
 	RenderWorld(dt);
 	
-	if (settings.keyMenu.IsDown() && !settings.keyMenu.WasDown() && !KeyBindingWidget::anyKeyBindingPickingKey)
-	{
-		m_screen = Screen::Main;
-	}
-	
 	if (m_levelHighlightIntensity.size() < levels.size())
 	{
 		m_levelHighlightIntensity.resize(levels.size(), 0.0f);
@@ -162,6 +157,12 @@ void MainMenuGameState::RunFrame(float dt)
 			DrawLevelSelect(dt, invXOffset);
 		}
 		m_spriteBatch.opacityScale = 1;
+		
+		if (settings.keyMenu.IsDown() && !settings.keyMenu.WasDown() && !KeyBindingWidget::anyKeyBindingPickingKey)
+		{
+			m_screen = Screen::Main;
+			m_transitionToMainScreen = true;
+		}
 	}
 	
 #if !defined(NDEBUG)

@@ -121,6 +121,8 @@ void EndUpdateLevelThumbnails(LevelThumbnailUpdate* update)
 	if (update == nullptr)
 		return;
 	
+	char flippedData[THUMBNAIL_BYTES];
+	
 	for (LevelThumbnailEntry& thumbnail : update->thumbnails)
 	{
 		std::ofstream thumbnailStream(thumbnail.thumbnailPath, std::ios::binary);
@@ -133,7 +135,19 @@ void EndUpdateLevelThumbnails(LevelThumbnailUpdate* update)
 		
 		thumbnail.downloadBuffer.Invalidate(0, THUMBNAIL_BYTES);
 		char* data = static_cast<char*>(thumbnail.downloadBuffer.Map(0, THUMBNAIL_BYTES));
-		if (!eg::WriteImageToStream(thumbnailStream, eg::WriteImageFormat::JPG, LEVEL_THUMBNAIL_RES_X, LEVEL_THUMBNAIL_RES_Y, 4, {data, THUMBNAIL_BYTES}))
+		if (eg::CurrentGraphicsAPI() == eg::GraphicsAPI::OpenGL)
+		{
+			for (uint32_t y = 0; y < LEVEL_THUMBNAIL_RES_Y; y++)
+			{
+				uint32_t srcRowOffset = y * LEVEL_THUMBNAIL_RES_X * 4;
+				uint32_t dstRowOffset = (LEVEL_THUMBNAIL_RES_Y - y - 1) * LEVEL_THUMBNAIL_RES_X * 4;
+				std::memcpy(flippedData + dstRowOffset, data + srcRowOffset, LEVEL_THUMBNAIL_RES_X * 4);
+			}
+			data = flippedData;
+		}
+		
+		if (!eg::WriteImageToStream(thumbnailStream, eg::WriteImageFormat::JPG,
+			LEVEL_THUMBNAIL_RES_X, LEVEL_THUMBNAIL_RES_Y, 4, {data, THUMBNAIL_BYTES}))
 		{
 			continue;
 		}

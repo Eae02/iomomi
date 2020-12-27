@@ -12,6 +12,8 @@ layout(location=1) out vec2 texCoord_out;
 layout(location=2) out vec3 normal_out;
 layout(location=3) out vec3 tangent_out;
 
+layout(constant_id=151) const float depthOffset = 0;
+
 #define RENDER_SETTINGS_BINDING 0
 #include "Inc/RenderSettings.glh"
 
@@ -25,4 +27,5 @@ void main()
 	tangent_out = normalize((worldTransform * vec4(tangent_in, 0.0)).xyz);
 	
 	gl_Position = renderSettings.viewProjection * vec4(worldPos_out, 1.0);
+	gl_Position.z -= depthOffset;
 }

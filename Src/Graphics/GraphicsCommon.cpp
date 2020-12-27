@@ -43,6 +43,7 @@ const std::pair<uint32_t, uint32_t> cubeMesh::edges[12] =
 };
 
 eg::Sampler commonTextureSampler;
+eg::Sampler framebufferNearestSampler;
 eg::Sampler framebufferLinearSampler;
 
 eg::Texture whitePixelTexture;
@@ -54,13 +55,17 @@ static void OnInit()
 	samplerDescription.maxAnistropy = 16;
 	commonTextureSampler = eg::Sampler(samplerDescription);
 	
-	eg::SamplerDescription framebufferLinearSamplerDesc;
-	framebufferLinearSamplerDesc.wrapU = eg::WrapMode::ClampToEdge;
-	framebufferLinearSamplerDesc.wrapV = eg::WrapMode::ClampToEdge;
-	framebufferLinearSamplerDesc.wrapW = eg::WrapMode::ClampToEdge;
-	framebufferLinearSamplerDesc.minFilter = eg::TextureFilter::Linear;
-	framebufferLinearSamplerDesc.magFilter = eg::TextureFilter::Linear;
-	framebufferLinearSampler = eg::Sampler(framebufferLinearSamplerDesc);
+	eg::SamplerDescription framebufferSamplerDesc;
+	framebufferSamplerDesc.wrapU = eg::WrapMode::ClampToEdge;
+	framebufferSamplerDesc.wrapV = eg::WrapMode::ClampToEdge;
+	framebufferSamplerDesc.wrapW = eg::WrapMode::ClampToEdge;
+	framebufferSamplerDesc.minFilter = eg::TextureFilter::Linear;
+	framebufferSamplerDesc.magFilter = eg::TextureFilter::Linear;
+	framebufferLinearSampler = eg::Sampler(framebufferSamplerDesc);
+	
+	framebufferSamplerDesc.minFilter = eg::TextureFilter::Nearest;
+	framebufferSamplerDesc.magFilter = eg::TextureFilter::Nearest;
+	framebufferNearestSampler = eg::Sampler(framebufferSamplerDesc);
 	
 	eg::TextureCreateInfo whiteTextureCI;
 	whiteTextureCI.format = eg::Format::R8G8B8A8_UNorm;
@@ -87,6 +92,7 @@ static void OnShutdown()
 {
 	commonTextureSampler = { };
 	framebufferLinearSampler = { };
+	framebufferNearestSampler = { };
 	whitePixelTexture.Destroy();
 	blackPixelTexture.Destroy();
 }

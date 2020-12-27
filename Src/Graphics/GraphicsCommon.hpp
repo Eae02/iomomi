@@ -3,6 +3,7 @@
 #include <optional>
 
 extern eg::Sampler commonTextureSampler;
+extern eg::Sampler framebufferNearestSampler;
 extern eg::Sampler framebufferLinearSampler;
 
 extern eg::Texture whitePixelTexture;
@@ -30,6 +31,8 @@ private:
 };
 
 constexpr uint32_t WATER_MODE_CONST_ID = 150;
+
+constexpr uint32_t COMMON_3D_DEPTH_OFFSET_CONST_ID = 151;
 
 extern const int32_t WATER_MODE_BEFORE;
 extern const int32_t WATER_MODE_AFTER;
