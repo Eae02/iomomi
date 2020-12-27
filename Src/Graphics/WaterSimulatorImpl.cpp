@@ -114,6 +114,7 @@ WaterSimulatorImpl* WSI_New(const WSINewArgs& args)
 	//Allocates memory for particle data
 	size_t memoryBytes = impl->allocatedParticles * (sizeof(__m128) * 5 + sizeof(uint8_t) + sizeof(float) + sizeof(glm::vec2));
 	impl->dataMemory = aligned_alloc(alignof(__m128), memoryBytes);
+	std::memset(impl->dataMemory, 0, memoryBytes);
 	
 	//Sets up SoA particle data
 	impl->particlePos             = reinterpret_cast<__m128*>(impl->dataMemory);
@@ -132,8 +133,6 @@ WaterSimulatorImpl* WSI_New(const WSINewArgs& args)
 		impl->particleRadius[i] = radiusDist(impl->rng);
 	
 	std::fill_n(impl->particleGravity, impl->numParticles, (uint8_t)Dir::NegY);
-	std::memset(impl->particleVel, 0, sizeof(float) * 4 * impl->numParticles);
-	std::memset(impl->particlePos, 0, sizeof(float) * 4 * impl->numParticles);
 	
 	//Copies particle positions to m_particlePos
 	for (size_t i = 0; i < args.numParticles; i++)
@@ -230,6 +229,8 @@ alignas(16) static const float gravities[6][4] =
 	{ 0, 0, -GRAVITY, 0 }
 };
 
+static constexpr int DP_IMM8 = 0x71;
+
 void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 {
 	float dt = args.dt;
@@ -245,7 +246,8 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 		impl->particleDensity[i] = glm::vec2(1.0f);
 		
 		//Computes the cell to place this particle into based on the floor of the particle's position.
-		impl->particleCells[i] = _mm_sub_epi32(_mm_cvtps_epi32(_mm_floor_ps(_mm_div_ps(impl->particlePos[i], gridCell4))),
+		impl->particleCells[i] = _mm_sub_epi32(
+			_mm_cvtps_epi32(_mm_floor_ps(_mm_div_ps(impl->particlePos[i], gridCell4))),
 			*reinterpret_cast<const __m128i*>(gridCellsMin4));
 		
 		//Adds the particle to the cell
@@ -276,7 +278,7 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 				{
 					//Check particle b for proximity
 					__m128 sep = _mm_sub_ps(particlePos, impl->particlePos[b]);
-					float dist2 = _mm_cvtss_f32(_mm_dp_ps(sep, sep, 0xFF));
+					float dist2 = _mm_cvtss_f32(_mm_dp_ps(sep, sep, DP_IMM8));
 					if (dist2 < INFLUENCE_RADIUS * INFLUENCE_RADIUS)
 					{
 						impl->closeParticles[p][numClose++] = b;
@@ -324,7 +326,7 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 			if (b > a)
 				continue;
 			__m128 sep = _mm_sub_ps(impl->particlePos[a], impl->particlePos[b]);
-			const float dist = glm::fastSqrt(_mm_cvtss_f32(_mm_dp_ps(sep, sep, 0xFF)));
+			const float dist = glm::fastSqrt(_mm_cvtss_f32(_mm_dp_ps(sep, sep, DP_IMM8)));
 			const float q    = std::max(1.0f - dist / INFLUENCE_RADIUS, 0.0f);
 			const float q2   = q * q;
 			const float q3   = q2 * q;
@@ -353,7 +355,7 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 		{
 			uint16_t b = impl->closeParticles[a][bI];
 			__m128 sep = _mm_sub_ps(impl->particlePos[a], impl->particlePos[b]);
-			float dist2 = _mm_cvtss_f32(_mm_dp_ps(sep, sep, 0xFF));
+			float dist2 = _mm_cvtss_f32(_mm_dp_ps(sep, sep, DP_IMM8));
 			
 			//Randomly separates particles that are very close so that the pressure gradient won't be zero.
 			if (dist2 < CORE_RADIUS * CORE_RADIUS || std::abs(sep[0]) < CORE_RADIUS ||
@@ -362,7 +364,7 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 				std::uniform_real_distribution<float> offsetDist(-CORE_RADIUS / 2, CORE_RADIUS);
 				alignas(16) float offset[4] = { offsetDist(impl->rng), offsetDist(impl->rng), offsetDist(impl->rng), 0 };
 				sep = _mm_add_ps(sep, *reinterpret_cast<__m128*>(offset));
-				dist2 = _mm_cvtss_f32(_mm_dp_ps(sep, sep, 0xFF));
+				dist2 = _mm_cvtss_f32(_mm_dp_ps(sep, sep, DP_IMM8));
 			}
 			
 			const float dist    = std::sqrt(dist2);
@@ -439,15 +441,15 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 			__m128 velB = impl->particleVel[b];
 			
 			__m128 sep     = _mm_sub_ps(impl->particlePos[a], impl->particlePos[b]);
-			float dist     = glm::fastSqrt(_mm_cvtss_f32(_mm_dp_ps(sep, sep, 0xFF)));
+			float dist     = glm::fastSqrt(_mm_cvtss_f32(_mm_dp_ps(sep, sep, 0x71)));
 			__m128 sepDir  = _mm_div_ps(sep, _mm_load1_ps(&dist));
 			__m128 velDiff = _mm_sub_ps(velA, velB);
-			float velSep   = _mm_cvtss_f32(_mm_dp_ps(velDiff, sepDir, 0xFF));
+			float velSep   = _mm_cvtss_f32(_mm_dp_ps(velDiff, sepDir, DP_IMM8));
 			if (velSep < 0.0f)
 			{
 				const float infl         = std::max(1.0f - dist / INFLUENCE_RADIUS, 0.0f);
-				const float velSepA      = _mm_cvtss_f32(_mm_dp_ps(velA, sepDir, 0xFF));
-				const float velSepB      = _mm_cvtss_f32(_mm_dp_ps(velB, sepDir, 0xFF));
+				const float velSepA      = _mm_cvtss_f32(_mm_dp_ps(velA, sepDir, DP_IMM8));
+				const float velSepB      = _mm_cvtss_f32(_mm_dp_ps(velB, sepDir, DP_IMM8));
 				const float velSepTarget = (velSepA + velSepB) * 0.5f;
 				const float diffSepA     = velSepTarget - velSepA;
 				const float changeSepA   = RADIAL_VISCOSITY_GAIN * diffSepA * infl;
@@ -461,7 +463,7 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 		const float MAX_MOVE = 0.2f;
 		vel = _mm_mul_ps(vel, _mm_load1_ps(&VEL_SCALE));
 		__m128 move = _mm_mul_ps(vel, dt4);
-		float moveDistSquared = _mm_cvtss_f32(_mm_dp_ps(move, move, 0xFF));
+		float moveDistSquared = _mm_cvtss_f32(_mm_dp_ps(move, move, DP_IMM8));
 		if (moveDistSquared > MAX_MOVE * MAX_MOVE)
 		{
 			float scale = MAX_MOVE * glm::fastInverseSqrt(moveDistSquared);
@@ -484,15 +486,15 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 			auto CheckFace = [&] (__m128 planePoint, __m128 normal, __m128 tangent, __m128 bitangent,
 				float tangentLen, float biTangentLen, float minDistC)
 			{
-				float distC = _mm_cvtss_f32(_mm_dp_ps(_mm_sub_ps(impl->particlePos2[a], planePoint), normal, 0xFF));
+				float distC = _mm_cvtss_f32(_mm_dp_ps(_mm_sub_ps(impl->particlePos2[a], planePoint), normal, DP_IMM8));
 				float distE = distC - impl->particleRadius[a] * 0.5f;
 				
 				if (distC > minDistC && distE < minDist)
 				{
 					__m128 iPos = _mm_sub_ps(_mm_add_ps(impl->particlePos2[a], _mm_mul_ps(_mm_load1_ps(&distC), normal)), planePoint);
-					float iDotT = _mm_cvtss_f32(_mm_dp_ps(iPos, tangent, 0xFF));
-					float iDotBT = _mm_cvtss_f32(_mm_dp_ps(iPos, bitangent, 0xFF));
-					float iDotN = _mm_cvtss_f32(_mm_dp_ps(iPos, normal, 0xFF));
+					float iDotT = _mm_cvtss_f32(_mm_dp_ps(iPos, tangent, DP_IMM8));
+					float iDotBT = _mm_cvtss_f32(_mm_dp_ps(iPos, bitangent, DP_IMM8));
+					float iDotN = _mm_cvtss_f32(_mm_dp_ps(iPos, normal, DP_IMM8));
 					
 					//Checks that the intersection actually happened on the voxel's face
 					if (std::abs(iDotT) <= tangentLen && std::abs(iDotBT) <= biTangentLen && std::abs(iDotN) < 0.8f)
@@ -564,7 +566,7 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 			//Applies an impulse to the velocity
 			if (minDist < 0)
 			{
-				float vDotDisplace = _mm_cvtss_f32(_mm_dp_ps(vel, displaceNormal, 0xFF)) * IMPACT_COEFFICIENT;
+				float vDotDisplace = _mm_cvtss_f32(_mm_dp_ps(vel, displaceNormal, DP_IMM8)) * IMPACT_COEFFICIENT;
 				__m128 impulse = _mm_mul_ps(displaceNormal, _mm_load1_ps(&vDotDisplace));
 				vel = _mm_sub_ps(vel, impulse);
 			}

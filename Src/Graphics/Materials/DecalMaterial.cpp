@@ -205,10 +205,7 @@ bool DecalMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) con
 
 eg::MeshBatch::Mesh DecalMaterial::GetMesh()
 {
-	eg::MeshBatch::Mesh mesh;
-	mesh.firstIndex = 0;
-	mesh.firstVertex = 0;
-	mesh.indexBuffer = eg::BufferRef();
+	eg::MeshBatch::Mesh mesh = {};
 	mesh.numElements = 4;
 	mesh.vertexBuffer = decalVertexBuffer;
 	return mesh;
