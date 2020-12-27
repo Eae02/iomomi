@@ -9,6 +9,9 @@ inline static void* aligned_alloc(size_t alignment, size_t size)
 {
 	return _aligned_malloc(size, alignment);
 }
+#define ALIGNED_FREE _aligned_free
+#else
+#define ALIGNED_FREE std::free
 #endif
 
 //Maximum number of particles per partition grid cell
@@ -151,7 +154,7 @@ WaterSimulatorImpl* WSI_New(const WSINewArgs& args)
 
 void WSI_Delete(WaterSimulatorImpl* impl)
 {
-	std::free(impl->dataMemory);
+	ALIGNED_FREE(impl->dataMemory);
 	std::free(impl->isVoxelAir);
 	delete impl;
 }
