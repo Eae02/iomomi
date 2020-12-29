@@ -37,6 +37,7 @@ public:
 	//Object properties
 	bool canBePushed = true;
 	bool canCarry = false;
+	glm::vec3 slideDim { 1, 1, 1 };
 	float mass = 10;
 	float friction = 0.5f;
 	uint32_t debugColor = 0xde921f;

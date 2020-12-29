@@ -8,6 +8,7 @@ extern eg::Sampler framebufferLinearSampler;
 
 extern eg::Texture whitePixelTexture;
 extern eg::Texture blackPixelTexture;
+extern eg::Texture defaultShadowMap;
 
 namespace cubeMesh
 {

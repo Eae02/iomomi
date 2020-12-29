@@ -50,7 +50,7 @@ CubeEnt::CubeEnt(const glm::vec3& position, bool _canFloat)
 bool CubeEnt::ShouldCollide(const PhysicsObject& self, const PhysicsObject& other)
 {
 	CubeEnt* cube = (CubeEnt*)std::get<Ent*>(self.owner);
-	if (cube->m_isPickedUp && std::holds_alternative<Player*>(other.owner))
+	if (cube->m_collisionWithPlayerDisabled && std::holds_alternative<Player*>(other.owner))
 		return false;
 	return true;
 }
@@ -168,6 +168,7 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 	m_physicsObject.mass = *cubeMass;
 	
 	eg::Sphere sphere(m_physicsObject.position, RADIUS);
+	eg::AABB aabb(sphere.position - RADIUS, sphere.position + RADIUS);
 	
 	bool inGoo = false;
 	args.world->entManager.ForEachOfType<GooPlaneEnt>([&] (const GooPlaneEnt& goo)
@@ -182,8 +183,7 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 		return;
 	}
 	
-	std::optional<Dir> forceFieldGravity = ForceFieldEnt::CheckIntersection(args.world->entManager,
-		eg::AABB(sphere.position - RADIUS, sphere.position + RADIUS));
+	std::optional<Dir> forceFieldGravity = ForceFieldEnt::CheckIntersection(args.world->entManager, aabb);
 	if (forceFieldGravity.has_value() && m_currentDown != *forceFieldGravity)
 	{
 		m_currentDown = *forceFieldGravity;
@@ -217,9 +217,16 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 			m_physicsObject.move = deltaPos;
 			m_physicsObject.velocity = { };
 		}
+		
+		m_collisionWithPlayerDisabled = true;
 	}
 	else
 	{
+		if (m_collisionWithPlayerDisabled && !args.player->GetAABB().Intersects(aabb))
+		{
+			m_collisionWithPlayerDisabled = false;
+		}
+		
 		m_physicsObject.gravity = DirectionVector(m_currentDown);
 		
 		//Water interaction
@@ -317,4 +324,9 @@ void CubeEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 void CubeEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
 	m_physicsObject.position = newPosition;
+}
+
+int CubeEnt::GetEditorIconIndex() const
+{
+	return 4;
 }

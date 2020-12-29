@@ -8,9 +8,10 @@ class CubeSpawnerEnt : public Ent
 public:
 	static constexpr EntTypeID TypeID = EntTypeID::CubeSpawner;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::EditorWallMove;
-	static constexpr int EditorIconIndex = 4;
 	
 	CubeSpawnerEnt() = default;
+	
+	int GetEditorIconIndex() const override;
 	
 	void Serialize(std::ostream& stream) const override;
 	void Deserialize(std::istream& stream) override;

@@ -66,6 +66,8 @@ public:
 	
 	int GetMaterial(const glm::ivec3& pos, Dir side) const;
 	
+	std::optional<int> GetMaterialIfVisible(const glm::ivec3& pos, Dir side) const;
+	
 	bool HasCollision(const glm::ivec3& pos, Dir side) const;
 	
 	void CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt);

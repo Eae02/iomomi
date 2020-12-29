@@ -131,13 +131,14 @@ void PhysicsEngine::ApplyMovement(PhysicsObject& object, float dt, const Collisi
 	
 	bool didCollide = true;
 	
+	constexpr float MIN_MOVE_LEN = 1E-4f;
 	constexpr float MAX_MOVE_LEN = 10;
 	constexpr float MAX_MOVE_PER_STEP = 0.5f;
 	constexpr int MAX_ITERATIONS = 5;
 	for (int i = 0; i < MAX_ITERATIONS && didCollide; i++)
 	{
 		float moveLen = glm::length(object.move);
-		if (moveLen < 1E-4f)
+		if (moveLen < MIN_MOVE_LEN)
 			break;
 		
 		if (moveLen > MAX_MOVE_LEN)
@@ -170,7 +171,8 @@ void PhysicsEngine::ApplyMovement(PhysicsObject& object, float dt, const Collisi
 						continue;
 				}
 				object.velocity -= colRes.correction * (glm::dot(colRes.correction, object.velocity) / glm::length2(colRes.correction));
-				object.move = partialMove + colRes.correction * 1.01f;
+				object.move = partialMove;
+				object.move += colRes.correction * object.slideDim * 1.01f;
 				
 				glm::vec3 relativeVel = object.velocity - colRes.other->velocity;
 				if (glm::length2(relativeVel) > 1E-6f)
@@ -193,7 +195,10 @@ void PhysicsEngine::ApplyMovement(PhysicsObject& object, float dt, const Collisi
 		object.didMove = true;
 	}
 	
-	object.move = { };
+	if (glm::length(object.move) >= MIN_MOVE_LEN)
+	{
+		object.move = {};
+	}
 	
 	object.collisionDepth--;
 }

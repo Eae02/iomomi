@@ -3,6 +3,7 @@
 #include "../../World/Entities/Components/ActivatableComp.hpp"
 #include "../../World/Entities/EntTypes/ActivationLightStripEnt.hpp"
 #include "../../World/Entities/Components/ActivatorComp.hpp"
+#include "../../Gui/GuiCommon.hpp"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -39,23 +40,6 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 	
 	const bool mouseHeld = eg::IsButtonDown(eg::Button::MouseLeft) && eg::WasButtonDown(eg::Button::MouseLeft);
 	
-	auto EntityMoved = [&] (Ent& entity)
-	{
-		if (ActivatableComp* activatable = entity.GetComponentMut<ActivatableComp>())
-		{
-			editorState.world->entManager.ForEach([&] (Ent& activatorEntity)
-			{
-				ActivatorComp* activator = activatorEntity.GetComponentMut<ActivatorComp>();
-				if (activator && activator->activatableName == activatable->m_name)
-				{
-					ActivationLightStripEnt::GenerateForActivator(*editorState.world, activatorEntity);
-				}
-			});
-		}
-		
-		ActivationLightStripEnt::GenerateForActivator(*editorState.world, entity);
-	};
-	
 	std::shared_ptr<Ent> wallDragEntity;
 	auto UpdateWallDragEntity = [&] ()
 	{
@@ -80,8 +64,14 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 				if (MaybeClone())
 					UpdateWallDragEntity();
 				
-				wallDragEntity->EditorMoved(SnapToGrid(pickResult.intersectPosition), pickResult.normalDir);
-				EntityMoved(*wallDragEntity);
+				glm::vec3 newPos = pickResult.intersectPosition;
+				if (eg::InputState::Current().IsAltDown())
+					newPos = SnapToGrid(newPos, BIG_GRID_SNAP);
+				else if (!eg::InputState::Current().IsCtrlDown())
+					newPos = SnapToGrid(newPos, SMALL_GRID_SNAP);
+				
+				wallDragEntity->EditorMoved(newPos, pickResult.normalDir);
+				editorState.EntityMoved(*wallDragEntity);
 			}
 		}
 		else if (std::abs(m_mouseDownPos.x - eg::CursorX()) > DRAG_BEGIN_DELTA ||
@@ -103,44 +93,67 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 	{
 		if (!m_translationGizmo.HasInputFocus())
 		{
-			m_gizmoPosUnaligned = glm::vec3(0.0f);
+			m_dragEntities.clear();
+			m_initialGizmoPos = glm::vec3(0.0f);
 			for (int64_t i = editorState.selectedEntities->size() - 1; i >= 0; i--)
 			{
 				std::shared_ptr<Ent> selectedEntitySP = editorState.selectedEntities->at(i).lock();
-				if (!selectedEntitySP || eg::HasFlag(selectedEntitySP->TypeFlags(), EntTypeFlags::EditorWallMove))
+				if (!selectedEntitySP)
 				{
 					editorState.selectedEntities->at(i).swap(editorState.selectedEntities->back());
 					editorState.selectedEntities->pop_back();
 				}
 				else
 				{
-					m_gizmoPosUnaligned += selectedEntitySP->GetPosition();
+					m_initialGizmoPos += selectedEntitySP->GetPosition();
+					m_dragEntities.emplace_back(selectedEntitySP, selectedEntitySP->GetPosition());
 				}
 			}
-			m_gizmoPosUnaligned /= (float)editorState.selectedEntities->size();
-			m_prevGizmoPos = m_gizmoPosUnaligned;
+			m_initialGizmoPos /= (float)editorState.selectedEntities->size();
+			m_gizmoPos = m_initialGizmoPos;
 		}
 		
 		m_drawTranslationGizmo = true;
-		m_translationGizmo.Update(m_gizmoPosUnaligned, RenderSettings::instance->cameraPosition,
+		m_translationGizmo.Update(m_gizmoPos, RenderSettings::instance->cameraPosition,
 		                          RenderSettings::instance->viewProjection, editorState.viewRay);
 		
-		if (glm::distance2(m_gizmoPosUnaligned, m_prevGizmoPos) > 1E-6f)
+		m_gizmoDragDist = m_gizmoPos - m_initialGizmoPos;
+		if (m_translationGizmo.CurrentAxis() != -1)
 		{
-			const glm::vec3 gizmoPosAligned = SnapToGrid(m_gizmoPosUnaligned);
-			const glm::vec3 dragDelta = gizmoPosAligned - m_prevGizmoPos;
-			if (glm::length2(dragDelta) > 1E-6f)
+			if (!eg::InputState::Current().IsAltDown() && !eg::InputState::Current().IsCtrlDown())
 			{
-				MaybeClone();
-				for (const std::weak_ptr<Ent>& selectedEntity : *editorState.selectedEntities)
+				float gridSnap = SMALL_GRID_SNAP;
+				if (m_dragEntities.size() == 1)
 				{
-					if (std::shared_ptr<Ent> selectedEntitySP = selectedEntity.lock())
+					std::shared_ptr<Ent> dragEntity = m_dragEntities[0].entity.lock();
+					if (dragEntity != nullptr)
 					{
-						selectedEntitySP->EditorMoved(selectedEntitySP->GetPosition() + dragDelta, {});
-						EntityMoved(*selectedEntitySP);
+						gridSnap = dragEntity->GetEditorGridAlignment()[m_translationGizmo.CurrentAxis()];
 					}
 				}
-				m_prevGizmoPos = gizmoPosAligned;
+				m_gizmoDragDist = SnapToGrid(m_gizmoDragDist, gridSnap);
+			}
+			if (glm::length2(m_gizmoDragDist) > 1E-6f)
+			{
+				MaybeClone();
+			}
+			for (DraggingEntity& entity : m_dragEntities)
+			{
+				if (std::shared_ptr<Ent> selectedEntitySP = entity.entity.lock())
+				{
+					glm::vec3 newPos = entity.initialPosition + m_gizmoDragDist;
+					if (eg::InputState::Current().IsAltDown())
+					{
+						newPos[m_translationGizmo.CurrentAxis()] =
+							SnapToGrid(newPos[m_translationGizmo.CurrentAxis()], BIG_GRID_SNAP);
+					}
+					if (glm::distance2(newPos, entity.lastPositionSet) > 1E-6f)
+					{
+						selectedEntitySP->EditorMoved(newPos, {});
+						editorState.EntityMoved(*selectedEntitySP);
+						entity.lastPositionSet = newPos;
+					}
+				}
 			}
 		}
 		
@@ -195,6 +208,11 @@ void EntityEditorComponent::RenderSettings(const EditorState& editorState)
 						editorState.world->entManager.RemoveEntity(*lightStrip);
 					}
 				}
+				ImGui::SameLine();
+				if (ImGui::Button("Generate"))
+				{
+					ActivationLightStripEnt::GenerateForActivator(*editorState.world, *entity);
+				}
 				if (disabled)
 					ImGui::PopStyleVar();
 			}
@@ -214,7 +232,7 @@ bool EntityEditorComponent::CollectIcons(const EditorState& editorState, std::ve
 		{
 			selected->push_back(move(entityWP));
 		});
-		icon.iconIndex = entTypeMap.at(entity.TypeID()).editorIconIndex;
+		icon.iconIndex = entity.GetEditorIconIndex();
 		icon.selected = editorState.IsEntitySelected(entity);
 	});
 	
@@ -226,5 +244,27 @@ void EntityEditorComponent::LateDraw() const
 	if (m_drawTranslationGizmo)
 	{
 		m_translationGizmo.Draw(RenderSettings::instance->viewProjection);
+	}
+}
+
+void EntityEditorComponent::EarlyDraw(PrimitiveRenderer& primitiveRenderer) const
+{
+	if (m_translationGizmo.HasInputFocus())
+	{
+		glm::vec3 dragDist;
+		if (m_dragEntities.size() == 1)
+		{
+			dragDist = m_dragEntities[0].lastPositionSet - m_dragEntities[0].initialPosition;
+		}
+		else
+		{
+			dragDist = m_gizmoDragDist;
+		}
+		
+		char stringBuffer[128];
+		snprintf(stringBuffer, sizeof(stringBuffer), "Translating (%.2f, %.2f, %.2f)",
+		         dragDist.x, dragDist.y, dragDist.z);
+		eg::SpriteBatch::overlay.DrawText(*style::UIFont, stringBuffer, glm::vec2(10), eg::ColorLin(1, 1, 1, 0.5f),
+		                                  0.5f, nullptr, eg::TextFlags::DropShadow);
 	}
 }

@@ -14,7 +14,7 @@ constexpr float DOUBLE_CLICK_TIMEOUT = 0.2f;
 
 bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorState)
 {
-	WallRayIntersectResult pickResult;// = editorState.world->RayIntersectWall(editorState.viewRay);
+	WallRayIntersectResult pickResult;
 	bool hasPickResult = false;
 	auto DoWallRayIntersect = [&] ()
 	{
@@ -117,14 +117,17 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 						{
 							const int stepDim = (selDim + 1 + s / 2) % 3;
 							const Dir stepDir = (Dir)(stepDim * 2 + s % 2);
+							
 							if (!allAir)
 							{
-								editorState.world->SetMaterialSafe(pos, stepDir, material);
+								int materialHere = editorState.world->GetMaterialIfVisible(pos + texSourceOffset, stepDir).value_or(material);
+								editorState.world->SetMaterialSafe(pos, stepDir, materialHere);
 							}
 							else
 							{
 								const glm::ivec3 npos = pos + DirectionVector(stepDir);
-								editorState.world->SetMaterialSafe(npos, stepDir, material);
+								int materialHere = editorState.world->GetMaterialIfVisible(npos - texDestOffset, stepDir).value_or(material);
+								editorState.world->SetMaterialSafe(npos, stepDir, materialHere);
 							}
 						}
 					}, selDimOffsetMin, selDimOffsetMax);
@@ -134,9 +137,27 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 						UpdateIsAir();
 					}
 					
+					glm::ivec3 selDelta(0, 0, 0);
+					selDelta[selDim] = newDragDist - m_dragDistance;
+					
+					editorState.world->entManager.ForEachWithFlag(EntTypeFlags::EditorWallMove, [&] (Ent& entity)
+					{
+						if (entity.GetFacingDirection() == m_selectionNormal)
+						{
+							glm::ivec3 wallPos = glm::floor(
+								entity.GetPosition() - glm::vec3(DirectionVector(entity.GetFacingDirection())) * 0.1f
+							);
+							if (eg::Contains(m_finishedSelection, wallPos))
+							{
+								entity.EditorMoved(entity.GetPosition() + glm::vec3(selDelta), m_selectionNormal);
+								editorState.EntityMoved(entity);
+							}
+						}
+					});
+					
 					for (glm::ivec3& selected : m_finishedSelection)
 					{
-						selected[selDim] += newDragDist - m_dragDistance;
+						selected += selDelta;
 					}
 					
 					m_dragDir = newDragDist > m_dragDistance ? 1 : -1;
@@ -207,7 +228,14 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 				DoWallRayIntersect();
 				if (pickResult.intersected)
 				{
-					FillSelection(*editorState.world, pickResult.voxelPosition, pickResult.normalDir);
+					std::optional<int> requiredMaterial;
+					if (eg::InputState::Current().IsAltDown())
+					{
+						requiredMaterial = editorState.world->GetMaterial(
+							pickResult.voxelPosition + DirectionVector(pickResult.normalDir), pickResult.normalDir);
+					}
+					
+					FillSelection(*editorState.world, pickResult.voxelPosition, pickResult.normalDir, requiredMaterial);
 					if (!m_finishedSelection.empty())
 					{
 						m_selectionNormal = pickResult.normalDir;
@@ -224,9 +252,15 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 	return false;
 }
 
-void WallDragEditorComponent::FillSelection(const World& world, const glm::ivec3& pos, Dir normalDir)
+void WallDragEditorComponent::FillSelection(const World& world, const glm::ivec3& pos, Dir normalDir,
+	std::optional<int> requiredMaterial)
 {
 	if (!world.IsAir(pos + DirectionVector(normalDir)) || world.IsAir(pos) || eg::Contains(m_finishedSelection, pos))
+	{
+		return;
+	}
+	
+	if (requiredMaterial.has_value() && world.GetMaterial(pos + DirectionVector(normalDir), normalDir) != *requiredMaterial)
 	{
 		return;
 	}
@@ -241,7 +275,7 @@ void WallDragEditorComponent::FillSelection(const World& world, const glm::ivec3
 		glm::ivec3 neighbor = pos;
 		neighbor[d1] += toNeighbor.x;
 		neighbor[d2] += toNeighbor.y;
-		FillSelection(world, neighbor, normalDir);
+		FillSelection(world, neighbor, normalDir, requiredMaterial);
 	}
 }
 

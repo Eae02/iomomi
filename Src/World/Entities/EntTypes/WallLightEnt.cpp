@@ -8,6 +8,12 @@
 static constexpr float LIGHT_DIST = 0.5f;
 static constexpr float MODEL_SCALE = 0.25f;
 
+WallLightEnt::WallLightEnt()
+{
+	m_color = eg::ColorSRGB::FromHex(0xD1F8FE);
+	m_intensity = 15;
+}
+
 void WallLightEnt::RenderSettings()
 {
 	Ent::RenderSettings();
@@ -110,4 +116,9 @@ void WallLightEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> 
 	{
 		m_forwardDir = *faceDirection;
 	}
+}
+
+int WallLightEnt::GetEditorIconIndex() const
+{
+	return 3;
 }

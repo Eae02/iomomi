@@ -59,7 +59,7 @@ MainMenuGameState::MainMenuGameState()
 	}
 	else
 	{
-		backgroundLevel = &levels[time(nullptr) % m_numMainLevels];
+		backgroundLevel = &levels[m_levelIds[time(nullptr) % m_numMainLevels]];
 	}
 	
 	m_mainWidgetList.AddWidget(Button("Continue", [&] { ContinueClicked(); }));

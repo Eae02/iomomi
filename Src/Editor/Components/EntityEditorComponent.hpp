@@ -9,18 +9,32 @@ public:
 	
 	void RenderSettings(const EditorState& editorState) override;
 	
+	void EarlyDraw(struct PrimitiveRenderer& primitiveRenderer) const override;
+	
 	void LateDraw() const override;
 	
 	bool CollectIcons(const EditorState& editorState, std::vector<EditorIcon>& icons) override;
 	
 private:
-	glm::vec3 m_gizmoPosUnaligned;
-	glm::vec3 m_prevGizmoPos;
+	glm::ivec2 m_mouseDownPos;
+	
+	struct DraggingEntity
+	{
+		std::weak_ptr<Ent> entity;
+		glm::vec3 initialPosition;
+		glm::vec3 lastPositionSet;
+		
+		DraggingEntity(std::weak_ptr<Ent> _entity, const glm::vec3& position)
+			: entity(std::move(_entity)), initialPosition(position), lastPositionSet(position) { }
+	};
+	std::vector<DraggingEntity> m_dragEntities;
+	
+	glm::vec3 m_gizmoPos;
+	glm::vec3 m_initialGizmoPos;
+	glm::vec3 m_gizmoDragDist;
 	eg::TranslationGizmo m_translationGizmo;
 	bool m_drawTranslationGizmo = false;
 	bool m_entitiesCloned = false;
-	
-	glm::vec2 m_mouseDownPos;
 	
 	bool m_isDraggingWallEntity = false;
 };

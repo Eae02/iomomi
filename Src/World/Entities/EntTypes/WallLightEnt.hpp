@@ -7,15 +7,16 @@
 class WallLightEnt : public Ent
 {
 public:
-	WallLightEnt() = default;
+	WallLightEnt();
 	
 	static constexpr EntTypeID TypeID = EntTypeID::WallLight;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::EditorWallMove;
-	static constexpr int EditorIconIndex = 3;
 	
 	void Serialize(std::ostream& stream) const override;
 	
 	void Deserialize(std::istream& stream) override;
+	
+	int GetEditorIconIndex() const override;
 	
 	void RenderSettings() override;
 	

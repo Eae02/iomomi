@@ -55,3 +55,13 @@ std::shared_ptr<Ent> Ent::Clone() const
 		activatable->GiveNewName();
 	return clone;
 }
+
+glm::vec3 Ent::GetEditorGridAlignment() const
+{
+	return glm::vec3(0.1f);
+}
+
+int Ent::GetEditorIconIndex() const
+{
+	return 5;
+}

@@ -25,7 +25,9 @@ bool AAQuadDragEditorComponent::UpdateInput(float dt, const EditorState& editorS
 			entity->GetPosition()[dragDim] + quadComp.radius[draggingBitangent] * 0.5f,
 			entity->GetPosition()[dragDim] - quadComp.radius[draggingBitangent] * 0.5f
 		};
-		edges[draggingNegative] = SnapToGrid(intersectPos[dragDim]);
+		
+		const float gridSnap = eg::InputState::Current().IsAltDown() ? BIG_GRID_SNAP : SMALL_GRID_SNAP;
+		edges[draggingNegative] = SnapToGrid(intersectPos[dragDim], gridSnap);
 		
 		glm::vec3 newPos = entity->GetPosition();
 		newPos[dragDim] = (edges[0] + edges[1]) / 2.0f;

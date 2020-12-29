@@ -24,6 +24,8 @@ struct EditorState
 	void InvalidateWater() const;
 	
 	bool IsEntitySelected(const Ent& entity) const;
+	
+	void EntityMoved(Ent& entity) const;
 };
 
 class EditorIcon
@@ -42,12 +44,33 @@ public:
 	
 	void ApplyDepthBias(float bias) { m_depth -= bias; }
 	
+	void InvokeCallback() const { m_callback(); }
+	
 private:
 	eg::Rectangle m_rectangle;
 	float m_depth;
 	bool m_behindScreen;
 	std::function<void()> m_callback;
 };
+
+constexpr float SMALL_GRID_SNAP = 0.1f;
+constexpr float BIG_GRID_SNAP = 0.5f;
+
+template <typename T>
+static T SnapToGrid(const T& pos, float step)
+{
+	return glm::round(pos / step) * step;
+}
+
+template <typename T>
+static T SnapToGrid(const T& pos)
+{
+	if (eg::InputState::Current().IsAltDown())
+		return SnapToGrid(pos, BIG_GRID_SNAP);
+	else if (!eg::InputState::Current().IsCtrlDown())
+		return SnapToGrid(pos, SMALL_GRID_SNAP);
+	return pos;
+}
 
 class EditorComponent
 {
@@ -60,11 +83,4 @@ public:
 	virtual void LateDraw() const { }
 	virtual void RenderSettings(const EditorState& editorState) { }
 	virtual bool CollectIcons(const EditorState& editorState, std::vector<EditorIcon>& icons) { return false; }
-	
-	template <typename T>
-	static T SnapToGrid(const T& pos)
-	{
-		const float STEP = eg::IsButtonDown(eg::Button::LeftAlt) ? 0.5f : 0.1f;
-		return glm::round(pos / STEP) * STEP;
-	}
 };

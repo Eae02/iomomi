@@ -299,7 +299,7 @@ void Editor::RunFrame(float dt)
 	
 	if (canUpdateInput && eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft))
 	{
-		bool shouldClearSelected = !eg::IsButtonDown(eg::Button::LeftControl) && !eg::IsButtonDown(eg::Button::RightControl);
+		bool shouldClearSelected = !eg::InputState::Current().IsCtrlDown();
 		
 		if (m_hoveredIcon != -1)
 		{

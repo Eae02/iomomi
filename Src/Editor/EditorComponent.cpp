@@ -1,6 +1,8 @@
 #include "EditorComponent.hpp"
 #include "../Graphics/RenderSettings.hpp"
 #include "../World/Entities/Components/LiquidPlaneComp.hpp"
+#include "../World/Entities/Components/ActivatableComp.hpp"
+#include "../World/Entities/Components/ActivatorComp.hpp"
 
 #include <magic_enum.hpp>
 
@@ -29,6 +31,23 @@ bool EditorState::IsEntitySelected(const Ent& entity) const
 			return true;
 	}
 	return false;
+}
+
+void EditorState::EntityMoved(Ent& entity) const
+{
+	if (ActivatableComp* activatable = entity.GetComponentMut<ActivatableComp>())
+	{
+		world->entManager.ForEach([&](Ent& activatorEntity)
+		{
+			ActivatorComp* activator = activatorEntity.GetComponentMut<ActivatorComp>();
+			if (activator && activator->activatableName == activatable->m_name)
+			{
+				ActivationLightStripEnt::GenerateForActivator(*world, activatorEntity);
+			}
+		});
+	}
+	
+	ActivationLightStripEnt::GenerateForActivator(*world, entity);
 }
 
 void EditorState::InvalidateWater() const

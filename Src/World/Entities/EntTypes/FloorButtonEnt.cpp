@@ -153,7 +153,7 @@ void FloorButtonEnt::Update(const WorldUpdateArgs& args)
 		m_lightColor = std::max(m_lightColor - args.dt / LIGHT_ANIMATION_TIME, 0.0f);
 	}
 	
-	m_padPhysicsObject.move += GetRotationMatrix(m_direction) * glm::vec3(0, args.dt * 0.5f, 0);
+	m_padPhysicsObject.move += GetRotationMatrix(m_direction) * glm::vec3(0, args.dt * 0.2f, 0);
 	
 	m_activator.Update(args);
 }
@@ -221,4 +221,9 @@ void FloorButtonEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir
 	{
 		m_direction = *faceDirection;
 	}
+}
+
+int FloorButtonEnt::GetEditorIconIndex() const
+{
+	return 15;
 }

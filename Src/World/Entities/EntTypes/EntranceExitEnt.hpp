@@ -25,6 +25,8 @@ public:
 	void Serialize(std::ostream& stream) const override;
 	void Deserialize(std::istream& stream) override;
 	
+	int GetEditorIconIndex() const override;
+	
 	void RenderSettings() override;
 	
 	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;

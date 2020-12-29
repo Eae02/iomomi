@@ -320,6 +320,16 @@ int World::GetMaterial(const glm::ivec3& pos, Dir side) const
 	return voxelIt->second.materials[(int)side];
 }
 
+std::optional<int> World::GetMaterialIfVisible(const glm::ivec3& pos, Dir side) const
+{
+	if (!IsAir(pos) || IsAir(pos - DirectionVector(side)))
+		return {};
+	auto voxelIt = m_voxels.find(pos);
+	if (voxelIt == m_voxels.end())
+		return {};
+	return voxelIt->second.materials[(int)side];
+}
+
 glm::mat3 GravityCorner::MakeRotationMatrix() const
 {
 	const glm::vec3 r1 = -DirectionVector(down1);
@@ -611,10 +621,15 @@ void World::BuildBorderMesh(std::vector<WallBorderVertex>* borderVertices, std::
 				for (int v = 0; v < 2; v++)
 				{
 					const glm::ivec3 vSV = vV * (v * 2 - 1);
-					const bool uAir = IsAir(voxel.first + uSV);
-					const bool vAir = IsAir(voxel.first + vSV);
-					const bool diagAir = IsAir(voxel.first + uSV + vSV);
-					if (diagAir || uAir != vAir)
+					auto CouldHaveGravityCorner = [&] (const glm::ivec3& pos)
+					{
+						const bool uAir = IsAir(pos + uSV);
+						const bool vAir = IsAir(pos + vSV);
+						const bool diagAir = IsAir(pos + uSV + vSV);
+						return !(diagAir || uAir != vAir);
+					};
+					
+					if (!CouldHaveGravityCorner(voxel.first))
 						continue;
 					
 					if (borderVertices != nullptr)
@@ -642,7 +657,10 @@ void World::BuildBorderMesh(std::vector<WallBorderVertex>* borderVertices, std::
 						{
 							glm::ivec3 nextGlobalPos = voxel.first + dlV * (((s + u + v) % 2) * 2 - 1);
 							auto nextVoxelIt = m_voxels.find(nextGlobalPos);
-							corner.isEnd[s] = nextVoxelIt == m_voxels.end() || !nextVoxelIt->second.hasGravityCorner[gBit];
+							corner.isEnd[s] =
+								!CouldHaveGravityCorner(nextGlobalPos) ||
+								nextVoxelIt == m_voxels.end() ||
+								!nextVoxelIt->second.hasGravityCorner[gBit];
 						}
 					}
 				}

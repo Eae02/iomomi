@@ -19,6 +19,8 @@ public:
 	glm::vec3 GetPosition() const override { return m_ringPhysicsObject.position; }
 	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
+	int GetEditorIconIndex() const override;
+	
 	void CommonDraw(const EntDrawArgs& args) override;
 	
 	void Serialize(std::ostream& stream) const override;

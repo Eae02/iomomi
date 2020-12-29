@@ -438,11 +438,13 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 		m_onGround = false;
 		m_physicsObject.shape = eg::AABB(-m_radius, m_radius);
 		m_physicsObject.move = moveY;
+		m_physicsObject.slideDim = glm::abs(up);
 		physicsEngine.ApplyMovement(m_physicsObject, dt, [&] (const PhysicsObject&, const glm::vec3& correction)
 		{
 			if (glm::dot(correction, up) > 0)
 				m_onGround = true;
 		});
+		m_physicsObject.slideDim = glm::vec3(1);
 		
 		if (glm::length2(launchVelocity) > 0.001f)
 		{

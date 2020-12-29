@@ -96,3 +96,8 @@ void CubeSpawnerEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir
 	if (faceDirection)
 		m_direction = *faceDirection;
 }
+
+int CubeSpawnerEnt::GetEditorIconIndex() const
+{
+	return 12;
+}

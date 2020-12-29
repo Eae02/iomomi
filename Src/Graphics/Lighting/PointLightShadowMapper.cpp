@@ -263,11 +263,19 @@ void PointLightShadowMapper::UpdateShadowMaps(const RenderCallback& prepareCallb
 	}
 	
 	int remUpdateCount = MAX_UPDATES_PER_FRAME[(int)m_qualityLevel];
-	for (size_t i = m_dynamicLightUpdatePos; i < m_dynamicLightUpdatePos + m_lights.size() && remUpdateCount >= 0; i++)
+	std::optional<size_t> nextDynamicLightUpdatePos;
+	for (size_t i = m_dynamicLightUpdatePos; i < m_dynamicLightUpdatePos + m_lights.size(); i++)
 	{
 		LightEntry& entry = m_lights[i % m_lights.size()];
 		if (!entry.light->enabled || !entry.light->castsShadows || !viewFrustum.Intersects(entry.light->GetSphere()))
 			continue;
+		
+		if (remUpdateCount <= 0 && !entry.light->highPriority)
+		{
+			if (!nextDynamicLightUpdatePos.has_value())
+				nextDynamicLightUpdatePos = i % m_lights.size();
+			continue;
+		}
 		
 		bool updateAll = entry.HasMoved();
 		if (entry.dynamicShadowMap == -1)
@@ -293,7 +301,8 @@ void PointLightShadowMapper::UpdateShadowMaps(const RenderCallback& prepareCallb
 		entry.previousRange = entry.light->Range();
 	}
 	
-	m_dynamicLightUpdatePos %= m_lights.size();
+	if (nextDynamicLightUpdatePos.has_value())
+		m_dynamicLightUpdatePos = *nextDynamicLightUpdatePos;
 	
 	eg::DC.DebugLabelEnd();
 	

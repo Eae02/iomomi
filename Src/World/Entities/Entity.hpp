@@ -52,14 +52,14 @@ public:
 	Ent& operator=(Ent&& other) = delete;
 	Ent& operator=(const Ent& other) = default;
 	
-	static constexpr int EditorIconIndex = 5;
-	
 	virtual void Serialize(std::ostream& stream) const = 0;
 	virtual void Deserialize(std::istream& stream) = 0;
 	
 	virtual void RenderSettings();
 	
 	virtual void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) { }
+	virtual glm::vec3 GetEditorGridAlignment() const;
+	virtual int GetEditorIconIndex() const;
 	virtual glm::vec3 GetPosition() const = 0;
 	virtual Dir GetFacingDirection() const { return Dir::PosY; }
 	
@@ -163,7 +163,6 @@ struct EntType
 	EntTypeFlags flags;
 	std::string name;
 	std::string prettyName;
-	int editorIconIndex;
 	std::shared_ptr<Ent> (*create)();
 	std::shared_ptr<Ent> (*clone)(const Ent& ent);
 };

@@ -174,6 +174,9 @@ EntranceExitEnt::EntranceExitEnt()
 		auto& font = eg::GetAsset<eg::SpriteFont>("GameFont.ttf");
 		spriteBatch.DrawText(font, "", glm::vec2(10, 10), ScreenTextColor);
 	};
+	
+	m_pointLight->highPriority = true;
+	m_fanPointLight->highPriority = true;
 }
 
 const Dir UP_VECTORS[] =
@@ -211,21 +214,12 @@ static float* fanLightZOffset = eg::TweakVarFloat("entfan_lz", 1.1f);
 
 void EntranceExitEnt::Update(const WorldUpdateArgs& args)
 {
-	m_pointLight->position = GetTransform() * glm::vec4(pointLightPos, 1.0f);
-	m_pointLight->enabled = m_isPlayerInside;
-	
-	glm::vec3 fanLightPos(fanRotationCenter.x, fanRotationCenter.y + *fanLightYOffset, fanRotationCenter.z + *fanLightZOffset);
-	m_fanPointLight->position = GetTransform() * glm::vec4(fanLightPos, 1.0f);
-	m_fanPointLight->enabled = m_isPlayerInside && settings.shadowQuality >= QualityLevel::Medium;
-	if (args.plShadowMapper && m_fanPointLight->enabled)
-	{
-		glm::vec3 invalidatePos(GetTransform() * glm::vec4(fanRotationCenter, 1));
-		args.plShadowMapper->Invalidate(eg::Sphere(invalidatePos, 0.1f), m_fanPointLight.get());
-	}
-	
-	m_fanRotation += args.dt * *fanSpeed;
 	if (args.mode != WorldMode::Game)
+	{
+		m_pointLight->enabled = false;
+		m_fanPointLight->enabled = false;
 		return;
+	}
 	
 	Dir direction = OppositeDir(m_direction);
 	
@@ -266,6 +260,20 @@ void EntranceExitEnt::Update(const WorldUpdateArgs& args)
 	glm::vec3 towardsAABBEnd = glm::vec3(DirectionVector(direction)) * MESH_LENGTH * 2.0f;
 	eg::AABB targetAABB(m_position - diag, m_position + towardsAABBEnd + diag);
 	m_isPlayerInside = targetAABB.Intersects(args.player->GetAABB()) || m_doorOpenProgress != 0;
+	
+	m_pointLight->position = GetTransform() * glm::vec4(pointLightPos, 1.0f);
+	m_pointLight->enabled = m_isPlayerInside;
+	
+	glm::vec3 fanLightPos(fanRotationCenter.x, fanRotationCenter.y + *fanLightYOffset, fanRotationCenter.z + *fanLightZOffset);
+	m_fanPointLight->position = GetTransform() * glm::vec4(fanLightPos, 1.0f);
+	m_fanPointLight->enabled = m_isPlayerInside && settings.shadowQuality >= QualityLevel::Medium;
+	if (args.plShadowMapper && m_fanPointLight->enabled)
+	{
+		glm::vec3 invalidatePos(GetTransform() * glm::vec4(fanRotationCenter, 1));
+		args.plShadowMapper->Invalidate(eg::Sphere(invalidatePos, 0.1f), m_fanPointLight.get());
+	}
+	
+	m_fanRotation += args.dt * *fanSpeed;
 	
 	m_shouldSwitchEntrance =
 		m_isPlayerInside && m_doorHasOpened && m_doorOpenProgress == 0 &&
@@ -460,6 +468,11 @@ void EntranceExitEnt::CollectPointLights(std::vector<std::shared_ptr<PointLight>
 {
 	lights.push_back(m_pointLight);
 	lights.push_back(m_fanPointLight);
+}
+
+int EntranceExitEnt::GetEditorIconIndex() const
+{
+	return 13 + (int)m_type;
 }
 
 template <>

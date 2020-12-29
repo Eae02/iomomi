@@ -29,6 +29,8 @@ public:
 	
 	glm::vec3 GetPosition() const override;
 	
+	glm::vec3 GetEditorGridAlignment() const override;
+	
 	bool NeedsBlurredTextures() const;
 	
 private:

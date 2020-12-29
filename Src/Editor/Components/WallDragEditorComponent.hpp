@@ -17,7 +17,7 @@ private:
 	template <typename CallbackTp>
 	void IterateSelection(CallbackTp callback, int minOffsetSelDir, int maxOffsetSelDir);
 	
-	void FillSelection(const World& world, const glm::ivec3& pos, Dir normalDir);
+	void FillSelection(const World& world, const glm::ivec3& pos, Dir normalDir, std::optional<int> requiredMaterial);
 	
 	enum class SelState
 	{

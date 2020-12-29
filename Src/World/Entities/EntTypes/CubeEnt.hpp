@@ -14,7 +14,6 @@ public:
 	static constexpr EntTypeID TypeID = EntTypeID::Cube;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
 		EntTypeFlags::ShadowDrawableD | EntTypeFlags::Interactable | EntTypeFlags::HasPhysics;
-	static constexpr int EditorIconIndex = 4;
 	
 	CubeEnt() : CubeEnt(glm::vec3(0.0f), false) { }
 	CubeEnt(const glm::vec3& position, bool canFloat);
@@ -22,6 +21,8 @@ public:
 	glm::vec3 GetPosition() const override { return m_physicsObject.position; }
 	
 	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	
+	int GetEditorIconIndex() const override;
 	
 	void Serialize(std::ostream& stream) const override;
 	
@@ -67,6 +68,7 @@ private:
 	PhysicsObject m_physicsObject;
 	GravityBarrierInteractableComp m_barrierInteractableComp;
 	
+	bool m_collisionWithPlayerDisabled = false;
 	bool m_showChangeGravityControlHint = false;
 	bool m_isPickedUp = false;
 	Dir m_currentDown = Dir::NegY;

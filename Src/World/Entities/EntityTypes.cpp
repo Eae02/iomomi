@@ -41,7 +41,6 @@ void DefineEntityType(std::string name, std::string prettyName)
 		T::EntFlags,
 		std::move(name),
 		std::move(prettyName),
-		T::EditorIconIndex,
 		&Ent::CreateCallback<T>,
 		&CloneEntity<T>
 	}).second;

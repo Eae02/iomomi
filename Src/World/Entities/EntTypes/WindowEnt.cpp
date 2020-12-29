@@ -207,3 +207,10 @@ glm::vec3 WindowEnt::GetPosition() const
 {
 	return m_physicsObject.position;
 }
+
+glm::vec3 WindowEnt::GetEditorGridAlignment() const
+{
+	glm::vec3 alignment(0.1f);
+	alignment[m_aaQuad.upPlane] = 0.05f;
+	return alignment;
+}
