@@ -39,6 +39,7 @@ CubeEnt::CubeEnt(const glm::vec3& position, bool _canFloat)
 	: canFloat(_canFloat)
 {
 	m_physicsObject.position = position;
+	m_physicsObject.displayPosition = position;
 	m_physicsObject.mass = *cubeMass;
 	m_physicsObject.shape = eg::AABB(-glm::vec3(RADIUS), glm::vec3(RADIUS));
 	m_physicsObject.owner = this;
