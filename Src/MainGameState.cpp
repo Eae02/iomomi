@@ -48,6 +48,8 @@ MainGameState::MainGameState()
 	
 	m_playerWaterAABB = std::make_shared<WaterSimulator::QueryAABB>();
 	GameRenderer::instance->m_waterSimulator.AddQueryAABB(m_playerWaterAABB);
+	
+	m_crosshairTexture = &eg::GetAsset<eg::Texture>("Textures/Crosshair.png");
 }
 
 void MainGameState::SetWorld(std::unique_ptr<World> newWorld, int64_t levelIndex, const EntranceExitEnt* exitEntity)
@@ -201,6 +203,8 @@ void MainGameState::RunFrame(float dt)
 	}
 }
 
+static int* drawCrosshair = eg::TweakVarInt("draw_ch", 1, 0, 1);
+
 void MainGameState::UpdateAndDrawHud(float dt)
 {
 	float controlHintTargetAlpha = 0;
@@ -269,12 +273,20 @@ void MainGameState::UpdateAndDrawHud(float dt)
 	}
 	
 	//Draws the crosshair
-	const float CROSSHAIR_SIZE = 32;
-	const float CROSSHAIR_OPACITY = 0.75f;
-	eg::SpriteBatch::overlay.Draw(
-		eg::GetAsset<eg::Texture>("Textures/Crosshair.png"),
-	    eg::Rectangle::CreateCentered(eg::CurrentResolutionX() / 2.0f, eg::CurrentResolutionY() / 2.0f, CROSSHAIR_SIZE, CROSSHAIR_SIZE),
-	    eg::ColorLin(eg::Color::White.ScaleAlpha(CROSSHAIR_OPACITY)), eg::SpriteFlags::None);
+	if (*drawCrosshair)
+	{
+		const float crosshairSize = std::round(eg::CurrentResolutionX() / 40.0f);
+		const eg::Rectangle chRect = eg::Rectangle::CreateCentered(
+			eg::CurrentResolutionX() / 2,
+			eg::CurrentResolutionY() / 2,
+			crosshairSize, crosshairSize
+		);
+		
+		constexpr float CROSSHAIR_OPACITY = 0.75f;
+		const float opacity = CROSSHAIR_OPACITY * (1 - m_pausedMenu.fade);
+		
+		eg::SpriteBatch::overlay.Draw(*m_crosshairTexture, chRect, eg::ColorLin(1, 1, 1, opacity));
+	}
 }
 
 int* debugOverlay = eg::TweakVarInt("dbg_overlay", 1);

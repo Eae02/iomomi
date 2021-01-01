@@ -16,7 +16,7 @@ static float* swimAccelTime     = eg::TweakVarFloat("pl_swim_atime",        0.4f
 static float* walkDeaccelTime   = eg::TweakVarFloat("pl_walk_datime",       0.05f, 0.0f);
 static float* swimDrag          = eg::TweakVarFloat("pl_swim_drag",         5.0f,  0.0f);
 static float* jumpHeight        = eg::TweakVarFloat("pl_jump_height",       1.1f,  0.0f);
-static float* eyeRoundPrecision = eg::TweakVarFloat("pl_eye_round_prec",  0.005f, 0);
+static float* eyeRoundPrecision = eg::TweakVarFloat("pl_eye_round_prec",  0.01f, 0);
 static int* noclipActive        = eg::TweakVarInt("noclip", 0, 0, 1);
 
 static constexpr float EYE_OFFSET = Player::EYE_HEIGHT - Player::HEIGHT / 2;
@@ -516,7 +516,8 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 	
 	//Updates the eye position
 	m_eyePosition = Position() + up * EYE_OFFSET;
-	m_eyePosition = glm::round(m_eyePosition / *eyeRoundPrecision) * *eyeRoundPrecision;
+	int downDim = (int)m_down / 2;
+	m_eyePosition[downDim] = std::round(m_eyePosition[downDim] / *eyeRoundPrecision) * *eyeRoundPrecision;
 	if (m_gravityTransitionMode == TransitionMode::Fall)
 	{
 		m_eyePosition = glm::mix(m_oldEyePosition + Position() - m_oldPosition, m_eyePosition, TransitionInterpol());

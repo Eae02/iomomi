@@ -9,6 +9,7 @@ struct PointLightShadowDrawArgs
 	eg::Frustum frustum;
 	bool renderStatic;
 	bool renderDynamic;
+	const class PointLight* light;
 	
 	void SetPushConstants() const;
 };

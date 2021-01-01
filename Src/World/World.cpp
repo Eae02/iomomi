@@ -3,6 +3,7 @@
 #include "Entities/EntTypes/EntranceExitEnt.hpp"
 #include "Entities/Components/ActivatorComp.hpp"
 #include "Entities/EntTypes/CubeEnt.hpp"
+#include "Entities/EntTypes/CubeSpawnerEnt.hpp"
 #include "Entities/EntTypes/WallLightEnt.hpp"
 #include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
 #include "../Graphics/WallShader.hpp"
@@ -14,6 +15,7 @@ World::World()
 {
 	m_physicsObject.canBePushed = false;
 	m_physicsObject.shape = &m_collisionMesh;
+	m_physicsObject.owner = this;
 	
 	m_voxelVertexBuffer.flags = eg::BufferFlags::VertexBuffer | eg::BufferFlags::CopyDst;
 	m_voxelIndexBuffer.flags = eg::BufferFlags::IndexBuffer | eg::BufferFlags::CopyDst;
@@ -72,6 +74,11 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 		world->entManager.ForEachOfType<EntranceExitEnt>([&] (EntranceExitEnt& ent)
 		{
 			world->m_doors.push_back(ent.GetDoorDescription());
+		});
+		
+		world->entManager.ForEachOfType<CubeSpawnerEnt>([&] (CubeSpawnerEnt& ent)
+		{
+			world->cubeSpawnerPositions2.emplace_back(glm::round(ent.GetPosition() * 2.0f));
 		});
 	}
 	
@@ -527,11 +534,16 @@ eg::CollisionMesh World::BuildMesh(std::vector<WallVertex>& vertices, std::vecto
 			//The center of the face to be emitted
 			const glm::ivec3 faceCenter2 = voxel.first * 2 + 1 - normal;
 			
+			bool shouldDraw = !eg::Contains(cubeSpawnerPositions2, faceCenter2);
+			
 			//Emits indices
-			const uint32_t baseIndex = (uint32_t)vertices.size();
-			static const uint32_t indicesRelative[] = { 0, 1, 2, 2, 1, 3 };
-			for (uint32_t i : indicesRelative)
-				indices.push_back(baseIndex + i);
+			static const uint32_t indicesRelative[] = {0, 1, 2, 2, 1, 3};
+			if (shouldDraw)
+			{
+				const uint32_t baseIndex = (uint32_t)vertices.size();
+				for (uint32_t i : indicesRelative)
+					indices.push_back(baseIndex + i);
+			}
 			
 			uint32_t baseIndexCol = collisionVertices.size();
 			bool hasCollision = true;
@@ -556,25 +568,28 @@ eg::CollisionMesh World::BuildMesh(std::vector<WallVertex>& vertices, std::vecto
 					}
 					const float doorDist255 = (glm::clamp(doorDist, -1.0f, 1.0f) + 1.0f) * 127.0f;
 					
-					WallVertex& vertex = vertices.emplace_back();
-					vertex.position = pos;
-					vertex.misc[WallVertex::M_TexLayer] = texture;
-					vertex.misc[WallVertex::M_DoorDist] = (uint8_t)doorDist255;
-					vertex.misc[WallVertex::M_AO] = 0;
-					vertex.SetNormal(normal);
-					vertex.SetTangent(tangent);
+					if (shouldDraw)
+					{
+						WallVertex& vertex = vertices.emplace_back();
+						vertex.position = pos;
+						vertex.misc[WallVertex::M_TexLayer] = texture;
+						vertex.misc[WallVertex::M_DoorDist] = (uint8_t)doorDist255;
+						vertex.misc[WallVertex::M_AO] = 0;
+						vertex.SetNormal(normal);
+						vertex.SetTangent(tangent);
+						
+						if (!IsAir(voxel.first + tDir))
+							vertex.misc[WallVertex::M_AO] |= fy + 1;
+						if (!IsAir(voxel.first + bDir))
+							vertex.misc[WallVertex::M_AO] |= (fx + 1) << 2;
+						if (!IsAir(voxel.first + diagDir) && vertex.misc[WallVertex::M_AO] == 0)
+							vertex.misc[WallVertex::M_AO] = 1 << (fx + 2 * fy);
+					}
 					
 					if (doorDist < 0.0f)
 						hasCollision = false;
 					if (hasCollision)
 						collisionVertices.push_back(pos);
-					
-					if (!IsAir(voxel.first + tDir))
-						vertex.misc[WallVertex::M_AO] |= fy + 1;
-					if (!IsAir(voxel.first + bDir))
-						vertex.misc[WallVertex::M_AO] |= (fx + 1) << 2;
-					if (!IsAir(voxel.first + diagDir) && vertex.misc[WallVertex::M_AO] == 0)
-						vertex.misc[WallVertex::M_AO] = 1 << (fx + 2 * fy);
 				}
 			}
 			

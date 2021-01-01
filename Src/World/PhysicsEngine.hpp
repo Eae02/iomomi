@@ -42,7 +42,7 @@ public:
 	float friction = 0.5f;
 	uint32_t debugColor = 0xde921f;
 	CollisionShape shape;
-	std::variant<std::monostate, struct Player*, struct Ent*> owner;
+	std::variant<std::monostate, struct World*, struct Player*, struct Ent*> owner;
 	uint32_t rayIntersectMask = 0xFF;
 	bool(*shouldCollide)(const PhysicsObject& self, const PhysicsObject& other) = nullptr;
 	glm::vec3(*constrainMove)(const PhysicsObject& self, const glm::vec3& move) = nullptr;

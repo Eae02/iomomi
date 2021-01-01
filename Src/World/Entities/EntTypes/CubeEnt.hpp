@@ -11,6 +11,8 @@
 class CubeEnt : public Ent, public EntInteractable, public EntGravityChargeable
 {
 public:
+	friend class CubeSpawnerEnt;
+	
 	static constexpr EntTypeID TypeID = EntTypeID::Cube;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
 		EntTypeFlags::ShadowDrawableD | EntTypeFlags::Interactable | EntTypeFlags::HasPhysics;
@@ -57,6 +59,7 @@ public:
 		return eg::Sphere(m_physicsObject.position, RADIUS * std::sqrt(3.0f));
 	}
 	
+	bool isSpawning = false;
 	bool canFloat = false;
 	
 private:

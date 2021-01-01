@@ -27,6 +27,8 @@ private:
 	
 	bool ReloadLevel();
 	
+	const eg::Texture* m_crosshairTexture;
+	
 	float m_controlHintAlpha = 0;
 	std::string_view m_controlHintMessage;
 	eg::Button m_controlHintButton;

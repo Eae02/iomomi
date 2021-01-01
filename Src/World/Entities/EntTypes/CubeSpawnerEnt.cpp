@@ -1,9 +1,29 @@
 #include "CubeSpawnerEnt.hpp"
 #include "CubeEnt.hpp"
-#include "../../World.hpp"
-#include "../../WorldUpdateArgs.hpp"
 #include "../../../../Protobuf/Build/CubeSpawnerEntity.pb.h"
+#include "../../../Graphics/Materials/StaticPropMaterial.hpp"
+#include "../../../Graphics/Materials/EmissiveMaterial.hpp"
+#include "../../../Graphics/Lighting/PointLightShadowMapper.hpp"
+
 #include <imgui.h>
+
+static const eg::Model* cubeSpawnerModel;
+static int lightsMaterialIndex;
+static const eg::IMaterial* cubeSpawnerMaterial;
+
+static size_t door1MeshIndex;
+static size_t door2MeshIndex;
+
+static void OnInit()
+{
+	cubeSpawnerModel = &eg::GetAsset<eg::Model>("Models/CubeSpawner.obj");
+	lightsMaterialIndex = cubeSpawnerModel->GetMaterialIndex("Lights");
+	cubeSpawnerMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/CubeSpawner.yaml");
+	door1MeshIndex = cubeSpawnerModel->GetMeshIndex("Door1");
+	door2MeshIndex = cubeSpawnerModel->GetMeshIndex("Door2");
+}
+
+EG_ON_INIT(OnInit)
 
 void CubeSpawnerEnt::RenderSettings()
 {
@@ -15,6 +35,49 @@ void CubeSpawnerEnt::RenderSettings()
 	ImGui::Checkbox("Reset on Activation", &m_activationResets);
 }
 
+static const eg::ColorSRGB emissiveColor = eg::ColorSRGB::FromHex(0xD1F8FE);
+static constexpr float EMISSIVE_STRENGTH = 3.0f;
+
+CubeSpawnerEnt::CubeSpawnerEnt()
+{
+	
+}
+
+void CubeSpawnerEnt::CommonDraw(const EntDrawArgs& args)
+{
+	glm::mat4 transform =
+		glm::translate(glm::mat4(1), m_position) *
+		glm::mat4(GetRotationMatrix(m_direction)) *
+		glm::rotate(glm::mat4(1), eg::HALF_PI, glm::vec3(0, 0, 1)) *
+		glm::scale(glm::mat4(1), glm::vec3(CubeEnt::RADIUS));
+	
+	const eg::ColorLin emissiveLin(emissiveColor);
+	const glm::vec4 emissiveV4 = glm::vec4(emissiveLin.r, emissiveLin.g, emissiveLin.b, emissiveLin.a) * EMISSIVE_STRENGTH;
+	
+	float openProgressSmooth = glm::smoothstep(0.0f, 1.0f, m_doorOpenProgress);
+	
+	for (size_t m = 0; m < cubeSpawnerModel->NumMeshes(); m++)
+	{
+		if (cubeSpawnerModel->GetMesh(m).materialIndex == lightsMaterialIndex)
+		{
+			args.meshBatch->AddModelMesh(*cubeSpawnerModel, m, EmissiveMaterial::instance, EmissiveMaterial::InstanceData { transform, emissiveV4 });
+		}
+		else
+		{
+			glm::mat4 transformHere = transform;
+			if (m == door1MeshIndex)
+				transformHere = glm::translate(transform, glm::vec3(0, 0, -openProgressSmooth));
+			else if (m == door2MeshIndex)
+				transformHere = glm::translate(transform, glm::vec3(0, 0, openProgressSmooth));
+			args.meshBatch->AddModelMesh(*cubeSpawnerModel, m, *cubeSpawnerMaterial, StaticPropMaterial::InstanceData(transformHere));
+		}
+	}
+}
+
+static constexpr float DOOR_OPEN_SPEED = 0.5f;
+static constexpr float DOOR_CLOSE_SPEED = 0.5f;
+static constexpr float SPAWN_DIST_INSIDE = 0.1f;
+
 void CubeSpawnerEnt::Update(const WorldUpdateArgs& args)
 {
 	if (args.mode != WorldMode::Game)
@@ -22,31 +85,74 @@ void CubeSpawnerEnt::Update(const WorldUpdateArgs& args)
 	
 	bool activated = m_activatable.AllSourcesActive();
 	
-	std::shared_ptr<Ent> cube = m_cube.lock();
+	std::shared_ptr<CubeEnt> cube = m_cube.lock();
 	
-	bool spawnNew = false;
-	if (cube == nullptr && (!m_requireActivation || m_activatable.m_enabledConnections == 0))
+	if (m_state == State::Initial)
 	{
-		spawnNew = true;
-	}
-	else if (activated && !m_wasActivated && (!cube || m_activationResets))
-	{
-		if (cube)
+		bool spawnNew = false;
+		if (cube == nullptr && (!m_requireActivation || m_activatable.m_enabledConnections == 0))
 		{
-			args.world->entManager.RemoveEntity(*cube);
-			cube = nullptr;
+			spawnNew = true;
 		}
-		spawnNew = true;
+		else if (activated && !m_wasActivated && (!cube || m_activationResets))
+		{
+			if (cube)
+			{
+				args.world->entManager.RemoveEntity(*cube);
+				cube = nullptr;
+			}
+			spawnNew = true;
+		}
+		if (spawnNew)
+		{
+			glm::vec3 spawnPos = m_position - glm::vec3(DirectionVector(m_direction)) * (CubeEnt::RADIUS + SPAWN_DIST_INSIDE);
+			
+			cube = Ent::Create<CubeEnt>(spawnPos, m_cubeCanFloat);
+			cube->isSpawning = true;
+			m_cube = cube;
+			args.world->entManager.AddEntity(std::move(cube));
+			m_state = State::OpeningDoor;
+		}
 	}
-	
-	if (spawnNew)
+	else if (m_state == State::PushingCube)
 	{
-		glm::vec3 spawnDir(DirectionVector(m_direction));
-		glm::vec3 spawnPos = m_position + spawnDir * (CubeEnt::RADIUS + 0.01f);
-		
-		cube = Ent::Create<CubeEnt>(spawnPos, m_cubeCanFloat);
-		m_cube = cube;
-		args.world->entManager.AddEntity(std::move(cube));
+		if (cube == nullptr)
+		{
+			m_state = State::ClosingDoor;
+		}
+		else
+		{
+			glm::vec3 toCube = cube->GetPosition() - m_position;
+			if (glm::dot(toCube, glm::vec3(DirectionVector(m_direction))) >= CubeEnt::RADIUS + 0.05f)
+			{
+				cube->isSpawning = false;
+				m_state = State::ClosingDoor;
+			}
+			else
+			{
+				constexpr float PUSH_DURATION = 0.5f;
+				constexpr float PUSH_VEL = (CubeEnt::RADIUS * 2 + SPAWN_DIST_INSIDE) / PUSH_DURATION;
+				cube->m_physicsObject.velocity = PUSH_VEL * glm::vec3(DirectionVector(m_direction));
+			}
+		}
+	}
+	else if (m_state == State::OpeningDoor)
+	{
+		m_doorOpenProgress += args.dt / DOOR_OPEN_SPEED;
+		if (m_doorOpenProgress >= 1)
+		{
+			m_doorOpenProgress = 1;
+			m_state = State::PushingCube;
+		}
+	}
+	else if (m_state == State::ClosingDoor)
+	{
+		m_doorOpenProgress -= args.dt / DOOR_CLOSE_SPEED;
+		if (m_doorOpenProgress <= 0)
+		{
+			m_doorOpenProgress = 0;
+			m_state = State::Initial;
+		}
 	}
 	
 	m_wasActivated = activated;

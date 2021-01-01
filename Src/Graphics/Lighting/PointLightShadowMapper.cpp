@@ -198,6 +198,7 @@ void PointLightShadowMapper::UpdateShadowMaps(const RenderCallback& prepareCallb
 			renderArgs.lightMatrix = glm::scale(glm::mat4(1), glm::vec3(1, -1, 1)) * renderArgs.lightMatrix;
 		}
 		
+		renderArgs.light = &light;
 		renderArgs.frustum = eg::Frustum(glm::inverse(renderArgs.lightMatrix));
 		
 		prepareCallback(renderArgs);

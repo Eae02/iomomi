@@ -52,6 +52,8 @@ bool CubeEnt::ShouldCollide(const PhysicsObject& self, const PhysicsObject& othe
 	CubeEnt* cube = (CubeEnt*)std::get<Ent*>(self.owner);
 	if (cube->m_collisionWithPlayerDisabled && std::holds_alternative<Player*>(other.owner))
 		return false;
+	if (cube->isSpawning && std::holds_alternative<World*>(other.owner))
+		return false;
 	return true;
 }
 
@@ -110,7 +112,7 @@ void CubeEnt::Interact(Player& player)
 
 int CubeEnt::CheckInteraction(const Player& player, const class PhysicsEngine& physicsEngine) const
 {
-	if (!player.OnGround() && !player.Underwater())
+	if ((!player.OnGround() && !player.Underwater()) || isSpawning)
 		return 0;
 	
 	//Very high so that dropping the cube has higher priority than other interactions.
@@ -179,6 +181,10 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 	
 	if (inGoo)
 	{
+		if (args.plShadowMapper)
+		{
+			args.plShadowMapper->Invalidate(GetSphere());
+		}
 		args.world->entManager.RemoveEntity(*this);
 		return;
 	}
@@ -218,6 +224,11 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 			m_physicsObject.velocity = { };
 		}
 		
+		m_collisionWithPlayerDisabled = true;
+	}
+	else if (isSpawning)
+	{
+		m_physicsObject.gravity = { };
 		m_collisionWithPlayerDisabled = true;
 	}
 	else
