@@ -31,6 +31,8 @@ public:
 	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
 private:
+	static std::vector<glm::vec3> GetConnectionPoints(const Ent& entity);
+	
 	glm::vec3 m_position;
 	Dir m_direction;
 	

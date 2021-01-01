@@ -1,5 +1,5 @@
-albedo: ../Textures/DefaultA.png
+albedo: ../Textures/CubeSpawnerA.png
 normalMap: ../Textures/DefaultN.png
-miscMap: ../Textures/DefaultM.png
-roughnessMin: 1.0
+miscMap: ../Textures/CubeSpawnerM.png
+roughnessMin: 0.2
 roughnessMax: 1.0

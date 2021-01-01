@@ -43,6 +43,7 @@ assets:
   - name: Textures/ThumbnailNA.png
   - name: Textures/Lock.png
   - name: Textures/LevelCompleted.png
+  - name: Textures/LevelSelect.png
   - name: Textures/NoDraw.png
     mipShift: *MipShift
     srgb: true

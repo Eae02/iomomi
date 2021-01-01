@@ -39,8 +39,23 @@ static const eg::ColorSRGB emissiveColor = eg::ColorSRGB::FromHex(0xD1F8FE);
 static constexpr float EMISSIVE_STRENGTH = 3.0f;
 
 CubeSpawnerEnt::CubeSpawnerEnt()
+	: m_activatable(&CubeSpawnerEnt::GetConnectionPoints)
 {
 	
+}
+
+std::vector<glm::vec3> CubeSpawnerEnt::GetConnectionPoints(const Ent& entity)
+{
+	const CubeSpawnerEnt& spawnerEnt = static_cast<const CubeSpawnerEnt&>(entity);
+	
+	const glm::mat3 rotationScale = CubeEnt::RADIUS * GetRotationMatrix(spawnerEnt.m_direction);
+	
+	std::vector<glm::vec3> points;
+	points.push_back(spawnerEnt.m_position + rotationScale * glm::vec3(1, 0, 0));
+	points.push_back(spawnerEnt.m_position + rotationScale * glm::vec3(-1, 0, 0));
+	points.push_back(spawnerEnt.m_position + rotationScale * glm::vec3(0, 0, 1));
+	points.push_back(spawnerEnt.m_position + rotationScale * glm::vec3(0, 0, -1));
+	return points;
 }
 
 void CubeSpawnerEnt::CommonDraw(const EntDrawArgs& args)
@@ -49,6 +64,7 @@ void CubeSpawnerEnt::CommonDraw(const EntDrawArgs& args)
 		glm::translate(glm::mat4(1), m_position) *
 		glm::mat4(GetRotationMatrix(m_direction)) *
 		glm::rotate(glm::mat4(1), eg::HALF_PI, glm::vec3(0, 0, 1)) *
+		glm::rotate(glm::mat4(1), eg::PI, glm::vec3(1, 0, 0)) *
 		glm::scale(glm::mat4(1), glm::vec3(CubeEnt::RADIUS));
 	
 	const eg::ColorLin emissiveLin(emissiveColor);

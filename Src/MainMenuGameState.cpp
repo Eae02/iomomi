@@ -191,22 +191,29 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 	
 	glm::vec2 flippedCursorPos(eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY());
 	
+	const eg::Texture& thumbnailNaTexture = eg::GetAsset<eg::Texture>("Textures/ThumbnailNA.png");
+	const eg::Texture& lockTexture = eg::GetAsset<eg::Texture>("Textures/Lock.png");
+	const eg::Texture& completedTexture = eg::GetAsset<eg::Texture>("Textures/LevelCompleted.png");
+	const eg::Texture& titleTexture = eg::GetAsset<eg::Texture>("Textures/LevelSelect.png");
+	
 	const float marginX = 0.05f * eg::CurrentResolutionX();
+	
+	const float titleTextureWidth = std::min(eg::CurrentResolutionX() * 0.25f, (float)titleTexture.Width());
+	const float titleTextureHeight = titleTextureWidth * titleTexture.Height() / titleTexture.Width();
+	const eg::Rectangle titleRect(marginX + xOffset, eg::CurrentResolutionY() - 75 - titleTextureHeight, titleTextureWidth, titleTextureHeight);
+	m_spriteBatch.Draw(titleTexture, titleRect, eg::ColorLin(1, 1, 1, 1));
+	
 	const float levelBoxW = glm::clamp(eg::CurrentResolutionX() * 0.1f, 150.0f, (float)LEVEL_THUMBNAIL_RES_X);
 	const float levelBoxH = 0.8f * levelBoxW;
 	const float levelBoxSpacingX = levelBoxW * 0.1f;
 	const float levelBoxSpacingY = levelBoxSpacingX * 2;
 	const float inflatePixelsY = levelBoxH * style::ButtonInflatePercent;
 	
-	const float boxStartY = eg::CurrentResolutionY() - 200;
+	const float boxStartY = eg::CurrentResolutionY() - 100 - titleTextureHeight;
 	const float boxEndY = 100;
 	const float visibleHeight = boxStartY - boxEndY;
 	const int numPerRow = (eg::CurrentResolutionX() - marginX * 2 + levelBoxSpacingX) / (levelBoxW + levelBoxSpacingX);
 	const bool cursorInLevelsArea = eg::Rectangle(marginX, boxEndY, eg::CurrentResolutionX() - marginX * 2, visibleHeight).Contains(flippedCursorPos);
-	
-	const eg::Texture& thumbnailNaTexture = eg::GetAsset<eg::Texture>("Textures/ThumbnailNA.png");
-	const eg::Texture& lockTexture = eg::GetAsset<eg::Texture>("Textures/Lock.png");
-	const eg::Texture& completedTexture = eg::GetAsset<eg::Texture>("Textures/LevelCompleted.png");
 	
 	float totalHeight = 0;
 	
