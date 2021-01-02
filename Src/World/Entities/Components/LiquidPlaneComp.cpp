@@ -47,7 +47,7 @@ void LiquidPlaneComp::MaybeUpdate(const World& world)
 	const_cast<EntityManager&>(world.entManager).ForEachWithComponent<WaterBlockComp>([&] (const Ent& entity)
 	{
 		const auto& waterBlockComp = *entity.GetComponent<WaterBlockComp>();
-		if (waterBlockComp.blockedGravities[(int)Dir::NegY])
+		if (waterBlockComp.blockedGravities[(int)Dir::NegY] && !waterBlockComp.onlyBlockDuringSimulation)
 		{
 			blockedByEntity.insert(blockedByEntity.end(),
 				waterBlockComp.blockedVoxels.begin(), waterBlockComp.blockedVoxels.end());
@@ -89,7 +89,7 @@ void LiquidPlaneComp::MaybeUpdate(const World& world)
 void LiquidPlaneComp::GenerateMesh()
 {
 	std::map<glm::ivec3, uint16_t, Vec3Compare> indexMap;
-	std::vector<glm::vec3> vertices;
+	std::vector<Vertex> vertices;
 	std::vector<uint16_t> indices;
 	
 	for (const glm::ivec3& waterCoord : m_underwater)
@@ -106,11 +106,15 @@ void LiquidPlaneComp::GenerateMesh()
 			{
 				glm::ivec3 pos = waterCoord + glm::ivec3(dx, 0, dz);
 				auto it = indexMap.find(pos);
-				
 				if (it == indexMap.end())
 				{
 					it = indexMap.emplace(pos, (uint16_t)vertices.size()).first;
-					vertices.emplace_back(pos.x, y, pos.z);
+					Vertex& vertex = vertices.emplace_back();
+					vertex.pos = glm::vec3(pos.x, y, pos.z);
+					vertex.edgeDists[0] = (int)( dz && !IsUnderwater(waterCoord + glm::ivec3(0, 0, 1))) * 255;
+					vertex.edgeDists[1] = (int)(!dz && !IsUnderwater(waterCoord - glm::ivec3(0, 0, 1))) * 255;
+					vertex.edgeDists[2] = (int)( dx && !IsUnderwater(waterCoord + glm::ivec3(1, 0, 0))) * 255;
+					vertex.edgeDists[3] = (int)(!dx && !IsUnderwater(waterCoord - glm::ivec3(1, 0, 0))) * 255;
 				}
 				
 				vIndices[dx][dz] = it->second;
@@ -129,7 +133,7 @@ void LiquidPlaneComp::GenerateMesh()
 	}
 	
 	//Allocates an upload buffer
-	size_t verticesSize = vertices.size() * sizeof(glm::vec3);
+	size_t verticesSize = vertices.size() * sizeof(Vertex);
 	size_t indicesSize = indices.size() * sizeof(uint16_t);
 	eg::UploadBuffer uploadBuffer = eg::GetTemporaryUploadBuffer(verticesSize + indicesSize);
 	
@@ -143,7 +147,7 @@ void LiquidPlaneComp::GenerateMesh()
 	{
 		m_verticesCapacity = eg::RoundToNextMultiple(vertices.size(), 1024);
 		m_vertexBuffer = eg::Buffer(eg::BufferFlags::CopyDst | eg::BufferFlags::VertexBuffer,
-			m_verticesCapacity * sizeof(glm::vec3), nullptr);
+			m_verticesCapacity * sizeof(Vertex), nullptr);
 	}
 	
 	if (m_indicesCapacity < indices.size())

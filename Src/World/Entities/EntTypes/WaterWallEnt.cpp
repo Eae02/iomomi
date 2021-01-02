@@ -8,6 +8,7 @@
 WaterWallEnt::WaterWallEnt()
 {
 	std::fill_n(m_waterBlockComp.blockedGravities, 6, true);
+	m_waterBlockComp.onlyBlockDuringSimulation = true;
 }
 
 void WaterWallEnt::RenderSettings()

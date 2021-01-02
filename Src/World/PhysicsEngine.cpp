@@ -327,11 +327,11 @@ std::pair<PhysicsObject*, float> PhysicsEngine::RayIntersect(const eg::Ray& ray,
 	return { intersectedObject, minIntersect };
 }
 
-PhysicsObject* PhysicsEngine::CheckCollision(const eg::AABB& aabb, const PhysicsObject* ignoreObject) const
+PhysicsObject* PhysicsEngine::CheckCollision(const eg::AABB& aabb, uint32_t mask, const PhysicsObject* ignoreObject) const
 {
 	for (PhysicsObject* object : m_objects)
 	{
-		if (object == ignoreObject)
+		if (!(object->rayIntersectMask & mask) || object == ignoreObject)
 			continue;
 		if (const eg::CollisionMesh* const* mesh = std::get_if<const eg::CollisionMesh*>(&object->shape))
 		{

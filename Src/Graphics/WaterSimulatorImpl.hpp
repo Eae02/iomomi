@@ -28,6 +28,7 @@ struct WaterBlocker
 struct WSISimulateArgs
 {
 	float dt;
+	float gameTime;
 	int changeGravityParticle;
 	Dir newGravity;
 	size_t numWaterBlockers;

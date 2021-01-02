@@ -1,4 +1,5 @@
 #include "GooPlaneMaterial.hpp"
+#include "../../World/Entities/Components/LiquidPlaneComp.hpp"
 
 constexpr int NM_SAMPLES = 3;
 constexpr float NM_SCALE_GLOBAL = 3.5f;
@@ -24,8 +25,9 @@ void GooPlaneMaterial::OnInit()
 	pipelineCI.cullMode = eg::CullMode::Back;
 	pipelineCI.frontFaceCCW = true;
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
-	pipelineCI.vertexBindings[0] = { sizeof(glm::vec3), eg::InputRate::Vertex };
-	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
+	pipelineCI.vertexBindings[0] = { sizeof(LiquidPlaneComp::Vertex), eg::InputRate::Vertex };
+	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(LiquidPlaneComp::Vertex, pos) };
+	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::UInt8Norm, 4, offsetof(LiquidPlaneComp::Vertex, edgeDists) };
 	pipelineCI.blendStates[0] = eg::AlphaBlend;
 	s_pipeline = eg::Pipeline::Create(pipelineCI);
 	

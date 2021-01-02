@@ -6,10 +6,12 @@ public:
 	struct InstanceData
 	{
 		glm::mat3x4 transform;
-		glm::vec4 downAndGlowIntensity;
+		glm::vec3 down;
+		float minIntensity;
+		float maxIntensity;
 		
-		InstanceData(const glm::mat4& _transform, const glm::vec3& down, float glowIntensity)
-			: transform(glm::transpose(_transform)), downAndGlowIntensity(down, glowIntensity) { }
+		InstanceData(const glm::mat4& _transform)
+			: transform(glm::transpose(_transform)) { }
 	};
 	
 	GravityIndicatorMaterial();
@@ -23,6 +25,8 @@ public:
 	OrderRequirement GetOrderRequirement() const override;
 	
 	bool CheckInstanceDataType(const std::type_info* instanceDataType) const override;
+	
+	static GravityIndicatorMaterial instance;
 	
 private:
 	

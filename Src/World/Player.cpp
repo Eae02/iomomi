@@ -8,15 +8,15 @@
 
 #include <imgui.h>
 
-static float* walkSpeed         = eg::TweakVarFloat("pl_walk_speed",        4.0f,  0.0f);
-static float* swimSpeed         = eg::TweakVarFloat("pl_swim_speed",        5.0f,  0.0f);
-static float* noclipSpeed       = eg::TweakVarFloat("pl_noclip_speed",      8.0f,  0.0f);
-static float* walkAccelTime     = eg::TweakVarFloat("pl_walk_atime",        0.1f,  0.0f);
-static float* swimAccelTime     = eg::TweakVarFloat("pl_swim_atime",        0.4f,  0.0f);
-static float* walkDeaccelTime   = eg::TweakVarFloat("pl_walk_datime",       0.05f, 0.0f);
-static float* swimDrag          = eg::TweakVarFloat("pl_swim_drag",         5.0f,  0.0f);
-static float* jumpHeight        = eg::TweakVarFloat("pl_jump_height",       1.1f,  0.0f);
-static float* eyeRoundPrecision = eg::TweakVarFloat("pl_eye_round_prec",  0.01f, 0);
+static float* walkSpeed         = eg::TweakVarFloat("pl_walk_speed",     4.0f,  0.0f);
+static float* swimSpeed         = eg::TweakVarFloat("pl_swim_speed",     5.0f,  0.0f);
+static float* noclipSpeed       = eg::TweakVarFloat("pl_noclip_speed",   8.0f,  0.0f);
+static float* walkAccelTime     = eg::TweakVarFloat("pl_walk_atime",     0.1f,  0.0f);
+static float* swimAccelTime     = eg::TweakVarFloat("pl_swim_atime",     0.4f,  0.0f);
+static float* walkDeaccelTime   = eg::TweakVarFloat("pl_walk_datime",    0.05f, 0.0f);
+static float* swimDrag          = eg::TweakVarFloat("pl_swim_drag",      3.5f,  0.0f);
+static float* jumpHeight        = eg::TweakVarFloat("pl_jump_height",    1.1f,  0.0f);
+static float* eyeRoundPrecision = eg::TweakVarFloat("pl_eye_round_prec", 0.01f, 0);
 static int* noclipActive        = eg::TweakVarInt("noclip", 0, 0, 1);
 
 static constexpr float EYE_OFFSET = Player::EYE_HEIGHT - Player::HEIGHT / 2;
@@ -276,8 +276,8 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 			aabbNoIntersect.min += up;
 			aabbNoIntersect.max += up;
 			
-			if (physicsEngine.CheckCollision(aabbNeedsIntersect, &m_physicsObject) &&
-			    !physicsEngine.CheckCollision(aabbNoIntersect, &m_physicsObject))
+			if (physicsEngine.CheckCollision(aabbNeedsIntersect, RAY_MASK_CLIMB, &m_physicsObject) &&
+			    !physicsEngine.CheckCollision(aabbNoIntersect, RAY_MASK_CLIMB, &m_physicsObject))
 			{
 				localVelVertical = jumpAccel;
 			}
@@ -514,8 +514,13 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 		}
 	}
 	
+	if (underwater)
+		m_eyeOffsetFade = std::max(m_eyeOffsetFade - dt, 0.0f);
+	else
+		m_eyeOffsetFade = std::min(m_eyeOffsetFade + dt, 1.0f);
+	
 	//Updates the eye position
-	m_eyePosition = Position() + up * EYE_OFFSET;
+	m_eyePosition = Position() + up * EYE_OFFSET * m_eyeOffsetFade;
 	int downDim = (int)m_down / 2;
 	m_eyePosition[downDim] = std::round(m_eyePosition[downDim] / *eyeRoundPrecision) * *eyeRoundPrecision;
 	if (m_gravityTransitionMode == TransitionMode::Fall)
@@ -584,12 +589,19 @@ void Player::Reset()
 	m_physicsObject.velocity = glm::vec3(0.0f);
 	m_onGround = false;
 	m_wasOnGround = false;
+	m_wasUnderwater = false;
 	m_down = Dir::NegY;
 	m_isCarrying = false;
+	m_eyeOffsetFade = 1;
 	m_gravityTransitionMode = TransitionMode::None;
 }
 
 glm::vec3 Player::FeetPosition() const
 {
 	return m_physicsObject.position + glm::vec3(DirectionVector(m_down)) * (HEIGHT * 0.45f);
+}
+
+eg::AABB Player::GetAABB() const
+{
+	return eg::AABB(m_physicsObject.position - m_radius, m_physicsObject.position + m_radius);
 }

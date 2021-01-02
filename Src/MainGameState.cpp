@@ -93,6 +93,8 @@ void MainGameState::OnDeactivate()
 	m_world.reset();
 }
 
+static int* playerUnderwaterSpheres = eg::TweakVarInt("pl_underwater_spheres", 15, 0);
+
 void MainGameState::RunFrame(float dt)
 {
 	GameRenderer::instance->m_player = &m_player;
@@ -158,7 +160,7 @@ void MainGameState::RunFrame(float dt)
 		
 		{
 			auto playerUpdateCPUTimer = eg::StartCPUTimer("Player Update");
-			bool underwater = m_playerWaterAABB->GetResults().numIntersecting > 30;
+			bool underwater = m_playerWaterAABB->GetResults().numIntersecting > *playerUnderwaterSpheres;
 			m_player.Update(*m_world, m_physicsEngine, dt, underwater);
 		}
 		

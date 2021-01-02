@@ -1,5 +1,4 @@
 #include "GooPlaneEnt.hpp"
-#include "../Entity.hpp"
 #include "../../../../Protobuf/Build/GooPlaneEntity.pb.h"
 
 GooPlaneEnt::GooPlaneEnt()

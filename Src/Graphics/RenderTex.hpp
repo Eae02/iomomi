@@ -6,6 +6,7 @@ enum class RenderTex
 	GBColor1,
 	GBColor2,
 	Flags,
+	WaterGlowIntensity,
 	WaterMinDepth,
 	WaterMaxDepth,
 	WaterTravelDepth,
@@ -18,7 +19,7 @@ enum class RenderTex
 	Lit
 };
 
-constexpr size_t NUM_RENDER_TEXTURES = 14;
+constexpr size_t NUM_RENDER_TEXTURES = 15;
 
 constexpr eg::Format GB_DEPTH_FORMAT = eg::Format::Depth32;
 constexpr eg::Format GB_COLOR_FORMAT = eg::Format::R8G8B8A8_UNorm;

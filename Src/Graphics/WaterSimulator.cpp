@@ -1,5 +1,6 @@
 #include "WaterSimulator.hpp"
 #include "WaterSimulatorImpl.hpp"
+#include "RenderSettings.hpp"
 #include "../World/World.hpp"
 #include "../World/Player.hpp"
 #include "../World/Entities/EntTypes/WaterPlaneEnt.hpp"
@@ -46,6 +47,8 @@ void WaterSimulator::Init(World& world)
 					{
 						glm::vec3 pos = glm::vec3(cell) +
 							glm::vec3(x + offsetDist(rng), y + offsetDist(rng), z + offsetDist(rng)) / glm::vec3(generatePerVoxel);
+						if (pos.y > waterPlaneEntity.GetPosition().y)
+							continue;
 						positions.push_back(pos.x);
 						positions.push_back(pos.y);
 						positions.push_back(pos.z);
@@ -147,6 +150,7 @@ void WaterSimulator::ThreadTarget()
 			stepsPerSecond = *stepsPerSecondVar;
 			
 			waterBlockers = m_waterBlockersSH;
+			simulateArgs.gameTime = m_gameTimeSH;
 			
 			if (!m_changeGravityParticles.empty())
 			{
@@ -274,6 +278,7 @@ void WaterSimulator::Update(const World& world, bool paused)
 			m_changeGravityParticleMT = -1;
 		}
 		
+		m_gameTimeSH = RenderSettings::instance->gameTime + GAME_TIME_OFFSET;
 		m_pausedSH = paused;
 		m_numParticlesToDraw = WSI_GetPositions(m_impl, m_positionsUploadBufferMemory + uploadBufferOffset);
 	}

@@ -74,7 +74,10 @@ private:
 	bool m_collisionWithPlayerDisabled = false;
 	bool m_showChangeGravityControlHint = false;
 	bool m_isPickedUp = false;
+	bool m_gravityHasChanged = false;
 	Dir m_currentDown = Dir::NegY;
+	
+	float m_gravityIndicatorFlashIntensity = 0;
 	
 	std::shared_ptr<WaterSimulator::QueryAABB> m_waterQueryAABB;
 };

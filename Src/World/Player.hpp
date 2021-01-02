@@ -37,10 +37,7 @@ public:
 		return m_down;
 	}
 	
-	eg::AABB GetAABB() const
-	{
-		return eg::AABB(m_physicsObject.position - m_radius, m_physicsObject.position + m_radius);
-	}
+	eg::AABB GetAABB() const;
 	
 	void FlipDown();
 	
@@ -78,6 +75,7 @@ public:
 private:
 	Dir m_down = Dir::NegY;
 	
+	float m_eyeOffsetFade = 1;
 	float m_onGroundLinger = 0;
 	float m_planeMovementDisabledTimer = 0;
 	bool m_onGround = false;

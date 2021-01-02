@@ -42,11 +42,14 @@ WaterRenderer::WaterRenderer()
 	m_quadVB = eg::Buffer(eg::BufferFlags::VertexBuffer, sizeof(quadVBData), quadVBData);
 	m_quadVB.UsageHint(eg::BufferUsage::VertexBuffer);
 	
+	auto& sphereDepthFS = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterSphereDepth.fs.glsl");
+	auto& sphereVS = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterSphere.vs.glsl");
+	
 	eg::GraphicsPipelineCreateInfo pipelineCITemplate;
-	pipelineCITemplate.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterSphere.vs.glsl").DefaultVariant();
+	pipelineCITemplate.vertexShader = sphereVS.GetVariant("VDefault");
 	pipelineCITemplate.topology = eg::Topology::TriangleStrip;
 	pipelineCITemplate.vertexAttributes[0] = { 0, eg::DataType::Float32, 2, 0 };
-	pipelineCITemplate.vertexAttributes[1] = { 1, eg::DataType::Float32, 3, 0 };
+	pipelineCITemplate.vertexAttributes[1] = { 1, eg::DataType::Float32, 4, 0 };
 	pipelineCITemplate.vertexBindings[0] = { sizeof(float) * 2, eg::InputRate::Vertex };
 	pipelineCITemplate.vertexBindings[1] = { sizeof(float) * 4, eg::InputRate::Instance };
 	
@@ -56,9 +59,8 @@ WaterRenderer::WaterRenderer()
 	pipelineBasicCI.enableDepthWrite = true;
 	m_pipelineBasic = eg::Pipeline::Create(pipelineBasicCI);
 	
-	auto& sphereDepthFS = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterSphereDepth.fs.glsl");
-	
 	eg::GraphicsPipelineCreateInfo pipelineDepthMinCI = pipelineCITemplate;
+	pipelineDepthMinCI.vertexShader = sphereVS.GetVariant("VWithGlowIntensity");
 	pipelineDepthMinCI.fragmentShader = sphereDepthFS.GetVariant("VDepthMin");
 	pipelineDepthMinCI.enableDepthTest = true;
 	pipelineDepthMinCI.enableDepthWrite = true;
@@ -179,9 +181,11 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 	eg::DC.DebugLabelBegin("Depth");
 	
 	eg::RenderPassBeginInfo depthMinRPBeginInfo;
-	depthMinRPBeginInfo.framebuffer = rtManager.GetFramebuffer({}, {}, RenderTex::WaterMinDepth, "WaterMinDepth");
+	depthMinRPBeginInfo.framebuffer = rtManager.GetFramebuffer(RenderTex::WaterGlowIntensity, {}, RenderTex::WaterMinDepth, "WaterMinDepth");
 	depthMinRPBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Clear;
 	depthMinRPBeginInfo.depthClearValue = 1;
+	depthMinRPBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
+	depthMinRPBeginInfo.colorAttachments[0].clearValue = eg::ColorLin(0, 0, 0, 0);
 	eg::DC.BeginRenderPass(depthMinRPBeginInfo);
 	
 	eg::DC.BindPipeline(m_pipelineDepthMin);
@@ -194,9 +198,6 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 	
 	eg::DC.EndRenderPass();
 	eg::DC.DebugLabelEnd();
-	
-	rtManager.RenderTextureUsageHintFS(RenderTex::WaterMinDepth);
-	
 	
 	// ** Travel depth additive pass **
 	//This pass renders all water particles additively to get the water travel depth.
@@ -223,8 +224,6 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 	eg::DC.EndRenderPass();
 	eg::DC.DebugLabelEnd();
 	
-	rtManager.RenderTextureUsageHintFS(RenderTex::WaterTravelDepth);
-	
 	// ** Depth max pass **
 	//This pass renders all water particles that are closer to the camera than the the travel depth
 	// to a depth buffer. Greater compare mode is used to get the maximum depth bounds.
@@ -250,7 +249,10 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 	eg::DC.EndRenderPass();
 	eg::DC.DebugLabelEnd();
 	
+	rtManager.RenderTextureUsageHintFS(RenderTex::WaterMinDepth);
 	rtManager.RenderTextureUsageHintFS(RenderTex::WaterMaxDepth);
+	rtManager.RenderTextureUsageHintFS(RenderTex::WaterGlowIntensity);
+	rtManager.RenderTextureUsageHintFS(RenderTex::WaterTravelDepth);
 	
 	
 	timer.StartStage("Blur");
@@ -297,6 +299,7 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 		eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::WaterMinDepth), 0, 0);
 		eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::WaterTravelDepth), 0, 1);
 		eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::WaterMaxDepth), 0, 2);
+		eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::WaterGlowIntensity), 0, 3);
 		eg::DC.Draw(0, 3, 0, 1);
 		
 		eg::DC.EndRenderPass();

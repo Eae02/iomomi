@@ -36,6 +36,8 @@ const float reflectDistortionFactor = 0.05;
 
 const vec3 waterUp = vec3(0, 1, 0);
 
+const vec3 glowColor = vec3(0.12, 0.9, 0.7) * 5;
+
 const float causticsPosScale = 20;
 const float causticsTimeScale = 0.05;
 const float causticsIntensity = 0.04;
@@ -121,7 +123,6 @@ void main()
 	vec3 worldColor = texture(worldColorSampler, texCoord_in).rgb;
 	
 	float waterDepthL = underwater ? waterDepth4.b : waterDepth4.r;
-	float waterDepthLUB = underwater ? waterDepth4.w : waterDepthL;
 	float waterDepthH = hyperDepth(waterDepthL);
 	float worldDepthH = texture(worldDepthSampler, texCoord_in).r;
 	
@@ -273,4 +274,6 @@ void main()
 		vec3 waterColor = mix(refractColor, reflectColor, fresnel) * light;
 		color_out = vec4(mix(oriWorldColor, mix(foamColor, waterColor, foam), shore), 1.0);
 	}
+	
+	color_out.rgb += glowColor * waterDepth4.w;
 }

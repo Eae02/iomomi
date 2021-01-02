@@ -8,6 +8,7 @@
 #include <EGame.glh>
 
 layout(location=0) in vec3 worldPos_in;
+layout(location=1) in vec4 edgeDists_in;
 
 layout(location=0) out vec4 color_out;
 
@@ -25,16 +26,16 @@ layout(set=0, binding=2) uniform sampler2D normalMap;
 const float ROUGHNESS = 0.2;
 const float DISTORT_INTENSITY = 0.1;
 
+const float EDGE_FADE_DIST = 0.3;
+
 void main()
 {
+	float edgeDist = max(max(edgeDists_in.x, edgeDists_in.y), max(edgeDists_in.z, edgeDists_in.w));
+	float edgeFade = clamp(edgeDist / EDGE_FADE_DIST + 1.0 - 1.0 / EDGE_FADE_DIST, 0, 1);
+	
 	const float VISIBILITY_DEPTH = 1.5;
 	
-	//vec2 screenCoord = vec2(gl_FragCoord.xy) / vec2(textureSize(depthBuffer, 0).xy);
-	float hDepth = 1;//texture(depthBuffer, screenCoord).r;
-	
-	//vec3 geomWorldPos = WorldPosFromDepth(hDepth, screenCoord, renderSettings.invViewProjection);
-	
-	float depth = 100;//distance(worldPos_in, geomWorldPos);
+	float depth = 100;
 	float alpha = mix(0.1, 1.0, depth / VISIBILITY_DEPTH);
 	
 	vec3 normal = vec3(0.0);
@@ -55,11 +56,7 @@ void main()
 	vec3 waterColor = color * mix(minBrightness, 1.0, brightness);
 	
 	float glow = max(brightness - CUTOFF, 0.0) * MAX_BRIGHTNESS / (1.0 - CUTOFF);
-	alpha += glow;
-	waterColor += color * glow;
+	waterColor += color * glow * (1 - edgeFade);
 	
-	if (hDepth < gl_FragCoord.z)
-		alpha = 0;
-	
-	color_out = vec4(waterColor, min(alpha, 1.0));
+	color_out = vec4(mix(waterColor, color * minBrightness, edgeFade), mix(1, 0.3, edgeFade));
 }

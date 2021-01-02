@@ -307,6 +307,7 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 			particlesStack.pop_back();
 			
 			impl->particleGravity[cur] = (uint8_t)args.newGravity;
+			impl->particlePos[cur][3] = args.gameTime;
 			
 			for (uint16_t bI = 0; bI < impl->numCloseParticles[cur]; bI++)
 			{
@@ -341,7 +342,7 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 		}
 	}
 	
-	const __m128 dt4 = _mm_load1_ps(&dt);
+	const __m128 dt4 = { dt, dt, dt, 0 };
 	
 	//Accelerates particles
 	std::for_each_n(std::execution::par_unseq, impl->particlePos, impl->numParticles, [&] (__m128& aPos)
@@ -444,7 +445,7 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 			__m128 velB = impl->particleVel[b];
 			
 			__m128 sep     = _mm_sub_ps(impl->particlePos[a], impl->particlePos[b]);
-			float dist     = glm::fastSqrt(_mm_cvtss_f32(_mm_dp_ps(sep, sep, 0x71)));
+			float dist     = glm::fastSqrt(_mm_cvtss_f32(_mm_dp_ps(sep, sep, DP_IMM8)));
 			__m128 sepDir  = _mm_div_ps(sep, _mm_load1_ps(&dist));
 			__m128 velDiff = _mm_sub_ps(velA, velB);
 			float velSep   = _mm_cvtss_f32(_mm_dp_ps(velDiff, sepDir, DP_IMM8));
@@ -575,7 +576,8 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 			}
 			
 			//Applies collision correction
-			impl->particlePos2[a] = _mm_sub_ps(impl->particlePos2[a], _mm_mul_ps(displaceNormal, _mm_load1_ps(&minDist)));
+			const __m128 minDist4 = { minDist, minDist, minDist, 0 };
+			impl->particlePos2[a] = _mm_sub_ps(impl->particlePos2[a], _mm_mul_ps(displaceNormal, minDist4));
 		}
 		
 		impl->particleVel2[a] = vel;

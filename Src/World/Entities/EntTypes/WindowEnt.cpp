@@ -51,7 +51,7 @@ WindowEnt::WindowEnt()
 {
 	m_physicsObject.canCarry = false;
 	m_physicsObject.canBePushed = false;
-	m_physicsObject.rayIntersectMask = RAY_MASK_BLOCK_PICK_UP;
+	m_physicsObject.rayIntersectMask = RAY_MASK_BLOCK_PICK_UP | RAY_MASK_CLIMB;
 }
 
 void WindowEnt::RenderSettings()

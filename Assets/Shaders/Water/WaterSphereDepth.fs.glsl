@@ -13,6 +13,9 @@ layout(location=1) in vec3 eyePos_in;
 
 #ifdef VDepthMax
 layout(binding=1) uniform sampler2D geometryDepthSampler;
+#else
+layout(location=2) in float glowIntensity_in;
+layout(location=0) out float glowIntensity_out;
 #endif
 
 void main()
@@ -33,5 +36,6 @@ void main()
 	gl_FragDepth = min(ndcBack.z, inputDepth);
 #else
 	gl_FragDepth = ndcFront.z;
+	glowIntensity_out = glowIntensity_in;
 #endif
 }

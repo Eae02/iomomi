@@ -5,6 +5,7 @@
 
 using CollisionShape = std::variant<eg::AABB, const eg::CollisionMesh*>;
 
+constexpr uint32_t RAY_MASK_CLIMB = 4;
 constexpr uint32_t RAY_MASK_BLOCK_PICK_UP = 2;
 constexpr uint32_t RAY_MASK_BLOCK_GUN = 1;
 
@@ -82,7 +83,8 @@ public:
 	
 	void GetDebugRenderData(struct PhysicsDebugRenderData& dataOut) const;
 	
-	PhysicsObject* CheckCollision(const eg::AABB& aabb, const PhysicsObject* ignoreObject) const;
+	PhysicsObject* CheckCollision(const eg::AABB& aabb, uint32_t mask = 0xFF,
+		const PhysicsObject* ignoreObject = nullptr) const;
 	
 private:
 	void CopyParentMove(PhysicsObject& object, float dt);

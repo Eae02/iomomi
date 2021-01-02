@@ -8,6 +8,7 @@
 #include "../../../Settings.hpp"
 #include "../../../../Protobuf/Build/CubeEntity.pb.h"
 #include "ForceFieldEnt.hpp"
+#include "../../../Graphics/Materials/GravityIndicatorMaterial.hpp"
 #include <imgui.h>
 
 static float* cubeBuoyancyScale = eg::TweakVarFloat("cube_bcy_scale", 0.5f, 0.0f);
@@ -46,6 +47,7 @@ CubeEnt::CubeEnt(const glm::vec3& position, bool _canFloat)
 	m_physicsObject.canCarry = true;
 	m_physicsObject.debugColor = 0x1f9bde;
 	m_physicsObject.shouldCollide = ShouldCollide;
+	m_physicsObject.rayIntersectMask = RAY_MASK_BLOCK_GUN | RAY_MASK_BLOCK_PICK_UP;
 }
 
 bool CubeEnt::ShouldCollide(const PhysicsObject& self, const PhysicsObject& other)
@@ -73,6 +75,12 @@ void CubeEnt::Draw(eg::MeshBatch& meshBatch, const glm::mat4& transform) const
 		*(canFloat ? woodCubeMaterial : cubeMaterial), StaticPropMaterial::InstanceData(transform));
 }
 
+float* cubeGAIntenstiyMax = eg::TweakVarFloat("cube_ga_imax", 2.0f, 0);
+float* cubeGAIntenstiyMin = eg::TweakVarFloat("cube_ga_imin", 0.1f, 0);
+float* cubeGAIntenstiyFlash = eg::TweakVarFloat("cube_ga_iflash", 5.0f, 0);
+float* cubeGAFlashTime = eg::TweakVarFloat("cube_ga_flash_time", 0.3f, 0);
+float* cubeGAPulseTime = eg::TweakVarFloat("cube_ga_pulse_time", 2, 0);
+
 void CubeEnt::GameDraw(const EntGameDrawArgs& args)
 {
 	if (args.frustum->Intersects(GetSphere()))
@@ -80,6 +88,19 @@ void CubeEnt::GameDraw(const EntGameDrawArgs& args)
 		glm::mat4 worldMatrix = glm::translate(glm::mat4(1), m_physicsObject.displayPosition);
 		worldMatrix *= glm::scale(glm::mat4(1), glm::vec3(RADIUS));
 		Draw(*args.meshBatch, worldMatrix);
+		
+		if (m_gravityHasChanged)
+		{
+			GravityIndicatorMaterial::InstanceData instanceData(worldMatrix);
+			instanceData.down = glm::vec3(DirectionVector(m_currentDown));
+			
+			float t = RenderSettings::instance->gameTime * eg::TWO_PI / *cubeGAPulseTime;
+			float intensity = glm::mix(0.25f, 1.0f, std::sin(t) * 0.5f + 0.5f);
+			instanceData.minIntensity = glm::mix(*cubeGAIntenstiyMin * intensity, *cubeGAIntenstiyFlash, m_gravityIndicatorFlashIntensity);
+			instanceData.maxIntensity = glm::mix(*cubeGAIntenstiyMax * intensity, *cubeGAIntenstiyFlash, m_gravityIndicatorFlashIntensity);
+			
+			args.meshBatch->AddModel(*(canFloat ? woodCubeModel : cubeModel), GravityIndicatorMaterial::instance, instanceData);
+		}
 	}
 }
 
@@ -154,7 +175,12 @@ bool CubeEnt::SetGravity(Dir newGravity)
 {
 	if (m_isPickedUp)
 		return false;
-	m_currentDown = newGravity;
+	if (newGravity != m_currentDown)
+	{
+		m_currentDown = newGravity;
+		m_gravityHasChanged = true;
+		m_gravityIndicatorFlashIntensity = 1;
+	}
 	return true;
 }
 
@@ -167,6 +193,8 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 {
 	if (args.mode == WorldMode::Editor || args.mode == WorldMode::Thumbnail)
 		return;
+	
+	m_gravityIndicatorFlashIntensity = std::max(m_gravityIndicatorFlashIntensity - args.dt / *cubeGAFlashTime, 0.0f);
 	
 	m_physicsObject.mass = *cubeMass;
 	
@@ -194,6 +222,8 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 	if (forceFieldGravity.has_value() && m_currentDown != *forceFieldGravity)
 	{
 		m_currentDown = *forceFieldGravity;
+		m_gravityHasChanged = true;
+		m_gravityIndicatorFlashIntensity = 1;
 		if (m_isPickedUp)
 		{
 			m_isPickedUp = false;

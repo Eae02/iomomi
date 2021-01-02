@@ -11,6 +11,8 @@
 class WaterSimulator
 {
 public:
+	static constexpr float GAME_TIME_OFFSET = 100;
+	
 	struct QueryResults
 	{
 		int numIntersecting;
@@ -114,6 +116,8 @@ private:
 	
 	std::vector<WaterBlocker> m_waterBlockersMT;
 	std::vector<WaterBlocker> m_waterBlockersSH;
+	
+	float m_gameTimeSH = 0;
 	
 	bool m_pausedSH = false;
 	std::condition_variable m_unpausedSignal;

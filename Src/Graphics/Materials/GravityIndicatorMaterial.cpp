@@ -5,6 +5,8 @@
 static eg::Pipeline pipeline;
 static eg::DescriptorSet descriptorSet;
 
+GravityIndicatorMaterial GravityIndicatorMaterial::instance;
+
 static void OnInit()
 {
 	eg::GraphicsPipelineCreateInfo pipelineCI;
@@ -20,7 +22,8 @@ static void OnInit()
 	pipelineCI.vertexAttributes[1] = { 1, eg::DataType::Float32, 4, offsetof(GravityIndicatorMaterial::InstanceData, transform) + 0 };
 	pipelineCI.vertexAttributes[2] = { 1, eg::DataType::Float32, 4, offsetof(GravityIndicatorMaterial::InstanceData, transform) + 16 };
 	pipelineCI.vertexAttributes[3] = { 1, eg::DataType::Float32, 4, offsetof(GravityIndicatorMaterial::InstanceData, transform) + 32 };
-	pipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 4, offsetof(GravityIndicatorMaterial::InstanceData, downAndGlowIntensity) };
+	pipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 3, offsetof(GravityIndicatorMaterial::InstanceData, down) };
+	pipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 2, offsetof(GravityIndicatorMaterial::InstanceData, minIntensity) };
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
@@ -32,6 +35,7 @@ static void OnInit()
 	
 	descriptorSet = eg::DescriptorSet(pipeline, 0);
 	descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+	descriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 1);
 }
 
 static void OnShutdown()

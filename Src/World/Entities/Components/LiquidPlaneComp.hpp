@@ -5,6 +5,12 @@
 class LiquidPlaneComp
 {
 public:
+	struct Vertex
+	{
+		glm::vec3 pos;
+		uint8_t edgeDists[4];
+	};
+	
 	LiquidPlaneComp() = default;
 	
 	void MaybeUpdate(const class World& world);
