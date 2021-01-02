@@ -77,7 +77,7 @@ void CubeEnt::Draw(eg::MeshBatch& meshBatch, const glm::mat4& transform) const
 
 float* cubeGAIntenstiyMax = eg::TweakVarFloat("cube_ga_imax", 2.0f, 0);
 float* cubeGAIntenstiyMin = eg::TweakVarFloat("cube_ga_imin", 0.1f, 0);
-float* cubeGAIntenstiyFlash = eg::TweakVarFloat("cube_ga_iflash", 5.0f, 0);
+float* cubeGAIntenstiyFlash = eg::TweakVarFloat("cube_ga_iflash", 4.0f, 0);
 float* cubeGAFlashTime = eg::TweakVarFloat("cube_ga_flash_time", 0.3f, 0);
 float* cubeGAPulseTime = eg::TweakVarFloat("cube_ga_pulse_time", 2, 0);
 
@@ -94,10 +94,11 @@ void CubeEnt::GameDraw(const EntGameDrawArgs& args)
 			GravityIndicatorMaterial::InstanceData instanceData(worldMatrix);
 			instanceData.down = glm::vec3(DirectionVector(m_currentDown));
 			
+			float flashIntensity = settings.gunFlash ? *cubeGAIntenstiyFlash : 1.0f;
 			float t = RenderSettings::instance->gameTime * eg::TWO_PI / *cubeGAPulseTime;
 			float intensity = glm::mix(0.25f, 1.0f, std::sin(t) * 0.5f + 0.5f);
-			instanceData.minIntensity = glm::mix(*cubeGAIntenstiyMin * intensity, *cubeGAIntenstiyFlash, m_gravityIndicatorFlashIntensity);
-			instanceData.maxIntensity = glm::mix(*cubeGAIntenstiyMax * intensity, *cubeGAIntenstiyFlash, m_gravityIndicatorFlashIntensity);
+			instanceData.minIntensity = glm::mix(*cubeGAIntenstiyMin * intensity, flashIntensity, m_gravityIndicatorFlashIntensity);
+			instanceData.maxIntensity = glm::mix(*cubeGAIntenstiyMax * intensity, flashIntensity, m_gravityIndicatorFlashIntensity);
 			
 			args.meshBatch->AddModel(*(canFloat ? woodCubeModel : cubeModel), GravityIndicatorMaterial::instance, instanceData);
 		}
@@ -175,12 +176,10 @@ bool CubeEnt::SetGravity(Dir newGravity)
 {
 	if (m_isPickedUp)
 		return false;
-	if (newGravity != m_currentDown)
-	{
-		m_currentDown = newGravity;
-		m_gravityHasChanged = true;
+	m_currentDown = newGravity;
+	m_gravityHasChanged = true;
+	if (m_gravityIndicatorFlashIntensity < 1E-3f)
 		m_gravityIndicatorFlashIntensity = 1;
-	}
 	return true;
 }
 
@@ -221,14 +220,12 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 	std::optional<Dir> forceFieldGravity = ForceFieldEnt::CheckIntersection(args.world->entManager, aabb);
 	if (forceFieldGravity.has_value() && m_currentDown != *forceFieldGravity)
 	{
-		m_currentDown = *forceFieldGravity;
-		m_gravityHasChanged = true;
-		m_gravityIndicatorFlashIntensity = 1;
 		if (m_isPickedUp)
 		{
 			m_isPickedUp = false;
 			args.player->m_isCarrying = false;
 		}
+		SetGravity(*forceFieldGravity);
 	}
 	
 	if (m_isPickedUp)

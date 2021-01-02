@@ -32,11 +32,8 @@ const float visibility = 10;
 const vec3 colorExtinction = vec3(0.7, 3.0, 4.0) * 10;
 
 const float indexOfRefraction = 0.6;
-const float reflectDistortionFactor = 0.05;
 
 const vec3 waterUp = vec3(0, 1, 0);
-
-const vec3 glowColor = vec3(0.12, 0.9, 0.7) * 5;
 
 const float causticsPosScale = 20;
 const float causticsTimeScale = 0.05;
@@ -112,6 +109,7 @@ const vec2 normalMapPanDirs[] = vec2[]
 layout(push_constant) uniform PC
 {
 	vec2 pixelSize;
+	vec3 glowColor;
 };
 
 void main()

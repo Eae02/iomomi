@@ -330,6 +330,8 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 	rtManager.RenderTextureUsageHintFS(RenderTex::WaterDepthBlurred2);
 }
 
+static const glm::vec3 waterGlowColor(0.12f, 0.9f, 0.7f);
+
 void WaterRenderer::RenderPost(RenderTexManager& rtManager)
 {
 	// ** Post pass **
@@ -344,7 +346,16 @@ void WaterRenderer::RenderPost(RenderTexManager& rtManager)
 	
 	eg::DC.BindPipeline(m_pipelinesRefPost[(int)settings.waterQuality]);
 	
-	float pc[2] = { 2.0f / rtManager.ResX(), 2.0f / rtManager.ResY() };
+	float waterGlowIntensity = settings.gunFlash ? 4 : 0.5f;
+	
+	float pc[8] =
+	{
+		2.0f / rtManager.ResX(), 2.0f / rtManager.ResY(), 0, 0,
+		waterGlowColor.r * waterGlowIntensity,
+		waterGlowColor.g * waterGlowIntensity,
+		waterGlowColor.b * waterGlowIntensity,
+		0
+	};
 	eg::DC.PushConstants(0, sizeof(pc), pc);
 	
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
