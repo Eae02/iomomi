@@ -260,10 +260,20 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 	
 	glm::vec3 velocityXZ = localVelPlane.x * forwardPlane + localVelPlane.y * rightPlane;
 	
+	m_radius = glm::vec3(WIDTH / 2, WIDTH / 2, WIDTH / 2);
+	if (!underwater)
+		m_radius[(int)m_down / 2] = HEIGHT / 2;
+	m_physicsObject.shape = eg::AABB(-m_radius, m_radius);
+	PhysicsObject* floorObject = physicsEngine.FindFloorObject(m_physicsObject, -up);
+	
 	//Vertical movement
 	if (!*noclipActive)
 	{
-		const float jumpAccel = std::sqrt(2.0f * *jumpHeight * GRAVITY_MAG);
+		const bool standingOnCube = floorObject &&
+			std::holds_alternative<Ent*>(floorObject->owner) &&
+		    std::get<Ent*>(floorObject->owner)->TypeID() == EntTypeID::Cube;
+		
+		const float jumpAccel = std::sqrt(2.0f * *jumpHeight * GRAVITY_MAG * (standingOnCube ? 0.7f : 1.0f));
 		
 		if (m_wasUnderwater && !underwater && localVelVertical > 0)
 		{
@@ -302,10 +312,6 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 	m_physicsObject.velocity = velocityXZ + velocityY;
 	glm::vec3 moveXZ = velocityXZ * dt;
 	glm::vec3 moveY = velocityY * dt;
-	
-	m_radius = glm::vec3(WIDTH / 2, WIDTH / 2, WIDTH / 2);
-	if (!underwater)
-		m_radius[(int)m_down / 2] = HEIGHT / 2;
 	
 	//Checks for intersections with gravity corners along the move (XZ) vector
 	if (m_gravityTransitionMode == TransitionMode::None && m_onGround && !m_isCarrying)
@@ -408,8 +414,6 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 	}
 	
 	//Moves the player with the current platform, if there is one below
-	m_physicsObject.shape = eg::AABB(-m_radius, m_radius);
-	PhysicsObject* floorObject = physicsEngine.FindFloorObject(m_physicsObject, -up);
 	glm::vec3 launchVelocity(0.0f);
 	if (floorObject != nullptr && std::holds_alternative<Ent*>(floorObject->owner) && !*noclipActive)
 	{

@@ -37,10 +37,6 @@ public:
 		}
 		
 	private:
-		static constexpr uint32_t MAX_PARTICLE_INFO = 128;
-		
-		bool m_wantsParticleInfo;
-		
 		std::mutex m_mutex;
 		QueryResults m_results;
 		

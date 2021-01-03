@@ -1,13 +1,11 @@
 #include "CubeEnt.hpp"
 #include "GooPlaneEnt.hpp"
-#include "PlatformEnt.hpp"
 #include "FloorButtonEnt.hpp"
+#include "ForceFieldEnt.hpp"
 #include "../../Player.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
-#include "../../../Graphics/Lighting/PointLightShadowMapper.hpp"
 #include "../../../Settings.hpp"
 #include "../../../../Protobuf/Build/CubeEntity.pb.h"
-#include "ForceFieldEnt.hpp"
 #include "../../../Graphics/Materials/GravityIndicatorMaterial.hpp"
 #include <imgui.h>
 
@@ -272,7 +270,6 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 		if (m_waterQueryAABB != nullptr)
 		{
 			WaterSimulator::QueryResults waterQueryRes = m_waterQueryAABB->GetResults();
-			//m_physicsObject.baseVelocity += waterQueryRes.waterVelocity * *cubeWaterVelFactor;
 			
 			glm::vec3 relVelocity = waterQueryRes.waterVelocity - m_physicsObject.velocity;
 			glm::vec3 pullForce = relVelocity * *cubeWaterDrag;
