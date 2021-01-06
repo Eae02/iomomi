@@ -7,11 +7,7 @@ graphics fixes:
  - ssr should be blurred slightly
 
 textures and models:
- - texture and model for cube spawner
- - make cube (re)spawn prettier
  - different graphics for pushable platforms
- - make objects glow when gravity has been changed
- - particles (or other visuals) to show current gravity of objects
  - particles when water splashes
  - decorative mesh entities
  - wall overlay textures
@@ -42,7 +38,6 @@ sounds:
  - menu buttons
 
 ui:
- - level select screen title
  - hints for restart (?)
  - option for hud
    - crosshair (?)
