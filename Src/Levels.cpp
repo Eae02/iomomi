@@ -46,6 +46,7 @@ const std::vector<std::string_view> levelsOrder =
 	"gravgun_1",
 	"gravgun_2",
 	"gravgun_3",
+	//"gravgun_4",
 	"gravgun_5",
 	
 	"gravbarrier_1",
@@ -63,18 +64,15 @@ const std::vector<std::string_view> levelsOrder =
 	"water_5",
 	//"water_6",
 	
-	"launch_0",
-	"launch_1",
-	
 	"forcefield_1",
 	"cubeflip_0",
+	"launch_0",
+	//"launch_1",
 	"launch_2",
 	"launch_3",
 	"forcefield_4",
 	"forcefield_3",
 	"forcefield_2",
-	
-	"gravgun_4",
 	
 	"cubeflip_2"
 };

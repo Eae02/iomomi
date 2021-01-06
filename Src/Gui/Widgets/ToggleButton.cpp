@@ -31,12 +31,7 @@ void ToggleButton::Update(float dt, bool allowInteraction)
 
 void ToggleButton::Draw(eg::SpriteBatch& spriteBatch) const
 {
-	DrawBase(spriteBatch, m_highlightIntensity, "");//getValue() ? trueString : falseString);
-	
-	// -1        = 0
-	// -0.0001   = -md
-	//  0.0001   = md
-	// 1         = 0
+	DrawBase(spriteBatch, m_highlightIntensity, "");
 	
 	glm::vec2 textPos = GetTextPos();
 	textPos.x += (1 - std::abs(m_textSwapProgress)) * TEXT_SWAP_MOVE_DIST * glm::sign(m_textSwapProgress);

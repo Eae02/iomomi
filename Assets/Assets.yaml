@@ -23,6 +23,9 @@ assets:
   
   - name: UIFont.ttf
     size: 24
+  - name: UIFontSmall.ttf
+    source: UIFont.ttf
+    size: 12
   - name: GameFont.ttf
     size: 64
     

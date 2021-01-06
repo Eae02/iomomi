@@ -172,7 +172,7 @@ void MainMenuGameState::RunFrame(float dt)
 #else
 	std::string_view infoLine = BUILD_DATE;
 #endif
-	m_spriteBatch.DrawText(*style::UIFont, infoLine, glm::vec2(5), eg::ColorLin(1, 1, 1, 0.2f), 0.5f,
+	m_spriteBatch.DrawText(*style::UIFontSmall, infoLine, glm::vec2(5), eg::ColorLin(1, 1, 1, 0.2f), 1,
 	                       nullptr, eg::TextFlags::DropShadow);
 	
 	if (ComboBox::current)
@@ -277,6 +277,15 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 			shade *= 0.4f;
 		
 		m_spriteBatch.Draw(*texture, inflatedRect, eg::ColorLin(1, 1, 1, 1).ScaleRGB(shade));
+		
+		if (eg::DevMode())
+		{
+			float nameLen = style::UIFontSmall->GetTextExtents(level.name).x;
+			m_spriteBatch.DrawText(*style::UIFontSmall, level.name,
+			                       glm::vec2(rect.CenterX() - nameLen / 2, inflatedRect.y + 10),
+			                       eg::ColorLin(1, 1, 1, glm::mix(0.4f, 1.0f, highlightIntensity)),
+			                       1, nullptr, eg::TextFlags::DropShadow);
+		}
 		
 		if (level.status == LevelStatus::Locked)
 		{

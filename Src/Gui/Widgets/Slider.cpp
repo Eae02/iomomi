@@ -59,9 +59,8 @@ void Slider::Draw(eg::SpriteBatch& spriteBatch) const
 		snprintf(valueBuffer, sizeof(valueBuffer), "%d%s", (int)std::round(value), valueSuffix ? valueSuffix : "");
 		std::string_view valueStr = valueBuffer;
 		
-		constexpr float VALUE_FONT_SCALE = 0.6f;
 		constexpr float VALUE_BORDER_SPACING = 5;
-		float textWidth = style::UIFont->GetTextExtents(valueStr).x * VALUE_FONT_SCALE;
+		float textWidth = style::UIFontSmall->GetTextExtents(valueStr).x;
 		
 		glm::vec2 textPos;
 		textPos.y = activeRect.y + 3;
@@ -76,6 +75,6 @@ void Slider::Draw(eg::SpriteBatch& spriteBatch) const
 			textPos.x = activeRect.MaxX() - textWidth - VALUE_BORDER_SPACING;
 			textColor = eg::ColorLin(0, 0, 0, 1);
 		}
-		spriteBatch.DrawText(*style::UIFont, valueStr, textPos, textColor, VALUE_FONT_SCALE);
+		spriteBatch.DrawText(*style::UIFontSmall, valueStr, textPos, textColor);
 	}
 }

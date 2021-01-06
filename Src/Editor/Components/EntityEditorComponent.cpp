@@ -264,7 +264,7 @@ void EntityEditorComponent::EarlyDraw(PrimitiveRenderer& primitiveRenderer) cons
 		char stringBuffer[128];
 		snprintf(stringBuffer, sizeof(stringBuffer), "Translating (%.2f, %.2f, %.2f)",
 		         dragDist.x, dragDist.y, dragDist.z);
-		eg::SpriteBatch::overlay.DrawText(*style::UIFont, stringBuffer, glm::vec2(10), eg::ColorLin(1, 1, 1, 0.5f),
-		                                  0.5f, nullptr, eg::TextFlags::DropShadow);
+		eg::SpriteBatch::overlay.DrawText(*style::UIFontSmall, stringBuffer, glm::vec2(10), eg::ColorLin(1, 1, 1, 0.5f),
+		                                  1, nullptr, eg::TextFlags::DropShadow);
 	}
 }
