@@ -97,6 +97,8 @@ void RampEnt::RenderSettings()
 		m_meshOutOfDate = true;
 	
 	ImGui::DragFloat("Texture Scale", &m_textureScale, 0.5f, 0.0f, INFINITY);
+	if (ImGui::SliderInt("Texture Rotation", &m_textureRotation, 0, 4))
+		m_meshOutOfDate = true;
 	ImGui::Checkbox("Stretch Texture V", &m_stretchTextureV);
 }
 
@@ -104,12 +106,14 @@ void RampEnt::CommonDraw(const EntDrawArgs& args)
 {
 	InitializeVertexBuffer();
 	
-	glm::vec2 textureScale(m_textureScale, m_rampLength * m_textureScale);
+	glm::vec2 textureScale(m_textureScale * m_size.x, m_rampLength * m_textureScale);
 	if (m_stretchTextureV)
 	{
-		float roundPrecision = rampMaterials[m_material].material->TextureScale().x;
-		textureScale.y = std::max(std::round(textureScale.y / roundPrecision), 1.0f) * roundPrecision;
+		float roundPrecision = rampMaterials[m_material].material->TextureScale()[m_textureRotation % 2];
+		textureScale.y = std::max(std::round(textureScale.y * roundPrecision), 1.0f) / roundPrecision;
 	}
+	if (m_textureRotation % 2)
+		std::swap(textureScale.x, textureScale.y);
 	
 	eg::MeshBatch::Mesh mesh;
 	mesh.firstIndex = 0;
@@ -162,8 +166,14 @@ void RampEnt::InitializeVertexBuffer()
 			vertices[i].normal[j] = eg::FloatToSNorm(normal[j]);
 			vertices[i].tangent[j] = eg::FloatToSNorm(aDir[j]);
 		}
-		vertices[i].texCoord[0] = uvs[indices[i]].x * m_size.x;
-		vertices[i].texCoord[1] = uvs[indices[i]].y; //will be scaled in the shader
+		vertices[i].texCoord[0] = uvs[indices[i]].x;
+		vertices[i].texCoord[1] = uvs[indices[i]].y;
+		for (int r = 0; r < m_textureRotation; r++)
+		{
+			float x = vertices[i].texCoord[0];
+			vertices[i].texCoord[0] = vertices[i].texCoord[1];
+			vertices[i].texCoord[1] = -x;
+		}
 	}
 	
 	eg::DC.UpdateBuffer(m_vertexBuffer, 0, sizeof(vertices), vertices);
@@ -245,6 +255,7 @@ void RampEnt::Serialize(std::ostream& stream) const
 	rampPB.set_stretch_texture_v(m_stretchTextureV);
 	rampPB.set_no_edge_decals(!m_hasEdgeDecals);
 	rampPB.set_material(eg::HashFNV1a32(rampMaterials[m_material].name));
+	rampPB.set_texture_rotation(m_textureRotation);
 	
 	rampPB.SerializeToOstream(&stream);
 }
@@ -263,6 +274,7 @@ void RampEnt::Deserialize(std::istream& stream)
 	m_textureScale = rampPB.texture_scale();
 	m_stretchTextureV = rampPB.stretch_texture_v();
 	m_hasEdgeDecals = !rampPB.no_edge_decals();
+	m_textureRotation = rampPB.texture_rotation();
 	
 	m_material = 0;
 	for (uint32_t i = 0; i < rampMaterials.size(); i++)
@@ -302,9 +314,15 @@ std::shared_ptr<Ent> CloneEntity<RampEnt>(const Ent& entity)
 {
 	const RampEnt& src = static_cast<const RampEnt&>(entity);
 	std::shared_ptr<RampEnt> clone = Ent::Create<RampEnt>();
+	
 	clone->m_rotation = src.m_rotation;
 	clone->m_flipped = src.m_flipped;
 	clone->m_size = src.m_size;
 	clone->m_position = src.m_position;
+	clone->m_hasEdgeDecals = src.m_hasEdgeDecals;
+	clone->m_stretchTextureV = src.m_stretchTextureV;
+	clone->m_textureScale = src.m_textureScale;
+	clone->m_textureRotation = src.m_textureRotation;
+	
 	return clone;
 }

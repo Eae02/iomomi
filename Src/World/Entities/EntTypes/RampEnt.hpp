@@ -32,6 +32,7 @@ public:
 	bool m_hasEdgeDecals = true;
 	bool m_stretchTextureV = false;
 	float m_textureScale = 1;
+	int m_textureRotation = 0;
 	
 	glm::vec3 m_size { 1.0f };
 	glm::vec3 m_position;

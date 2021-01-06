@@ -15,4 +15,5 @@ message RampEntity {
 	bool no_edge_decals = 10;
 	bool stretch_texture_v = 11;
 	fixed32 material = 12;
+	int32 texture_rotation = 13;
 }
