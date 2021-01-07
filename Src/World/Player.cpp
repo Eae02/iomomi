@@ -16,6 +16,7 @@ static float* swimAccelTime     = eg::TweakVarFloat("pl_swim_atime",     0.4f,  
 static float* walkDeaccelTime   = eg::TweakVarFloat("pl_walk_datime",    0.05f, 0.0f);
 static float* swimDrag          = eg::TweakVarFloat("pl_swim_drag",      3.5f,  0.0f);
 static float* jumpHeight        = eg::TweakVarFloat("pl_jump_height",    1.1f,  0.0f);
+static float* waterJumpHeight   = eg::TweakVarFloat("pl_wjump_height",   1.3f,  0.0f);
 static float* eyeRoundPrecision = eg::TweakVarFloat("pl_eye_round_prec", 0.01f, 0);
 static int* noclipActive        = eg::TweakVarInt("noclip", 0, 0, 1);
 
@@ -51,6 +52,11 @@ inline glm::quat GetRotation(float yaw, float pitch, Dir down)
 	return GetDownCorrection(down) *
 	       glm::angleAxis(yaw, glm::vec3(0, 1, 0)) *
 	       glm::angleAxis(pitch, glm::vec3(1, 0, 0));
+}
+
+inline float GetJumpAccel(float height)
+{
+	return std::sqrt(2.0f * height * GRAVITY_MAG);
 }
 
 void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool underwater)
@@ -128,7 +134,11 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 	const bool moveRight   = settings.keyMoveR.IsDown();
 	const bool moveUp      = settings.keyJump.IsDown();
 	
-	if (underwater || *noclipActive)
+	if (m_leftWaterTime > 0)
+	{
+		m_leftWaterTime -= dt;
+	}
+	else if (underwater || *noclipActive)
 	{
 		m_onGround = false;
 		
@@ -261,7 +271,7 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 	glm::vec3 velocityXZ = localVelPlane.x * forwardPlane + localVelPlane.y * rightPlane;
 	
 	m_radius = glm::vec3(WIDTH / 2, WIDTH / 2, WIDTH / 2);
-	if (!underwater)
+	if (!underwater && !m_wasUnderwater)
 		m_radius[(int)m_down / 2] = HEIGHT / 2;
 	m_physicsObject.shape = eg::AABB(-m_radius, m_radius);
 	PhysicsObject* floorObject = physicsEngine.FindFloorObject(m_physicsObject, -up);
@@ -273,9 +283,7 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 			std::holds_alternative<Ent*>(floorObject->owner) &&
 		    std::get<Ent*>(floorObject->owner)->TypeID() == EntTypeID::Cube;
 		
-		const float jumpAccel = std::sqrt(2.0f * *jumpHeight * GRAVITY_MAG * (standingOnCube ? 0.7f : 1.0f));
-		
-		if (m_wasUnderwater && !underwater && localVelVertical > 0)
+		if (m_wasUnderwater && !underwater && (localVelVertical > 0 || moveUp))
 		{
 			glm::vec3 xzShift = forwardPlane * 0.1f;
 			eg::AABB aabbNeedsIntersect = GetAABB();
@@ -283,13 +291,14 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 			aabbNeedsIntersect.max += xzShift;
 			
 			eg::AABB aabbNoIntersect = aabbNeedsIntersect;
-			aabbNoIntersect.min += up;
-			aabbNoIntersect.max += up;
+			aabbNoIntersect.min += up * *waterJumpHeight;
+			aabbNoIntersect.max += up * *waterJumpHeight;
 			
 			if (physicsEngine.CheckCollision(aabbNeedsIntersect, RAY_MASK_CLIMB, &m_physicsObject) &&
 			    !physicsEngine.CheckCollision(aabbNoIntersect, RAY_MASK_CLIMB, &m_physicsObject))
 			{
-				localVelVertical = jumpAccel;
+				localVelVertical = GetJumpAccel(*waterJumpHeight);
+				m_leftWaterTime = 0.5f;
 			}
 		}
 		
@@ -299,7 +308,7 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 		//Updates vertical velocity
 		if (moveUp && m_gravityTransitionMode == TransitionMode::None && m_onGround)
 		{
-			localVelVertical = jumpAccel;
+			localVelVertical = GetJumpAccel(*jumpHeight * (standingOnCube ? 0.7f : 1.0f));
 			m_onGroundRingBufferSize = std::min(m_onGroundRingBufferSize, 1U);
 			m_onGround = false;
 			m_onGroundLinger = 0;
@@ -596,6 +605,7 @@ void Player::Reset()
 	m_wasUnderwater = false;
 	m_down = Dir::NegY;
 	m_isCarrying = false;
+	m_leftWaterTime = 0;
 	m_eyeOffsetFade = 1;
 	m_gravityTransitionMode = TransitionMode::None;
 }
