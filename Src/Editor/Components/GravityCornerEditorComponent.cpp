@@ -3,7 +3,7 @@
 
 void GravityCornerEditorComponent::Update(float dt, const EditorState& editorState)
 {
-	WallRayIntersectResult pickResult = editorState.world->RayIntersectWall(editorState.viewRay);
+	VoxelRayIntersectResult pickResult = editorState.world->voxels.RayIntersect(editorState.viewRay);
 	
 	m_hoveredCornerDim = -1;
 	
@@ -29,7 +29,7 @@ void GravityCornerEditorComponent::Update(float dt, const EditorState& editorSta
 			m_hoveredCornerPos[nDim] = ni;
 			m_hoveredCornerPos[uDim] = std::floor(u);
 			m_hoveredCornerPos[vDim] = vi;
-			if (editorState.world->IsCorner(m_hoveredCornerPos, (Dir)(uDim * 2)))
+			if (editorState.world->voxels.IsCorner(m_hoveredCornerPos, (Dir)(uDim * 2)))
 				m_hoveredCornerDim = uDim;
 		};
 		auto TryU = [&]
@@ -39,7 +39,7 @@ void GravityCornerEditorComponent::Update(float dt, const EditorState& editorSta
 			m_hoveredCornerPos[nDim] = ni;
 			m_hoveredCornerPos[uDim] = ui;
 			m_hoveredCornerPos[vDim] = std::floor(v);
-			if (editorState.world->IsCorner(m_hoveredCornerPos, (Dir)(vDim * 2)))
+			if (editorState.world->voxels.IsCorner(m_hoveredCornerPos, (Dir)(vDim * 2)))
 				m_hoveredCornerDim = vDim;
 		};
 		
@@ -65,8 +65,8 @@ bool GravityCornerEditorComponent::UpdateInput(float dt, const EditorState& edit
 		if (m_modCornerDim != m_hoveredCornerDim || m_modCornerPos != m_hoveredCornerPos)
 		{
 			const Dir cornerDir = (Dir)(m_hoveredCornerDim * 2);
-			const bool isGravityCorner = editorState.world->IsGravityCorner(m_hoveredCornerPos, cornerDir);
-			editorState.world->SetIsGravityCorner(m_hoveredCornerPos, cornerDir, !isGravityCorner);
+			const bool isGravityCorner = editorState.world->voxels.IsGravityCorner(m_hoveredCornerPos, cornerDir);
+			editorState.world->voxels.SetIsGravityCorner(m_hoveredCornerPos, cornerDir, !isGravityCorner);
 			
 			m_modCornerDim = m_hoveredCornerDim;
 			m_modCornerPos = m_hoveredCornerPos;

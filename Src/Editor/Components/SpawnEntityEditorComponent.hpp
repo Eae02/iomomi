@@ -13,7 +13,7 @@ public:
 	bool UpdateInput(float dt, const EditorState& editorState) override;
 	
 private:
-	WallRayIntersectResult m_spawnEntityPickResult;
+	VoxelRayIntersectResult m_spawnEntityPickResult;
 	std::vector<char> m_searchBuffer;
 	bool m_open = false;
 };

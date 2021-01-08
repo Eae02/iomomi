@@ -323,6 +323,7 @@ std::shared_ptr<Ent> CloneEntity<RampEnt>(const Ent& entity)
 	clone->m_stretchTextureV = src.m_stretchTextureV;
 	clone->m_textureScale = src.m_textureScale;
 	clone->m_textureRotation = src.m_textureRotation;
+	clone->m_material = src.m_material;
 	
 	return clone;
 }

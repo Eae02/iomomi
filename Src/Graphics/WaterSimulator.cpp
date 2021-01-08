@@ -5,19 +5,19 @@
 #include "../World/Player.hpp"
 #include "../World/Entities/EntTypes/WaterPlaneEnt.hpp"
 #include "../World/Entities/Components/WaterBlockComp.hpp"
-#include "../Vec3Compare.hpp"
 
 #include <cstdlib>
 #include <execution>
+#include <glm/gtx/hash.hpp>
 
 void WaterSimulator::Init(World& world)
 {
 	Stop();
 	
-	auto [worldBoundsMin, worldBoundsMax] = world.CalculateBounds();
+	auto [worldBoundsMin, worldBoundsMax] = world.voxels.CalculateBounds();
 	glm::ivec3 worldSize = worldBoundsMax - worldBoundsMin;
 	
-	std::set<glm::ivec3, IVec3Compare> alreadyGenerated;
+	std::unordered_set<glm::ivec3> alreadyGenerated;
 	
 	std::uniform_real_distribution<float> offsetDist(0.3f, 0.7f);
 	
@@ -69,7 +69,7 @@ void WaterSimulator::Init(World& world)
 			for (int x = 0; x < worldSize.x; x++)
 			{
 				size_t index = x + y * worldSize.x + z * worldSize.x * worldSize.y;
-				isVoxelAir[index / 8] |= (uint8_t)world.IsAir(glm::ivec3(x, y, z) + worldBoundsMin) << (index % 8);
+				isVoxelAir[index / 8] |= (uint8_t)world.voxels.IsAir(glm::ivec3(x, y, z) + worldBoundsMin) << (index % 8);
 			}
 		}
 	}

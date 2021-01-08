@@ -133,7 +133,7 @@ void CubeEnt::Interact(Player& player)
 
 int CubeEnt::CheckInteraction(const Player& player, const class PhysicsEngine& physicsEngine) const
 {
-	if ((!player.OnGround() && !player.Underwater()) || isSpawning)
+	if ((!m_isPickedUp && !player.OnGround() && !player.Underwater()) || isSpawning)
 		return 0;
 	
 	//Very high so that dropping the cube has higher priority than other interactions.

@@ -33,6 +33,7 @@ public:
 	bool m_stretchTextureV = false;
 	float m_textureScale = 1;
 	int m_textureRotation = 0;
+	uint32_t m_material = 0;
 	
 	glm::vec3 m_size { 1.0f };
 	glm::vec3 m_position;
@@ -46,7 +47,6 @@ private:
 	bool m_meshOutOfDate = false;
 	eg::Buffer m_vertexBuffer;
 	
-	uint32_t m_material = 0;
 	float m_rampLength = 0;
 	
 	std::vector<DecalMaterial::InstanceData> m_edgeDecalInstances;

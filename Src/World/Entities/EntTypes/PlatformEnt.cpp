@@ -158,7 +158,7 @@ void PlatformEnt::EditorDraw(const EntEditorDrawArgs& args)
 			for (float dst = STEP_SIZE; dst < 50; dst += STEP_SIZE)
 			{
 				glm::vec3 pos = posAt(dst);
-				if (!args.world->IsAir(glm::floor(pos)))
+				if (!args.world->voxels.IsAir(glm::floor(pos)))
 				{
 					float lo = dst - STEP_SIZE;
 					float hi = dst;
@@ -166,7 +166,7 @@ void PlatformEnt::EditorDraw(const EntEditorDrawArgs& args)
 					{
 						float mid = (lo + hi) / 2;
 						pos = posAt(mid);
-						if (args.world->IsAir(glm::floor(pos)))
+						if (args.world->voxels.IsAir(glm::floor(pos)))
 							lo = mid;
 						else
 							hi = mid;

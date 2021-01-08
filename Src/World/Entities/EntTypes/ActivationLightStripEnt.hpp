@@ -1,7 +1,9 @@
 #pragma once
 
+#include <future>
 #include "../Entity.hpp"
 #include "../../../Graphics/Materials/LightStripMaterial.hpp"
+#include "../../VoxelBuffer.hpp"
 
 class ActivationLightStripEnt : public Ent
 {
@@ -9,7 +11,7 @@ public:
 	ActivationLightStripEnt() = default;
 	
 	static constexpr EntTypeID TypeID = EntTypeID::ActivationLightStrip;
-	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::EditorInvisible;
+	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::EditorInvisible | EntTypeFlags::DisableClone;
 	
 	void Serialize(std::ostream& stream) const override;
 	void Deserialize(std::istream& stream) override;
@@ -30,10 +32,6 @@ public:
 	static void GenerateAll(World& world);
 	
 	void Update(const struct WorldUpdateArgs& args) override;
-	
-	void Generate(const class World& world, eg::Span<const WayPoint> points);
-	
-	void ClearGeneratedMesh();
 	
 	struct PathEntry
 	{
@@ -57,9 +55,9 @@ public:
 	static const eg::ColorLin ACTIVATED_COLOR;
 	static const eg::ColorLin DEACTIVATED_COLOR;
 	
-private:
-	void Draw(eg::MeshBatch& meshBatch);
+	bool regenerate = false;
 	
+private:
 	enum MeshVariants
 	{
 		MV_Straight,
@@ -68,14 +66,28 @@ private:
 		MV_Count
 	};
 	
+	struct GenerateResult
+	{
+		std::vector<PathEntry> path;
+		std::array<std::vector<LightStripMaterial::InstanceData>, MV_Count> instances;
+		float maxTransitionProgress;
+	};
+	
+	static GenerateResult Generate(const VoxelBuffer& voxels, eg::Span<const WayPoint> points);
+	
+	std::vector<WayPoint> GetWayPointsWithStartAndEnd() const;
+	
+	std::future<GenerateResult> m_generationFuture;
+	
 	static const eg::Model* s_models[MV_Count];
 	static const eg::IMaterial* s_materials[MV_Count];
 	
 	std::weak_ptr<Ent> m_activator;
+	std::weak_ptr<Ent> m_activatable;
 	
 	std::vector<PathEntry> m_path;
 	
-	std::vector<LightStripMaterial::InstanceData> m_instances[MV_Count];
+	std::array<std::vector<LightStripMaterial::InstanceData>, MV_Count> m_instances;
 	
 	int m_transitionDirection = 0;
 	float m_maxTransitionProgress = 0;

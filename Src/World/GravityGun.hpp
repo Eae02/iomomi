@@ -14,6 +14,8 @@ public:
 	
 	void Draw(eg::MeshBatch& meshBatch, eg::MeshBatchOrdered& transparentMeshBatch);
 	
+	void ChangeLevel(const glm::quat& oldPlayerRotation, const glm::quat& newPlayerRotation);
+	
 	std::shared_ptr<PointLight> light;
 	
 	bool shouldShowControlHint = false;

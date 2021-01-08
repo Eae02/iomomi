@@ -136,11 +136,13 @@ void MainGameState::RunFrame(float dt)
 		//Moves to the next level
 		if (currentExit != nullptr && m_currentLevelIndex != -1 && levels[m_currentLevelIndex].nextLevelIndex != -1)
 		{
+			glm::quat oldPlayerRotation = m_player.Rotation();
 			MarkLevelCompleted(levels[m_currentLevelIndex]);
 			int64_t nextLevelIndex = levels[m_currentLevelIndex].nextLevelIndex;
-			eg::Log(eg::LogLevel::Info, "lvl", "Going to next level '{0}'", levels[nextLevelIndex].name);
 			SetWorld(LoadLevelWorld(levels[nextLevelIndex], false), nextLevelIndex, currentExit);
+			m_gravityGun.ChangeLevel(oldPlayerRotation, m_player.Rotation());
 			m_physicsEngine = {};
+			UpdateViewProjMatrices();
 		}
 		
 		WorldUpdateArgs updateArgs;

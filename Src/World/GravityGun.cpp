@@ -106,23 +106,15 @@ void GravityGun::SetBeamInstanceTransform(BeamInstance& instance)
 	instance.particleEmitter.SetTransform(glm::translate(glm::mat4(1), instance.beamPos) * glm::mat4(instance.rotationMatrix));
 }
 
+void GravityGun::ChangeLevel(const glm::quat& oldPlayerRotation, const glm::quat& newPlayerRotation)
+{
+	m_gunOffset = newPlayerRotation * glm::inverse(oldPlayerRotation) * m_gunOffset;
+}
+
 void GravityGun::Update(World& world, const PhysicsEngine& physicsEngine, WaterSimulator& waterSim,
 	eg::ParticleManager& particleManager, const Player& player, const glm::mat4& inverseViewProj, float dt)
 {
 	glm::mat3 rotationMatrix = (glm::mat3_cast(player.Rotation()));
-	
-	//Uncomment this to add an imgui window for customizing weapon location
-	/*
-	if (ImGui::Begin("Weapon"))
-	{
-		ImGui::DragFloat3("Position", &GUN_POSITION.x, 0.1f);
-		ImGui::DragFloat("RotY", &GUN_ROTATION_Y, 0.001f);
-		ImGui::DragFloat("RotX", &GUN_ROTATION_X, 0.001f);
-		ImGui::DragFloat("Scale", &GUN_SCALE, 0.001f, 0.0f, 1.0f);
-		ImGui::DragFloat("Bob Scale", &GUN_BOB_SCALE, 0.001f, 0.0f, 1.0f);
-	}
-	ImGui::End();
-	*/
 	
 	float fovOffsetZ = 0.07f * (settings.fieldOfViewDeg - 80.0f);
 	glm::vec3 targetOffset = rotationMatrix * ((GUN_POSITION + glm::vec3(0, 0, fovOffsetZ)) * GUN_SCALE);

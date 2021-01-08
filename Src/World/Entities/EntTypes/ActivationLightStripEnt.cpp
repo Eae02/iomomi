@@ -2,9 +2,7 @@
 #include "../Components/ActivatorComp.hpp"
 #include "../Components/ActivatableComp.hpp"
 #include "../../World.hpp"
-#include "../../../Vec3Compare.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
-#include "../../../Graphics/RenderSettings.hpp"
 
 #include <unordered_map>
 #include <tuple>
@@ -74,6 +72,23 @@ void ActivationLightStripEnt::CommonDraw(const EntDrawArgs& args)
 	}
 }
 
+std::vector<ActivationLightStripEnt::WayPoint> ActivationLightStripEnt::GetWayPointsWithStartAndEnd() const
+{
+	std::shared_ptr<Ent> activatorEnt = m_activator.lock();
+	std::shared_ptr<Ent> activatableEnt = m_activatable.lock();
+	const ActivatorComp* activator = activatorEnt->GetComponent<ActivatorComp>();
+	
+	std::vector<WayPoint> points(activator->waypoints.size() + 2);
+	points[0].position = activatorEnt->GetPosition();
+	points[0].wallNormal = activatorEnt->GetFacingDirection();
+	std::copy(activator->waypoints.begin(), activator->waypoints.end(), points.begin() + 1);
+	
+	std::vector<glm::vec3> connectionPoints = activatableEnt->GetComponent<ActivatableComp>()->GetConnectionPoints(*activatableEnt);
+	points.back().position = connectionPoints[std::min<size_t>(activator->targetConnectionIndex, connectionPoints.size() - 1)];
+	
+	return points;
+}
+
 void ActivationLightStripEnt::Update(const WorldUpdateArgs& args)
 {
 	const float TRANSITION_SPEED = 100;
@@ -81,13 +96,36 @@ void ActivationLightStripEnt::Update(const WorldUpdateArgs& args)
 	const float REVERT_MARGIN = 2.0f;
 	
 	std::shared_ptr<Ent> activatorEnt = m_activator.lock();
-	if (activatorEnt == nullptr)
+	if (activatorEnt == nullptr || m_activatable.lock() == nullptr)
 	{
 		args.world->entManager.RemoveEntity(*this);
 		return;
 	}
 	
 	const ActivatorComp* activator = activatorEnt->GetComponent<ActivatorComp>();
+	
+	if (m_generationFuture.valid() && m_generationFuture.wait_for(std::chrono::seconds(0)) == std::future_status::ready)
+	{
+		GenerateResult result = m_generationFuture.get();
+		m_instances.swap(result.instances);
+		m_path.swap(result.path);
+		m_maxTransitionProgress = result.maxTransitionProgress;
+		m_generationFuture = {};
+	}
+	if (!m_generationFuture.valid() && regenerate)
+	{
+		m_generationFuture = std::async(std::launch::async,
+		[
+			points = GetWayPointsWithStartAndEnd(),
+		    voxels = args.world->voxels,
+		    self = std::dynamic_pointer_cast<ActivationLightStripEnt>(shared_from_this())
+	    ] ()
+		{
+			return self->Generate(voxels, points);
+		});
+		regenerate = false;
+	}
+	
 	bool activated = activator && activator->IsActivated();
 	
 	if (m_transitionDirection == 0 || m_transitionProgress < REVERT_MARGIN ||
@@ -166,7 +204,7 @@ static const Dir ORTHO_DIRS[3][4] =
 	{ Dir::PosY, Dir::NegY, Dir::PosX, Dir::NegX },
 };
 
-void ActivationLightStripEnt::Generate(const World& world, eg::Span<const WayPoint> points)
+ActivationLightStripEnt::GenerateResult ActivationLightStripEnt::Generate(const VoxelBuffer& voxels, eg::Span<const WayPoint> points)
 {
 	struct NodeData
 	{
@@ -198,7 +236,7 @@ void ActivationLightStripEnt::Generate(const World& world, eg::Span<const WayPoi
 				for (int dn = 0; dn < 2; dn++)
 				{
 					glm::ivec3 actPos = glm::floor(glm::vec3(pos.doublePos - dirU * du - dirV * dv + dirN * (dn * 2 - 1)) / 2.0f);
-					isAir[du][dv][dn] = world.IsAir(actPos);
+					isAir[du][dv][dn] = voxels.IsAir(actPos);
 				}
 			}
 		}
@@ -208,14 +246,11 @@ void ActivationLightStripEnt::Generate(const World& world, eg::Span<const WayPoi
 			((!isAir[0][0][0] && !isAir[0][1][0]) || (!isAir[1][0][0] && !isAir[1][1][0]));
 	};
 	
-	m_maxTransitionProgress = 0;
-	ClearGeneratedMesh();
+	GenerateResult result;
 	
 	std::vector<NodePos> path;
 	std::vector<size_t> nodesBeforeWayPoint(points.size());
 	nodesBeforeWayPoint[0] = 0;
-	
-	m_path.clear();
 	
 	NodePos nextStart;
 	nextStart.doublePos = GetDoublePos(points[0].position);
@@ -324,7 +359,7 @@ void ActivationLightStripEnt::Generate(const World& world, eg::Span<const WayPoi
 		if (pq.empty())
 		{
 			eg::Log(eg::LogLevel::Warning, "misc", "Unable to find path for activation light strip!");
-			return;
+			return { };
 		}
 		
 		//Returns whether the given node has a previous node
@@ -345,14 +380,13 @@ void ActivationLightStripEnt::Generate(const World& world, eg::Span<const WayPoi
 		nextStart = lastPos;
 	}
 	
+	result.path.resize(path.size());
 	for (size_t i = 0; i < path.size(); i++)
 	{
 		auto wpi = std::lower_bound(nodesBeforeWayPoint.begin(), nodesBeforeWayPoint.end(), i);
-		
-		PathEntry& entry = m_path.emplace_back();
-		entry.position = glm::vec3(path[i].doublePos) / 2.0f;
-		entry.wallNormal = path[i].wallNormal;
-		entry.prevWayPoint = (int)(wpi - nodesBeforeWayPoint.begin()) - 1;
+		result.path[i].position = glm::vec3(path[i].doublePos) / 2.0f;
+		result.path[i].wallNormal = path[i].wallNormal;
+		result.path[i].prevWayPoint = (int)(wpi - nodesBeforeWayPoint.begin()) - 1;
 	}
 	
 	//Builds the path mesh
@@ -390,7 +424,7 @@ void ActivationLightStripEnt::Generate(const World& world, eg::Span<const WayPoi
 				std::swap(rotationX, rotationZ);
 			
 			translation = glm::vec3(path[i - 1].doublePos) / 2.0f;
-			instanceData = &m_instances[MV_Bend].emplace_back();
+			instanceData = &result.instances[MV_Bend].emplace_back();
 			i -= 2;
 		}
 		//If the step direction and normals match, insert a straight segment.
@@ -398,13 +432,13 @@ void ActivationLightStripEnt::Generate(const World& world, eg::Span<const WayPoi
 		{
 			rotationX = glm::cross(rotationY, rotationZ);
 			translation = glm::vec3(path[i].doublePos + path[i - 1].doublePos) / 4.0f;
-			instanceData = &m_instances[MV_Straight].emplace_back();
+			instanceData = &result.instances[MV_Straight].emplace_back();
 		}
 		else if (path[i - 1].stepDirection == path[i].wallNormal)
 		{
 			rotationX = glm::cross(rotationY, rotationZ);
 			translation = glm::vec3(path[i].doublePos) / 2.0f;
-			instanceData = &m_instances[MV_Corner].emplace_back();
+			instanceData = &result.instances[MV_Corner].emplace_back();
 		}
 		
 		if (instanceData != nullptr)
@@ -416,14 +450,17 @@ void ActivationLightStripEnt::Generate(const World& world, eg::Span<const WayPoi
 		}
 	}
 	
+	result.maxTransitionProgress = 0;
 	for (int v = 0; v < MV_Count; v++)
 	{
-		for (LightStripMaterial::InstanceData& instanceData : m_instances[v])
+		for (LightStripMaterial::InstanceData& instanceData : result.instances[v])
 		{
-			instanceData.lightProgress = m_maxTransitionProgress + accDistance - instanceData.lightProgress;
+			instanceData.lightProgress = result.maxTransitionProgress + accDistance - instanceData.lightProgress;
 		}
 	}
-	m_maxTransitionProgress += accDistance + 1;
+	result.maxTransitionProgress += accDistance + 1;
+	
+	return result;
 }
 
 void ActivationLightStripEnt::GenerateForActivator(World& world, Ent& activatorEntity)
@@ -442,23 +479,13 @@ void ActivationLightStripEnt::GenerateForActivator(World& world, Ent& activatorE
 	{
 		lightStripEnt = Ent::Create<ActivationLightStripEnt>();
 		lightStripEnt->PreventSerialize();
+		world.entManager.AddEntity(lightStripEnt);
 		activator->lightStripEntity = lightStripEnt;
 	}
 	
-	std::vector<glm::vec3> connectionPoints = activatableEntity->GetComponent<ActivatableComp>()->GetConnectionPoints(*activatableEntity);
-	
-	std::vector<WayPoint> points(activator->waypoints.size() + 2);
-	
-	points[0].position = activatorEntity.GetPosition();
-	points[0].wallNormal = activatorEntity.GetFacingDirection();
-	std::copy(activator->waypoints.begin(), activator->waypoints.end(), points.begin() + 1);
-	points.back().position = connectionPoints[std::min<size_t>(activator->targetConnectionIndex, connectionPoints.size() - 1)];
-	
 	lightStripEnt->m_activator = activatorEntity.shared_from_this();
-	
-	lightStripEnt->Generate(world, points);
-	
-	world.entManager.AddEntity(std::move(lightStripEnt));
+	lightStripEnt->m_activatable = activatableEntity->shared_from_this();
+	lightStripEnt->regenerate = true;
 }
 
 void ActivationLightStripEnt::GenerateAll(World& world)
@@ -467,12 +494,6 @@ void ActivationLightStripEnt::GenerateAll(World& world)
 	{
 		GenerateForActivator(world, entity);
 	});
-}
-
-void ActivationLightStripEnt::ClearGeneratedMesh()
-{
-	for (std::vector<LightStripMaterial::InstanceData>& instance : m_instances)
-		instance.clear();
 }
 
 void ActivationLightStripEnt::Serialize(std::ostream& stream) const { }

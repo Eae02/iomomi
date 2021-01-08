@@ -14,13 +14,13 @@ constexpr float DOUBLE_CLICK_TIMEOUT = 0.2f;
 
 bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorState)
 {
-	WallRayIntersectResult pickResult;
+	VoxelRayIntersectResult pickResult;
 	bool hasPickResult = false;
 	auto DoWallRayIntersect = [&] ()
 	{
 		if (!hasPickResult)
 		{
-			pickResult = editorState.world->RayIntersectWall(editorState.viewRay);
+			pickResult = editorState.world->voxels.RayIntersect(editorState.viewRay);
 			hasPickResult = true;
 		}
 	};
@@ -76,7 +76,7 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 				bool allAir = true;
 				IterateSelection([&] (const glm::ivec3& pos)
 				{
-					if (!editorState.world->IsAir(pos))
+					if (!editorState.world->voxels.IsAir(pos))
 						allAir = false;
 				}, selDimOffsetMin, selDimOffsetMax);
 				
@@ -91,7 +91,7 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 						editorState.InvalidateWater();
 						IterateSelection([&] (const glm::ivec3& pos)
 						{
-							editorState.world->SetIsAir(pos, !allAir);
+							editorState.world->voxels.SetIsAir(pos, !allAir);
 						}, selDimOffsetMin, selDimOffsetMax);
 					};
 					
@@ -111,8 +111,8 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 					
 					IterateSelection([&] (const glm::ivec3& pos)
 					{
-						int material = editorState.world->GetMaterial(pos + texSourceOffset, texSourceSide);
-						editorState.world->SetMaterialSafe(pos + texDestOffset, texSourceSide, material);
+						int material = editorState.world->voxels.GetMaterial(pos + texSourceOffset, texSourceSide);
+						editorState.world->voxels.SetMaterialSafe(pos + texDestOffset, texSourceSide, material);
 						for (int s = 0; s < 4; s++)
 						{
 							const int stepDim = (selDim + 1 + s / 2) % 3;
@@ -120,14 +120,14 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 							
 							if (!allAir)
 							{
-								int materialHere = editorState.world->GetMaterialIfVisible(pos + texSourceOffset, stepDir).value_or(material);
-								editorState.world->SetMaterialSafe(pos, stepDir, materialHere);
+								int materialHere = editorState.world->voxels.GetMaterialIfVisible(pos + texSourceOffset, stepDir).value_or(material);
+								editorState.world->voxels.SetMaterialSafe(pos, stepDir, materialHere);
 							}
 							else
 							{
 								const glm::ivec3 npos = pos + DirectionVector(stepDir);
-								int materialHere = editorState.world->GetMaterialIfVisible(npos - texDestOffset, stepDir).value_or(material);
-								editorState.world->SetMaterialSafe(npos, stepDir, materialHere);
+								int materialHere = editorState.world->voxels.GetMaterialIfVisible(npos - texDestOffset, stepDir).value_or(material);
+								editorState.world->voxels.SetMaterialSafe(npos, stepDir, materialHere);
 							}
 						}
 					}, selDimOffsetMin, selDimOffsetMax);
@@ -206,8 +206,8 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 					for (int z = mn.z; z <= mx.z; z++)
 					{
 						glm::ivec3 pos(x, y, z);
-						if (editorState.world->IsAir(pos + DirectionVector(m_selectionNormal)) &&
-							!editorState.world->IsAir(pos))
+						if (editorState.world->voxels.IsAir(pos + DirectionVector(m_selectionNormal)) &&
+							!editorState.world->voxels.IsAir(pos))
 						{
 							m_finishedSelection.emplace_back(x, y, z);
 						}
@@ -231,7 +231,7 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 					std::optional<int> requiredMaterial;
 					if (eg::InputState::Current().IsAltDown())
 					{
-						requiredMaterial = editorState.world->GetMaterial(
+						requiredMaterial = editorState.world->voxels.GetMaterial(
 							pickResult.voxelPosition + DirectionVector(pickResult.normalDir), pickResult.normalDir);
 					}
 					
@@ -255,12 +255,12 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 void WallDragEditorComponent::FillSelection(const World& world, const glm::ivec3& pos, Dir normalDir,
 	std::optional<int> requiredMaterial)
 {
-	if (!world.IsAir(pos + DirectionVector(normalDir)) || world.IsAir(pos) || eg::Contains(m_finishedSelection, pos))
+	if (!world.voxels.IsAir(pos + DirectionVector(normalDir)) || world.voxels.IsAir(pos) || eg::Contains(m_finishedSelection, pos))
 	{
 		return;
 	}
 	
-	if (requiredMaterial.has_value() && world.GetMaterial(pos + DirectionVector(normalDir), normalDir) != *requiredMaterial)
+	if (requiredMaterial.has_value() && world.voxels.GetMaterial(pos + DirectionVector(normalDir), normalDir) != *requiredMaterial)
 	{
 		return;
 	}
@@ -375,7 +375,7 @@ void WallDragEditorComponent::RenderSettings(const EditorState& editorState)
 			{
 				IterateSelection([&](glm::ivec3 pos)
 				{
-					editorState.world->SetMaterialSafe(pos + DirectionVector(m_selectionNormal), m_selectionNormal, i);
+					editorState.world->voxels.SetMaterialSafe(pos + DirectionVector(m_selectionNormal), m_selectionNormal, i);
 				}, 0, 0);
 			}
 			ImGui::PopID();

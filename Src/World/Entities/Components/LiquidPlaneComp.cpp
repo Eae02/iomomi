@@ -1,8 +1,10 @@
 #include "LiquidPlaneComp.hpp"
-#include "../../World.hpp"
-#include "../../../Vec3Compare.hpp"
 #include "WaterBlockComp.hpp"
 #include "AxisAlignedQuadComp.hpp"
+#include "../../World.hpp"
+#include "../../../Vec3Compare.hpp"
+
+#include <glm/gtx/hash.hpp>
 
 bool LiquidPlaneComp::IsUnderwater(const glm::ivec3& pos) const
 {
@@ -28,7 +30,7 @@ void LiquidPlaneComp::MaybeUpdate(const World& world)
 	
 	glm::vec3 startF = position + glm::vec3(DirectionVector(wallForward)) * 0.5f;
 	
-	std::set<glm::ivec3, Vec3Compare> visited;
+	std::unordered_set<glm::ivec3> visited;
 	std::queue<glm::ivec3> bfsQueue;
 	
 	glm::ivec3 startI = glm::floor(startF);
@@ -66,7 +68,7 @@ void LiquidPlaneComp::MaybeUpdate(const World& world)
 			const glm::ivec3 next = pos + delta;
 			if (next.y > startI.y)
 				continue;
-			if (!world.IsAir(next))
+			if (!world.voxels.IsAir(next))
 				continue;
 			if (eg::SortedContains(blockedByEntity, next, Vec3Compare()))
 				continue;
@@ -81,6 +83,7 @@ void LiquidPlaneComp::MaybeUpdate(const World& world)
 	m_underwater.clear();
 	m_underwater.resize(visited.size());
 	std::copy(visited.begin(), visited.end(), m_underwater.begin());
+	std::sort(m_underwater.begin(), m_underwater.end(), Vec3Compare());
 	
 	if (shouldGenerateMesh)
 		GenerateMesh();

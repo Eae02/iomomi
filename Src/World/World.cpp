@@ -4,7 +4,6 @@
 #include "Entities/Components/ActivatorComp.hpp"
 #include "Entities/EntTypes/CubeEnt.hpp"
 #include "Entities/EntTypes/CubeSpawnerEnt.hpp"
-#include "Entities/EntTypes/WallLightEnt.hpp"
 #include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
 #include "../Graphics/WallShader.hpp"
 #include "../../Protobuf/Build/World.pb.h"
@@ -28,6 +27,17 @@ World::World()
 static const uint32_t CURRENT_VERSION = 9;
 static char MAGIC[] = { (char)0xFF, 'G', 'W', 'D' };
 
+#pragma pack(push, 1)
+struct VoxelData
+{
+	int32_t x;
+	int32_t y;
+	int32_t z;
+	uint8_t materials[6];
+	uint16_t hasGravityCorner;
+};
+#pragma pack(pop)
+
 std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 {
 	char magicBuf[sizeof(MAGIC)];
@@ -41,34 +51,55 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 	std::unique_ptr<World> world = std::make_unique<World>();
 	
 	const uint32_t version = eg::BinRead<uint32_t>(stream);
-	if (version >= 1 && version <= 4)
-	{
-		world->LoadFormatSub5(stream, version, isEditor);
-	}
-	else if (version >= 5)
-	{
-		world->LoadFormatSup5(stream, version, isEditor);
-	}
-	else
+	if (version != 9)
 	{
 		eg::Log(eg::LogLevel::Error, "wd", "Unsupported world format");
 		return nullptr;
 	}
 	
-	if (version < 8)
+	//Reads voxel data
+	uint32_t numVoxels = eg::BinRead<uint32_t>(stream);
+	std::vector<VoxelData> voxelData(numVoxels);
+	eg::ReadCompressedSection(stream, voxelData.data(), numVoxels * sizeof(VoxelData));
+	
+	//Parses voxel data
+	for (const VoxelData& data : voxelData)
 	{
-		world->entManager.ForEachOfType<EntranceExitEnt>([&] (EntranceExitEnt& ent)
+		VoxelBuffer::AirVoxel& voxel = world->voxels.m_voxels.emplace(glm::ivec3(data.x, data.y, data.z), VoxelBuffer::AirVoxel()).first->second;
+		std::copy_n(data.materials, 6, voxel.materials);
+		for (int i = 0; i < 6; i++)
 		{
-			if (ent.m_type == EntranceExitEnt::Type::Entrance)
-			{
-				world->thumbnailCameraDir = glm::vec3(DirectionVector(ent.GetFacingDirection()));
-				world->thumbnailCameraPos = ent.GetPosition() + world->thumbnailCameraDir * 0.1f;
-			}
-		});
+			if (voxel.materials[i] >= MAX_WALL_MATERIALS || !wallMaterials[voxel.materials[i]].initialized)
+				voxel.materials[i] = 0;
+		}
+		voxel.hasGravityCorner = std::bitset<12>(data.hasGravityCorner);
 	}
 	
-	ActivatorComp::Initialize(world->entManager);
+	//Parses protobuf data
+	uint64_t dataSize = eg::BinRead<uint64_t>(stream);
+	std::vector<char> data(dataSize);
+	stream.read(data.data(), dataSize);
+	gravity_pb::World worldPB;
+	worldPB.ParseFromArray(data.data(), dataSize);
 	
+	//Writes protobuf data to the world's fields
+	world->thumbnailCameraPos = glm::vec3(worldPB.thumbnail_camera_x(), worldPB.thumbnail_camera_y(), worldPB.thumbnail_camera_z());
+	world->thumbnailCameraDir = glm::normalize(glm::vec3(worldPB.thumbnail_camera_dx(), worldPB.thumbnail_camera_dy(), worldPB.thumbnail_camera_dz()));
+	world->extraWaterParticles = worldPB.extra_water_particles();
+	world->playerHasGravityGun = worldPB.player_has_gravity_gun();
+	world->title = worldPB.title();
+	for (int i = 0; i < std::min(worldPB.control_hints_size(), NUM_CONTROL_HINTS); i++)
+	{
+		world->showControlHint[i] = worldPB.control_hints(i);
+	}
+	
+	world->entManager = EntityManager::Deserialize(stream);
+	
+	world->voxels.m_modified = true;
+	world->m_isLatestVersion = version == CURRENT_VERSION;
+	
+	//Post-load initialization
+	ActivatorComp::Initialize(world->entManager);
 	if (!isEditor)
 	{
 		world->entManager.ForEachOfType<EntranceExitEnt>([&] (EntranceExitEnt& ent)
@@ -81,150 +112,9 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 			world->cubeSpawnerPositions2.emplace_back(glm::round(ent.GetPosition() * 2.0f));
 		});
 	}
-	
-	world->m_isLatestVersion = version == CURRENT_VERSION;
-	
 	ActivationLightStripEnt::GenerateAll(*world);
 	
 	return world;
-}
-
-void World::LoadFormatSub5(std::istream& stream, uint32_t version, bool isEditor)
-{
-	const uint32_t numRegions = eg::BinRead<uint32_t>(stream);
-	for (uint32_t i = 0; i < numRegions; i++)
-	{
-		glm::ivec3 coordinate;
-		coordinate.x = eg::BinRead<int32_t>(stream);
-		coordinate.y = eg::BinRead<int32_t>(stream);
-		coordinate.z = eg::BinRead<int32_t>(stream);
-		
-		constexpr uint32_t REGION_SIZE = 16;
-		constexpr uint64_t IS_AIR_MASK = (uint64_t)1 << (uint64_t)60;
-		
-		uint64_t voxels[REGION_SIZE][REGION_SIZE][REGION_SIZE];
-		
-		if (!eg::ReadCompressedSection(stream, voxels, sizeof(voxels)))
-		{
-			EG_PANIC("Could not decompress voxels")
-		}
-		
-		glm::ivec3 regionMin = coordinate * (int)REGION_SIZE;
-		for (uint32_t x = 0; x < REGION_SIZE; x++)
-		{
-			for (uint32_t y = 0; y < REGION_SIZE; y++)
-			{
-				for (uint32_t z = 0; z < REGION_SIZE; z++)
-				{
-					if (!(voxels[x][y][z] & IS_AIR_MASK))
-						continue;
-					AirVoxel& voxel = m_voxels.emplace(regionMin + glm::ivec3(x, y, z), AirVoxel()).first->second;
-					for (int f = 0; f < 6; f++)
-					{
-						voxel.materials[f] = (voxels[x][y][z] >> (f * 8)) & 0xFF;
-					}
-					voxel.hasGravityCorner = (voxels[x][y][z] >> 48) & 0xFFF;
-				}
-			}
-		}
-	}
-	
-	playerHasGravityGun = version >= 2 && (bool)eg::BinRead<uint8_t>(stream);
-	
-	bool halfLightIntensity = version < 4 || (bool)eg::BinRead<uint8_t>(stream);
-	
-	title = version >= 3 ? eg::BinReadString(stream) : "Untitled";
-	
-	entManager = EntityManager::Deserialize(stream);
-	
-	if (halfLightIntensity)
-	{
-		entManager.ForEachOfType<WallLightEnt>([&] (WallLightEnt& ent)
-		{
-			ent.HalfLightIntensity();
-		});
-	}
-}
-
-#pragma pack(push, 1)
-struct VoxelData
-{
-	int32_t x;
-	int32_t y;
-	int32_t z;
-	uint8_t materials[6];
-	uint16_t hasGravityCorner;
-};
-#pragma pack(pop)
-
-void World::LoadFormatSup5(std::istream& stream, uint32_t version, bool isEditor)
-{
-	uint32_t numVoxels = eg::BinRead<uint32_t>(stream);
-	std::vector<VoxelData> voxelData(numVoxels);
-	
-	if (version == 5)
-	{
-		stream.read(reinterpret_cast<char*>(voxelData.data()), numVoxels * sizeof(VoxelData));
-	}
-	else
-	{
-		eg::ReadCompressedSection(stream, voxelData.data(), numVoxels * sizeof(VoxelData));
-	}
-	
-	for (const VoxelData& data : voxelData)
-	{
-		AirVoxel& voxel = m_voxels.emplace(glm::ivec3(data.x, data.y, data.z), AirVoxel()).first->second;
-		std::copy_n(data.materials, 6, voxel.materials);
-		for (int i = 0; i < 6; i++)
-		{
-			if (voxel.materials[i] >= MAX_WALL_MATERIALS || !wallMaterials[voxel.materials[i]].initialized)
-				voxel.materials[i] = 0;
-		}
-		voxel.hasGravityCorner = std::bitset<12>(data.hasGravityCorner);
-	}
-	
-	if (version >= 9)
-	{
-		uint64_t dataSize = eg::BinRead<uint64_t>(stream);
-		std::vector<char> data(dataSize);
-		stream.read(data.data(), dataSize);
-		
-		gravity_pb::World worldPB;
-		worldPB.ParseFromArray(data.data(), dataSize);
-		
-		thumbnailCameraPos = glm::vec3(worldPB.thumbnail_camera_x(), worldPB.thumbnail_camera_y(), worldPB.thumbnail_camera_z());
-		thumbnailCameraDir = glm::vec3(worldPB.thumbnail_camera_dx(), worldPB.thumbnail_camera_dy(), worldPB.thumbnail_camera_dz());
-		thumbnailCameraDir = glm::normalize(thumbnailCameraDir);
-		extraWaterParticles = worldPB.extra_water_particles();
-		playerHasGravityGun = worldPB.player_has_gravity_gun();
-		title = worldPB.title();
-		
-		for (int i = 0; i < std::min(worldPB.control_hints_size(), NUM_CONTROL_HINTS); i++)
-		{
-			showControlHint[i] = worldPB.control_hints(i);
-		}
-	}
-	else
-	{
-		if (version >= 8)
-		{
-			thumbnailCameraPos.x = eg::BinRead<float>(stream);
-			thumbnailCameraPos.y = eg::BinRead<float>(stream);
-			thumbnailCameraPos.z = eg::BinRead<float>(stream);
-			thumbnailCameraDir.x = eg::BinRead<float>(stream);
-			thumbnailCameraDir.y = eg::BinRead<float>(stream);
-			thumbnailCameraDir.z = eg::BinRead<float>(stream);
-			thumbnailCameraDir = glm::normalize(thumbnailCameraDir);
-		}
-		if (version >= 7)
-		{
-			extraWaterParticles = eg::BinRead<uint32_t>(stream);
-		}
-		playerHasGravityGun = eg::BinRead<uint8_t>(stream);
-		title = eg::BinReadString(stream);
-	}
-	
-	entManager = EntityManager::Deserialize(stream);
 }
 
 void World::Save(std::ostream& outStream) const
@@ -232,11 +122,11 @@ void World::Save(std::ostream& outStream) const
 	outStream.write(MAGIC, sizeof(MAGIC));
 	eg::BinWrite(outStream, CURRENT_VERSION);
 	
-	eg::BinWrite(outStream, (uint32_t)m_voxels.size());
+	eg::BinWrite(outStream, (uint32_t)voxels.m_voxels.size());
 	std::vector<VoxelData> voxelData;
-	voxelData.reserve(m_voxels.size());
+	voxelData.reserve(voxels.m_voxels.size());
 	
-	for (const auto& voxel : m_voxels)
+	for (const auto& voxel : voxels.m_voxels)
 	{
 		VoxelData& data = voxelData.emplace_back();
 		data.x = voxel.first.x;
@@ -267,74 +157,6 @@ void World::Save(std::ostream& outStream) const
 	worldPB.SerializeToOstream(&outStream);
 	
 	entManager.Serialize(outStream);
-}
-
-std::pair<glm::ivec3, glm::ivec3> World::CalculateBounds() const
-{
-	glm::ivec3 boundsMin(INT_MAX);
-	glm::ivec3 boundsMax(INT_MIN);
-	for (const auto& voxel : m_voxels)
-	{
-		boundsMin = glm::min(boundsMin, voxel.first);
-		boundsMax = glm::max(boundsMax, voxel.first);
-	}
-	boundsMin -= 1;
-	boundsMax += 2;
-	return std::make_pair(boundsMin, boundsMax);
-}
-
-void World::SetIsAir(const glm::ivec3& pos, bool air)
-{
-	auto voxelIt = m_voxels.find(pos);
-	bool alreadyAir = voxelIt != m_voxels.end();
-	
-	if (alreadyAir == air)
-		return;
-	
-	if (alreadyAir)
-	{
-		m_voxels.erase(voxelIt);
-	}
-	else
-	{
-		m_voxels.emplace(pos, AirVoxel());
-	}
-}
-
-void World::SetMaterialSafe(const glm::ivec3& pos, Dir side, int material)
-{
-	auto voxelIt = m_voxels.find(pos);
-	if (voxelIt != m_voxels.end())
-	{
-		voxelIt->second.materials[(int)side] = material;
-		m_buffersOutOfDate = true;
-	}
-}
-
-void World::SetMaterial(const glm::ivec3& pos, Dir side, int material)
-{
-	auto voxelIt = m_voxels.find(pos);
-	EG_ASSERT(voxelIt != m_voxels.end())
-	voxelIt->second.materials[(int)side] = material;
-	m_buffersOutOfDate = true;
-}
-
-int World::GetMaterial(const glm::ivec3& pos, Dir side) const
-{
-	auto voxelIt = m_voxels.find(pos);
-	if (voxelIt == m_voxels.end())
-		return 0;
-	return voxelIt->second.materials[(int)side];
-}
-
-std::optional<int> World::GetMaterialIfVisible(const glm::ivec3& pos, Dir side) const
-{
-	if (!IsAir(pos) || IsAir(pos - DirectionVector(side)))
-		return {};
-	auto voxelIt = m_voxels.find(pos);
-	if (voxelIt == m_voxels.end())
-		return {};
-	return voxelIt->second.materials[(int)side];
 }
 
 glm::mat3 GravityCorner::MakeRotationMatrix() const
@@ -369,7 +191,7 @@ void World::Update(const WorldUpdateArgs& args, PhysicsEngine* physicsEngine)
 
 void World::PrepareForDraw(PrepareDrawArgs& args)
 {
-	if (m_buffersOutOfDate)
+	if (voxels.m_modified)
 		PrepareMeshes(args.isEditor);
 	
 	eg::Model& gravityCornerModel = eg::GetAsset<eg::Model>("Models/GravityCornerConvex.obj");
@@ -508,7 +330,7 @@ void World::PrepareMeshes(bool isEditor)
 	
 	m_numVoxelIndices = wallIndices.size();
 	m_numBorderVertices = borderVertices.size();
-	m_buffersOutOfDate = false;
+	voxels.m_modified = false;
 	m_canDraw = true;
 }
 
@@ -517,7 +339,7 @@ eg::CollisionMesh World::BuildMesh(std::vector<WallVertex>& vertices, std::vecto
 	std::vector<glm::vec3> collisionVertices;
 	std::vector<uint32_t> collisionIndices;
 	
-	for (const auto& voxel : m_voxels)
+	for (const auto& voxel : voxels.m_voxels)
 	{
 		for (int s = 0; s < 6; s++)
 		{
@@ -525,7 +347,7 @@ eg::CollisionMesh World::BuildMesh(std::vector<WallVertex>& vertices, std::vecto
 			const glm::ivec3 nPos = voxel.first - normal;
 			
 			//Only emit triangles for voxels that face into a solid voxel
-			if (IsAir(nPos))
+			if (voxels.IsAir(nPos))
 				continue;
 			int texture = voxel.second.materials[s];
 			if (texture == 0 && !includeNoDraw)
@@ -578,11 +400,11 @@ eg::CollisionMesh World::BuildMesh(std::vector<WallVertex>& vertices, std::vecto
 						vertex.SetNormal(normal);
 						vertex.SetTangent(tangent);
 						
-						if (!IsAir(voxel.first + tDir))
+						if (!voxels.IsAir(voxel.first + tDir))
 							vertex.misc[WallVertex::M_AO] |= fy + 1;
-						if (!IsAir(voxel.first + bDir))
+						if (!voxels.IsAir(voxel.first + bDir))
 							vertex.misc[WallVertex::M_AO] |= (fx + 1) << 2;
-						if (!IsAir(voxel.first + diagDir) && vertex.misc[WallVertex::M_AO] == 0)
+						if (!voxels.IsAir(voxel.first + diagDir) && vertex.misc[WallVertex::M_AO] == 0)
 							vertex.misc[WallVertex::M_AO] = 1 << (fx + 2 * fy);
 					}
 					
@@ -617,7 +439,7 @@ eg::CollisionMesh World::BuildMesh(std::vector<WallVertex>& vertices, std::vecto
 
 void World::BuildBorderMesh(std::vector<WallBorderVertex>* borderVertices, std::vector<GravityCorner>& gravityCorners) const
 {
-	for (const auto& voxel : m_voxels)
+	for (const auto& voxel : voxels.m_voxels)
 	{
 		const glm::vec3 cPos = glm::vec3(voxel.first) + 0.5f;
 		
@@ -638,9 +460,9 @@ void World::BuildBorderMesh(std::vector<WallBorderVertex>* borderVertices, std::
 					const glm::ivec3 vSV = vV * (v * 2 - 1);
 					auto CouldHaveGravityCorner = [&] (const glm::ivec3& pos)
 					{
-						const bool uAir = IsAir(pos + uSV);
-						const bool vAir = IsAir(pos + vSV);
-						const bool diagAir = IsAir(pos + uSV + vSV);
+						const bool uAir = voxels.IsAir(pos + uSV);
+						const bool vAir = voxels.IsAir(pos + vSV);
+						const bool diagAir = voxels.IsAir(pos + uSV + vSV);
 						return !(diagAir || uAir != vAir);
 					};
 					
@@ -671,10 +493,10 @@ void World::BuildBorderMesh(std::vector<WallBorderVertex>* borderVertices, std::
 						for (int s = 0; s < 2; s++)
 						{
 							glm::ivec3 nextGlobalPos = voxel.first + dlV * (((s + u + v) % 2) * 2 - 1);
-							auto nextVoxelIt = m_voxels.find(nextGlobalPos);
+							auto nextVoxelIt = voxels.m_voxels.find(nextGlobalPos);
 							corner.isEnd[s] =
 								!CouldHaveGravityCorner(nextGlobalPos) ||
-								nextVoxelIt == m_voxels.end() ||
+								nextVoxelIt == voxels.m_voxels.end() ||
 								!nextVoxelIt->second.hasGravityCorner[gBit];
 						}
 					}
@@ -682,81 +504,6 @@ void World::BuildBorderMesh(std::vector<WallBorderVertex>* borderVertices, std::
 			}
 		}
 	}
-}
-
-glm::ivec4 World::GetGravityCornerVoxelPos(glm::ivec3 cornerPos, Dir cornerDir) const
-{
-	const int cornerDim = (int)cornerDir / 2;
-	if ((int)cornerDir % 2)
-		cornerPos[cornerDim]--;
-	
-	const Dir uDir = (Dir)((cornerDim + 1) % 3 * 2);
-	const Dir vDir = (Dir)((cornerDim + 2) % 3 * 2);
-	const glm::ivec3 uV = DirectionVector(uDir);
-	const glm::ivec3 vV = DirectionVector(vDir);
-	
-	int numAir = 0;
-	glm::ivec2 airPos, notAirPos;
-	for (int u = -1; u <= 0; u++)
-	{
-		for (int v = -1; v <= 0; v++)
-		{
-			glm::ivec3 pos = cornerPos + uV * u + vV * v;
-			if (IsAir(pos))
-			{
-				numAir++;
-				airPos = { u, v };
-			}
-			else
-			{
-				notAirPos = { u, v };
-			}
-		}
-	}
-	
-	if (numAir == 3)
-	{
-		airPos.x = -1 - notAirPos.x;
-		airPos.y = -1 - notAirPos.y;
-	}
-	else if (numAir != 1)
-		return { 0, 0, 0, -1 };
-	
-	const int bit = cornerDim * 4 + (airPos.y + 1) * 2 + airPos.x + 1;
-	return glm::ivec4(cornerPos + uV * airPos.x + vV * airPos.y, bit);
-}
-
-bool World::IsGravityCorner(const glm::ivec3& cornerPos, Dir cornerDir) const
-{
-	glm::ivec4 voxelPos = GetGravityCornerVoxelPos(cornerPos, cornerDir);
-	if (voxelPos.w == -1)
-		return false;
-	
-	auto voxelIt = m_voxels.find(glm::ivec3(voxelPos));
-	if (voxelIt == m_voxels.end())
-		return false;
-	
-	return voxelIt->second.hasGravityCorner[voxelPos.w];
-}
-
-void World::SetIsGravityCorner(const glm::ivec3& cornerPos, Dir cornerDir, bool value)
-{
-	glm::ivec4 voxelPos = GetGravityCornerVoxelPos(cornerPos, cornerDir);
-	if (voxelPos.w == -1)
-		return;
-	
-	auto voxelIt = m_voxels.find(glm::ivec3(voxelPos));
-	if (voxelIt == m_voxels.end())
-		return;
-	
-	voxelIt->second.hasGravityCorner[voxelPos.w] = value;
-	m_buffersOutOfDate = true;
-}
-
-bool World::IsCorner(const glm::ivec3& cornerPos, Dir cornerDir) const
-{
-	glm::ivec4 voxelPos = GetGravityCornerVoxelPos(cornerPos, cornerDir);
-	return voxelPos.w != -1;
 }
 
 const GravityCorner* World::FindGravityCorner(const eg::AABB& aabb, glm::vec3 move, Dir currentDown) const
@@ -814,46 +561,9 @@ const GravityCorner* World::FindGravityCorner(const eg::AABB& aabb, glm::vec3 mo
 	return ret;
 }
 
-WallRayIntersectResult World::RayIntersectWall(const eg::Ray& ray) const
-{
-	float minDist = INFINITY;
-	WallRayIntersectResult result;
-	result.intersected = false;
-	
-	for (int dim = 0; dim < 3; dim++)
-	{
-		glm::vec3 dn = DirectionVector((Dir)(dim * 2));
-		for (int s = -100; s <= 100; s++)
-		{
-			if (std::signbit(s - ray.GetStart()[dim]) != std::signbit(ray.GetDirection()[dim]))
-				continue;
-			
-			eg::Plane plane(dn, s);
-			float intersectDist;
-			if (ray.Intersects(plane, intersectDist) && intersectDist < minDist)
-			{
-				glm::vec3 iPos = ray.GetPoint(intersectDist);
-				glm::vec3 posDel = ray.GetDirection() * dn * 0.1f;
-				glm::ivec3 voxelPosN = glm::floor(iPos + posDel);
-				glm::ivec3 voxelPosP = glm::floor(iPos - posDel);
-				if (IsAir(voxelPosP) && !IsAir(voxelPosN))
-				{
-					result.intersectPosition = iPos;
-					result.voxelPosition = voxelPosN;
-					result.normalDir = (Dir)(dim * 2 + (voxelPosP[dim] > voxelPosN[dim] ? 0 : 1));
-					result.intersected = true;
-					minDist = intersectDist;
-				}
-			}
-		}
-	}
-	
-	return result;
-}
-
 bool World::HasCollision(const glm::ivec3& pos, Dir side) const
 {
-	if (IsAir(pos) == IsAir(pos + DirectionVector(side)))
+	if (voxels.IsAir(pos) == voxels.IsAir(pos + DirectionVector(side)))
 		return false;
 	
 	glm::ivec3 sideNormal = -DirectionVector(side);
@@ -882,9 +592,4 @@ bool World::HasCollision(const glm::ivec3& pos, Dir side) const
 	}
 	
 	return true;
-}
-
-bool World::IsAir(const glm::ivec3& pos) const
-{
-	return m_voxels.count(pos) != 0;
 }

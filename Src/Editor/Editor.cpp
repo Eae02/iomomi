@@ -83,10 +83,10 @@ void Editor::RunFrame(float dt)
 					{
 						for (int z = 0; z < 3; z++)
 						{
-							m_world->SetIsAir({x, y, z}, true);
+							m_world->voxels.SetIsAir({x, y, z}, true);
 							for (int s = 0; s < 6; s++)
 							{
-								m_world->SetMaterialSafe({x, y, z}, (Dir)s, NEW_LEVEL_WALL_TEXTURE);
+								m_world->voxels.SetMaterialSafe({x, y, z}, (Dir)s, NEW_LEVEL_WALL_TEXTURE);
 							}
 						}
 					}

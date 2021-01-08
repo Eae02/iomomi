@@ -58,7 +58,7 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 		constexpr int DRAG_BEGIN_DELTA = 10;
 		if (m_isDraggingWallEntity)
 		{
-			WallRayIntersectResult pickResult = editorState.world->RayIntersectWall(editorState.viewRay);
+			VoxelRayIntersectResult pickResult = editorState.world->voxels.RayIntersect(editorState.viewRay);
 			if (pickResult.intersected)
 			{
 				if (MaybeClone())

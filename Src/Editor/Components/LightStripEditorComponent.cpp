@@ -11,7 +11,7 @@ bool LightStripEditorComponent::UpdateInput(float dt, const EditorState& editorS
 		
 		if (activator != nullptr)
 		{
-			WallRayIntersectResult pickResult = editorState.world->RayIntersectWall(editorState.viewRay);
+			VoxelRayIntersectResult pickResult = editorState.world->voxels.RayIntersect(editorState.viewRay);
 			if (pickResult.intersected)
 			{
 				activator->waypoints[m_editingWayPointIndex] = { pickResult.normalDir, pickResult.intersectPosition };
