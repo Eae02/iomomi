@@ -278,7 +278,7 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 		
 		m_spriteBatch.Draw(*texture, inflatedRect, eg::ColorLin(1, 1, 1, 1).ScaleRGB(shade));
 		
-		if (eg::DevMode())
+		if (eg::DevMode() || level.isExtra)
 		{
 			float nameLen = style::UIFontSmall->GetTextExtents(level.name).x;
 			m_spriteBatch.DrawText(*style::UIFontSmall, level.name,

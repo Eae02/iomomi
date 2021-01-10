@@ -25,6 +25,10 @@ features:
  - the gun should be picked up rather than suddenly appearing
  - placable doors
 
+levels:
+ - cube launch with force field
+ - floating cube levels
+
 sounds:
  - walking
  - landing
