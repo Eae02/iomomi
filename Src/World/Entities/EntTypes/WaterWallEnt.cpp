@@ -41,7 +41,12 @@ void WaterWallEnt::EditorDraw(const EntEditorDrawArgs& args)
 		m_position + tangent + biTangent
 	};
 	
-	args.primitiveRenderer->AddQuad(vertices, eg::ColorSRGB::FromRGBAHex(0x7034DA99));
+	eg::ColorSRGB color = eg::ColorSRGB::FromRGBAHex(0x7034DA99);
+	args.primitiveRenderer->AddLine(vertices[0], vertices[1], color);
+	args.primitiveRenderer->AddLine(vertices[0], vertices[2], color);
+	args.primitiveRenderer->AddLine(vertices[3], vertices[1], color);
+	args.primitiveRenderer->AddLine(vertices[3], vertices[2], color);
+	args.primitiveRenderer->AddQuad(vertices, color.ScaleAlpha(0.1f));
 }
 
 void WaterWallEnt::Update(const WorldUpdateArgs& args)
