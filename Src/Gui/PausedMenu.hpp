@@ -12,9 +12,12 @@ public:
 	
 	bool isPaused = false;
 	bool shouldRestartLevel = false;
+	bool isFromEditor = false;
 	float fade = 0;
 	
 private:
 	int m_buttonKeyboardFocus = -1;
 	WidgetList m_widgetList;
+	
+	size_t m_mainMenuWidgetIndex;
 };

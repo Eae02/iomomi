@@ -12,6 +12,8 @@
 
 World::World()
 {
+	ssrFallbackColor = eg::ColorSRGB::FromHex(0x625F46);
+	
 	m_physicsObject.canBePushed = false;
 	m_physicsObject.shape = &m_collisionMesh;
 	m_physicsObject.owner = this;
@@ -37,6 +39,7 @@ struct VoxelData
 	uint16_t hasGravityCorner;
 };
 #pragma pack(pop)
+
 
 std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 {
@@ -91,6 +94,12 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 	for (int i = 0; i < std::min(worldPB.control_hints_size(), NUM_CONTROL_HINTS); i++)
 	{
 		world->showControlHint[i] = worldPB.control_hints(i);
+	}
+	if (worldPB.has_ssr_fallback())
+	{
+		world->ssrFallbackColor.r = worldPB.ssr_fallback_r();
+		world->ssrFallbackColor.g = worldPB.ssr_fallback_g();
+		world->ssrFallbackColor.b = worldPB.ssr_fallback_b();
 	}
 	
 	world->entManager = EntityManager::Deserialize(stream);
@@ -148,6 +157,10 @@ void World::Save(std::ostream& outStream) const
 	worldPB.set_title(title);
 	worldPB.set_extra_water_particles(extraWaterParticles);
 	worldPB.set_player_has_gravity_gun(playerHasGravityGun);
+	worldPB.set_has_ssr_fallback(true);
+	worldPB.set_ssr_fallback_r(ssrFallbackColor.r);
+	worldPB.set_ssr_fallback_g(ssrFallbackColor.g);
+	worldPB.set_ssr_fallback_b(ssrFallbackColor.b);
 	for (bool controlHint : showControlHint)
 	{
 		worldPB.add_control_hints(controlHint);

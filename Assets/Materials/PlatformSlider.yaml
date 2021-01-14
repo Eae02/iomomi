@@ -4,4 +4,3 @@ miscMap: ../Textures/PlatformSliderM.png
 roughnessMin: 0.2
 roughnessMax: 0.5
 castShadows: false
-enableSSR: false

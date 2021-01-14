@@ -14,12 +14,14 @@ enum class RenderTex
 	WaterDepthBlurred2,
 	LitWithoutWater,
 	LitWithoutSSR,
+	SSRTemp1,
+	SSRTemp2,
 	BlurredGlassDepth,
 	LitWithoutBlurredGlass,
 	Lit
 };
 
-constexpr size_t NUM_RENDER_TEXTURES = 15;
+constexpr size_t NUM_RENDER_TEXTURES = 17;
 
 constexpr eg::Format GB_DEPTH_FORMAT = eg::Format::Depth32;
 constexpr eg::Format GB_COLOR_FORMAT = eg::Format::R8G8B8A8_UNorm;

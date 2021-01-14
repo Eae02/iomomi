@@ -236,7 +236,7 @@ void Editor::RunFrame(float dt)
 		std::stringstream stream;
 		m_world->Save(stream);
 		stream.seekg(0, std::ios::beg);
-		mainGameState->SetWorld(World::Load(stream, false));
+		mainGameState->SetWorld(World::Load(stream, false), -1, nullptr, true);
 		SetCurrentGS(mainGameState);
 		ImGui::End();
 		return;

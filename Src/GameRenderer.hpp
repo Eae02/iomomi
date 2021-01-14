@@ -39,6 +39,8 @@ public:
 	WaterSimulator m_waterSimulator;
 	float postColorScale = 1;
 	
+	eg::ColorSRGB ssrFallbackColor;
+	
 private:
 	RenderTexManager m_rtManager;
 	

@@ -1,6 +1,5 @@
 #include "PointLightShadowMapper.hpp"
 #include "PointLight.hpp"
-#include "../RenderSettings.hpp"
 #include "../GraphicsCommon.hpp"
 
 void PointLightShadowDrawArgs::SetPushConstants() const
@@ -93,10 +92,10 @@ void PointLightShadowMapper::SetQuality(QualityLevel quality)
 		m_resolution = 512;
 		break;
 	case QualityLevel::High:
-		m_resolution = 1024;
+		m_resolution = 768;
 		break;
 	case QualityLevel::VeryHigh:
-		m_resolution = 1536;
+		m_resolution = 1024;
 		break;
 	}
 	

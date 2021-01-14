@@ -3,6 +3,5 @@ normalMap: ../Textures/WoodCubeN.png
 miscMap: ../Textures/WoodCubeM.png
 roughnessMin: 0.3
 roughnessMax: 0.75
-enableSSR: false
 backfaceCull: false
 minShadowQuality: medium

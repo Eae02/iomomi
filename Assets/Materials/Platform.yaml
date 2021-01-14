@@ -4,5 +4,3 @@ miscMap: ../Textures/PlatformM.png
 roughnessMin: 0.2
 roughnessMax: 0.6
 textureScale: 0.5
-enableSSR: false
-minShadowQuality: medium

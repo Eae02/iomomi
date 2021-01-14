@@ -6,6 +6,7 @@
 #include "../../../Graphics/Lighting/PointLightShadowMapper.hpp"
 #include "../../../Editor/PrimitiveRenderer.hpp"
 #include "../../../../Protobuf/Build/PlatformEntity.pb.h"
+#include "../../../Settings.hpp"
 
 #include <imgui.h>
 
@@ -14,6 +15,8 @@ static eg::IMaterial* platformMaterial;
 
 static eg::Model* platformSliderModel;
 static eg::IMaterial* platformSliderMaterial;
+
+constexpr QualityLevel minShadowCastQualityLevel = QualityLevel::Low;
 
 static void OnInit()
 {
@@ -121,6 +124,9 @@ void PlatformEnt::DrawSliderMesh(eg::MeshBatch& meshBatch, const eg::Frustum& fr
 
 void PlatformEnt::GameDraw(const EntGameDrawArgs& args)
 {
+	if (args.shadowDrawArgs && settings.shadowQuality < minShadowCastQualityLevel)
+		return;
+	
 	if (args.shadowDrawArgs == nullptr)
 	{
 		DrawSliderMesh(*args.meshBatch, *args.frustum);
@@ -200,7 +206,7 @@ glm::vec3 PlatformEnt::ConstrainMove(const PhysicsObject& object, const glm::vec
 
 void PlatformEnt::Update(const WorldUpdateArgs& args)
 {
-	if (args.plShadowMapper)
+	if (args.plShadowMapper && settings.shadowQuality >= minShadowCastQualityLevel)
 	{
 		if (!m_prevShadowInvalidatePos || glm::distance2(m_physicsObject.position, *m_prevShadowInvalidatePos) > 0.001f)
 		{

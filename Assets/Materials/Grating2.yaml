@@ -4,4 +4,3 @@ miscMap: ../Textures/Grating2M.png
 roughnessMin: 0.2
 roughnessMax: 0.6
 textureScale: 1.5
-enableSSR: true

@@ -19,6 +19,11 @@ layout(binding=6) uniform sampler2D waterDepthSampler;
 layout(constant_id=0) const int ssrLinearSamples = 8;
 layout(constant_id=1) const int ssrBinarySamples = 8;
 
+layout(push_constant) uniform PC
+{
+	vec3 fallbackColor;
+};
+
 float getWaterHDepth(vec2 texCoord)
 {
 	return hyperDepth(texture(waterDepthSampler, texCoord).r);
@@ -40,14 +45,15 @@ bool behindDepthBuffer(vec3 worldPos)
 	return depthTo01(ndc.z) > min(texture(gbDepthSampler, sampleTC).r, getWaterHDepth(sampleTC));
 }
 
-vec3 calcReflection(vec3 surfacePos, vec3 dirToEye, vec3 normal)
+vec4 calcReflection(vec3 surfacePos, vec3 dirToEye, vec3 normal)
 {
 	surfacePos += normal * 0.01;
 	
 	const float MAX_DIST   = 20;   //Maximum distance to reflection
 	const float FADE_BEGIN = 0.75; //Percentage of screen radius to begin fading out at
 	
-	vec3 rayDir = normalize(reflect(-dirToEye, normal)) * (MAX_DIST / ssrLinearSamples);
+	float rayDirLen = MAX_DIST / ssrLinearSamples;
+	vec3 rayDir = normalize(reflect(-dirToEye, normal)) * rayDirLen;
 	
 	for (uint i = 1; i <= ssrLinearSamples; i++)
 	{
@@ -56,9 +62,10 @@ vec3 calcReflection(vec3 surfacePos, vec3 dirToEye, vec3 normal)
 		{
 			float lo = i - 1;
 			float hi = i;
+			float mid;
 			for (int i = 0; i < ssrBinarySamples; i++)
 			{
-				float mid = (lo + hi) / 2.0;
+				mid = (lo + hi) / 2.0;
 				if (behindDepthBuffer(surfacePos + rayDir * mid))
 					hi = mid;
 				else
@@ -67,11 +74,11 @@ vec3 calcReflection(vec3 surfacePos, vec3 dirToEye, vec3 normal)
 			
 			float fade01 = max(abs(ndc.x), abs(ndc.y));
 			float fade = 1 - clamp((fade01 - 1) / (1 - FADE_BEGIN) + 1, 0, 1);
-			return texture(inputColorSampler, sampleTC).rgb * fade;
+			return vec4(mix(fallbackColor, texture(inputColorSampler, sampleTC).rgb, fade), mid * rayDirLen);
 		}
 	}
 	
-	return vec3(0.0);
+	return vec4(fallbackColor, MAX_DIST);
 }
 
 layout(location=0) out vec4 color_out;
@@ -80,7 +87,7 @@ void main()
 {
 	uint flags = texelFetch(gbFlagsSampler, ivec2(gl_FragCoord.xy), 0).r;
 	
-	color_out = texture(inputColorSampler, texCoord_in);
+	color_out = vec4(0.0);
 	
 	if ((flags & (RF_NO_SSR | RF_NO_LIGHTING)) != 0)
 		return;
@@ -104,7 +111,8 @@ void main()
 	
 	vec3 toEye = normalize(renderSettings.cameraPosition - data.worldPos);
 	vec3 fresnel = calcFresnel(data, toEye);
-	vec3 reflection = calcReflection(data.worldPos, toEye, data.normal);
+	vec4 reflection = calcReflection(data.worldPos, toEye, data.normal);
+	float blur = reflection.a * data.roughness / distance(data.worldPos, renderSettings.cameraPosition);
 	
-	color_out.rgb += reflection * fresnel * (1 - data.roughness) * data.ao;
+	color_out = vec4(reflection.rgb * fresnel * (1 - data.roughness), blur);
 }

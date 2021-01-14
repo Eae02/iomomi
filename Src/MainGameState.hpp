@@ -16,7 +16,10 @@ public:
 	
 	void RunFrame(float dt) override;
 	
-	void SetWorld(std::unique_ptr<World> newWorld, int64_t levelIndex = -1, const class EntranceExitEnt* exitEntity = nullptr);
+	void SetWorld(std::unique_ptr<World> newWorld,
+		int64_t levelIndex = -1,
+		const class EntranceExitEnt* exitEntity = nullptr,
+		bool fromEditor = false);
 	
 	void OnDeactivate() override;
 	
@@ -26,6 +29,8 @@ private:
 	void UpdateAndDrawHud(float dt);
 	
 	bool ReloadLevel();
+	
+	bool m_ssrReflectionColorEditorShown = false;
 	
 	const eg::Texture* m_crosshairTexture;
 	

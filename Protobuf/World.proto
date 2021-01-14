@@ -13,4 +13,8 @@ message World {
   string title = 8;
   bool player_has_gravity_gun = 9;
   repeated bool control_hints = 10;
+  bool has_ssr_fallback = 11;
+  float ssr_fallback_r = 12;
+  float ssr_fallback_g = 13;
+  float ssr_fallback_b = 14;
 }

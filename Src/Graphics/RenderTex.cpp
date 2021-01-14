@@ -42,6 +42,10 @@ eg::Format GetFormatForRenderTexture(RenderTex texture)
 			return eg::Format::R32G32B32A32_Float;
 		return eg::Format::R16G16B16A16_Float;
 		
+	case RenderTex::SSRTemp1:
+	case RenderTex::SSRTemp2:
+		return eg::Format::R16G16B16A16_Float;
+		
 	case RenderTex::LitWithoutWater:
 	case RenderTex::LitWithoutBlurredGlass:
 	case RenderTex::LitWithoutSSR:

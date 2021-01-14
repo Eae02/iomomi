@@ -4,9 +4,11 @@
 #include "World/Entities/EntTypes/EntranceExitEnt.hpp"
 #include "MainMenuGameState.hpp"
 #include "Gui/GuiCommon.hpp"
+#include "Editor/Editor.hpp"
 
 #include <fstream>
 #include <imgui.h>
+#include <imgui_internal.h>
 
 MainGameState* mainGameState;
 
@@ -38,6 +40,11 @@ MainGameState::MainGameState()
 		}
 	});
 	
+	eg::console::AddCommand("ssrfbEdit", 0, [this] (eg::Span<const std::string_view> args, eg::console::Writer& writer)
+	{
+		m_ssrReflectionColorEditorShown = !m_ssrReflectionColorEditorShown;
+	});
+	
 	eg::console::AddCommand("showExtraLevels", 0, [this] (eg::Span<const std::string_view>, eg::console::Writer&)
 	{
 		settings.showExtraLevels = true;
@@ -52,13 +59,16 @@ MainGameState::MainGameState()
 	m_crosshairTexture = &eg::GetAsset<eg::Texture>("Textures/Crosshair.png");
 }
 
-void MainGameState::SetWorld(std::unique_ptr<World> newWorld, int64_t levelIndex, const EntranceExitEnt* exitEntity)
+void MainGameState::SetWorld(std::unique_ptr<World> newWorld, int64_t levelIndex,
+                             const EntranceExitEnt* exitEntity, bool fromEditor)
 {
 	m_player.Reset();
 	m_gameTime = 0;
 	m_currentLevelIndex = levelIndex;
 	m_pausedMenu.isPaused = false;
 	m_pausedMenu.shouldRestartLevel = false;
+	m_pausedMenu.isFromEditor = fromEditor;
+	m_ssrReflectionColorEditorShown = false;
 	
 	//Moves the player to the entrance entity for this level
 	newWorld->entManager.ForEachOfType<EntranceExitEnt>([&] (EntranceExitEnt& entity)
@@ -121,7 +131,7 @@ void MainGameState::RunFrame(float dt)
 	if (m_world == nullptr)
 		return;
 	
-	if (!eg::console::IsShown() && !m_pausedMenu.isPaused)
+	if (!eg::console::IsShown() && !m_pausedMenu.isPaused && !m_ssrReflectionColorEditorShown)
 	{
 		auto worldUpdateCPUTimer = eg::StartCPUTimer("World Update");
 		
@@ -180,6 +190,28 @@ void MainGameState::RunFrame(float dt)
 	{
 		eg::SetRelativeMouseMode(false);
 		UpdateViewProjMatrices();
+	}
+	
+	if (m_ssrReflectionColorEditorShown)
+	{
+		ImGui::Begin("SSR Reflection Color Editor", &m_ssrReflectionColorEditorShown);
+		ImGui::ColorPicker3("###Color", &GameRenderer::instance->ssrFallbackColor.r);
+		
+		const bool canSaveToEditor = m_pausedMenu.isFromEditor && (
+			!eg::FEqual(editor->SSRFallbackColor().r, GameRenderer::instance->ssrFallbackColor.r) ||
+			!eg::FEqual(editor->SSRFallbackColor().g, GameRenderer::instance->ssrFallbackColor.g) ||
+			!eg::FEqual(editor->SSRFallbackColor().b, GameRenderer::instance->ssrFallbackColor.b)
+		);
+		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, !canSaveToEditor);
+		ImGui::PushStyleVar(ImGuiStyleVar_Alpha, canSaveToEditor ? 1.0f : 0.4f);
+		if (ImGui::Button("Save to Editor") && canSaveToEditor)
+		{
+			editor->SetSSRFallbackColor(GameRenderer::instance->ssrFallbackColor);
+		}
+		ImGui::PopItemFlag();
+		ImGui::PopStyleVar();
+		
+		ImGui::End();
 	}
 	
 	m_playerWaterAABB->SetAABB(m_player.GetAABB());

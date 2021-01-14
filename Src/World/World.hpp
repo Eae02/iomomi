@@ -75,6 +75,8 @@ public:
 	
 	bool showControlHint[NUM_CONTROL_HINTS] = {};
 	
+	eg::ColorSRGB ssrFallbackColor;
+	
 	VoxelBuffer voxels;
 	
 private:

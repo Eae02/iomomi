@@ -3,6 +3,7 @@
 #include "../GameState.hpp"
 #include "../MainMenuGameState.hpp"
 #include "../Settings.hpp"
+#include "../Editor/Editor.hpp"
 
 constexpr float BUTTON_W = 200;
 
@@ -21,10 +22,17 @@ PausedMenu::PausedMenu()
 		optionsMenuOpen = false;
 	}));
 	m_widgetList.AddWidget(Button("Options", [&] { optionsMenuOpen = true; }));
-	m_widgetList.AddWidget(Button("Main Menu", [&]
+	m_mainMenuWidgetIndex = m_widgetList.AddWidget(Button("", [&]
 	{
-		mainMenuGameState->GoToMainScreen();
-		SetCurrentGS(mainMenuGameState);
+		if (isFromEditor)
+		{
+			SetCurrentGS(editor);
+		}
+		else
+		{
+			mainMenuGameState->GoToMainScreen();
+			SetCurrentGS(mainMenuGameState);
+		}
 	}));
 	
 	m_widgetList.relativeOffset = glm::vec2(-0.5f, 0.5f);
@@ -69,11 +77,10 @@ void PausedMenu::Update(float dt)
 	}
 	*/
 	
-	if (optionsMenuOpen)
-	{
-		UpdateOptionsMenu(dt, glm::vec2(0));
-	}
+	UpdateOptionsMenu(dt, glm::vec2(0), optionsMenuOpen);
 	
+	std::get<Button>(m_widgetList.GetWidget(m_mainMenuWidgetIndex)).text =
+		isFromEditor ? "Return to Editor" : "Main Menu";
 	m_widgetList.position = glm::vec2(eg::CurrentResolutionX(), eg::CurrentResolutionY()) / 2.0f;
 	m_widgetList.Update(dt, !optionsMenuOpen);
 }

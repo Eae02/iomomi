@@ -4,10 +4,10 @@
 #include "../World/PrepareDrawArgs.hpp"
 #include "../Graphics/RenderContext.hpp"
 #include "../GameState.hpp"
+#include "../World/Entities/EntTypes/ActivationLightStripEnt.hpp"
 #include "EditorCamera.hpp"
 #include "PrimitiveRenderer.hpp"
 #include "LiquidPlaneRenderer.hpp"
-#include "../World/Entities/EntTypes/ActivationLightStripEnt.hpp"
 #include "EditorComponent.hpp"
 
 #include <EGame/FlyCamera.hpp>
@@ -20,6 +20,9 @@ public:
 	void RunFrame(float dt) override;
 	
 	void SetResolution(int width, int height);
+	
+	eg::ColorSRGB SSRFallbackColor() const { return m_world->ssrFallbackColor; }
+	void SetSSRFallbackColor(const eg::ColorSRGB& color) { m_world->ssrFallbackColor = color; }
 	
 private:
 	template <typename CallbackTp>
