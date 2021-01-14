@@ -18,6 +18,7 @@ layout(binding=6) uniform sampler2D waterDepthSampler;
 
 layout(constant_id=0) const int ssrLinearSamples = 8;
 layout(constant_id=1) const int ssrBinarySamples = 8;
+layout(constant_id=2) const int isDirect = 1;
 
 layout(push_constant) uniform PC
 {
@@ -112,7 +113,15 @@ void main()
 	vec3 toEye = normalize(renderSettings.cameraPosition - data.worldPos);
 	vec3 fresnel = calcFresnel(data, toEye);
 	vec4 reflection = calcReflection(data.worldPos, toEye, data.normal);
-	float blur = reflection.a * data.roughness / distance(data.worldPos, renderSettings.cameraPosition);
+	vec3 ssrColor = reflection.rgb * fresnel * (1 - data.roughness);
 	
-	color_out = vec4(reflection.rgb * fresnel * (1 - data.roughness), blur);
+	if (isDirect == 1)
+	{
+		color_out = texture(inputColorSampler, texCoord_in) + vec4(ssrColor, 0);
+	}
+	else
+	{
+		float blur = reflection.a * data.roughness / distance(data.worldPos, renderSettings.cameraPosition);
+		color_out = vec4(ssrColor, blur);
+	}
 }

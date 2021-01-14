@@ -15,7 +15,7 @@ private:
 	
 	QualityLevel m_currentReflectionQualityLevel = (QualityLevel)-1;
 	
-	eg::Pipeline m_pipeline;
+	eg::Pipeline m_pipelineInitial;
 	eg::Pipeline m_blur1Pipeline;
 	eg::Pipeline m_blur2Pipeline;
 };
