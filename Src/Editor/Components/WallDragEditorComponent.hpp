@@ -38,6 +38,8 @@ private:
 	glm::vec3 m_selection2Anim;
 	Dir m_selectionNormal;
 	
+	bool m_hoveringSelection = false;
+	
 	float m_timeSinceLastClick = 0;
 	
 	std::vector<glm::ivec3> m_finishedSelection;

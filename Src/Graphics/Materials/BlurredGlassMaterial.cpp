@@ -14,7 +14,7 @@ static void OnInit()
 	
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	StaticPropMaterial::InitializeForCommon3DVS(pipelineCI);
-	pipelineCI.cullMode = eg::CullMode::Back;
+	pipelineCI.cullMode = eg::CullMode::None;
 	pipelineCI.topology = eg::Topology::TriangleList;
 	pipelineCI.enableDepthTest = true;
 	

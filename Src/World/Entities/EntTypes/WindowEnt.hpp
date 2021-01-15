@@ -36,6 +36,8 @@ public:
 private:
 	void UpdateWaterBlock();
 	
+	glm::vec3 GetTranslationFromOriginMode() const;
+	
 	enum class WaterBlockMode
 	{
 		Auto = 0,
@@ -43,11 +45,24 @@ private:
 		Always = 2
 	};
 	
+	enum class OriginMode
+	{
+		Top,
+		Middle,
+		Bottom
+	};
+	
 	uint32_t m_windowType = 0;
 	float m_textureScale = 1;
+	float m_depth = 0.05f;
+	float m_windowDistanceScale = 1;
+	OriginMode m_originMode = OriginMode::Middle;
 	WaterBlockMode m_waterBlockMode = WaterBlockMode::Auto;
 	AxisAlignedQuadComp m_aaQuad;
 	WaterBlockComp m_waterBlockComp;
+	
+	bool m_hasFrame = false;
+	float m_frameScale = 0.5f;
 	
 	PhysicsObject m_physicsObject;
 };

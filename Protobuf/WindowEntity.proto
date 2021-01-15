@@ -12,4 +12,10 @@ message WindowEntity {
 	float texture_scale = 7;
 	fixed32 window_type = 8;
 	fixed32 water_block_mode = 10;
+	bool has_depth_data = 11;
+	float depth = 12;
+	float window_distance_scale = 13;
+	bool border_mesh = 14;
+	int32 origin_mode = 15;
+	float border_scale = 16;
 }

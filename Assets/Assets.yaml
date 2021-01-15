@@ -160,7 +160,6 @@ assets:
       - WallTextures/Panels1A.png
       - WallTextures/Panels2A.png
       - WallTextures/Panels1StripedA.png
-      - WallTextures/CircleMetalA.png
   - name: WallTextures/NormalMap
     generator: Texture2DArray
     loader: Texture2D
@@ -175,7 +174,6 @@ assets:
       - WallTextures/Panels1N.png
       - WallTextures/Panels2N.png
       - WallTextures/Panels1N.png
-      - WallTextures/CircleMetalN.png
   - name: WallTextures/MiscMap
     generator: Texture2DArray
     loader: Texture2D
@@ -190,7 +188,6 @@ assets:
       - WallTextures/Panels1M.png
       - WallTextures/Panels2M.png
       - WallTextures/Panels1M.png
-      - WallTextures/CircleMetalM.png
   - name: Caustics
     generator: Texture2DArray
     loader: Texture2D

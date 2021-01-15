@@ -36,8 +36,6 @@ bool behindDepthBuffer(vec3 worldPos)
 {
 	vec4 ndc3 = renderSettings.viewProjection * vec4(worldPos, 1.0);
 	ndc = ndc3.xyz / ndc3.w;
-	if (ndc.x < -1 || ndc.y < -1 || ndc.x > 1 || ndc.y > 1)
-		return true;
 	
 	sampleTC = ndc.xy * 0.5 + 0.5;
 	if (!EG_OPENGL)

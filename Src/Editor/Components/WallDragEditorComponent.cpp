@@ -14,16 +14,12 @@ constexpr float DOUBLE_CLICK_TIMEOUT = 0.2f;
 
 bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorState)
 {
-	VoxelRayIntersectResult pickResult;
-	bool hasPickResult = false;
-	auto DoWallRayIntersect = [&] ()
-	{
-		if (!hasPickResult)
-		{
-			pickResult = editorState.world->voxels.RayIntersect(editorState.viewRay);
-			hasPickResult = true;
-		}
-	};
+	VoxelRayIntersectResult pickResult = editorState.world->voxels.RayIntersect(editorState.viewRay);
+	
+	m_hoveringSelection =
+		m_selState == SelState::SelectDone &&
+		pickResult.intersected &&
+		eg::Contains(m_finishedSelection, pickResult.voxelPosition);
 	
 	//Handles mouse move events
 	if (eg::IsButtonDown(eg::Button::MouseLeft) && eg::WasButtonDown(eg::Button::MouseLeft) &&
@@ -34,7 +30,6 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 		{
 			//Updates the current selection if the new hovered voxel is
 			// in the same plane as the voxel where the selection started.
-			DoWallRayIntersect();
 			if (pickResult.intersected && pickResult.voxelPosition[selDim] == m_selection1[selDim])
 			{
 				m_selection2 = pickResult.voxelPosition;
@@ -167,9 +162,7 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 		}
 		else
 		{
-			DoWallRayIntersect();
-			if (m_selState == SelState::SelectDone && pickResult.intersected &&
-				eg::Contains(m_finishedSelection, pickResult.voxelPosition))
+			if (m_hoveringSelection)
 			{
 				//Starts a drag operation
 				m_selState = SelState::Dragging;
@@ -225,7 +218,6 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 			m_selState = SelState::NoSelection;
 			if (m_timeSinceLastClick < DOUBLE_CLICK_TIMEOUT)
 			{
-				DoWallRayIntersect();
 				if (pickResult.intersected)
 				{
 					std::optional<int> requiredMaterial;
@@ -306,11 +298,15 @@ void WallDragEditorComponent::EarlyDraw(PrimitiveRenderer& primitiveRenderer) co
 			eg::ColorSRGB color;
 			if (m_selState == SelState::Dragging)
 			{
-				color = eg::ColorSRGB(eg::ColorSRGB::FromHex(0xDB9951).ScaleAlpha(0.4f));
+				color = eg::ColorSRGB::FromRGBAHex(0xDB995166);
+			}
+			else if (m_hoveringSelection)
+			{
+				color = eg::ColorSRGB::FromRGBAHex(0xb9ddf377);
 			}
 			else
 			{
-				color = eg::ColorSRGB(eg::ColorSRGB::FromHex(0x91CAED).ScaleAlpha(0.4f));
+				color = eg::ColorSRGB::FromRGBAHex(0x91CAED66);
 			}
 			
 			for (glm::ivec3 pos : m_finishedSelection)
