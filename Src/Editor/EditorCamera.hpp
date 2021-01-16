@@ -5,7 +5,7 @@ class EditorCamera
 public:
 	EditorCamera();
 	
-	void Reset();
+	void Reset(const eg::Sphere& levelSphere);
 	
 	void Update(float dt, bool& canUpdateInput);
 	

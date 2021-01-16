@@ -4,9 +4,11 @@
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../Graphics/Materials/BlurredGlassMaterial.hpp"
 #include "../../../../Protobuf/Build/WindowEntity.pb.h"
+#include "../../../Graphics/WallShader.hpp"
 
 #include <imgui.h>
 #include <glm/glm.hpp>
+#include <imgui_internal.h>
 
 struct WindowType
 {
@@ -28,7 +30,19 @@ BlurredGlassMaterial clearGlassMaterial;
 static eg::Buffer windowVertexBuffer;
 
 static const eg::Model* frameModel;
-static int frameMeshIndices[3][3];
+static int frameFrontMeshIndices[3][3];
+static int frameSideMeshIndices[3][3];
+
+struct FrameMaterial
+{
+	const char* name;
+	const StaticPropMaterial* material;
+	
+	FrameMaterial(const char* _name, const StaticPropMaterial* _material)
+		: name(_name), material(_material) { }
+};
+static std::vector<FrameMaterial> frameMaterials;
+static bool frameMaterialsInitialized = false;
 
 static void OnInit()
 {
@@ -45,16 +59,24 @@ static void OnInit()
 	
 	frameModel = &eg::GetAsset<eg::Model>("Models/WindowFrame.obj");
 	
-	std::fill_n(frameMeshIndices[0], 9, -1);
-	frameMeshIndices[0][0] = frameModel->GetMeshIndex("SideBL");
-	frameMeshIndices[1][0] = frameModel->GetMeshIndex("SideB");
-	frameMeshIndices[2][0] = frameModel->GetMeshIndex("SideBR");
-	frameMeshIndices[0][2] = frameModel->GetMeshIndex("SideTL");
-	frameMeshIndices[1][2] = frameModel->GetMeshIndex("SideT");
-	frameMeshIndices[2][2] = frameModel->GetMeshIndex("SideTR");
-	frameMeshIndices[0][1] = frameModel->GetMeshIndex("SideL");
-	frameMeshIndices[2][1] = frameModel->GetMeshIndex("SideR");
+	auto InitMeshIndices = [&] (int x, int y, const char* suffix)
+	{
+		char nameBuffer[64];
+		snprintf(nameBuffer, sizeof(nameBuffer), "Side%s", suffix);
+		frameSideMeshIndices[x][y] = frameModel->GetMeshIndex(nameBuffer);
+		snprintf(nameBuffer, sizeof(nameBuffer), "Front%s", suffix);
+		frameFrontMeshIndices[x][y] = frameModel->GetMeshIndex(nameBuffer);
+	};
+	InitMeshIndices(0, 0, "BL");
+	InitMeshIndices(1, 0, "B");
+	InitMeshIndices(2, 0, "BR");
+	InitMeshIndices(0, 2, "TL");
+	InitMeshIndices(1, 2, "T");
+	InitMeshIndices(2, 2, "TR");
+	InitMeshIndices(0, 1, "L");
+	InitMeshIndices(2, 1, "R");
 	
+	//Initializes the window plane vertex buffer
 	eg::StdVertex windowVertices[6];
 	auto InitVertex = [&] (eg::StdVertex& vertex, int x, int y)
 	{
@@ -81,6 +103,19 @@ static void OnInit()
 	windowVertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer, sizeof(windowVertices), windowVertices);
 }
 
+static void InitializeFrameMaterials()
+{
+	for (uint32_t i = 1; i < MAX_WALL_MATERIALS; i++)
+	{
+		if (wallMaterials[i].initialized)
+		{
+			frameMaterials.emplace_back(wallMaterials[i].name, &StaticPropMaterial::GetFromWallMaterial(i));
+		}
+	}
+	
+	frameMaterialsInitialized = true;
+}
+
 void OnShutdown()
 {
 	windowVertexBuffer.Destroy();
@@ -91,9 +126,16 @@ EG_ON_SHUTDOWN(OnShutdown)
 
 WindowEnt::WindowEnt()
 {
+	if (!frameMaterialsInitialized)
+	{
+		InitializeFrameMaterials();
+	}
+	
 	m_physicsObject.canCarry = false;
 	m_physicsObject.canBePushed = false;
 	m_physicsObject.rayIntersectMask = RAY_MASK_BLOCK_PICK_UP | RAY_MASK_CLIMB;
+	m_frameTextureScale = glm::vec2(1.0f);
+	m_textureScale = glm::vec2(1.0f);
 }
 
 void WindowEnt::RenderSettings()
@@ -106,12 +148,13 @@ void WindowEnt::RenderSettings()
 	
 	ImGui::Combo("Origin", reinterpret_cast<int*>(&m_originMode), "Top\0Middle\0Bottom\0");
 	
-	ImGui::DragFloat("Depth", &m_depth, 0.05f, 0.0f, INFINITY);
-	ImGui::DragFloat("Plane Distance", &m_windowDistanceScale, 0.01f, 0.0f, 1.0f);
+	ImGui::DragFloat("Depth", &m_depth, 0.05f, 0.0f, INFINITY, nullptr, ImGuiSliderFlags_AlwaysClamp);
+	
+	ImGui::DragFloat("Plane Distance", &m_windowDistanceScale, 0.01f, 0.0f, 1.0f, nullptr, ImGuiSliderFlags_AlwaysClamp);
 	
 	ImGui::Separator();
 	
-	ImGui::DragFloat("Texture Scale", &m_textureScale, 0.5f, 0.0f, INFINITY);
+	ImGui::DragFloat2("Texture Scale", &m_textureScale.x, 0.5f, 0.01f, INFINITY, nullptr, ImGuiSliderFlags_AlwaysClamp);
 	
 	if (ImGui::BeginCombo("Window Type", windowTypes[m_windowType].name))
 	{
@@ -135,8 +178,32 @@ void WindowEnt::RenderSettings()
 	ImGui::Separator();
 	
 	ImGui::Checkbox("Has Frame", &m_hasFrame);
-	if (ImGui::DragFloat("Frame Scale", &m_frameScale, 0.1f, 0.0f, INFINITY))
-		m_frameScale = std::max(m_frameScale, 0.0f);
+	if (!m_hasFrame)
+	{
+		ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5f);
+		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+	}
+	
+	ImGui::DragFloat("Frame Scale", &m_frameScale, 0.1f, 0.0f, INFINITY, nullptr, ImGuiSliderFlags_AlwaysClamp);
+	ImGui::DragFloat2("Frame Texture Scale", &m_frameTextureScale.x, 0.5f, -INFINITY, INFINITY);
+	
+	if (ImGui::BeginCombo("Frame Material", frameMaterials[m_frameMaterial].name))
+	{
+		for (uint32_t material = 0; material < frameMaterials.size(); material++)
+		{
+			if (ImGui::Selectable(frameMaterials[material].name, m_frameMaterial == material))
+			{
+				m_frameMaterial = material;
+			}
+		}
+		ImGui::EndCombo();
+	}
+	
+	if (!m_hasFrame)
+	{
+		ImGui::PopStyleVar();
+		ImGui::PopItemFlag();
+	}
 	
 	ImGui::Separator();
 	
@@ -184,7 +251,7 @@ void WindowEnt::CommonDraw(const EntDrawArgs& args)
 	//Draws the frame
 	if (m_hasFrame)
 	{
-		const eg::IMaterial& frameMaterial = eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml");
+		const StaticPropMaterial& frameMaterial = *frameMaterials[m_frameMaterial].material;
 		
 		const glm::mat4 frameCommonTransform = translationMatrix *
 			glm::translate(glm::mat4(), (tangent - bitangent) * 0.5f) *
@@ -195,18 +262,23 @@ void WindowEnt::CommonDraw(const EntDrawArgs& args)
 				glm::vec4(0, 0, 0, 1)
 			);
 		
+		const glm::vec2 MASTER_FRONT_TEXTURE_SCALE(3.0f, -3.0f);
+		glm::vec2 frontTextureScale = MASTER_FRONT_TEXTURE_SCALE / m_frameTextureScale;
+		glm::vec2 sideTextureScale = glm::vec2(m_depth / m_frameScale, 1) / m_frameTextureScale;
+		
 		int frameBlocksW = std::max((int)std::round(glm::length(bitangent) / m_frameScale), 2);
 		int frameBlocksH = std::max((int)std::round(glm::length(tangent) / m_frameScale), 2);
 		auto DrawFrameMesh = [&] (int x, int y)
 		{
 			int miX = (x == frameBlocksW - 1) ? 2 : std::min(x, 1);
 			int miY = (y == frameBlocksH - 1) ? 2 : std::min(y, 1);
-			if (frameMeshIndices[miX][miY] == -1)
+			if (miX == 1 && miY == 1)
 				return;
-			
-			glm::mat4 transform = glm::translate(frameCommonTransform, glm::vec3(x - miX, -(y - miY), -0.5f));
-			StaticPropMaterial::InstanceData instanceData(transform);
-			args.meshBatch->AddModelMesh(*frameModel, frameMeshIndices[miX][miY], frameMaterial, instanceData);
+			const glm::mat4 transform = glm::translate(frameCommonTransform, glm::vec3(x - miX, -(y - miY), -0.5f));
+			args.meshBatch->AddModelMesh(*frameModel, frameFrontMeshIndices[miX][miY], frameMaterial,
+			                             StaticPropMaterial::InstanceData(transform, frontTextureScale));
+			args.meshBatch->AddModelMesh(*frameModel, frameSideMeshIndices[miX][miY], frameMaterial,
+			                             StaticPropMaterial::InstanceData(transform, sideTextureScale));
 		};
 		
 		for (int x = 0; x < frameBlocksW; x++)
@@ -281,7 +353,8 @@ void WindowEnt::Serialize(std::ostream& stream) const
 	windowPB.set_up_plane(m_aaQuad.upPlane);
 	windowPB.set_sizex(m_aaQuad.radius.x);
 	windowPB.set_sizey(m_aaQuad.radius.y);
-	windowPB.set_texture_scale(m_textureScale);
+	windowPB.set_texture_scale_x(m_textureScale.x);
+	windowPB.set_texture_scale_y(m_textureScale.y);
 	windowPB.set_window_type(m_windowType);
 	windowPB.set_water_block_mode((int)m_waterBlockMode);
 	windowPB.set_depth(m_depth);
@@ -289,7 +362,10 @@ void WindowEnt::Serialize(std::ostream& stream) const
 	windowPB.set_has_depth_data(true);
 	windowPB.set_border_mesh(m_hasFrame);
 	windowPB.set_origin_mode((int)m_originMode);
-	windowPB.set_border_scale(m_frameScale);
+	windowPB.set_frame_scale(m_frameScale);
+	windowPB.set_frame_texture_scale_x(m_frameTextureScale.x);
+	windowPB.set_frame_texture_scale_y(m_frameTextureScale.y);
+	windowPB.set_frame_material(m_frameMaterial);
 	
 	windowPB.SerializeToOstream(&stream);
 }
@@ -304,12 +380,27 @@ void WindowEnt::Deserialize(std::istream& stream)
 	m_aaQuad.upPlane = windowPB.up_plane();
 	m_aaQuad.radius = glm::vec2(windowPB.sizex(), windowPB.sizey());
 	m_waterBlockMode = (WaterBlockMode)windowPB.water_block_mode();
-	m_textureScale = windowPB.texture_scale();
+	
+	m_textureScale.x = windowPB.texture_scale_x();
+	if (windowPB.texture_scale_y() != 0)
+		m_textureScale.y = windowPB.texture_scale_y();
+	else
+		m_textureScale.y = m_textureScale.x;
+	
 	m_windowType = windowPB.window_type();
 	m_hasFrame = windowPB.border_mesh();
 	m_originMode = (OriginMode)windowPB.origin_mode();
-	if (windowPB.border_scale() != 0)
-		m_frameScale = windowPB.border_scale();
+	if (windowPB.frame_scale() != 0)
+		m_frameScale = windowPB.frame_scale();
+	
+	if (windowPB.frame_texture_scale_x() != 0)
+		m_frameTextureScale.x = windowPB.frame_texture_scale_x();
+	if (windowPB.frame_texture_scale_y() != 0)
+		m_frameTextureScale.y = windowPB.frame_texture_scale_x();
+	else
+		m_frameTextureScale.y = m_frameTextureScale.x;
+	
+	m_frameMaterial = windowPB.frame_material();
 	if (m_windowType >= windowTypes.size())
 		m_windowType = 0;
 	

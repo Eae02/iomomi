@@ -2,17 +2,17 @@
 
 EditorCamera::EditorCamera()
 {
-	Reset();
+	Reset(eg::Sphere(glm::vec3(0.0f), 5.0f));
 }
 
-void EditorCamera::Reset()
+void EditorCamera::Reset(const eg::Sphere& levelSphere)
 {
 	m_yaw = eg::PI / 4;
 	m_pitch = -eg::PI / 6;
 	m_kbVel[0] = 0;
 	m_kbVel[1] = 0;
-	m_targetDistance = m_distance = 5;
-	m_focus = glm::vec3(1.5f);
+	m_targetDistance = m_distance = levelSphere.radius * 1.1f;
+	m_focus = levelSphere.position;
 	UpdateRotationMatrix();
 }
 

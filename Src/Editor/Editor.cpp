@@ -10,6 +10,7 @@
 #include "../Graphics/Materials/MeshDrawArgs.hpp"
 #include "../World/Entities/Components/WaterBlockComp.hpp"
 #include "../World/Entities/Components/ActivatorComp.hpp"
+#include "../Gui/GuiCommon.hpp"
 
 #include <fstream>
 #include <magic_enum.hpp>
@@ -65,7 +66,7 @@ void Editor::RunFrame(float dt)
 {
 	if (m_world == nullptr)
 	{
-		ImGui::SetNextWindowSize(ImVec2(400, 500), ImGuiCond_Once);
+		ImGui::SetNextWindowSize(ImVec2(400, eg::CurrentResolutionY() * 0.8f), ImGuiCond_Once);
 		if (ImGui::Begin("Select Level", nullptr, ImGuiWindowFlags_NoCollapse))
 		{
 			ImGui::Text("New Level");
@@ -102,18 +103,7 @@ void Editor::RunFrame(float dt)
 				std::string label = eg::Concat({ level.name, "###L" });
 				if (ImGui::MenuItem(label.c_str()))
 				{
-					std::string path = GetLevelPath(level.name);
-					std::ifstream stream(path, std::ios::binary);
-					
-					if (std::unique_ptr<World> world = World::Load(stream, true))
-					{
-						m_world = std::move(world);
-						m_thumbnailCamera.SetView(m_world->thumbnailCameraPos,
-								m_world->thumbnailCameraPos + m_world->thumbnailCameraDir);
-						m_isUpdatingThumbnailView = false;
-						m_levelName = level.name;
-						InitWorld();
-					}
+					LoadLevel(level);
 				}
 				ImGui::PopID();
 			}
@@ -162,10 +152,26 @@ void Editor::RunFrame(float dt)
 	
 	DrawMenuBar();
 	
+	if (m_world != nullptr && eg::InputState::Current().IsCtrlDown())
+	{
+		if (eg::IsButtonDown(eg::Button::S))
+			Save();
+		if (eg::IsButtonDown(eg::Button::W))
+			Close();
+	}
+	
 	if (m_world == nullptr)
 		return;
 	
 	RenderSettings::instance->gameTime += dt;
+	m_savedTextTimer = std::max(m_savedTextTimer - dt, 0.0f);
+	if (m_savedTextTimer > 0)
+	{
+		constexpr float SAVED_TEXT_FADE_TIME = 0.5f;
+		eg::SpriteBatch::overlay.DrawText(*style::UIFontSmall, "Saved", glm::vec2(10),
+			eg::ColorLin(1, 1, 1, std::min(m_savedTextTimer / SAVED_TEXT_FADE_TIME, 1.0f)),
+			1, nullptr, eg::TextFlags::DropShadow);
+	}
 	
 	if (m_levelSettingsOpen)
 	{
@@ -231,7 +237,7 @@ void Editor::RunFrame(float dt)
 	ImGui::SetNextWindowSize(ImVec2(250, eg::CurrentResolutionY() * 0.5f), ImGuiCond_Once);
 	ImGui::Begin("Editor", nullptr, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoCollapse |
 	             ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove);
-	if (ImGui::Button("Test Level (F5)", ImVec2(ImGui::GetContentRegionAvail().x, 0)))
+	if (ImGui::Button("Test Level (F5)", ImVec2(ImGui::GetContentRegionAvail().x, 0)) || eg::IsButtonDown(eg::Button::F5))
 	{
 		std::stringstream stream;
 		m_world->Save(stream);
@@ -244,9 +250,9 @@ void Editor::RunFrame(float dt)
 	ImGui::Spacing();
 	if (ImGui::CollapsingHeader("Tools", ImGuiTreeNodeFlags_DefaultOpen))
 	{
-		ImGui::RadioButton("Walls", reinterpret_cast<int*>(&m_tool), (int)EditorTool::Walls);
-		ImGui::RadioButton("Corners", reinterpret_cast<int*>(&m_tool), (int)EditorTool::Corners);
-		ImGui::RadioButton("Entities", reinterpret_cast<int*>(&m_tool), (int)EditorTool::Entities);
+		ImGui::RadioButton("Walls (F1)", reinterpret_cast<int*>(&m_tool), (int)EditorTool::Walls);
+		ImGui::RadioButton("Corners (F2)", reinterpret_cast<int*>(&m_tool), (int)EditorTool::Corners);
+		ImGui::RadioButton("Entities (F3)", reinterpret_cast<int*>(&m_tool), (int)EditorTool::Entities);
 	}
 	for (EditorComponent* comp : m_componentsForTool[(int)m_tool])
 	{
@@ -431,12 +437,44 @@ void Editor::DrawWorld()
 	m_spriteBatch.End(eg::CurrentResolutionX(), eg::CurrentResolutionY(), spriteRPBeginInfo);
 }
 
+void Editor::LoadLevel(const Level& level)
+{
+	std::string path = GetLevelPath(level.name);
+	std::ifstream stream(path, std::ios::binary);
+	
+	if (std::unique_ptr<World> world = World::Load(stream, true))
+	{
+		m_world = std::move(world);
+		m_thumbnailCamera.SetView(m_world->thumbnailCameraPos,
+				m_world->thumbnailCameraPos + m_world->thumbnailCameraDir);
+		m_isUpdatingThumbnailView = false;
+		m_levelName = level.name;
+		m_savedTextTimer = 0;
+		m_levelSettingsOpen = false;
+		m_previousSumOfWaterBlockedVersion = -1;
+		InitWorld();
+		
+		auto [voxelMin, voxelMax] = m_world->voxels.CalculateBounds();
+		m_camera.Reset(eg::Sphere(
+			glm::vec3(voxelMin + voxelMax) / 2.0f,
+			glm::distance(glm::vec3(voxelMin), glm::vec3(voxelMax)) / 2.0f
+		));
+	}
+}
+
 void Editor::Save()
 {
 	std::string savePath = eg::Concat({ eg::ExeDirPath(), "/levels/", m_levelName, ".gwd" });
 	std::ofstream stream(savePath, std::ios::binary);
 	m_world->Save(stream);
 	InitLevels();
+	m_savedTextTimer = 3;
+}
+
+void Editor::Close()
+{
+	m_levelName.clear();
+	m_world = nullptr;
 }
 
 void Editor::DrawMenuBar()
@@ -445,22 +483,20 @@ void Editor::DrawMenuBar()
 	{
 		if (ImGui::BeginMenu("File"))
 		{
-			if (ImGui::MenuItem("Save"))
+			if (ImGui::MenuItem("Save", "Ctrl + S", false, m_world != nullptr))
 			{
 				Save();
 			}
 			
-			if (ImGui::MenuItem("Close"))
+			if (ImGui::MenuItem("Close", "Ctrl + W", false, m_world != nullptr))
 			{
-				m_levelName.clear();
-				m_world = nullptr;
+				Close();
 			}
 			
-			if (ImGui::MenuItem("Save and Close"))
+			if (ImGui::MenuItem("Save and Close", nullptr, false, m_world != nullptr))
 			{
 				Save();
-				m_levelName.clear();
-				m_world = nullptr;
+				Close();
 			}
 			
 			ImGui::EndMenu();

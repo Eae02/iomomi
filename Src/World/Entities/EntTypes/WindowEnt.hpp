@@ -53,7 +53,7 @@ private:
 	};
 	
 	uint32_t m_windowType = 0;
-	float m_textureScale = 1;
+	glm::vec2 m_textureScale;
 	float m_depth = 0.05f;
 	float m_windowDistanceScale = 1;
 	OriginMode m_originMode = OriginMode::Middle;
@@ -63,6 +63,8 @@ private:
 	
 	bool m_hasFrame = false;
 	float m_frameScale = 0.5f;
+	glm::vec2 m_frameTextureScale;
+	uint32_t m_frameMaterial = 0;
 	
 	PhysicsObject m_physicsObject;
 };

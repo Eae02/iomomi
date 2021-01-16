@@ -9,7 +9,8 @@ message WindowEntity {
 	float sizeX = 4;
 	float sizeY = 5;
 	fixed32 up_plane = 6;
-	float texture_scale = 7;
+	float texture_scale_x = 7;
+	float texture_scale_y = 20;
 	fixed32 window_type = 8;
 	fixed32 water_block_mode = 10;
 	bool has_depth_data = 11;
@@ -17,5 +18,8 @@ message WindowEntity {
 	float window_distance_scale = 13;
 	bool border_mesh = 14;
 	int32 origin_mode = 15;
-	float border_scale = 16;
+	float frame_scale = 16;
+	float frame_texture_scale_x = 17;
+	float frame_texture_scale_y = 19;
+	int32 frame_material = 18;
 }

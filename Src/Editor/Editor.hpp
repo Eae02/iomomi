@@ -25,26 +25,15 @@ public:
 	void SetSSRFallbackColor(const eg::ColorSRGB& color) { m_world->ssrFallbackColor = color; }
 	
 private:
-	template <typename CallbackTp>
-	void IterateSelection(CallbackTp callback);
-	
-	bool IsSelected(const Ent& entity) const;
-	
 	void InitWorld();
 	
 	void DrawWorld();
 	
 	void DrawMenuBar();
 	
+	void LoadLevel(const struct Level& level);
 	void Save();
-	
-	void UpdateToolWalls(float dt);
-	void UpdateToolCorners(float dt);
-	void UpdateToolEntities(float dt);
-	
-	void DrawToolWalls();
-	void DrawToolCorners();
-	void DrawToolEntities();
+	void Close();
 	
 	RenderContext* m_renderCtx;
 	PrepareDrawArgs m_prepareDrawArgs;
@@ -77,6 +66,8 @@ private:
 	
 	bool m_isUpdatingThumbnailView = false;
 	eg::FlyCamera m_thumbnailCamera;
+	
+	float m_savedTextTimer = 0;
 };
 
 extern Editor* editor;
