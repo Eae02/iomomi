@@ -101,6 +101,7 @@ static void OnInit()
 	InitVertex(windowVertices[4], 1, 1);
 	InitVertex(windowVertices[5], 0, 1);
 	windowVertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer, sizeof(windowVertices), windowVertices);
+	windowVertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
 }
 
 static void InitializeFrameMaterials()

@@ -348,13 +348,12 @@ void WaterRenderer::RenderPost(RenderTexManager& rtManager)
 	
 	float waterGlowIntensity = settings.gunFlash ? 4 : 0.5f;
 	
-	float pc[8] =
+	float pc[7] =
 	{
 		2.0f / rtManager.ResX(), 2.0f / rtManager.ResY(), 0, 0,
 		waterGlowColor.r * waterGlowIntensity,
 		waterGlowColor.g * waterGlowIntensity,
-		waterGlowColor.b * waterGlowIntensity,
-		0
+		waterGlowColor.b * waterGlowIntensity
 	};
 	eg::DC.PushConstants(0, sizeof(pc), pc);
 	
