@@ -2,16 +2,19 @@
 #include "DecalEnt.hpp"
 #include "../../../Graphics/Materials/DecalMaterial.hpp"
 #include "../../../../Protobuf/Build/DecalEntity.pb.h"
+#include "../../../Editor/PrimitiveRenderer.hpp"
 
 static const char* decalMaterials[] = 
 {
 	"Stain0",
 	"Stain1",
 	"Stain2",
-	"Arrow"
+	"Arrow",
+	"WarningDecal"
 };
 
 DecalEnt::DecalEnt()
+	: m_repetitions(0, 0)
 {
 	UpdateMaterialPointer();
 }
@@ -49,7 +52,7 @@ glm::mat4 DecalEnt::GetDecalTransform() const
 	return glm::translate(glm::mat4(1), m_position) *
 	       glm::mat4(GetRotationMatrix(m_direction)) *
 	       glm::rotate(glm::mat4(1), rotation, glm::vec3(0, 1, 0)) *
-	       glm::scale(glm::mat4(1), glm::vec3(scale * ar, 1.0f, scale));
+	       glm::scale(glm::mat4(1), glm::vec3(scale * ar * (m_repetitions.x + 1), 1.0f, scale * (m_repetitions.y + 1)));
 }
 
 void DecalEnt::RenderSettings()
@@ -63,14 +66,37 @@ void DecalEnt::RenderSettings()
 	
 	ImGui::DragFloat("Scale", &scale, 0.1f, 0.0f, INFINITY);
 	ImGui::SliderAngle("Rotation", &rotation);
+	
+	ImGui::DragInt2("Repetitions", &m_repetitions.x);
 }
 
 void DecalEnt::CommonDraw(const EntDrawArgs& args)
 {
-	eg::Sphere sphere(m_position, std::max(scale, scale * m_material->AspectRatio()));
-	if (args.frustum->Intersects(sphere))
+	const glm::mat4 transform = GetDecalTransform();
+	const eg::AABB aabb = eg::AABB(glm::vec3(-1, 0, -1), glm::vec3(1, 0.01f, 1)).TransformedBoundingBox(transform);
+	if (args.frustum->Intersects(aabb))
 	{
-		args.meshBatch->Add(DecalMaterial::GetMesh(), *m_material, DecalMaterial::InstanceData(GetDecalTransform()), 1);
+		args.meshBatch->Add(DecalMaterial::GetMesh(), *m_material,
+			DecalMaterial::InstanceData(transform, glm::vec2(0, 0), glm::vec2(m_repetitions + 1)), 1);
+	}
+}
+
+void DecalEnt::EditorDraw(const EntEditorDrawArgs& args)
+{
+	CommonDraw(args);
+	if (args.getDrawMode(this) == EntEditorDrawMode::Selected)
+	{
+		const glm::mat4 transform = GetDecalTransform();
+		const glm::vec3 vbl = transform * glm::vec4(-1, 0, -1, 1);
+		const glm::vec3 vbr = transform * glm::vec4( 1, 0, -1, 1);
+		const glm::vec3 vtl = transform * glm::vec4(-1, 0,  1, 1);
+		const glm::vec3 vtr = transform * glm::vec4( 1, 0,  1, 1);
+		static const eg::ColorSRGB editorOutlineColor = eg::ColorSRGB::FromHex(0x1f9bde);
+		
+		args.primitiveRenderer->AddLine(vbl, vbr, editorOutlineColor, 0.02f);
+		args.primitiveRenderer->AddLine(vbr, vtr, editorOutlineColor, 0.02f);
+		args.primitiveRenderer->AddLine(vtr, vtl, editorOutlineColor, 0.02f);
+		args.primitiveRenderer->AddLine(vtl, vbl, editorOutlineColor, 0.02f);
 	}
 }
 
@@ -85,6 +111,8 @@ void DecalEnt::Serialize(std::ostream& stream) const
 	decalPB.set_dir((gravity_pb::Dir)m_direction);
 	decalPB.set_rotation(rotation);
 	decalPB.set_scale(scale);
+	decalPB.set_extension_x(m_repetitions.x);
+	decalPB.set_extension_y(m_repetitions.y);
 	
 	decalPB.SerializeToOstream(&stream);
 }
@@ -96,6 +124,8 @@ void DecalEnt::Deserialize(std::istream& stream)
 	
 	m_position = DeserializePos(decalPB);
 	m_direction = (Dir)decalPB.dir();
+	m_repetitions.x = decalPB.extension_x();
+	m_repetitions.y = decalPB.extension_y();
 	
 	rotation = decalPB.rotation();
 	scale = decalPB.scale();

@@ -59,6 +59,9 @@ assets:
     mipShift: *MipShift
     srgb: true
     format: bc1
+  - regex: "Textures/Decals/WarningDecal.png"
+    srgb: true
+    format: bc3
     
   - name: Textures/Particles.png
     srgb: true

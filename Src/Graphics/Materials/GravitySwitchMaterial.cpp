@@ -9,11 +9,9 @@ static eg::DescriptorSet gravitySwitchDescriptorSet;
 
 static void OnInit()
 {
-	const eg::ShaderModuleAsset& fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravitySwitchLight.fs.glsl");
-	
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Common3D.vs.glsl").DefaultVariant();
-	pipelineCI.fragmentShader = fragmentShader.GetVariant("VDefault");
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravitySwitchLight.fs.glsl").DefaultVariant();
 	pipelineCI.enableDepthWrite = true;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::Back;
@@ -27,14 +25,12 @@ static void OnInit()
 	pipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 4, offsetof(StaticPropMaterial::InstanceData, transform) + 16 };
 	pipelineCI.vertexAttributes[6] = { 1, eg::DataType::Float32, 4, offsetof(StaticPropMaterial::InstanceData, transform) + 32 };
 	pipelineCI.vertexAttributes[7] = { 1, eg::DataType::Float32, 2, offsetof(StaticPropMaterial::InstanceData, textureScale) };
-	pipelineCI.numColorAttachments = 2;
+	pipelineCI.numColorAttachments = 1;
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.label = "GravSwitchGame";
 	gravitySwitchPipelineGame = eg::Pipeline::Create(pipelineCI);
-	gravitySwitchPipelineGame.FramebufferFormatHint(DeferredRenderer::GEOMETRY_FB_FORMAT);
 	
 	pipelineCI.label = "GravSwitchEditor";
-	pipelineCI.fragmentShader = fragmentShader.GetVariant("VEditor");
 	pipelineCI.cullMode = eg::CullMode::None;
 	pipelineCI.numColorAttachments = 1;
 	gravitySwitchPipelineEditor = eg::Pipeline::Create(pipelineCI);
@@ -64,9 +60,9 @@ inline static eg::PipelineRef GetPipeline(const MeshDrawArgs& drawArgs)
 {
 	switch (drawArgs.drawMode)
 	{
-	case MeshDrawMode::Game: return gravitySwitchPipelineGame;
+	case MeshDrawMode::Emissive: return gravitySwitchPipelineGame;
 	case MeshDrawMode::Editor: return gravitySwitchPipelineEditor;
-	case MeshDrawMode::ObjectFlags: return StaticPropMaterial::FlagsPipelineBackCull;
+	//case MeshDrawMode::ObjectFlags: return StaticPropMaterial::FlagsPipelineBackCull;
 	default: return eg::PipelineRef();
 	}
 }

@@ -24,7 +24,7 @@ void EditorCamera::Update(float dt, bool& canUpdateInput)
 		return (pitch1 - std::floor(pitch1)) > 0.5f ? -1 : 1;
 	};
 	
-	if (eg::IsButtonDown(eg::Button::MouseMiddle) || (eg::IsButtonDown(eg::Button::MouseRight) && eg::InputState::Current().IsAltDown()))
+	if (eg::IsButtonDown(eg::Button::MouseRight))
 	{
 		canUpdateInput = false;
 		eg::SetRelativeMouseMode(true);

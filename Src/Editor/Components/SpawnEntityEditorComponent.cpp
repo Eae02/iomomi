@@ -96,7 +96,7 @@ void SpawnEntityEditorComponent::Update(float dt, const EditorState& editorState
 bool SpawnEntityEditorComponent::UpdateInput(float dt, const EditorState& editorState)
 {
 	//Opens the spawn entity menu if the right mouse button is clicked
-	if (eg::IsButtonDown(eg::Button::MouseRight) && !eg::WasButtonDown(eg::Button::MouseRight))
+	if (eg::IsButtonDown(eg::Button::S) && !eg::WasButtonDown(eg::Button::S) && !eg::InputState::Current().IsCtrlDown())
 	{
 		m_spawnEntityPickResult = editorState.world->voxels.RayIntersect(editorState.viewRay);
 		if (m_spawnEntityPickResult.intersected)

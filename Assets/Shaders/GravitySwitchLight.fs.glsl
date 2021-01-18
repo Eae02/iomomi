@@ -1,12 +1,6 @@
 #version 450 core
 
-#pragma variants VDefault VEditor
-
-#ifdef VDefault
-#include "Inc/DeferredGeom.glh"
-#else
 layout(location=0) out vec4 color_out;
-#endif
 
 #define RENDER_SETTINGS_BINDING 0
 #include "Inc/RenderSettings.glh"
@@ -14,11 +8,6 @@ layout(location=0) out vec4 color_out;
 layout(binding=1) uniform sampler2D hexSampler;
 
 layout(location=1) in vec2 texCoord_in;
-#ifdef VDefault
-layout(location=2) in vec3 normal_in;
-#endif
-
-const float ROUGHNESS = 0.4;
 
 const vec3 COLOR = vec3(0.12, 0.9, 0.7);
 
@@ -42,11 +31,5 @@ void main()
 	
 	vec3 color = COLOR * mix(0.5, 2.0, intensity);
 	
-#ifdef VEditor
 	color_out = vec4(color, 1.0);
-#endif
-	
-#ifdef VDefault
-	DeferredOut(color, normal_in, ROUGHNESS, 1.0, 1.0);
-#endif
 }

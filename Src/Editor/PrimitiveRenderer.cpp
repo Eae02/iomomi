@@ -12,7 +12,7 @@ void PrimitiveRenderer::OnInit()
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, (uint32_t)offsetof(Vertex, position) };
 	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::UInt8Norm, 4, (uint32_t)offsetof(Vertex, color) };
 	pipelineCI.cullMode = eg::CullMode::None;
-	pipelineCI.enableDepthTest = false;
+	pipelineCI.enableDepthTest = true;
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.blendStates[0] = eg::AlphaBlend;
 	

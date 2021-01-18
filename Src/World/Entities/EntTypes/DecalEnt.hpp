@@ -16,6 +16,7 @@ public:
 	void RenderSettings() override;
 	
 	void CommonDraw(const EntDrawArgs& args) override;
+	void EditorDraw(const EntEditorDrawArgs& args) override;
 	
 	void Serialize(std::ostream& stream) const override;
 	
@@ -38,4 +39,5 @@ private:
 	
 	const class DecalMaterial* m_material = nullptr;
 	int m_decalMaterialIndex = 0;
+	glm::ivec2 m_repetitions;
 };

@@ -12,4 +12,6 @@ message DecalEntity {
 	string material_name = 5;
 	float rotation = 6;
 	float scale = 7;
+	int32 extension_x = 8;
+	int32 extension_y = 9;
 }
