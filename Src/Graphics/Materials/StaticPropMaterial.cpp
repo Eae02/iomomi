@@ -27,6 +27,7 @@ public:
 		const float texScaleX = rootYaml["textureScaleX"].as<float>(texScale);
 		const float texScaleY = rootYaml["textureScaleY"].as<float>(texScale);
 		const bool backfaceCull = rootYaml["backfaceCull"].as<bool>(true);
+		const bool backfaceCullEd = rootYaml["backfaceCullEd"].as<bool>(false);
 		const bool castShadows = rootYaml["castShadows"].as<bool>(true);
 		const bool enableSSR = rootYaml["enableSSR"].as<bool>(true);
 		
@@ -56,7 +57,7 @@ public:
 		eg::BinWrite(generateContext.outputStream, roughnessMax);
 		eg::BinWrite(generateContext.outputStream, texScaleX);
 		eg::BinWrite(generateContext.outputStream, texScaleY);
-		eg::BinWrite<uint8_t>(generateContext.outputStream, (uint8_t)backfaceCull);
+		eg::BinWrite<uint8_t>(generateContext.outputStream, (uint8_t)backfaceCull | ((uint8_t)backfaceCullEd << 1));
 		eg::BinWrite<uint8_t>(generateContext.outputStream, (uint8_t)castShadows);
 		eg::BinWrite<uint8_t>(generateContext.outputStream, (uint8_t)objectFlags);
 		eg::BinWrite<uint8_t>(generateContext.outputStream, (uint8_t)minShadowQuality);
@@ -69,7 +70,7 @@ public:
 	}
 };
 
-static eg::Pipeline staticPropPipelineEditor;
+static eg::Pipeline staticPropPipelineEditor[2];
 static eg::Pipeline staticPropPipelineGame[2];
 static eg::Pipeline staticPropPipelineFlags[2];
 static eg::Pipeline staticPropPipelinePLShadow[2];
@@ -116,11 +117,15 @@ static void OnInit()
 	
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/StaticModel-Editor.fs.glsl").DefaultVariant();
-	pipelineCI.cullMode = eg::CullMode::None;
+	pipelineCI.cullMode = eg::CullMode::Back;
 	pipelineCI.label = "StaticPropEditor";
-	staticPropPipelineEditor = eg::Pipeline::Create(pipelineCI);
-	staticPropPipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
+	staticPropPipelineEditor[1] = eg::Pipeline::Create(pipelineCI);
+	staticPropPipelineEditor[1].FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
+	pipelineCI.cullMode = eg::CullMode::None;
+	pipelineCI.label = "StaticPropEditorNoCull";
+	staticPropPipelineEditor[0] = eg::Pipeline::Create(pipelineCI);
+	staticPropPipelineEditor[0].FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
 	eg::GraphicsPipelineCreateInfo flagsPipelineCI;
 	flagsPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/ObjectFlags.vs.glsl").DefaultVariant();
@@ -178,7 +183,8 @@ static void OnInit()
 
 static void OnShutdown()
 {
-	staticPropPipelineEditor.Destroy();
+	staticPropPipelineEditor[0].Destroy();
+	staticPropPipelineEditor[1].Destroy();
 	staticPropPipelineGame[0].Destroy();
 	staticPropPipelineGame[1].Destroy();
 	staticPropPipelineFlags[0].Destroy();
@@ -213,7 +219,9 @@ bool StaticPropMaterial::AssetLoader(const eg::AssetLoadContext& loadContext)
 	material.m_roughnessMax = eg::BinRead<float>(stream);
 	material.m_textureScale.x = 1.0f / eg::BinRead<float>(stream);
 	material.m_textureScale.y = 1.0f / eg::BinRead<float>(stream);
-	material.m_backfaceCull = eg::BinRead<uint8_t>(stream);
+	uint8_t backfaceCullFlags = eg::BinRead<uint8_t>(stream);
+	material.m_backfaceCull = (backfaceCullFlags & 1) != 0;
+	material.m_backfaceCullEditor = (backfaceCullFlags & 2) != 0;
 	material.m_castShadows = eg::BinRead<uint8_t>(stream);
 	material.m_objectFlags = eg::BinRead<uint8_t>(stream);
 	material.m_minShadowQuality = (QualityLevel)eg::BinRead<uint8_t>(stream);
@@ -229,16 +237,16 @@ void StaticPropMaterial::InitAssetTypes()
 
 size_t StaticPropMaterial::PipelineHash() const
 {
-	return typeid(StaticPropMaterial).hash_code() + m_backfaceCull;
+	return typeid(StaticPropMaterial).hash_code() + m_backfaceCull + m_backfaceCullEditor * 2;
 }
 
-inline static eg::PipelineRef GetPipeline(const MeshDrawArgs& drawArgs, bool backfaceCull)
+inline static eg::PipelineRef GetPipeline(const MeshDrawArgs& drawArgs, bool backfaceCull, bool backfaceCullEditor)
 {
 	switch (drawArgs.drawMode)
 	{
 	case MeshDrawMode::Game: return staticPropPipelineGame[(int)backfaceCull];
 	case MeshDrawMode::ObjectFlags: return staticPropPipelineFlags[(int)backfaceCull];
-	case MeshDrawMode::Editor: return staticPropPipelineEditor;
+	case MeshDrawMode::Editor: return staticPropPipelineEditor[(int)backfaceCullEditor];
 	case MeshDrawMode::PointLightShadow: return staticPropPipelinePLShadow[(int)backfaceCull];
 	default: return eg::PipelineRef();
 	}
@@ -248,7 +256,7 @@ inline static eg::PipelineRef GetPipeline(const MeshDrawArgs& drawArgs, bool bac
 bool StaticPropMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
 	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
-	eg::PipelineRef pipeline = GetPipeline(*mDrawArgs, m_backfaceCull);
+	eg::PipelineRef pipeline = GetPipeline(*mDrawArgs, m_backfaceCull, m_backfaceCullEditor);
 	if (pipeline.handle == nullptr)
 		return false;
 	cmdCtx.BindPipeline(pipeline);
@@ -280,7 +288,7 @@ bool StaticPropMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs
 	if (!m_descriptorsInitialized)
 	{
 		m_descriptorSet = eg::DescriptorSet(staticPropPipelineGame[(int)m_backfaceCull], 0);
-		m_descriptorSetEditor = eg::DescriptorSet(staticPropPipelineEditor, 0);
+		m_descriptorSetEditor = eg::DescriptorSet(staticPropPipelineEditor[(int)m_backfaceCullEditor], 0);
 		m_descriptorsInitialized = true;
 		
 		m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
@@ -324,6 +332,7 @@ const StaticPropMaterial& StaticPropMaterial::GetFromWallMaterial(uint32_t index
 		staticPropWallMaterials[index]->m_roughnessMin = wallMaterials[index].minRoughness;
 		staticPropWallMaterials[index]->m_roughnessMax = wallMaterials[index].maxRoughness;
 		staticPropWallMaterials[index]->m_textureScale = glm::vec2(1.0f / wallMaterials[index].textureScale);
+		staticPropWallMaterials[index]->m_backfaceCullEditor = true;
 	}
 	return *staticPropWallMaterials[index];
 }

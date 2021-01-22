@@ -33,7 +33,7 @@ static void OnInit()
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.numColorAttachments = 2;
-	pipelineCI.cullMode = eg::CullMode::None;
+	pipelineCI.cullMode = eg::CullMode::Back;
 	pipelineCI.topology = eg::Topology::TriangleStrip;
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.vertexBindings[0] = { sizeof(float) * 2, eg::InputRate::Vertex };

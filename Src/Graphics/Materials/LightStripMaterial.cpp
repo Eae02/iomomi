@@ -29,7 +29,6 @@ static void OnInit()
 	lightStripPipelineGame.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
 	lightStripPipelineGame.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
 	
-	pipelineCI.cullMode = eg::CullMode::None;
 	pipelineCI.label = "LightStripEditor";
 	lightStripPipelineEditor = eg::Pipeline::Create(pipelineCI);
 	lightStripPipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);

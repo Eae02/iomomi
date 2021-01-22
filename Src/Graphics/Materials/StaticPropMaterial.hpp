@@ -56,6 +56,7 @@ private:
 	float m_roughnessMax;
 	glm::vec2 m_textureScale;
 	bool m_backfaceCull = true;
+	bool m_backfaceCullEditor = false;
 	bool m_castShadows = true;
 	QualityLevel m_minShadowQuality = QualityLevel::Medium;
 	uint32_t m_objectFlags = 0;

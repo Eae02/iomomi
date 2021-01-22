@@ -15,6 +15,8 @@ assets:
   - name: Models/Window.obj
     flipWinding: true
     removeNameSuffix: true
+  - name: Models/EditorEntrance.obj
+    flipWinding: true
     
   - regex: "Models/.*\\.obj"
     removeNameSuffix: true
