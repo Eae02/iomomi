@@ -3,6 +3,7 @@
 #include "Entities/EntTypes/PlatformEnt.hpp"
 #include "Entities/EntTypes/ForceFieldEnt.hpp"
 #include "Entities/EntTypes/GooPlaneEnt.hpp"
+#include "Entities/EntTypes/LadderEnt.hpp"
 #include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
 #include "../Settings.hpp"
 
@@ -15,6 +16,8 @@ static float* walkAccelTime     = eg::TweakVarFloat("pl_walk_atime",     0.1f,  
 static float* swimAccelTime     = eg::TweakVarFloat("pl_swim_atime",     0.4f,  0.0f);
 static float* walkDeaccelTime   = eg::TweakVarFloat("pl_walk_datime",    0.05f, 0.0f);
 static float* swimDrag          = eg::TweakVarFloat("pl_swim_drag",      3.5f,  0.0f);
+static float* ladderClimbSpeed  = eg::TweakVarFloat("pl_ladder_speed",   3.0f,  0.0f);
+static float* ladderAccelTime   = eg::TweakVarFloat("pl_ladder_atime",   0.2f,  0.0f);
 static float* jumpHeight        = eg::TweakVarFloat("pl_jump_height",    1.1f,  0.0f);
 static float* waterJumpHeight   = eg::TweakVarFloat("pl_wjump_height",   1.3f,  0.0f);
 static float* eyeRoundPrecision = eg::TweakVarFloat("pl_eye_round_prec", 0.01f, 0);
@@ -268,6 +271,13 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 		}
 	}
 	
+	glm::vec3 accXZNorm = localAccPlane.x * forwardPlane + localAccPlane.y * rightPlane;
+	float accXZLen = glm::length(accXZNorm);
+	if (accXZLen > 0.001f)
+		accXZNorm /= accXZLen;
+	else
+		accXZNorm = glm::vec3(0);
+	
 	glm::vec3 velocityXZ = localVelPlane.x * forwardPlane + localVelPlane.y * rightPlane;
 	
 	m_radius = glm::vec3(WIDTH / 2, WIDTH / 2, WIDTH / 2);
@@ -275,6 +285,30 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 		m_radius[(int)m_down / 2] = HEIGHT / 2;
 	m_physicsObject.shape = eg::AABB(-m_radius, m_radius);
 	PhysicsObject* floorObject = physicsEngine.FindFloorObject(m_physicsObject, -up);
+	
+	//Checks for intersections with ladders
+	const LadderEnt* ladder = nullptr;
+	if (m_gravityTransitionMode == TransitionMode::None && !m_isCarrying && !underwater)
+	{
+		eg::AABB selfAABB = GetAABB();
+		if (m_wasClimbingLadder)
+		{
+			glm::vec3 aabbExtension = up * -0.2f;
+			selfAABB.min = glm::min(selfAABB.min, selfAABB.min + aabbExtension);
+			selfAABB.max = glm::max(selfAABB.max, selfAABB.max + aabbExtension);
+		}
+		
+		world.entManager.ForEachOfType<LadderEnt>([&] (const LadderEnt& ladderCandidate)
+		{
+			if (std::abs(glm::dot(up, ladderCandidate.GetDownVector())) > 0.5f &&
+				glm::dot(accXZNorm, -glm::vec3(DirectionVector(ladderCandidate.GetFacingDirection()))) > 0.5f &&
+				ladderCandidate.GetAABB().Intersects(selfAABB))
+			{
+				ladder = &ladderCandidate;
+				velocityXZ = glm::vec3(0);
+			}
+		});
+	}
 	
 	//Vertical movement
 	if (!*noclipActive)
@@ -302,19 +336,33 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 			}
 		}
 		
-		//Applies gravity
-		localVelVertical -= ((underwater ? 0.2f : 1.0f) * GRAVITY_MAG) * dt;
-		
-		//Updates vertical velocity
-		if (moveUp && m_gravityTransitionMode == TransitionMode::None && m_onGround)
+		if (ladder != nullptr)
 		{
-			localVelVertical = GetJumpAccel(*jumpHeight * (standingOnCube ? 0.7f : 1.0f));
-			m_onGroundRingBufferSize = std::min(m_onGroundRingBufferSize, 1U);
 			m_onGround = false;
 			m_onGroundLinger = 0;
-			m_physicsObject.position += up * 0.01f;
+			
+			if (localVelVertical < 0)
+				localVelVertical = 0;
+			localVelVertical = std::min(localVelVertical + *ladderClimbSpeed / *ladderAccelTime * dt, *ladderClimbSpeed);
+		}
+		else
+		{
+			//Applies gravity
+			localVelVertical -= ((underwater ? 0.2f : 1.0f) * GRAVITY_MAG) * dt;
+			
+			//Updates vertical velocity
+			if (moveUp && m_gravityTransitionMode == TransitionMode::None && m_onGround)
+			{
+				localVelVertical = GetJumpAccel(*jumpHeight * (standingOnCube ? 0.7f : 1.0f));
+				m_onGroundRingBufferSize = std::min(m_onGroundRingBufferSize, 1U);
+				m_onGround = false;
+				m_onGroundLinger = 0;
+				m_physicsObject.position += up * 0.01f;
+			}
 		}
 	}
+	
+	m_wasClimbingLadder = ladder != nullptr;
 	
 	//Reconstructs the world velocity vector
 	glm::vec3 velocityY = localVelVertical * up;
@@ -595,6 +643,7 @@ void Player::DrawDebugOverlay()
 	ImGui::Text("Facing: %c%c", forward[maxDir] < 0 ? '-' : '+', dirNames[maxDir]);
 	
 	ImGui::Text("On ground: %d", (int)m_onGround);
+	ImGui::Text("On ladder: %d", (int)m_wasClimbingLadder);
 }
 
 void Player::Reset()

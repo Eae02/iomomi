@@ -81,6 +81,7 @@ private:
 	bool m_onGround = false;
 	bool m_wasOnGround = false;
 	bool m_wasUnderwater = false;
+	bool m_wasClimbingLadder = false;
 	float m_leftWaterTime = 0;
 	
 	enum class TransitionMode

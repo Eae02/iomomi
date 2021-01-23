@@ -1,7 +1,6 @@
 #include "GravitySwitchEnt.hpp"
 #include "../../Player.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
-#include "../../../Graphics/Materials/GravitySwitchMaterial.hpp"
 #include "../../../../Protobuf/Build/GravitySwitchEntity.pb.h"
 #include "../../../Graphics/RenderSettings.hpp"
 #include "../../../Settings.hpp"

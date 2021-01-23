@@ -18,6 +18,7 @@
 #include "EntTypes/WindowEnt.hpp"
 #include "EntTypes/WaterWallEnt.hpp"
 #include "EntTypes/SlidingWallEnt.hpp"
+#include "EntTypes/LadderEnt.hpp"
 
 const EntTypeID entUpdateOrder[NUM_UPDATABLE_ENTITY_TYPES] =
 {
@@ -69,4 +70,5 @@ void InitEntityTypes()
 	DefineEntityType<WindowEnt>("Window", "Window");
 	DefineEntityType<WaterWallEnt>("WaterWall", "Water Wall");
 	DefineEntityType<SlidingWallEnt>("SlidingWall", "Sliding Wall");
+	DefineEntityType<LadderEnt>("Ladder", "Ladder");
 }

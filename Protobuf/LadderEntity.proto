@@ -1,0 +1,14 @@
+syntax="proto3";
+
+package gravity_pb;
+
+import "Dir.proto";
+
+message LadderEntity {
+	float posX = 1;
+	float posY = 2;
+	float posZ = 3;
+	Dir dir = 4;
+	int32 length = 5;
+	int32 down = 6;
+}
