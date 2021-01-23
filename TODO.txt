@@ -4,7 +4,6 @@ fixes:
 
 graphics fixes:
  - gun should be rendered after ssr
- - ssr should be blurred slightly
 
 textures and models:
  - different graphics for pushable platforms
@@ -26,7 +25,6 @@ features:
  - placable doors
 
 levels:
- - cube launch with force field
  - floating cube levels
 
 sounds:
