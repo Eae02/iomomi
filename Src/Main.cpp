@@ -28,6 +28,7 @@ void Start(eg::RunConfig& runConfig)
 	runConfig.gameName = "Gravity Game";
 	runConfig.flags |= eg::RunFlags::DefaultFramebufferSRGB;
 	runConfig.defaultDepthStencilFormat = eg::Format::Depth32;
+	runConfig.framerateCap = 200;
 	runConfig.minWindowW = 1000;
 	runConfig.minWindowH = 700;
 	runConfig.initialize = []
