@@ -13,8 +13,6 @@ public:
 	
 	void RunFrame(float dt) override;
 	
-	void ResolutionChanged(int newWidth, int newHeight) override;
-	
 private:
 	float m_gameTime = 0;
 	

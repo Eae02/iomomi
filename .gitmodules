@@ -4,6 +4,7 @@
 [submodule "Deps/imgui"]
 	path = Deps/imgui
 	url = https://github.com/ocornut/imgui.git
+	branch = "docking"
 [submodule "Deps/cmake-pch"]
 	path = Deps/cmake-pch
 	url = https://github.com/nanoant/CMakePCHCompiler.git

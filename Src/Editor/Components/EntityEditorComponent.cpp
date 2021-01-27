@@ -1,9 +1,6 @@
 #include "EntityEditorComponent.hpp"
-#include "../../Graphics/RenderSettings.hpp"
-#include "../../World/Entities/Components/ActivatableComp.hpp"
 #include "../../World/Entities/EntTypes/ActivationLightStripEnt.hpp"
 #include "../../World/Entities/Components/ActivatorComp.hpp"
-#include "../../Gui/GuiCommon.hpp"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -14,6 +11,13 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 	{
 		m_mouseDownPos = eg::CursorPos();
 	}
+	
+	if (eg::FrameIdx() != m_lastUpdateFrameIndex + 1)
+	{
+		m_isDraggingWallEntity = false;
+		m_mouseDownPos = {};
+	}
+	m_lastUpdateFrameIndex = eg::FrameIdx();
 	
 	auto MaybeClone = [&] ()
 	{
@@ -74,8 +78,8 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 				editorState.EntityMoved(*wallDragEntity);
 			}
 		}
-		else if (std::abs(m_mouseDownPos.x - eg::CursorX()) > DRAG_BEGIN_DELTA ||
-		         std::abs(m_mouseDownPos.y - eg::CursorY()) > DRAG_BEGIN_DELTA)
+		else if (m_mouseDownPos.has_value() &&
+			glm::distance2(glm::vec2(*m_mouseDownPos), glm::vec2(eg::CursorPos())) > DRAG_BEGIN_DELTA * DRAG_BEGIN_DELTA)
 		{
 			m_isDraggingWallEntity = true;
 		}
@@ -114,8 +118,7 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 		}
 		
 		m_drawTranslationGizmo = true;
-		m_translationGizmo.Update(m_gizmoPos, RenderSettings::instance->cameraPosition,
-		                          RenderSettings::instance->viewProjection, editorState.viewRay);
+		m_translationGizmo.Update(m_gizmoPos, editorState.cameraPosition, editorState.viewProjection, editorState.viewRay);
 		
 		m_gizmoDragDist = m_gizmoPos - m_initialGizmoPos;
 		if (m_translationGizmo.CurrentAxis() != -1)
@@ -228,43 +231,23 @@ bool EntityEditorComponent::CollectIcons(const EditorState& editorState, std::ve
 		if (eg::HasFlag(entity.TypeFlags(), EntTypeFlags::EditorInvisible))
 			return;
 		
-		EditorIcon& icon = icons.emplace_back(entity.GetPosition(), [entityWP = entity.shared_from_this(), selected = editorState.selectedEntities] ()
-		{
-			selected->push_back(move(entityWP));
-		});
+		EditorIcon icon = editorState.CreateIcon(entity.GetPosition(),
+			[entityWP = entity.shared_from_this(), selected = editorState.selectedEntities] ()
+			{
+				selected->push_back(move(entityWP));
+			});
 		icon.iconIndex = entity.GetEditorIconIndex();
 		icon.selected = editorState.IsEntitySelected(entity);
+		icons.push_back(std::move(icon));
 	});
 	
 	return false;
 }
 
-void EntityEditorComponent::LateDraw() const
+void EntityEditorComponent::LateDraw(const EditorState& editorState) const
 {
 	if (m_drawTranslationGizmo)
 	{
-		m_translationGizmo.Draw(RenderSettings::instance->viewProjection);
-	}
-}
-
-void EntityEditorComponent::EarlyDraw(PrimitiveRenderer& primitiveRenderer) const
-{
-	if (m_translationGizmo.HasInputFocus())
-	{
-		glm::vec3 dragDist;
-		if (m_dragEntities.size() == 1)
-		{
-			dragDist = m_dragEntities[0].lastPositionSet - m_dragEntities[0].initialPosition;
-		}
-		else
-		{
-			dragDist = m_gizmoDragDist;
-		}
-		
-		char stringBuffer[128];
-		snprintf(stringBuffer, sizeof(stringBuffer), "Translating (%.2f, %.2f, %.2f)",
-		         dragDist.x, dragDist.y, dragDist.z);
-		eg::SpriteBatch::overlay.DrawText(*style::UIFontSmall, stringBuffer, glm::vec2(10), eg::ColorLin(1, 1, 1, 0.5f),
-		                                  1, nullptr, eg::TextFlags::DropShadow);
+		m_translationGizmo.Draw(editorState.viewProjection);
 	}
 }

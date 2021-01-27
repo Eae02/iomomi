@@ -8,18 +8,21 @@
 
 static constexpr float ICON_SIZE = 32;
 
-EditorIcon::EditorIcon(const glm::vec3& worldPos, std::function<void()> callback)
-	: m_callback(move(callback))
+EditorIcon EditorState::CreateIcon(const glm::vec3& worldPos, std::function<void()> callback) const
 {
-	glm::vec4 sp4 = RenderSettings::instance->viewProjection * glm::vec4(worldPos, 1.0f);
+	EditorIcon icon;
+	icon.m_callback = std::move(callback);
+	
+	glm::vec4 sp4 = viewProjection * glm::vec4(worldPos, 1.0f);
 	glm::vec3 sp3 = glm::vec3(sp4) / sp4.w;
 	
-	glm::vec2 screenPos = (glm::vec2(sp3) * 0.5f + 0.5f) *
-	                      glm::vec2(eg::CurrentResolutionX(), eg::CurrentResolutionY());
+	glm::vec2 screenPos = (glm::vec2(sp3) * 0.5f + 0.5f) * windowRect.Size();
 	
-	m_rectangle = eg::Rectangle::CreateCentered(screenPos, ICON_SIZE, ICON_SIZE);
-	m_depth = sp3.z;
-	m_behindScreen = sp4.w < 0;
+	icon.m_rectangle = eg::Rectangle::CreateCentered(screenPos, ICON_SIZE, ICON_SIZE);
+	icon.m_depth = sp3.z;
+	icon.m_behindScreen = sp4.w < 0;
+	
+	return icon;
 }
 
 bool EditorState::IsEntitySelected(const Ent& entity) const

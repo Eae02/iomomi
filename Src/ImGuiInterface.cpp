@@ -38,6 +38,9 @@ ImGuiInterface::ImGuiInterface()
 	io.IniFilename = m_iniFileName.c_str();
 #endif
 	
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+	io.ConfigWindowsMoveFromTitleBarOnly = true;
+	
 	ImGui::StyleColorsDark(&ImGui::GetStyle());
 	
 	io.SetClipboardTextFn = [] (void* data, const char* text) { eg::SetClipboardText(text); };

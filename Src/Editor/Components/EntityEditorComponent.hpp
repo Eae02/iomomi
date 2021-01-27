@@ -9,14 +9,12 @@ public:
 	
 	void RenderSettings(const EditorState& editorState) override;
 	
-	void EarlyDraw(struct PrimitiveRenderer& primitiveRenderer) const override;
-	
-	void LateDraw() const override;
+	void LateDraw(const EditorState& editorState) const override;
 	
 	bool CollectIcons(const EditorState& editorState, std::vector<EditorIcon>& icons) override;
 	
 private:
-	glm::ivec2 m_mouseDownPos;
+	std::optional<glm::ivec2> m_mouseDownPos;
 	
 	struct DraggingEntity
 	{
@@ -37,4 +35,6 @@ private:
 	bool m_entitiesCloned = false;
 	
 	bool m_isDraggingWallEntity = false;
+	
+	uint64_t m_lastUpdateFrameIndex = 0;
 };

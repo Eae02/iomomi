@@ -86,8 +86,15 @@ void EditorCamera::Update(float dt, bool& canUpdateInput)
 
 void EditorCamera::GetViewMatrix(glm::mat4& matrixOut, glm::mat4& inverseMatrixOut) const
 {
-	matrixOut = glm::translate(glm::mat4(1), glm::vec3(0, 0, -m_distance)) * glm::transpose(m_rotationMatrix) * glm::translate(glm::mat4(1), -m_focus);
-	inverseMatrixOut = glm::translate(glm::mat4(1), m_focus) * m_rotationMatrix * glm::translate(glm::mat4(1), glm::vec3(0, 0, m_distance));
+	matrixOut =
+		glm::translate(glm::mat4(1), glm::vec3(0, 0, -m_distance)) *
+		glm::transpose(m_rotationMatrix) *
+		glm::translate(glm::mat4(1), -m_focus);
+	
+	inverseMatrixOut =
+		glm::translate(glm::mat4(1), m_focus) *
+		m_rotationMatrix *
+		glm::translate(glm::mat4(1), glm::vec3(0, 0, m_distance));
 }
 
 void EditorCamera::UpdateRotationMatrix()

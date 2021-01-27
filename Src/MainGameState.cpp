@@ -4,7 +4,6 @@
 #include "World/Entities/EntTypes/EntranceExitEnt.hpp"
 #include "MainMenuGameState.hpp"
 #include "Gui/GuiCommon.hpp"
-#include "Editor/Editor.hpp"
 
 #include <fstream>
 #include <imgui.h>
@@ -103,6 +102,8 @@ void MainGameState::OnDeactivate()
 	m_world.reset();
 }
 
+extern std::weak_ptr<World> runningEditorWorld;
+
 static int* playerUnderwaterSpheres = eg::TweakVarInt("pl_underwater_spheres", 15, 0);
 
 void MainGameState::RunFrame(float dt)
@@ -197,16 +198,13 @@ void MainGameState::RunFrame(float dt)
 		ImGui::Begin("SSR Reflection Color Editor", &m_ssrReflectionColorEditorShown);
 		ImGui::ColorPicker3("###Color", &GameRenderer::instance->ssrFallbackColor.r);
 		
-		const bool canSaveToEditor = m_pausedMenu.isFromEditor && (
-			!eg::FEqual(editor->SSRFallbackColor().r, GameRenderer::instance->ssrFallbackColor.r) ||
-			!eg::FEqual(editor->SSRFallbackColor().g, GameRenderer::instance->ssrFallbackColor.g) ||
-			!eg::FEqual(editor->SSRFallbackColor().b, GameRenderer::instance->ssrFallbackColor.b)
-		);
+		std::shared_ptr<World> editorWorld = runningEditorWorld.lock();
+		const bool canSaveToEditor = m_pausedMenu.isFromEditor && editorWorld != nullptr;
 		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, !canSaveToEditor);
 		ImGui::PushStyleVar(ImGuiStyleVar_Alpha, canSaveToEditor ? 1.0f : 0.4f);
 		if (ImGui::Button("Save to Editor") && canSaveToEditor)
 		{
-			editor->SetSSRFallbackColor(GameRenderer::instance->ssrFallbackColor);
+			editorWorld->ssrFallbackColor = GameRenderer::instance->ssrFallbackColor;
 		}
 		ImGui::PopItemFlag();
 		ImGui::PopStyleVar();

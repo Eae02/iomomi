@@ -17,7 +17,7 @@ extern WallMaterial wallMaterials[MAX_WALL_MATERIALS];
 void InitializeWallShader();
 
 void BindWallShaderGame();
-void BindWallShaderEditor();
+void BindWallShaderEditor(bool drawGrid);
 void BindWallShaderPointLightShadow(const struct PointLightShadowDrawArgs& renderArgs);
 
 void DrawWallBordersEditor(eg::BufferRef vertexBuffer, uint32_t numVertices);

@@ -1,252 +1,209 @@
 #include "Editor.hpp"
-#include "Components/EntityEditorComponent.hpp"
-#include "Components/SpawnEntityEditorComponent.hpp"
-#include "Components/LightStripEditorComponent.hpp"
-#include "Components/GravityCornerEditorComponent.hpp"
-#include "Components/WallDragEditorComponent.hpp"
-#include "Components/AAQuadDragEditorComponent.hpp"
 #include "../Levels.hpp"
 #include "../MainGameState.hpp"
-#include "../Graphics/Materials/MeshDrawArgs.hpp"
-#include "../World/Entities/Components/WaterBlockComp.hpp"
 #include "../World/Entities/Components/ActivatorComp.hpp"
-#include "../Gui/GuiCommon.hpp"
+#include "../ImGuiInterface.hpp"
+#include "../ThumbnailRenderer.hpp"
+#include "../MainMenuGameState.hpp"
 
 #include <fstream>
-#include <magic_enum.hpp>
 #include <imgui.h>
 #include <misc/cpp/imgui_stdlib.h>
 
 Editor* editor;
 
-struct EditorComponentsSet
-{
-	EntityEditorComponent entity;
-	SpawnEntityEditorComponent spawnEntity;
-	LightStripEditorComponent lightStrip;
-	GravityCornerEditorComponent gravityCorner;
-	WallDragEditorComponent wallDrag;
-	AAQuadDragEditorComponent aaQuadDrag;
-};
-
-void EditorComponentDeleter(EditorComponentsSet* s)
-{
-	delete s;
-}
-
 Editor::Editor(RenderContext& renderCtx)
-	: m_renderCtx(&renderCtx), m_components(new EditorComponentsSet, &EditorComponentDeleter)
+	: m_renderCtx(&renderCtx)
 {
 	m_prepareDrawArgs.isEditor = true;
 	m_prepareDrawArgs.meshBatch = &renderCtx.meshBatch;
 	m_prepareDrawArgs.transparentMeshBatch = &renderCtx.transparentMeshBatch;
 	m_prepareDrawArgs.player = nullptr;
-	
-	m_projection.SetFieldOfViewDeg(75.0f);
-	
-	m_componentsForTool[(int)EditorTool::Entities].push_back(&m_components->lightStrip);
-	m_componentsForTool[(int)EditorTool::Entities].push_back(&m_components->aaQuadDrag);
-	m_componentsForTool[(int)EditorTool::Entities].push_back(&m_components->spawnEntity);
-	m_componentsForTool[(int)EditorTool::Entities].push_back(&m_components->entity);
-	
-	m_componentsForTool[(int)EditorTool::Walls].push_back(&m_components->wallDrag);
-	
-	m_componentsForTool[(int)EditorTool::Corners].push_back(&m_components->gravityCorner);
 }
 
-void Editor::InitWorld()
+static inline std::unique_ptr<World> CreateEmptyWorld()
 {
-	m_world->entManager.isEditor = true;
-	m_selectedEntities.clear();
+	constexpr int NEW_LEVEL_WALL_TEXTURE = 6;
+	
+	std::unique_ptr<World> world = std::make_unique<World>();
+	
+	for (int x = 0; x < 3; x++)
+	{
+		for (int y = 0; y < 3; y++)
+		{
+			for (int z = 0; z < 3; z++)
+			{
+				world->voxels.SetIsAir({x, y, z}, true);
+				for (int s = 0; s < 6; s++)
+				{
+					world->voxels.SetMaterialSafe({x, y, z}, (Dir)s, NEW_LEVEL_WALL_TEXTURE);
+				}
+			}
+		}
+	}
+	
+	return world;
 }
-
-static constexpr int NEW_LEVEL_WALL_TEXTURE = 6;
 
 void Editor::RunFrame(float dt)
 {
-	if (m_world == nullptr)
+	eg::SetRelativeMouseMode(false);
+	
+	RenderSettings::instance->gameTime += dt;
+	
+	//Sets up the root docking window
+	ImGuiViewport* viewport = ImGui::GetMainViewport();
+	ImGui::SetNextWindowPos(viewport->GetWorkPos());
+	ImGui::SetNextWindowSize(viewport->GetWorkSize());
+	ImGui::SetNextWindowViewport(viewport->ID);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+	ImGuiWindowFlags rootWindowFlags = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoMove
+		 | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize
+		 | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+	ImGui::Begin("rootDockWindow", nullptr, rootWindowFlags);
+	ImGui::PopStyleVar(2);
+	const ImGuiID dockSpaceID = ImGui::GetID("rootDockSpace");
+	ImGui::DockSpace(dockSpaceID, ImVec2(0.0f, 0.0f));
+	ImGui::End();
+	
+	for (size_t i = 0; i < m_worlds.size();)
+	{
+		std::string title = m_worlds[i]->Name() + "###Level" + std::to_string(m_worlds[i]->uid);
+		bool open = true;
+		
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+		
+		ImGui::SetNextWindowDockID(dockSpaceID, ImGuiCond_Appearing);
+		m_worlds[i]->isWindowVisisble = ImGui::Begin(title.c_str(), &open, ImGuiWindowFlags_MenuBar);
+		m_worlds[i]->isWindowFocused = ImGui::IsWindowFocused();
+		m_worlds[i]->isWindowHovered = ImGui::IsWindowHovered();
+		
+		ImGui::PopStyleVar();
+		
+		if (m_worlds[i]->isWindowFocused)
+		{
+			m_currentWorld = m_worlds[i].get();
+		}
+		if (m_worlds[i]->isWindowVisisble)
+		{
+			m_worlds[i]->RenderImGui();
+			
+			ImDrawList* drawList = ImGui::GetWindowDrawList();
+			glm::vec2 imguiCursorPos = ImGui::GetCursorScreenPos();
+			
+			eg::Rectangle windowRect(imguiCursorPos.x, imguiCursorPos.y, ImGui::GetWindowContentRegionWidth(), ImGui::GetWindowHeight());
+			m_worlds[i]->SetWindowRect(windowRect);
+			
+			const bool flipY = eg::CurrentGraphicsAPI() == eg::GraphicsAPI::OpenGL;
+			drawList->AddImage(MakeImTextureID(m_worlds[i]->renderTexture),
+			                   imguiCursorPos, windowRect.Max(),
+			                   ImVec2(0, flipY ? 1 : 0), ImVec2(1, flipY ? 0 : 1));
+		}
+		
+		ImGui::End();
+		
+		if (!open || m_worlds[i]->shouldClose)
+		{
+			if (m_currentWorld == m_worlds[i].get())
+				m_currentWorld = nullptr;
+			m_worlds.erase(m_worlds.begin() + i);
+		}
+		else
+		{
+			i++;
+		}
+	}
+	
+	// ** Level select window **
+	if (m_levelSelectWindowOpen)
 	{
 		ImGui::SetNextWindowSize(ImVec2(400, eg::CurrentResolutionY() * 0.8f), ImGuiCond_Once);
-		if (ImGui::Begin("Select Level", nullptr, ImGuiWindowFlags_NoCollapse))
+		if (ImGui::Begin("Select Level", &m_levelSelectWindowOpen, ImGuiWindowFlags_NoCollapse))
 		{
 			ImGui::Text("New Level");
 			ImGui::InputText("Name", &m_newLevelName);
 			if (ImGui::Button("Create") && !m_newLevelName.empty())
 			{
-				m_levelName = std::move(m_newLevelName);
-				m_newLevelName = { };
-				m_world = std::make_unique<World>();
-				InitWorld();
-				
-				for (int x = 0; x < 3; x++)
+				m_worlds.push_back(std::make_unique<EditorWorld>(std::move(m_newLevelName), CreateEmptyWorld()));
+				m_newLevelName = {};
+			}
+			
+			ImGui::Separator();
+			
+			auto DrawLevelButton = [&] (const Level& level)
+			{
+				ImGui::PushID(&level);
+				std::string label = eg::Concat({level.name, "###L"});
+				if (ImGui::MenuItem(label.c_str()))
 				{
-					for (int y = 0; y < 3; y++)
+					std::string path = GetLevelPath(level.name);
+					std::ifstream stream(path, std::ios::binary);
+					
+					if (std::unique_ptr<World> world = World::Load(stream, true))
 					{
-						for (int z = 0; z < 3; z++)
-						{
-							m_world->voxels.SetIsAir({x, y, z}, true);
-							for (int s = 0; s < 6; s++)
-							{
-								m_world->voxels.SetMaterialSafe({x, y, z}, (Dir)s, NEW_LEVEL_WALL_TEXTURE);
-							}
-						}
+						m_worlds.push_back(std::make_unique<EditorWorld>(level.name, std::move(world)));
+					}
+				}
+				
+				if (level.thumbnail.handle != nullptr && ImGui::IsItemHovered())
+				{
+					ImGui::BeginTooltip();
+					ImGui::Image(MakeImTextureID(level.thumbnail), ImVec2(LEVEL_THUMBNAIL_RES_X / 2.0f, LEVEL_THUMBNAIL_RES_Y / 2.0f));
+					ImGui::EndTooltip();
+				}
+				
+				ImGui::PopID();
+			};
+			
+			if (ImGui::CollapsingHeader("Game Levels", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				for (std::string_view levelName : levelsOrder)
+				{
+					int64_t index = FindLevel(levelName);
+					if (index != -1)
+					{
+						DrawLevelButton(levels[index]);
 					}
 				}
 			}
 			
-			ImGui::Separator();
-			ImGui::Text("Open Level");
-			
-			for (const Level& level : levels)
+			if (ImGui::CollapsingHeader("Extra Levels", ImGuiTreeNodeFlags_DefaultOpen))
 			{
-				ImGui::PushID(&level);
-				std::string label = eg::Concat({ level.name, "###L" });
-				if (ImGui::MenuItem(label.c_str()))
+				for (const Level& level : levels)
 				{
-					LoadLevel(level);
+					if (level.isExtra)
+					{
+						DrawLevelButton(level);
+					}
 				}
-				ImGui::PopID();
 			}
 		}
-		
 		ImGui::End();
-		return;
 	}
 	
-	if (m_world != nullptr && m_isUpdatingThumbnailView)
-	{
-		if (eg::IsButtonDown(eg::Button::Escape) || eg::IsButtonDown(eg::Button::Space))
-		{
-			if (eg::IsButtonDown(eg::Button::Space))
-			{
-				m_world->thumbnailCameraPos = m_thumbnailCamera.Position();
-				m_world->thumbnailCameraDir = m_thumbnailCamera.Forward();
-			}
-			m_isUpdatingThumbnailView = false;
-		}
-		
-		if (!eg::console::IsShown())
-		{
-			eg::SetRelativeMouseMode(true);
-			m_thumbnailCamera.Update(dt);
-		}
-		
-		RenderSettings::instance->viewProjection = m_projection.Matrix() * m_thumbnailCamera.ViewMatrix();
-		RenderSettings::instance->invViewProjection = m_thumbnailCamera.InverseViewMatrix() * m_projection.InverseMatrix();
-		RenderSettings::instance->cameraPosition = m_thumbnailCamera.Position();
-		RenderSettings::instance->UpdateBuffer();
-		
-		std::string_view label = "Press space to set view\nPress escape to cancel";
-		eg::Rectangle labelRect(10, eg::CurrentResolutionY() - 60, 210, 50);
-		eg::SpriteBatch::overlay.DrawRect(labelRect, eg::ColorLin(0, 0, 0, 0.8f));
-		eg::SpriteBatch::overlay.DrawTextMultiline(eg::SpriteFont::DevFont(), label,
-			glm::vec2(labelRect.x + 5, labelRect.MaxY() - 5 - eg::SpriteFont::DevFont().LineHeight()),
-			eg::ColorLin(eg::ColorLin::White));
-		
-		m_icons.clear();
-		DrawWorld();
-		return;
-	}
-	
-	eg::SetRelativeMouseMode(false);
-	
-	DrawMenuBar();
-	
-	if (m_world != nullptr && eg::InputState::Current().IsCtrlDown())
-	{
-		if (eg::IsButtonDown(eg::Button::S))
-			Save();
-		if (eg::IsButtonDown(eg::Button::W))
-			Close();
-	}
-	
-	if (m_world == nullptr)
-		return;
-	
-	RenderSettings::instance->gameTime += dt;
-	m_savedTextTimer = std::max(m_savedTextTimer - dt, 0.0f);
-	if (m_savedTextTimer > 0)
-	{
-		constexpr float SAVED_TEXT_FADE_TIME = 0.5f;
-		eg::SpriteBatch::overlay.DrawText(*style::UIFontSmall, "Saved", glm::vec2(10),
-			eg::ColorLin(1, 1, 1, std::min(m_savedTextTimer / SAVED_TEXT_FADE_TIME, 1.0f)),
-			1, nullptr, eg::TextFlags::DropShadow);
-	}
-	
-	if (m_levelSettingsOpen)
+	// ** Level settings window **
+	if (m_levelSettingsWindowOpen)
 	{
 		ImGui::SetNextWindowSize(ImVec2(250, 0), ImGuiCond_FirstUseEver);
-		if (ImGui::Begin("Level Settings", &m_levelSettingsOpen))
+		std::string levelSettingsTitle = "Level Settings";
+		if (m_currentWorld != nullptr)
+			levelSettingsTitle += " - " + m_currentWorld->Name();
+		levelSettingsTitle += "###LevelSettingsWindow";
+		if (ImGui::Begin(levelSettingsTitle.c_str(), &m_levelSettingsWindowOpen) && m_currentWorld != nullptr)
 		{
-			ImGui::Checkbox("Has Gravity Gun", &m_world->playerHasGravityGun);
-			
-			int extraWaterParticles = m_world->extraWaterParticles;
-			if (ImGui::DragInt("Extra Water Particles", &extraWaterParticles))
-				m_world->extraWaterParticles = std::max(extraWaterParticles, 0);
-			
-			ImGui::InputText("Title", &m_world->title);
-			
-			if (ImGui::CollapsingHeader("Control Hints", ImGuiTreeNodeFlags_DefaultOpen))
-			{
-				static const char* controlHintLabels[] = { "Movement", "Flip gravity", "Pick up cube" };
-				static_assert(std::size(controlHintLabels) == NUM_CONTROL_HINTS);
-				for (int i = 0; i < NUM_CONTROL_HINTS; i++)
-				{
-					ImGui::Checkbox(controlHintLabels[i], &m_world->showControlHint[i]);
-				}
-			}
+			m_currentWorld->RenderLevelSettings();
 		}
 		ImGui::End();
 	}
-	
-	WorldUpdateArgs entityUpdateArgs = { };
-	entityUpdateArgs.mode = WorldMode::Editor;
-	entityUpdateArgs.dt = dt;
-	entityUpdateArgs.world = m_world.get();
-	m_world->Update(entityUpdateArgs, nullptr);
-	
-	
-	EditorState editorState;
-	editorState.world = m_world.get();
-	editorState.camera = &m_camera;
-	editorState.projection = &m_projection;
-	editorState.selectedEntities = &m_selectedEntities;
-	editorState.tool = m_tool;
-	
-	
-	glm::mat4 viewMatrix, inverseViewMatrix;
-	m_camera.GetViewMatrix(viewMatrix, inverseViewMatrix);
-	
-	RenderSettings::instance->viewProjection = m_projection.Matrix() * viewMatrix;
-	RenderSettings::instance->invViewProjection = inverseViewMatrix * m_projection.InverseMatrix();
-	RenderSettings::instance->cameraPosition = glm::vec3(inverseViewMatrix[3]);
-	RenderSettings::instance->UpdateBuffer();
-	
-	editorState.viewRay = eg::Ray::UnprojectScreen(RenderSettings::instance->invViewProjection, eg::CursorPos());
 	
 	for (int i = 0; i < (int)EDITOR_NUM_TOOLS; i++)
 	{
 		if (eg::IsButtonDown((eg::Button)((int)eg::Button::F1 + i)))
-		{
 			m_tool = (EditorTool)i;
-		}
 	}
 	
-	
-	ImGui::SetNextWindowPos(ImVec2(0, eg::CurrentResolutionY() / 2.0f), ImGuiCond_Always, ImVec2(0, 0.5f));
-	ImGui::SetNextWindowSize(ImVec2(250, eg::CurrentResolutionY() * 0.5f), ImGuiCond_Once);
-	ImGui::Begin("Editor", nullptr, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoCollapse |
-	             ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove);
-	if (ImGui::Button("Test Level (F5)", ImVec2(ImGui::GetContentRegionAvail().x, 0)) || eg::IsButtonDown(eg::Button::F5))
-	{
-		std::stringstream stream;
-		m_world->Save(stream);
-		stream.seekg(0, std::ios::beg);
-		mainGameState->SetWorld(World::Load(stream, false), -1, nullptr, true);
-		SetCurrentGS(mainGameState);
-		ImGui::End();
-		return;
-	}
+	ImGui::Begin("Tools");
 	ImGui::Spacing();
 	if (ImGui::CollapsingHeader("Tools", ImGuiTreeNodeFlags_DefaultOpen))
 	{
@@ -254,274 +211,65 @@ void Editor::RunFrame(float dt)
 		ImGui::RadioButton("Corners (F2)", reinterpret_cast<int*>(&m_tool), (int)EditorTool::Corners);
 		ImGui::RadioButton("Entities (F3)", reinterpret_cast<int*>(&m_tool), (int)EditorTool::Entities);
 	}
-	for (EditorComponent* comp : m_componentsForTool[(int)m_tool])
+	if (m_currentWorld != nullptr)
 	{
-		comp->RenderSettings(editorState);
+		m_currentWorld->RenderToolSettings(m_tool);
 	}
 	ImGui::End();
 	
-	for (EditorComponent* comp : m_componentsForTool[(int)m_tool])
-	{
-		comp->Update(dt, editorState);
-	}
-	
-	bool canUpdateInput = !ImGui::GetIO().WantCaptureMouse && !ImGui::GetIO().WantCaptureKeyboard && !eg::console::IsShown();
-	if (canUpdateInput)
-	{
-		m_camera.Update(dt, canUpdateInput);
-		if (canUpdateInput)
-		{
-			for (EditorComponent* comp : m_componentsForTool[(int)m_tool])
-			{
-				if (comp->UpdateInput(dt, editorState))
-				{
-					canUpdateInput = false;
-					break;
-				}
-			}
-		}
-	}
-	
-	m_icons.clear();
-	for (EditorComponent* comp : m_componentsForTool[(int)m_tool])
-	{
-		if (comp->CollectIcons(editorState, m_icons))
-			break;
-	}
-	m_icons.emplace_back(m_world->thumbnailCameraPos, nullptr).iconIndex = 11;
-	m_icons.erase(std::remove_if(m_icons.begin(), m_icons.end(), [&] (const EditorIcon& icon) { return icon.m_behindScreen; }), m_icons.end());
-	std::sort(m_icons.begin(), m_icons.end(), [&] (const EditorIcon& a, const EditorIcon& b)
-	{
-		return a.m_depth > b.m_depth;
-	});
-	
-	glm::vec2 flippedCursorPos(eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY());
-	m_hoveredIcon = -1;
-	for (size_t i = 0; i < m_icons.size(); i++)
-	{
-		if (m_icons[i].m_rectangle.Contains(flippedCursorPos))
-			m_hoveredIcon = i;
-	}
-	
-	if (canUpdateInput && eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft))
-	{
-		bool shouldClearSelected = !eg::InputState::Current().IsCtrlDown();
-		
-		if (m_hoveredIcon != -1)
-		{
-			if (m_icons[m_hoveredIcon].shouldClearSelection && shouldClearSelected)
-				m_selectedEntities.clear();
-			if (m_icons[m_hoveredIcon].m_callback)
-				m_icons[m_hoveredIcon].m_callback();
-		}
-		else if (shouldClearSelected)
-			m_selectedEntities.clear();
-	}
-	
-	//Invalidates water if the sum of all WaterBlockComp::editorVersion has changed
-	int sumOfWaterBlockedVersion = 0;
-	m_world->entManager.ForEachWithComponent<WaterBlockComp>([&] (const Ent& entity)
-	{
-		sumOfWaterBlockedVersion += entity.GetComponent<WaterBlockComp>()->editorVersion;
-	});
-	if (m_previousSumOfWaterBlockedVersion != -1 && m_previousSumOfWaterBlockedVersion != sumOfWaterBlockedVersion)
-	{
-		editorState.InvalidateWater();
-	}
-	m_previousSumOfWaterBlockedVersion = sumOfWaterBlockedVersion;
-	
-	DrawWorld();
-}
-
-void Editor::DrawWorld()
-{
-	m_primRenderer.Begin(RenderSettings::instance->viewProjection, RenderSettings::instance->cameraPosition);
-	m_spriteBatch.Begin();
-	m_renderCtx->meshBatch.Begin();
-	m_renderCtx->transparentMeshBatch.Begin();
-	
-	eg::Frustum frustum(RenderSettings::instance->invViewProjection);
-	m_prepareDrawArgs.frustum = &frustum;
-	
-	m_world->PrepareForDraw(m_prepareDrawArgs);
-	
-	for (EditorComponent* comp : m_componentsForTool[(int)m_tool])
-	{
-		comp->EarlyDraw(m_primRenderer);
-	}
-	
-	//Draws icons
-	const eg::Texture& iconsTexture = eg::GetAsset<eg::Texture>("Textures/EntityIcons.png");
-	auto CreateSrcRectangle = [&] (int index)
-	{
-		return eg::Rectangle(index * 50, 0, 50, 50);
-	};
-	for (size_t i = 0; i < m_icons.size(); i++)
-	{
-		if (m_icons[i].hideIfNotHovered && (int)i != m_hoveredIcon)
-			continue;
-		
-		eg::ColorLin color(eg::Color::White);
-		
-		//Draws the background sprite
-		m_spriteBatch.Draw(iconsTexture, m_icons[i].m_rectangle, color,
-			CreateSrcRectangle(m_icons[i].selected ? 1 : ((int)i == m_hoveredIcon ? 10 : 0)), eg::SpriteFlags::None);
-		
-		//Draws the icon
-		m_spriteBatch.Draw(iconsTexture, m_icons[i].m_rectangle, color,
-			CreateSrcRectangle(m_icons[i].iconIndex), eg::SpriteFlags::None);
-	}
-	
-	//Sends the editor draw message to entities
-	EntEditorDrawArgs drawArgs = {};
-	drawArgs.spriteBatch = &m_spriteBatch;
-	drawArgs.primitiveRenderer = &m_primRenderer;
-	drawArgs.meshBatch = &m_renderCtx->meshBatch;
-	drawArgs.transparentMeshBatch = &m_renderCtx->transparentMeshBatch;
-	drawArgs.world = m_world.get();
-	drawArgs.frustum = &frustum;
-	drawArgs.getDrawMode = [this] (const Ent* entity) -> EntEditorDrawMode
-	{
-		for (const std::weak_ptr<Ent>& selEnt : m_selectedEntities)
-		{
-			if (selEnt.lock().get() == entity)
-				return EntEditorDrawMode::Selected;
-		}
-		return EntEditorDrawMode::Default;
-	};
-	m_world->entManager.ForEachWithFlag(EntTypeFlags::EditorDrawable, [&] (Ent& entity)
-	{
-		entity.EditorDraw(drawArgs);
-	});
-	
-	m_primRenderer.End();
-	
-	m_renderCtx->meshBatch.End(eg::DC);
-	m_renderCtx->transparentMeshBatch.End(eg::DC);
-	
-	m_liquidPlaneRenderer.Prepare(*m_world, m_renderCtx->transparentMeshBatch, RenderSettings::instance->cameraPosition);
-	
-	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = nullptr;
-	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Clear;
-	rpBeginInfo.depthClearValue = 1.0f;
-	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
-	rpBeginInfo.colorAttachments[0].clearValue = eg::ColorLin(eg::ColorSRGB::FromHex(0x1C1E26));
-	
-	eg::DC.BeginRenderPass(rpBeginInfo);
-	
-	m_world->DrawEditor();
-	
-	MeshDrawArgs mDrawArgs;
-	mDrawArgs.waterDepthTexture = WaterRenderer::GetDummyDepthTexture();
-	mDrawArgs.drawMode = MeshDrawMode::Editor;
-	mDrawArgs.rtManager = nullptr;
-	m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
-	
-	m_primRenderer.Draw();
-	
-	m_renderCtx->transparentMeshBatch.Draw(eg::DC, &mDrawArgs);
-	
-	m_liquidPlaneRenderer.Render();
-	
-	for (EditorComponent* comp : m_componentsForTool[(int)m_tool])
-	{
-		comp->LateDraw();
-	}
-	
-	eg::DC.EndRenderPass();
-	
-	eg::RenderPassBeginInfo spriteRPBeginInfo;
-	spriteRPBeginInfo.framebuffer = nullptr;
-	spriteRPBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Load;
-	m_spriteBatch.End(eg::CurrentResolutionX(), eg::CurrentResolutionY(), spriteRPBeginInfo);
-}
-
-void Editor::LoadLevel(const Level& level)
-{
-	std::string path = GetLevelPath(level.name);
-	std::ifstream stream(path, std::ios::binary);
-	
-	if (std::unique_ptr<World> world = World::Load(stream, true))
-	{
-		m_world = std::move(world);
-		m_thumbnailCamera.SetView(m_world->thumbnailCameraPos,
-				m_world->thumbnailCameraPos + m_world->thumbnailCameraDir);
-		m_isUpdatingThumbnailView = false;
-		m_levelName = level.name;
-		m_savedTextTimer = 0;
-		m_levelSettingsOpen = false;
-		m_previousSumOfWaterBlockedVersion = -1;
-		InitWorld();
-		
-		auto [voxelMin, voxelMax] = m_world->voxels.CalculateBounds();
-		m_camera.Reset(eg::Sphere(
-			glm::vec3(voxelMin + voxelMax) / 2.0f,
-			glm::distance(glm::vec3(voxelMin), glm::vec3(voxelMax)) / 2.0f
-		));
-	}
-}
-
-void Editor::Save()
-{
-	std::string savePath = eg::Concat({ eg::ExeDirPath(), "/levels/", m_levelName, ".gwd" });
-	std::ofstream stream(savePath, std::ios::binary);
-	m_world->Save(stream);
-	InitLevels();
-	m_savedTextTimer = 3;
-}
-
-void Editor::Close()
-{
-	m_levelName.clear();
-	m_world = nullptr;
-}
-
-void Editor::DrawMenuBar()
-{
 	if (ImGui::BeginMainMenuBar())
 	{
 		if (ImGui::BeginMenu("File"))
 		{
-			if (ImGui::MenuItem("Save", "Ctrl + S", false, m_world != nullptr))
+			const std::string saveCurrentText = m_currentWorld ?
+				"Save " + m_currentWorld->Name() + "###SaveCur" :
+				"Save Current###SaveCur";
+			if (ImGui::MenuItem(saveCurrentText.c_str(), nullptr, false, m_currentWorld != nullptr))
 			{
-				Save();
+				m_currentWorld->Save();
 			}
 			
-			if (ImGui::MenuItem("Close", "Ctrl + W", false, m_world != nullptr))
+			if (ImGui::MenuItem("Save All", nullptr, false, !m_worlds.empty()))
 			{
-				Close();
+				for (const std::unique_ptr<EditorWorld>& world : m_worlds)
+				{
+					world->Save();
+				}
 			}
 			
-			if (ImGui::MenuItem("Save and Close", nullptr, false, m_world != nullptr))
+			ImGui::Separator();
+			
+			if (ImGui::MenuItem("Close All", nullptr, false, !m_worlds.empty()))
 			{
-				Save();
-				Close();
+				m_worlds.clear();
+				m_currentWorld = nullptr;
 			}
 			
+			ImGui::Separator();
+			
+			if (ImGui::MenuItem("Exit to Main Menu"))
+			{
+				SetCurrentGS(mainMenuGameState);
+			}
 			ImGui::EndMenu();
 		}
-		
 		if (ImGui::BeginMenu("View"))
 		{
-			if (ImGui::MenuItem("Level Settings", nullptr, false, m_world != nullptr))
-			{
-				m_levelSettingsOpen = true;
-			}
-			
-			if (ImGui::MenuItem("Update Thumbnail View", nullptr, false, m_world != nullptr))
-			{
-				m_isUpdatingThumbnailView = true;
-			}
-			
+			if (ImGui::MenuItem("Level Settings"))
+				m_levelSettingsWindowOpen = true;
+			if (ImGui::MenuItem("Level Select"))
+				m_levelSelectWindowOpen = true;
 			ImGui::EndMenu();
 		}
-		
 		ImGui::EndMainMenuBar();
 	}
-}
-
-void Editor::SetResolution(int width, int height)
-{
-	m_projection.SetResolution(width, height);
+	
+	for (const std::unique_ptr<EditorWorld>& world : m_worlds)
+	{
+		if (world->isWindowVisisble)
+		{
+			world->Update(dt, m_tool);
+			world->Draw(m_tool, *m_renderCtx, m_prepareDrawArgs);
+		}
+	}
 }

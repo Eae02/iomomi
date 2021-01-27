@@ -79,7 +79,7 @@ void LadderEnt::CommonDraw(const EntDrawArgs& args)
 	DrawPart(m_length * -2 + 2, LadderComponent::Bottom);
 }
 
-glm::mat4 LadderEnt::UpdateTransformAndAABB()
+void LadderEnt::UpdateTransformAndAABB()
 {
 	const glm::vec3 xDir = DirectionVector(m_forward);
 	const glm::vec3 zDir = voxel::tangents[(int)m_forward];

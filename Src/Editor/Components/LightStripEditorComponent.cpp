@@ -45,15 +45,17 @@ bool LightStripEditorComponent::CollectIcons(const EditorState& editorState, std
 			//Adds icons for existing points
 			for (size_t i = 0; i < activator->waypoints.size(); i++)
 			{
-				EditorIcon& icon = icons.emplace_back(activator->waypoints[i].position, [this, activatorEntity, activator, i, selectedEntities = editorState.selectedEntities]
-				{
-					m_editingLightStripEntity = activator->lightStripEntity;
-					m_editingWayPointIndex = i;
-				});
+				EditorIcon icon = editorState.CreateIcon(activator->waypoints[i].position,
+					[this, activatorEntity, activator, i, selectedEntities = editorState.selectedEntities]
+					{
+						m_editingLightStripEntity = activator->lightStripEntity;
+						m_editingWayPointIndex = i;
+					});
 				icon.shouldClearSelection = false;
 				icon.iconIndex = 7;
-				if (icon.Rectangle().Contains({ eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY() }))
+				if (icon.Rectangle().Contains(editorState.windowCursorPos))
 					hoveringExistingPoint = true;
+				icons.push_back(std::move(icon));
 			}
 			
 			//Adds icons to connect this activator to a new connection point
@@ -66,7 +68,7 @@ bool LightStripEditorComponent::CollectIcons(const EditorState& editorState, std
 				std::vector<glm::vec3> connectionPoints = activatableComp->GetConnectionPoints(activatableEntity);
 				for (int i = 0; i < (int)connectionPoints.size(); i++)
 				{
-					EditorIcon& icon = icons.emplace_back(connectionPoints[i], [activatorEntity, activator, i,
+					EditorIcon icon = editorState.CreateIcon(connectionPoints[i], [activatorEntity, activator, i,
 						world = editorState.world, activatableSP = activatableEntity.shared_from_this()]
 					{
 						ActivatableComp* activatableComp2 = activatableSP->GetComponentMut<ActivatableComp>();
@@ -86,6 +88,8 @@ bool LightStripEditorComponent::CollectIcons(const EditorState& editorState, std
 					icon.shouldClearSelection = false;
 					if (activator->activatableName == activatableComp->m_name && activator->targetConnectionIndex == i)
 						icon.selected = true;
+					
+					icons.push_back(std::move(icon));
 				}
 			});
 		}
@@ -137,25 +141,28 @@ bool LightStripEditorComponent::CollectIcons(const EditorState& editorState, std
 		//Add an icon for a new waypoint
 		if (closestDist < 0.5f)
 		{
-			EditorIcon& icon = icons.emplace_back(closestPoint, [this, closestActivatorEntity, nextWayPoint, closestPoint, wallNormal, selectedEntities = editorState.selectedEntities]
-			{
-				std::shared_ptr<Ent> activatorEntity = closestActivatorEntity.lock();
-				if (activatorEntity == nullptr) return;
-				ActivatorComp* activator = activatorEntity->GetComponentMut<ActivatorComp>();
-				if (activator == nullptr) return;
-				
-				ActivationLightStripEnt::WayPoint wp;
-				wp.position = closestPoint;
-				wp.wallNormal = wallNormal;
-				activator->waypoints.insert(activator->waypoints.begin() + nextWayPoint, wp);
-				
-				m_editingLightStripEntity = activator->lightStripEntity;
-				m_editingWayPointIndex = nextWayPoint;
-				
-				selectedEntities->push_back(activatorEntity);
-			});
+			EditorIcon icon = editorState.CreateIcon(closestPoint,
+				[this, closestActivatorEntity, nextWayPoint, closestPoint, wallNormal, selectedEntities = editorState.selectedEntities]
+				{
+					std::shared_ptr<Ent> activatorEntity = closestActivatorEntity.lock();
+					if (activatorEntity == nullptr) return;
+					ActivatorComp* activator = activatorEntity->GetComponentMut<ActivatorComp>();
+					if (activator == nullptr) return;
+					
+					ActivationLightStripEnt::WayPoint wp;
+					wp.position = closestPoint;
+					wp.wallNormal = wallNormal;
+					activator->waypoints.insert(activator->waypoints.begin() + nextWayPoint, wp);
+					
+					m_editingLightStripEntity = activator->lightStripEntity;
+					m_editingWayPointIndex = nextWayPoint;
+					
+					selectedEntities->push_back(activatorEntity);
+				});
 			icon.hideIfNotHovered = true;
 			icon.iconIndex = 7;
+			
+			icons.push_back(std::move(icon));
 		}
 	}
 	

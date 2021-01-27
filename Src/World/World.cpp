@@ -285,12 +285,12 @@ void World::DrawPointLightShadows(const struct PointLightShadowDrawArgs& renderA
 	eg::DC.DrawIndexed(0, m_numVoxelIndices, 0, 0, 1);
 }
 
-void World::DrawEditor()
+void World::DrawEditor(bool drawGrid)
 {
 	if (!m_canDraw)
 		return;
 	
-	BindWallShaderEditor();
+	BindWallShaderEditor(drawGrid);
 	
 	eg::DC.BindVertexBuffer(0, m_voxelVertexBuffer.buffer, 0);
 	eg::DC.BindIndexBuffer(eg::IndexType::UInt32, m_voxelIndexBuffer.buffer, 0);

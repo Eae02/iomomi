@@ -54,7 +54,7 @@ bool AAQuadDragEditorComponent::CollectIcons(const EditorState& editorState, std
 		
 		for (int d = 0; d < 4; d++)
 		{
-			EditorIcon& icon = icons.emplace_back(entity->GetPosition() + dirs[d] * 0.5f, [entityWP=entityWP, d, this]
+			EditorIcon icon = editorState.CreateIcon(entity->GetPosition() + dirs[d] * 0.5f, [entityWP=entityWP, d, this]
 			{
 				m_activeEntity = entityWP;
 				draggingBitangent = d / 2;
@@ -62,6 +62,7 @@ bool AAQuadDragEditorComponent::CollectIcons(const EditorState& editorState, std
 			});
 			icon.shouldClearSelection = false;
 			icon.iconIndex = 9;
+			icons.push_back(std::move(icon));
 		}
 	}
 	

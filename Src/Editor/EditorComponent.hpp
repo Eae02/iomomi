@@ -12,28 +12,12 @@ enum class EditorTool
 
 constexpr size_t EDITOR_NUM_TOOLS = 3;
 
-struct EditorState
-{
-	World* world;
-	const EditorCamera* camera;
-	const eg::PerspectiveProjection* projection;
-	eg::Ray viewRay;
-	std::vector<std::weak_ptr<Ent>>* selectedEntities;
-	EditorTool tool;
-	
-	void InvalidateWater() const;
-	
-	bool IsEntitySelected(const Ent& entity) const;
-	
-	void EntityMoved(Ent& entity) const;
-};
-
 class EditorIcon
 {
 public:
 	friend class Editor;
-	
-	EditorIcon(const glm::vec3& worldPos, std::function<void()> callback);
+	friend class EditorWorld;
+	friend class EditorState;
 	
 	int iconIndex = 5;
 	bool selected = false;
@@ -47,10 +31,37 @@ public:
 	void InvokeCallback() const { m_callback(); }
 	
 private:
+	EditorIcon() = default;
+	
 	eg::Rectangle m_rectangle;
 	float m_depth;
 	bool m_behindScreen;
 	std::function<void()> m_callback;
+};
+
+struct EditorState
+{
+	World* world;
+	const EditorCamera* camera;
+	glm::vec3 cameraPosition;
+	eg::PerspectiveProjection projection;
+	eg::Ray viewRay;
+	std::vector<std::weak_ptr<Ent>>* selectedEntities;
+	EditorTool tool;
+	
+	glm::mat4 viewProjection;
+	glm::mat4 inverseViewProjection;
+	
+	glm::vec2 windowCursorPos;
+	eg::Rectangle windowRect;
+	
+	void InvalidateWater() const;
+	
+	bool IsEntitySelected(const Ent& entity) const;
+	
+	void EntityMoved(Ent& entity) const;
+	
+	EditorIcon CreateIcon(const glm::vec3& worldPos, std::function<void()> callback) const;
 };
 
 constexpr float SMALL_GRID_SNAP = 0.1f;
@@ -80,7 +91,7 @@ public:
 	virtual void Update(float dt, const EditorState& editorState) { };
 	virtual bool UpdateInput(float dt, const EditorState& editorState) { return false; };
 	virtual void EarlyDraw(class PrimitiveRenderer& primitiveRenderer) const { }
-	virtual void LateDraw() const { }
+	virtual void LateDraw(const EditorState& editorState) const { }
 	virtual void RenderSettings(const EditorState& editorState) { }
 	virtual bool CollectIcons(const EditorState& editorState, std::vector<EditorIcon>& icons) { return false; }
 };

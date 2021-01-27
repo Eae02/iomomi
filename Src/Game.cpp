@@ -118,11 +118,6 @@ Game::~Game()
 	delete GameRenderer::instance;
 }
 
-void Game::ResolutionChanged(int newWidth, int newHeight)
-{
-	editor->SetResolution(newWidth, newHeight);
-}
-
 void Game::RunFrame(float dt)
 {
 	constexpr float MAX_DT = 1.0f / 20.0f;

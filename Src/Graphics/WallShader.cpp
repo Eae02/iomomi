@@ -151,11 +151,14 @@ void BindWallShaderGame()
 	eg::DC.BindDescriptorSet(wr.gameDescriptorSet, 0);
 }
 
-void BindWallShaderEditor()
+void BindWallShaderEditor(bool drawGrid)
 {
 	eg::DC.BindPipeline(wr.pipelineEditor);
 	
 	eg::DC.BindDescriptorSet(wr.editorDescriptorSet, 0);
+	
+	float pc = drawGrid ? 1 : 0;
+	eg::DC.PushConstants(0, sizeof(float), &pc);
 }
 
 void BindWallShaderPointLightShadow(const PointLightShadowDrawArgs& renderArgs)

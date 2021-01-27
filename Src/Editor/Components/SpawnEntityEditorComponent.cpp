@@ -39,8 +39,6 @@ void SpawnEntityEditorComponent::Update(float dt, const EditorState& editorState
 		
 		ImGui::Separator();
 		
-		ImGui::BeginChild("EntityTypes", ImVec2(0, 250));
-		
 		for (const auto& entityGroup : entityGroups)
 		{
 			if (!entityGroup.first.empty() && !hasSearchString && !ImGui::CollapsingHeader(entityGroup.first.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
@@ -83,8 +81,6 @@ void SpawnEntityEditorComponent::Update(float dt, const EditorState& editorState
 		{
 			ImGui::Text("No Matches Found");
 		}
-		
-		ImGui::EndChild();
 		
 		if (!ImGui::IsAnyItemHovered() && !eg::IsButtonDown(eg::Button::MouseLeft) && eg::WasButtonDown(eg::Button::MouseLeft))
 			ImGui::CloseCurrentPopup();

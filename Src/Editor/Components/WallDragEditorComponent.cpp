@@ -22,8 +22,7 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 		eg::Contains(m_finishedSelection, pickResult.voxelPosition);
 	
 	//Handles mouse move events
-	if (eg::IsButtonDown(eg::Button::MouseLeft) && eg::WasButtonDown(eg::Button::MouseLeft) &&
-	    eg::CursorPos() != eg::PrevCursorPos())
+	if (eg::IsButtonDown(eg::Button::MouseLeft) && eg::WasButtonDown(eg::Button::MouseLeft) && eg::CursorPos() != eg::PrevCursorPos())
 	{
 		int selDim = (int)m_selectionNormal / 2;
 		if (m_selState == SelState::Selecting)
@@ -356,8 +355,6 @@ void WallDragEditorComponent::RenderSettings(const EditorState& editorState)
 	
 	if (ImGui::CollapsingHeader("Textures", ImGuiTreeNodeFlags_DefaultOpen))
 	{
-		ImGui::BeginChildFrame(ImGui::GetID("TexturesList"), ImVec2(0, 300));
-		
 		for (size_t i = 0; i < MAX_WALL_MATERIALS; i++)
 		{
 			if (!wallMaterials[i].initialized)
@@ -384,7 +381,5 @@ void WallDragEditorComponent::RenderSettings(const EditorState& editorState)
 			drawList->AddText(ImVec2(imguiCursorPos.x + ITEM_HEIGHT + 10, imguiCursorPos.y + ITEM_HEIGHT / 2 - 8),
 			                  0xFFFFFFFFU, wallMaterials[i].name);
 		}
-		
-		ImGui::EndChildFrame();
 	}
 }

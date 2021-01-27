@@ -30,7 +30,7 @@ public:
 	const glm::vec3& GetDownVector() const { return m_downVector; }
 	
 private:
-	glm::mat4 UpdateTransformAndAABB();
+	void UpdateTransformAndAABB();
 	
 	glm::mat4 m_commonTransform;
 	eg::AABB m_aabb;

@@ -15,6 +15,11 @@ layout(binding=3) uniform sampler2DArray normalMapSampler;
 layout(binding=4) uniform sampler2D gridSampler;
 layout(binding=5) uniform sampler2D noDrawSampler;
 
+layout(push_constant) uniform PC
+{
+	float gridIntensity;
+};
+
 void main()
 {
 	vec3 surfNormal = normalize(normal_in);
@@ -40,8 +45,8 @@ void main()
 	
 	color *= CalcEditorLight(normal, ao);
 	
-	float gridIntensity = texture(gridSampler, texCoord_in.xy * texCoord_in.w).r;
-	color = mix(color, vec3(1.0), gridIntensity);
+	float gridA = gridIntensity * texture(gridSampler, texCoord_in.xy * texCoord_in.w).r;
+	color = mix(color, vec3(1.0), gridA);
 	
 	color_out = vec4(color, 1.0);
 }

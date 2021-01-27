@@ -55,7 +55,7 @@ public:
 	void PrepareForDraw(struct PrepareDrawArgs& args);
 	
 	void Draw();
-	void DrawEditor();
+	void DrawEditor(bool drawGrid);
 	void DrawPointLightShadows(const struct PointLightShadowDrawArgs& renderArgs);
 	
 	bool HasCollision(const glm::ivec3& pos, Dir side) const;
