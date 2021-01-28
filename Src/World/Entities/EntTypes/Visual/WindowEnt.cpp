@@ -1,10 +1,10 @@
 #include "WindowEnt.hpp"
-#include "../../Collision.hpp"
-#include "../../../Graphics/RenderSettings.hpp"
-#include "../../../Graphics/Materials/StaticPropMaterial.hpp"
-#include "../../../Graphics/Materials/BlurredGlassMaterial.hpp"
-#include "../../../../Protobuf/Build/WindowEntity.pb.h"
-#include "../../../Graphics/WallShader.hpp"
+#include "../../../Collision.hpp"
+#include "../../../../Graphics/RenderSettings.hpp"
+#include "../../../../Graphics/Materials/StaticPropMaterial.hpp"
+#include "../../../../Graphics/Materials/BlurredGlassMaterial.hpp"
+#include "../../../../Graphics/WallShader.hpp"
+#include "../../../../../Protobuf/Build/WindowEntity.pb.h"
 
 #include <imgui.h>
 #include <glm/glm.hpp>

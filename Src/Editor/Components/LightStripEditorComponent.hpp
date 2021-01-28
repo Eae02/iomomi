@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../EditorComponent.hpp"
-#include "../../World/Entities/EntTypes/ActivationLightStripEnt.hpp"
+#include "../../World/Entities/EntTypes/Activation/ActivationLightStripEnt.hpp"
 
 class LightStripEditorComponent : public EditorComponent
 {

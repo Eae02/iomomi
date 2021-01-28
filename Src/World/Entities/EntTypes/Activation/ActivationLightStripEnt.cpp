@@ -1,9 +1,9 @@
 #include "ActivationLightStripEnt.hpp"
-#include "../Components/ActivatorComp.hpp"
-#include "../Components/ActivatableComp.hpp"
-#include "../../World.hpp"
-#include "../../../Graphics/RenderSettings.hpp"
-#include "../../../Graphics/Materials/StaticPropMaterial.hpp"
+#include "../../Components/ActivatorComp.hpp"
+#include "../../Components/ActivatableComp.hpp"
+#include "../../../World.hpp"
+#include "../../../../Graphics/RenderSettings.hpp"
+#include "../../../../Graphics/Materials/StaticPropMaterial.hpp"
 
 #include <unordered_map>
 #include <tuple>

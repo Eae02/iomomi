@@ -1,5 +1,5 @@
 #include "EntityEditorComponent.hpp"
-#include "../../World/Entities/EntTypes/ActivationLightStripEnt.hpp"
+#include "../../World/Entities/EntTypes/Activation/ActivationLightStripEnt.hpp"
 #include "../../World/Entities/Components/ActivatorComp.hpp"
 
 #include <imgui.h>

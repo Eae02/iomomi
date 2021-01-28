@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../Entity.hpp"
-#include "../../../Graphics/Materials/EmissiveMaterial.hpp"
-#include "../../../Graphics/Lighting/PointLight.hpp"
+#include "../../Entity.hpp"
+#include "../../../../Graphics/Materials/EmissiveMaterial.hpp"
+#include "../../../../Graphics/Lighting/PointLight.hpp"
 
 class WallLightEnt : public Ent
 {

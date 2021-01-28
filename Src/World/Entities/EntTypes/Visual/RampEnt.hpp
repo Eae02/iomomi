@@ -1,10 +1,11 @@
 #pragma once
 
+#include "../../Entity.hpp"
+#include "../../../PhysicsEngine.hpp"
+#include "../../../../Graphics/Materials/DecalMaterial.hpp"
+
 #include <optional>
 #include <EGame/AABB.hpp>
-#include "../Entity.hpp"
-#include "../../../Graphics/Materials/DecalMaterial.hpp"
-#include "../../PhysicsEngine.hpp"
 
 class RampEnt : public Ent
 {

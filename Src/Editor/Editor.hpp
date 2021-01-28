@@ -4,7 +4,7 @@
 #include "../World/PrepareDrawArgs.hpp"
 #include "../Graphics/RenderContext.hpp"
 #include "../GameState.hpp"
-#include "../World/Entities/EntTypes/ActivationLightStripEnt.hpp"
+#include "../World/Entities/EntTypes/Activation/ActivationLightStripEnt.hpp"
 #include "EditorCamera.hpp"
 #include "PrimitiveRenderer.hpp"
 #include "LiquidPlaneRenderer.hpp"

@@ -1,13 +1,13 @@
 #include "GravityBarrierEnt.hpp"
+#include "Activation/CubeEnt.hpp"
 #include "../../World.hpp"
 #include "../../Player.hpp"
 #include "../../../Graphics/RenderSettings.hpp"
 #include "../../../Graphics/Materials/GravityBarrierMaterial.hpp"
 #include "../../../Graphics/Materials/MeshDrawArgs.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
-#include "../../../../Protobuf/Build/GravityBarrierEntity.pb.h"
-#include "CubeEnt.hpp"
 #include "../../../Graphics/Materials/EmissiveMaterial.hpp"
+#include "../../../../Protobuf/Build/GravityBarrierEntity.pb.h"
 
 #include <imgui.h>
 

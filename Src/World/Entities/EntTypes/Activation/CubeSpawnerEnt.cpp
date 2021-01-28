@@ -1,9 +1,9 @@
 #include "CubeSpawnerEnt.hpp"
 #include "CubeEnt.hpp"
-#include "../../../../Protobuf/Build/CubeSpawnerEntity.pb.h"
-#include "../../../Graphics/Materials/StaticPropMaterial.hpp"
-#include "../../../Graphics/Materials/EmissiveMaterial.hpp"
-#include "../../../Graphics/Lighting/PointLightShadowMapper.hpp"
+#include "../../../../Graphics/Materials/StaticPropMaterial.hpp"
+#include "../../../../Graphics/Materials/EmissiveMaterial.hpp"
+#include "../../../../Graphics/Lighting/PointLightShadowMapper.hpp"
+#include "../../../../../Protobuf/Build/CubeSpawnerEntity.pb.h"
 
 #include <imgui.h>
 

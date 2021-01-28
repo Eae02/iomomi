@@ -1,8 +1,8 @@
 #include "RampEnt.hpp"
-#include "../../../Graphics/Materials/StaticPropMaterial.hpp"
-#include "../../../Graphics/WallShader.hpp"
-#include "../../../../Protobuf/Build/Ramp.pb.h"
-#include "../../Collision.hpp"
+#include "../../../Collision.hpp"
+#include "../../../../Graphics/Materials/StaticPropMaterial.hpp"
+#include "../../../../Graphics/WallShader.hpp"
+#include "../../../../../Protobuf/Build/Ramp.pb.h"
 
 #include <imgui.h>
 #include <glm/glm.hpp>

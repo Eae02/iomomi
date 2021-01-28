@@ -1,5 +1,5 @@
 #include "MeshEnt.hpp"
-#include "../../../Graphics/Materials/StaticPropMaterial.hpp"
+#include "../../../../Graphics/Materials/StaticPropMaterial.hpp"
 
 struct MeshType
 {

@@ -1,7 +1,7 @@
 #include "WallLightEnt.hpp"
-#include "../../World.hpp"
-#include "../../../Graphics/Materials/EmissiveMaterial.hpp"
-#include "../../../../Protobuf/Build/WallLightEntity.pb.h"
+#include "../../../World.hpp"
+#include "../../../../Graphics/Materials/EmissiveMaterial.hpp"
+#include "../../../../../Protobuf/Build/WallLightEntity.pb.h"
 
 #include <imgui.h>
 

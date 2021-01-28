@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Entity.hpp"
+#include "../../Entity.hpp"
 
 class DecalEnt : public Ent
 {

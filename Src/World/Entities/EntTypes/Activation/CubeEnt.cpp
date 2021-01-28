@@ -1,12 +1,12 @@
 #include "CubeEnt.hpp"
-#include "GooPlaneEnt.hpp"
 #include "FloorButtonEnt.hpp"
-#include "ForceFieldEnt.hpp"
-#include "../../Player.hpp"
-#include "../../../Graphics/Materials/StaticPropMaterial.hpp"
-#include "../../../Settings.hpp"
-#include "../../../../Protobuf/Build/CubeEntity.pb.h"
-#include "../../../Graphics/Materials/GravityIndicatorMaterial.hpp"
+#include "../GooPlaneEnt.hpp"
+#include "../ForceFieldEnt.hpp"
+#include "../../../Player.hpp"
+#include "../../../../Graphics/Materials/StaticPropMaterial.hpp"
+#include "../../../../Graphics/Materials/GravityIndicatorMaterial.hpp"
+#include "../../../../Settings.hpp"
+#include "../../../../../Protobuf/Build/CubeEntity.pb.h"
 #include <imgui.h>
 
 static float* cubeBuoyancyScale = eg::TweakVarFloat("cube_bcy_scale", 0.5f, 0.0f);

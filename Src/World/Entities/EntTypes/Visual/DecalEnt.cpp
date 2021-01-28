@@ -1,8 +1,9 @@
-#include <imgui.h>
 #include "DecalEnt.hpp"
-#include "../../../Graphics/Materials/DecalMaterial.hpp"
-#include "../../../../Protobuf/Build/DecalEntity.pb.h"
-#include "../../../Editor/PrimitiveRenderer.hpp"
+#include "../../../../Graphics/Materials/DecalMaterial.hpp"
+#include "../../../../Editor/PrimitiveRenderer.hpp"
+#include "../../../../../Protobuf/Build/DecalEntity.pb.h"
+
+#include <imgui.h>
 
 static const char* decalMaterials[] = 
 {

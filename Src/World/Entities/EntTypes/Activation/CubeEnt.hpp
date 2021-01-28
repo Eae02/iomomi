@@ -1,12 +1,12 @@
 #pragma once
 
-#include "GravityBarrierEnt.hpp"
-#include "../Entity.hpp"
-#include "../EntInteractable.hpp"
-#include "../EntGravityChargeable.hpp"
-#include "../../Dir.hpp"
-#include "../../../Graphics/WaterSimulator.hpp"
-#include "../../PhysicsEngine.hpp"
+#include "../GravityBarrierEnt.hpp"
+#include "../../Entity.hpp"
+#include "../../EntInteractable.hpp"
+#include "../../EntGravityChargeable.hpp"
+#include "../../../Dir.hpp"
+#include "../../../PhysicsEngine.hpp"
+#include "../../../../Graphics/WaterSimulator.hpp"
 
 class CubeEnt : public Ent, public EntInteractable, public EntGravityChargeable
 {

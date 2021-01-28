@@ -1,9 +1,9 @@
 #pragma once
 
 #include <future>
-#include "../Entity.hpp"
-#include "../../../Graphics/Materials/LightStripMaterial.hpp"
-#include "../../VoxelBuffer.hpp"
+#include "../../Entity.hpp"
+#include "../../../VoxelBuffer.hpp"
+#include "../../../../Graphics/Materials/LightStripMaterial.hpp"
 
 class ActivationLightStripEnt : public Ent
 {

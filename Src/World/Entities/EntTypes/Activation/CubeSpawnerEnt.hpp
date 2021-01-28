@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../Entity.hpp"
-#include "../Components/ActivatableComp.hpp"
 #include "CubeEnt.hpp"
+#include "../../Entity.hpp"
+#include "../../Components/ActivatableComp.hpp"
 
 class CubeSpawnerEnt : public Ent
 {

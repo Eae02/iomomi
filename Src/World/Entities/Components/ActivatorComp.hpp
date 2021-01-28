@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../../../Protobuf/Build/Activator.pb.h"
-#include "../EntTypes/ActivationLightStripEnt.hpp"
+#include "../EntTypes/Activation/ActivationLightStripEnt.hpp"
 
 class ActivatorComp
 {

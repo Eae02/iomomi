@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../Entity.hpp"
-#include "../Components/ActivatorComp.hpp"
-#include "../../PhysicsEngine.hpp"
+#include "../../Entity.hpp"
+#include "../../Components/ActivatorComp.hpp"
+#include "../../../PhysicsEngine.hpp"
 
 class FloorButtonEnt : public Ent
 {

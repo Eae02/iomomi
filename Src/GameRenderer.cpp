@@ -1,12 +1,12 @@
 #include "GameRenderer.hpp"
-#include "World/World.hpp"
-#include "World/Entities/EntTypes/WindowEnt.hpp"
-#include "Graphics/Materials/MeshDrawArgs.hpp"
 #include "Settings.hpp"
+#include "World/World.hpp"
+#include "World/Entities/EntTypes/Visual/WindowEnt.hpp"
 #include "World/Player.hpp"
-#include "Graphics/Materials/GravitySwitchVolLightMaterial.hpp"
 #include "World/PrepareDrawArgs.hpp"
 #include "World/GravityGun.hpp"
+#include "Graphics/Materials/MeshDrawArgs.hpp"
+#include "Graphics/Materials/GravitySwitchVolLightMaterial.hpp"
 #include "Graphics/Materials/GravityCornerLightMaterial.hpp"
 
 GameRenderer* GameRenderer::instance;

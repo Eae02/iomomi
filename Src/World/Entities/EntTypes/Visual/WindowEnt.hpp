@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../Entity.hpp"
-#include "../Components/AxisAlignedQuadComp.hpp"
-#include "../Components/WaterBlockComp.hpp"
-#include "../../PhysicsEngine.hpp"
+#include "../../Entity.hpp"
+#include "../../Components/AxisAlignedQuadComp.hpp"
+#include "../../Components/WaterBlockComp.hpp"
+#include "../../../PhysicsEngine.hpp"
 
 class WindowEnt : public Ent
 {
