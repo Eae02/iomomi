@@ -33,5 +33,5 @@ vec3 CalculateLighting(GBData gbData)
 	if (penumbraFactor <= 0.0)
 		discard;
 	
-	return calcDirectReflectance(toLight, dist, toEye, fresnel, gbData, pc.radiance * penumbraFactor);
+	return calcDirectReflectance(toLight, dist, toEye, fresnel, gbData, pc.radiance * penumbraFactor, 1);
 }

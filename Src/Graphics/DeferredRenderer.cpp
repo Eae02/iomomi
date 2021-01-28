@@ -214,6 +214,7 @@ void DeferredRenderer::DrawPointLights(const std::vector<std::shared_ptr<PointLi
 		float causticsPanSpeed;
 		float causticsTexScale;
 		float shadowSampleDist;
+		float specularIntensity;
 	};
 	
 	PointLightPC pc;
@@ -232,6 +233,7 @@ void DeferredRenderer::DrawPointLights(const std::vector<std::shared_ptr<PointLi
 		pc.range = light->Range();
 		pc.radiance = light->Radiance();
 		pc.invRange = 1.0f / pc.range;
+		pc.specularIntensity = light->enableSpecularHighlights ? 1 : 0;
 		eg::DC.PushConstants(0, pc);
 		
 		eg::DC.BindTexture(light->shadowMap, 0, 7, &m_shadowMapSampler);

@@ -13,4 +13,5 @@ message WallLightEntity {
 	float colorG = 6;
 	float colorB = 7;
 	float intensity = 8;
+	bool no_specular = 9;
 }

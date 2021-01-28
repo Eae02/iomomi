@@ -23,8 +23,6 @@ public:
 	void GameDraw(const EntGameDrawArgs& args) override;
 	void EditorDraw(const EntEditorDrawArgs& args) override;
 	
-	void HalfLightIntensity();
-	
 	glm::vec3 GetPosition() const override { return m_position; }
 	Dir GetFacingDirection() const override { return m_forwardDir; }
 	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
@@ -40,4 +38,5 @@ private:
 	glm::vec3 m_position;
 	eg::ColorSRGB m_color;
 	float m_intensity;
+	bool m_enableSpecularHighlights = true;
 };

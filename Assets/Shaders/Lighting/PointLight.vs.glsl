@@ -19,6 +19,7 @@ layout(push_constant, std140) uniform PC
 	float causticsPanSpeed;
 	float causticsTexScale;
 	float shadowSampleDist;
+	float specularIntensity;
 } pc;
 
 void main()

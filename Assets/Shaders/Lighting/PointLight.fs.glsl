@@ -17,6 +17,7 @@ layout(push_constant, std140) uniform PC
 	float causticsPanSpeed;
 	float causticsTexScale;
 	float shadowSampleDist;
+	float specularIntensity;
 } pc;
 
 layout(location=1) noperspective in vec2 screenCoord_in;
@@ -105,5 +106,5 @@ vec3 CalculateLighting(GBData gbData)
 	vec3 toEye = normalize(renderSettings.cameraPosition - gbData.worldPos);
 	vec3 fresnel = calcFresnel(gbData, toEye);
 	
-	return calcDirectReflectance(toLight, dist, toEye, fresnel, gbData, radiance);
+	return calcDirectReflectance(toLight, dist, toEye, fresnel, gbData, radiance, pc.specularIntensity);
 }

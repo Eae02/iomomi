@@ -3,6 +3,7 @@
 
 #include "EntTypes/EntranceExitEnt.hpp"
 #include "EntTypes/Visual/WallLightEnt.hpp"
+#include "EntTypes/Visual/PointLightEnt.hpp"
 #include "EntTypes/Visual/DecalEnt.hpp"
 #include "EntTypes/GooPlaneEnt.hpp"
 #include "EntTypes/WaterPlaneEnt.hpp"
@@ -71,4 +72,5 @@ void InitEntityTypes()
 	DefineEntityType<WaterWallEnt>("WaterWall", "Water Wall");
 	DefineEntityType<SlidingWallEnt>("SlidingWall", "Sliding Wall");
 	DefineEntityType<LadderEnt>("Ladder", "Ladder");
+	DefineEntityType<PointLightEnt>("PointLight", "Point Light");
 }

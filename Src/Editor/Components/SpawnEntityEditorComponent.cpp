@@ -4,12 +4,45 @@
 
 const static std::pair<std::string, std::vector<EntTypeID>> entityGroups[] = 
 {
-	{ "Visual", { EntTypeID::WallLight, EntTypeID::Decal, EntTypeID::Window, EntTypeID::Ramp, EntTypeID::Mesh } },
-	{ "Gameplay", {
-		EntTypeID::EntranceExit, EntTypeID::Cube, EntTypeID::CubeSpawner, EntTypeID::Platform, EntTypeID::SlidingWall,
-		EntTypeID::ForceField, EntTypeID::GravityBarrier, EntTypeID::GravitySwitch, EntTypeID::FloorButton, EntTypeID::Ladder
-	} },
-	{ "Water", { EntTypeID::GooPlane, EntTypeID::WaterPlane, EntTypeID::WaterWall } }
+	{
+		"Visual",
+		{
+			EntTypeID::WallLight,
+			EntTypeID::PointLight,
+			EntTypeID::Decal,
+			EntTypeID::Window,
+			EntTypeID::Ramp,
+			EntTypeID::Mesh
+		}
+	},
+	{
+		"Activation",
+		{
+			EntTypeID::Cube,
+			EntTypeID::CubeSpawner,
+			EntTypeID::FloorButton
+		}
+	},
+	{
+		"Gameplay",
+		{
+			EntTypeID::EntranceExit,
+			EntTypeID::Platform,
+			EntTypeID::SlidingWall,
+			EntTypeID::ForceField,
+			EntTypeID::GravityBarrier,
+			EntTypeID::GravitySwitch,
+			EntTypeID::Ladder
+		}
+	},
+	{
+		"Water",
+		{
+			EntTypeID::GooPlane,
+			EntTypeID::WaterPlane,
+			EntTypeID::WaterWall
+		}
+	}
 };
 
 void SpawnEntityEditorComponent::Update(float dt, const EditorState& editorState)

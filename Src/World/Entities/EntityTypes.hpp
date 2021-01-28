@@ -21,6 +21,7 @@ enum class EntTypeID
 	WaterWall            = 16,
 	SlidingWall          = 17,
 	Ladder               = 18,
+	PointLight           = 19,
 	MAX
 };
  

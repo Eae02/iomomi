@@ -1,0 +1,14 @@
+syntax="proto3";
+
+package gravity_pb;
+
+message PointLightEntity {
+	float posX = 1;
+	float posY = 2;
+	float posZ = 3;
+	float colorR = 4;
+	float colorG = 5;
+	float colorB = 6;
+	float intensity = 7;
+	bool no_specular = 9;
+}
