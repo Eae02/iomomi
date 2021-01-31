@@ -8,7 +8,8 @@ class SSR
 public:
 	SSR() = default;
 	
-	void Render(eg::TextureRef waterDepth, RenderTex destinationTexture, RenderTexManager& rtManager, const eg::ColorSRGB& fallbackColor);
+	void Render(eg::TextureRef waterDepth, RenderTex destinationTexture, RenderTexManager& rtManager,
+		const eg::ColorSRGB& fallbackColor, float intensityScale);
 	
 private:
 	void CreatePipeline();

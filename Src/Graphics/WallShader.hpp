@@ -11,7 +11,7 @@ struct WallMaterial
 	float maxRoughness = 1;
 };
 
-constexpr size_t MAX_WALL_MATERIALS = 8;
+constexpr size_t MAX_WALL_MATERIALS = 9;
 extern WallMaterial wallMaterials[MAX_WALL_MATERIALS];
 
 void InitializeWallShader();

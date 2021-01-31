@@ -100,6 +100,8 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 		world->ssrFallbackColor.r = worldPB.ssr_fallback_r();
 		world->ssrFallbackColor.g = worldPB.ssr_fallback_g();
 		world->ssrFallbackColor.b = worldPB.ssr_fallback_b();
+		if (worldPB.ssr_intensity() > 0)
+			world->ssrIntensity = worldPB.ssr_intensity();
 	}
 	
 	world->entManager = EntityManager::Deserialize(stream);
@@ -161,6 +163,7 @@ void World::Save(std::ostream& outStream) const
 	worldPB.set_ssr_fallback_r(ssrFallbackColor.r);
 	worldPB.set_ssr_fallback_g(ssrFallbackColor.g);
 	worldPB.set_ssr_fallback_b(ssrFallbackColor.b);
+	worldPB.set_ssr_intensity(ssrIntensity);
 	for (bool controlHint : showControlHint)
 	{
 		worldPB.add_control_hints(controlHint);

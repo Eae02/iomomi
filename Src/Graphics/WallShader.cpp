@@ -33,6 +33,7 @@ static inline void InitializeMaterials()
 	wallMaterials[5] = { true, "Concrete Panels",     2.0f, 0.8f, 1.0f };
 	wallMaterials[6] = { true, "Smooth Panels",       1.0f, 0.1f, 0.5f };
 	wallMaterials[7] = { true, "Concrete Panels (S)", 2.0f, 0.8f, 1.0f };
+	wallMaterials[8] = { true, "Tiles",               2.0f, 0.1f, 0.5f };
 }
 
 void InitializeWallShader()

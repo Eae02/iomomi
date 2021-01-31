@@ -81,7 +81,8 @@ float* ssrBlurIntensity = eg::TweakVarFloat("ssr_blur_scale", 0.05f, 0.0f);
 float* ssrBlurFalloff = eg::TweakVarFloat("ssr_blur_fo", 5.0f, 0.0f);
 float* ssrBlurMax = eg::TweakVarFloat("ssr_blur_max", 4.0f, 0.0f);
 
-void SSR::Render(eg::TextureRef waterDepth, RenderTex destinationTexture, RenderTexManager& rtManager, const eg::ColorSRGB& fallbackColor)
+void SSR::Render(eg::TextureRef waterDepth, RenderTex destinationTexture, RenderTexManager& rtManager,
+	const eg::ColorSRGB& fallbackColor, float intensityScale)
 {
 	if (settings.reflectionsQuality != m_currentReflectionQualityLevel)
 	{
@@ -98,9 +99,11 @@ void SSR::Render(eg::TextureRef waterDepth, RenderTex destinationTexture, Render
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
 	eg::DC.BeginRenderPass(rpBeginInfo);
 	
-	eg::DC.BindPipeline(m_pipelineInitial);
 	eg::ColorLin fallbackColorLin(fallbackColor);
-	eg::DC.PushConstants(0, sizeof(float) * 3, &fallbackColorLin);
+	const float pcInitial[4] = { fallbackColorLin.r, fallbackColorLin.g, fallbackColorLin.b, intensityScale };
+	
+	eg::DC.BindPipeline(m_pipelineInitial);
+	eg::DC.PushConstants(0, sizeof(pcInitial), pcInitial);
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::LitWithoutSSR), 0, 1, &framebufferLinearSampler);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor1), 0, 2);

@@ -4,19 +4,13 @@ mipShift: &MipShift
   high: 0
 
 assets:
-  - name: Models/EnterRoomCol.obj
-    access: cpu
-    flipWinding: true
-    removeNameSuffix: true
-  - name: Models/ButtonCol.obj
-    access: cpu
-    flipWinding: true
-    removeNameSuffix: true
-  - name: Models/Window.obj
-    flipWinding: true
-    removeNameSuffix: true
   - name: Models/EditorEntrance.obj
     flipWinding: true
+
+  - regex: "Models/.*Col.obj"
+    access: cpu
+    flipWinding: true
+    removeNameSuffix: true
     
   - regex: "Models/.*\\.obj"
     removeNameSuffix: true
@@ -165,6 +159,7 @@ assets:
       - WallTextures/Panels1A.png
       - WallTextures/Panels2A.png
       - WallTextures/Panels1StripedA.png
+      - WallTextures/TilesA.png
   - name: WallTextures/NormalMap
     generator: Texture2DArray
     loader: Texture2D
@@ -179,6 +174,7 @@ assets:
       - WallTextures/Panels1N.png
       - WallTextures/Panels2N.png
       - WallTextures/Panels1N.png
+      - WallTextures/TilesN.png
   - name: WallTextures/MiscMap
     generator: Texture2DArray
     loader: Texture2D
@@ -193,6 +189,7 @@ assets:
       - WallTextures/Panels1M.png
       - WallTextures/Panels2M.png
       - WallTextures/Panels1M.png
+      - WallTextures/TilesM.png
   - name: Caustics
     generator: Texture2DArray
     loader: Texture2D

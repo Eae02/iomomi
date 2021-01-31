@@ -40,6 +40,7 @@ public:
 	float postColorScale = 1;
 	
 	eg::ColorSRGB ssrFallbackColor;
+	float ssrIntensity = 1;
 	
 private:
 	RenderTexManager m_rtManager;

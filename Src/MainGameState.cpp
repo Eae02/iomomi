@@ -197,6 +197,7 @@ void MainGameState::RunFrame(float dt)
 	{
 		ImGui::Begin("SSR Reflection Color Editor", &m_ssrReflectionColorEditorShown);
 		ImGui::ColorPicker3("###Color", &GameRenderer::instance->ssrFallbackColor.r);
+		ImGui::DragFloat("Intensity", &GameRenderer::instance->ssrIntensity, 0.1f);
 		
 		std::shared_ptr<World> editorWorld = runningEditorWorld.lock();
 		const bool canSaveToEditor = m_pausedMenu.isFromEditor && editorWorld != nullptr;
@@ -205,6 +206,7 @@ void MainGameState::RunFrame(float dt)
 		if (ImGui::Button("Save to Editor") && canSaveToEditor)
 		{
 			editorWorld->ssrFallbackColor = GameRenderer::instance->ssrFallbackColor;
+			editorWorld->ssrIntensity = GameRenderer::instance->ssrIntensity;
 		}
 		ImGui::PopItemFlag();
 		ImGui::PopStyleVar();

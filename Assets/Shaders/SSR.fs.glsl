@@ -23,6 +23,7 @@ layout(constant_id=2) const int isDirect = 1;
 layout(push_constant) uniform PC
 {
 	vec3 fallbackColor;
+	float ssrIntensity;
 };
 
 float getWaterHDepth(vec2 texCoord)
@@ -111,7 +112,7 @@ void main()
 	vec3 toEye = normalize(renderSettings.cameraPosition - data.worldPos);
 	vec3 fresnel = calcFresnel(data, toEye);
 	vec4 reflection = calcReflection(data.worldPos, toEye, data.normal);
-	vec3 ssrColor = reflection.rgb * fresnel * (1 - data.roughness);
+	vec3 ssrColor = reflection.rgb * fresnel * (1 - data.roughness) * ssrIntensity;
 	
 	if (isDirect == 1)
 	{

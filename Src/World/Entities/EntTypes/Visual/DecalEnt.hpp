@@ -1,8 +1,9 @@
 #pragma once
 
 #include "../../Entity.hpp"
+#include "../../EntEditorWallRotate.hpp"
 
-class DecalEnt : public Ent
+class DecalEnt : public Ent, public EntEditorWallRotate
 {
 public:
 	DecalEnt();
@@ -25,6 +26,9 @@ public:
 	glm::vec3 GetPosition() const override { return m_position; }
 	Dir GetFacingDirection() const override { return m_direction; }
 	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	
+	float GetWallRotation() const override;
+	void SetWallRotation(float _rotation) override;
 	
 	float rotation = 0;
 	float scale = 1;

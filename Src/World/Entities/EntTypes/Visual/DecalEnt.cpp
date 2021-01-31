@@ -140,3 +140,13 @@ void DecalEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> face
 	if (faceDirection)
 		m_direction = *faceDirection;
 }
+
+float DecalEnt::GetWallRotation() const
+{
+	return rotation;
+}
+
+void DecalEnt::SetWallRotation(float _rotation)
+{
+	rotation = _rotation;
+}

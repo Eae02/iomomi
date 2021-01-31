@@ -28,3 +28,6 @@ private:
 };
 
 ImTextureID MakeImTextureID(eg::TextureRef texture, int layer = -1);
+
+void ImPushDisabled(bool disabled);
+void ImPopDisabled(bool disabled);

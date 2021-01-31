@@ -1,0 +1,18 @@
+syntax="proto3";
+
+package gravity_pb;
+
+message MeshEntity {
+  float posX = 1;
+  float posY = 2;
+  float posZ = 3;
+  float scaleX = 4;
+  float scaleY = 5;
+  float scaleZ = 6;
+  float rotX = 7;
+  float rotY = 8;
+  float rotZ = 9;
+  float rotW = 10;
+  string model_name = 11;
+  int32 material_index = 12;
+}

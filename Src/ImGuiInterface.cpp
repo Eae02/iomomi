@@ -1,6 +1,7 @@
 #include "ImGuiInterface.hpp"
 
 #include <imgui.h>
+#include <imgui_internal.h>
 
 static std::string clipboardText;
 
@@ -298,4 +299,22 @@ ImTextureID MakeImTextureID(eg::TextureRef texture, int layer)
 {
 	imguiTextures.emplace_back(texture, layer);
 	return reinterpret_cast<ImTextureID>(static_cast<intptr_t>(imguiTextures.size() - 1));
+}
+
+void ImPushDisabled(bool disabled)
+{
+	if (disabled)
+	{
+		ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5f);
+		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+	}
+}
+
+void ImPopDisabled(bool disabled)
+{
+	if (disabled)
+	{
+		ImGui::PopStyleVar();
+		ImGui::PopItemFlag();
+	}
 }

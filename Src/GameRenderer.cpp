@@ -42,6 +42,7 @@ void GameRenderer::WorldChanged(World& world)
 	});
 	
 	ssrFallbackColor = world.ssrFallbackColor;
+	ssrIntensity = world.ssrIntensity;
 }
 
 void GameRenderer::SetViewMatrix(const glm::mat4& viewMatrix, const glm::mat4& inverseViewMatrix, bool updateFrustum)
@@ -326,7 +327,7 @@ void GameRenderer::Render(World& world, float gameTime, float dt,
 		auto gpuTimerTransparent = eg::StartGPUTimer("SSR");
 		eg::DC.DebugLabelBegin("SSR");
 		
-		m_renderCtx->ssr.Render(mDrawArgs.waterDepthTexture, RenderTex::Lit, m_rtManager, ssrFallbackColor);
+		m_renderCtx->ssr.Render(mDrawArgs.waterDepthTexture, RenderTex::Lit, m_rtManager, ssrFallbackColor, ssrIntensity);
 		
 		eg::DC.DebugLabelEnd();
 	}

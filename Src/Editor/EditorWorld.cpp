@@ -266,6 +266,7 @@ void EditorWorld::Update(float dt, EditorTool currentTool)
 	m_editorState.windowCursorPos = glm::vec2(windowCursorPosNF.x, m_editorState.windowRect.h - windowCursorPosNF.y);
 	m_editorState.inverseViewProjection = RenderSettings::instance->invViewProjection;
 	m_editorState.viewProjection = RenderSettings::instance->viewProjection;
+	m_editorState.cameraPosition = glm::vec3(inverseViewMatrix[3]);
 	m_editorState.viewRay = eg::Ray::UnprojectNDC(m_editorState.inverseViewProjection, windowCursorPosNDC);
 	m_editorState.tool = currentTool;
 	

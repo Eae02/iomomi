@@ -31,15 +31,16 @@ struct EntEditorDrawArgs : EntDrawArgs
 
 enum class EntTypeFlags
 {
-	EditorInvisible  = 0x1,
-	EditorWallMove   = 0x2,
-	Drawable         = 0x4,
-	EditorDrawable   = 0x8,
-	ShadowDrawableD  = 0x10,
-	ShadowDrawableS  = 0x20,
-	Interactable     = 0x40,
-	DisableClone     = 0x80,
-	HasPhysics       = 0x100
+	EditorInvisible    = 0x1,
+	EditorWallMove     = 0x2,
+	Drawable           = 0x4,
+	EditorDrawable     = 0x8,
+	ShadowDrawableD    = 0x10,
+	ShadowDrawableS    = 0x20,
+	Interactable       = 0x40,
+	DisableClone       = 0x80,
+	HasPhysics         = 0x100,
+	EditorRotatable    = 0x200
 };
 
 class Ent : public std::enable_shared_from_this<Ent>
@@ -62,6 +63,9 @@ public:
 	virtual int GetEditorIconIndex() const;
 	virtual glm::vec3 GetPosition() const = 0;
 	virtual Dir GetFacingDirection() const { return Dir::PosY; }
+	
+	virtual glm::quat GetEditorRotation() { return glm::quat(); }
+	virtual void EditorRotated(const glm::quat& newRotation) { }
 	
 	virtual void Spawned(bool isEditor);
 	

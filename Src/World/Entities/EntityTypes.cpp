@@ -17,6 +17,7 @@
 #include "EntTypes/GravityBarrierEnt.hpp"
 #include "EntTypes/Visual/RampEnt.hpp"
 #include "EntTypes/Visual/WindowEnt.hpp"
+#include "EntTypes/Visual/MeshEnt.hpp"
 #include "EntTypes/WaterWallEnt.hpp"
 #include "EntTypes/SlidingWallEnt.hpp"
 #include "EntTypes/LadderEnt.hpp"
@@ -73,4 +74,5 @@ void InitEntityTypes()
 	DefineEntityType<SlidingWallEnt>("SlidingWall", "Sliding Wall");
 	DefineEntityType<LadderEnt>("Ladder", "Ladder");
 	DefineEntityType<PointLightEnt>("PointLight", "Point Light");
+	DefineEntityType<MeshEnt>("Mesh", "Mesh");
 }
