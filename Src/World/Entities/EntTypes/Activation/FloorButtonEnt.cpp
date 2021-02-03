@@ -5,10 +5,10 @@
 #include "../../../../Graphics/Materials/EmissiveMaterial.hpp"
 #include "../../../../../Protobuf/Build/FloorButtonEntity.pb.h"
 
-#include <iomanip>
 #include <imgui.h>
 
 static eg::Model* s_model;
+static eg::CollisionMesh s_collisionMesh;
 static eg::IMaterial* s_material;
 static size_t s_padMeshIndex;
 static size_t s_lightsMeshIndex;
@@ -18,11 +18,12 @@ static eg::CollisionMesh s_padCollisionMesh;
 
 static void OnInit()
 {
-	eg::Model& collisionModel = eg::GetAsset<eg::Model>("Models/ButtonCol.obj");
+	eg::Model& collisionModel = eg::GetAsset<eg::Model>("Models/Button.col.obj");
 	s_ringCollisionMesh = collisionModel.MakeCollisionMesh(collisionModel.GetMeshIndex("CollisionRing"));
 	s_padCollisionMesh = collisionModel.MakeCollisionMesh(collisionModel.GetMeshIndex("CollisionPad"));
 	
-	s_model = &eg::GetAsset<eg::Model>("Models/Button.obj");
+	s_model = &eg::GetAsset<eg::Model>("Models/Button.aa.obj");
+	s_collisionMesh = s_model->MakeCollisionMesh();
 	s_material = &eg::GetAsset<StaticPropMaterial>("Materials/Button.yaml");
 	
 	for (size_t i = 0; i < s_model->NumMeshes(); i++)
@@ -225,5 +226,16 @@ void FloorButtonEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir
 
 int FloorButtonEnt::GetEditorIconIndex() const
 {
-	return 15;
+	return -1;
+}
+
+eg::Span<const EditorSelectionMesh> FloorButtonEnt::GetEditorSelectionMeshes() const
+{
+	static EditorSelectionMesh selectionMesh;
+	selectionMesh.model = s_model;
+	selectionMesh.collisionMesh = &s_collisionMesh;
+	selectionMesh.transform =
+		glm::translate(glm::mat4(1), m_ringPhysicsObject.displayPosition) *
+		glm::mat4(GetRotationMatrix(m_direction));;
+	return { &selectionMesh, 1 };
 }

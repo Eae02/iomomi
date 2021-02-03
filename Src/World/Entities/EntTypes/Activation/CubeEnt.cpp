@@ -19,16 +19,20 @@ static float* cubeDropDist = eg::TweakVarFloat("cube_drop_dist", 0.9f, 0.0f);
 static float* cubeMaxInteractDist = eg::TweakVarFloat("cube_max_interact_dist", 1.5f, 0.0f);
 
 static eg::Model* cubeModel;
+static eg::CollisionMesh cubeSelColMesh;
 static eg::IMaterial* cubeMaterial;
 
 static eg::Model* woodCubeModel;
+static eg::CollisionMesh woodCubeSelColMesh;
 static eg::IMaterial* woodCubeMaterial;
 
 static void OnInit()
 {
-	cubeModel = &eg::GetAsset<eg::Model>("Models/Cube.obj");
+	cubeModel = &eg::GetAsset<eg::Model>("Models/Cube.aa.obj");
+	cubeSelColMesh = cubeModel->MakeCollisionMesh(0);
 	cubeMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Cube.yaml");
-	woodCubeModel = &eg::GetAsset<eg::Model>("Models/WoodCube.obj");
+	woodCubeModel = &eg::GetAsset<eg::Model>("Models/WoodCube.aa.obj");
+	woodCubeSelColMesh = cubeModel->MakeCollisionMesh(0);
 	woodCubeMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/WoodCube.yaml");
 }
 
@@ -103,13 +107,17 @@ void CubeEnt::GameDraw(const EntGameDrawArgs& args)
 	}
 }
 
-void CubeEnt::EditorDraw(const EntEditorDrawArgs& args)
+glm::mat4 CubeEnt::GetEditorWorldMatrix() const
 {
-	const glm::mat4 worldMatrix =
+	return
 		glm::translate(glm::mat4(1), m_physicsObject.position) *
 		glm::mat4_cast(m_physicsObject.rotation) *
 		glm::scale(glm::mat4(1), glm::vec3(RADIUS));
-	Draw(*args.meshBatch, worldMatrix);
+}
+
+void CubeEnt::EditorDraw(const EntEditorDrawArgs& args)
+{
+	Draw(*args.meshBatch, GetEditorWorldMatrix());
 }
 
 const void* CubeEnt::GetComponent(const std::type_info& type) const
@@ -364,5 +372,14 @@ void CubeEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceD
 
 int CubeEnt::GetEditorIconIndex() const
 {
-	return 4;
+	return -1;
+}
+
+eg::Span<const EditorSelectionMesh> CubeEnt::GetEditorSelectionMeshes() const
+{
+	static EditorSelectionMesh selectionMesh;
+	selectionMesh.model = canFloat ? woodCubeModel : cubeModel;
+	selectionMesh.collisionMesh = canFloat ? &woodCubeSelColMesh : &cubeSelColMesh;
+	selectionMesh.transform = GetEditorWorldMatrix();
+	return { &selectionMesh, 1 };
 }

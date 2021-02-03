@@ -5,7 +5,7 @@ layout(location=1) in vec2 texCoord_in;
 layout(location=2) in vec3 normal_in;
 layout(location=3) in vec3 tangent_in;
 layout(location=4) in mat3x4 worldTransform_in;
-layout(location=7) in vec2 textureScale_in;
+layout(location=7) in vec4 textureRange_in;
 
 layout(location=0) out vec3 worldPos_out;
 layout(location=1) out vec2 texCoord_out;
@@ -22,7 +22,7 @@ void main()
 	mat4 worldTransform = transpose(mat4(worldTransform_in));
 	
 	worldPos_out = (worldTransform * vec4(position_in, 1.0)).xyz;
-	texCoord_out = textureScale_in * texCoord_in;
+	texCoord_out = mix(textureRange_in.xy, textureRange_in.zw, texCoord_in);
 	normal_out = normalize((worldTransform * vec4(normal_in, 0.0)).xyz);
 	tangent_out = normalize((worldTransform * vec4(tangent_in, 0.0)).xyz);
 	

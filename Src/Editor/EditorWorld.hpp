@@ -8,6 +8,7 @@
 #include "PrimitiveRenderer.hpp"
 #include "LiquidPlaneRenderer.hpp"
 #include "EditorComponent.hpp"
+#include "SelectionRenderer.hpp"
 
 #include <EGame/FlyCamera.hpp>
 
@@ -51,6 +52,8 @@ private:
 	
 	eg::Texture m_renderTextureDepth;
 	eg::Framebuffer m_framebuffer;
+	
+	SelectionRenderer m_selectionRenderer;
 	
 	EditorState m_editorState;
 	

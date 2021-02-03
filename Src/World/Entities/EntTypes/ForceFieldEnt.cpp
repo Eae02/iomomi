@@ -6,6 +6,7 @@
 #include "../../../Graphics/RenderSettings.hpp"
 #include "../../../../Protobuf/Build/ForceFieldEntity.pb.h"
 #include "../../../Graphics/GraphicsCommon.hpp"
+#include "../../../Game.hpp"
 
 #include <imgui.h>
 
@@ -125,8 +126,6 @@ void ForceFieldEnt::EditorDraw(const EntEditorDrawArgs& args)
 	}
 }
 
-static std::mt19937 particleRNG;
-
 void ForceFieldEnt::Update(const WorldUpdateArgs& args)
 {
 	if (args.mode == WorldMode::Editor)
@@ -198,8 +197,8 @@ void ForceFieldEnt::Update(const WorldUpdateArgs& args)
 			{
 				for (int y = 0; y < sectionsB; y++)
 				{
-					float t = (std::uniform_real_distribution<float>(0.0f, 1.0f)(particleRNG) + x) / sectionsT;
-					float u = (std::uniform_real_distribution<float>(0.0f, 1.0f)(particleRNG) + y) / sectionsB;
+					float t = (std::uniform_real_distribution<float>(0.0f, 1.0f)(globalRNG) + x) / sectionsT;
+					float u = (std::uniform_real_distribution<float>(0.0f, 1.0f)(globalRNG) + y) / sectionsB;
 					
 					ForceFieldParticle& particle = m_particles.emplace_back();
 					particle.elapsedTime = 0;

@@ -6,12 +6,14 @@
 #include "../../../Settings.hpp"
 
 static eg::Model* s_model;
+static eg::CollisionMesh s_collisionMesh;
 static eg::IMaterial* s_material;
 static int s_centerMaterialIndex;
 
 static void OnInit()
 {
-	s_model = &eg::GetAsset<eg::Model>("Models/GravitySwitch.obj");
+	s_model = &eg::GetAsset<eg::Model>("Models/GravitySwitch.aa.obj");
+	s_collisionMesh = s_model->MakeCollisionMesh();
 	s_material = &eg::GetAsset<StaticPropMaterial>("Materials/GravitySwitch.yaml");
 	s_centerMaterialIndex = s_model->GetMaterialIndex("Center");
 }
@@ -56,9 +58,14 @@ void GravitySwitchEnt::Update(const WorldUpdateArgs& args)
 	m_centerMaterial.timeOffset += glm::mix(0.2f, 1.0f, m_enableAnimationTime) * args.dt;
 }
 
+glm::mat4 GravitySwitchEnt::GetTransform() const
+{
+	return glm::translate(glm::mat4(1), m_position) * glm::mat4(GetRotationMatrix(m_up));
+}
+
 void GravitySwitchEnt::Draw(eg::MeshBatch& meshBatch) const
 {
-	const glm::mat4 transform = glm::translate(glm::mat4(1), m_position) * glm::mat4(GetRotationMatrix(m_up));
+	const glm::mat4 transform = GetTransform();
 	
 	for (size_t m = 0; m < s_model->NumMeshes(); m++)
 	{
@@ -154,4 +161,18 @@ void GravitySwitchEnt::EditorMoved(const glm::vec3& newPosition, std::optional<D
 	m_position = newPosition;
 	if (faceDirection)
 		m_up = *faceDirection;
+}
+
+eg::Span<const EditorSelectionMesh> GravitySwitchEnt::GetEditorSelectionMeshes() const
+{
+	static EditorSelectionMesh selectionMesh;
+	selectionMesh.model = s_model;
+	selectionMesh.collisionMesh = &s_collisionMesh;
+	selectionMesh.transform = GetTransform();
+	return { &selectionMesh, 1 };
+}
+
+int GravitySwitchEnt::GetEditorIconIndex() const
+{
+	return -1;
 }

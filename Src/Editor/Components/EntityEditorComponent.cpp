@@ -1,8 +1,8 @@
 #include "EntityEditorComponent.hpp"
+#include "../SelectionRenderer.hpp"
 #include "../PrimitiveRenderer.hpp"
 #include "../../World/Entities/EntTypes/Activation/ActivationLightStripEnt.hpp"
 #include "../../World/Entities/Components/ActivatorComp.hpp"
-#include "../../World/Entities/EntEditorWallRotate.hpp"
 #include "../../ImGuiInterface.hpp"
 
 #include <imgui.h>
@@ -267,6 +267,41 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 		editorState.selectedEntities->clear();
 	}
 	
+	//Updates the hovered selection mesh entity
+	m_hoveredSelMeshEntity = {};
+	if (!blockFurtherInput)
+	{
+		const VoxelRayIntersectResult voxelRayIR = editorState.world->voxels.RayIntersect(editorState.viewRay);
+		float closestSelMeshIntersect = INFINITY;//voxelRayIR.intersected ? voxelRayIR.intersectDist + 0.5f : INFINITY;
+		editorState.world->entManager.ForEach([&] (Ent& entity)
+		{
+			if (eg::HasFlag(entity.TypeFlags(), EntTypeFlags::EditorInvisible))
+				return;
+			
+			for (const EditorSelectionMesh& selMesh : entity.GetEditorSelectionMeshes())
+			{
+				float intersectDist;
+				if (selMesh.collisionMesh->Intersect(editorState.viewRay, intersectDist, &selMesh.transform))
+				{
+					if (intersectDist < closestSelMeshIntersect)
+					{
+						m_hoveredSelMeshEntity = entity.shared_from_this();
+						closestSelMeshIntersect = intersectDist;
+					}
+				}
+			}
+		});
+		
+		if (m_hoveredSelMeshEntity && eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft))
+		{
+			if (!eg::InputState::Current().IsCtrlDown())
+				editorState.selectedEntities->clear();
+			if (!editorState.IsEntitySelected(*m_hoveredSelMeshEntity))
+				editorState.selectedEntities->push_back(m_hoveredSelMeshEntity);
+			blockFurtherInput = true;
+		}
+	}
+	
 	return blockFurtherInput;
 }
 
@@ -332,17 +367,53 @@ bool EntityEditorComponent::CollectIcons(const EditorState& editorState, std::ve
 		if (eg::HasFlag(entity.TypeFlags(), EntTypeFlags::EditorInvisible))
 			return;
 		
+		int iconIndex = entity.GetEditorIconIndex();
+		if (iconIndex == -1)
+			return;
+		
+		bool alreadySelected = editorState.IsEntitySelected(entity);
+		
 		EditorIcon icon = editorState.CreateIcon(entity.GetPosition(),
-			[entityWP = entity.shared_from_this(), selected = editorState.selectedEntities] ()
+			[entityWP = entity.shared_from_this(), selected = editorState.selectedEntities, alreadySelected] ()
 			{
-				selected->push_back(move(entityWP));
+				if (!alreadySelected)
+				{
+					selected->push_back(move(entityWP));
+				}
 			});
 		icon.iconIndex = entity.GetEditorIconIndex();
-		icon.selected = editorState.IsEntitySelected(entity);
+		icon.selected = alreadySelected;
 		icons.push_back(std::move(icon));
 	});
 	
 	return false;
+}
+
+void EntityEditorComponent::EarlyDraw(const EditorState& editorState) const
+{
+	//Draws selection outlines around entities with selection meshes
+	bool hasDrawnOutlineForHoveredEntity = false;
+	for (const std::weak_ptr<Ent>& entityHandle : *editorState.selectedEntities)
+	{
+		std::shared_ptr<Ent> entity = entityHandle.lock();
+		if (entity == nullptr || eg::HasFlag(entity->TypeFlags(), EntTypeFlags::EditorInvisible))
+			continue;
+		if (entity == m_hoveredSelMeshEntity)
+			hasDrawnOutlineForHoveredEntity = true;
+		
+		for (const EditorSelectionMesh& selMesh : entity->GetEditorSelectionMeshes())
+		{
+			editorState.selectionRenderer->Draw(1, selMesh.transform, *selMesh.model, selMesh.meshIndex);
+		}
+	}
+	if (m_hoveredSelMeshEntity != nullptr && !hasDrawnOutlineForHoveredEntity)
+	{
+		for (const EditorSelectionMesh& selMesh : m_hoveredSelMeshEntity->GetEditorSelectionMeshes())
+		{
+			editorState.selectionRenderer->Draw(0.5f, selMesh.transform, *selMesh.model, selMesh.meshIndex);
+		}
+	}
+	editorState.selectionRenderer->EndDraw();
 }
 
 void EntityEditorComponent::LateDraw(const EditorState& editorState) const

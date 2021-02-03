@@ -24,6 +24,8 @@ public:
 	
 	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
+	eg::Span<const EditorSelectionMesh> GetEditorSelectionMeshes() const override;
+	
 	int GetEditorIconIndex() const override;
 	
 	void Serialize(std::ostream& stream) const override;
@@ -63,6 +65,8 @@ public:
 	bool canFloat = false;
 	
 private:
+	glm::mat4 GetEditorWorldMatrix() const;
+	
 	void Draw(eg::MeshBatch& meshBatch, const glm::mat4& transform) const;
 	
 	static bool ShouldCollide(const PhysicsObject& self, const PhysicsObject& other);

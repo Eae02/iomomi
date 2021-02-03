@@ -17,7 +17,7 @@ static std::vector<LadderComponent> meshComponents;
 
 static void OnInit()
 {
-	ladderModel = &eg::GetAsset<eg::Model>("Models/Ladder.obj");
+	ladderModel = &eg::GetAsset<eg::Model>("Models/Ladder.aa.obj");
 	meshComponents.resize(ladderModel->NumMeshes());
 	for (size_t i = 0; i < ladderModel->NumMeshes(); i++)
 	{

@@ -270,7 +270,7 @@ void WallDragEditorComponent::FillSelection(const World& world, const glm::ivec3
 	}
 }
 
-void WallDragEditorComponent::EarlyDraw(PrimitiveRenderer& primitiveRenderer) const
+void WallDragEditorComponent::EarlyDraw(const EditorState& editorState) const
 {
 	if (m_selState != SelState::NoSelection)
 	{
@@ -290,7 +290,7 @@ void WallDragEditorComponent::EarlyDraw(PrimitiveRenderer& primitiveRenderer) co
 			quadCorners[2][sd2] = quadCorners[0][sd2] = std::min<float>(m_selection1[sd2], m_selection2Anim[sd2]);
 			quadCorners[1][sd2] = quadCorners[3][sd2] = std::max<float>(m_selection1[sd2], m_selection2Anim[sd2]) + 1;
 			
-			primitiveRenderer.AddQuad(quadCorners, eg::ColorSRGB(eg::ColorSRGB::FromHex(0x91CAED).ScaleAlpha(0.5f)));
+			editorState.primitiveRenderer->AddQuad(quadCorners, eg::ColorSRGB(eg::ColorSRGB::FromHex(0x91CAED).ScaleAlpha(0.5f)));
 		}
 		else
 		{
@@ -322,7 +322,7 @@ void WallDragEditorComponent::EarlyDraw(PrimitiveRenderer& primitiveRenderer) co
 					nextQuadCorner++;
 				}
 				
-				primitiveRenderer.AddQuad(quadCorners, color);
+				editorState.primitiveRenderer->AddQuad(quadCorners, color);
 			}
 		}
 	}

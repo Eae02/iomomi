@@ -142,6 +142,8 @@ void DeferredRenderer::EndTransparent()
 	eg::DC.EndRenderPass();
 }
 
+static float* ambientIntensity = eg::TweakVarFloat("ambient_intensity", 0.1f);
+
 void DeferredRenderer::BeginLighting(RenderTexManager& rtManager)
 {
 	eg::RenderPassBeginInfo rpBeginInfo;
@@ -153,7 +155,7 @@ void DeferredRenderer::BeginLighting(RenderTexManager& rtManager)
 	eg::ColorLin ambientColor = eg::ColorLin(eg::ColorSRGB::FromHex(0xf6f9fc));
 	if (!unlit)
 	{
-		ambientColor = ambientColor.ScaleRGB(0.2f);
+		ambientColor = ambientColor.ScaleRGB(*ambientIntensity);
 	}
 	
 	eg::DC.BindPipeline(m_ambientPipeline);

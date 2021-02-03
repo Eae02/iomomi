@@ -55,6 +55,8 @@ EditorWorld::EditorWorld(std::string levelName, std::unique_ptr<World> world)
 	m_editorState.camera = &m_camera;
 	m_editorState.selectedEntities = &m_selectedEntities;
 	m_editorState.projection.SetFieldOfViewDeg(75.0f);
+	m_editorState.primitiveRenderer = &m_primRenderer;
+	m_editorState.selectionRenderer = &m_selectionRenderer;
 	
 	m_thumbnailCamera.SetView(m_world->thumbnailCameraPos, m_world->thumbnailCameraPos + m_world->thumbnailCameraDir);
 	
@@ -97,6 +99,8 @@ void EditorWorld::SetWindowRect(const eg::Rectangle& windowRect)
 		
 		m_framebuffer = eg::Framebuffer({ &colorAttachment, 1 }, depthAttachment);
 	}
+	
+	m_selectionRenderer.BeginFrame(resX, resY);
 }
 
 void EditorWorld::RenderImGui()
@@ -260,6 +264,8 @@ void EditorWorld::Update(float dt, EditorTool currentTool)
 	RenderSettings::instance->cameraPosition = glm::vec3(inverseViewMatrix[3]);
 	RenderSettings::instance->UpdateBuffer();
 	
+	m_selectionRenderer.viewProjection = RenderSettings::instance->viewProjection;
+	
 	glm::vec2 windowCursorPosNF = glm::vec2(eg::CursorPos()) - m_editorState.windowRect.Min();
 	glm::vec2 windowCursorPosNDC = ((windowCursorPosNF / m_editorState.windowRect.Size()) * 2.0f - 1.0f) * glm::vec2(1, -1);
 	
@@ -356,7 +362,7 @@ void EditorWorld::Draw(EditorTool currentTool, RenderContext& renderCtx, Prepare
 	
 	for (EditorComponent* comp : m_componentsForTool[(int)currentTool])
 	{
-		comp->EarlyDraw(m_primRenderer);
+		comp->EarlyDraw(m_editorState);
 	}
 	
 	//Draws icons
@@ -432,6 +438,8 @@ void EditorWorld::Draw(EditorTool currentTool, RenderContext& renderCtx, Prepare
 	renderCtx.transparentMeshBatch.Draw(eg::DC, &mDrawArgs);
 	
 	m_liquidPlaneRenderer.Render();
+	
+	m_selectionRenderer.EndFrame();
 	
 	for (EditorComponent* comp : m_componentsForTool[(int)currentTool])
 	{

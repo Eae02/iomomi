@@ -80,7 +80,7 @@ bool GravityCornerEditorComponent::UpdateInput(float dt, const EditorState& edit
 	return false;
 }
 
-void GravityCornerEditorComponent::EarlyDraw(PrimitiveRenderer& primitiveRenderer) const
+void GravityCornerEditorComponent::EarlyDraw(const EditorState& editorState) const
 {
 	if (m_hoveredCornerDim != -1)
 	{
@@ -108,7 +108,7 @@ void GravityCornerEditorComponent::EarlyDraw(PrimitiveRenderer& primitiveRendere
 		}
 		
 		eg::ColorSRGB color = eg::ColorSRGB(eg::ColorSRGB::FromHex(0xDB9951).ScaleAlpha(0.4f));
-		primitiveRenderer.AddQuad(lineCorners, color);
-		primitiveRenderer.AddQuad(lineCorners + 4, color);
+		editorState.primitiveRenderer->AddQuad(lineCorners, color);
+		editorState.primitiveRenderer->AddQuad(lineCorners + 4, color);
 	}
 }

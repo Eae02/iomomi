@@ -3,16 +3,18 @@
 #include "MainGameState.hpp"
 #include "Levels.hpp"
 #include "Editor/Editor.hpp"
-#include "Settings.hpp"
 #include "Graphics/GraphicsCommon.hpp"
 #include "Graphics/WallShader.hpp"
 #include "MainMenuGameState.hpp"
 #include "ThumbnailRenderer.hpp"
 
+std::mt19937 globalRNG;
+
 #include <fstream>
 
 Game::Game()
 {
+	globalRNG = std::mt19937(std::time(nullptr));
 	GameRenderer::instance = new GameRenderer(m_renderCtx);
 	
 	editor = new Editor(m_renderCtx);

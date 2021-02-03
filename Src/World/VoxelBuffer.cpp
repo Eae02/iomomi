@@ -164,6 +164,7 @@ VoxelRayIntersectResult VoxelBuffer::RayIntersect(const eg::Ray& ray) const
 					result.intersectPosition = iPos;
 					result.voxelPosition = voxelPosN;
 					result.normalDir = (Dir)(dim * 2 + (voxelPosP[dim] > voxelPosN[dim] ? 0 : 1));
+					result.intersectDist = intersectDist;
 					result.intersected = true;
 					minDist = intersectDist;
 				}

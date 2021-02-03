@@ -33,6 +33,8 @@ struct
 	
 	const eg::Model* editorEntModel;
 	const eg::Model* editorExitModel;
+	eg::CollisionMesh editorEntCollisionMesh;
+	eg::CollisionMesh editorExitCollisionMesh;
 	const eg::IMaterial* editorEntMaterial;
 	const eg::IMaterial* editorExitMaterial;
 	
@@ -51,8 +53,11 @@ inline static void AssignMaterial(std::string_view materialName, std::string_vie
 static void OnInit()
 {
 	entrance.model = &eg::GetAsset<eg::Model>("Models/EnterRoom.obj");
-	entrance.editorEntModel = &eg::GetAsset<eg::Model>("Models/EditorEntrance.obj");
-	entrance.editorExitModel = &eg::GetAsset<eg::Model>("Models/EditorExit.obj");
+	entrance.editorEntModel = &eg::GetAsset<eg::Model>("Models/EditorEntrance.aa.obj");
+	entrance.editorExitModel = &eg::GetAsset<eg::Model>("Models/EditorExit.aa.obj");
+	
+	entrance.editorEntCollisionMesh = entrance.editorEntModel->MakeCollisionMesh();
+	entrance.editorExitCollisionMesh = entrance.editorExitModel->MakeCollisionMesh();
 	
 	entrance.materials.resize(entrance.model->NumMaterials(), &eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml"));
 	AssignMaterial("Floor",       "Materials/Entrance/Floor.yaml");
@@ -114,7 +119,7 @@ static void OnInit()
 		}
 	}
 	
-	const eg::Model& colModel = eg::GetAsset<eg::Model>("Models/EnterRoomCol.obj");
+	const eg::Model& colModel = eg::GetAsset<eg::Model>("Models/EnterRoom.col.obj");
 	auto MakeCollisionMesh = [&] (std::string_view meshName) -> eg::CollisionMesh
 	{
 		int index = colModel.GetMeshIndex(meshName);
@@ -202,6 +207,17 @@ glm::mat4 EntranceExitEnt::GetTransform() const
 {
 	auto [rotation, translation] = GetTransformParts();
 	return glm::translate(glm::mat4(1.0f), translation) * glm::mat4(rotation);
+}
+
+glm::mat4 EntranceExitEnt::GetEditorTransform() const
+{
+	glm::mat4 transform = GetTransform();
+	if (m_type == Type::Exit)
+	{
+		transform *= glm::scale(glm::mat4(), glm::vec3(-1, 1, 1));
+	}
+	transform *= glm::translate(glm::mat4(), glm::vec3(-MESH_LENGTH - 0.01f, 0, 0));
+	return transform;
 }
 
 static const glm::vec3 fanRotationCenter = glm::vec3(0, 1.47092f, 2.31192f);
@@ -356,18 +372,9 @@ void EntranceExitEnt::GameDraw(const EntGameDrawArgs& args)
 
 void EntranceExitEnt::EditorDraw(const EntEditorDrawArgs& args)
 {
-	glm::mat4 transform = GetTransform();
-	
-	if (m_type == Type::Exit)
-	{
-		transform *= glm::scale(glm::mat4(), glm::vec3(-1, 1, 1));
-	}
-	transform *= glm::translate(glm::mat4(), glm::vec3(-MESH_LENGTH - 0.01f, 0, 0));
-	
 	auto model = m_type == Type::Entrance ? entrance.editorEntModel : entrance.editorExitModel;
 	auto material = m_type == Type::Entrance ? entrance.editorEntMaterial : entrance.editorExitMaterial;
-	
-	args.meshBatch->AddModel(*model, *material, StaticPropMaterial::InstanceData(transform));
+	args.meshBatch->AddModel(*model, *material, StaticPropMaterial::InstanceData(GetEditorTransform()));
 }
 
 void EntranceExitEnt::RenderSettings()
@@ -472,7 +479,17 @@ void EntranceExitEnt::CollectPointLights(std::vector<std::shared_ptr<PointLight>
 
 int EntranceExitEnt::GetEditorIconIndex() const
 {
-	return 13 + (int)m_type;
+	return -1;
+	//return 13 + (int)m_type;
+}
+
+eg::Span<const EditorSelectionMesh> EntranceExitEnt::GetEditorSelectionMeshes() const
+{
+	static EditorSelectionMesh selectionMesh;
+	selectionMesh.model = m_type == Type::Entrance ? entrance.editorEntModel : entrance.editorExitModel;
+	selectionMesh.collisionMesh = m_type == Type::Entrance ? &entrance.editorEntCollisionMesh : &entrance.editorExitCollisionMesh;
+	selectionMesh.transform = GetEditorTransform();
+	return { &selectionMesh, 1 };
 }
 
 template <>

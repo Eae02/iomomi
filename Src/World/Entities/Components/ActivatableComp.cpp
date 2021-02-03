@@ -1,5 +1,6 @@
 #include "ActivatableComp.hpp"
 #include "../EntityManager.hpp"
+#include "../../../Game.hpp"
 
 #include <ctime>
 
@@ -20,8 +21,6 @@ bool ActivatableComp::AllSourcesActive() const
 {
 	return (m_activations & m_enabledConnections) == m_enabledConnections;
 }
-
-static std::mt19937 nameGen { (uint32_t)std::time(nullptr) };
 
 static std::vector<glm::vec3> GetConnectionPointsDefault(const Ent& entity)
 {
@@ -66,5 +65,5 @@ Ent* ActivatableComp::FindByName(EntityManager& entityManager, uint32_t name)
 
 void ActivatableComp::GiveNewName()
 {
-	m_name = std::uniform_int_distribution<uint32_t>(1)(nameGen);
+	m_name = std::uniform_int_distribution<uint32_t>(1)(globalRNG);
 }

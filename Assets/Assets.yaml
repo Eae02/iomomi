@@ -4,14 +4,19 @@ mipShift: &MipShift
   high: 0
 
 assets:
-  - name: Models/EditorEntrance.obj
+  - name: Models/EditorEntrance.aa.obj
+    access: all
     flipWinding: true
 
-  - regex: "Models/.*Col.obj"
+  - regex: "Models/.*\\.col\\.obj"
     access: cpu
     flipWinding: true
     removeNameSuffix: true
-    
+
+  - regex: "Models/.*\\.aa\\.obj"
+    access: all
+    removeNameSuffix: true
+
   - regex: "Models/.*\\.obj"
     removeNameSuffix: true
   

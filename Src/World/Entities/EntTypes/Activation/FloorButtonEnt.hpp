@@ -21,6 +21,8 @@ public:
 	
 	int GetEditorIconIndex() const override;
 	
+	eg::Span<const EditorSelectionMesh> GetEditorSelectionMeshes() const override;
+	
 	void CommonDraw(const EntDrawArgs& args) override;
 	
 	void Serialize(std::ostream& stream) const override;

@@ -5,6 +5,8 @@
 #include "World/World.hpp"
 #include "World/Player.hpp"
 
+extern std::mt19937 globalRNG;
+
 class Game : public eg::IGame
 {
 public:

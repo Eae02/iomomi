@@ -8,10 +8,19 @@ public:
 	struct InstanceData
 	{
 		glm::mat3x4 transform;
-		glm::vec2 textureScale;
+		glm::vec4 textureRange;
 		
-		InstanceData(const glm::mat4& _transform, glm::vec2 _textureScale = glm::vec2(1))
-			: transform(glm::transpose(_transform)), textureScale(_textureScale) { }
+		InstanceData(const glm::mat4& _transform)
+			: transform(glm::transpose(_transform)),
+			  textureRange(0, 0, 1, 1) { }
+		
+		InstanceData(const glm::mat4& _transform, glm::vec2 textureScale)
+			: transform(glm::transpose(_transform)),
+			  textureRange(0, 0, textureScale.x, textureScale.y) { }
+		
+		InstanceData(const glm::mat4& _transform, glm::vec2 textureMin, glm::vec2 textureMax)
+			: transform(glm::transpose(_transform)),
+			  textureRange(textureMin.x, textureMin.y, textureMax.x, textureMax.y) { }
 	};
 	
 	struct FlagsPipelinePushConstantData

@@ -9,7 +9,7 @@ public:
 	
 	bool UpdateInput(float dt, const EditorState& editorState) override;
 	
-	void EarlyDraw(class PrimitiveRenderer& primitiveRenderer) const override;
+	void EarlyDraw(const EditorState& editorState) const override;
 	
 	void RenderSettings(const EditorState& editorState) override;
 	

@@ -9,6 +9,7 @@ struct VoxelRayIntersectResult
 	glm::ivec3 voxelPosition;
 	glm::vec3 intersectPosition;
 	Dir normalDir;
+	float intersectDist;
 };
 
 class VoxelBuffer

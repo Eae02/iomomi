@@ -15,4 +15,5 @@ message MeshEntity {
   float rotW = 10;
   string model_name = 11;
   int32 material_index = 12;
+  int32 num_repeats = 13;
 }

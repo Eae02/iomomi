@@ -49,6 +49,9 @@ struct EditorState
 	std::vector<std::weak_ptr<Ent>>* selectedEntities;
 	EditorTool tool;
 	
+	class SelectionRenderer* selectionRenderer;
+	class PrimitiveRenderer* primitiveRenderer;
+	
 	glm::mat4 viewProjection;
 	glm::mat4 inverseViewProjection;
 	
@@ -90,7 +93,7 @@ public:
 	
 	virtual void Update(float dt, const EditorState& editorState) { };
 	virtual bool UpdateInput(float dt, const EditorState& editorState) { return false; };
-	virtual void EarlyDraw(class PrimitiveRenderer& primitiveRenderer) const { }
+	virtual void EarlyDraw(const EditorState& editorState) const { }
 	virtual void LateDraw(const EditorState& editorState) const { }
 	virtual void RenderSettings(const EditorState& editorState) { }
 	virtual bool CollectIcons(const EditorState& editorState, std::vector<EditorIcon>& icons) { return false; }

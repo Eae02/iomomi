@@ -43,6 +43,14 @@ enum class EntTypeFlags
 	EditorRotatable    = 0x200
 };
 
+struct EditorSelectionMesh
+{
+	const eg::Model* model = nullptr;
+	const eg::CollisionMesh* collisionMesh = nullptr;
+	int meshIndex = -1;
+	glm::mat4 transform;
+};
+
 class Ent : public std::enable_shared_from_this<Ent>
 {
 public:
@@ -63,6 +71,8 @@ public:
 	virtual int GetEditorIconIndex() const;
 	virtual glm::vec3 GetPosition() const = 0;
 	virtual Dir GetFacingDirection() const { return Dir::PosY; }
+	
+	virtual eg::Span<const EditorSelectionMesh> GetEditorSelectionMeshes() const { return { }; }
 	
 	virtual glm::quat GetEditorRotation() { return glm::quat(); }
 	virtual void EditorRotated(const glm::quat& newRotation) { }

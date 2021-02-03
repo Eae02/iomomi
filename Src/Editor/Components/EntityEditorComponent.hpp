@@ -13,6 +13,8 @@ public:
 	
 	void RenderSettings(const EditorState& editorState) override;
 	
+	void EarlyDraw(const EditorState& editorState) const override;
+	
 	void LateDraw(const EditorState& editorState) const override;
 	
 	bool CollectIcons(const EditorState& editorState, std::vector<EditorIcon>& icons) override;
@@ -41,6 +43,8 @@ private:
 	bool m_drawRotationGizmo = false;
 	bool m_inRotationMode = false;
 	bool m_canRotate = false;
+	
+	std::shared_ptr<Ent> m_hoveredSelMeshEntity;
 	
 	std::shared_ptr<Ent> m_wallDragEntity;
 	bool m_isDraggingWallEntity = false;

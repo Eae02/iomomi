@@ -31,6 +31,8 @@ public:
 	
 	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
+	eg::Span<const EditorSelectionMesh> GetEditorSelectionMeshes() const override;
+	
 	void InitPlayer(class Player& player);
 	
 	static void MovePlayer(const EntranceExitEnt& oldExit, const EntranceExitEnt& newEntrance, class Player& player);
@@ -74,6 +76,7 @@ public:
 private:
 	std::tuple<glm::mat3, glm::vec3> GetTransformParts() const;
 	glm::mat4 GetTransform() const;
+	glm::mat4 GetEditorTransform() const;
 	
 	static std::vector<glm::vec3> GetConnectionPoints(const Ent& entity);
 	

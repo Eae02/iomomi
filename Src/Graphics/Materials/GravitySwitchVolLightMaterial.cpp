@@ -3,6 +3,7 @@
 #include "../RenderSettings.hpp"
 #include "../GraphicsCommon.hpp"
 #include "../../Settings.hpp"
+#include "../../Game.hpp"
 
 #include <random>
 #include <ctime>
@@ -158,11 +159,10 @@ void GravitySwitchVolLightMaterial::SetQuality(QualityLevel qualityLevel)
 	lightDataBufferStruct.quarterRaySteps = raySteps / 4;
 	
 	//Generates sample points
-	std::mt19937 rng(std::time(nullptr));
 	std::uniform_real_distribution<float> offDist(0.0f, 1.0f);
 	for (int i = 0; i < raySteps; i++)
 	{
-		lightDataBufferStruct.samplePoints[i] = ((float)i + offDist(rng)) / (float)raySteps;
+		lightDataBufferStruct.samplePoints[i] = ((float)i + offDist(globalRNG)) / (float)raySteps;
 	}
 	
 	eg::DC.UpdateBuffer(lightDataBuffer, 0, sizeof(LightDataBuffer), &lightDataBufferStruct);

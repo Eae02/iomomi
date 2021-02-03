@@ -16,7 +16,7 @@ static size_t door2MeshIndex;
 
 static void OnInit()
 {
-	cubeSpawnerModel = &eg::GetAsset<eg::Model>("Models/CubeSpawner.obj");
+	cubeSpawnerModel = &eg::GetAsset<eg::Model>("Models/CubeSpawner.aa.obj");
 	lightsMaterialIndex = cubeSpawnerModel->GetMaterialIndex("Lights");
 	cubeSpawnerMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/CubeSpawner.yaml");
 	door1MeshIndex = cubeSpawnerModel->GetMeshIndex("Door1");
