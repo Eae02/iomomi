@@ -179,7 +179,15 @@ static float* causticsIntensity = eg::TweakVarFloat("cau_intensity", 10);
 static float* causticsColorOffset = eg::TweakVarFloat("cau_clr_offset", 1.5f);
 static float* causticsPanSpeed = eg::TweakVarFloat("cau_pan_speed", 0.05f);
 static float* causticsTexScale = eg::TweakVarFloat("cau_tex_scale", 0.5f);
-static float* shadowSoftness = eg::TweakVarFloat("shadow_softness", 1.5f);
+
+static const float shadowSoftnessByQualityLevel[] =
+{
+	0.0f,
+	0.5f,
+	0.7f,
+	1.0f,
+	1.5f
+};
 
 void DeferredRenderer::DrawPointLights(const std::vector<std::shared_ptr<PointLight>>& pointLights,
 	eg::TextureRef waterDepthTexture, RenderTexManager& rtManager, uint32_t shadowResolution) const
@@ -224,7 +232,7 @@ void DeferredRenderer::DrawPointLights(const std::vector<std::shared_ptr<PointLi
 	pc.causticsColorOffset = *causticsColorOffset;
 	pc.causticsPanSpeed = *causticsPanSpeed;
 	pc.causticsTexScale = *causticsTexScale;
-	pc.shadowSampleDist = *shadowSoftness / shadowResolution;
+	pc.shadowSampleDist = shadowSoftnessByQualityLevel[(int)settings.shadowQuality] / shadowResolution;
 	
 	for (const std::shared_ptr<PointLight>& light : pointLights)
 	{

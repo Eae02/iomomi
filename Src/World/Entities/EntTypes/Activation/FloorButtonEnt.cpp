@@ -226,7 +226,7 @@ void FloorButtonEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir
 
 int FloorButtonEnt::GetEditorIconIndex() const
 {
-	return -1;
+	return 15;
 }
 
 eg::Span<const EditorSelectionMesh> FloorButtonEnt::GetEditorSelectionMeshes() const

@@ -150,3 +150,8 @@ void DecalEnt::SetWallRotation(float _rotation)
 {
 	rotation = _rotation;
 }
+
+int DecalEnt::GetEditorIconIndex() const
+{
+	return 19;
+}

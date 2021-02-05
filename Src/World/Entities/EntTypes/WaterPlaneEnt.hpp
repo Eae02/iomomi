@@ -22,6 +22,8 @@ public:
 	
 	glm::vec3 GetPosition() const override;
 	
+	int GetEditorIconIndex() const override;
+	
 	LiquidPlaneComp liquidPlane;
 	int densityBoost = 0;
 };

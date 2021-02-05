@@ -28,6 +28,8 @@ public:
 	glm::vec3 GetPosition() const override;
 	
 	void Update(const struct WorldUpdateArgs& args) override;
+	
+	int GetEditorIconIndex() const override;
 
 private:
 	glm::vec3 m_position;

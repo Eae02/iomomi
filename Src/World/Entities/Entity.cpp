@@ -2,7 +2,7 @@
 #include "Components/ActivatableComp.hpp"
 #include <imgui.h>
 
-std::unordered_map<EntTypeID, EntType> entTypeMap;
+std::optional<EntType> entityTypes[(size_t)EntTypeID::MAX];
 
 std::mt19937 Ent::s_nameGen;
 
@@ -41,7 +41,7 @@ eg::AABB Ent::GetAABB(float scale, float upDist, Dir facingDirection) const
 
 EntTypeFlags Ent::TypeFlags() const
 {
-	return entTypeMap.at(m_typeID).flags;
+	return entityTypes[(int)m_typeID]->flags;
 }
 
 void Ent::Update(const struct WorldUpdateArgs& args) { }
@@ -50,7 +50,7 @@ void Ent::Spawned(bool isEditor) { }
 
 std::shared_ptr<Ent> Ent::Clone() const
 {
-	std::shared_ptr<Ent> clone = entTypeMap.at(m_typeID).clone(*this);
+	std::shared_ptr<Ent> clone = entityTypes[(int)m_typeID]->clone(*this);
 	if (ActivatableComp* activatable = clone->GetComponentMut<ActivatableComp>())
 		activatable->GiveNewName();
 	return clone;
@@ -64,4 +64,13 @@ glm::vec3 Ent::GetEditorGridAlignment() const
 int Ent::GetEditorIconIndex() const
 {
 	return 5;
+}
+
+const EntType* GetEntityType(EntTypeID typeID)
+{
+	if ((int)typeID < 0 || (int)typeID >= (int)EntTypeID::MAX)
+		return nullptr;
+	if (!entityTypes[(int)typeID].has_value())
+		return nullptr;
+	return &*entityTypes[(int)typeID];
 }

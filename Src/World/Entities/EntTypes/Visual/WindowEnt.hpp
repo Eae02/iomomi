@@ -27,9 +27,11 @@ public:
 	
 	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
-	glm::vec3 GetPosition() const override;
-	
+	eg::Span<const EditorSelectionMesh> GetEditorSelectionMeshes() const override;
 	glm::vec3 GetEditorGridAlignment() const override;
+	int GetEditorIconIndex() const override;
+	
+	glm::vec3 GetPosition() const override;
 	
 	bool NeedsBlurredTextures() const;
 	
@@ -37,6 +39,7 @@ private:
 	void UpdateWaterBlock();
 	
 	glm::vec3 GetTranslationFromOriginMode() const;
+	glm::vec3 GetRenderTranslation() const;
 	
 	enum class WaterBlockMode
 	{

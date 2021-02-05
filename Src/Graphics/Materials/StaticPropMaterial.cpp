@@ -166,7 +166,7 @@ static void OnInit()
 	plsPipelineCI.vertexAttributes[2] = { 1, eg::DataType::Float32, 4, offsetof(StaticPropMaterial::InstanceData, transform) + 0 };
 	plsPipelineCI.vertexAttributes[3] = { 1, eg::DataType::Float32, 4, offsetof(StaticPropMaterial::InstanceData, transform) + 16 };
 	plsPipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 4, offsetof(StaticPropMaterial::InstanceData, transform) + 32 };
-	plsPipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 2, offsetof(StaticPropMaterial::InstanceData, textureRange) };
+	plsPipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 4, offsetof(StaticPropMaterial::InstanceData, textureRange) };
 	plsPipelineCI.label = "StaticPropPLS";
 	staticPropPipelinePLShadow[1] = eg::Pipeline::Create(plsPipelineCI);
 	

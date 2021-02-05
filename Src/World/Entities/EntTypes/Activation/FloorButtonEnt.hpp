@@ -11,7 +11,7 @@ public:
 	
 	static constexpr EntTypeID TypeID = EntTypeID::FloorButton;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::ShadowDrawableS |
-		EntTypeFlags::EditorWallMove | EntTypeFlags::HasPhysics;
+		EntTypeFlags::EditorWallMove | EntTypeFlags::HasPhysics | EntTypeFlags::OptionalEditorIcon;
 	
 	void RenderSettings() override;
 	

@@ -1,4 +1,5 @@
 #include "AxisAlignedQuadComp.hpp"
+#include "../Entity.hpp"
 #include "../../Dir.hpp"
 #include "../../Collision.hpp"
 
@@ -66,4 +67,36 @@ std::optional<glm::vec3> AxisAlignedQuadComp::CollisionGeometry::CheckCollision(
 	}
 	
 	return combiner.GetCorrection();
+}
+
+static const eg::Model* basicCubeModel;
+static eg::CollisionMesh basicCubeCollisionMesh;
+
+EditorSelectionMesh AxisAlignedQuadComp::GetEditorSelectionMesh(const glm::vec3& center, float depth) const
+{
+	if (basicCubeModel == nullptr)
+	{
+		basicCubeModel = &eg::GetAsset<eg::Model>("Models/BasicCube.aa.obj");
+		basicCubeCollisionMesh = basicCubeModel->MakeCollisionMesh();
+	}
+	
+	auto [tangent, bitangent] = GetTangents(0);
+	
+	EditorSelectionMesh mesh;
+	mesh.model = basicCubeModel;
+	mesh.collisionMesh = &basicCubeCollisionMesh;
+	mesh.transform = glm::translate(glm::mat4(1), center) * glm::mat4(
+		glm::vec4(-tangent * 0.5f, 0),
+		glm::vec4(bitangent * 0.5f, 0),
+		glm::vec4(GetNormal() * depth * 0.5f, 0),
+		glm::vec4(0, 0, 0, 1)
+	);
+	return mesh;
+}
+
+eg::Span<const EditorSelectionMesh> AxisAlignedQuadComp::GetEditorSelectionMeshes(const glm::vec3& center, float depth) const
+{
+	static EditorSelectionMesh selMesh;
+	selMesh = GetEditorSelectionMesh(center, depth);
+	return { &selMesh, 1 };
 }

@@ -40,7 +40,8 @@ enum class EntTypeFlags
 	Interactable       = 0x40,
 	DisableClone       = 0x80,
 	HasPhysics         = 0x100,
-	EditorRotatable    = 0x200
+	EditorRotatable    = 0x200,
+	OptionalEditorIcon = 0x400,
 };
 
 struct EditorSelectionMesh
@@ -181,4 +182,4 @@ struct EntType
 	std::shared_ptr<Ent> (*clone)(const Ent& ent);
 };
 
-extern std::unordered_map<EntTypeID, EntType> entTypeMap;
+const EntType* GetEntityType(EntTypeID typeID);

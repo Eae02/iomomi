@@ -4,6 +4,7 @@
 #include "../../World/Entities/EntTypes/Activation/ActivationLightStripEnt.hpp"
 #include "../../World/Entities/Components/ActivatorComp.hpp"
 #include "../../ImGuiInterface.hpp"
+#include "../../Settings.hpp"
 
 #include <imgui.h>
 
@@ -36,10 +37,9 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 		{
 			if (std::shared_ptr<Ent> entity = entityWeak.lock())
 			{
-				if ((entity = entity->Clone()))
+				if (std::shared_ptr<Ent> clonedEntity = entity->Clone())
 				{
-					entityWeak = entity;
-					editorState.world->entManager.AddEntity(std::move(entity));
+					editorState.world->entManager.AddEntity(std::move(clonedEntity));
 				}
 			}
 		}
@@ -186,8 +186,10 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 			}
 		}
 		
-		if (m_translationGizmo.HasInputFocus())
+		if (m_translationGizmo.HasInputFocus() || m_translationGizmo.IsHovered())
+		{
 			blockFurtherInput = true;
+		}
 	}
 	
 	//Updates m_canRotate
@@ -240,6 +242,10 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 						entitySP->EditorRotated(m_rotationValue * entity.initialRotation);
 					}
 				}
+			}
+			
+			if (m_rotationGizmo.HasInputFocus() || m_rotationGizmo.IsHovered())
+			{
 				blockFurtherInput = true;
 			}
 		}
@@ -272,7 +278,7 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 	if (!blockFurtherInput)
 	{
 		const VoxelRayIntersectResult voxelRayIR = editorState.world->voxels.RayIntersect(editorState.viewRay);
-		float closestSelMeshIntersect = INFINITY;//voxelRayIR.intersected ? voxelRayIR.intersectDist + 0.5f : INFINITY;
+		float closestSelMeshIntersect = voxelRayIR.intersected ? voxelRayIR.intersectDist + 0.5f : INFINITY;
 		editorState.world->entManager.ForEach([&] (Ent& entity)
 		{
 			if (eg::HasFlag(entity.TypeFlags(), EntTypeFlags::EditorInvisible))
@@ -325,12 +331,12 @@ void EntityEditorComponent::RenderSettings(const EditorState& editorState)
 		if (entity == nullptr)
 			continue;
 		
-		const EntType& entType = entTypeMap.at(entity->TypeID());
-		if (eg::HasFlag(entType.flags, EntTypeFlags::EditorInvisible))
+		const EntType* entType = GetEntityType(entity->TypeID());
+		if (entType == nullptr || eg::HasFlag(entType->flags, EntTypeFlags::EditorInvisible))
 			continue;
 		
 		ImGui::PushID(entity->Name());
-		if (ImGui::CollapsingHeader(entType.prettyName.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+		if (ImGui::CollapsingHeader(entType->prettyName.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			entity->RenderSettings();
 			
@@ -367,22 +373,26 @@ bool EntityEditorComponent::CollectIcons(const EditorState& editorState, std::ve
 		if (eg::HasFlag(entity.TypeFlags(), EntTypeFlags::EditorInvisible))
 			return;
 		
-		int iconIndex = entity.GetEditorIconIndex();
+		if (eg::HasFlag(entity.TypeFlags(), EntTypeFlags::OptionalEditorIcon) &&
+			!settings.edEntityIconEnabled.at((int)entity.TypeID()))
+		{
+			return;
+		}
+		
+		const int iconIndex = entity.GetEditorIconIndex();
 		if (iconIndex == -1)
 			return;
 		
-		bool alreadySelected = editorState.IsEntitySelected(entity);
-		
 		EditorIcon icon = editorState.CreateIcon(entity.GetPosition(),
-			[entityWP = entity.shared_from_this(), selected = editorState.selectedEntities, alreadySelected] ()
+			[entityWP = entity.shared_from_this(), es = &editorState] ()
 			{
-				if (!alreadySelected)
+				if (!es->IsEntitySelected(*entityWP))
 				{
-					selected->push_back(move(entityWP));
+					es->selectedEntities->push_back(move(entityWP));
 				}
 			});
-		icon.iconIndex = entity.GetEditorIconIndex();
-		icon.selected = alreadySelected;
+		icon.iconIndex = iconIndex;
+		icon.selected = editorState.IsEntitySelected(entity);
 		icons.push_back(std::move(icon));
 	});
 	

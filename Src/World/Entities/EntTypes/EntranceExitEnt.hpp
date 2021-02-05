@@ -31,8 +31,6 @@ public:
 	
 	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
-	eg::Span<const EditorSelectionMesh> GetEditorSelectionMeshes() const override;
-	
 	void InitPlayer(class Player& player);
 	
 	static void MovePlayer(const EntranceExitEnt& oldExit, const EntranceExitEnt& newEntrance, class Player& player);

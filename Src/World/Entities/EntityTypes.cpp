@@ -37,20 +37,27 @@ const EntTypeID entUpdateOrder[NUM_UPDATABLE_ENTITY_TYPES] =
 	EntTypeID::WaterWall
 };
 
+extern std::optional<EntType> entityTypes[(size_t)EntTypeID::MAX];
+
 template <typename T>
 void DefineEntityType(std::string name, std::string prettyName)
 {
-	bool ok = entTypeMap.emplace(T::TypeID, EntType {
+	if ((int)T::TypeID < 0 || (int)T::TypeID >= (int)EntTypeID::MAX)
+	{
+		EG_PANIC("Entity " << name << " using out of range id!");
+	}
+	if (entityTypes[(int)T::TypeID].has_value())
+	{
+		EG_PANIC("Entity " << name << " using occupied type id!");
+	}
+	
+	entityTypes[((int)T::TypeID)] = EntType {
 		T::EntFlags,
 		std::move(name),
 		std::move(prettyName),
 		&Ent::CreateCallback<T>,
 		&CloneEntity<T>
-	}).second;
-	if (!ok)
-	{
-		EG_PANIC("Entity " << name << " using occupied type id!");
-	}
+	};
 }
 
 void InitEntityTypes()

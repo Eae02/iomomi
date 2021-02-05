@@ -54,3 +54,8 @@ void GooPlaneEnt::Deserialize(std::istream& stream)
 	m_liquidPlane.position = DeserializePos(gooPlanePB);
 	m_liquidPlane.wallForward = (Dir)gooPlanePB.wall_dir();
 }
+
+int GooPlaneEnt::GetEditorIconIndex() const
+{
+	return 17;
+}

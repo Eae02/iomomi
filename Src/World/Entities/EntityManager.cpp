@@ -67,9 +67,12 @@ void EntityManager::ComponentTracker::MaybeAdd(const std::shared_ptr<Ent>& entit
 EntityManager EntityManager::Deserialize(std::istream& stream)
 {
 	std::unordered_map<uint32_t, const EntType*> serializerMap;
-	for (const auto& entType : entTypeMap)
+	for (int entityType = 0; entityType < (int)EntTypeID::MAX; entityType++)
 	{
-		serializerMap.emplace(eg::HashFNV1a32(entType.second.name), &entType.second);
+		if (const EntType* type = GetEntityType((EntTypeID)entityType))
+		{
+			serializerMap.emplace(eg::HashFNV1a32(type->name), type);
+		}
 	}
 	
 	EntityManager mgr;
@@ -112,8 +115,8 @@ void EntityManager::Serialize(std::ostream& stream) const
 	eg::BinWrite(stream, totalEntities);
 	const_cast<EntityManager*>(this)->ForEach([&] (const Ent& entity)
 	{
-		const EntType& entType = entTypeMap.at(entity.TypeID());
-		eg::BinWrite(stream, (uint32_t)eg::HashFNV1a32(entType.name));
+		const EntType* entType = GetEntityType(entity.TypeID());
+		eg::BinWrite(stream, (uint32_t)eg::HashFNV1a32(entType->name));
 		
 		std::ostringstream serializeStream;
 		entity.Serialize(serializeStream);

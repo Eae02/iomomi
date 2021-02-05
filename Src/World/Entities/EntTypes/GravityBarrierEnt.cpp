@@ -413,3 +413,13 @@ void GravityBarrierEnt::EditorMoved(const glm::vec3& newPosition, std::optional<
 	m_position = newPosition;
 	m_waterBlockComponentOutOfDate = true;
 }
+
+int GravityBarrierEnt::GetEditorIconIndex() const
+{
+	return -1;
+}
+
+eg::Span<const EditorSelectionMesh> GravityBarrierEnt::GetEditorSelectionMeshes() const
+{
+	return m_aaQuad.GetEditorSelectionMeshes(m_position, 0.1f);
+}

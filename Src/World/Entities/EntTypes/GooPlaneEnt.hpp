@@ -30,6 +30,8 @@ public:
 	
 	glm::vec3 GetPosition() const override { return m_liquidPlane.position; }
 	
+	int GetEditorIconIndex() const override;
+
 private:
 	LiquidPlaneComp m_liquidPlane;
 	GooPlaneMaterial m_material;

@@ -19,6 +19,7 @@ void Start(eg::RunConfig& runConfig)
 {
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
 	
+	InitEntityTypes();
 	LoadSettings();
 	eg::TextureAssetQuality = settings.textureQuality;
 	
@@ -41,7 +42,6 @@ void Start(eg::RunConfig& runConfig)
 		
 		eg::SpriteFont::LoadDevFont();
 		eg::console::Init();
-		InitEntityTypes();
 		StaticPropMaterial::InitAssetTypes();
 		DecalMaterial::InitAssetTypes();
 		if (!eg::LoadAssets("assets", "/"))

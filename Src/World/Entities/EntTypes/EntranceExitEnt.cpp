@@ -33,8 +33,6 @@ struct
 	
 	const eg::Model* editorEntModel;
 	const eg::Model* editorExitModel;
-	eg::CollisionMesh editorEntCollisionMesh;
-	eg::CollisionMesh editorExitCollisionMesh;
 	const eg::IMaterial* editorEntMaterial;
 	const eg::IMaterial* editorExitMaterial;
 	
@@ -55,9 +53,6 @@ static void OnInit()
 	entrance.model = &eg::GetAsset<eg::Model>("Models/EnterRoom.obj");
 	entrance.editorEntModel = &eg::GetAsset<eg::Model>("Models/EditorEntrance.aa.obj");
 	entrance.editorExitModel = &eg::GetAsset<eg::Model>("Models/EditorExit.aa.obj");
-	
-	entrance.editorEntCollisionMesh = entrance.editorEntModel->MakeCollisionMesh();
-	entrance.editorExitCollisionMesh = entrance.editorExitModel->MakeCollisionMesh();
 	
 	entrance.materials.resize(entrance.model->NumMaterials(), &eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml"));
 	AssignMaterial("Floor",       "Materials/Entrance/Floor.yaml");
@@ -479,17 +474,7 @@ void EntranceExitEnt::CollectPointLights(std::vector<std::shared_ptr<PointLight>
 
 int EntranceExitEnt::GetEditorIconIndex() const
 {
-	return -1;
-	//return 13 + (int)m_type;
-}
-
-eg::Span<const EditorSelectionMesh> EntranceExitEnt::GetEditorSelectionMeshes() const
-{
-	static EditorSelectionMesh selectionMesh;
-	selectionMesh.model = m_type == Type::Entrance ? entrance.editorEntModel : entrance.editorExitModel;
-	selectionMesh.collisionMesh = m_type == Type::Entrance ? &entrance.editorEntCollisionMesh : &entrance.editorExitCollisionMesh;
-	selectionMesh.transform = GetEditorTransform();
-	return { &selectionMesh, 1 };
+	return 13 + (int)m_type;
 }
 
 template <>

@@ -1,5 +1,7 @@
 #pragma once
 
+struct EditorSelectionMesh;
+
 struct AxisAlignedQuadComp
 {
 	int upPlane = 0;
@@ -17,4 +19,9 @@ struct AxisAlignedQuadComp
 	};
 	
 	CollisionGeometry GetCollisionGeometry(const glm::vec3& center, float depth) const;
+	
+	EditorSelectionMesh GetEditorSelectionMesh(const glm::vec3& center, float depth) const;
+	
+	//Convenience wrapper around GetEditorSelectionMesh which returns a reference to a common EditorSelectionMesh.
+	eg::Span<const EditorSelectionMesh> GetEditorSelectionMeshes(const glm::vec3& center, float depth) const;
 };

@@ -233,6 +233,16 @@ bool WindowEnt::NeedsBlurredTextures() const
 	return windowTypes[m_windowType].needsBlurredTextures;
 }
 
+glm::vec3 WindowEnt::GetRenderTranslation() const
+{
+	glm::vec3 translation = m_physicsObject.position;
+	if (m_originMode == OriginMode::Top)
+		translation -= m_aaQuad.GetNormal() * m_depth * 0.5f;
+	else if (m_originMode == OriginMode::Bottom)
+		translation += m_aaQuad.GetNormal() * m_depth * 0.5f;
+	return translation;
+}
+
 void WindowEnt::CommonDraw(const EntDrawArgs& args)
 {
 	const eg::IMaterial& material = *windowTypes[m_windowType].material;
@@ -242,20 +252,16 @@ void WindowEnt::CommonDraw(const EntDrawArgs& args)
 	
 	auto [tangent, bitangent] = m_aaQuad.GetTangents(0);
 	const glm::vec3 normal = m_aaQuad.GetNormal();
-	
-	glm::mat4 translationMatrix = glm::translate(glm::mat4(1), m_physicsObject.position);
-	if (m_originMode == OriginMode::Top)
-		translationMatrix = glm::translate(translationMatrix, -normal * m_depth * 0.5f);
-	else if (m_originMode == OriginMode::Bottom)
-		translationMatrix = glm::translate(translationMatrix, normal * m_depth * 0.5f);
+	const glm::vec3 translation = GetRenderTranslation();
+	const glm::mat4 translationMatrix = glm::translate(glm::mat4(1), translation);
 	
 	//Draws the frame
 	if (m_hasFrame)
 	{
 		const StaticPropMaterial& frameMaterial = *frameMaterials[m_frameMaterial].material;
 		
-		const glm::mat4 frameCommonTransform = translationMatrix *
-			glm::translate(glm::mat4(), (tangent - bitangent) * 0.5f) *
+		const glm::mat4 frameCommonTransform = 
+			glm::translate(glm::mat4(), translation + (tangent - bitangent) * 0.5f) *
 			glm::mat4(
 				glm::vec4(glm::normalize(bitangent) * m_frameScale, 0),
 				glm::vec4(glm::normalize(tangent) * m_frameScale, 0),
@@ -461,4 +467,14 @@ glm::vec3 WindowEnt::GetTranslationFromOriginMode() const
 		return m_aaQuad.GetNormal() * m_depth * 0.5f;
 	}
 	EG_UNREACHABLE
+}
+
+int WindowEnt::GetEditorIconIndex() const
+{
+	return -1;
+}
+
+eg::Span<const EditorSelectionMesh> WindowEnt::GetEditorSelectionMeshes() const
+{
+	return m_aaQuad.GetEditorSelectionMeshes(GetRenderTranslation(), m_depth);
 }

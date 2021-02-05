@@ -259,6 +259,19 @@ void Editor::RunFrame(float dt)
 				m_levelSettingsWindowOpen = true;
 			if (ImGui::MenuItem("Level Select"))
 				m_levelSelectWindowOpen = true;
+			
+			ImGui::Separator();
+			ImGui::TextDisabled("Icons");
+			
+			for (int entityType = 0; entityType < (int)EntTypeID::MAX; entityType++)
+			{
+				const EntType* type = GetEntityType((EntTypeID)entityType);
+				if (type != nullptr && eg::HasFlag(type->flags, EntTypeFlags::OptionalEditorIcon))
+				{
+					ImGui::MenuItem(type->prettyName.c_str(), nullptr, &settings.edEntityIconEnabled[entityType]);
+				}
+			}
+			
 			ImGui::EndMenu();
 		}
 		ImGui::EndMainMenuBar();

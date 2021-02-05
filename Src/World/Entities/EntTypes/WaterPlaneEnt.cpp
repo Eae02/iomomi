@@ -54,3 +54,8 @@ void WaterPlaneEnt::RenderSettings()
 	if (ImGui::DragInt("Density Boost", &densityBoost))
 		densityBoost = std::max(densityBoost, 0);
 }
+
+int WaterPlaneEnt::GetEditorIconIndex() const
+{
+	return 16;
+}

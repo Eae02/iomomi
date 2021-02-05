@@ -42,11 +42,13 @@ void WaterWallEnt::EditorDraw(const EntEditorDrawArgs& args)
 	};
 	
 	eg::ColorSRGB color = eg::ColorSRGB::FromRGBAHex(0x7034DA99);
+	color = color.ScaleAlpha(args.getDrawMode(this) == EntEditorDrawMode::Selected ? 0.5f : 0.1f);
+	
 	args.primitiveRenderer->AddLine(vertices[0], vertices[1], color);
 	args.primitiveRenderer->AddLine(vertices[0], vertices[2], color);
 	args.primitiveRenderer->AddLine(vertices[3], vertices[1], color);
 	args.primitiveRenderer->AddLine(vertices[3], vertices[2], color);
-	args.primitiveRenderer->AddQuad(vertices, color.ScaleAlpha(0.1f));
+	args.primitiveRenderer->AddQuad(vertices, color);
 }
 
 void WaterWallEnt::Update(const WorldUpdateArgs& args)
@@ -112,4 +114,9 @@ void WaterWallEnt::Deserialize(std::istream& stream)
 	}
 	
 	m_waterBlockComp.InitFromAAQuadComponent(m_aaQuad, m_position);
+}
+
+int WaterWallEnt::GetEditorIconIndex() const
+{
+	return 18;
 }

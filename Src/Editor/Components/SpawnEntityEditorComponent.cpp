@@ -79,10 +79,10 @@ void SpawnEntityEditorComponent::Update(float dt, const EditorState& editorState
 			
 			for (EntTypeID entityTypeId : entityGroup.second)
 			{
-				auto entityType = entTypeMap.find(entityTypeId);
-				if (entityType == entTypeMap.end())
+				const EntType* entityType = GetEntityType(entityTypeId);
+				if (entityType == nullptr)
 					continue;
-				const std::string& entityName = entityType->second.prettyName;
+				const std::string& entityName = entityType->prettyName;
 				
 				//Checks the entry against the search query
 				if (hasSearchString)
@@ -99,7 +99,7 @@ void SpawnEntityEditorComponent::Update(float dt, const EditorState& editorState
 				bool chooseOnEnter = hasSearchString && isFirstItem;
 				if (ImGui::MenuItem(entityName.c_str(), chooseOnEnter ? "Enter" : "") || (chooseOnEnter && eg::IsButtonDown(eg::Button::Enter)))
 				{
-					std::shared_ptr<Ent> entity = entityType->second.create();
+					std::shared_ptr<Ent> entity = entityType->create();
 					entity->EditorMoved(m_spawnEntityPickResult.intersectPosition, m_spawnEntityPickResult.normalDir);
 					editorState.world->entManager.AddEntity(std::move(entity));
 					

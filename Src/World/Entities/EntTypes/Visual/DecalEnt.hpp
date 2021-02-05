@@ -9,7 +9,8 @@ public:
 	DecalEnt();
 	
 	static constexpr EntTypeID TypeID = EntTypeID::Decal;
-	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::EditorWallMove;
+	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
+		EntTypeFlags::EditorWallMove | EntTypeFlags::OptionalEditorIcon;
 	
 	void SetMaterialByName(std::string_view materialName);
 	const char* GetMaterialName() const;
@@ -26,6 +27,7 @@ public:
 	glm::vec3 GetPosition() const override { return m_position; }
 	Dir GetFacingDirection() const override { return m_direction; }
 	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	int GetEditorIconIndex() const override;
 	
 	float GetWallRotation() const override;
 	void SetWallRotation(float _rotation) override;

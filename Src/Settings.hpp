@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Graphics/QualityLevel.hpp"
+#include "World/Entities/EntityTypes.hpp"
 
 enum class DisplayMode
 {
@@ -56,6 +57,8 @@ struct Settings
 	float lookSensitivityGP = 2.0f;
 	bool flipJoysticks      = false;
 	bool lookInvertY        = false;
+	
+	std::array<bool, (int)EntTypeID::MAX> edEntityIconEnabled;
 	
 	bool HDREnabled() const
 	{

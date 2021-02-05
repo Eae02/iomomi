@@ -10,7 +10,8 @@ public:
 	
 	static constexpr EntTypeID TypeID = EntTypeID::Mesh;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
-		EntTypeFlags::ShadowDrawableS | EntTypeFlags::EditorRotatable | EntTypeFlags::HasPhysics;
+		EntTypeFlags::ShadowDrawableS | EntTypeFlags::EditorRotatable | EntTypeFlags::HasPhysics |
+		EntTypeFlags::OptionalEditorIcon;
 	
 	void Serialize(std::ostream& stream) const override;
 	
