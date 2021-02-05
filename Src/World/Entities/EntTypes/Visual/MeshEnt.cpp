@@ -17,8 +17,9 @@ struct ModelOption
 	glm::vec2 repeatUVShift;
 	std::vector<std::pair<const char*, const eg::IMaterial*>> materialOptions;
 	
-	bool blockGun = false;
+	int rayMask = RAY_MASK_BLOCK_GUN | RAY_MASK_BLOCK_PICK_UP;
 	bool useMeshAABBForCollision = false;
+	bool repetitionsUseScaledCollisionMesh = false;
 	std::optional<eg::CollisionMesh> collisionMesh;
 	
 	eg::CollisionMesh selectionMesh;
@@ -35,8 +36,7 @@ struct ModelOption
 		
 		if (!meshName.empty())
 		{
-			meshIndex = model->GetMeshIndex(meshName);
-			EG_ASSERT(meshIndex != -1);
+			meshIndex = model->RequireMeshIndex(meshName);
 			selectionMesh = model->MakeCollisionMesh(meshIndex);
 		}
 		else
@@ -58,34 +58,38 @@ static void OnInit()
 {
 	ModelOption railingCenter("Models/Railing.aa.obj", "center", {"Materials/Railing.yaml" });
 	railingCenter.name = "Railing";
+	railingCenter.rayMask = RAY_MASK_BLOCK_PICK_UP;
 	railingCenter.serializedName = "RailingCenter";
 	railingCenter.SetCollisionMesh("Models/Railing.col.obj");
 	modelOptions.push_back(std::move(railingCenter));
 	
 	ModelOption railingCorner("Models/Railing.aa.obj", "edge", {"Materials/Railing.yaml" });
 	railingCorner.name = "Railing (corner)";
+	railingCorner.rayMask = 0;
 	railingCorner.serializedName = "RailingCorner";
 	modelOptions.push_back(std::move(railingCorner));
 	
 	ModelOption pipeStraight("Models/Pipe.aa.obj", "straight", {"Materials/PipeCenter.yaml" });
 	pipeStraight.name = "Pipe (straight)";
 	pipeStraight.serializedName = "PipeS";
+	pipeStraight.collisionMesh = pipeStraight.model->MakeCollisionMesh(pipeStraight.model->RequireMeshIndex("straight.col"));
+	pipeStraight.collisionMesh->FlipWinding();
 	pipeStraight.repeatAxis = 1;
 	pipeStraight.repeatDistance = 1;
 	pipeStraight.repeatUVShift = { 0.32f, 0.0f };
-	pipeStraight.blockGun = true;
-	pipeStraight.useMeshAABBForCollision = true;
+	pipeStraight.repetitionsUseScaledCollisionMesh = true;
 	modelOptions.push_back(std::move(pipeStraight));
 	
 	ModelOption pipeBend("Models/Pipe.aa.obj", "bend", {"Materials/PipeCenter.yaml" });
 	pipeBend.name = "Pipe (bend)";
 	pipeBend.serializedName = "PipeB";
-	pipeBend.blockGun = true;
-	pipeBend.useMeshAABBForCollision = true;
+	pipeBend.collisionMesh = pipeBend.model->MakeCollisionMesh(pipeBend.model->RequireMeshIndex("bend.col"));
+	//pipeBend.collisionMesh->FlipWinding();
 	modelOptions.push_back(std::move(pipeBend));
 	
-	ModelOption pipeRing("Models/Pipe.aa.obj", "connection", {"Materials/Default.yaml" });
+	ModelOption pipeRing("Models/Pipe.aa.obj", "connection", {"Materials/PipeRing.yaml" });
 	pipeRing.name = "Pipe (ring)";
+	pipeRing.rayMask = 0;
 	pipeRing.serializedName = "PipeR";
 	modelOptions.push_back(std::move(pipeRing));
 }
@@ -95,15 +99,19 @@ EG_ON_INIT(OnInit)
 MeshEnt::MeshEnt()
 {
 	m_scale = glm::vec3(1);
-	
-	m_physicsObject.canBePushed = false;
-	m_physicsObject.debugColor = 0x12b81a;
 	m_randomTextureOffset = std::uniform_real_distribution<float>(0, 10000)(globalRNG);
 }
 
 void MeshEnt::RenderSettings()
 {
 	Ent::RenderSettings();
+	
+	float uniformScale = (m_scale.x + m_scale.y + m_scale.z) / 3.0f;
+	if (ImGui::DragFloat("Scale (Uniform)", &uniformScale, 0.1f))
+	{
+		m_scale = glm::vec3(uniformScale);
+		UpdateEditorSelectionMeshes();
+	}
 	
 	if (ImGui::DragFloat3("Scale", &m_scale.x, 0.1f))
 	{
@@ -161,16 +169,21 @@ void MeshEnt::RenderSettings()
 	ImPopDisabled(repeatDisabled);
 }
 
+glm::mat4 MeshEnt::GetCommonTransform() const
+{
+	return
+		glm::translate(glm::mat4(1), m_position) *
+		glm::mat4_cast(m_rotation) *
+		glm::scale(glm::mat4(1), m_scale);
+}
+
 template <typename CallbackFn>
 void MeshEnt::IterateRepeatedInstances(CallbackFn callback) const
 {
 	if (!m_model.has_value())
 		return;
 	
-	glm::mat4 commonTransform =
-		glm::translate(glm::mat4(1), m_position) *
-		glm::mat4_cast(m_rotation) *
-		glm::scale(glm::mat4(1), m_scale);
+	const glm::mat4 commonTransform = GetCommonTransform();
 	
 	for (int i = std::min(m_numRepeats, 0); i <= std::max(m_numRepeats, 0); i++)
 	{
@@ -284,14 +297,29 @@ void MeshEnt::Deserialize(std::istream& stream)
 	{
 		const ModelOption& model = modelOptions[*m_model];
 		
-		m_physicsObject.position = m_position;
-		m_physicsObject.rotation = m_rotation;
-		m_physicsObject.rayIntersectMask = model.blockGun ? RAY_MASK_BLOCK_GUN : 0;
+		m_physicsObject = PhysicsObject();
+		m_physicsObject->rayIntersectMask = model.rayMask;
+		m_physicsObject->canBePushed = false;
+		m_physicsObject->debugColor = 0x12b81a;
 		
 		if (model.collisionMesh.has_value())
 		{
-			m_physicsObject.shape = &*model.collisionMesh;
-			m_hasCollision = true;
+			glm::mat4 transform = GetCommonTransform();
+			
+			if (m_numRepeats != 0 && model.repeatAxis != -1 && model.repetitionsUseScaledCollisionMesh)
+			{
+				glm::vec3 repeatDir(0);
+				repeatDir[model.repeatAxis] = m_numRepeats;
+				if (m_numRepeats < 0)
+				{
+					transform = glm::translate(transform, repeatDir * model.repeatDistance);
+				}
+				transform = glm::scale(transform, glm::abs(repeatDir) + 1.0f);
+			}
+			
+			m_collisionMesh = *model.collisionMesh;
+			m_collisionMesh.Transform(transform);
+			m_physicsObject->shape = &m_collisionMesh;
 		}
 		else if (model.useMeshAABBForCollision && model.meshIndex != -1)
 		{
@@ -305,11 +333,9 @@ void MeshEnt::Deserialize(std::istream& stream)
 				aabb.max = glm::max(aabb.max, aabb.max + repeatDir);
 			}
 			
-			aabb.min *= m_scale;
-			aabb.max *= m_scale;
+			aabb = aabb.TransformedBoundingBox(GetCommonTransform());
 			
-			m_physicsObject.shape = aabb;
-			m_hasCollision = true;
+			m_physicsObject->shape = aabb;
 		}
 	}
 	
@@ -318,9 +344,9 @@ void MeshEnt::Deserialize(std::istream& stream)
 
 void MeshEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 {
-	if (m_hasCollision)
+	if (m_physicsObject.has_value())
 	{
-		physicsEngine.RegisterObject(&m_physicsObject);
+		physicsEngine.RegisterObject(&*m_physicsObject);
 	}
 }
 

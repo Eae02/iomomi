@@ -31,6 +31,8 @@ public:
 	eg::Span<const EditorSelectionMesh> GetEditorSelectionMeshes() const override;
 	
 private:
+	glm::mat4 GetCommonTransform() const;
+	
 	template <typename CallbackFn>
 	void IterateRepeatedInstances(CallbackFn callback) const;
 	
@@ -45,8 +47,8 @@ private:
 	int m_numRepeats = 0;
 	float m_randomTextureOffset = 0;
 	
-	bool m_hasCollision = false;
-	PhysicsObject m_physicsObject;
+	eg::CollisionMesh m_collisionMesh;
+	std::optional<PhysicsObject> m_physicsObject;
 	
 	std::vector<EditorSelectionMesh> m_editorSelectionMeshes;
 };
