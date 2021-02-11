@@ -2,8 +2,8 @@
 
 #include "../Entity.hpp"
 #include "../EntInteractable.hpp"
-#include "../../../Graphics/Materials/GravitySwitchVolLightMaterial.hpp"
 #include "../Components/ActivatableComp.hpp"
+#include "../../../Graphics/Materials/GravitySwitchVolLightMaterial.hpp"
 #include "../../../Graphics/Materials/GravitySwitchMaterial.hpp"
 
 class GravitySwitchEnt : public Ent, public EntInteractable

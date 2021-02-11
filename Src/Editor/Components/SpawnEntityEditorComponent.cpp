@@ -32,7 +32,8 @@ const static std::pair<std::string, std::vector<EntTypeID>> entityGroups[] =
 			EntTypeID::ForceField,
 			EntTypeID::GravityBarrier,
 			EntTypeID::GravitySwitch,
-			EntTypeID::Ladder
+			EntTypeID::Ladder,
+			EntTypeID::Collider,
 		}
 	},
 	{

@@ -1,4 +1,4 @@
-PROTOBUFS=Dir World EntranceEntity WallLightEntity GravitySwitchEntity FloorButtonEntity MeshEntity \
+PROTOBUFS=Dir World EntranceEntity WallLightEntity GravitySwitchEntity FloorButtonEntity MeshEntity ColliderEntity \
 CubeEntity GooPlaneEntity WaterPlaneEntity DecalEntity PlatformEntity GravityBarrierEntity PointLightEntity \
 Activator Vec CubeSpawnerEntity ForceFieldEntity Ramp WindowEntity WaterWallEntity SlidingWallEntity LadderEntity
 BUILD_DIR=Build

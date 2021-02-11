@@ -134,7 +134,7 @@ void PhysicsEngine::ApplyMovement(PhysicsObject& object, float dt, const Collisi
 	constexpr float MIN_MOVE_LEN = 1E-4f;
 	constexpr float MAX_MOVE_LEN = 10;
 	constexpr float MAX_MOVE_PER_STEP = 0.5f;
-	constexpr int MAX_ITERATIONS = 5;
+	constexpr int MAX_ITERATIONS = 20;
 	for (int i = 0; i < MAX_ITERATIONS && didCollide; i++)
 	{
 		float moveLen = glm::length(object.move);

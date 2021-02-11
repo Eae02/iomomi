@@ -22,6 +22,7 @@ enum class EntTypeID
 	SlidingWall          = 17,
 	Ladder               = 18,
 	PointLight           = 19,
+	Collider             = 20,
 	MAX
 };
  

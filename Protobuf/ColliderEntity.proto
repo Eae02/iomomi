@@ -1,0 +1,13 @@
+syntax="proto3";
+
+package gravity_pb;
+
+message ColliderEntity {
+  float posX = 1;
+  float posY = 2;
+  float posZ = 3;
+  float radX = 4;
+  float radY = 5;
+  float radZ = 6;
+  fixed32 block_bit_mask = 7;
+}

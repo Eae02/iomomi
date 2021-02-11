@@ -281,18 +281,6 @@ void EditorWorld::Update(float dt, EditorTool currentTool)
 		comp->Update(dt, m_editorState);
 	}
 	
-	if (canUpdateInput)
-	{
-		for (EditorComponent* comp : m_componentsForTool[(int)currentTool])
-		{
-			if (comp->UpdateInput(dt, m_editorState))
-			{
-				canUpdateInput = false;
-				break;
-			}
-		}
-	}
-	
 	m_icons.clear();
 	for (EditorComponent* comp : m_componentsForTool[(int)currentTool])
 	{
@@ -309,12 +297,28 @@ void EditorWorld::Update(float dt, EditorTool currentTool)
 	});
 	
 	m_hoveredIcon = -1;
+	m_editorState.anyIconHovered = false;
 	if (canUpdateInput)
 	{
 		for (size_t i = 0; i < m_icons.size(); i++)
 		{
 			if (m_icons[i].m_rectangle.Contains(m_editorState.windowCursorPos))
+			{
 				m_hoveredIcon = i;
+				m_editorState.anyIconHovered = true;
+			}
+		}
+	}
+	
+	if (canUpdateInput)
+	{
+		for (EditorComponent* comp : m_componentsForTool[(int)currentTool])
+		{
+			if (comp->UpdateInput(dt, m_editorState))
+			{
+				canUpdateInput = false;
+				break;
+			}
 		}
 	}
 	

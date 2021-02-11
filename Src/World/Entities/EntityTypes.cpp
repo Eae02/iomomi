@@ -21,6 +21,7 @@
 #include "EntTypes/WaterWallEnt.hpp"
 #include "EntTypes/SlidingWallEnt.hpp"
 #include "EntTypes/LadderEnt.hpp"
+#include "EntTypes/ColliderEnt.hpp"
 
 const EntTypeID entUpdateOrder[NUM_UPDATABLE_ENTITY_TYPES] =
 {
@@ -82,4 +83,5 @@ void InitEntityTypes()
 	DefineEntityType<LadderEnt>("Ladder", "Ladder");
 	DefineEntityType<PointLightEnt>("PointLight", "Point Light");
 	DefineEntityType<MeshEnt>("Mesh", "Mesh");
+	DefineEntityType<ColliderEnt>("Collider", "Collider");
 }

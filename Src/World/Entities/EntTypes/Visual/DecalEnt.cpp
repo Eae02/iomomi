@@ -11,7 +11,8 @@ static const char* decalMaterials[] =
 	"Stain1",
 	"Stain2",
 	"Arrow",
-	"WarningDecal"
+	"WarningDecal",
+	"Target"
 };
 
 DecalEnt::DecalEnt()

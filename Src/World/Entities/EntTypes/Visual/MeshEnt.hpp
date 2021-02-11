@@ -48,6 +48,8 @@ private:
 	int m_numRepeats = 0;
 	float m_randomTextureOffset = 0;
 	
+	bool m_hasCollision = true;
+	
 	eg::CollisionMesh m_collisionMesh;
 	std::optional<PhysicsObject> m_physicsObject;
 	

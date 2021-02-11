@@ -275,7 +275,7 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 	
 	//Updates the hovered selection mesh entity
 	m_hoveredSelMeshEntity = {};
-	if (!blockFurtherInput)
+	if (!blockFurtherInput && !editorState.anyIconHovered)
 	{
 		const VoxelRayIntersectResult voxelRayIR = editorState.world->voxels.RayIntersect(editorState.viewRay);
 		float closestSelMeshIntersect = voxelRayIR.intersected ? voxelRayIR.intersectDist + 0.5f : INFINITY;

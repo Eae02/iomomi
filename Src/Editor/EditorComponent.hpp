@@ -48,6 +48,7 @@ struct EditorState
 	eg::Ray viewRay;
 	std::vector<std::weak_ptr<Ent>>* selectedEntities;
 	EditorTool tool;
+	bool anyIconHovered = false;
 	
 	class SelectionRenderer* selectionRenderer;
 	class PrimitiveRenderer* primitiveRenderer;

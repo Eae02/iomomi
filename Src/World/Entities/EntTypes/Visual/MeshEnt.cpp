@@ -84,7 +84,7 @@ static void OnInit()
 	pipeBend.name = "Pipe (bend)";
 	pipeBend.serializedName = "PipeB";
 	pipeBend.collisionMesh = pipeBend.model->MakeCollisionMesh(pipeBend.model->RequireMeshIndex("bend.col"));
-	//pipeBend.collisionMesh->FlipWinding();
+	pipeBend.collisionMesh->FlipWinding();
 	modelOptions.push_back(std::move(pipeBend));
 	
 	ModelOption pipeRing("Models/Pipe.aa.obj", "connection", {"Materials/PipeRing.yaml" });
@@ -167,6 +167,15 @@ void MeshEnt::RenderSettings()
 		UpdateEditorSelectionMeshes();
 	}
 	ImPopDisabled(repeatDisabled);
+	
+	const bool collisionToggleDisabled = !m_model.has_value() ||
+		(!modelOptions[*m_model].useMeshAABBForCollision && !modelOptions[*m_model].collisionMesh.has_value());
+	ImPushDisabled(collisionToggleDisabled);
+	bool hasCollision = m_hasCollision && !collisionToggleDisabled;
+	ImGui::Checkbox("Has Collision", &hasCollision);
+	if (!collisionToggleDisabled)
+		m_hasCollision = hasCollision;
+	ImPopDisabled(collisionToggleDisabled);
 }
 
 glm::mat4 MeshEnt::GetCommonTransform() const
@@ -258,6 +267,7 @@ void MeshEnt::Serialize(std::ostream& stream) const
 	entityPB.set_model_name(m_model.has_value() ? modelOptions[*m_model].serializedName : "");
 	entityPB.set_material_index(m_material);
 	entityPB.set_num_repeats(m_numRepeats);
+	entityPB.set_disable_collision(!m_hasCollision);
 	
 	entityPB.SerializeToOstream(&stream);
 }
@@ -276,6 +286,7 @@ void MeshEnt::Deserialize(std::istream& stream)
 	m_rotation.z = entityPB.rotz();
 	m_rotation.w = entityPB.rotw();
 	m_numRepeats = entityPB.num_repeats();
+	m_hasCollision = !entityPB.disable_collision();
 	
 	m_model = {};
 	m_material = 0;
@@ -293,15 +304,9 @@ void MeshEnt::Deserialize(std::istream& stream)
 		}
 	}
 	
-	if (m_model.has_value())
+	if (m_model.has_value() && m_hasCollision)
 	{
 		const ModelOption& model = modelOptions[*m_model];
-		
-		m_physicsObject = PhysicsObject();
-		m_physicsObject->rayIntersectMask = model.rayMask;
-		m_physicsObject->canBePushed = false;
-		m_physicsObject->debugColor = 0x12b81a;
-		
 		if (model.collisionMesh.has_value())
 		{
 			glm::mat4 transform = GetCommonTransform();
@@ -319,6 +324,7 @@ void MeshEnt::Deserialize(std::istream& stream)
 			
 			m_collisionMesh = *model.collisionMesh;
 			m_collisionMesh.Transform(transform);
+			m_physicsObject = PhysicsObject();
 			m_physicsObject->shape = &m_collisionMesh;
 		}
 		else if (model.useMeshAABBForCollision && model.meshIndex != -1)
@@ -335,7 +341,16 @@ void MeshEnt::Deserialize(std::istream& stream)
 			
 			aabb = aabb.TransformedBoundingBox(GetCommonTransform());
 			
+			m_physicsObject = PhysicsObject();
 			m_physicsObject->shape = aabb;
+		}
+		
+		if (m_physicsObject.has_value())
+		{
+			m_physicsObject->rayIntersectMask = model.rayMask;
+			m_physicsObject->canBePushed = false;
+			m_physicsObject->debugColor = 0x12b81a;
+			m_physicsObject->owner = this;
 		}
 	}
 	

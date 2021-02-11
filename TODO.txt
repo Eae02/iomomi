@@ -1,9 +1,20 @@
 fixes:
  - water should be affected by force fields
  - physics object rotation
+ - bending pipe collision
+ - aim assist
+ - make gravity barriers red from water
 
-graphics fixes:
+misc:
+ - benchmarks
+ - lower shadow resolution
  - gun should be rendered after ssr
+ - fix flickering on nvidia + vulkan
+ - fix black water when reflection is low
+
+levels:
+ - pushable platforms
+ - water with force fields
 
 textures and models:
  - different graphics for pushable platforms
@@ -13,11 +24,13 @@ textures and models:
  - make doors not clip into the level change room's model
  - outdoor light sources
  - make cube snap to button
+ - scaffolding mesh
 
 features:
  - zero gravity mode
  - barriers that prevent falling
  - levers
+ - buttons that you press (not floor buttons)
  - moving force fields
  - water drains and emitters
  - the gun should be picked up rather than suddenly appearing
@@ -40,4 +53,5 @@ ui:
  - option for hud
    - crosshair (?)
    - control hints
+ - draggable scrollbar in level select screen
  - control menus using keyboard / controller
