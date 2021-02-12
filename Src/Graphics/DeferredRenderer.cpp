@@ -183,10 +183,10 @@ static float* causticsTexScale = eg::TweakVarFloat("cau_tex_scale", 0.5f);
 static const float shadowSoftnessByQualityLevel[] =
 {
 	0.0f,
-	0.5f,
-	0.7f,
+	0.0f,
 	1.0f,
-	1.5f
+	1.3f,
+	1.6f
 };
 
 void DeferredRenderer::DrawPointLights(const std::vector<std::shared_ptr<PointLight>>& pointLights,

@@ -6,13 +6,12 @@
 
 layout(location=0) in vec2 texCoord_in;
 
-layout(location=0) out vec4 depth_out;
+layout(location=0) out vec2 depths_out;
 
 layout(binding=0) uniform sampler2D depthSampler;
 
 #ifdef V1
 layout(binding=1) uniform sampler2D depthMaxSampler;
-layout(binding=2) uniform sampler2D glowIntensitySampler;
 #endif
 
 layout(constant_id=0) const int FILTER_RADIUS = 16;
@@ -33,13 +32,11 @@ void main()
 	vec4 centerSample = texture(depthSampler, texCoord_in);
 	
 #ifdef V1
-	float centerDepth       = linearizeDepth(depthTo01(centerSample.x));
-	float centerDepthMax    = linearizeDepth(depthTo01(texture(depthMaxSampler, texCoord_in).r));
-	float glowIntensity     = texture(glowIntensitySampler, texCoord_in).r;
+	float centerDepth       = linearizeDepth(centerSample.x);
+	float centerDepthMax    = linearizeDepth(texture(depthMaxSampler, texCoord_in).r);
 #else
 	float centerDepth       = centerSample.x;
 	float centerDepthMax    = centerSample.y;
-	float glowIntensity     = centerSample.z;
 #endif
 	
 	float centerTravelDepth = centerDepthMax - centerDepth;
@@ -54,8 +51,8 @@ void main()
 		
 #ifdef V1
 		vec2 s = vec2(
-			linearizeDepth(depthTo01(texture(depthSampler, tc).x)),
-			linearizeDepth(depthTo01(texture(depthMaxSampler, tc).x))
+			linearizeDepth(texture(depthSampler, tc).x),
+			linearizeDepth(texture(depthMaxSampler, tc).x)
 		);
 #else
 		vec2 s = texture(depthSampler, tc).xy;
@@ -75,7 +72,5 @@ void main()
 		wsum += weight;
 	}
 	
-	sum /= max(wsum, vec2(0.001));
-	
-	depth_out = vec4(sum, glowIntensity, 0);
+	depths_out = sum / max(wsum, vec2(0.001));
 }

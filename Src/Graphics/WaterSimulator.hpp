@@ -55,7 +55,7 @@ public:
 	
 	void Stop();
 	
-	void Update(const World& world, bool paused);
+	void Update(const World& world, const glm::vec3& cameraPos, bool paused);
 	
 	//Finds an intersection between the given ray and the water.
 	// Returns a pair of distance and particleIndex.

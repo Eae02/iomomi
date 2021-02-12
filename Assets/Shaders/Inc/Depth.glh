@@ -11,6 +11,11 @@ float depthTo01(float d)
 	return EG_OPENGL ? (d * 0.5 + 0.5) : d;
 }
 
+float depthFrom01(float d)
+{
+	return EG_OPENGL ? (d * 2 - 1) : d;
+}
+
 float linearizeDepth(float hDepth)
 {
 	return ZFar * ZNear / (ZFar - (hDepth * (ZFar - ZNear)));

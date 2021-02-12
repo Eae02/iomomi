@@ -86,7 +86,7 @@ void WaterSimulator::Init(World& world)
 	m_impl = WSI_New(newArgs);
 	
 	uint64_t bufferSize = sizeof(float) * 4 * m_numParticles;
-	m_positionsBuffer = eg::Buffer(eg::BufferFlags::CopyDst | eg::BufferFlags::VertexBuffer, bufferSize, nullptr);
+	m_positionsBuffer = eg::Buffer(eg::BufferFlags::CopyDst | eg::BufferFlags::StorageBuffer, bufferSize, nullptr);
 	
 	m_positionsUploadBuffer = eg::Buffer(eg::BufferFlags::HostAllocate | eg::BufferFlags::CopySrc | eg::BufferFlags::MapWrite,
 		bufferSize * eg::MAX_CONCURRENT_FRAMES, nullptr);
@@ -199,7 +199,7 @@ inline __m128 Vec3ToM128(const glm::vec3& v3)
 	return _mm_load_ps(data);
 }
 
-void WaterSimulator::Update(const World& world, bool paused)
+void WaterSimulator::Update(const World& world, const glm::vec3& cameraPos, bool paused)
 {
 	if (m_numParticles == 0)
 	{
@@ -280,12 +280,19 @@ void WaterSimulator::Update(const World& world, bool paused)
 		
 		m_gameTimeSH = RenderSettings::instance->gameTime + GAME_TIME_OFFSET;
 		m_pausedSH = paused;
-		m_numParticlesToDraw = WSI_GetPositions(m_impl, m_positionsUploadBufferMemory + uploadBufferOffset);
+		m_numParticlesToDraw = WSI_CopyToOutputBuffer(m_impl);
 	}
 	
 	if (!paused)
 	{
 		m_unpausedSignal.notify_one();
+	}
+	
+	{
+		alignas(16) float cameraPos4[] = { cameraPos.x, cameraPos.y, cameraPos.z, 0 };
+		auto sortTimer = eg::StartCPUTimer("Water Sort");
+ 		WSI_SortOutputBuffer(m_impl, m_numParticlesToDraw, cameraPos4);
+		std::memcpy(m_positionsUploadBufferMemory + uploadBufferOffset, WSI_GetOutputBuffer(m_impl), m_numParticlesToDraw * sizeof(float) * 4);
 	}
 	
 	const uint64_t uploadBufferRange = m_numParticlesToDraw * 4 * sizeof(float);
@@ -296,7 +303,7 @@ void WaterSimulator::Update(const World& world, bool paused)
 	m_currentParticlePositions = reinterpret_cast<float*>(m_positionsUploadBufferMemory + uploadBufferOffset);
 	
 	eg::DC.CopyBuffer(m_positionsUploadBuffer, m_positionsBuffer, uploadBufferOffset, 0, uploadBufferRange);
-	m_positionsBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
+	m_positionsBuffer.UsageHint(eg::BufferUsage::StorageBufferRead, eg::ShaderAccessFlags::Vertex);
 }
 
 std::pair<float, int> WaterSimulator::RayIntersect(const eg::Ray& ray) const

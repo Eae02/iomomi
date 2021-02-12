@@ -3,12 +3,3 @@ const float TRAVEL_DIST_SCALE = 0.5;
 const float UNDERWATER_DEPTH = 0.5;
 
 #include "../Inc/Depth.glh"
-
-#ifdef DEFINE_SPHERE_TO_NDC
-vec3 sphereToNDC(float r2, float side)
-{
-	vec3 normalES = vec3(spritePos_in, sqrt(1.0 - r2) * side);
-	vec4 ppsPos = renderSettings.projectionMatrix * vec4(eyePos_in + normalES * PARTICLE_RADIUS, 1.0);
-	return ppsPos.xyz / ppsPos.w;
-}
-#endif

@@ -41,7 +41,9 @@ WaterSimulatorImpl* WSI_New(const WSINewArgs& args);
 
 void WSI_Delete(WaterSimulatorImpl* impl);
 
-uint32_t WSI_GetPositions(WaterSimulatorImpl* impl, void* destination);
+uint32_t WSI_CopyToOutputBuffer(WaterSimulatorImpl* impl);
+void WSI_SortOutputBuffer(WaterSimulatorImpl* impl, uint32_t numParticles, const float* cameraPos4);
+void* WSI_GetOutputBuffer(WaterSimulatorImpl* impl);
 
 int WSI_Query(WaterSimulatorImpl* impl, const eg::AABB& aabb, glm::vec3& waterVelocity, glm::vec3& buoyancy);
 

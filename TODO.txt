@@ -1,16 +1,13 @@
 fixes:
  - water should be affected by force fields
  - physics object rotation
- - bending pipe collision
  - aim assist
  - make gravity barriers red from water
 
 misc:
  - benchmarks
- - lower shadow resolution
  - gun should be rendered after ssr
  - fix flickering on nvidia + vulkan
- - fix black water when reflection is low
 
 levels:
  - pushable platforms

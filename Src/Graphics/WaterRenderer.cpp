@@ -41,34 +41,31 @@ WaterRenderer::WaterRenderer()
 	m_quadVB = eg::Buffer(eg::BufferFlags::VertexBuffer, sizeof(quadVBData), quadVBData);
 	m_quadVB.UsageHint(eg::BufferUsage::VertexBuffer);
 	
-	auto& sphereDepthFS = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterSphereDepth.fs.glsl");
+	auto& sphereDepthFS = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterSphere.fs.glsl");
 	auto& sphereVS = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterSphere.vs.glsl");
 	
 	eg::GraphicsPipelineCreateInfo pipelineCITemplate;
-	pipelineCITemplate.vertexShader = sphereVS.GetVariant("VDefault");
 	pipelineCITemplate.topology = eg::Topology::TriangleStrip;
 	pipelineCITemplate.vertexAttributes[0] = { 0, eg::DataType::Float32, 2, 0 };
-	pipelineCITemplate.vertexAttributes[1] = { 1, eg::DataType::Float32, 4, 0 };
+	//pipelineCITemplate.vertexAttributes[1] = { 1, eg::DataType::Float32, 4, 0 };
 	pipelineCITemplate.vertexBindings[0] = { sizeof(float) * 2, eg::InputRate::Vertex };
-	pipelineCITemplate.vertexBindings[1] = { sizeof(float) * 4, eg::InputRate::Instance };
-	
-	eg::GraphicsPipelineCreateInfo pipelineBasicCI = pipelineCITemplate;
-	pipelineBasicCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterSphereBasic.fs.glsl").DefaultVariant();
-	pipelineBasicCI.enableDepthTest = true;
-	pipelineBasicCI.enableDepthWrite = true;
-	m_pipelineBasic = eg::Pipeline::Create(pipelineBasicCI);
+	//pipelineCITemplate.vertexBindings[1] = { sizeof(float) * 4, eg::InputRate::Instance };
 	
 	eg::GraphicsPipelineCreateInfo pipelineDepthMinCI = pipelineCITemplate;
-	pipelineDepthMinCI.vertexShader = sphereVS.GetVariant("VWithGlowIntensity");
+	pipelineDepthMinCI.vertexShader = sphereVS.GetVariant("VDepthMin");
 	pipelineDepthMinCI.fragmentShader = sphereDepthFS.GetVariant("VDepthMin");
 	pipelineDepthMinCI.enableDepthTest = true;
 	pipelineDepthMinCI.enableDepthWrite = true;
+	pipelineDepthMinCI.enableDepthClamp = true;
+	pipelineDepthMinCI.depthCompare = eg::CompareOp::Less;
 	m_pipelineDepthMin = eg::Pipeline::Create(pipelineDepthMinCI);
 	
 	eg::GraphicsPipelineCreateInfo pipelineDepthMaxCI = pipelineCITemplate;
+	pipelineDepthMaxCI.vertexShader = sphereVS.GetVariant("VDepthMax");
 	pipelineDepthMaxCI.fragmentShader = sphereDepthFS.GetVariant("VDepthMax");
 	pipelineDepthMaxCI.enableDepthTest = true;
 	pipelineDepthMaxCI.enableDepthWrite = true;
+	pipelineDepthMaxCI.enableDepthClamp = true;
 	pipelineDepthMaxCI.depthCompare = eg::CompareOp::Greater;
 	m_pipelineDepthMax = eg::Pipeline::Create(pipelineDepthMaxCI);
 	
@@ -112,17 +109,6 @@ void WaterRenderer::CreateDepthBlurPipelines(uint32_t samples)
 	m_pipelineBlurPass2 = eg::Pipeline::Create(pipelineBlurCI);
 	m_pipelineBlurPass2.FramebufferFormatHint(eg::Format::R32G32B32A32_Float);
 	m_pipelineBlurPass2.FramebufferFormatHint(eg::Format::R16G16B16A16_Float);
-}
-
-void WaterRenderer::RenderBasic(eg::BufferRef positionsBuffer, uint32_t numParticles) const
-{
-	eg::DC.BindPipeline(m_pipelineBasic);
-	
-	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
-	
-	eg::DC.BindVertexBuffer(0, m_quadVB, 0);
-	eg::DC.BindVertexBuffer(1, positionsBuffer, 0);
-	eg::DC.Draw(0, 4, 0, numParticles);
 }
 
 #pragma pack(push, 1)
@@ -183,7 +169,8 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 	
 	eg::DC.BindVertexBuffer(0, m_quadVB, 0);
-	eg::DC.BindVertexBuffer(1, positionsBuffer, 0);
+	eg::DC.BindStorageBuffer(positionsBuffer, 0, 1, 0, numParticles * sizeof(float) * 4);
+	//eg::DC.BindVertexBuffer(1, positionsBuffer, 0);
 	eg::DC.Draw(0, 4, 0, numParticles);
 	
 	eg::DC.EndRenderPass();
@@ -204,11 +191,15 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 	
 	eg::DC.BindPipeline(m_pipelineDepthMax);
 	
+	uint32_t depthMaxPC = numParticles - 1;
+	eg::DC.PushConstants(0, sizeof(uint32_t), &depthMaxPC);
+	
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 1);
+	eg::DC.BindStorageBuffer(positionsBuffer, 0, 1, 0, numParticles * sizeof(float) * 4);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 2);
 	
 	eg::DC.BindVertexBuffer(0, m_quadVB, 0);
-	eg::DC.BindVertexBuffer(1, positionsBuffer, 0);
+	//eg::DC.BindVertexBuffer(1, positionsBuffer, 0);
 	eg::DC.Draw(0, 4, 0, numParticles);
 	
 	eg::DC.EndRenderPass();
@@ -216,7 +207,6 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 	
 	rtManager.RenderTextureUsageHintFS(RenderTex::WaterMinDepth);
 	rtManager.RenderTextureUsageHintFS(RenderTex::WaterMaxDepth);
-	rtManager.RenderTextureUsageHintFS(RenderTex::WaterGlowIntensity);
 	
 	
 	timer.StartStage("Blur");
@@ -238,7 +228,6 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 	
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::WaterMinDepth), 0, 0);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::WaterMaxDepth), 0, 1);
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::WaterGlowIntensity), 0, 2);
 	eg::DC.Draw(0, 3, 0, 1);
 	
 	eg::DC.EndRenderPass();
@@ -266,6 +255,7 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 	eg::DC.DebugLabelEnd();
 	
 	rtManager.RenderTextureUsageHintFS(RenderTex::WaterDepthBlurred2);
+	rtManager.RenderTextureUsageHintFS(RenderTex::WaterGlowIntensity);
 }
 
 static const glm::vec3 waterGlowColor(0.12f, 0.9f, 0.7f);
@@ -306,9 +296,10 @@ void WaterRenderer::RenderPost(RenderTexManager& rtManager)
 	
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::WaterDepthBlurred2), 0, 1);
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::LitWithoutWater), 0, 2);
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 3);
-	eg::DC.BindTexture(*m_normalMapTexture, 0, 4);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::WaterGlowIntensity), 0, 2);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::LitWithoutWater), 0, 3);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 4);
+	eg::DC.BindTexture(*m_normalMapTexture, 0, 5);
 	
 	eg::DC.Draw(0, 3, 0, 1);
 	

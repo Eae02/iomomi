@@ -8,14 +8,26 @@
 layout(location=0) in vec2 spritePos_in;
 layout(location=1) in vec3 eyePos_in;
 
-#define DEFINE_SPHERE_TO_NDC
 #include "WaterCommon.glh"
 
+vec3 sphereToNDC(float r2, float side)
+{
+	vec3 normalES = vec3(spritePos_in, sqrt(1.0 - r2) * side);
+	vec4 ppsPos = renderSettings.projectionMatrix * vec4(eyePos_in + normalES * PARTICLE_RADIUS, 1.0);
+	return ppsPos.xyz / ppsPos.w;
+}
+
 #ifdef VDepthMax
-layout(binding=1) uniform sampler2D geometryDepthSampler;
-#else
+layout(binding=2) uniform sampler2D geometryDepthSampler;
+
+layout (depth_less) out float gl_FragDepth;
+#endif
+
+#ifdef VDepthMin
 layout(location=2) in float glowIntensity_in;
 layout(location=0) out float glowIntensity_out;
+
+layout (depth_greater) out float gl_FragDepth;
 #endif
 
 void main()
@@ -27,15 +39,14 @@ void main()
 	vec3 ndcFront = sphereToNDC(r2, 1);
 #ifdef VDepthMax
 	vec3 ndcBack = sphereToNDC(r2, -1);
+	float d = depthTo01(ndcBack.z);
 	vec2 scrPos = ndcFront.xy * vec2(0.5, EG_OPENGL ? 0.5 : -0.5) + 0.5;
 	float inputDepth = texture(geometryDepthSampler, scrPos).r;
-	if (EG_OPENGL)
-		inputDepth = inputDepth * 2 - 1;
-	if (linearizeDepth(ndcBack.z) > linearizeDepth(inputDepth) + 0.6)
+	if (linearizeDepth(d) > linearizeDepth(inputDepth) + PARTICLE_RADIUS * 2)
 		discard;
-	gl_FragDepth = min(ndcBack.z, inputDepth);
+	gl_FragDepth = min(d, inputDepth);
 #else
-	gl_FragDepth = ndcFront.z;
+	gl_FragDepth = depthTo01(ndcFront.z);
 	glowIntensity_out = glowIntensity_in;
 #endif
 }

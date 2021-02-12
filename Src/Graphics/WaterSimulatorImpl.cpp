@@ -50,6 +50,7 @@ struct WaterSimulatorImpl
 	//SoA particle data, points into dataMemory
 	__m128* particlePos;
 	__m128* particlePos2;
+	__m128* particlePosOut;
 	__m128* particleVel;
 	__m128* particleVel2;
 	float* particleRadius;
@@ -115,14 +116,15 @@ WaterSimulatorImpl* WSI_New(const WSINewArgs& args)
 	impl->cellParticles.resize(impl->cellNumParticles.size());
 	
 	//Allocates memory for particle data
-	size_t memoryBytes = impl->allocatedParticles * (sizeof(__m128) * 5 + sizeof(uint8_t) + sizeof(float) + sizeof(glm::vec2));
+	size_t memoryBytes = impl->allocatedParticles * (sizeof(__m128) * 6 + sizeof(uint8_t) + sizeof(float) + sizeof(glm::vec2));
 	impl->dataMemory = aligned_alloc(alignof(__m128), memoryBytes);
 	std::memset(impl->dataMemory, 0, memoryBytes);
 	
 	//Sets up SoA particle data
 	impl->particlePos             = reinterpret_cast<__m128*>(impl->dataMemory);
 	impl->particlePos2            = impl->particlePos + impl->allocatedParticles;
-	impl->particleVel             = impl->particlePos2 + impl->allocatedParticles;
+	impl->particlePosOut          = impl->particlePos2 + impl->allocatedParticles;
+	impl->particleVel             = impl->particlePosOut + impl->allocatedParticles;
 	impl->particleVel2            = impl->particleVel + impl->allocatedParticles;
 	impl->particleCells           = reinterpret_cast<__m128i*>(impl->particleVel2 + impl->allocatedParticles);
 	impl->particleGravity         = reinterpret_cast<uint8_t*>(impl->particleCells + impl->allocatedParticles);
@@ -159,10 +161,27 @@ void WSI_Delete(WaterSimulatorImpl* impl)
 	delete impl;
 }
 
-uint32_t WSI_GetPositions(WaterSimulatorImpl* impl, void* destination)
+uint32_t WSI_CopyToOutputBuffer(WaterSimulatorImpl* impl)
 {
-	std::memcpy(destination, impl->particlePos, impl->numParticles * sizeof(float) * 4);
+	std::memcpy(impl->particlePosOut, impl->particlePos, impl->numParticles * sizeof(float) * 4);
 	return impl->numParticles;
+}
+
+static constexpr int DP_IMM8 = 0x71;
+
+void WSI_SortOutputBuffer(WaterSimulatorImpl* impl, uint32_t numParticles, const float* cameraPos4)
+{
+	std::sort(impl->particlePosOut, impl->particlePosOut + numParticles, [&] (const __m128& a, const __m128& b)
+	{
+		__m128 v1 = _mm_sub_ps(a, *reinterpret_cast<const __m128*>(cameraPos4));
+		__m128 v2 = _mm_sub_ps(b, *reinterpret_cast<const __m128*>(cameraPos4));
+		return _mm_cvtss_f32(_mm_dp_ps(v1, v1, DP_IMM8)) < _mm_cvtss_f32(_mm_dp_ps(v2, v2, DP_IMM8));
+	});
+}
+
+void* WSI_GetOutputBuffer(WaterSimulatorImpl* impl)
+{
+	return impl->particlePosOut;
 }
 
 void WSI_SwapBuffers(WaterSimulatorImpl* impl)
@@ -231,8 +250,6 @@ alignas(16) static const float gravities[6][4] =
 	{ 0, 0,  GRAVITY, 0 },
 	{ 0, 0, -GRAVITY, 0 }
 };
-
-static constexpr int DP_IMM8 = 0x71;
 
 void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 {

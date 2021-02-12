@@ -34,8 +34,8 @@ eg::Format GetFormatForRenderTexture(RenderTex texture)
 	case RenderTex::WaterDepthBlurred1:
 	case RenderTex::WaterDepthBlurred2:
 		if (settings.waterQuality >= WaterRenderer::HighPrecisionMinQL)
-			return eg::Format::R32G32B32A32_Float;
-		return eg::Format::R16G16B16A16_Float;
+			return eg::Format::R32G32_Float;
+		return eg::Format::R16G16_Float;
 		
 	case RenderTex::SSRTemp1:
 	case RenderTex::SSRTemp2:

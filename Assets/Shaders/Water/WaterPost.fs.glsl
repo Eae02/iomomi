@@ -17,10 +17,11 @@ layout(location=0) in vec2 texCoord_in;
 layout(location=0) out vec4 color_out;
 
 layout(binding=1) uniform sampler2D waterDepthSampler;
-layout(binding=2) uniform sampler2D worldColorSampler;
-layout(binding=3) uniform sampler2D worldDepthSampler;
+layout(binding=2) uniform sampler2D waterGlowSampler;
+layout(binding=3) uniform sampler2D worldColorSampler;
+layout(binding=4) uniform sampler2D worldDepthSampler;
 
-layout(binding=4) uniform sampler2D normalMapSampler;
+layout(binding=5) uniform sampler2D normalMapSampler;
 
 const float R0 = 0.03;
 
@@ -113,13 +114,13 @@ const vec2 normalMapPanDirs[] = vec2[]
 
 void main()
 {
-	vec4 waterDepth4 = texture(waterDepthSampler, texCoord_in);
+	vec2 waterDepths = texture(waterDepthSampler, texCoord_in).xy;
 	
-	bool underwater = waterDepth4.r < UNDERWATER_DEPTH;
+	bool underwater = waterDepths.r < UNDERWATER_DEPTH;
 	
 	vec3 worldColor = texture(worldColorSampler, texCoord_in).rgb;
 	
-	float waterDepthL = underwater ? waterDepth4.g : waterDepth4.r;
+	float waterDepthL = underwater ? waterDepths.g : waterDepths.r;
 	float waterDepthH = hyperDepth(waterDepthL);
 	float worldDepthH = texture(worldDepthSampler, texCoord_in).r;
 	
@@ -232,7 +233,7 @@ void main()
 	//Updates variables with the new texture coordinate
 	worldColor = texture(worldColorSampler, refractTexcoord).rgb;
 	targetPos = WorldPosFromDepth(worldDepthH, refractTexcoord, renderSettings.invViewProjection);
-	waterDepth4 = texture(waterDepthSampler, refractTexcoord);
+	waterDepths = texture(waterDepthSampler, refractTexcoord).xy;
 	
 	float waterTravelDist;
 	if (underwater)
@@ -271,5 +272,5 @@ void main()
 		color_out = vec4(mix(oriWorldColor, mix(foamColor, waterColor, foam), shore), 1.0);
 	}
 	
-	color_out.rgb += glowColor * waterDepth4.b;
+	color_out.rgb += glowColor * texture(waterGlowSampler, texCoord_in).r;
 }

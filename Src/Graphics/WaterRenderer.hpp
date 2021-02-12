@@ -9,8 +9,6 @@ class WaterRenderer
 public:
 	WaterRenderer();
 	
-	void RenderBasic(eg::BufferRef positionsBuffer, uint32_t numParticles) const;
-	
 	void RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParticles, class RenderTexManager& rtManager);
 	void RenderPost(class RenderTexManager& rtManager);
 	
@@ -24,8 +22,6 @@ private:
 	QualityLevel m_currentQualityLevel;
 	
 	eg::Buffer m_quadVB;
-	
-	eg::Pipeline m_pipelineBasic;
 	
 	eg::Pipeline m_pipelineDepthMin;
 	eg::Pipeline m_pipelineDepthMax;
