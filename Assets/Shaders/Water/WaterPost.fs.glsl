@@ -28,17 +28,22 @@ const vec3 color = pow(vec3(13, 184, 250) / 255.0, vec3(2.2));
 
 const vec3 colorSurface = vec3(0.04, 0.59, 0.77);
 const vec3 colorDeep = vec3(0.01, 0.03, 0.35);
-const float visibility = 10;
 const vec3 colorExtinction = vec3(0.7, 3.0, 4.0) * 10;
-
-const float indexOfRefraction = 0.6;
-
-const vec3 waterUp = vec3(0, 1, 0);
 
 const float causticsPosScale = 20;
 const float causticsTimeScale = 0.05;
 const float causticsIntensity = 0.04;
 const float causticsPower = 5.0;
+
+layout(push_constant) uniform PC
+{
+	vec2 pixelSize;
+	float visibility;
+	float normalMapIntensity;
+	vec3 glowColor;
+	float ssrIntensity;
+	float indexOfRefraction;
+};
 
 vec3 doColorExtinction(vec3 inputColor, float waterTravelDist)
 {
@@ -58,7 +63,7 @@ vec3 viewPosFromDepth(vec2 screenCoord, float waterDepthH)
 vec3 viewPosSampleDepth(vec2 screenCoord, bool underwater)
 {
 	vec4 depthSample = texture(waterDepthSampler, screenCoord);
-	return viewPosFromDepth(screenCoord, hyperDepth(underwater ? depthSample.b : depthSample.r));
+	return viewPosFromDepth(screenCoord, hyperDepth(underwater ? depthSample.g : depthSample.r));
 }
 
 const vec3 DEFAULT_REFLECT_COLOR = vec3(0.5, 0.6, 0.7);
@@ -70,9 +75,9 @@ vec3 calcReflection(vec3 surfacePos, vec3 dirToEye, vec3 normal)
 	
 	vec3 rayDir = normalize(reflect(-dirToEye, normal));
 	
-	const float MAX_DIST   = 15;   //Maximum distance to reflection
-	const float FADE_BEGIN = 0.75; //Percentage of screen radius to begin fading out at
-	const int   SAMPLES    = 32;   //Number of samples to take along the ray
+	const float MAX_DIST   = 20;   //Maximum distance to reflection
+	const float FADE_BEGIN = 0.85; //Percentage of screen radius to begin fading out at
+	const int   SAMPLES    = 20;   //Number of samples to take along the ray
 	
 	for (uint i = 1; i <= SAMPLES; i++)
 	{
@@ -90,7 +95,7 @@ vec3 calcReflection(vec3 surfacePos, vec3 dirToEye, vec3 normal)
 		{
 			float fade01 = max(abs(sampleNDC.x), abs(sampleNDC.y));
 			float fade = clamp((fade01 - 1) / (1 - FADE_BEGIN) + 1, 0, 1);
-			return mix(texture(worldColorSampler, sampleTC).rgb, DEFAULT_REFLECT_COLOR, fade);
+			return mix(texture(worldColorSampler, sampleTC).rgb * ssrIntensity, DEFAULT_REFLECT_COLOR, fade);
 		}
 	}
 #endif
@@ -106,12 +111,6 @@ const vec2 normalMapPanDirs[] = vec2[]
 	vec2(-1.0, -1.0)
 );
 
-layout(push_constant) uniform PC
-{
-	vec2 pixelSize;
-	vec3 glowColor;
-};
-
 void main()
 {
 	vec4 waterDepth4 = texture(waterDepthSampler, texCoord_in);
@@ -120,7 +119,7 @@ void main()
 	
 	vec3 worldColor = texture(worldColorSampler, texCoord_in).rgb;
 	
-	float waterDepthL = underwater ? waterDepth4.b : waterDepth4.r;
+	float waterDepthL = underwater ? waterDepth4.g : waterDepth4.r;
 	float waterDepthH = hyperDepth(waterDepthL);
 	float worldDepthH = texture(worldDepthSampler, texCoord_in).r;
 	
@@ -177,8 +176,7 @@ void main()
 			normalTS += vec3(nmVal, sqrt(1 - (nmVal.x * nmVal.x + nmVal.y * nmVal.y))) * abs(plainNormal[d]);
 		}
 	}
-	const float nmStrength = 0.8;
-	normalTS.xy *= nmStrength;
+	normalTS.xy *= normalMapIntensity;
 	vec3 normal = normalize(tbnMatrix * normalTS);
 	
 	vec3 dirToEye = normalize(renderSettings.cameraPosition - surfacePos);
@@ -241,7 +239,7 @@ void main()
 		waterTravelDist = min(distance(renderSettings.cameraPosition, targetPos), distance(renderSettings.cameraPosition, surfacePos));
 	else
 		waterTravelDist = distance(targetPos, surfacePos);
-	waterTravelDist = min(waterTravelDist, waterDepth4.g);
+	waterTravelDist += 0.1;
 	
 	vec3 reflectColor = underwater ? DEFAULT_REFLECT_COLOR : calcReflection(surfacePos, dirToEye, normal);
 	
@@ -273,5 +271,5 @@ void main()
 		color_out = vec4(mix(oriWorldColor, mix(foamColor, waterColor, foam), shore), 1.0);
 	}
 	
-	color_out.rgb += glowColor * waterDepth4.w;
+	color_out.rgb += glowColor * waterDepth4.b;
 }

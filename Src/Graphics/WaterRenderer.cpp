@@ -1,6 +1,5 @@
 #include "WaterRenderer.hpp"
 #include "RenderSettings.hpp"
-#include "GraphicsCommon.hpp"
 #include "RenderTex.hpp"
 #include "../Settings.hpp"
 
@@ -73,11 +72,6 @@ WaterRenderer::WaterRenderer()
 	pipelineDepthMaxCI.depthCompare = eg::CompareOp::Greater;
 	m_pipelineDepthMax = eg::Pipeline::Create(pipelineDepthMaxCI);
 	
-	eg::GraphicsPipelineCreateInfo pipelineAddCI = pipelineCITemplate;
-	pipelineAddCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterSphereAdd.fs.glsl").DefaultVariant();
-	pipelineAddCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
-	m_pipelineAdditive = eg::Pipeline::Create(pipelineAddCI);
-	
 	auto& postFS = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterPost.fs.glsl");
 	eg::GraphicsPipelineCreateInfo pipelinePostCI;
 	pipelinePostCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
@@ -103,7 +97,7 @@ void WaterRenderer::CreateDepthBlurPipelines(uint32_t samples)
 {
 	eg::SpecializationConstantEntry specConstants[] = { { 0, 0, sizeof(uint32_t) } };
 	
-	const auto& depthBlurTwoPassFS = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/DepthBlur2P.fs.glsl");
+	const auto& depthBlurTwoPassFS = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/DepthBlur.fs.glsl");
 	eg::GraphicsPipelineCreateInfo pipelineBlurCI;
 	pipelineBlurCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
 	pipelineBlurCI.fragmentShader = depthBlurTwoPassFS.GetVariant("V1");
@@ -118,9 +112,6 @@ void WaterRenderer::CreateDepthBlurPipelines(uint32_t samples)
 	m_pipelineBlurPass2 = eg::Pipeline::Create(pipelineBlurCI);
 	m_pipelineBlurPass2.FramebufferFormatHint(eg::Format::R32G32B32A32_Float);
 	m_pipelineBlurPass2.FramebufferFormatHint(eg::Format::R16G16B16A16_Float);
-	
-	pipelineBlurCI.fragmentShader.shaderModule = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/DepthBlur1P.fs.glsl").DefaultVariant();
-	m_pipelineBlurSinglePass = eg::Pipeline::Create(pipelineBlurCI);
 }
 
 void WaterRenderer::RenderBasic(eg::BufferRef positionsBuffer, uint32_t numParticles) const
@@ -146,7 +137,6 @@ struct WaterBlurPC
 static float* blurRadius          = eg::TweakVarFloat("wblur_radius", 1.0f, 0.0f);
 static float* blurDistanceFalloff = eg::TweakVarFloat("wblur_distfall", 0.5f, 0.0f);
 static float* blurDepthFalloff    = eg::TweakVarFloat("wblur_depthfall", 0.2f, 0.0f);
-static int* blurSinglePass        = eg::TweakVarInt("wblur_singlepass", 0, 0, 1);
 
 /*
 Water quality settings:
@@ -199,31 +189,6 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 	eg::DC.EndRenderPass();
 	eg::DC.DebugLabelEnd();
 	
-	// ** Travel depth additive pass **
-	//This pass renders all water particles additively to get the water travel depth.
-	
-	timer.StartStage("Additive Depth");
-	eg::DC.DebugLabelBegin("Additive Depth");
-	
-	eg::RenderPassBeginInfo additiveRPBeginInfo;
-	additiveRPBeginInfo.framebuffer = rtManager.GetFramebuffer(RenderTex::WaterTravelDepth, {}, {}, "WaterTravelDepth");
-	additiveRPBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
-	additiveRPBeginInfo.colorAttachments[0].clearValue = eg::ColorLin(0, 0, 0, 0);
-	additiveRPBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Load;
-	eg::DC.BeginRenderPass(additiveRPBeginInfo);
-	
-	eg::DC.BindPipeline(m_pipelineAdditive);
-	
-	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 1);
-	
-	eg::DC.BindVertexBuffer(0, m_quadVB, 0);
-	eg::DC.BindVertexBuffer(1, positionsBuffer, 0);
-	eg::DC.Draw(0, 4, 0, numParticles);
-	
-	eg::DC.EndRenderPass();
-	eg::DC.DebugLabelEnd();
-	
 	// ** Depth max pass **
 	//This pass renders all water particles that are closer to the camera than the the travel depth
 	// to a depth buffer. Greater compare mode is used to get the maximum depth bounds.
@@ -252,78 +217,51 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 	rtManager.RenderTextureUsageHintFS(RenderTex::WaterMinDepth);
 	rtManager.RenderTextureUsageHintFS(RenderTex::WaterMaxDepth);
 	rtManager.RenderTextureUsageHintFS(RenderTex::WaterGlowIntensity);
-	rtManager.RenderTextureUsageHintFS(RenderTex::WaterTravelDepth);
 	
 	
 	timer.StartStage("Blur");
 	eg::DC.DebugLabelBegin("Blur");
 	
-	if (*blurSinglePass)
-	{
-		// ** Single pass depth blur **
-		eg::RenderPassBeginInfo depthBlurBeginInfo;
-		depthBlurBeginInfo.framebuffer = rtManager.GetFramebuffer(RenderTex::WaterDepthBlurred2, {}, {}, "WaterDepthBlurred2");
-		depthBlurBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
-		eg::DC.BeginRenderPass(depthBlurBeginInfo);
-		
-		WaterBlurPC blurPC;
-		blurPC.blurDir = glm::vec2(relBlurRad / rtManager.ResX(), relBlurRad / rtManager.ResY());
-		blurPC.blurDepthFalloff = *blurDepthFalloff;
-		blurPC.blurDistanceFalloff = relDistanceFalloff;
-		
-		eg::DC.BindPipeline(m_pipelineBlurSinglePass);
-		eg::DC.PushConstants(0, blurPC);
-		
-		eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::WaterMinDepth), 0, 0);
-		eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::WaterTravelDepth), 0, 1);
-		eg::DC.Draw(0, 3, 0, 1);
-		
-		eg::DC.EndRenderPass();
-	}
-	else
-	{
-		// ** Depth blur pass 1 **
-		eg::RenderPassBeginInfo depthBlur1RPBeginInfo;
-		depthBlur1RPBeginInfo.framebuffer = rtManager.GetFramebuffer(RenderTex::WaterDepthBlurred1, {}, {}, "WaterDepthBlurred1");
-		depthBlur1RPBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
-		eg::DC.BeginRenderPass(depthBlur1RPBeginInfo);
-		
-		WaterBlurPC blurPC;
-		blurPC.blurDir = glm::vec2(0, relBlurRad / rtManager.ResY());
-		blurPC.blurDepthFalloff = *blurDepthFalloff;
-		blurPC.blurDistanceFalloff = relDistanceFalloff;
-		
-		eg::DC.BindPipeline(m_pipelineBlurPass1);
-		eg::DC.PushConstants(0, blurPC);
-		
-		eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::WaterMinDepth), 0, 0);
-		eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::WaterTravelDepth), 0, 1);
-		eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::WaterMaxDepth), 0, 2);
-		eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::WaterGlowIntensity), 0, 3);
-		eg::DC.Draw(0, 3, 0, 1);
-		
-		eg::DC.EndRenderPass();
-		
-		rtManager.RenderTextureUsageHintFS(RenderTex::WaterDepthBlurred1);
-		
-		// ** Depth blur pass 2 **
-		eg::RenderPassBeginInfo depthBlurBeginInfo;
-		depthBlurBeginInfo.framebuffer = rtManager.GetFramebuffer(RenderTex::WaterDepthBlurred2, {}, {}, "WaterDepthBlurred2");
-		depthBlurBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
-		eg::DC.BeginRenderPass(depthBlurBeginInfo);
-		
-		blurPC.blurDir = glm::vec2(relBlurRad / rtManager.ResX(), 0);
-		blurPC.blurDepthFalloff = *blurDepthFalloff;
-		blurPC.blurDistanceFalloff = relDistanceFalloff;
-		
-		eg::DC.BindPipeline(m_pipelineBlurPass2);
-		eg::DC.PushConstants(0, blurPC);
-		
-		eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::WaterDepthBlurred1), 0, 0);
-		eg::DC.Draw(0, 3, 0, 1);
-		
-		eg::DC.EndRenderPass();
-	}
+	// ** Depth blur pass 1 **
+	eg::RenderPassBeginInfo depthBlur1RPBeginInfo;
+	depthBlur1RPBeginInfo.framebuffer = rtManager.GetFramebuffer(RenderTex::WaterDepthBlurred1, {}, {}, "WaterDepthBlurred1");
+	depthBlur1RPBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
+	eg::DC.BeginRenderPass(depthBlur1RPBeginInfo);
+	
+	WaterBlurPC blurPC;
+	blurPC.blurDir = glm::vec2(0, relBlurRad / rtManager.ResY());
+	blurPC.blurDepthFalloff = *blurDepthFalloff;
+	blurPC.blurDistanceFalloff = relDistanceFalloff;
+	
+	eg::DC.BindPipeline(m_pipelineBlurPass1);
+	eg::DC.PushConstants(0, blurPC);
+	
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::WaterMinDepth), 0, 0);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::WaterMaxDepth), 0, 1);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::WaterGlowIntensity), 0, 2);
+	eg::DC.Draw(0, 3, 0, 1);
+	
+	eg::DC.EndRenderPass();
+	
+	rtManager.RenderTextureUsageHintFS(RenderTex::WaterDepthBlurred1);
+	
+	// ** Depth blur pass 2 **
+	eg::RenderPassBeginInfo depthBlurBeginInfo;
+	depthBlurBeginInfo.framebuffer = rtManager.GetFramebuffer(RenderTex::WaterDepthBlurred2, {}, {}, "WaterDepthBlurred2");
+	depthBlurBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
+	eg::DC.BeginRenderPass(depthBlurBeginInfo);
+	
+	blurPC.blurDir = glm::vec2(relBlurRad / rtManager.ResX(), 0);
+	blurPC.blurDepthFalloff = *blurDepthFalloff;
+	blurPC.blurDistanceFalloff = relDistanceFalloff;
+	
+	eg::DC.BindPipeline(m_pipelineBlurPass2);
+	eg::DC.PushConstants(0, blurPC);
+	
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::WaterDepthBlurred1), 0, 0);
+	eg::DC.Draw(0, 3, 0, 1);
+	
+	eg::DC.EndRenderPass();
 	
 	eg::DC.DebugLabelEnd();
 	
@@ -331,6 +269,11 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 }
 
 static const glm::vec3 waterGlowColor(0.12f, 0.9f, 0.7f);
+
+static float* waterVisibility = eg::TweakVarFloat("water_visibility", 10.0f, 0.0f);
+static float* waterNormalMapIntensity = eg::TweakVarFloat("water_nm_intensity", 0.8f, 0.0f);
+static float* waterSSRIntensity = eg::TweakVarFloat("water_ssr_intensity", 2.0f, 0.0f);
+static float* waterIndexOfRefraction = eg::TweakVarFloat("water_ior", 0.75f);
 
 void WaterRenderer::RenderPost(RenderTexManager& rtManager)
 {
@@ -348,12 +291,16 @@ void WaterRenderer::RenderPost(RenderTexManager& rtManager)
 	
 	float waterGlowIntensity = settings.gunFlash ? 4 : 0.5f;
 	
-	float pc[7] =
+	float pc[] =
 	{
-		2.0f / rtManager.ResX(), 2.0f / rtManager.ResY(), 0, 0,
+		2.0f / rtManager.ResX(), 2.0f / rtManager.ResY(),
+		*waterVisibility,
+		*waterNormalMapIntensity,
 		waterGlowColor.r * waterGlowIntensity,
 		waterGlowColor.g * waterGlowIntensity,
-		waterGlowColor.b * waterGlowIntensity
+		waterGlowColor.b * waterGlowIntensity,
+		*waterSSRIntensity,
+		*waterIndexOfRefraction
 	};
 	eg::DC.PushConstants(0, sizeof(pc), pc);
 	

@@ -88,6 +88,11 @@ void main()
 	uint flags = texelFetch(gbFlagsSampler, ivec2(gl_FragCoord.xy), 0).r;
 	
 	color_out = vec4(0.0);
+
+	if (isDirect == 1)
+	{
+		color_out = texture(inputColorSampler, texCoord_in);
+	}
 	
 	if ((flags & (RF_NO_SSR | RF_NO_LIGHTING)) != 0)
 		return;
@@ -116,7 +121,7 @@ void main()
 	
 	if (isDirect == 1)
 	{
-		color_out = texture(inputColorSampler, texCoord_in) + vec4(ssrColor, 0);
+		color_out += vec4(ssrColor, 0);
 	}
 	else
 	{

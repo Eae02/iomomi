@@ -11,9 +11,8 @@ layout(location=0) out vec4 depth_out;
 layout(binding=0) uniform sampler2D depthSampler;
 
 #ifdef V1
-layout(binding=1) uniform sampler2D travelDepthSampler;
-layout(binding=2) uniform sampler2D depthMaxSampler;
-layout(binding=3) uniform sampler2D glowIntensitySampler;
+layout(binding=1) uniform sampler2D depthMaxSampler;
+layout(binding=2) uniform sampler2D glowIntensitySampler;
 #endif
 
 layout(constant_id=0) const int FILTER_RADIUS = 16;
@@ -35,33 +34,31 @@ void main()
 	
 #ifdef V1
 	float centerDepth       = linearizeDepth(depthTo01(centerSample.x));
-	float centerTravelDepth = texture(travelDepthSampler, texCoord_in).x;
 	float centerDepthMax    = linearizeDepth(depthTo01(texture(depthMaxSampler, texCoord_in).r));
 	float glowIntensity     = texture(glowIntensitySampler, texCoord_in).r;
 #else
 	float centerDepth       = centerSample.x;
-	float centerTravelDepth = centerSample.y;
-	float centerDepthMax    = centerSample.z;
-	float glowIntensity     = centerSample.w;
+	float centerDepthMax    = centerSample.y;
+	float glowIntensity     = centerSample.z;
 #endif
 	
+	float centerTravelDepth = centerDepthMax - centerDepth;
 	float blurRamp = clamp((centerTravelDepth - BLUR_RAMP_BEGIN) / BLUR_RAMP_SIZE, 0, 1);
 	float blurDist = (blurRamp * (MAX_BLUR_RAMP - 1) + 1) / (centerDepth < UNDERWATER_DEPTH ? centerDepthMax : centerDepth);
 	
-	vec3 sum = vec3(0);
-	vec3 wsum = vec3(0);
+	vec2 sum = vec2(0);
+	vec2 wsum = vec2(0);
 	for (int x = -FILTER_RADIUS; x <= FILTER_RADIUS; x++)
 	{
 		vec2 tc = texCoord_in + x * blurDir * blurDist;
 		
 #ifdef V1
-		vec3 s = vec3(
+		vec2 s = vec2(
 			linearizeDepth(depthTo01(texture(depthSampler, tc).x)),
-			texture(travelDepthSampler, tc).x,
 			linearizeDepth(depthTo01(texture(depthMaxSampler, tc).x))
 		);
 #else
-		vec3 s = texture(depthSampler, tc).xyz;
+		vec2 s = texture(depthSampler, tc).xy;
 #endif
 		
 		float r = x * blurScale;
@@ -70,15 +67,15 @@ void main()
 		float rMin = abs(s.x - centerDepth) * blurDepthFalloff;
 		float gMin = exp(-rMin * rMin);
 		
-		float rMax = abs(s.z - centerDepthMax) * blurDepthFalloff;
+		float rMax = abs(s.y - centerDepthMax) * blurDepthFalloff;
 		float gMax = exp(-rMax * rMax);
 		
-		vec3 weight = wDist * vec3(gMin, gMin, gMax);
+		vec2 weight = wDist * vec2(gMin, gMax);
 		sum += s * weight;
 		wsum += weight;
 	}
 	
-	sum /= max(wsum, vec3(0.001));
+	sum /= max(wsum, vec2(0.001));
 	
-	depth_out = vec4(sum, glowIntensity);
+	depth_out = vec4(sum, glowIntensity, 0);
 }

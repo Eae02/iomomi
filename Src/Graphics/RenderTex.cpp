@@ -27,15 +27,10 @@ eg::Format GetFormatForRenderTexture(RenderTex texture)
 	case RenderTex::GBColor2:           return GB_COLOR_FORMAT;
 	case RenderTex::Flags:              return eg::Format::R8_UInt;
 	case RenderTex::WaterGlowIntensity: return eg::Format::R8_UNorm;
-	case RenderTex::WaterMinDepth:      return eg::Format::Depth32;
-	case RenderTex::WaterMaxDepth:      return eg::Format::Depth32;
+	case RenderTex::WaterMinDepth:      return eg::Format::Depth16;
+	case RenderTex::WaterMaxDepth:      return eg::Format::Depth16;
 	case RenderTex::BlurredGlassDepth:  return GB_DEPTH_FORMAT;
 	
-	case RenderTex::WaterTravelDepth:
-		if (settings.waterQuality >= WaterRenderer::HighPrecisionMinQL)
-			return eg::Format::R32_Float;
-		return eg::Format::R16_Float;
-		
 	case RenderTex::WaterDepthBlurred1:
 	case RenderTex::WaterDepthBlurred2:
 		if (settings.waterQuality >= WaterRenderer::HighPrecisionMinQL)

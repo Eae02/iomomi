@@ -81,7 +81,7 @@ vec3 CalculateLighting(GBData gbData)
 	vec3 radiance = pc.radiance * shadow;
 	vec4 waterDepth4 = texture(waterDepth, screenCoord_in);
 	float lDepth = linearizeDepth(gbData.hDepth);
-	float maxWaterDepth = waterDepth4.b + (waterDepth4.r < 0.5 ? 0.2 : 0.4);
+	float maxWaterDepth = waterDepth4.g + (waterDepth4.r < 0.5 ? 0.2 : 0.4);
 	if (lDepth > waterDepth4.r && lDepth < maxWaterDepth)
 	{
 		vec2 offsetG = vec2(0.01, 0.003) * pc.causticsColorOffset;
