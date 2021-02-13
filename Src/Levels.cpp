@@ -52,6 +52,7 @@ const std::vector<std::string_view> levelsOrder =
 	"forcefield_2",
 	
 	"gravgun_5",
+	"gravgun_6",
 	
 	"forcefield_3",
 	"forcefield_4",
