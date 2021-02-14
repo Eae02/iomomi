@@ -56,6 +56,7 @@ void ColliderEnt::RenderSettings()
 	ImGui::TextDisabled("Block by Type");
 	ImGui::Checkbox("Block Player", &m_blockPlayer);
 	ImGui::Checkbox("Block Cubes", &m_blockCubes);
+	ImGui::Checkbox("Block Picking Up", &m_blockPickUp);
 	
 	ImGui::Separator();
 	
@@ -115,7 +116,8 @@ void ColliderEnt::Serialize(std::ostream& stream) const
 	
 	uint32_t blockBitMask =
 		((uint32_t)m_blockPlayer << 0U) |
-		((uint32_t)m_blockCubes << 1U);
+		((uint32_t)m_blockCubes << 1U) |
+		((uint32_t)m_blockPickUp << 8U);
 	for (uint32_t i = 0; i < 6; i++)
 	{
 		blockBitMask |= (uint32_t)m_blockedGravityModes[i] << (2 + i);
@@ -140,4 +142,7 @@ void ColliderEnt::Deserialize(std::istream& stream)
 	{
 		m_blockedGravityModes[i] = (entityPB.block_bit_mask() & (1 << (i + 2))) != 0;
 	}
+	m_blockPickUp = (entityPB.block_bit_mask() & 256U) != 0;
+	
+	m_physicsObject.rayIntersectMask = m_blockPickUp ? RAY_MASK_BLOCK_PICK_UP : 0;
 }

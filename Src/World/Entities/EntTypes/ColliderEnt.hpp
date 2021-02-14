@@ -32,6 +32,7 @@ private:
 	
 	bool m_blockPlayer = true;
 	bool m_blockCubes = true;
+	bool m_blockPickUp = false;
 	bool m_blockedGravityModes[6];
 	
 	PhysicsObject m_physicsObject;
