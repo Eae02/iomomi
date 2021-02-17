@@ -18,6 +18,8 @@ public:
 	std::function<int()> getValue;
 	std::function<void(int)> setValue;
 	
+	bool restartRequiredIfChanged = false;
+	
 	static ComboBox* current;
 	
 private:
@@ -25,4 +27,5 @@ private:
 	float m_expandProgress = 0;
 	std::vector<float> m_optionHighlightIntensity;
 	uint64_t m_lastFrameUpdated = 0;
+	std::optional<int> m_initialValue;
 };

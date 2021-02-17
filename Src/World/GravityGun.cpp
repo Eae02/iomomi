@@ -119,7 +119,11 @@ void GravityGun::Update(World& world, const PhysicsEngine& physicsEngine, WaterS
 	float yoffset = sin(2 * m_bobTime) * speed * GUN_BOB_SCALE / 400;
 	m_bobTime += dt * GUN_BOB_SPEED;
 	
-	glm::vec3 translation = (rotationMatrix * glm::vec3(xoffset, yoffset, 0)) + player.EyePosition() + m_gunOffset;
+	glm::mat4 viewMatrix, viewMatrixInv;
+	player.GetViewMatrix(viewMatrix, viewMatrixInv);
+	glm::vec3 playerEyePos(viewMatrixInv[3]);
+	
+	glm::vec3 translation = (rotationMatrix * glm::vec3(xoffset, yoffset, 0)) + playerEyePos + m_gunOffset;
 	
 	m_gunTransform = glm::translate(glm::mat4(), translation) * glm::mat4(rotationMatrix);
 	m_gunTransform = glm::rotate(m_gunTransform, eg::PI * GUN_ROTATION_X, glm::vec3(1, 0, 0));

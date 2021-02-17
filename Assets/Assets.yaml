@@ -45,9 +45,9 @@ assets:
   #Textures:
   - name: Textures/EntityIcons.png
   - name: Textures/ThumbnailNA.png
-  - name: Textures/Lock.png
-  - name: Textures/LevelCompleted.png
-  - name: Textures/LevelSelect.png
+  - regex: "Textures/UI/.*\\.png"
+    srgb: true
+    format: rgba8
   - name: Textures/NoDraw.png
     mipShift: *MipShift
     srgb: true
@@ -124,9 +124,6 @@ assets:
   - name: Textures/Grid.png
     format: r8
     filtering: nearest
-  - name: Textures/Crosshair.png
-    format: rgba8
-    filtering: linear
     
   - regex: "Textures/Decals/.*\\.png"
     mipShift: *MipShift

@@ -16,7 +16,7 @@ public:
 protected:
 	void UpdateBase(bool allowInteraction);
 	
-	void DrawBase(eg::SpriteBatch& spriteBatch, float highlightIntensity, std::string_view valueText) const;
+	void DrawBase(eg::SpriteBatch& spriteBatch, float highlightIntensity, std::string_view valueText, float maxValueWidth = 0) const;
 	
 	static glm::vec2 GetTextPos(const eg::Rectangle& rectangle);
 	glm::vec2 GetTextPos() const { return GetTextPos(m_rectangle); }

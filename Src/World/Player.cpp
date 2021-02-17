@@ -23,6 +23,10 @@ static float* waterJumpHeight   = eg::TweakVarFloat("pl_wjump_height",   1.3f,  
 static float* eyeRoundPrecision = eg::TweakVarFloat("pl_eye_round_prec", 0.01f, 0);
 static int* noclipActive        = eg::TweakVarInt("noclip", 0, 0, 1);
 
+static const float* viewBobbingMaxRotation = eg::TweakVarFloat("vb_max_rot", 0.0035f, 0);
+static const float* viewBobbingMaxTransY = eg::TweakVarFloat("vb_max_ty", 0.06f, 0);
+static const float* viewBobbingSpeed = eg::TweakVarFloat("vb_speed", 6.0f, 0);
+
 static constexpr float EYE_OFFSET = Player::EYE_HEIGHT - Player::HEIGHT / 2;
 
 Player::Player()
@@ -596,6 +600,13 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 	
 	m_wasUnderwater = underwater;
 	m_wasOnGround = m_onGround;
+	
+	float targetVBIntensity = (m_onGround && !underwater) ? std::min(glm::length(velocityXZ) / *walkSpeed, 1.0f) : 0.0f;
+	m_viewBobbingIntensity = eg::AnimateTo(m_viewBobbingIntensity, targetVBIntensity, dt * 10.0f);
+	if (m_viewBobbingIntensity < 0.0001f)
+		m_viewBobbingTime = 0;
+	else
+		m_viewBobbingTime += dt * *viewBobbingSpeed * m_viewBobbingIntensity;
 }
 
 void Player::FlipDown()
@@ -615,11 +626,37 @@ void Player::FlipDown()
 	m_physicsObject.velocity = glm::vec3(0);
 }
 
+static const float VIEW_BOBBING_TY_LEVEL_MULTIPLIERS[] = {
+	/* Off    */ 0.0f,
+	/* Low    */ 0.5f,
+	/* Normal */ 1.0f
+};
+
+static const float VIEW_BOBBING_RZ_LEVEL_MULTIPLIERS[] = {
+	/* Off    */ 0.0f,
+	/* Low    */ 0.0f,
+	/* Normal */ 1.0f
+};
+
 void Player::GetViewMatrix(glm::mat4& matrixOut, glm::mat4& inverseMatrixOut) const
 {
+	const float viewBobbingRZ = std::sin(m_viewBobbingTime) * *viewBobbingMaxRotation *
+		m_viewBobbingIntensity * VIEW_BOBBING_RZ_LEVEL_MULTIPLIERS[(int)settings.viewBobbingLevel];
+	const float viewBobbingTY = std::sin(m_viewBobbingTime * 2) * *viewBobbingMaxTransY *
+		m_viewBobbingIntensity * VIEW_BOBBING_TY_LEVEL_MULTIPLIERS[(int)settings.viewBobbingLevel];
+	
 	const glm::mat4 rotationMatrix = glm::mat4_cast(m_rotation);
-	matrixOut = glm::transpose(rotationMatrix) * glm::translate(glm::mat4(1.0f), -m_eyePosition);
-	inverseMatrixOut = glm::translate(glm::mat4(1.0f), m_eyePosition) * rotationMatrix;
+	
+	matrixOut =
+		glm::rotate(glm::mat4(1), viewBobbingRZ, glm::vec3(0, 0, 1)) *
+		glm::translate(glm::mat4(1), glm::vec3(0, viewBobbingTY, 0)) *
+		glm::transpose(rotationMatrix) *
+		glm::translate(glm::mat4(1.0f), -m_eyePosition);
+	inverseMatrixOut =
+		glm::translate(glm::mat4(1.0f), m_eyePosition) *
+		rotationMatrix *
+		glm::translate(glm::mat4(1), glm::vec3(0, -viewBobbingTY, 0)) *
+		glm::rotate(glm::mat4(1), -viewBobbingRZ, glm::vec3(0, 0, 1));
 }
 
 glm::vec3 Player::Forward() const
@@ -661,6 +698,7 @@ void Player::Reset()
 	m_isCarrying = false;
 	m_leftWaterTime = 0;
 	m_eyeOffsetFade = 1;
+	m_viewBobbingIntensity = 1;
 	m_gravityTransitionMode = TransitionMode::None;
 }
 

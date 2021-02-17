@@ -5,7 +5,7 @@ static Slider* currentSlider = nullptr;
 
 Slider::Slider()
 {
-	height = 20;
+	height = 25;
 }
 
 void Slider::Update(float dt, bool allowInteraction)
@@ -41,7 +41,7 @@ void Slider::Update(float dt, bool allowInteraction)
 
 void Slider::Draw(eg::SpriteBatch& spriteBatch) const
 {
-	DrawBase(spriteBatch, 0, {});
+	DrawBase(spriteBatch, 0, std::string_view());
 	
 	float value = getValue();
 	
@@ -53,17 +53,15 @@ void Slider::Draw(eg::SpriteBatch& spriteBatch) const
 	);
 	spriteBatch.DrawRect(activeRect, eg::ColorLin(1, 1, 1, 0.8f));
 	
-	if (displayValue)
+	if (getDisplayValueString)
 	{
-		char valueBuffer[64];
-		snprintf(valueBuffer, sizeof(valueBuffer), "%d%s", (int)std::round(value), valueSuffix ? valueSuffix : "");
-		std::string_view valueStr = valueBuffer;
+		std::string_view valueStr = getDisplayValueString(value);
 		
 		constexpr float VALUE_BORDER_SPACING = 5;
 		float textWidth = style::UIFontSmall->GetTextExtents(valueStr).x;
 		
 		glm::vec2 textPos;
-		textPos.y = activeRect.y + 3;
+		textPos.y = activeRect.y + 5;
 		eg::ColorLin textColor;
 		if (activeRect.w + textWidth + VALUE_BORDER_SPACING < m_rectangle.w)
 		{

@@ -4,6 +4,7 @@
 #include "../WallShader.hpp"
 #include "../../Settings.hpp"
 
+#include <magic_enum.hpp>
 #include <fstream>
 
 static const eg::AssetFormat StaticPropMaterialAssetFormat { "StaticPropMaterial", 7 };
@@ -31,9 +32,19 @@ public:
 		const bool castShadows = rootYaml["castShadows"].as<bool>(true);
 		const bool enableSSR = rootYaml["enableSSR"].as<bool>(true);
 		
-		std::string minShadowQualityString = rootYaml["minShadowQuality"].as<std::string>("vlow");
-		QualityLevel minShadowQuality = QualityLevel::VeryLow;
-		DecodeQualityLevel(minShadowQualityString, minShadowQuality);
+		QualityLevel minShadowQuality = QualityLevel::Low;
+		std::string minShadowQualityStr = rootYaml["minShadowQuality"].as<std::string>("");
+		if (!minShadowQualityStr.empty())
+		{
+			if (std::optional<QualityLevel> levelOpt = magic_enum::enum_cast<QualityLevel>(minShadowQualityStr))
+			{
+				minShadowQuality = *levelOpt;
+			}
+			else
+			{
+				eg::Log(eg::LogLevel::Error, "as", "Unknown shadow quality level {} in {}", minShadowQualityStr, sourcePath);
+			}
+		}
 		
 		std::string albedoPath = rootYaml["albedo"].as<std::string>(std::string());
 		std::string normalMapPath = rootYaml["normalMap"].as<std::string>(std::string());

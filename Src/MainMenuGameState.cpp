@@ -192,9 +192,9 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 	glm::vec2 flippedCursorPos(eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY());
 	
 	const eg::Texture& thumbnailNaTexture = eg::GetAsset<eg::Texture>("Textures/ThumbnailNA.png");
-	const eg::Texture& lockTexture = eg::GetAsset<eg::Texture>("Textures/Lock.png");
-	const eg::Texture& completedTexture = eg::GetAsset<eg::Texture>("Textures/LevelCompleted.png");
-	const eg::Texture& titleTexture = eg::GetAsset<eg::Texture>("Textures/LevelSelect.png");
+	const eg::Texture& lockTexture = eg::GetAsset<eg::Texture>("Textures/UI/Lock.png");
+	const eg::Texture& completedTexture = eg::GetAsset<eg::Texture>("Textures/UI/LevelCompleted.png");
+	const eg::Texture& titleTexture = eg::GetAsset<eg::Texture>("Textures/UI/LevelSelect.png");
 	
 	const float marginX = 0.05f * eg::CurrentResolutionX();
 	

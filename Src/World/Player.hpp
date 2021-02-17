@@ -78,6 +78,8 @@ private:
 	float m_eyeOffsetFade = 1;
 	float m_onGroundLinger = 0;
 	float m_planeMovementDisabledTimer = 0;
+	float m_viewBobbingIntensity = 1;
+	float m_viewBobbingTime = 0;
 	bool m_onGround = false;
 	bool m_wasOnGround = false;
 	bool m_wasUnderwater = false;

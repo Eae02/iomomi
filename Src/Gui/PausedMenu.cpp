@@ -50,45 +50,37 @@ void PausedMenu::Update(float dt)
 		optionsMenuOpen = false;
 	}
 	
-	if (!isPaused)
+	float fadeTarget = 0;
+	float optionsFadeTarget = 0;
+	
+	if (isPaused)
 	{
-		fade = std::max(fade - dt / FADE_IN_TIME, 0.0f);
-		return;
+		fadeTarget = 1;
+		optionsFadeTarget = optionsMenuOpen ? 1 : 0;
+		
+		UpdateOptionsMenu(dt, glm::vec2(0), optionsMenuOpen);
+		
+		std::get<Button>(m_widgetList.GetWidget(m_mainMenuWidgetIndex)).text =
+			isFromEditor ? "Return to Editor" : "Main Menu";
+		m_widgetList.position = glm::vec2(eg::CurrentResolutionX(), eg::CurrentResolutionY()) / 2.0f;
+		m_widgetList.Update(dt, !optionsMenuOpen);
 	}
 	
-	fade = std::min(fade + dt / FADE_IN_TIME, 1.0f);
-	/*
-	auto ChangeKeyboardFocus = [&] (int delta)
-	{
-		m_buttons[m_buttonKeyboardFocus].hasKeyboardFocus = false;
-		m_buttonKeyboardFocus = (m_buttonKeyboardFocus + delta + BTN_Count) % BTN_Count;
-		m_buttons[m_buttonKeyboardFocus].hasKeyboardFocus = true;
-	};
-	
-	if ((eg::IsButtonDown(eg::Button::UpArrow) && !eg::WasButtonDown(eg::Button::UpArrow)) ||
-		(eg::IsButtonDown(eg::Button::CtrlrDPadUp) && !eg::WasButtonDown(eg::Button::CtrlrDPadUp)))
-	{
-		ChangeKeyboardFocus(-1);
-	}
-	if ((eg::IsButtonDown(eg::Button::DownArrow) && !eg::WasButtonDown(eg::Button::DownArrow)) ||
-		(eg::IsButtonDown(eg::Button::CtrlrDPadDown) && !eg::WasButtonDown(eg::Button::CtrlrDPadDown)))
-	{
-		ChangeKeyboardFocus(1);
-	}
-	*/
-	
-	UpdateOptionsMenu(dt, glm::vec2(0), optionsMenuOpen);
-	
-	std::get<Button>(m_widgetList.GetWidget(m_mainMenuWidgetIndex)).text =
-		isFromEditor ? "Return to Editor" : "Main Menu";
-	m_widgetList.position = glm::vec2(eg::CurrentResolutionX(), eg::CurrentResolutionY()) / 2.0f;
-	m_widgetList.Update(dt, !optionsMenuOpen);
+	fade = eg::AnimateTo(fade, fadeTarget, dt / FADE_IN_TIME);
+	m_optionsMenuOverlayFade = eg::AnimateTo(m_optionsMenuOverlayFade, optionsFadeTarget, dt / FADE_IN_TIME);
 }
 
 void PausedMenu::Draw(eg::SpriteBatch& spriteBatch) const
 {
 	if (!isPaused)
 		return;
+	
+	if (m_optionsMenuOverlayFade > 0)
+	{
+		spriteBatch.DrawRect(
+			eg::Rectangle(0, 0, eg::CurrentResolutionX(), eg::CurrentResolutionY()),
+			eg::ColorLin(0, 0, 0, 0.3f * m_optionsMenuOverlayFade));
+	}
 	
 	if (optionsMenuOpen)
 	{

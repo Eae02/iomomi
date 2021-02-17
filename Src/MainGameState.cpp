@@ -44,9 +44,14 @@ MainGameState::MainGameState()
 		m_ssrReflectionColorEditorShown = !m_ssrReflectionColorEditorShown;
 	});
 	
-	eg::console::AddCommand("showExtraLevels", 0, [this] (eg::Span<const std::string_view>, eg::console::Writer&)
+	eg::console::AddCommand("showExtraLevels", 0, [] (eg::Span<const std::string_view>, eg::console::Writer&)
 	{
 		settings.showExtraLevels = true;
+	});
+	
+	eg::console::AddCommand("crosshair", 0, [] (eg::Span<const std::string_view>, eg::console::Writer&)
+	{
+		settings.drawCrosshair = !settings.drawCrosshair;
 	});
 	
 	const eg::Texture& particlesTexture = eg::GetAsset<eg::Texture>("Textures/Particles.png");
@@ -55,7 +60,7 @@ MainGameState::MainGameState()
 	m_playerWaterAABB = std::make_shared<WaterSimulator::QueryAABB>();
 	GameRenderer::instance->m_waterSimulator.AddQueryAABB(m_playerWaterAABB);
 	
-	m_crosshairTexture = &eg::GetAsset<eg::Texture>("Textures/Crosshair.png");
+	m_crosshairTexture = &eg::GetAsset<eg::Texture>("Textures/UI/Crosshair.png");
 }
 
 void MainGameState::SetWorld(std::unique_ptr<World> newWorld, int64_t levelIndex,
@@ -239,8 +244,6 @@ void MainGameState::RunFrame(float dt)
 	}
 }
 
-static int* drawCrosshair = eg::TweakVarInt("draw_ch", 1, 0, 1);
-
 void MainGameState::UpdateAndDrawHud(float dt)
 {
 	float controlHintTargetAlpha = 0;
@@ -309,7 +312,7 @@ void MainGameState::UpdateAndDrawHud(float dt)
 	}
 	
 	//Draws the crosshair
-	if (*drawCrosshair)
+	if (settings.drawCrosshair)
 	{
 		const float crosshairSize = std::round(eg::CurrentResolutionX() / 40.0f);
 		const eg::Rectangle chRect = eg::Rectangle::CreateCentered(

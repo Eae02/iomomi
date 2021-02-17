@@ -15,9 +15,20 @@ static_assert(sizeof(float) == 4);
 
 const char* version = __DATE__;
 
-void Start(eg::RunConfig& runConfig)
+int main(int argc, char** argv)
 {
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
+	
+	std::string appDataDirPath = eg::AppDataPath() + "/EaeGravity";
+	if (!eg::FileExists(appDataDirPath.c_str()))
+	{
+		eg::CreateDirectory(appDataDirPath.c_str());
+	}
+	
+	eg::RunConfig runConfig;
+#ifndef NDEBUG
+	runConfig.flags |= eg::RunFlags::DevMode;
+#endif
 	
 	InitEntityTypes();
 	LoadSettings();
@@ -25,6 +36,12 @@ void Start(eg::RunConfig& runConfig)
 	
 	if (settings.vsync)
 		runConfig.flags |= eg::RunFlags::VSync;
+	runConfig.graphicsAPI = settings.graphicsAPI;
+	runConfig.preferredGPUName = settings.preferredGPUName;
+	
+	eg::ParseCommandLineArgs(runConfig, argc, argv);
+	if (eg::HasFlag(runConfig.flags, eg::RunFlags::PreferIntegratedGPU))
+		runConfig.preferredGPUName.clear();
 	
 	runConfig.gameName = "Gravity Game";
 	runConfig.flags |= eg::RunFlags::DefaultFramebufferSRGB;
@@ -53,34 +70,7 @@ void Start(eg::RunConfig& runConfig)
 	};
 	
 	eg::Run<Game>(runConfig);
-}
-
-#ifdef __EMSCRIPTEN__
-extern "C" void WebMain()
-{
-	eg::RunConfig runConfig;
-	runConfig.graphicsAPI = eg::GraphicsAPI::OpenGL;
-	Start(runConfig);
-}
-#else
-int main(int argc, char** argv)
-{
-	std::string appDataDirPath = eg::AppDataPath() + "/EaeGravity";
-	if (!eg::FileExists(appDataDirPath.c_str()))
-	{
-		eg::CreateDirectory(appDataDirPath.c_str());
-	}
-	
-	eg::RunConfig runConfig;
-#ifndef NDEBUG
-	runConfig.flags |= eg::RunFlags::DevMode;
-#endif
-	
-	eg::ParseCommandLineArgs(runConfig, argc, argv);
-	
-	Start(runConfig);
 	
 	SaveProgress();
 	SaveSettings();
 }
-#endif

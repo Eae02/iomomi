@@ -18,9 +18,5 @@ public:
 	float max = 1;
 	float increment = 0;
 	
-	bool displayValue = false;
-	const char* valueSuffix = nullptr;
-	
-private:
-	
+	std::function<std::string_view(float)> getDisplayValueString;
 };

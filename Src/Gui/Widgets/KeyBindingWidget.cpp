@@ -27,13 +27,13 @@ void KeyBindingWidget::Update(float dt, bool allowInteraction)
 	
 	if (m_isPickingKey)
 	{
-		if (cancelButtonHovered && eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft))
+		anyKeyBindingPickingKey = true;
+		if ((cancelButtonHovered && eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft)) || settings.keyMenu.IsDown())
 		{
 			m_isPickingKey = false;
 		}
 		else
 		{
-			anyKeyBindingPickingKey = true;
 			const eg::Button button = eg::InputState::Current().PressedButton();
 			if (button != eg::Button::Unknown && eg::InputState::Previous().PressedButton() != button &&
 				IsControllerButton(button) == isConfiguringGamePad)

@@ -45,8 +45,7 @@ private:
 	
 	struct AirVoxel
 	{
-		//Tracks which material to use for each face
-		uint8_t materials[6];
+		uint8_t materials[6]; //Tracks which material to use for each face
 		std::bitset<12> hasGravityCorner;
 		
 		AirVoxel() : materials { }, hasGravityCorner(0) { }

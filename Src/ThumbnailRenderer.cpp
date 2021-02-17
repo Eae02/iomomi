@@ -70,6 +70,12 @@ LevelThumbnailUpdate* BeginUpdateLevelThumbnails(RenderContext& renderContext, e
 			continue;
 		worldStream.close();
 		
+		if (!world->voxels.IsAir(glm::floor(world->thumbnailCameraPos)))
+		{
+			std::string errorMessage = "Thumbnail camera position is inside a wall for level: " + level.name;
+			writer.WriteLine(eg::console::ErrorColor, errorMessage);
+		}
+		
 		renderer->WorldChanged(*world);
 		
 		WorldUpdateArgs updateArgs = {};

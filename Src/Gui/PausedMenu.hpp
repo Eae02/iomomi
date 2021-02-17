@@ -20,4 +20,6 @@ private:
 	WidgetList m_widgetList;
 	
 	size_t m_mainMenuWidgetIndex;
+	
+	float m_optionsMenuOverlayFade = 0;
 };

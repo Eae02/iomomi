@@ -2,28 +2,11 @@
 
 #include <yaml-cpp/yaml.h>
 #include <fstream>
+#include <magic_enum.hpp>
 
 std::string settingsPath;
 
 Settings settings;
-
-void DecodeQualityLevel(std::string_view name, QualityLevel& def)
-{
-	if (name == "veryLow" || name == "vlow")
-		def = QualityLevel::VeryLow;
-	else if (name == "low")
-		def = QualityLevel::Low;
-	else if (name == "medium")
-		def = QualityLevel::Medium;
-	else if (name == "high")
-		def = QualityLevel::High;
-	else if (name == "veryHigh" || name == "vhigh")
-		def = QualityLevel::VeryHigh;
-	else
-		eg::Log(eg::LogLevel::Error, "opt", "Unknwon quality level '{0}'", name);
-}
-
-static std::string displayModeNames[] = { "windowed", "fullscreen", "fullscreenDesktop" };
 
 void LoadSettings()
 {
@@ -35,7 +18,7 @@ void LoadSettings()
 	
 	YAML::Node settingsNode = YAML::Load(settingsStream);
 	
-	std::string textureQualStr = settingsNode["textureQuality"].as<std::string>("medium");
+	std::string textureQualStr = settingsNode["textureQuality"].as<std::string>("high");
 	if (textureQualStr == "low")
 		settings.textureQuality = eg::TextureQuality::Low;
 	else if (textureQualStr == "medium")
@@ -43,10 +26,10 @@ void LoadSettings()
 	else if (textureQualStr == "high")
 		settings.textureQuality = eg::TextureQuality::High;
 	
-	DecodeQualityLevel(settingsNode["reflectionsQuality"].as<std::string>("medium"), settings.reflectionsQuality);
-	DecodeQualityLevel(settingsNode["shadowQuality"].as<std::string>("medium"), settings.shadowQuality);
-	DecodeQualityLevel(settingsNode["lightingQuality"].as<std::string>("medium"), settings.lightingQuality);
-	DecodeQualityLevel(settingsNode["waterQuality"].as<std::string>("medium"), settings.waterQuality);
+	settings.reflectionsQuality = magic_enum::enum_cast<QualityLevel>(settingsNode["reflQuality"].as<std::string>("")).value_or(QualityLevel::Medium);
+	settings.shadowQuality      = magic_enum::enum_cast<QualityLevel>(settingsNode["shadowQuality"].as<std::string>("")).value_or(QualityLevel::Medium);
+	settings.lightingQuality    = magic_enum::enum_cast<QualityLevel>(settingsNode["lightingQuality"].as<std::string>("")).value_or(QualityLevel::High);
+	settings.waterQuality       = magic_enum::enum_cast<QualityLevel>(settingsNode["waterQuality"].as<std::string>("")).value_or(QualityLevel::High);
 	settings.fieldOfViewDeg = settingsNode["fieldOfView"].as<float>(settings.fieldOfViewDeg);
 	settings.exposure = settingsNode["exposure"].as<float>(settings.exposure);
 	settings.lookSensitivityMS = settingsNode["lookSensitivityMS"].as<float>(settings.lookSensitivityMS);
@@ -56,18 +39,22 @@ void LoadSettings()
 	settings.enableBloom = settingsNode["bloom"].as<bool>(true);
 	settings.showExtraLevels = settingsNode["showExtraLevels"].as<bool>(false);
 	settings.gunFlash = settingsNode["gunFlash"].as<bool>(true);
+	settings.drawCrosshair = settingsNode["crosshair"].as<bool>(true);
 	
-	std::string displayModeString = settingsNode["displayMode"].as<std::string>("");
-	for (int i = 0; i < 3; i++)
-	{
-		if (displayModeString == displayModeNames[i])
-			settings.displayMode = (DisplayMode)i;
-	}
+	settings.graphicsAPI = magic_enum::enum_cast<eg::GraphicsAPI>(settingsNode["graphicsAPI"].as<std::string>("")).value_or(eg::GraphicsAPI::OpenGL);
+	settings.preferredGPUName = settingsNode["prefGPUName"].as<std::string>("");
+	
+	settings.displayMode = magic_enum::enum_cast<DisplayMode>(settingsNode["displayMode"].as<std::string>("")).value_or(DisplayMode::Windowed);
+	settings.viewBobbingLevel = magic_enum::enum_cast<ViewBobbingLevel>(settingsNode["displayMode"].as<std::string>("")).value_or(ViewBobbingLevel::Normal);
 	
 	settings.fullscreenDisplayMode.resolutionX = settingsNode["resx"].as<uint32_t>(0);
 	settings.fullscreenDisplayMode.resolutionY = settingsNode["resy"].as<uint32_t>(0);
 	settings.fullscreenDisplayMode.refreshRate = settingsNode["refreshRate"].as<uint32_t>(0);
 	settings.vsync = settingsNode["vsync"].as<bool>(true);
+	
+	settings.masterVolume = settingsNode["masterVolume"].as<float>(settings.masterVolume);
+	settings.sfxVolume = settingsNode["sfxVolume"].as<float>(settings.sfxVolume);
+	settings.ambienceVolume = settingsNode["ambienceVolume"].as<float>(settings.ambienceVolume);
 	
 	auto ReadKeyBinding = [&] (const char* name, KeyBinding& binding)
 	{
@@ -89,35 +76,40 @@ void LoadSettings()
 	ReadKeyBinding("keyShoot", settings.keyShoot);
 }
 
-static const char* textureQualityNames[] = { "low", "medium", "high" };
-static const char* qualityNames[] = { "veryLow", "low", "medium", "high", "veryHigh" };
-
 void SaveSettings()
 {
 	YAML::Emitter emitter;
 	
 	emitter << YAML::BeginMap;
-	emitter << YAML::Key << "showExtraLevels" << YAML::Value << settings.showExtraLevels;
-	emitter << YAML::Key << "textureQuality" << YAML::Value << textureQualityNames[(int)settings.textureQuality];
-	emitter << YAML::Key << "reflectionsQuality" << YAML::Value << qualityNames[(int)settings.reflectionsQuality];
-	emitter << YAML::Key << "shadowQuality" << YAML::Value << qualityNames[(int)settings.shadowQuality];
-	emitter << YAML::Key << "lightingQuality" << YAML::Value << qualityNames[(int)settings.lightingQuality];
-	emitter << YAML::Key << "waterQuality" << YAML::Value << qualityNames[(int)settings.waterQuality];
-	emitter << YAML::Key << "fieldOfView" << YAML::Value << settings.fieldOfViewDeg;
-	emitter << YAML::Key << "exposure" << YAML::Value << settings.exposure;
+	emitter << YAML::Key << "showExtraLevels"   << YAML::Value << settings.showExtraLevels;
+	emitter << YAML::Key << "textureQuality"    << YAML::Value << std::string(magic_enum::enum_name(settings.textureQuality));
+	emitter << YAML::Key << "reflQuality"       << YAML::Value << std::string(magic_enum::enum_name(settings.reflectionsQuality));
+	emitter << YAML::Key << "shadowQuality"     << YAML::Value << std::string(magic_enum::enum_name(settings.shadowQuality));
+	emitter << YAML::Key << "lightingQuality"   << YAML::Value << std::string(magic_enum::enum_name(settings.lightingQuality));
+	emitter << YAML::Key << "waterQuality"      << YAML::Value << std::string(magic_enum::enum_name(settings.waterQuality));
+	emitter << YAML::Key << "fieldOfView"       << YAML::Value << settings.fieldOfViewDeg;
+	emitter << YAML::Key << "exposure"          << YAML::Value << settings.exposure;
 	emitter << YAML::Key << "lookSensitivityMS" << YAML::Value << settings.lookSensitivityMS;
 	emitter << YAML::Key << "lookSensitivityGP" << YAML::Value << settings.lookSensitivityGP;
-	emitter << YAML::Key << "lookInvertY" << YAML::Value << settings.lookInvertY;
-	emitter << YAML::Key << "flipJoysticks" << YAML::Value << settings.flipJoysticks;
-	emitter << YAML::Key << "fxaa" << YAML::Value << settings.enableFXAA;
-	emitter << YAML::Key << "bloom" << YAML::Value << settings.enableBloom;
-	emitter << YAML::Key << "gunFlash" << YAML::Value << settings.gunFlash;
+	emitter << YAML::Key << "lookInvertY"       << YAML::Value << settings.lookInvertY;
+	emitter << YAML::Key << "flipJoysticks"     << YAML::Value << settings.flipJoysticks;
+	emitter << YAML::Key << "fxaa"              << YAML::Value << settings.enableFXAA;
+	emitter << YAML::Key << "bloom"             << YAML::Value << settings.enableBloom;
+	emitter << YAML::Key << "gunFlash"          << YAML::Value << settings.gunFlash;
+	emitter << YAML::Key << "crosshair"         << YAML::Value << settings.drawCrosshair;
+	emitter << YAML::Key << "viewBobbing"       << YAML::Value << std::string(magic_enum::enum_name(settings.viewBobbingLevel));
 	
-	emitter << YAML::Key << "displayMode" << YAML::Value << displayModeNames[(int)settings.displayMode];
-	emitter << YAML::Key << "resx" << YAML::Value << settings.fullscreenDisplayMode.resolutionX;
-	emitter << YAML::Key << "resy" << YAML::Value << settings.fullscreenDisplayMode.resolutionY;
+	emitter << YAML::Key << "displayMode" << YAML::Value << std::string(magic_enum::enum_name(settings.displayMode));
+	emitter << YAML::Key << "resx"        << YAML::Value << settings.fullscreenDisplayMode.resolutionX;
+	emitter << YAML::Key << "resy"        << YAML::Value << settings.fullscreenDisplayMode.resolutionY;
 	emitter << YAML::Key << "refreshRate" << YAML::Value << settings.fullscreenDisplayMode.refreshRate;
-	emitter << YAML::Key << "vsync" << YAML::Value << settings.vsync;
+	emitter << YAML::Key << "vsync"       << YAML::Value << settings.vsync;
+	emitter << YAML::Key << "prefGPUName" << YAML::Value << settings.preferredGPUName;
+	emitter << YAML::Key << "graphicsAPI" << YAML::Value << std::string(magic_enum::enum_name(settings.graphicsAPI));
+	
+	emitter << YAML::Key << "masterVolume"   << YAML::Value << settings.masterVolume;
+	emitter << YAML::Key << "sfxVolume"      << YAML::Value << settings.sfxVolume;
+	emitter << YAML::Key << "ambienceVolume" << YAML::Value << settings.ambienceVolume;
 	
 	auto WriteKeyBinding = [&] (const char* name, const KeyBinding& binding)
 	{

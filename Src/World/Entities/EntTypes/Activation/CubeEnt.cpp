@@ -239,7 +239,10 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 		const float distFromPlayer = RADIUS + *cubeCarryDist; //Distance to the cube when carrying
 		const float maxDistFromPlayer = RADIUS + *cubeDropDist; //Drop the cube if further away than this
 		
-		glm::vec3 desiredPosition = args.player->EyePosition() + args.player->Forward() * distFromPlayer;
+		glm::mat4 viewMatrix, viewMatrixInv;
+		args.player->GetViewMatrix(viewMatrix, viewMatrixInv);
+		
+		glm::vec3 desiredPosition = viewMatrixInv * glm::vec4(0, 0, -distFromPlayer, 1);
 		
 		eg::AABB desiredAABB(desiredPosition - RADIUS * 1.001f, desiredPosition + RADIUS * 1.001f);
 		

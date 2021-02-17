@@ -10,6 +10,13 @@ enum class DisplayMode
 	FullscreenDesktop
 };
 
+enum class ViewBobbingLevel
+{
+	Off,
+	Low,
+	Normal
+};
+
 struct KeyBinding
 {
 	eg::Button kbmButton;
@@ -33,17 +40,23 @@ struct Settings
 	bool showExtraLevels = false;
 	
 	eg::TextureQuality textureQuality = eg::TextureQuality::High;
-	QualityLevel shadowQuality        = QualityLevel::High;
+	QualityLevel shadowQuality        = QualityLevel::Medium;
 	QualityLevel reflectionsQuality   = QualityLevel::Medium;
 	QualityLevel lightingQuality      = QualityLevel::High;
-	QualityLevel waterQuality         = QualityLevel::Medium;
+	QualityLevel waterQuality         = QualityLevel::High;
 	float fieldOfViewDeg              = 80.0f;
+	
+	eg::GraphicsAPI graphicsAPI = eg::GraphicsAPI::OpenGL;
+	std::string preferredGPUName;
 	
 	float exposure = 0.9f;
 	
 	bool enableFXAA         = true;
 	bool enableBloom        = true;
 	bool gunFlash           = true;
+	bool drawCrosshair      = true;
+	
+	ViewBobbingLevel viewBobbingLevel = ViewBobbingLevel::Normal;
 	
 	KeyBinding keyMoveF { eg::Button::W, eg::Button::CtrlrDPadUp };
 	KeyBinding keyMoveB { eg::Button::S, eg::Button::CtrlrDPadDown };
@@ -57,6 +70,10 @@ struct Settings
 	float lookSensitivityGP = 2.0f;
 	bool flipJoysticks      = false;
 	bool lookInvertY        = false;
+	
+	float masterVolume   = 1.0f;
+	float sfxVolume      = 1.0f;
+	float ambienceVolume = 0.6f;
 	
 	std::array<bool, (int)EntTypeID::MAX> edEntityIconEnabled;
 	
@@ -81,8 +98,6 @@ extern Settings settings;
 extern bool settingsWindowVisible;
 
 void UpdateDisplayMode();
-
-void DecodeQualityLevel(std::string_view name, QualityLevel& def);
 
 int SettingsGeneration();
 

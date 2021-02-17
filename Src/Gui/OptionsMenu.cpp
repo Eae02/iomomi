@@ -2,7 +2,7 @@
 #include "Widgets/WidgetList.hpp"
 #include "../Settings.hpp"
 
-static constexpr float WIDGET_LIST_WIDTH = 400;
+static constexpr float WIDGET_LIST_WIDTH = 420;
 static constexpr float WIDGET_LIST_SPACING = 50;
 
 static WidgetList leftWidgetList(WIDGET_LIST_WIDTH);
@@ -13,19 +13,30 @@ bool optionsMenuOpen = false;
 template <typename T>
 std::vector<std::string> settingsCBOptions;
 
+template <> std::vector<std::string> settingsCBOptions<ViewBobbingLevel> { "Off", "Low", "Normal" };
 template <> std::vector<std::string> settingsCBOptions<eg::TextureQuality> { "Low", "Medium", "High" };
 template <> std::vector<std::string> settingsCBOptions<QualityLevel> { "Very Low", "Low", "Medium", "High", "Very High" };
 template <> std::vector<std::string> settingsCBOptions<DisplayMode> { "Windowed", "Fullscreen", "Fullscreen Windowed" };
 
 template <typename T>
-ComboBox InitSettingsCB(T Settings::*member, std::string label)
+ComboBox InitSettingsCB(T Settings::*member, std::string label, bool reverseOptions = false)
 {
 	ComboBox cb;
 	cb.label = std::move(label);
 	cb.options = settingsCBOptions<T>;
-	cb.getValue = [member] { return (int)(settings.*member); };
-	cb.setValue = [member] (int value)
+	if (reverseOptions)
+		std::reverse(cb.options.begin(), cb.options.end());
+	cb.getValue = [=]
 	{
+		int v = (int)(settings.*member);
+		if (reverseOptions)
+			v = settingsCBOptions<T>.size() - 1 - v;
+		return v;
+	};
+	cb.setValue = [=] (int value)
+	{
+		if (reverseOptions)
+			value = settingsCBOptions<T>.size() - 1 - value;
 		settings.*member = (T)value;
 		SettingsChanged();
 	};
@@ -47,6 +58,23 @@ Slider InitSettingsSlider(float Settings::*member, std::string label, float min,
 	return slider;
 }
 
+std::string_view VolumeAndBrightnessGetDisplayValueString(float value)
+{
+	if (value <= 0)
+		return "Muted";
+	int val = std::max((int)std::round(value * 100), 1);
+	static char buffer[16];
+	snprintf(buffer, sizeof(buffer), "%d%%", val);
+	return buffer;
+}
+
+Slider InitVolumeSlider(float Settings::*member, std::string label)
+{
+	Slider slider = InitSettingsSlider(member, label, 0, 1.5f);
+	slider.getDisplayValueString = VolumeAndBrightnessGetDisplayValueString;
+	return slider;
+}
+
 ToggleButton InitSettingsToggleButton(bool Settings::*member, std::string label, std::string trueString, std::string falseString)
 {
 	ToggleButton button;
@@ -63,8 +91,22 @@ ToggleButton InitSettingsToggleButton(bool Settings::*member, std::string label,
 }
 
 static int fullscreenDisplayModeIndex;
-static size_t textureQualityWidgetIndex;
-static eg::TextureQuality initialTextureQuality;
+
+std::string FilterGPUNameString(std::string_view inputString)
+{
+	std::string outputString;
+	int parenDepth = 0;
+	for (char c : inputString)
+	{
+		if (c == '(')
+			parenDepth++;
+		if (parenDepth == 0)
+			outputString.push_back(c);
+		if (c == ')')
+			parenDepth--;
+	}
+	return outputString;
+}
 
 void InitOptionsMenu()
 {
@@ -79,7 +121,7 @@ void InitOptionsMenu()
 			fullscreenDisplayModeIndex = i;
 		}
 		resolutionCB.options.push_back(
-			std::to_string(mode.resolutionX) + "x" + std::to_string(mode.resolutionY) + " @" + std::to_string(mode.refreshRate) + "Hz"
+			std::to_string(mode.resolutionX) + "x" + std::to_string(mode.resolutionY) + " \e@" + std::to_string(mode.refreshRate) + "Hz\e"
 		);
 	}
 	resolutionCB.getValue = [] { return fullscreenDisplayModeIndex; };
@@ -89,24 +131,70 @@ void InitOptionsMenu()
 		settings.fullscreenDisplayMode = eg::FullscreenDisplayModes()[value];
 	};
 	
+	ComboBox apiComboBox;
+	apiComboBox.label = "Graphics API";
+	apiComboBox.restartRequiredIfChanged = true;
+	apiComboBox.options.push_back("OpenGL");
+	if (eg::VulkanAppearsSupported())
+		apiComboBox.options.push_back("Vulkan");
+	apiComboBox.getValue = [] { return (int)settings.graphicsAPI; };
+	apiComboBox.setValue = [] (int value) { settings.graphicsAPI = (eg::GraphicsAPI)value; };
+	
+	eg::Span<std::string> gpuNames = eg::gal::GetDeviceNames();
+	
+	ComboBox gpuComboBox;
+	gpuComboBox.label = "GPU";
+	gpuComboBox.restartRequiredIfChanged = true;
+	for (const std::string& deviceName : gpuNames)
+	{
+		gpuComboBox.options.emplace_back(FilterGPUNameString(deviceName));
+	}
+	gpuComboBox.getValue = [gpuNames]
+	{
+		int activeGpuIndex = 0;
+		for (int i = 0; i < (int)gpuNames.size(); i++)
+		{
+			if (settings.preferredGPUName == gpuNames[i])
+				return i;
+			if (eg::GetGraphicsDeviceInfo().deviceName == gpuNames[i])
+				activeGpuIndex = i;
+		}
+		return activeGpuIndex;
+	};
+	gpuComboBox.setValue = [gpuNames] (int value)
+	{
+		settings.preferredGPUName = gpuNames[value];
+	};
+	
 	leftWidgetList.AddWidget(SubtitleWidget("Display"));
-	leftWidgetList.AddWidget(InitSettingsCB(&Settings::displayMode, "Display Mode:"));
+	leftWidgetList.AddWidget(InitSettingsCB(&Settings::displayMode, "Display Mode"));
 	leftWidgetList.AddWidget(std::move(resolutionCB));
-	leftWidgetList.AddWidget(InitSettingsToggleButton(&Settings::vsync, "VSync:", "On", "Off"));
+	leftWidgetList.AddWidget(InitSettingsToggleButton(&Settings::vsync, "VSync", "On", "Off"));
+	leftWidgetList.AddWidget(std::move(apiComboBox));
+	leftWidgetList.AddWidget(std::move(gpuComboBox));
 	
 	leftWidgetList.AddWidget(SubtitleWidget("Graphics"));
-	textureQualityWidgetIndex = leftWidgetList.AddWidget(InitSettingsCB(&Settings::textureQuality, "Textures:"));
-	leftWidgetList.AddWidget(InitSettingsCB(&Settings::shadowQuality, "Shadows:"));
-	leftWidgetList.AddWidget(InitSettingsCB(&Settings::reflectionsQuality, "Reflections:"));
-	leftWidgetList.AddWidget(InitSettingsCB(&Settings::lightingQuality, "Lighting:"));
-	leftWidgetList.AddWidget(InitSettingsCB(&Settings::waterQuality, "Water:"));
-	leftWidgetList.AddWidget(InitSettingsToggleButton(&Settings::enableBloom, "Bloom:", "On", "Off"));
-	leftWidgetList.AddWidget(InitSettingsToggleButton(&Settings::enableFXAA, "FXAA:", "On", "Off"));
-	leftWidgetList.AddWidget(InitSettingsToggleButton(&Settings::gunFlash, "Gun Flash:", "Enabled", "Disabled"));
-	leftWidgetList.AddWidget(InitSettingsSlider(&Settings::exposure, "Brightness:", 0.5f, 1.2f));
-	Slider fovSlider = InitSettingsSlider(&Settings::fieldOfViewDeg, "Field of View:", 60, 100);
-	fovSlider.displayValue = true;
-	fovSlider.valueSuffix = u8"°";
+	ComboBox textureQualityCB = InitSettingsCB(&Settings::textureQuality, "Textures", true);
+	textureQualityCB.restartRequiredIfChanged = true;
+	leftWidgetList.AddWidget(textureQualityCB);
+	leftWidgetList.AddWidget(InitSettingsCB(&Settings::shadowQuality, "Shadows", true));
+	leftWidgetList.AddWidget(InitSettingsCB(&Settings::reflectionsQuality, "Reflections", true));
+	leftWidgetList.AddWidget(InitSettingsCB(&Settings::lightingQuality, "Lighting", true));
+	leftWidgetList.AddWidget(InitSettingsCB(&Settings::waterQuality, "Water", true));
+	leftWidgetList.AddWidget(InitSettingsToggleButton(&Settings::enableBloom, "Bloom", "On", "Off"));
+	leftWidgetList.AddWidget(InitSettingsToggleButton(&Settings::enableFXAA, "FXAA", "On", "Off"));
+	leftWidgetList.AddWidget(InitSettingsToggleButton(&Settings::gunFlash, "Gun Flash", "Enabled", "Disabled"));
+	leftWidgetList.AddWidget(InitSettingsCB(&Settings::viewBobbingLevel, "View Bobbing", true));
+	Slider brighnessSlider = InitSettingsSlider(&Settings::exposure, "Brightness", 0.6f, 1.3f);
+	brighnessSlider.getDisplayValueString = VolumeAndBrightnessGetDisplayValueString;
+	leftWidgetList.AddWidget(std::move(brighnessSlider));
+	Slider fovSlider = InitSettingsSlider(&Settings::fieldOfViewDeg, "Field of View", 60, 110);
+	fovSlider.getDisplayValueString = [] (float value) -> std::string_view
+	{
+		static char buffer[16];
+		snprintf(buffer, sizeof(buffer), u8"%d°", (int)std::round(value));
+		return buffer;
+	};
 	leftWidgetList.AddWidget(std::move(fovSlider));
 	
 	leftWidgetList.AddSpacing(20);
@@ -118,33 +206,37 @@ void InitOptionsMenu()
 	}));
 	
 	
+	rightWidgetList.AddWidget(SubtitleWidget("Audio"));
+	rightWidgetList.AddWidget(InitVolumeSlider(&Settings::masterVolume, "Master Volume"));
+	rightWidgetList.AddWidget(InitVolumeSlider(&Settings::sfxVolume, "SFX Volume"));
+	rightWidgetList.AddWidget(InitVolumeSlider(&Settings::ambienceVolume, "Ambience Volume"));
+	
 	rightWidgetList.AddWidget(SubtitleWidget("Input"));
-	rightWidgetList.AddWidget(InitSettingsToggleButton(&Settings::lookInvertY, "Look Invert Y:", "Yes", "No"));
-	rightWidgetList.AddWidget(InitSettingsSlider(&Settings::lookSensitivityMS, "Mouse Sensitivity:", 0.001f, 0.02f));
+	rightWidgetList.AddWidget(InitSettingsToggleButton(&Settings::lookInvertY, "Look Invert Y", "Yes", "No"));
+	rightWidgetList.AddWidget(InitSettingsSlider(&Settings::lookSensitivityMS, "Mouse Sensitivity", 0.001f, 0.02f));
 	
 	ComboBox joystickAxesCB;
-	joystickAxesCB.label = "Joystick Mapping:";
-	joystickAxesCB.options = { "Left: Move, Right: Look", "Left: Look, Right: Move" };
+	joystickAxesCB.label = "Joystick Mapping";
+	joystickAxesCB.options = { "\eLeft: \eMove\e, Right:\e Look", "\eLeft: \eLook, \eRight:\e Move" };
 	joystickAxesCB.getValue = [] { return (int)settings.flipJoysticks; };
 	joystickAxesCB.setValue = [] (int value) { settings.flipJoysticks = value == 1; SettingsChanged(); };
 	rightWidgetList.AddWidget(std::move(joystickAxesCB));
-	rightWidgetList.AddWidget(InitSettingsSlider(&Settings::lookSensitivityGP, "Joystick Sensitivity:", 0.5f, 4.0f));
+	rightWidgetList.AddWidget(InitSettingsSlider(&Settings::lookSensitivityGP, "Joystick Sensitivity", 0.5f, 4.0f));
 	
 	rightWidgetList.AddWidget(SubtitleWidget("Key Bindings"));
 	ComboBox keyBindingsConfigureModeCB;
-	keyBindingsConfigureModeCB.label = "Bindings to Configure:";
+	keyBindingsConfigureModeCB.label = "Bindings to Configure";
 	keyBindingsConfigureModeCB.options = { "Keyboard & Mouse", "Controller" };
 	keyBindingsConfigureModeCB.getValue = [] { return (int)KeyBindingWidget::isConfiguringGamePad; };
 	keyBindingsConfigureModeCB.setValue = [] (int value) { KeyBindingWidget::isConfiguringGamePad = value == 1; };
 	rightWidgetList.AddWidget(std::move(keyBindingsConfigureModeCB));
-	rightWidgetList.AddWidget(KeyBindingWidget("Move Forward:", settings.keyMoveF));
-	rightWidgetList.AddWidget(KeyBindingWidget("Move Backward:", settings.keyMoveB));
-	rightWidgetList.AddWidget(KeyBindingWidget("Move Left:", settings.keyMoveL));
-	rightWidgetList.AddWidget(KeyBindingWidget("Move Right:", settings.keyMoveR));
-	rightWidgetList.AddWidget(KeyBindingWidget("Jump:", settings.keyJump));
-	rightWidgetList.AddWidget(KeyBindingWidget("Interact:", settings.keyInteract));
-	rightWidgetList.AddWidget(KeyBindingWidget("Shoot:", settings.keyShoot));
-	rightWidgetList.AddWidget(KeyBindingWidget("Menu:", settings.keyMenu));
+	rightWidgetList.AddWidget(KeyBindingWidget("Move Forward", settings.keyMoveF));
+	rightWidgetList.AddWidget(KeyBindingWidget("Move Backward", settings.keyMoveB));
+	rightWidgetList.AddWidget(KeyBindingWidget("Move Left", settings.keyMoveL));
+	rightWidgetList.AddWidget(KeyBindingWidget("Move Right", settings.keyMoveR));
+	rightWidgetList.AddWidget(KeyBindingWidget("Jump", settings.keyJump));
+	rightWidgetList.AddWidget(KeyBindingWidget("Interact", settings.keyInteract));
+	rightWidgetList.AddWidget(KeyBindingWidget("Shoot", settings.keyShoot));
 	
 	rightWidgetList.AddSpacing(std::max(leftWidgetList.Height() - WidgetList::WIDGET_SPACING - Button::height - rightWidgetList.Height(), 0.0f));
 	rightWidgetList.AddWidget(Button("Reset All Settings", []
@@ -155,8 +247,6 @@ void InitOptionsMenu()
 	
 	leftWidgetList.relativeOffset = glm::vec2(-1, 0.5f);
 	rightWidgetList.relativeOffset = glm::vec2(0, 0.5f);
-	
-	initialTextureQuality = settings.textureQuality;
 }
 
 EG_ON_INIT(InitOptionsMenu)
@@ -171,14 +261,6 @@ void UpdateOptionsMenu(float dt, const glm::vec2& positionOffset, bool allowInte
 	
 	leftWidgetList.Update(dt, allowInteraction);
 	rightWidgetList.Update(dt, allowInteraction);
-	
-	ComboBox& textureQualityCB = std::get<ComboBox>(leftWidgetList.GetWidget(textureQualityWidgetIndex));
-	const bool hasTextureWarning = !textureQualityCB.warning.empty();
-	const bool shouldHaveTextureWarning = settings.textureQuality != initialTextureQuality;
-	if (hasTextureWarning != shouldHaveTextureWarning)
-	{
-		textureQualityCB.warning = shouldHaveTextureWarning ? "Requires restart" : "";
-	}
 }
 
 void DrawOptionsMenu(eg::SpriteBatch& spriteBatch)
