@@ -75,7 +75,7 @@ const std::vector<std::string_view> levelsOrder =
 	"gravbarrier_4",
 	"gravbarrier_5",
 	"cubeflip_0",
-	"launch_1",
+	//"launch_1",
 	"launch_2",
 	"forcefield_5",
 	"forcefield_6",
@@ -149,24 +149,29 @@ void MarkLevelCompleted(Level& level)
 }
 
 static std::string progressPath;
+static std::string levelsDirPath;
 
 void InitLevels()
 {
 	eg::console::AddCommand("upgradeLevels", 0, &UpgradeLevelsCommand);
 	
-	std::string levelsPath = eg::ExeRelPath("levels");
-	if (!eg::FileExists(levelsPath.c_str()))
+	levelsDirPath = eg::ExeRelPath("Levels");
+	if (!eg::FileExists(levelsDirPath.c_str()))
 	{
-		eg::ReleasePanic("Missing directory \"levels\".");
+		levelsDirPath = "./Levels";
+		if (!eg::FileExists(levelsDirPath.c_str()))
+		{
+			eg::ReleasePanic("Missing directory \"Levels\".");
+		}
 	}
 	
-	std::string thumbnailsPath = levelsPath + "/img";
+	std::string thumbnailsPath = levelsDirPath + "/img";
 	eg::CreateDirectory(thumbnailsPath.c_str());
 	
 	levels.clear();
 	
 	//Adds all gwd files in the levels directory to the levels list
-	for (const auto& entry : directory_iterator(levelsPath))
+	for (const auto& entry : directory_iterator(levelsDirPath))
 	{
 		if (is_regular_file(entry.status()) && entry.path().extension() == ".gwd")
 		{
@@ -268,12 +273,12 @@ int64_t FindLevel(std::string_view name)
 
 std::string GetLevelPath(std::string_view name)
 {
-	return eg::Concat({ eg::ExeDirPath(), "/levels/", name, ".gwd" });
+	return eg::Concat({ levelsDirPath, "/", name, ".gwd" });
 }
 
 std::string GetLevelThumbnailPath(std::string_view name)
 {
-	return eg::Concat({ eg::ExeDirPath(), "/levels/img/", name, ".jpg" });
+	return eg::Concat({ levelsDirPath, "/img/", name, ".jpg" });
 }
 
 void LoadLevelThumbnail(Level& level)

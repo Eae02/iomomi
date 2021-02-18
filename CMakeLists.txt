@@ -1,6 +1,5 @@
-cmake_minimum_required(VERSION 3.13)
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/Deps/cmake-pch/)
-project(Gravity CXX CXXPCH)
+cmake_minimum_required(VERSION 3.19)
+project(Gravity CXX)
 
 set(BUILD_DIR_NAME ${CMAKE_BUILD_TYPE})
 if(${CMAKE_CXX_COMPILER} MATCHES "emcc$")
@@ -24,6 +23,8 @@ set(IMGUI_FILES
 )
 
 add_executable(Gravity ${SOURCE_FILES} ${IMGUI_FILES})
+
+target_precompile_headers(Gravity PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Inc/Common.hpp)
 
 #Adds compiler specific options
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
@@ -83,5 +84,3 @@ else()
 	
 	target_link_libraries(Gravity protobuf::libprotobuf)
 endif()
-
-target_precompiled_header(Gravity Inc/Common.hpp)

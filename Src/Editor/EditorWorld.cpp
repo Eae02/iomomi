@@ -480,7 +480,7 @@ void EditorWorld::Draw(EditorTool currentTool, RenderContext& renderCtx, Prepare
 
 void EditorWorld::Save()
 {
-	std::string savePath = eg::Concat({ eg::ExeDirPath(), "/levels/", m_levelName, ".gwd" });
+	std::string savePath = GetLevelPath(m_levelName);
 	std::ofstream stream(savePath, std::ios::binary);
 	m_world->Save(stream);
 	m_savedTextTimer = 3;

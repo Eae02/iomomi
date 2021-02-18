@@ -61,7 +61,7 @@ int main(int argc, char** argv)
 		eg::console::Init();
 		StaticPropMaterial::InitAssetTypes();
 		DecalMaterial::InitAssetTypes();
-		if (!eg::LoadAssets("assets", "/"))
+		if (!eg::LoadAssets("Assets", "/"))
 		{
 			EG_PANIC("Failed to load assets, make sure assets.eap exists.");
 		}
