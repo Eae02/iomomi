@@ -31,4 +31,5 @@ public:
 private:
 	float m_highlightIntensity = 0;
 	uint64_t m_lastUpdateFrameIdx = 0;
+	bool m_wasHovered = false;
 };

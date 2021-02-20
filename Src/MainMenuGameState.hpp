@@ -5,6 +5,7 @@
 #include "World/PhysicsEngine.hpp"
 #include "World/World.hpp"
 #include "Graphics/BlurRenderer.hpp"
+#include "Gui/Scroll.hpp"
 
 class MainMenuGameState : public GameState
 {
@@ -46,8 +47,7 @@ private:
 	float m_transitionProgress = 0;
 	
 	std::vector<float> m_levelHighlightIntensity;
-	float m_levelSelectScroll = 0;
-	float m_levelSelectScrollVel = 0;
+	ScrollPanel m_levelSelectScroll;
 	
 	size_t m_numMainLevels = 0;
 	std::vector<int64_t> m_levelIds;

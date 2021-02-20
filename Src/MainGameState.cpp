@@ -4,6 +4,7 @@
 #include "World/Entities/EntTypes/EntranceExitEnt.hpp"
 #include "MainMenuGameState.hpp"
 #include "Gui/GuiCommon.hpp"
+#include "AudioPlayers.hpp"
 
 #include <fstream>
 #include <imgui.h>
@@ -74,6 +75,8 @@ void MainGameState::SetWorld(std::unique_ptr<World> newWorld, int64_t levelIndex
 	m_pausedMenu.isFromEditor = fromEditor;
 	m_ssrReflectionColorEditorShown = false;
 	
+	AudioPlayers::gameSFXPlayer.StopAll();
+	
 	//Moves the player to the entrance entity for this level
 	newWorld->entManager.ForEachOfType<EntranceExitEnt>([&] (EntranceExitEnt& entity)
 	{
@@ -104,6 +107,7 @@ void MainGameState::SetWorld(std::unique_ptr<World> newWorld, int64_t levelIndex
 void MainGameState::OnDeactivate()
 {
 	GameRenderer::instance->m_waterSimulator.Stop();
+	AudioPlayers::gameSFXPlayer.StopAll();
 	m_world.reset();
 }
 
@@ -181,6 +185,12 @@ void MainGameState::RunFrame(float dt)
 			bool underwater = m_playerWaterAABB->GetResults().numIntersecting > *playerUnderwaterSpheres;
 			m_player.Update(*m_world, m_physicsEngine, dt, underwater);
 		}
+		
+		eg::AudioLocationParameters playerALP;
+		playerALP.position = m_player.EyePosition();
+		playerALP.direction = m_player.Forward();
+		playerALP.velocity = m_player.Velocity();
+		eg::SetListenerPosition(playerALP);
 		
 		m_world->Update(updateArgs, &m_physicsEngine);
 		

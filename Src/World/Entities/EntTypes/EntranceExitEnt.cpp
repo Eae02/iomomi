@@ -1,5 +1,6 @@
 #include "EntranceExitEnt.hpp"
 #include "../../Player.hpp"
+#include "../../../AudioPlayers.hpp"
 #include "../../../Graphics/Materials/EmissiveMaterial.hpp"
 #include "../../../Graphics/Lighting/PointLightShadowMapper.hpp"
 #include "../../../YAMLUtils.hpp"

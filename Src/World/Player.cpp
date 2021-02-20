@@ -649,13 +649,13 @@ void Player::GetViewMatrix(glm::mat4& matrixOut, glm::mat4& inverseMatrixOut) co
 	
 	matrixOut =
 		glm::rotate(glm::mat4(1), viewBobbingRZ, glm::vec3(0, 0, 1)) *
-		glm::translate(glm::mat4(1), glm::vec3(0, viewBobbingTY, 0)) *
+		glm::translate(glm::mat4(1), glm::vec3(0, -viewBobbingTY, 0)) *
 		glm::transpose(rotationMatrix) *
 		glm::translate(glm::mat4(1.0f), -m_eyePosition);
 	inverseMatrixOut =
 		glm::translate(glm::mat4(1.0f), m_eyePosition) *
 		rotationMatrix *
-		glm::translate(glm::mat4(1), glm::vec3(0, -viewBobbingTY, 0)) *
+		glm::translate(glm::mat4(1), glm::vec3(0, viewBobbingTY, 0)) *
 		glm::rotate(glm::mat4(1), -viewBobbingRZ, glm::vec3(0, 0, 1));
 }
 

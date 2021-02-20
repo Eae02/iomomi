@@ -10,7 +10,7 @@ Slider::Slider()
 
 void Slider::Update(float dt, bool allowInteraction)
 {
-	UpdateBase(allowInteraction);
+	UpdateBase(allowInteraction, false);
 	
 	constexpr float RECTANGLE_H_PERCENT = 0.8f;
 	m_rectangle.y = m_rectangle.CenterY() - m_rectangle.h * RECTANGLE_H_PERCENT * 0.5f;

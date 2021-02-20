@@ -6,10 +6,10 @@ size_t WidgetList::AddWidget(Widget widget)
 	std::visit([&] (auto& widgetVis) {
 		widgetVis.width = m_width;
 		y += widgetVis.height;
-		m_nextY += widgetVis.height + WIDGET_SPACING;
+		m_nextY += widgetVis.height + m_widgetSpacing;
 	}, widget);
 	m_widgets.emplace_back(std::move(widget), y);
-	m_height = m_nextY - WIDGET_SPACING;
+	m_height = m_nextY - m_widgetSpacing;
 	return m_widgets.size() - 1;
 }
 

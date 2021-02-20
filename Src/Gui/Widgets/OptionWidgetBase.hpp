@@ -14,7 +14,7 @@ public:
 	static constexpr float FONT_SCALE = 0.6f;
 	
 protected:
-	void UpdateBase(bool allowInteraction);
+	void UpdateBase(bool allowInteraction, bool playHoverSound = true);
 	
 	void DrawBase(eg::SpriteBatch& spriteBatch, float highlightIntensity, std::string_view valueText, float maxValueWidth = 0) const;
 	

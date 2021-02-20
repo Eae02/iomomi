@@ -4,6 +4,8 @@
 #include "Graphics/Materials/StaticPropMaterial.hpp"
 #include "Graphics/Materials/DecalMaterial.hpp"
 
+#include <EGame/Audio/AudioPlayer.hpp>
+
 #include <google/protobuf/stubs/common.h>
 
 #ifdef _WIN32
@@ -56,6 +58,8 @@ int main(int argc, char** argv)
 			settings.fullscreenDisplayMode = eg::FullscreenDisplayModes()[eg::NativeDisplayModeIndex()];
 		}
 		UpdateDisplayMode();
+		
+		eg::InitializeAudio();
 		
 		eg::SpriteFont::LoadDevFont();
 		eg::console::Init();

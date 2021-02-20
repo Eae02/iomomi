@@ -1,11 +1,12 @@
 #include "OptionWidgetBase.hpp"
 #include "../GuiCommon.hpp"
+#include "../../AudioPlayers.hpp"
 
 float OptionWidgetBase::textHeight = 0;
 
 static constexpr float LABEL_WIDTH_PERCENT = 0.4f;
 
-void OptionWidgetBase::UpdateBase(bool allowInteraction)
+void OptionWidgetBase::UpdateBase(bool allowInteraction, bool playHoverSound)
 {
 	if (textHeight == 0)
 	{
@@ -15,7 +16,10 @@ void OptionWidgetBase::UpdateBase(bool allowInteraction)
 	m_rectangle = eg::Rectangle(position.x + width * LABEL_WIDTH_PERCENT, position.y, width * (1 - LABEL_WIDTH_PERCENT), height);
 	
 	glm::vec2 flippedCursorPos(eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY());
-	m_hovered = allowInteraction && m_rectangle.Contains(flippedCursorPos);
+	bool nowHovered = allowInteraction && m_rectangle.Contains(flippedCursorPos);
+	if (nowHovered && !m_hovered && playHoverSound)
+		PlayButtonHoverSound();
+	m_hovered = nowHovered;
 }
 
 void OptionWidgetBase::DrawBase(eg::SpriteBatch& spriteBatch, float highlightIntensity, std::string_view valueText, float maxValueWidth) const

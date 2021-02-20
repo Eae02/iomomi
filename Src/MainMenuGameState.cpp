@@ -5,6 +5,7 @@
 #include "MainGameState.hpp"
 #include "Settings.hpp"
 #include "ThumbnailRenderer.hpp"
+#include "AudioPlayers.hpp"
 
 #include <fstream>
 
@@ -196,24 +197,27 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 	const eg::Texture& completedTexture = eg::GetAsset<eg::Texture>("Textures/UI/LevelCompleted.png");
 	const eg::Texture& titleTexture = eg::GetAsset<eg::Texture>("Textures/UI/LevelSelect.png");
 	
-	const float marginX = 0.05f * eg::CurrentResolutionX();
-	
-	const float titleTextureWidth = std::min(eg::CurrentResolutionX() * 0.25f, (float)titleTexture.Width());
-	const float titleTextureHeight = titleTextureWidth * titleTexture.Height() / titleTexture.Width();
-	const eg::Rectangle titleRect(marginX + xOffset, eg::CurrentResolutionY() - 75 - titleTextureHeight, titleTextureWidth, titleTextureHeight);
-	m_spriteBatch.Draw(titleTexture, titleRect, eg::ColorLin(1, 1, 1, 1));
-	
 	const float levelBoxW = glm::clamp(eg::CurrentResolutionX() * 0.1f, 150.0f, (float)LEVEL_THUMBNAIL_RES_X);
 	const float levelBoxH = 0.8f * levelBoxW;
 	const float levelBoxSpacingX = levelBoxW * 0.1f;
 	const float levelBoxSpacingY = levelBoxSpacingX * 2;
 	const float inflatePixelsY = levelBoxH * style::ButtonInflatePercent;
 	
+	const float marginX = 0.05f * eg::CurrentResolutionX();
+	const int numPerRow = (eg::CurrentResolutionX() - marginX * 2 + levelBoxSpacingX) / (levelBoxW + levelBoxSpacingX);
+	
+	const float boxW = numPerRow * (levelBoxW + levelBoxSpacingX) - levelBoxSpacingX;
+	const float boxLX = (eg::CurrentResolutionX() - boxW) / 2;
+	
+	const float titleTextureWidth = std::min(eg::CurrentResolutionX() * 0.25f, (float)titleTexture.Width());
+	const float titleTextureHeight = titleTextureWidth * titleTexture.Height() / titleTexture.Width();
+	const eg::Rectangle titleRect(boxLX + xOffset, eg::CurrentResolutionY() - 75 - titleTextureHeight, titleTextureWidth, titleTextureHeight);
+	m_spriteBatch.Draw(titleTexture, titleRect, eg::ColorLin(1, 1, 1, 1));
+	
 	const float boxStartY = eg::CurrentResolutionY() - 100 - titleTextureHeight;
 	const float boxEndY = 100;
 	const float visibleHeight = boxStartY - boxEndY;
-	const int numPerRow = (eg::CurrentResolutionX() - marginX * 2 + levelBoxSpacingX) / (levelBoxW + levelBoxSpacingX);
-	const bool cursorInLevelsArea = eg::Rectangle(marginX, boxEndY, eg::CurrentResolutionX() - marginX * 2, visibleHeight).Contains(flippedCursorPos);
+	const bool cursorInLevelsArea = eg::Rectangle(boxLX, boxEndY, boxW, visibleHeight).Contains(flippedCursorPos);
 	
 	float totalHeight = 0;
 	
@@ -227,7 +231,7 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 		size_t iForGridCalculation = i >= m_numMainLevels ? i - m_numMainLevels : i;
 		const float gridX = iForGridCalculation % numPerRow;
 		const float gridY = iForGridCalculation / numPerRow;
-		const float x = marginX + gridX * (levelBoxW + levelBoxSpacingX) + xOffset;
+		const float x = boxLX + gridX * (levelBoxW + levelBoxSpacingX) + xOffset;
 		float yNoScroll = gridY * (levelBoxH + levelBoxSpacingY) + levelBoxH;
 		if (i >= m_numMainLevels)
 		{
@@ -235,14 +239,14 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 		}
 		
 		totalHeight = std::max(yNoScroll, totalHeight);
-		const float y = boxStartY - yNoScroll + m_levelSelectScroll;
+		const float y = boxStartY - yNoScroll + m_levelSelectScroll.scroll;
 		if (i == m_numMainLevels)
 		{
 			m_spriteBatch.DrawText(*style::UIFont, "Extra Levels", glm::vec2(x, y + levelBoxH + 20),
-						  eg::ColorLin(1, 1, 1, 0.75f), 1, nullptr, eg::TextFlags::DropShadow);
+			                       eg::ColorLin(1, 1, 1, 0.75f), 1, nullptr, eg::TextFlags::DropShadow);
 			m_spriteBatch.DrawLine(glm::vec2(x, y + levelBoxH + 15),
-						  glm::vec2(eg::CurrentResolutionX() - marginX + xOffset, y + levelBoxH + 15),
-						  eg::ColorLin(1, 1, 1, 0.75f));
+			                       glm::vec2(eg::CurrentResolutionX() - boxLX + xOffset, y + levelBoxH + 15),
+			                       eg::ColorLin(1, 1, 1, 0.75f));
 		}
 		
 		eg::Rectangle rect(x, y, levelBoxW, levelBoxH);
@@ -258,9 +262,15 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 		
 		float& highlightIntensity = m_levelHighlightIntensity[m_levelIds[i]];
 		if (hovered)
+		{
+			if (highlightIntensity == 0)
+				PlayButtonHoverSound();
 			highlightIntensity = std::min(highlightIntensity + dt / style::HoverAnimationTime, 1.0f);
+		}
 		else
+		{
 			highlightIntensity = std::max(highlightIntensity - dt / style::HoverAnimationTime, 0.0f);
+		}
 		
 		const eg::Texture* texture = &thumbnailNaTexture;
 		if (level.thumbnail.handle != nullptr)
@@ -301,28 +311,15 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 	}
 	m_spriteBatch.PopScissor();
 	
-	//Updates scroll
-	const float maxScroll = std::max(totalHeight - visibleHeight, 0.0f);
-	constexpr float SCROLL_SPEED = 1500;
-	m_levelSelectScrollVel *= 1 - std::min(dt * 10.0f, 1.0f);
-	m_levelSelectScrollVel += (eg::InputState::Previous().scrollY - eg::InputState::Current().scrollY) * SCROLL_SPEED * 0.5f;
-	m_levelSelectScrollVel = glm::clamp(m_levelSelectScrollVel, -SCROLL_SPEED, SCROLL_SPEED);
-	m_levelSelectScroll = glm::clamp(m_levelSelectScroll + m_levelSelectScrollVel * dt, 0.0f, (float)maxScroll);
+	m_levelSelectScroll.contentHeight = totalHeight;
+	m_levelSelectScroll.screenRectangle.x = boxLX + xOffset;
+	m_levelSelectScroll.screenRectangle.y = boxEndY;
+	m_levelSelectScroll.screenRectangle.w = boxW + 20;
+	m_levelSelectScroll.screenRectangle.h = visibleHeight;
+	m_levelSelectScroll.Update(dt, ComboBox::current == nullptr);
+	m_levelSelectScroll.Draw(m_spriteBatch);
 	
-	//Draws the scroll bar
-	if (maxScroll > 0)
-	{
-		constexpr int SCROLL_BAR_W = 6;
-		eg::Rectangle scrollAreaRect(eg::CurrentResolutionX() - marginX + 5 + xOffset, boxEndY, SCROLL_BAR_W, visibleHeight);
-		m_spriteBatch.DrawRect(scrollAreaRect, style::ButtonColorDefault);
-		
-		float barHeight = scrollAreaRect.h * (float)visibleHeight / (float)totalHeight;
-		float barYOffset = (m_levelSelectScroll / (float)maxScroll) * (scrollAreaRect.h - barHeight);
-		eg::Rectangle scrollBarRect(scrollAreaRect.x + 1, scrollAreaRect.y + scrollAreaRect.h - barYOffset - barHeight, SCROLL_BAR_W - 2, barHeight);
-		m_spriteBatch.DrawRect(scrollBarRect, style::ButtonColorHover);
-	}
-	
-	m_levelSelectBackButton.position = glm::vec2(marginX, boxEndY - 60);
+	m_levelSelectBackButton.position = glm::vec2(boxLX, boxEndY - 60);
 	m_levelSelectBackButton.Update(dt, true);
 	m_levelSelectBackButton.Draw(m_spriteBatch);
 }

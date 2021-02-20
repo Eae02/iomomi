@@ -4,7 +4,10 @@
 void Button::Update(float dt, bool allowInteraction)
 {
 	if (m_lastUpdateFrameIdx + 1 != eg::FrameIdx())
+	{
 		m_highlightIntensity = 0;
+		m_wasHovered = false;
+	}
 	m_lastUpdateFrameIdx = eg::FrameIdx();
 	
 	if (std::abs(eg::CursorDeltaX()) > 2 || std::abs(eg::CursorDeltaY()) > 2)
@@ -22,6 +25,10 @@ void Button::Update(float dt, bool allowInteraction)
 		m_highlightIntensity = std::min(m_highlightIntensity + dt / style::HoverAnimationTime, 1.0f);
 	else
 		m_highlightIntensity = std::max(m_highlightIntensity - dt / style::HoverAnimationTime, 0.0f);
+	
+	if (hovered && !m_wasHovered)
+		PlayButtonHoverSound();
+	m_wasHovered = hovered;
 	
 	if (clicked && onClick)
 		onClick();

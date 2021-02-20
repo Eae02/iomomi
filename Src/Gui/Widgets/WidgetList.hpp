@@ -12,11 +12,12 @@ using Widget = std::variant<Button, ComboBox, ToggleButton, KeyBindingWidget, Sl
 class WidgetList
 {
 public:
-	explicit WidgetList(float width)
-		: m_width(width) { }
+	explicit WidgetList(float width, float widgetSpacing = 10)
+		: m_width(width), m_widgetSpacing(widgetSpacing) { }
 	
 	float Width() const { return m_width; }
 	float Height() const { return m_height; }
+	float WidgetSpacing() const { return m_widgetSpacing; }
 	
 	void AddSpacing(float spacing)
 	{
@@ -42,10 +43,9 @@ public:
 	
 	float maxHeight = INFINITY;
 	
-	static constexpr float WIDGET_SPACING = 10;
-	
 private:
 	float m_width;
+	float m_widgetSpacing;
 	float m_height = 0;
 	float m_nextY = 0;
 	

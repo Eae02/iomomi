@@ -1,12 +1,17 @@
 #include "OptionsMenu.hpp"
 #include "Widgets/WidgetList.hpp"
+#include "Scroll.hpp"
 #include "../Settings.hpp"
 
 static constexpr float WIDGET_LIST_WIDTH = 420;
 static constexpr float WIDGET_LIST_SPACING = 50;
 
-static WidgetList leftWidgetList(WIDGET_LIST_WIDTH);
-static WidgetList rightWidgetList(WIDGET_LIST_WIDTH);
+static WidgetList leftWidgetList(WIDGET_LIST_WIDTH, 8);
+static WidgetList rightWidgetList(WIDGET_LIST_WIDTH, 8);
+
+static ScrollPanel optionsScrollPanel;
+
+static Button backButton;
 
 bool optionsMenuOpen = false;
 
@@ -197,15 +202,6 @@ void InitOptionsMenu()
 	};
 	leftWidgetList.AddWidget(std::move(fovSlider));
 	
-	leftWidgetList.AddSpacing(20);
-	leftWidgetList.AddWidget(Button("Back", []
-	{
-		SaveSettings();
-		UpdateDisplayMode();
-		optionsMenuOpen = false;
-	}));
-	
-	
 	rightWidgetList.AddWidget(SubtitleWidget("Audio"));
 	rightWidgetList.AddWidget(InitVolumeSlider(&Settings::masterVolume, "Master Volume"));
 	rightWidgetList.AddWidget(InitVolumeSlider(&Settings::sfxVolume, "SFX Volume"));
@@ -238,15 +234,13 @@ void InitOptionsMenu()
 	rightWidgetList.AddWidget(KeyBindingWidget("Interact", settings.keyInteract));
 	rightWidgetList.AddWidget(KeyBindingWidget("Shoot", settings.keyShoot));
 	
-	rightWidgetList.AddSpacing(std::max(leftWidgetList.Height() - WidgetList::WIDGET_SPACING - Button::height - rightWidgetList.Height(), 0.0f));
-	rightWidgetList.AddWidget(Button("Reset All Settings", []
+	backButton = Button("Back", []
 	{
-		settings = {};
-		SettingsChanged();
-	}));
-	
-	leftWidgetList.relativeOffset = glm::vec2(-1, 0.5f);
-	rightWidgetList.relativeOffset = glm::vec2(0, 0.5f);
+		SaveSettings();
+		UpdateDisplayMode();
+		optionsMenuOpen = false;
+	});
+	backButton.width = 200;
 }
 
 EG_ON_INIT(InitOptionsMenu)
@@ -255,16 +249,43 @@ void UpdateOptionsMenu(float dt, const glm::vec2& positionOffset, bool allowInte
 {
 	KeyBindingWidget::anyKeyBindingPickingKey = false;
 	
-	constexpr float distFromCenter = WIDGET_LIST_SPACING / 2;
-	leftWidgetList.position = glm::vec2(eg::CurrentResolutionX() - distFromCenter, eg::CurrentResolutionY()) / 2.0f + positionOffset;
-	rightWidgetList.position = glm::vec2(eg::CurrentResolutionX() + distFromCenter, eg::CurrentResolutionY()) / 2.0f + positionOffset;
+	constexpr float Y_MARGIN_TOP = 50;
+	constexpr float Y_MARGIN_BTM = 100;
 	
-	leftWidgetList.Update(dt, allowInteraction);
-	rightWidgetList.Update(dt, allowInteraction);
+	const glm::vec2 flippedCursorPos(eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY());
+	
+	optionsScrollPanel.contentHeight = std::max(leftWidgetList.Height(), rightWidgetList.Height());
+	const float screenRectH = std::min(eg::CurrentResolutionY() - Y_MARGIN_TOP - Y_MARGIN_BTM, optionsScrollPanel.contentHeight);
+	
+	optionsScrollPanel.screenRectangle.x = std::max(eg::CurrentResolutionX() / 2 - WIDGET_LIST_SPACING / 2 - WIDGET_LIST_WIDTH, 0.0f) + positionOffset.x;
+	optionsScrollPanel.screenRectangle.w = std::min(WIDGET_LIST_SPACING + WIDGET_LIST_WIDTH * 2 + 20, (float)eg::CurrentResolutionX());
+	optionsScrollPanel.screenRectangle.h = screenRectH;
+	optionsScrollPanel.screenRectangle.y = std::max((eg::CurrentResolutionY() - screenRectH) / 2, Y_MARGIN_BTM) + positionOffset.y;
+	
+	optionsScrollPanel.Update(dt, ComboBox::current == nullptr);
+	
+	leftWidgetList.position.x = optionsScrollPanel.screenRectangle.x;
+	leftWidgetList.position.y = optionsScrollPanel.screenRectangle.MaxY() + optionsScrollPanel.scroll;
+	rightWidgetList.position.x = (eg::CurrentResolutionX() + WIDGET_LIST_SPACING) / 2 + positionOffset.x;
+	rightWidgetList.position.y = leftWidgetList.position.y;
+	
+	bool canInteractWidgetList = allowInteraction && optionsScrollPanel.screenRectangle.Contains(flippedCursorPos);
+	leftWidgetList.Update(dt, canInteractWidgetList);
+	rightWidgetList.Update(dt, canInteractWidgetList);
+	
+	backButton.position.x = (eg::CurrentResolutionX() - backButton.width) / 2 + positionOffset.x;
+	backButton.position.y = optionsScrollPanel.screenRectangle.y - Button::height - 20 + positionOffset.y;
+	backButton.Update(dt, allowInteraction);
 }
 
 void DrawOptionsMenu(eg::SpriteBatch& spriteBatch)
 {
+	spriteBatch.PushScissor(0, optionsScrollPanel.screenRectangle.y, eg::CurrentResolutionX(), optionsScrollPanel.screenRectangle.h);
 	leftWidgetList.Draw(spriteBatch);
 	rightWidgetList.Draw(spriteBatch);
+	spriteBatch.PopScissor();
+	
+	backButton.Draw(spriteBatch);
+	
+	optionsScrollPanel.Draw(spriteBatch);
 }

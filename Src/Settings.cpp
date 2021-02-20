@@ -1,4 +1,5 @@
 #include "Settings.hpp"
+#include "AudioPlayers.hpp"
 
 #include <yaml-cpp/yaml.h>
 #include <fstream>
@@ -149,6 +150,9 @@ void SettingsChanged()
 		eg::gal::SetEnableVSync(settings.vsync);
 		prevVSyncState = settings.vsync;
 	}
+	
+	eg::SetMasterVolume(settings.masterVolume);
+	AudioPlayers::menuSFXPlayer.SetGlobalVolume(settings.sfxVolume);
 	
 	settingsGeneration++;
 }

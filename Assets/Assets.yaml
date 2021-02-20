@@ -30,6 +30,10 @@ assets:
   - name: GameFont.ttf
     size: 64
     
+  #Audio
+  - name: Audio/MenuMouseOver.ogg
+    mode: stereo
+    
   #Decal materials
   - regex: "Decals/.*\\.yaml"
     generator: DecalMaterial
