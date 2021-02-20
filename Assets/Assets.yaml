@@ -33,6 +33,7 @@ assets:
   #Audio
   - name: Audio/MenuMouseOver.ogg
     mode: stereo
+  - regex: "Audio/.*\\.ogg"
     
   #Decal materials
   - regex: "Decals/.*\\.yaml"

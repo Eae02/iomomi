@@ -86,6 +86,9 @@ private:
 	bool m_wasClimbingLadder = false;
 	float m_leftWaterTime = 0;
 	
+	float m_stepSoundRemDistance = 0;
+	int m_nextStepSoundRightIndex = -1;
+	
 	enum class TransitionMode
 	{
 		None,

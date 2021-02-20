@@ -5,13 +5,8 @@ fixes:
  - make gravity barriers red from water
 
 misc:
- - benchmarks
  - gun should be rendered after ssr
  - fix flickering on nvidia + vulkan
-
-levels:
- - pushable platforms
- - water with force fields
 
 textures and models:
  - different graphics for pushable platforms
@@ -19,7 +14,6 @@ textures and models:
  - wall overlay textures
  - swim animation
  - make doors not clip into the level change room's model
- - outdoor light sources
  - make cube snap to button
  - scaffolding mesh
 
@@ -34,21 +28,18 @@ features:
  - placable doors
 
 sounds:
- - walking
  - landing
  - shooting
- - flipping gravity
- - walking on a gravity corner
  - swimming
  - entering water
  - water moving (?)
  - door opening
- - menu buttons
+ - button down
+ - button up
+ - platform moving
+ - cube spawning
 
 ui:
  - hints for restart (?)
- - option for hud
-   - crosshair (?)
-   - control hints
  - draggable scrollbar in level select screen
  - control menus using keyboard / controller

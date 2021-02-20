@@ -59,7 +59,10 @@ int main(int argc, char** argv)
 		}
 		UpdateDisplayMode();
 		
-		eg::InitializeAudio();
+		if (!eg::InitializeAudio())
+		{
+			eg::Log(eg::LogLevel::Error, "audio", "Failed to initialize audio, sounds will not be played.");
+		}
 		
 		eg::SpriteFont::LoadDevFont();
 		eg::console::Init();

@@ -187,10 +187,10 @@ void MainGameState::RunFrame(float dt)
 		}
 		
 		eg::AudioLocationParameters playerALP;
-		playerALP.position = m_player.EyePosition();
+		playerALP.position = m_player.Position();
 		playerALP.direction = m_player.Forward();
 		playerALP.velocity = m_player.Velocity();
-		eg::SetListenerPosition(playerALP);
+		eg::UpdateAudioListener(playerALP, -DirectionVector(m_player.CurrentDown()));
 		
 		m_world->Update(updateArgs, &m_physicsEngine);
 		

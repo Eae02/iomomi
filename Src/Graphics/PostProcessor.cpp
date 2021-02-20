@@ -4,10 +4,9 @@
 
 static float* bloomIntensity = eg::TweakVarFloat("bloom_intensity", 0.5f, 0);
 
-PostProcessor::PostProcessor()
-{
-	
-}
+static float* vignetteMinRad = eg::TweakVarFloat("vign_min_rad", 0.2f, 0);
+static float* vignetteMaxRad = eg::TweakVarFloat("vign_max_rad", 0.75f, 0);
+static float* vignettePower = eg::TweakVarFloat("vign_power", 1.2f, 0);
 
 void PostProcessor::InitPipeline()
 {
@@ -61,7 +60,10 @@ void PostProcessor::Render(eg::TextureRef input, const eg::BloomRenderer::Render
 		1.0f / outputResY,
 		settings.exposure,
 		*bloomIntensity,
-		colorScale
+		colorScale,
+		*vignetteMinRad,
+		1.0f / (*vignetteMaxRad - *vignetteMinRad),
+		*vignettePower
 	};
 	
 	eg::DC.BindPipeline(m_pipeline);

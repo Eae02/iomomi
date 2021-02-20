@@ -4,11 +4,15 @@
 #include "../../../../Protobuf/Build/GravitySwitchEntity.pb.h"
 #include "../../../Graphics/RenderSettings.hpp"
 #include "../../../Settings.hpp"
+#include "../../../AudioPlayers.hpp"
 
 static eg::Model* s_model;
 static eg::CollisionMesh s_collisionMesh;
 static eg::IMaterial* s_material;
 static int s_centerMaterialIndex;
+
+eg::AudioClip* gravitySwitchSound;
+float* gravitySwitchVolume = eg::TweakVarFloat("vol_gravity_switch", 0.8f, 0);
 
 static void OnInit()
 {
@@ -16,6 +20,7 @@ static void OnInit()
 	s_collisionMesh = s_model->MakeCollisionMesh();
 	s_material = &eg::GetAsset<StaticPropMaterial>("Materials/GravitySwitch.yaml");
 	s_centerMaterialIndex = s_model->GetMaterialIndex("Center");
+	gravitySwitchSound = &eg::GetAsset<eg::AudioClip>("Audio/GravityFlip.ogg");
 }
 
 EG_ON_INIT(OnInit)
@@ -103,6 +108,11 @@ void GravitySwitchEnt::GameDraw(const EntGameDrawArgs& args)
 void GravitySwitchEnt::Interact(Player& player)
 {
 	player.FlipDown();
+	
+	eg::AudioLocationParameters locationParams = {};
+	locationParams.position = m_position;
+	locationParams.direction = DirectionVector(m_up);
+	AudioPlayers::gameSFXPlayer.Play(*gravitySwitchSound, *gravitySwitchVolume, 1, &locationParams);
 }
 
 int GravitySwitchEnt::CheckInteraction(const Player& player, const class PhysicsEngine& physicsEngine) const

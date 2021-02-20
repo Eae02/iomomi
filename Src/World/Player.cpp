@@ -4,8 +4,10 @@
 #include "Entities/EntTypes/ForceFieldEnt.hpp"
 #include "Entities/EntTypes/GooPlaneEnt.hpp"
 #include "Entities/EntTypes/LadderEnt.hpp"
+#include "../AudioPlayers.hpp"
 #include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
 #include "../Settings.hpp"
+#include "../Game.hpp"
 
 #include <imgui.h>
 
@@ -21,13 +23,37 @@ static float* ladderAccelTime   = eg::TweakVarFloat("pl_ladder_atime",   0.2f,  
 static float* jumpHeight        = eg::TweakVarFloat("pl_jump_height",    1.1f,  0.0f);
 static float* waterJumpHeight   = eg::TweakVarFloat("pl_wjump_height",   1.3f,  0.0f);
 static float* eyeRoundPrecision = eg::TweakVarFloat("pl_eye_round_prec", 0.01f, 0);
+static float* stepsPerSecond    = eg::TweakVarFloat("pl_steps_per_sec",  2.2f, 0);
 static int* noclipActive        = eg::TweakVarInt("noclip", 0, 0, 1);
 
+static float* stepVolume          = eg::TweakVarFloat("vol_pl_step", 0.7f, 0);
+static float* gravityCornerVolume = eg::TweakVarFloat("vol_gravity_corner", 1.5f, 0);
+
 static const float* viewBobbingMaxRotation = eg::TweakVarFloat("vb_max_rot", 0.0035f, 0);
-static const float* viewBobbingMaxTransY = eg::TweakVarFloat("vb_max_ty", 0.06f, 0);
-static const float* viewBobbingSpeed = eg::TweakVarFloat("vb_speed", 6.0f, 0);
+static const float* viewBobbingMaxTransY = eg::TweakVarFloat("vb_max_ty", 0.05f, 0);
+static const float* viewBobbingCyclesPerSecond = eg::TweakVarFloat("vb_cycles_per_sec", 2.2f, 0);
 
 static constexpr float EYE_OFFSET = Player::EYE_HEIGHT - Player::HEIGHT / 2;
+
+static constexpr int NUM_WALK_SOUNDS = 5;
+static const eg::AudioClip* WALK_SOUNDS_L[NUM_WALK_SOUNDS];
+static const eg::AudioClip* WALK_SOUNDS_R[NUM_WALK_SOUNDS];
+static const eg::AudioClip* gravityCornerSound;
+
+static void OnInit()
+{
+	char nameBuffer[64];
+	for (int i = 0; i < NUM_WALK_SOUNDS; i++)
+	{
+		snprintf(nameBuffer, sizeof(nameBuffer), "Audio/Walking/%dL.ogg", i + 1);
+		WALK_SOUNDS_L[i] = &eg::GetAsset<eg::AudioClip>(nameBuffer);
+		snprintf(nameBuffer, sizeof(nameBuffer), "Audio/Walking/%dR.ogg", i + 1);
+		WALK_SOUNDS_R[i] = &eg::GetAsset<eg::AudioClip>(nameBuffer);
+	}
+	
+	gravityCornerSound = &eg::GetAsset<eg::AudioClip>("Audio/GravityCorner.ogg");
+}
+EG_ON_INIT(OnInit)
 
 Player::Player()
 {
@@ -422,6 +448,10 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 			
 			glm::vec3 activatePos = cornerRotation * glm::vec3(0.3f, 0.3f, cornerL.z) + corner->position;
 			GravityCornerLightMaterial::instance.Activate(activatePos);
+			
+			eg::AudioLocationParameters locationParams = {};
+			locationParams.position = corner->position;
+			AudioPlayers::gameSFXPlayer.Play(*gravityCornerSound, *gravityCornerVolume, 1, &locationParams);
 		}
 	}
 	
@@ -478,6 +508,8 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 			m_newRotation = GetRotation(m_rotationYaw, m_rotationPitch, m_down);
 		}
 	}
+	
+	m_physicsObject.actualMove = {};
 	
 	//Moves the player with the current platform, if there is one below
 	glm::vec3 launchVelocity(0.0f);
@@ -589,6 +621,55 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 	else
 		m_eyeOffsetFade = std::min(m_eyeOffsetFade + dt, 1.0f);
 	
+	//Plays footstep sounds
+	const float distancePerStepSound = *walkSpeed / *stepsPerSecond;
+	if (m_onGround && !underwater)
+	{
+		glm::vec3 planeMove = m_physicsObject.actualMove - up * glm::dot(m_physicsObject.actualMove, up);
+		float distanceMoved = glm::length(planeMove);
+		if (distanceMoved < 1E-3f)
+		{
+			m_stepSoundRemDistance = distancePerStepSound * 0.25f;
+			m_nextStepSoundRightIndex = -1;
+		}
+		else
+		{
+			m_stepSoundRemDistance -= distanceMoved;
+			if (m_stepSoundRemDistance < 0)
+			{
+				const eg::AudioClip* clipToPlay;
+				if (m_nextStepSoundRightIndex != -1)
+				{
+					clipToPlay = WALK_SOUNDS_R[m_nextStepSoundRightIndex];
+					m_nextStepSoundRightIndex = -1;
+				}
+				else
+				{
+					m_nextStepSoundRightIndex = std::uniform_int_distribution<int>(0, NUM_WALK_SOUNDS - 1)(globalRNG);
+					clipToPlay = WALK_SOUNDS_L[m_nextStepSoundRightIndex];
+				}
+				
+				std::uniform_real_distribution<float> pitchDist(0.7f, 1.0f);
+				std::uniform_real_distribution<float> volumeDist(*stepVolume * 0.8f, *stepVolume * 1.2f);
+				
+				eg::AudioLocationParameters locationParameters = {};
+				locationParameters.position = FeetPosition();
+				locationParameters.direction = up;
+				AudioPlayers::gameSFXPlayer.Play(*clipToPlay, volumeDist(globalRNG), pitchDist(globalRNG),
+				                                 &locationParameters);
+				
+				m_stepSoundRemDistance += distancePerStepSound;
+				if (m_stepSoundRemDistance < 0)
+					m_stepSoundRemDistance = distancePerStepSound;
+			}
+		}
+	}
+	else
+	{
+		m_stepSoundRemDistance = distancePerStepSound * 0.25f;
+		m_nextStepSoundRightIndex = -1;
+	}
+	
 	//Updates the eye position
 	m_eyePosition = Position() + up * EYE_OFFSET * m_eyeOffsetFade;
 	int downDim = (int)m_down / 2;
@@ -606,7 +687,9 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 	if (m_viewBobbingIntensity < 0.0001f)
 		m_viewBobbingTime = 0;
 	else
-		m_viewBobbingTime += dt * *viewBobbingSpeed * m_viewBobbingIntensity;
+	{
+		m_viewBobbingTime += dt * eg::PI * *viewBobbingCyclesPerSecond * m_viewBobbingIntensity;
+	}
 }
 
 void Player::FlipDown()
@@ -700,6 +783,8 @@ void Player::Reset()
 	m_eyeOffsetFade = 1;
 	m_viewBobbingIntensity = 1;
 	m_gravityTransitionMode = TransitionMode::None;
+	m_nextStepSoundRightIndex = -1;
+	m_stepSoundRemDistance = 0;
 }
 
 glm::vec3 Player::FeetPosition() const

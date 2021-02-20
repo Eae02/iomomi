@@ -6,7 +6,7 @@
 class PostProcessor
 {
 public:
-	PostProcessor();
+	PostProcessor() = default;
 	
 	void Render(eg::TextureRef input, const eg::BloomRenderer::RenderTarget* bloomRenderTarget,
 		eg::FramebufferHandle output, uint32_t outputResX, uint32_t outputResY, float colorScale);

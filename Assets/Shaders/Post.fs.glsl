@@ -17,6 +17,9 @@ layout (push_constant) uniform PC
 	float exposure;
 	float bloomIntensity;
 	float finalColorScale;
+	float vignetteRadMin;
+	float vignetteRadScale;
+	float vignettePower;
 };
 
 vec3 doFXAA()
@@ -74,6 +77,6 @@ void main()
 		color += texture(bloomSampler, texCoord_in).rgb * bloomIntensity;
 	}
 	
-	float vignette = pow(length(texCoord_in - 0.5) / length(vec2(0.55)), 2.0);
+	float vignette = pow(clamp((length(texCoord_in - 0.5) - vignetteRadMin) * vignetteRadScale, 0, 1), vignettePower);
 	color_out = vec4((vec3(1.0) - exp(-exposure * color)) * (1.0 - vignette) * finalColorScale, 1.0);
 }
