@@ -42,9 +42,7 @@ void main()
 	float d = depthTo01(ndcBack.z);
 	vec2 scrPos = ndcFront.xy * vec2(0.5, EG_OPENGL ? 0.5 : -0.5) + 0.5;
 	float inputDepth = texture(geometryDepthSampler, scrPos).r;
-	if (linearizeDepth(d) > linearizeDepth(inputDepth) + PARTICLE_RADIUS * 2)
-		discard;
-	gl_FragDepth = min(d, inputDepth);
+	gl_FragDepth = hyperDepth(min(linearizeDepth(d), linearizeDepth(inputDepth) + PARTICLE_RADIUS * 2));
 #else
 	gl_FragDepth = depthTo01(ndcFront.z);
 	glowIntensity_out = glowIntensity_in;

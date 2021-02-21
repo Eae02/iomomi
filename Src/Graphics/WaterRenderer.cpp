@@ -261,9 +261,9 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 static const glm::vec3 waterGlowColor(0.12f, 0.9f, 0.7f);
 
 static float* waterVisibility = eg::TweakVarFloat("water_visibility", 10.0f, 0.0f);
-static float* waterNormalMapIntensity = eg::TweakVarFloat("water_nm_intensity", 0.8f, 0.0f);
+static float* waterNormalMapIntensity = eg::TweakVarFloat("water_nm_intensity", 0.6f, 0.0f);
 static float* waterSSRIntensity = eg::TweakVarFloat("water_ssr_intensity", 2.0f, 0.0f);
-static float* waterIndexOfRefraction = eg::TweakVarFloat("water_ior", 0.75f);
+static float* waterIndexOfRefraction = eg::TweakVarFloat("water_ior", 0.8f);
 
 void WaterRenderer::RenderPost(RenderTexManager& rtManager)
 {
@@ -296,10 +296,11 @@ void WaterRenderer::RenderPost(RenderTexManager& rtManager)
 	
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::WaterDepthBlurred2), 0, 1);
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::WaterGlowIntensity), 0, 2);
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::LitWithoutWater), 0, 3);
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 4);
-	eg::DC.BindTexture(*m_normalMapTexture, 0, 5);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::WaterMaxDepth), 0, 2);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::WaterGlowIntensity), 0, 3);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::LitWithoutWater), 0, 4);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 5);
+	eg::DC.BindTexture(*m_normalMapTexture, 0, 6);
 	
 	eg::DC.Draw(0, 3, 0, 1);
 	

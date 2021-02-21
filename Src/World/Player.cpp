@@ -14,10 +14,13 @@
 static float* walkSpeed         = eg::TweakVarFloat("pl_walk_speed",     4.0f,  0.0f);
 static float* swimSpeed         = eg::TweakVarFloat("pl_swim_speed",     5.0f,  0.0f);
 static float* noclipSpeed       = eg::TweakVarFloat("pl_noclip_speed",   8.0f,  0.0f);
+static float* noclipAccel       = eg::TweakVarFloat("pl_noclip_accel",   80.0f, 0.0f);
 static float* walkAccelTime     = eg::TweakVarFloat("pl_walk_atime",     0.1f,  0.0f);
 static float* swimAccelTime     = eg::TweakVarFloat("pl_swim_atime",     0.4f,  0.0f);
 static float* walkDeaccelTime   = eg::TweakVarFloat("pl_walk_datime",    0.05f, 0.0f);
+static float* swimAccel         = eg::TweakVarFloat("pl_swim_accel",     12.0f, 0.0f);
 static float* swimDrag          = eg::TweakVarFloat("pl_swim_drag",      3.5f,  0.0f);
+static float* swimGravityScale  = eg::TweakVarFloat("pl_swim_gravscale", 0.1f,  0.0f);
 static float* ladderClimbSpeed  = eg::TweakVarFloat("pl_ladder_speed",   3.0f,  0.0f);
 static float* ladderAccelTime   = eg::TweakVarFloat("pl_ladder_atime",   0.2f,  0.0f);
 static float* jumpHeight        = eg::TweakVarFloat("pl_jump_height",    1.1f,  0.0f);
@@ -184,28 +187,30 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 		if (moveForward)
 			accel += forward;
 		if (moveBack)
-			accel -= forward;
+			accel += -forward;
 		if (moveLeft)
-			accel -= right;
+			accel += -right;
 		if (moveRight)
 			accel += right;
 		if (moveUp)
 			accel += up;
 		
-		float maxSpeed = *noclipActive ? *noclipSpeed : *swimSpeed;
-		float atime = *noclipActive ? *walkAccelTime : *swimAccelTime;
-		
 		if (glm::length2(accel) > 0.01f)
 		{
-			accel = glm::normalize(accel) * maxSpeed / atime;
+			if (underwater)
+			{
+				accel += up * *swimGravityScale * GRAVITY_MAG / *swimAccel;
+			}
+			
+			accel = glm::normalize(accel) * (*noclipActive ? *noclipAccel : *swimAccel);
 			m_physicsObject.velocity += accel * dt;
 		}
 		
-		//Caps the local velocity to the max speed
-		const float speed = glm::length(m_physicsObject.velocity);
-		if (speed > maxSpeed)
+		if (*noclipActive)
 		{
-			m_physicsObject.velocity *= maxSpeed / speed;
+			const float speed = glm::length(m_physicsObject.velocity);
+			if (speed > *noclipSpeed)
+				m_physicsObject.velocity *= *noclipSpeed / speed;
 		}
 		
 		m_physicsObject.velocity -= m_physicsObject.velocity * std::min(dt * *swimDrag, 1.0f);
@@ -383,7 +388,7 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 		else
 		{
 			//Applies gravity
-			localVelVertical -= ((underwater ? 0.2f : 1.0f) * GRAVITY_MAG) * dt;
+			localVelVertical -= ((underwater ? *swimGravityScale : 1.0f) * GRAVITY_MAG) * dt;
 			
 			//Updates vertical velocity
 			if (moveUp && m_gravityTransitionMode == TransitionMode::None && m_onGround)
