@@ -182,7 +182,8 @@ void MainMenuGameState::RunFrame(float dt)
 	}
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Load;
+	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
+	rpBeginInfo.colorAttachments[0].clearValue = eg::ColorSRGB::FromHex(0x041626);
 	m_spriteBatch.End(eg::CurrentResolutionX(), eg::CurrentResolutionY(), rpBeginInfo);
 }
 
@@ -335,6 +336,7 @@ void MainMenuGameState::RenderWorld(float dt)
 		m_world = LoadLevelWorld(*backgroundLevel, false);
 		m_physicsEngine = {};
 		m_worldGameTime = 0;
+		m_worldFadeInProgress = 0;
 		GameRenderer::instance->WorldChanged(*m_world);
 	}
 	
@@ -392,6 +394,10 @@ void MainMenuGameState::RenderWorld(float dt)
 		GameRenderer::instance->m_waterSimulator.Update(*m_world, m_world->thumbnailCameraPos, false);
 	}
 	
+	if (!GameRenderer::instance->m_waterSimulator.IsPresimComplete())
+		return;
+	m_worldFadeInProgress = std::min(m_worldFadeInProgress + dt * 2, 1.0f);
+	
 	GameRenderer::instance->Render(*m_world, m_worldGameTime, dt, m_worldRenderFramebuffer.handle,
 	                               eg::CurrentResolutionX(), eg::CurrentResolutionY());
 	
@@ -404,7 +410,8 @@ void MainMenuGameState::RenderWorld(float dt)
 	else
 		dstRect = eg::Rectangle(0, eg::CurrentResolutionY(), eg::CurrentResolutionX(), -eg::CurrentResolutionY());
 	
-	m_spriteBatch.Draw(m_worldBlurRenderer.OutputTexture(), dstRect, eg::ColorLin(1, 1, 1, 1), eg::SpriteFlags::ForceLowestMipLevel);
+	m_spriteBatch.Draw(m_worldBlurRenderer.OutputTexture(), dstRect, eg::ColorLin(1, 1, 1, m_worldFadeInProgress),
+	                   eg::SpriteFlags::ForceLowestMipLevel);
 }
 
 void MainMenuGameState::OnDeactivate()

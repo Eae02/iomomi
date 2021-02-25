@@ -92,11 +92,15 @@ public:
 		return m_lastUpdateTime;
 	}
 	
+	bool IsPresimComplete();
+	
 private:
 	void ThreadTarget();
 	
 	std::mutex m_mutex;
 	bool m_run = false;
+	
+	uint32_t m_presimIterationsCompleted = 0;
 	
 	std::atomic_uint64_t m_lastUpdateTime { 0 };
 	

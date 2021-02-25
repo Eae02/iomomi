@@ -60,6 +60,7 @@ private:
 	eg::Framebuffer m_worldRenderFramebuffer;
 	eg::Texture m_worldRenderTexture;
 	float m_worldGameTime = 0;
+	float m_worldFadeInProgress = 0;
 	
 	uint64_t m_lastFrameIndex = 0;
 };

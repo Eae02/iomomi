@@ -10,6 +10,8 @@
 #include <execution>
 #include <glm/gtx/hash.hpp>
 
+constexpr uint32_t PRESIM_LENGTH = 100;
+
 void WaterSimulator::Init(World& world)
 {
 	Stop();
@@ -92,7 +94,9 @@ void WaterSimulator::Init(World& world)
 		bufferSize * eg::MAX_CONCURRENT_FRAMES, nullptr);
 	m_positionsUploadBufferMemory = (char*)m_positionsUploadBuffer.Map(0, bufferSize * eg::MAX_CONCURRENT_FRAMES);
 	
+	m_presimIterationsCompleted = 0;
 	m_run = true;
+	m_pausedSH = true;
 	m_thread = std::thread(&WaterSimulator::ThreadTarget, this);
 }
 
@@ -117,6 +121,12 @@ void WaterSimulator::Stop()
 	m_positionsBuffer = { };
 }
 
+bool WaterSimulator::IsPresimComplete()
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	return !m_run || m_presimIterationsCompleted == PRESIM_LENGTH;
+}
+
 static int* stepsPerSecondVar = eg::TweakVarInt("water_sps", 60, 1);
 
 void WaterSimulator::ThreadTarget()
@@ -125,7 +135,7 @@ void WaterSimulator::ThreadTarget()
 	
 	std::vector<WaterBlocker> waterBlockers;
 	
-	bool firstStep = true;
+	bool presimDone = false;
 	Clock::time_point lastStepEnd = Clock::now();
 	while (true)
 	{
@@ -143,10 +153,13 @@ void WaterSimulator::ThreadTarget()
 			if (!m_run)
 				break;
 			
-			if (!firstStep)
+			if (m_presimIterationsCompleted != 0)
 				WSI_SwapBuffers(m_impl);
+			if (m_presimIterationsCompleted == PRESIM_LENGTH)
+				presimDone = true;
 			else
-				firstStep = false;
+				m_presimIterationsCompleted++;
+			
 			stepsPerSecond = *stepsPerSecondVar;
 			
 			waterBlockers = m_waterBlockersSH;
@@ -179,7 +192,8 @@ void WaterSimulator::ThreadTarget()
 		
 		m_lastUpdateTime = std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - lastStepEnd).count();
 		
-		std::this_thread::sleep_until(lastStepEnd + std::chrono::nanoseconds(1000000000LL / stepsPerSecond));
+		if (presimDone)
+			std::this_thread::sleep_until(lastStepEnd + std::chrono::nanoseconds(1000000000LL / stepsPerSecond));
 		lastStepEnd = Clock::now();
 	}
 }
