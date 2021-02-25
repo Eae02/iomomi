@@ -69,32 +69,23 @@ void ColliderEnt::RenderSettings()
 	ImGui::Checkbox("Block -Z", &m_blockedGravityModes[5]);
 }
 
-void ColliderEnt::EditorDraw(const EntEditorDrawArgs& args)
+std::optional<eg::ColorSRGB> ColliderEnt::EdGetBoxColor(bool selected) const
 {
-	if (!drawInEditor)
-		return;
-	
-	glm::vec3 realVertices[8];
-	for (int i = 0; i < 8; i++)
-	{
-		realVertices[i] = m_physicsObject.position + m_radius * glm::vec3(cubeMesh::vertices[i]);
-	}
-	
-	for (int f = 0; f < 6; f++)
-	{
-		glm::vec3 positions[4];
-		for (int i = 0; i < 4; i++)
-			positions[i] = realVertices[cubeMesh::faces[f][i]];
-		args.primitiveRenderer->AddQuad(positions, eg::ColorSRGB::FromRGBAHex(0xc3236d33));
-	}
-	
-	for (std::pair<int, int> edge : cubeMesh::edges)
-	{
-		args.primitiveRenderer->AddLine(realVertices[edge.first], realVertices[edge.second], eg::ColorSRGB::FromRGBAHex(0xc3236dBB));
-	}
+	if (!drawInEditor) return { };
+	return eg::ColorSRGB::FromRGBAHex(0xc3236d33);
 }
 
-void ColliderEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+glm::vec3 ColliderEnt::EdGetSize() const
+{
+	return m_radius;
+}
+
+void ColliderEnt::EdResized(const glm::vec3& newSize)
+{
+	m_radius = newSize;
+}
+
+void ColliderEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
 	m_physicsObject.position = newPosition;
 }

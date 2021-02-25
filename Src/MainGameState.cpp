@@ -2,6 +2,7 @@
 #include "Settings.hpp"
 #include "Levels.hpp"
 #include "World/Entities/EntTypes/EntranceExitEnt.hpp"
+#include "World/Entities/EntTypes/Activation/CubeEnt.hpp"
 #include "MainMenuGameState.hpp"
 #include "Gui/GuiCommon.hpp"
 #include "AudioPlayers.hpp"
@@ -178,7 +179,14 @@ void MainGameState::RunFrame(float dt)
 		
 		m_physicsEngine.BeginCollect();
 		m_world->CollectPhysicsObjects(m_physicsEngine, dt);
-		m_physicsEngine.EndCollect();
+		m_physicsEngine.EndCollect(dt);
+		
+		m_world->Update(updateArgs);
+		
+		{
+			auto physicsUpdateCPUTimer = eg::StartCPUTimer("Physics (early)");
+			m_physicsEngine.Simulate(dt);
+		}
 		
 		{
 			auto playerUpdateCPUTimer = eg::StartCPUTimer("Player Update");
@@ -186,13 +194,21 @@ void MainGameState::RunFrame(float dt)
 			m_player.Update(*m_world, m_physicsEngine, dt, underwater);
 		}
 		
+		m_world->entManager.ForEachOfType<CubeEnt>([&] (CubeEnt& cube) { cube.UpdateAfterPlayer(updateArgs); });
+		
+		{
+			auto physicsUpdateCPUTimer = eg::StartCPUTimer("Physics (late)");
+			m_physicsEngine.Simulate(dt);
+			m_physicsEngine.EndFrame(dt);
+		}
+		
+		m_world->UpdateAfterPhysics(updateArgs);
+		
 		eg::AudioLocationParameters playerALP;
 		playerALP.position = m_player.Position();
 		playerALP.direction = m_player.Forward();
 		playerALP.velocity = m_player.Velocity();
 		eg::UpdateAudioListener(playerALP, -DirectionVector(m_player.CurrentDown()));
-		
-		m_world->Update(updateArgs, &m_physicsEngine);
 		
 		UpdateViewProjMatrices();
 		if (m_world->playerHasGravityGun)

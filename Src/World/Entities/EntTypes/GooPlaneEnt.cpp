@@ -12,7 +12,7 @@ void GooPlaneEnt::RenderSettings()
 	Ent::RenderSettings();
 }
 
-void GooPlaneEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+void GooPlaneEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
 	m_liquidPlane.position = newPosition;
 	if (faceDirection)
@@ -55,7 +55,7 @@ void GooPlaneEnt::Deserialize(std::istream& stream)
 	m_liquidPlane.wallForward = (Dir)gooPlanePB.wall_dir();
 }
 
-int GooPlaneEnt::GetEditorIconIndex() const
+int GooPlaneEnt::EdGetIconIndex() const
 {
 	return 17;
 }

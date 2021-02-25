@@ -22,14 +22,14 @@ public:
 	void CommonDraw(const EntDrawArgs& args) override;
 	
 	glm::vec3 GetPosition() const override { return m_position; }
-	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	void EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
-	glm::quat GetEditorRotation() override;
-	void EditorRotated(const glm::quat& newRotation) override;
+	glm::quat EdGetRotation() const override;
+	void EdRotated(const glm::quat& newRotation) override;
 	
 	void CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt) override;
 	
-	eg::Span<const EditorSelectionMesh> GetEditorSelectionMeshes() const override;
+	eg::Span<const EditorSelectionMesh> EdGetSelectionMeshes() const override;
 	
 private:
 	glm::mat4 GetCommonTransform() const;

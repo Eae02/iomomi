@@ -40,11 +40,11 @@ public:
 	
 	glm::mat4 GetTransform() const;
 	glm::vec3 GetPosition() const override { return m_position; }
-	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	void EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
-	int GetEditorIconIndex() const override;
+	int EdGetIconIndex() const override;
 	
-	eg::Span<const EditorSelectionMesh> GetEditorSelectionMeshes() const override;
+	eg::Span<const EditorSelectionMesh> EdGetSelectionMeshes() const override;
 	
 	enum class ActivateAction
 	{

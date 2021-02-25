@@ -13,7 +13,7 @@ public:
 	
 	CubeSpawnerEnt();
 	
-	int GetEditorIconIndex() const override;
+	int EdGetIconIndex() const override;
 	
 	void CommonDraw(const EntDrawArgs& args) override;
 	
@@ -28,7 +28,7 @@ public:
 	
 	glm::vec3 GetPosition() const override { return m_position; }
 	Dir GetFacingDirection() const override { return m_direction; }
-	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	void EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
 private:
 	static std::vector<glm::vec3> GetConnectionPoints(const Ent& entity);

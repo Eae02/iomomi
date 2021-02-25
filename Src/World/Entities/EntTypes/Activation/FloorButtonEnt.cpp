@@ -214,7 +214,7 @@ void FloorButtonEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float d
 	physicsEngine.RegisterObject(&m_padPhysicsObject);
 }
 
-void FloorButtonEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+void FloorButtonEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
 	m_padPhysicsObject.displayPosition = m_padPhysicsObject.position = newPosition;
 	m_ringPhysicsObject.displayPosition = m_ringPhysicsObject.position = newPosition;
@@ -224,12 +224,12 @@ void FloorButtonEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir
 	}
 }
 
-int FloorButtonEnt::GetEditorIconIndex() const
+int FloorButtonEnt::EdGetIconIndex() const
 {
 	return 15;
 }
 
-eg::Span<const EditorSelectionMesh> FloorButtonEnt::GetEditorSelectionMeshes() const
+eg::Span<const EditorSelectionMesh> FloorButtonEnt::EdGetSelectionMeshes() const
 {
 	static EditorSelectionMesh selectionMesh;
 	selectionMesh.model = s_model;

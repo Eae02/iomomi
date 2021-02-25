@@ -42,6 +42,7 @@ enum class EntTypeFlags
 	HasPhysics         = 0x100,
 	EditorRotatable    = 0x200,
 	OptionalEditorIcon = 0x400,
+	EditorBoxResizable = 0x800,
 };
 
 struct EditorSelectionMesh
@@ -66,17 +67,19 @@ public:
 	virtual void Deserialize(std::istream& stream) = 0;
 	
 	virtual void RenderSettings();
-	
-	virtual void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) { }
-	virtual glm::vec3 GetEditorGridAlignment() const;
-	virtual int GetEditorIconIndex() const;
 	virtual glm::vec3 GetPosition() const = 0;
 	virtual Dir GetFacingDirection() const { return Dir::PosY; }
 	
-	virtual eg::Span<const EditorSelectionMesh> GetEditorSelectionMeshes() const { return { }; }
+	virtual glm::vec3 EdGetGridAlignment() const;
+	virtual int EdGetIconIndex() const;
+	virtual eg::Span<const EditorSelectionMesh> EdGetSelectionMeshes() const { return { }; }
+	virtual std::optional<eg::ColorSRGB> EdGetBoxColor(bool selected) const { return { }; }
 	
-	virtual glm::quat GetEditorRotation() { return glm::quat(); }
-	virtual void EditorRotated(const glm::quat& newRotation) { }
+	virtual void EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) { }
+	virtual glm::quat EdGetRotation() const { return glm::quat(); }
+	virtual void EdRotated(const glm::quat& newRotation) { }
+	virtual glm::vec3 EdGetSize() const { return glm::vec3(); }
+	virtual void EdResized(const glm::vec3& newSize) { }
 	
 	virtual void Spawned(bool isEditor);
 	

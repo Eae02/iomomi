@@ -27,7 +27,7 @@ public:
 	
 	void CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt) override;
 	
-	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	void EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
 	bool SetGravity(Dir newGravity) override;
 	

@@ -67,6 +67,11 @@ Player::Player()
 	m_physicsObject.owner = this;
 }
 
+bool Player::CanPickUpCube() const
+{
+	return *noclipActive || m_onGround;
+}
+
 static const glm::vec3 leftDirs[6] =
 {
 	{ 0, 1, 0 },
@@ -521,11 +526,12 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 	if (floorObject != nullptr && std::holds_alternative<Ent*>(floorObject->owner) && !*noclipActive)
 	{
 		Ent& floorEntity = *std::get<Ent*>(floorObject->owner);
+		physicsEngine.ApplyMovement(*floorObject, dt);
+		m_physicsObject.move = floorObject->actualMove;
+		physicsEngine.ApplyMovement(m_physicsObject, dt);
+		
 		if (floorEntity.TypeID() == EntTypeID::Platform)
 		{
-			physicsEngine.ApplyMovement(*floorObject, dt);
-			m_physicsObject.move = floorObject->actualMove;
-			physicsEngine.ApplyMovement(m_physicsObject, dt);
 			launchVelocity = ((PlatformEnt&)floorEntity).LaunchVelocity();
 		}
 	}

@@ -35,12 +35,6 @@ static void OnShutdown()
 EG_ON_INIT(OnInit)
 EG_ON_SHUTDOWN(OnShutdown)
 
-ForceFieldEnt::ForceFieldEnt()
-	: m_activatable(&ForceFieldEnt::GetConnectionPoints)
-{
-	
-}
-
 void ForceFieldEnt::RenderSettings()
 {
 	Ent::RenderSettings();
@@ -104,26 +98,9 @@ void ForceFieldEnt::GameDraw(const EntGameDrawArgs& args)
 	}
 }
 
-void ForceFieldEnt::EditorDraw(const EntEditorDrawArgs& args)
+std::optional<eg::ColorSRGB> ForceFieldEnt::EdGetBoxColor(bool selected) const
 {
-	glm::vec3 realVertices[8];
-	for (int i = 0; i < 8; i++)
-	{
-		realVertices[i] = m_position + radius * glm::vec3(cubeMesh::vertices[i]);
-	}
-	
-	for (int f = 0; f < 6; f++)
-	{
-		glm::vec3 positions[4];
-		for (int i = 0; i < 4; i++)
-			positions[i] = realVertices[cubeMesh::faces[f][i]];
-		args.primitiveRenderer->AddQuad(positions, eg::ColorSRGB::FromRGBAHex(0x2390c333));
-	}
-	
-	for (std::pair<int, int> edge : cubeMesh::edges)
-	{
-		args.primitiveRenderer->AddLine(realVertices[edge.first], realVertices[edge.second], eg::ColorSRGB::FromRGBAHex(0x2390c3BB));
-	}
+	return eg::ColorSRGB::FromHex(0xb6fdff).ScaleAlpha(selected ? 0.3f : 0.2f);
 }
 
 void ForceFieldEnt::Update(const WorldUpdateArgs& args)
@@ -258,9 +235,19 @@ void ForceFieldEnt::Deserialize(std::istream& stream)
 		m_activatable.m_name = forceFieldPB.name();
 }
 
-void ForceFieldEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+void ForceFieldEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
 	m_position = newPosition;
+}
+
+glm::vec3 ForceFieldEnt::EdGetSize() const
+{
+	return radius;
+}
+
+void ForceFieldEnt::EdResized(const glm::vec3& newSize)
+{
+	radius = newSize;
 }
 
 std::vector<glm::vec3> ForceFieldEnt::GetConnectionPoints(const Ent& entity)

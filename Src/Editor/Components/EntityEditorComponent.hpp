@@ -19,7 +19,11 @@ public:
 	
 	bool CollectIcons(const EditorState& editorState, std::vector<EditorIcon>& icons) override;
 	
+	void DrawEntityBox(PrimitiveRenderer& primitiveRenderer, const Ent& entity, bool isSelected) const;
+	
 private:
+	std::tuple<float, int, glm::vec3> PickEntityBoxResize(const eg::Ray& viewRay, const Ent& entity) const;
+	
 	std::optional<glm::ivec2> m_mouseDownPos;
 	
 	struct TransformingEntity
@@ -43,6 +47,14 @@ private:
 	bool m_drawRotationGizmo = false;
 	bool m_inRotationMode = false;
 	bool m_canRotate = false;
+	
+	std::shared_ptr<Ent> m_boxResizeEntity;
+	int m_boxResizeAxis = -1;
+	eg::Ray m_boxResizeDragRay;
+	float m_boxResizeInitialRayPos;
+	float m_boxResizeBeginSize;
+	float m_boxResizeAssignedSize;
+	bool m_boxResizeActive = false;
 	
 	std::shared_ptr<Ent> m_hoveredSelMeshEntity;
 	

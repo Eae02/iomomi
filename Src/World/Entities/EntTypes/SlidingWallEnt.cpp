@@ -113,7 +113,7 @@ void SlidingWallEnt::Spawned(bool isEditor)
 	m_lastShadowUpdatePosition = m_initialPosition;
 }
 
-void SlidingWallEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+void SlidingWallEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
 	m_initialPosition = m_physicsObject.position = newPosition;
 	UpdateWaterBlockComponent();

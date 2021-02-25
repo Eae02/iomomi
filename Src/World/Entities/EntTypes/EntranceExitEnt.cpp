@@ -403,7 +403,7 @@ void EntranceExitEnt::MovePlayer(const EntranceExitEnt& oldExit, const EntranceE
 	player.m_rotationYaw += -forwardRotations[(int)oldDir] + eg::PI + forwardRotations[(int)newDir];
 }
 
-void EntranceExitEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+void EntranceExitEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
 	if (faceDirection)
 		m_direction = faceDirection.value();
@@ -473,7 +473,7 @@ void EntranceExitEnt::CollectPointLights(std::vector<std::shared_ptr<PointLight>
 	lights.push_back(m_fanPointLight);
 }
 
-int EntranceExitEnt::GetEditorIconIndex() const
+int EntranceExitEnt::EdGetIconIndex() const
 {
 	return 13 + (int)m_type;
 }

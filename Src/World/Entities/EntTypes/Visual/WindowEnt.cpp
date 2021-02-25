@@ -436,7 +436,7 @@ void WindowEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 	physicsEngine.RegisterObject(&m_physicsObject);
 }
 
-void WindowEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+void WindowEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
 	m_physicsObject.position = newPosition;
 	m_waterBlockComp.InitFromAAQuadComponent(m_aaQuad, m_physicsObject.position);
@@ -448,7 +448,7 @@ glm::vec3 WindowEnt::GetPosition() const
 	return m_physicsObject.position;
 }
 
-glm::vec3 WindowEnt::GetEditorGridAlignment() const
+glm::vec3 WindowEnt::EdGetGridAlignment() const
 {
 	glm::vec3 alignment(0.1f);
 	alignment[m_aaQuad.upPlane] = 0.05f;
@@ -469,12 +469,12 @@ glm::vec3 WindowEnt::GetTranslationFromOriginMode() const
 	EG_UNREACHABLE
 }
 
-int WindowEnt::GetEditorIconIndex() const
+int WindowEnt::EdGetIconIndex() const
 {
 	return -1;
 }
 
-eg::Span<const EditorSelectionMesh> WindowEnt::GetEditorSelectionMeshes() const
+eg::Span<const EditorSelectionMesh> WindowEnt::EdGetSelectionMeshes() const
 {
 	return m_aaQuad.GetEditorSelectionMeshes(GetRenderTranslation(), m_depth);
 }

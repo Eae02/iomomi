@@ -28,7 +28,7 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 	}
 	m_lastUpdateFrameIndex = eg::FrameIdx();
 	
-	auto MaybeClone = [&] ()
+	auto MaybeClone = [&]()
 	{
 		if (!eg::IsButtonDown(eg::Button::LeftShift) || m_entitiesCloned)
 			return false;
@@ -53,7 +53,7 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 	const bool mouseHeld = eg::IsButtonDown(eg::Button::MouseLeft) && eg::WasButtonDown(eg::Button::MouseLeft);
 	
 	m_wallDragEntity = nullptr;
-	auto UpdateWallDragEntity = [&] ()
+	auto UpdateWallDragEntity = [&]()
 	{
 		if (editorState.selectedEntities->size() == 1)
 		{
@@ -82,12 +82,13 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 				else if (!eg::InputState::Current().IsCtrlDown())
 					newPos = SnapToGrid(newPos, SMALL_GRID_SNAP);
 				
-				m_wallDragEntity->EditorMoved(newPos, pickResult.normalDir);
+				m_wallDragEntity->EdMoved(newPos, pickResult.normalDir);
 				editorState.EntityMoved(*m_wallDragEntity);
 			}
 		}
 		else if (m_mouseDownPos.has_value() &&
-			glm::distance2(glm::vec2(*m_mouseDownPos), glm::vec2(eg::CursorPos())) > DRAG_BEGIN_DELTA * DRAG_BEGIN_DELTA)
+		         glm::distance2(glm::vec2(*m_mouseDownPos), glm::vec2(eg::CursorPos())) >
+		         DRAG_BEGIN_DELTA * DRAG_BEGIN_DELTA)
 		{
 			m_isDraggingWallEntity = true;
 		}
@@ -99,7 +100,7 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 	
 	bool blockFurtherInput = false;
 	
-	//Removed invalid selected entities and locks valid ones
+	//Removes invalid selected entities and locks valid ones
 	std::vector<std::shared_ptr<Ent>> selectedEntities;
 	for (int64_t i = editorState.selectedEntities->size() - 1; i >= 0; i--)
 	{
@@ -115,7 +116,33 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 		}
 	}
 	
-	auto UpdateGizmoEntities = [&] ()
+	//Updates box resize
+	if (!blockFurtherInput && m_boxResizeActive)
+	{
+		if (m_boxResizeEntity == nullptr || !eg::IsButtonDown(eg::Button::MouseLeft))
+		{
+			m_boxResizeActive = false;
+		}
+		else
+		{
+			float dragDist = m_boxResizeDragRay.GetClosestPoint(editorState.viewRay) - m_boxResizeInitialRayPos + m_boxResizeBeginSize;
+			if (!std::isnan(dragDist))
+			{
+				dragDist = SnapToGrid(std::max(dragDist, 0.0f));
+				if (!eg::FEqual(dragDist, m_boxResizeAssignedSize))
+				{
+					glm::vec3 newSize = m_boxResizeEntity->EdGetSize();
+					newSize[m_boxResizeAxis / 2] = (m_boxResizeBeginSize + dragDist) / 2;
+					m_boxResizeEntity->EdResized(newSize);
+					m_boxResizeEntity->EdMoved(m_boxResizeDragRay.GetPoint((dragDist - m_boxResizeBeginSize) / 2.0f), {});
+					m_boxResizeAssignedSize = dragDist;
+				}
+			}
+			blockFurtherInput = true;
+		}
+	}
+	
+	auto UpdateGizmoEntities = [&]()
 	{
 		m_transformingEntities.resize(selectedEntities.size());
 		m_initialGizmoPos = glm::vec3(0.0f);
@@ -126,7 +153,7 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 			m_transformingEntities[i].entity = selectedEntities[i];
 			m_transformingEntities[i].initialPosition = pos;
 			m_transformingEntities[i].lastPositionSet = pos;
-			m_transformingEntities[i].initialRotation = selectedEntities[i]->GetEditorRotation();
+			m_transformingEntities[i].initialRotation = selectedEntities[i]->EdGetRotation();
 			
 			m_initialGizmoPos += pos;
 		}
@@ -136,7 +163,7 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 	
 	//Updates the translation gizmo
 	m_drawTranslationGizmo = false;
-	if (!selectedEntities.empty() && m_wallDragEntity == nullptr && !m_inRotationMode)
+	if (!selectedEntities.empty() && m_wallDragEntity == nullptr && !m_inRotationMode && !blockFurtherInput)
 	{
 		if (!m_translationGizmo.HasInputFocus())
 		{
@@ -144,7 +171,8 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 		}
 		
 		m_drawTranslationGizmo = true;
-		m_translationGizmo.Update(m_gizmoPos, editorState.cameraPosition, editorState.viewProjection, editorState.viewRay);
+		m_translationGizmo.Update(m_gizmoPos, editorState.cameraPosition, editorState.viewProjection,
+		                          editorState.viewRay);
 		
 		m_gizmoDragDist = m_gizmoPos - m_initialGizmoPos;
 		if (m_translationGizmo.CurrentAxis() != -1)
@@ -157,7 +185,7 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 					std::shared_ptr<Ent> dragEntity = m_transformingEntities[0].entity.lock();
 					if (dragEntity != nullptr)
 					{
-						gridSnap = dragEntity->GetEditorGridAlignment()[m_translationGizmo.CurrentAxis()];
+						gridSnap = dragEntity->EdGetGridAlignment()[m_translationGizmo.CurrentAxis()];
 					}
 				}
 				m_gizmoDragDist = SnapToGrid(m_gizmoDragDist, gridSnap);
@@ -178,7 +206,7 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 					}
 					if (glm::distance2(newPos, entity.lastPositionSet) > 1E-6f)
 					{
-						selectedEntitySP->EditorMoved(newPos, {});
+						selectedEntitySP->EdMoved(newPos, {});
 						editorState.EntityMoved(*selectedEntitySP);
 						entity.lastPositionSet = newPos;
 					}
@@ -192,11 +220,11 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 		}
 	}
 	
-	//Updates m_canRotate
+	//Updates m_canRotate and the rotation gizmo
 	if (!selectedEntities.empty())
 	{
 		m_canRotate = false;
-		if (m_wallDragEntity == nullptr)
+		if (m_wallDragEntity == nullptr && !blockFurtherInput)
 		{
 			m_canRotate = true;
 			for (const std::shared_ptr<Ent>& entity : selectedEntities)
@@ -239,7 +267,7 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 				{
 					if (std::shared_ptr<Ent> entitySP = entity.entity.lock())
 					{
-						entitySP->EditorRotated(m_rotationValue * entity.initialRotation);
+						entitySP->EdRotated(m_rotationValue * entity.initialRotation);
 					}
 				}
 			}
@@ -275,40 +303,137 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 	
 	//Updates the hovered selection mesh entity
 	m_hoveredSelMeshEntity = {};
+	if (!m_boxResizeActive)
+	{
+		m_boxResizeEntity = {};
+		m_boxResizeAxis = -1;
+	}
 	if (!blockFurtherInput && !editorState.anyIconHovered)
 	{
 		const VoxelRayIntersectResult voxelRayIR = editorState.world->voxels.RayIntersect(editorState.viewRay);
-		float closestSelMeshIntersect = voxelRayIR.intersected ? voxelRayIR.intersectDist + 0.5f : INFINITY;
+		float closestIntersect = voxelRayIR.intersected ? voxelRayIR.intersectDist + 0.5f : INFINITY;
+		bool closestIsBoxResizeEntity = false;
+		bool closestIsSelMeshEntity = false;
 		editorState.world->entManager.ForEach([&] (Ent& entity)
 		{
 			if (eg::HasFlag(entity.TypeFlags(), EntTypeFlags::EditorInvisible))
 				return;
 			
-			for (const EditorSelectionMesh& selMesh : entity.GetEditorSelectionMeshes())
+			bool isSelected = editorState.IsEntitySelected(entity);
+			if (!eg::InputState::Current().IsAltDown() && entity.EdGetBoxColor(isSelected))
+			{
+				auto [entInterDist, axis, axisDir] = PickEntityBoxResize(editorState.viewRay, entity);
+				if (axis != -1 && entInterDist < closestIntersect)
+				{
+					closestIntersect = entInterDist;
+					if (eg::HasFlag(entity.TypeFlags(), EntTypeFlags::EditorBoxResizable) && isSelected)
+					{
+						m_boxResizeAxis = axis;
+						m_boxResizeEntity = entity.shared_from_this();
+						m_boxResizeDragRay = eg::Ray(entity.GetPosition(), axisDir);
+						closestIsBoxResizeEntity = true;
+						closestIsSelMeshEntity = false;
+					}
+					else
+					{
+						m_hoveredSelMeshEntity = entity.shared_from_this();
+						closestIsBoxResizeEntity = false;
+						closestIsSelMeshEntity = true;
+					}
+				}
+			}
+			
+			for (const EditorSelectionMesh& selMesh : entity.EdGetSelectionMeshes())
 			{
 				float intersectDist;
 				if (selMesh.collisionMesh->Intersect(editorState.viewRay, intersectDist, &selMesh.transform))
 				{
-					if (intersectDist < closestSelMeshIntersect)
+					if (intersectDist < closestIntersect)
 					{
 						m_hoveredSelMeshEntity = entity.shared_from_this();
-						closestSelMeshIntersect = intersectDist;
+						closestIntersect = intersectDist;
+						closestIsBoxResizeEntity = false;
+						closestIsSelMeshEntity = true;
 					}
 				}
 			}
 		});
 		
-		if (m_hoveredSelMeshEntity && eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft))
+		if (!closestIsSelMeshEntity)
+			m_hoveredSelMeshEntity = {};
+		if (!closestIsBoxResizeEntity)
+			m_boxResizeEntity = {};
+		
+		if (eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft))
 		{
-			if (!eg::InputState::Current().IsCtrlDown())
-				editorState.selectedEntities->clear();
-			if (!editorState.IsEntitySelected(*m_hoveredSelMeshEntity))
-				editorState.selectedEntities->push_back(m_hoveredSelMeshEntity);
-			blockFurtherInput = true;
+			if (closestIsSelMeshEntity)
+			{
+				if (!eg::InputState::Current().IsCtrlDown())
+					editorState.selectedEntities->clear();
+				if (!editorState.IsEntitySelected(*m_hoveredSelMeshEntity))
+					editorState.selectedEntities->push_back(m_hoveredSelMeshEntity);
+				blockFurtherInput = true;
+			}
+			else if (closestIsBoxResizeEntity)
+			{
+				m_boxResizeInitialRayPos = m_boxResizeDragRay.GetClosestPoint(editorState.viewRay);
+				if (!std::isnan(m_boxResizeInitialRayPos))
+				{
+					m_boxResizeActive = true;
+					m_boxResizeBeginSize = m_boxResizeEntity->EdGetSize()[m_boxResizeAxis / 2];
+					m_boxResizeAssignedSize = -1;
+				}
+				blockFurtherInput = true;
+			}
 		}
 	}
 	
 	return blockFurtherInput;
+}
+
+std::tuple<float, int, glm::vec3> EntityEditorComponent::PickEntityBoxResize(const eg::Ray& viewRay, const Ent& entity) const
+{
+	glm::vec3 pos = entity.GetPosition();
+	glm::vec3 size = entity.EdGetSize();
+	glm::quat rot = entity.EdGetRotation();
+	
+	glm::vec3 vertices[8];
+	for (int i = 0; i < 8; i++)
+	{
+		vertices[i] = rot * (size * glm::vec3(cubeMesh::vertices[i])) + pos;
+	}
+	
+	float minDist = INFINITY;
+	int axis = -1;
+	glm::vec3 axisDir;
+	
+	for (int d = 0; d < 6; d++)
+	{
+		glm::vec3 faceMid;
+		glm::vec3 faceVertices[4];
+		for (int i = 0; i < 4; i++)
+		{
+			faceVertices[i] = vertices[cubeMesh::faces[d][i]];
+			faceMid += faceVertices[i];
+		}
+		faceMid /= 4.0f;
+		
+		eg::Plane plane(faceVertices[0], faceVertices[1], faceVertices[2]);
+		float dist;
+		if (viewRay.Intersects(plane, dist) && dist < minDist)
+		{
+			glm::vec3 point = viewRay.GetPoint(dist);
+			if (eg::TriangleContainsPoint(faceVertices[0], faceVertices[1], faceVertices[2], point) ||
+				eg::TriangleContainsPoint(faceVertices[1], faceVertices[2], faceVertices[3], point))
+			{
+				minDist = dist;
+				axis = d;
+				axisDir = glm::normalize(faceMid - pos);
+			}
+		}
+	}
+	
+	return std::make_tuple(minDist, axis, axisDir);
 }
 
 void EntityEditorComponent::RenderSettings(const EditorState& editorState)
@@ -379,7 +504,7 @@ bool EntityEditorComponent::CollectIcons(const EditorState& editorState, std::ve
 			return;
 		}
 		
-		const int iconIndex = entity.GetEditorIconIndex();
+		const int iconIndex = entity.EdGetIconIndex();
 		if (iconIndex == -1)
 			return;
 		
@@ -399,6 +524,49 @@ bool EntityEditorComponent::CollectIcons(const EditorState& editorState, std::ve
 	return false;
 }
 
+void EntityEditorComponent::DrawEntityBox(PrimitiveRenderer& primitiveRenderer, const Ent& entity, bool isSelected) const
+{
+	std::optional<eg::ColorSRGB> color = entity.EdGetBoxColor(isSelected);
+	if (!color.has_value())
+		return;
+	eg::ColorLin colorLin = *color;
+	
+	glm::vec3 pos = entity.GetPosition();
+	glm::vec3 size = entity.EdGetSize();
+	glm::quat rot = entity.EdGetRotation();
+	
+	glm::vec3 vertices[8];
+	for (int i = 0; i < 8; i++)
+	{
+		vertices[i] = rot * (size * glm::vec3(cubeMesh::vertices[i])) + pos;
+	}
+	
+	for (int d = 0; d < 6; d++)
+	{
+		float brightness = 0;
+		if (m_hoveredSelMeshEntity.get() == &entity || m_boxResizeEntity.get() == &entity)
+		{
+			brightness = 0.2f;
+		}
+		if (m_boxResizeEntity.get() == &entity && isSelected && m_boxResizeAxis == d)
+		{
+			brightness = m_boxResizeActive ? 0.8f : 0.6f;
+		}
+		
+		glm::vec3 faceVertices[4];
+		for (int i = 0; i < 4; i++)
+			faceVertices[i] = vertices[cubeMesh::faces[d][i]];
+		primitiveRenderer.AddQuad(faceVertices, eg::ColorLin::Mix(colorLin, eg::ColorLin(1, 1, 1, 1), brightness));
+	}
+	
+	eg::ColorSRGB edgeColor = *color;
+	edgeColor.a = glm::mix(edgeColor.a, 1.0f, 0.5f);
+	for (std::pair<int, int> edge : cubeMesh::edges)
+	{
+		primitiveRenderer.AddLine(vertices[edge.first], vertices[edge.second], edgeColor, 0.02f);
+	}
+}
+
 void EntityEditorComponent::EarlyDraw(const EditorState& editorState) const
 {
 	//Draws selection outlines around entities with selection meshes
@@ -411,14 +579,14 @@ void EntityEditorComponent::EarlyDraw(const EditorState& editorState) const
 		if (entity == m_hoveredSelMeshEntity)
 			hasDrawnOutlineForHoveredEntity = true;
 		
-		for (const EditorSelectionMesh& selMesh : entity->GetEditorSelectionMeshes())
+		for (const EditorSelectionMesh& selMesh : entity->EdGetSelectionMeshes())
 		{
 			editorState.selectionRenderer->Draw(1, selMesh.transform, *selMesh.model, selMesh.meshIndex);
 		}
 	}
 	if (m_hoveredSelMeshEntity != nullptr && !hasDrawnOutlineForHoveredEntity)
 	{
-		for (const EditorSelectionMesh& selMesh : m_hoveredSelMeshEntity->GetEditorSelectionMeshes())
+		for (const EditorSelectionMesh& selMesh : m_hoveredSelMeshEntity->EdGetSelectionMeshes())
 		{
 			editorState.selectionRenderer->Draw(0.5f, selMesh.transform, *selMesh.model, selMesh.meshIndex);
 		}

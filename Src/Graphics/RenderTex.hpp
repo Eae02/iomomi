@@ -48,6 +48,8 @@ public:
 	
 	eg::TextureRef GetRenderTexture(RenderTex texture) const;
 	
+	RenderTex ResolveRedirects(RenderTex renderTex) const;
+	
 	//Gets a framebuffer made up of a set of render textures
 	eg::FramebufferHandle GetFramebuffer(
 		std::optional<RenderTex> colorTexture1,
@@ -81,6 +83,4 @@ private:
 	std::vector<FramebufferEntry> framebuffers;
 	
 	void InitFramebufferEntry(RenderTexManager::FramebufferEntry& entry);
-	
-	RenderTex ResolveRedirects(RenderTex renderTex) const;
 };

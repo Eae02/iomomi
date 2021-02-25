@@ -37,12 +37,12 @@ public:
 		return Ent::GetAABB(1.0f, 0.2f, m_up);
 	}
 	
-	eg::Span<const EditorSelectionMesh> GetEditorSelectionMeshes() const override;
-	int GetEditorIconIndex() const override;
+	eg::Span<const EditorSelectionMesh> EdGetSelectionMeshes() const override;
+	int EdGetIconIndex() const override;
 	
 	glm::vec3 GetPosition() const override { return m_position; }
 	Dir GetFacingDirection() const override { return m_up; }
-	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	void EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
 private:
 	glm::mat4 GetTransform() const;

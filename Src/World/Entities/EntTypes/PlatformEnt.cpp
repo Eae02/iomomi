@@ -318,7 +318,7 @@ glm::vec3 PlatformEnt::FinalPosition() const
 	return GetBaseTransform() * glm::vec4(m_slideOffset.x, m_slideOffset.y, 0, 1);
 }
 
-void PlatformEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+void PlatformEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
 	m_editorLaunchTrajectory.clear();
 	m_basePosition = newPosition;

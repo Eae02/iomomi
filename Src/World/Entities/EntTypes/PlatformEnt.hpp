@@ -33,7 +33,7 @@ public:
 	
 	glm::vec3 GetPosition() const override { return m_basePosition; }
 	Dir GetFacingDirection() const override { return m_forwardDir; }
-	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	void EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
 	static void DrawSliderMesh(eg::MeshBatch& meshBatch, const eg::Frustum& frustum,
 		const glm::vec3& start, const glm::vec3& toEnd, const glm::vec3& up, float scale);

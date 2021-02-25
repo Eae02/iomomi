@@ -23,13 +23,13 @@ public:
 	
 	const void* GetComponent(const std::type_info& type) const override;
 	
-	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	void EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
 	glm::vec3 GetPosition() const override;
 	
 	void Update(const struct WorldUpdateArgs& args) override;
 	
-	int GetEditorIconIndex() const override;
+	int EdGetIconIndex() const override;
 
 private:
 	glm::vec3 m_position;

@@ -15,12 +15,12 @@ public:
 	
 	void Deserialize(std::istream& stream) override;
 	
-	int GetEditorIconIndex() const override;
+	int EdGetIconIndex() const override;
 	
 	void RenderSettings() override;
 	
 	glm::vec3 GetPosition() const override { return m_position; }
-	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	void EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
 	void CollectPointLights(std::vector<std::shared_ptr<PointLight>>& lights) override;
 	

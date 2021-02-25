@@ -9,17 +9,21 @@ public:
 	ColliderEnt();
 	
 	static constexpr EntTypeID TypeID = EntTypeID::Collider;
-	static constexpr EntTypeFlags EntFlags = EntTypeFlags::HasPhysics | EntTypeFlags::EditorDrawable;
+	static constexpr EntTypeFlags EntFlags =
+		EntTypeFlags::HasPhysics | EntTypeFlags::EditorDrawable | EntTypeFlags::EditorBoxResizable;
 	
 	void Serialize(std::ostream& stream) const override;
 	void Deserialize(std::istream& stream) override;
 	
 	void RenderSettings() override;
 	
-	void EditorDraw(const EntEditorDrawArgs& args) override;
+	std::optional<eg::ColorSRGB> EdGetBoxColor(bool selected) const override;
+	
+	glm::vec3 EdGetSize() const override;
+	void EdResized(const glm::vec3& newSize) override;
 	
 	glm::vec3 GetPosition() const override { return m_physicsObject.position; }
-	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	void EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
 	void CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt) override;
 	

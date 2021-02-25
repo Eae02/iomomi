@@ -53,6 +53,8 @@ public:
 		return m_wasUnderwater;
 	}
 	
+	bool CanPickUpCube() const;
+	
 	void Reset();
 	
 	glm::vec3 Position() const { return m_physicsObject.position; }

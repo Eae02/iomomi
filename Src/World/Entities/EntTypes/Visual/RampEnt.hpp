@@ -13,7 +13,8 @@ public:
 	RampEnt();
 	
 	static constexpr EntTypeID TypeID = EntTypeID::Ramp;
-	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::ShadowDrawableS | EntTypeFlags::HasPhysics;
+	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
+		EntTypeFlags::ShadowDrawableS | EntTypeFlags::HasPhysics | EntTypeFlags::EditorBoxResizable;
 	
 	void Serialize(std::ostream& stream) const override;
 	
@@ -26,7 +27,13 @@ public:
 	void CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt) override;
 	
 	glm::vec3 GetPosition() const override { return m_position; }
-	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	void EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	
+	std::optional<eg::ColorSRGB> EdGetBoxColor(bool selected) const override;
+	
+	glm::vec3 EdGetSize() const override;
+	
+	void EdResized(const glm::vec3& newSize) override;
 	
 	int m_rotation = 0;
 	bool m_flipped = false;

@@ -42,12 +42,12 @@ void PointLightEnt::CollectPointLights(std::vector<std::shared_ptr<PointLight>>&
 	lights.push_back(std::move(pointLight));
 }
 
-void PointLightEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+void PointLightEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
 	m_position = newPosition;
 }
 
-int PointLightEnt::GetEditorIconIndex() const
+int PointLightEnt::EdGetIconIndex() const
 {
 	return 3;
 }

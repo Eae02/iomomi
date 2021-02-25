@@ -18,10 +18,11 @@ struct ForceFieldParticle
 class ForceFieldEnt : public Ent
 {
 public:
-	ForceFieldEnt();
+	ForceFieldEnt() : m_activatable(&ForceFieldEnt::GetConnectionPoints) { }
 	
 	static constexpr EntTypeID TypeID = EntTypeID::ForceField;
-	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable;
+	static constexpr EntTypeFlags EntFlags =
+		EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::EditorBoxResizable;
 	
 	void Serialize(std::ostream& stream) const override;
 	
@@ -31,12 +32,14 @@ public:
 	
 	void GameDraw(const EntGameDrawArgs& args) override;
 	
-	void EditorDraw(const EntEditorDrawArgs& args) override;
-	
 	void Update(const struct WorldUpdateArgs& args) override;
 	
 	glm::vec3 GetPosition() const override { return m_position; }
-	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	void EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	glm::vec3 EdGetSize() const override;
+	void EdResized(const glm::vec3& newSize) override;
+	
+	std::optional<eg::ColorSRGB> EdGetBoxColor(bool selected) const override;
 	
 	const void* GetComponent(const std::type_info& type) const override;
 	

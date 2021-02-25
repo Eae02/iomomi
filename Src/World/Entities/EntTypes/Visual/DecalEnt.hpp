@@ -26,8 +26,8 @@ public:
 	
 	glm::vec3 GetPosition() const override { return m_position; }
 	Dir GetFacingDirection() const override { return m_direction; }
-	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
-	int GetEditorIconIndex() const override;
+	void EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	int EdGetIconIndex() const override;
 	
 	float GetWallRotation() const override;
 	void SetWallRotation(float _rotation) override;

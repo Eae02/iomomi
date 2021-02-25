@@ -22,11 +22,11 @@ public:
 	
 	glm::vec3 GetPosition() const override { return m_physicsObject.position; }
 	
-	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	void EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
-	eg::Span<const EditorSelectionMesh> GetEditorSelectionMeshes() const override;
+	eg::Span<const EditorSelectionMesh> EdGetSelectionMeshes() const override;
 	
-	int GetEditorIconIndex() const override;
+	int EdGetIconIndex() const override;
 	
 	void Serialize(std::ostream& stream) const override;
 	
@@ -38,7 +38,8 @@ public:
 	void EditorDraw(const EntEditorDrawArgs& args) override;
 	
 	void Update(const struct WorldUpdateArgs& args) override;
-	void UpdatePostSim(const struct WorldUpdateArgs& args);
+	void UpdateAfterPlayer(const struct WorldUpdateArgs& args);
+	void UpdateAfterSimulation(const struct WorldUpdateArgs& args);
 	
 	const void* GetComponent(const std::type_info& type) const override;
 	

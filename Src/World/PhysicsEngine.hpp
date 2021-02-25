@@ -65,9 +65,11 @@ class PhysicsEngine
 public:
 	void BeginCollect();
 	
-	void EndCollect();
+	void EndCollect(float dt);
 	
 	void Simulate(float dt);
+	
+	void EndFrame(float dt);
 	
 	void RegisterObject(PhysicsObject* object);
 	

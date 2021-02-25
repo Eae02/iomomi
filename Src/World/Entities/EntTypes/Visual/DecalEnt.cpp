@@ -135,7 +135,7 @@ void DecalEnt::Deserialize(std::istream& stream)
 	SetMaterialByName(decalPB.material_name());
 }
 
-void DecalEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+void DecalEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
 	m_position = newPosition;
 	if (faceDirection)
@@ -152,7 +152,7 @@ void DecalEnt::SetWallRotation(float _rotation)
 	rotation = _rotation;
 }
 
-int DecalEnt::GetEditorIconIndex() const
+int DecalEnt::EdGetIconIndex() const
 {
 	return 19;
 }

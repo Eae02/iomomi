@@ -143,6 +143,13 @@ int SettingsGeneration()
 	return settingsGeneration;
 }
 
+void UpdateVolumeSettings()
+{
+	eg::SetMasterVolume(settings.masterVolume);
+	AudioPlayers::menuSFXPlayer.SetGlobalVolume(settings.sfxVolume);
+	AudioPlayers::gameSFXPlayer.SetGlobalVolume(settings.sfxVolume);
+}
+
 void SettingsChanged()
 {
 	if (!prevVSyncState.has_value() || *prevVSyncState != settings.vsync)
@@ -150,9 +157,7 @@ void SettingsChanged()
 		eg::gal::SetEnableVSync(settings.vsync);
 		prevVSyncState = settings.vsync;
 	}
-	
-	eg::SetMasterVolume(settings.masterVolume);
-	AudioPlayers::menuSFXPlayer.SetGlobalVolume(settings.sfxVolume);
+	UpdateVolumeSettings();
 	
 	settingsGeneration++;
 }

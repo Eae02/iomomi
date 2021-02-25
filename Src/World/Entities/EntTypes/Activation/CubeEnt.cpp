@@ -141,7 +141,7 @@ void CubeEnt::Interact(Player& player)
 
 int CubeEnt::CheckInteraction(const Player& player, const class PhysicsEngine& physicsEngine) const
 {
-	if ((!m_isPickedUp && !player.OnGround() && !player.Underwater()) || isSpawning)
+	if ((!m_isPickedUp && !player.CanPickUpCube()) || isSpawning)
 		return 0;
 	
 	//Very high so that dropping the cube has higher priority than other interactions.
@@ -234,41 +234,12 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 		SetGravity(*forceFieldGravity);
 	}
 	
-	if (m_isPickedUp)
-	{
-		const float distFromPlayer = RADIUS + *cubeCarryDist; //Distance to the cube when carrying
-		const float maxDistFromPlayer = RADIUS + *cubeDropDist; //Drop the cube if further away than this
-		
-		glm::mat4 viewMatrix, viewMatrixInv;
-		args.player->GetViewMatrix(viewMatrix, viewMatrixInv);
-		
-		glm::vec3 desiredPosition = viewMatrixInv * glm::vec4(0, 0, -distFromPlayer, 1);
-		
-		eg::AABB desiredAABB(desiredPosition - RADIUS * 1.001f, desiredPosition + RADIUS * 1.001f);
-		
-		glm::vec3 deltaPos = desiredPosition - m_physicsObject.position;
-		m_physicsObject.gravity = { };
-		
-		if (glm::length2(deltaPos) > maxDistFromPlayer * maxDistFromPlayer)
-		{
-			//The cube has moved to far away from the player, so it should be dropped.
-			m_isPickedUp = false;
-			args.player->m_isCarrying = false;
-		}
-		else
-		{
-			m_physicsObject.move = deltaPos;
-			m_physicsObject.velocity = { };
-		}
-		
-		m_collisionWithPlayerDisabled = true;
-	}
-	else if (isSpawning)
+	if (isSpawning)
 	{
 		m_physicsObject.gravity = { };
 		m_collisionWithPlayerDisabled = true;
 	}
-	else
+	else if (!m_isPickedUp)
 	{
 		if (m_collisionWithPlayerDisabled && !args.player->GetAABB().Intersects(aabb))
 		{
@@ -307,7 +278,40 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 	m_barrierInteractableComp.currentDown = m_currentDown;
 }
 
-void CubeEnt::UpdatePostSim(const WorldUpdateArgs& args)
+void CubeEnt::UpdateAfterPlayer(const WorldUpdateArgs& args)
+{
+	if (m_isPickedUp)
+	{
+		const float distFromPlayer = RADIUS + *cubeCarryDist; //Distance to the cube when carrying
+		const float maxDistFromPlayer = RADIUS + *cubeDropDist; //Drop the cube if further away than this
+		
+		glm::mat4 viewMatrix, viewMatrixInv;
+		args.player->GetViewMatrix(viewMatrix, viewMatrixInv);
+		
+		glm::vec3 desiredPosition = viewMatrixInv * glm::vec4(0, 0, -distFromPlayer, 1);
+		
+		eg::AABB desiredAABB(desiredPosition - RADIUS * 1.001f, desiredPosition + RADIUS * 1.001f);
+		
+		glm::vec3 deltaPos = desiredPosition - m_physicsObject.position;
+		m_physicsObject.gravity = { };
+		
+		if (glm::length2(deltaPos) > maxDistFromPlayer * maxDistFromPlayer)
+		{
+			//The cube has moved to far away from the player, so it should be dropped.
+			m_isPickedUp = false;
+			args.player->m_isCarrying = false;
+		}
+		else
+		{
+			m_physicsObject.move = deltaPos;
+			m_physicsObject.velocity = { };
+		}
+		
+		m_collisionWithPlayerDisabled = true;
+	}
+}
+
+void CubeEnt::UpdateAfterSimulation(const WorldUpdateArgs& args)
 {
 	if (args.mode == WorldMode::Editor || args.mode == WorldMode::Thumbnail)
 		return;
@@ -368,17 +372,17 @@ void CubeEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 	physicsEngine.RegisterObject(&m_physicsObject);
 }
 
-void CubeEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+void CubeEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
 	m_physicsObject.position = newPosition;
 }
 
-int CubeEnt::GetEditorIconIndex() const
+int CubeEnt::EdGetIconIndex() const
 {
 	return -1;
 }
 
-eg::Span<const EditorSelectionMesh> CubeEnt::GetEditorSelectionMeshes() const
+eg::Span<const EditorSelectionMesh> CubeEnt::EdGetSelectionMeshes() const
 {
 	static EditorSelectionMesh selectionMesh;
 	selectionMesh.model = canFloat ? woodCubeModel : cubeModel;

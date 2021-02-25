@@ -101,7 +101,7 @@ void SpawnEntityEditorComponent::Update(float dt, const EditorState& editorState
 				if (ImGui::MenuItem(entityName.c_str(), chooseOnEnter ? "Enter" : "") || (chooseOnEnter && eg::IsButtonDown(eg::Button::Enter)))
 				{
 					std::shared_ptr<Ent> entity = entityType->create();
-					entity->EditorMoved(m_spawnEntityPickResult.intersectPosition, m_spawnEntityPickResult.normalDir);
+					entity->EdMoved(m_spawnEntityPickResult.intersectPosition, m_spawnEntityPickResult.normalDir);
 					editorState.world->entManager.AddEntity(std::move(entity));
 					
 					ImGui::CloseCurrentPopup();

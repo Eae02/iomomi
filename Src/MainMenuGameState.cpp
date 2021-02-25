@@ -375,9 +375,17 @@ void MainMenuGameState::RenderWorld(float dt)
 	
 	m_physicsEngine.BeginCollect();
 	m_world->CollectPhysicsObjects(m_physicsEngine, dt);
-	m_physicsEngine.EndCollect();
+	m_physicsEngine.EndCollect(dt);
 	
-	m_world->Update(updateArgs, &m_physicsEngine);
+	m_world->Update(updateArgs);
+	
+	{
+		auto physicsUpdateCPUTimer = eg::StartCPUTimer("Physics");
+		m_physicsEngine.Simulate(dt);
+		m_physicsEngine.EndFrame(dt);
+	}
+	
+	m_world->UpdateAfterPhysics(updateArgs);
 	
 	{
 		auto waterUpdateTimer = eg::StartCPUTimer("Water Update MT");

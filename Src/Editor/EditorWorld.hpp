@@ -50,6 +50,8 @@ public:
 private:
 	void ResetCamera();
 	
+	bool IsEntitySelected(const Ent* entity) const;
+	
 	eg::Texture m_renderTextureDepth;
 	eg::Framebuffer m_framebuffer;
 	

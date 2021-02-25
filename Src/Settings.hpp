@@ -99,6 +99,8 @@ extern bool settingsWindowVisible;
 
 void UpdateDisplayMode();
 
+void UpdateVolumeSettings();
+
 int SettingsGeneration();
 
 void LoadSettings();

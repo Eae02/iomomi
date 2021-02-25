@@ -17,7 +17,7 @@ public:
 	
 	void RenderSettings() override;
 	
-	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	void EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
 	void GameDraw(const EntGameDrawArgs& args) override;
 	
@@ -30,7 +30,7 @@ public:
 	
 	glm::vec3 GetPosition() const override { return m_liquidPlane.position; }
 	
-	int GetEditorIconIndex() const override;
+	int EdGetIconIndex() const override;
 
 private:
 	LiquidPlaneComp m_liquidPlane;

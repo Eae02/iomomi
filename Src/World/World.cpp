@@ -192,17 +192,14 @@ void World::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 	});
 }
 
-void World::Update(const WorldUpdateArgs& args, PhysicsEngine* physicsEngine)
+void World::Update(const WorldUpdateArgs& args)
 {
 	entManager.Update(args);
-	
-	if (physicsEngine != nullptr)
-	{
-		auto physicsUpdateCPUTimer = eg::StartCPUTimer("Physics");
-		physicsEngine->Simulate(args.dt);
-	}
-	
-	entManager.ForEachOfType<CubeEnt>([&] (CubeEnt& cube) { cube.UpdatePostSim(args); });
+}
+
+void World::UpdateAfterPhysics(const WorldUpdateArgs& args)
+{
+	entManager.ForEachOfType<CubeEnt>([&] (CubeEnt& cube) { cube.UpdateAfterSimulation(args); });
 }
 
 void World::PrepareForDraw(PrepareDrawArgs& args)

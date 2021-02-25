@@ -97,7 +97,7 @@ void LadderEnt::UpdateTransformAndAABB()
 	m_downVector = glm::normalize(glm::vec3(m_commonTransform * glm::vec4(0, -1, 0, 0)));
 }
 
-void LadderEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+void LadderEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
 	m_position = newPosition;
 	if (faceDirection)
@@ -131,7 +131,7 @@ void LadderEnt::Deserialize(std::istream& stream)
 	UpdateTransformAndAABB();
 }
 
-glm::vec3 LadderEnt::GetEditorGridAlignment() const
+glm::vec3 LadderEnt::EdGetGridAlignment() const
 {
 	return glm::vec3(0.5f);
 }

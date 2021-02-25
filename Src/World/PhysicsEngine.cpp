@@ -39,32 +39,12 @@ void PhysicsEngine::Simulate(float dt)
 {
 	for (PhysicsObject* object : m_objects)
 	{
-		object->velocity += object->gravity * dt * GRAVITY_MAG;
-		object->velocity += object->force * dt;
-		object->move += object->velocity * dt;
-		object->collisionDepth = 0;
-		object->hasCopiedParentMove = false;
-		object->childObjects.clear();
-		object->pushForce = { };
-		object->force = { };
-		
-		object->floor = nullptr;
-		if (object->canBePushed && glm::length2(object->gravity) > 1E-3f)
-		{
-			object->floor = FindFloorObject(*object, object->gravity);
-		}
-	}
-	
-	for (PhysicsObject* object : m_objects)
-	{
-		CopyParentMove(*object, dt);
-	}
-	
-	for (PhysicsObject* object : m_objects)
-	{
 		ApplyMovement(*object, dt);
 	}
-	
+}
+
+void PhysicsEngine::EndFrame(float dt)
+{
 	for (PhysicsObject* object : m_objects)
 	{
 		object->displayPosition = object->position;
@@ -98,7 +78,7 @@ void PhysicsEngine::Simulate(float dt)
 	}
 }
 
-void PhysicsEngine::EndCollect()
+void PhysicsEngine::EndCollect(float dt)
 {
 	for (PhysicsObject* object : m_objects)
 	{
@@ -106,6 +86,26 @@ void PhysicsEngine::EndCollect()
 		object->childObjects.clear();
 		object->actualMove = { };
 		object->didMove = false;
+		
+		object->velocity += object->gravity * dt * GRAVITY_MAG;
+		object->velocity += object->force * dt;
+		object->move += object->velocity * dt;
+		object->collisionDepth = 0;
+		object->hasCopiedParentMove = false;
+		object->childObjects.clear();
+		object->pushForce = { };
+		object->force = { };
+		
+		object->floor = nullptr;
+		if (object->canBePushed && glm::length2(object->gravity) > 1E-3f)
+		{
+			object->floor = FindFloorObject(*object, object->gravity);
+		}
+	}
+	
+	for (PhysicsObject* object : m_objects)
+	{
+		CopyParentMove(*object, dt);
 	}
 }
 

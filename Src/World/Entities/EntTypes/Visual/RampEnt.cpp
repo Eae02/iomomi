@@ -303,10 +303,26 @@ void RampEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 	physicsEngine.RegisterObject(&m_physicsObject);
 }
 
-void RampEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+void RampEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
 	m_position = newPosition;
 	m_meshOutOfDate = true;
+}
+
+std::optional<eg::ColorSRGB> RampEnt::EdGetBoxColor(bool selected) const
+{
+	if (!selected) return {};
+	return eg::ColorSRGB::FromHex(0x1a8cc9).ScaleAlpha(0.5f);
+}
+
+glm::vec3 RampEnt::EdGetSize() const
+{
+	return m_size;
+}
+
+void RampEnt::EdResized(const glm::vec3& newSize)
+{
+	m_size = newSize;
 }
 
 template <>

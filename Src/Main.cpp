@@ -63,6 +63,7 @@ int main(int argc, char** argv)
 		{
 			eg::Log(eg::LogLevel::Error, "audio", "Failed to initialize audio, sounds will not be played.");
 		}
+		UpdateVolumeSettings();
 		
 		eg::SpriteFont::LoadDevFont();
 		eg::console::Init();

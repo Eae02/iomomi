@@ -408,18 +408,18 @@ void GravityBarrierEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, floa
 	physicsEngine.RegisterObject(&m_physicsObject);
 }
 
-void GravityBarrierEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+void GravityBarrierEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
 	m_position = newPosition;
 	m_waterBlockComponentOutOfDate = true;
 }
 
-int GravityBarrierEnt::GetEditorIconIndex() const
+int GravityBarrierEnt::EdGetIconIndex() const
 {
 	return -1;
 }
 
-eg::Span<const EditorSelectionMesh> GravityBarrierEnt::GetEditorSelectionMeshes() const
+eg::Span<const EditorSelectionMesh> GravityBarrierEnt::EdGetSelectionMeshes() const
 {
 	return m_aaQuad.GetEditorSelectionMeshes(m_position, 0.1f);
 }

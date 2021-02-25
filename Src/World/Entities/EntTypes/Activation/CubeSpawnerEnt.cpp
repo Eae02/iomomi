@@ -212,14 +212,14 @@ void CubeSpawnerEnt::Deserialize(std::istream& stream)
 		m_activatable.m_name = cubeSpawnerPB.name();
 }
 
-void CubeSpawnerEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+void CubeSpawnerEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
 	m_position = newPosition;
 	if (faceDirection)
 		m_direction = *faceDirection;
 }
 
-int CubeSpawnerEnt::GetEditorIconIndex() const
+int CubeSpawnerEnt::EdGetIconIndex() const
 {
 	return 12;
 }

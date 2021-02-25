@@ -25,11 +25,11 @@ public:
 	
 	void CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt) override;
 	
-	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	void EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
-	eg::Span<const EditorSelectionMesh> GetEditorSelectionMeshes() const override;
-	glm::vec3 GetEditorGridAlignment() const override;
-	int GetEditorIconIndex() const override;
+	eg::Span<const EditorSelectionMesh> EdGetSelectionMeshes() const override;
+	glm::vec3 EdGetGridAlignment() const override;
+	int EdGetIconIndex() const override;
 	
 	glm::vec3 GetPosition() const override;
 	

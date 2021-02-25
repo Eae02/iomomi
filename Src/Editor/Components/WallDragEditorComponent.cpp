@@ -143,7 +143,7 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 							);
 							if (eg::Contains(m_finishedSelection, wallPos))
 							{
-								entity.EditorMoved(entity.GetPosition() + glm::vec3(selDelta), m_selectionNormal);
+								entity.EdMoved(entity.GetPosition() + glm::vec3(selDelta), m_selectionNormal);
 								editorState.EntityMoved(entity);
 							}
 						}

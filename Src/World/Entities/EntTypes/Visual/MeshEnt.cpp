@@ -234,18 +234,18 @@ void MeshEnt::CommonDraw(const EntDrawArgs& args)
 	});
 }
 
-void MeshEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+void MeshEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
 	m_position = newPosition;
 	UpdateEditorSelectionMeshes();
 }
 
-glm::quat MeshEnt::GetEditorRotation()
+glm::quat MeshEnt::EdGetRotation() const
 {
 	return m_rotation;
 }
 
-void MeshEnt::EditorRotated(const glm::quat& newRotation)
+void MeshEnt::EdRotated(const glm::quat& newRotation)
 {
 	m_rotation = newRotation;
 	UpdateEditorSelectionMeshes();
@@ -365,7 +365,7 @@ void MeshEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 	}
 }
 
-eg::Span<const EditorSelectionMesh> MeshEnt::GetEditorSelectionMeshes() const
+eg::Span<const EditorSelectionMesh> MeshEnt::EdGetSelectionMeshes() const
 {
 	return { m_editorSelectionMeshes.data(), m_editorSelectionMeshes.size() };
 }

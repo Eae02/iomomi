@@ -72,7 +72,7 @@ const void* WaterWallEnt::GetComponent(const std::type_info& type) const
 	return nullptr;
 }
 
-void WaterWallEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+void WaterWallEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
 	m_waterBlockComp.InitFromAAQuadComponent(m_aaQuad, m_position);
 	m_waterBlockComp.editorVersion++;
@@ -116,7 +116,7 @@ void WaterWallEnt::Deserialize(std::istream& stream)
 	m_waterBlockComp.InitFromAAQuadComponent(m_aaQuad, m_position);
 }
 
-int WaterWallEnt::GetEditorIconIndex() const
+int WaterWallEnt::EdGetIconIndex() const
 {
 	return 18;
 }

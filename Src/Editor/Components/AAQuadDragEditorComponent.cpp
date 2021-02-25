@@ -32,7 +32,7 @@ bool AAQuadDragEditorComponent::UpdateInput(float dt, const EditorState& editorS
 		glm::vec3 newPos = entity->GetPosition();
 		newPos[dragDim] = (edges[0] + edges[1]) / 2.0f;
 		quadComp.radius[draggingBitangent] = (edges[0] - edges[1]);
-		entity->EditorMoved(newPos, {});
+		entity->EdMoved(newPos, {});
 	}
 	
 	return true;

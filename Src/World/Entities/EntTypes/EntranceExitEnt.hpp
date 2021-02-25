@@ -25,11 +25,11 @@ public:
 	void Serialize(std::ostream& stream) const override;
 	void Deserialize(std::istream& stream) override;
 	
-	int GetEditorIconIndex() const override;
+	int EdGetIconIndex() const override;
 	
 	void RenderSettings() override;
 	
-	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	void EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
 	void InitPlayer(class Player& player);
 	

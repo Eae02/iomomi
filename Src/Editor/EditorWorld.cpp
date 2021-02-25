@@ -248,7 +248,7 @@ void EditorWorld::Update(float dt, EditorTool currentTool)
 	entityUpdateArgs.mode = WorldMode::Editor;
 	entityUpdateArgs.dt = dt;
 	entityUpdateArgs.world = m_world.get();
-	m_world->Update(entityUpdateArgs, nullptr);
+	m_world->Update(entityUpdateArgs);
 	
 	bool canUpdateInput = isWindowFocused && isWindowHovered && !eg::console::IsShown();
 	
@@ -401,15 +401,12 @@ void EditorWorld::Draw(EditorTool currentTool, RenderContext& renderCtx, Prepare
 	drawArgs.frustum = &frustum;
 	drawArgs.getDrawMode = [this] (const Ent* entity) -> EntEditorDrawMode
 	{
-		for (const std::weak_ptr<Ent>& selEnt : m_selectedEntities)
-		{
-			if (selEnt.lock().get() == entity)
-				return EntEditorDrawMode::Selected;
-		}
-		return EntEditorDrawMode::Default;
+		return IsEntitySelected(entity) ? EntEditorDrawMode::Selected : EntEditorDrawMode::Default;
 	};
 	m_world->entManager.ForEachWithFlag(EntTypeFlags::EditorDrawable, [&] (Ent& entity)
 	{
+		m_components->entity.DrawEntityBox(m_primRenderer, entity,
+			currentTool == EditorTool::Entities && IsEntitySelected(&entity));
 		entity.EditorDraw(drawArgs);
 	});
 	
@@ -476,6 +473,16 @@ void EditorWorld::Draw(EditorTool currentTool, RenderContext& renderCtx, Prepare
 	m_spriteBatch.End(m_editorState.windowRect.w, m_editorState.windowRect.h, spriteRPBeginInfo);
 	
 	renderTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
+}
+
+bool EditorWorld::IsEntitySelected(const Ent* entity) const
+{
+	for (const std::weak_ptr<Ent>& selEnt : m_selectedEntities)
+	{
+		if (selEnt.lock().get() == entity)
+			return true;
+	}
+	return false;
 }
 
 void EditorWorld::Save()

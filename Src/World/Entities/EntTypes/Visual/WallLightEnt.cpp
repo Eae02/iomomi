@@ -69,7 +69,7 @@ void WallLightEnt::DrawEmissiveModel(const EntDrawArgs& drawArgs, float colorSca
 	drawArgs.meshBatch->AddModel(GetModel(), EmissiveMaterial::instance, GetInstanceData(colorScale));
 }
 
-void WallLightEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+void WallLightEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
 	m_position = newPosition;
 	if (faceDirection)
@@ -78,7 +78,7 @@ void WallLightEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> 
 	}
 }
 
-int WallLightEnt::GetEditorIconIndex() const
+int WallLightEnt::EdGetIconIndex() const
 {
 	return 3;
 }

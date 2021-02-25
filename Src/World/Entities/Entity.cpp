@@ -11,7 +11,7 @@ void Ent::RenderSettings()
 	glm::vec3 position = GetPosition();
 	if (ImGui::DragFloat3("Position", &position.x, 0.1f))
 	{
-		EditorMoved(position, {});
+		EdMoved(position, {});
 	}
 }
 
@@ -56,12 +56,12 @@ std::shared_ptr<Ent> Ent::Clone() const
 	return clone;
 }
 
-glm::vec3 Ent::GetEditorGridAlignment() const
+glm::vec3 Ent::EdGetGridAlignment() const
 {
 	return glm::vec3(0.1f);
 }
 
-int Ent::GetEditorIconIndex() const
+int Ent::EdGetIconIndex() const
 {
 	return 5;
 }

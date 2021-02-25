@@ -166,14 +166,14 @@ const void* GravitySwitchEnt::GetComponent(const std::type_info& type) const
 	return nullptr;
 }
 
-void GravitySwitchEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+void GravitySwitchEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
 	m_position = newPosition;
 	if (faceDirection)
 		m_up = *faceDirection;
 }
 
-eg::Span<const EditorSelectionMesh> GravitySwitchEnt::GetEditorSelectionMeshes() const
+eg::Span<const EditorSelectionMesh> GravitySwitchEnt::EdGetSelectionMeshes() const
 {
 	static EditorSelectionMesh selectionMesh;
 	selectionMesh.model = s_model;
@@ -182,7 +182,7 @@ eg::Span<const EditorSelectionMesh> GravitySwitchEnt::GetEditorSelectionMeshes()
 	return { &selectionMesh, 1 };
 }
 
-int GravitySwitchEnt::GetEditorIconIndex() const
+int GravitySwitchEnt::EdGetIconIndex() const
 {
 	return -1;
 }

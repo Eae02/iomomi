@@ -34,7 +34,7 @@ void WaterPlaneEnt::Deserialize(std::istream& stream)
 	liquidPlane.wallForward = (Dir)waterPlanePB.wall_dir();
 }
 
-void WaterPlaneEnt::EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
+void WaterPlaneEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
 {
 	liquidPlane.position = newPosition;
 	if (faceDirection)
@@ -55,7 +55,7 @@ void WaterPlaneEnt::RenderSettings()
 		densityBoost = std::max(densityBoost, 0);
 }
 
-int WaterPlaneEnt::GetEditorIconIndex() const
+int WaterPlaneEnt::EdGetIconIndex() const
 {
 	return 16;
 }

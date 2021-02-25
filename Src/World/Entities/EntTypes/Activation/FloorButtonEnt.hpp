@@ -17,11 +17,11 @@ public:
 	
 	Dir GetFacingDirection() const override { return m_direction; }
 	glm::vec3 GetPosition() const override { return m_ringPhysicsObject.position; }
-	void EditorMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
+	void EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
-	int GetEditorIconIndex() const override;
+	int EdGetIconIndex() const override;
 	
-	eg::Span<const EditorSelectionMesh> GetEditorSelectionMeshes() const override;
+	eg::Span<const EditorSelectionMesh> EdGetSelectionMeshes() const override;
 	
 	void CommonDraw(const EntDrawArgs& args) override;
 	
