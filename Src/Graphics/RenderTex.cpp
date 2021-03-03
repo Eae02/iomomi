@@ -31,6 +31,11 @@ eg::Format GetFormatForRenderTexture(RenderTex texture)
 	case RenderTex::WaterMaxDepth:      return eg::Format::Depth16;
 	case RenderTex::BlurredGlassDepth:  return GB_DEPTH_FORMAT;
 	
+	case RenderTex::SSAOUnblurred:
+	case RenderTex::SSAOTempBlur:
+	case RenderTex::SSAO:
+		return eg::Format::R8_UNorm;
+	
 	case RenderTex::WaterDepthBlurred1:
 	case RenderTex::WaterDepthBlurred2:
 		if (settings.waterQuality >= WaterRenderer::HighPrecisionMinQL)

@@ -91,6 +91,11 @@ struct Settings
 	{
 		return enableBloom && HDREnabled() && eg::GetGraphicsDeviceInfo().computeShader;
 	}
+	
+	bool SSAOEnabled() const
+	{
+		return lightingQuality >= QualityLevel::High;
+	}
 };
 
 extern Settings settings;

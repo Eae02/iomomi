@@ -3,6 +3,7 @@
 #include "DeferredRenderer.hpp"
 #include "GraphicsCommon.hpp"
 #include "Lighting/PointLightShadowMapper.hpp"
+#include "../Settings.hpp"
 
 struct
 {
@@ -150,6 +151,9 @@ void BindWallShaderGame()
 	eg::DC.BindPipeline(wr.pipelineDeferredGeom);
 	
 	eg::DC.BindDescriptorSet(wr.gameDescriptorSet, 0);
+	
+	float pc = settings.SSAOEnabled() ? 0 : 1;
+	eg::DC.PushConstants(0, sizeof(float), &pc);
 }
 
 void BindWallShaderEditor(bool drawGrid)

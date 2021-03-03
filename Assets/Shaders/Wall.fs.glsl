@@ -13,6 +13,11 @@ layout(binding=2) uniform sampler2DArray albedoSampler;
 layout(binding=3) uniform sampler2DArray nmSampler;
 layout(binding=4) uniform sampler2DArray mmSampler;
 
+layout(push_constant) uniform PC
+{
+	float wallAOEnable;
+};
+
 void main()
 {
 	vec3 sNormal = normalize(normal_in);
@@ -28,7 +33,7 @@ void main()
 	
 	vec2 ao2 = vec2(min(ao_in.x, ao_in.y), min(ao_in.w, ao_in.z));
 	ao2 = pow(clamp(ao2, vec2(0.0), vec2(1.0)), vec2(0.5));
-	float ao = miscMaps.b * ao2.x * ao2.y;
+	float ao = miscMaps.b * mix(1, ao2.x * ao2.y, wallAOEnable);
 	
 	DeferredOut(albedo, normal, mix(roughnessRange_in.x, roughnessRange_in.y, miscMaps.r), miscMaps.g, ao);
 }

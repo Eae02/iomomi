@@ -69,7 +69,7 @@ Player::Player()
 
 bool Player::CanPickUpCube() const
 {
-	return *noclipActive || m_onGround;
+	return *noclipActive || m_onGround || m_wasUnderwater;
 }
 
 static const glm::vec3 leftDirs[6] =

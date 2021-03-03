@@ -11,6 +11,9 @@ enum class RenderTex
 	WaterMaxDepth,
 	WaterDepthBlurred1,
 	WaterDepthBlurred2,
+	SSAOUnblurred,
+	SSAOTempBlur,
+	SSAO,
 	LitWithoutWater,
 	LitWithoutSSR,
 	SSRTemp1,
@@ -20,7 +23,7 @@ enum class RenderTex
 	Lit
 };
 
-constexpr size_t NUM_RENDER_TEXTURES = 16;
+constexpr size_t NUM_RENDER_TEXTURES = 19;
 
 constexpr eg::Format GB_DEPTH_FORMAT = eg::Format::Depth32;
 constexpr eg::Format GB_COLOR_FORMAT = eg::Format::R8G8B8A8_UNorm;
