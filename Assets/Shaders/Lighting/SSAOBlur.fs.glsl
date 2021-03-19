@@ -6,7 +6,7 @@ layout(location=0) out float ssao_out;
 
 layout(binding=0) uniform sampler2D inputImage;
 
-const float kernel[] = float[] (0.382928, 0.241732, 0.060598, 0.005977, 0.000229);
+const float kernel[] = float[] (0.134032, 0.126854, 0.107545, 0.08167, 0.055555, 0.033851, 0.018476, 0.009033);
 
 layout(push_constant) uniform PC
 {
