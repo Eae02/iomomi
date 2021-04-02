@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Lighting/PointLight.hpp"
-#include "WaterRenderer.hpp"
+#include "Water/WaterRenderer.hpp"
 #include "RenderTex.hpp"
 
 class DeferredRenderer

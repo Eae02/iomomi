@@ -2,7 +2,6 @@ fixes:
  - water should be affected by force fields
  - physics object rotation
  - aim assist
- - make gravity barriers red from water
 
 misc:
  - gun should be rendered after ssr
@@ -16,6 +15,7 @@ textures and models:
  - make doors not clip into the level change room's model
  - make cube snap to button
  - scaffolding mesh
+ - hanging cables
 
 features:
  - zero gravity mode

@@ -14,4 +14,5 @@ message GravityBarrierEntity {
 	uint32 activate_action = 10;
 	bool block_falling = 11;
 	bool never_block_water = 12;
+	bool red_from_water = 13;
 }

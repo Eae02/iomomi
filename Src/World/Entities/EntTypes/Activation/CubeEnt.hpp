@@ -6,7 +6,7 @@
 #include "../../EntGravityChargeable.hpp"
 #include "../../../Dir.hpp"
 #include "../../../PhysicsEngine.hpp"
-#include "../../../../Graphics/WaterSimulator.hpp"
+#include "../../../../Graphics/Water/WaterSimulator.hpp"
 
 class CubeEnt : public Ent, public EntInteractable, public EntGravityChargeable
 {

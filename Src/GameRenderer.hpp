@@ -7,7 +7,8 @@
 #include "Graphics/Lighting/PointLightShadowMapper.hpp"
 #include "Graphics/PostProcessor.hpp"
 #include "Graphics/ParticleRenderer.hpp"
-#include "Graphics/WaterSimulator.hpp"
+#include "Graphics/Water/WaterSimulator.hpp"
+#include "Graphics/Water/WaterBarrierRenderer.hpp"
 #include "Graphics/PhysicsDebugRenderer.hpp"
 
 class GameRenderer
@@ -50,6 +51,8 @@ private:
 	eg::PerspectiveProjection m_projection;
 	RenderContext* m_renderCtx;
 	BlurRenderer m_glassBlurRenderer;
+	
+	WaterBarrierRenderer m_waterBarrierRenderer;
 	
 	std::unique_ptr<eg::BloomRenderer> m_bloomRenderer;
 	

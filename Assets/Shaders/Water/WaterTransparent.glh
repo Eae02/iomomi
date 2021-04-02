@@ -16,6 +16,9 @@ bool CheckWaterDiscard()
 	
 	bool underwater = waterDepth3.r < UNDERWATER_DEPTH;
 	float waterDepthL = underwater ? waterDepth3.b : waterDepth3.r;
+#ifdef WATER_DEPTH_OFFSET
+	waterDepthL += WATER_DEPTH_OFFSET;
+#endif
 	float waterDepthH = hyperDepth(waterDepthL);
 	
 	if (WATER_MODE == WATERMODE_BEFORE)

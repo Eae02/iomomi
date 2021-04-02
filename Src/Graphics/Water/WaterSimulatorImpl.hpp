@@ -1,8 +1,6 @@
 #pragma once
 
-//No STL classes can be passed to the simulator implementation!
-
-#include "../World/Dir.hpp"
+#include "../../World/Dir.hpp"
 
 struct WSINewArgs
 {
@@ -44,6 +42,8 @@ void WSI_Delete(WaterSimulatorImpl* impl);
 uint32_t WSI_CopyToOutputBuffer(WaterSimulatorImpl* impl);
 void WSI_SortOutputBuffer(WaterSimulatorImpl* impl, uint32_t numParticles, const float* cameraPos4);
 void* WSI_GetOutputBuffer(WaterSimulatorImpl* impl);
+
+void* WSI_GetGravitiesOutputBuffer(WaterSimulatorImpl* impl, uint32_t& versionOut);
 
 int WSI_Query(WaterSimulatorImpl* impl, const eg::AABB& aabb, glm::vec3& waterVelocity, glm::vec3& buoyancy);
 

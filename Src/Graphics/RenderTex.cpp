@@ -1,5 +1,5 @@
 #include "RenderTex.hpp"
-#include "WaterRenderer.hpp"
+#include "Water/WaterRenderer.hpp"
 #include "../Settings.hpp"
 
 #include <magic_enum.hpp>

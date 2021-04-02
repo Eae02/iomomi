@@ -2,7 +2,7 @@
 
 #include <EGame/EG.hpp>
 
-#include "QualityLevel.hpp"
+#include "../QualityLevel.hpp"
 
 class WaterRenderer
 {

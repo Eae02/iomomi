@@ -12,22 +12,9 @@ public:
 		glm::vec4 iaPosition[NUM_INTERACTABLES];
 		float gameTime;
 	};
-	
-	struct InstanceData
-	{
-		glm::vec3 position;
-		uint8_t opacity;
-		uint8_t blockedAxis;
-		uint8_t _p1;
-		uint8_t _p2;
-		glm::vec3 tangent;
-		float tangentMag;
-		glm::vec3 bitangent;
-		float bitangentMag;
-	};
 #pragma pack(pop)
 	
-	GravityBarrierMaterial();
+	GravityBarrierMaterial() = default;
 	
 	size_t PipelineHash() const override;
 	
@@ -35,13 +22,22 @@ public:
 	
 	bool BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const override;
 	
-	eg::Buffer m_barrierDataBuffer;
+	glm::vec3 position;
+	glm::vec3 tangent;
+	glm::vec3 bitangent;
+	float opacity = 0;
+	int blockedAxis = 0;
+	
+	eg::TextureRef waterDistanceTexture;
+	
+	static void OnInit();
+	static void OnShutdown();
+	
+	static void UpdateSharedDataBuffer(const BarrierBufferData& data);
 	
 private:
-	eg::Pipeline m_pipelineGameBeforeWater;
-	eg::Pipeline m_pipelineGameFinal;
-	eg::DescriptorSet m_descriptorSetGame;
-	
-	eg::Pipeline m_pipelineEditor;
-	eg::DescriptorSet m_descriptorSetEditor;
+	static eg::Pipeline s_pipelineGameBeforeWater;
+	static eg::Pipeline s_pipelineGameFinal;
+	static eg::Pipeline s_pipelineEditor;
+	static eg::Buffer s_sharedDataBuffer;
 };

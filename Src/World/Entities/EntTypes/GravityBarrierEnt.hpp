@@ -5,6 +5,7 @@
 #include "../Components/AxisAlignedQuadComp.hpp"
 #include "../../PhysicsEngine.hpp"
 #include "../Components/WaterBlockComp.hpp"
+#include "../../../Graphics/Materials/GravityBarrierMaterial.hpp"
 
 struct GravityBarrierInteractableComp
 {
@@ -46,6 +47,9 @@ public:
 	
 	eg::Span<const EditorSelectionMesh> EdGetSelectionMeshes() const override;
 	
+	bool NeverBlockWater() const { return m_neverBlockWater; }
+	bool RedFromWater() const { return m_redFromWater; }
+	
 	enum class ActivateAction
 	{
 		Disable,
@@ -56,8 +60,12 @@ public:
 	int flowDirection = 0;
 	ActivateAction activateAction = ActivateAction::Rotate;
 	
+	eg::TextureRef waterDistanceTexture;
+	
 private:
 	glm::vec3 m_position;
+	
+	static void UpdateNearEntities(const Player* player, EntityManager& entityManager);
 	
 	static std::vector<glm::vec3> GetConnectionPoints(const Ent& entity);
 	
@@ -77,6 +85,9 @@ private:
 	bool m_blockFalling = false;
 	bool m_waterBlockComponentOutOfDate = true;
 	bool m_neverBlockWater = false;
+	bool m_redFromWater = true;
 	
 	PhysicsObject m_physicsObject;
+	
+	GravityBarrierMaterial m_material;
 };

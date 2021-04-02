@@ -5,8 +5,8 @@
 #include <thread>
 #include <mutex>
 
-#include "../World/Dir.hpp"
 #include "WaterSimulatorImpl.hpp"
+#include "../../World/Dir.hpp"
 
 class WaterSimulator
 {
@@ -69,7 +69,8 @@ public:
 		m_newGravityMT = newGravity;
 	}
 	
-	eg::BufferRef GetPositionsBuffer() const;
+	eg::BufferRef GetPositionsBuffer() const { return m_positionsBuffer; }
+	eg::BufferRef GetGravitiesBuffer() const { return m_gravitiesBuffer; }
 	
 	uint32_t NumParticles() const
 	{
@@ -94,6 +95,8 @@ public:
 	
 	bool IsPresimComplete();
 	
+	bool needParticleGravityBuffer = false;
+	
 private:
 	void ThreadTarget();
 	
@@ -101,6 +104,8 @@ private:
 	bool m_run = false;
 	
 	uint32_t m_presimIterationsCompleted = 0;
+	
+	uint32_t m_lastGravityBufferVersion = 0;
 	
 	std::atomic_uint64_t m_lastUpdateTime { 0 };
 	
@@ -127,6 +132,10 @@ private:
 	eg::Buffer m_positionsUploadBuffer;
 	char* m_positionsUploadBufferMemory;
 	eg::Buffer m_positionsBuffer;
+	
+	eg::Buffer m_gravitiesUploadBuffer;
+	char* m_gravitiesUploadBufferMemory;
+	eg::Buffer m_gravitiesBuffer;
 	
 	volatile const float* m_currentParticlePositions = nullptr;
 	

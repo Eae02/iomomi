@@ -3,7 +3,6 @@
 #include "../../World.hpp"
 #include "../../Player.hpp"
 #include "../../../Graphics/RenderSettings.hpp"
-#include "../../../Graphics/Materials/GravityBarrierMaterial.hpp"
 #include "../../../Graphics/Materials/MeshDrawArgs.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../Graphics/Materials/EmissiveMaterial.hpp"
@@ -11,10 +10,8 @@
 
 #include <imgui.h>
 
-static GravityBarrierMaterial* material;
 static eg::Buffer vertexBuffer;
 static eg::MeshBatch::Mesh barrierMesh;
-static eg::CollisionMesh barrierCollisionMesh;
 
 static eg::Model* barrierBorderModel;
 static size_t meshIndexBody;
@@ -24,12 +21,7 @@ static eg::IMaterial* borderMaterial;
 
 static void OnInit()
 {
-	material = new GravityBarrierMaterial;
-	
-	uint8_t vertices[] = 
-	{
-		0, 0, 255, 0, 0, 255, 255, 255
-	};
+	static const uint8_t vertices[] = { 0, 0, 255, 0, 0, 255, 255, 255 };
 	vertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer, sizeof(vertices), vertices);
 	vertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
 	
@@ -37,22 +29,6 @@ static void OnInit()
 	barrierMesh.firstVertex = 0;
 	barrierMesh.numElements = 4;
 	barrierMesh.vertexBuffer = vertexBuffer;
-	
-	const glm::vec3 colVertices[] = 
-	{
-		glm::vec3(-0.5f, -0.5f,  0.05f),
-		glm::vec3( 0.5f, -0.5f,  0.05f),
-		glm::vec3(-0.5f,  0.5f,  0.05f),
-		glm::vec3( 0.5f,  0.5f,  0.05f),
-		glm::vec3(-0.5f, -0.5f, -0.05f),
-		glm::vec3( 0.5f, -0.5f, -0.05f),
-		glm::vec3(-0.5f,  0.5f, -0.05f),
-		glm::vec3( 0.5f,  0.5f, -0.05f)
-	};
-	
-	const uint32_t colIndices[] = { 0, 1, 2, 1, 3, 2, 4, 6, 5, 6, 7, 5 };
-	
-	barrierCollisionMesh = eg::CollisionMesh::CreateV3<uint32_t>(colVertices, colIndices);
 	
 	barrierBorderModel = &eg::GetAsset<eg::Model>("Models/GravityBarrierBorder.obj");
 	meshIndexBody = barrierBorderModel->GetMeshIndex("Body");
@@ -63,7 +39,6 @@ static void OnInit()
 
 static void OnShutdown()
 {
-	delete material;
 	vertexBuffer.Destroy();
 }
 
@@ -143,8 +118,6 @@ void GravityBarrierEnt::CommonDraw(const EntDrawArgs& args)
 	float tangentLen = glm::length(tangent);
 	float bitangentLen = glm::length(bitangent);
 	
-	constexpr float TIME_SCALE = 0.25f;
-	
 	eg::AABB wholeAABB = std::get<eg::AABB>(m_physicsObject.shape);
 	wholeAABB.min += m_position;
 	wholeAABB.max += m_position;
@@ -153,16 +126,14 @@ void GravityBarrierEnt::CommonDraw(const EntDrawArgs& args)
 	
 	if (args.transparentMeshBatch)
 	{
-		GravityBarrierMaterial::InstanceData instanceData = { };
-		instanceData.position = m_position;
-		instanceData.opacity = 255 * glm::smoothstep(0.0f, 1.0f, m_opacity);
-		instanceData.blockedAxis = BlockedAxis();
-		instanceData.tangent = tangent;
-		instanceData.bitangent = bitangent;
-		instanceData.tangentMag = glm::length(tangentLen);
-		instanceData.bitangentMag = glm::length(bitangentLen) * TIME_SCALE;
+		m_material.position = m_position;
+		m_material.opacity = glm::smoothstep(0.0f, 1.0f, m_opacity);
+		m_material.blockedAxis = BlockedAxis();
+		m_material.tangent = tangent;
+		m_material.bitangent = bitangent;
+		m_material.waterDistanceTexture = waterDistanceTexture;
 		
-		args.transparentMeshBatch->Add(barrierMesh, *material, instanceData, DepthDrawOrder(instanceData.position));
+		args.transparentMeshBatch->AddNoData(barrierMesh, m_material, DepthDrawOrder(m_position));
 	}
 	
 	glm::vec3 tangentNorm = tangent / tangentLen;
@@ -176,11 +147,11 @@ void GravityBarrierEnt::CommonDraw(const EntDrawArgs& args)
 			return;
 		
 		args.meshBatch->AddModelMesh(*barrierBorderModel, meshIndexBody, *borderMaterial,
-							   StaticPropMaterial::InstanceData(transform));
+		                             StaticPropMaterial::InstanceData(transform));
 		
 		const float intensity = glm::mix(LIGHT_INTENSITY_MIN, LIGHT_INTENSITY_MAX, lightIntensity);
 		args.meshBatch->AddModelMesh(*barrierBorderModel, meshIndexEmissive, EmissiveMaterial::instance,
-							   EmissiveMaterial::InstanceData { transform, gravityBarrierLightColor * intensity });
+		                             EmissiveMaterial::InstanceData { transform, gravityBarrierLightColor * intensity });
 	};
 	
 	int tangentLenI = (int)std::round(tangentLen);
@@ -233,11 +204,13 @@ void GravityBarrierEnt::RenderSettings()
 		flowDirection = glm::clamp(flowDir, 1, 4) - 1;
 	}
 	
-	ImGui::Combo("Activate Action", reinterpret_cast<int*>(&activateAction), "Disable\0Enable\0Rotate\0");
+	ImGui::Combo("Activate action", reinterpret_cast<int*>(&activateAction), "Disable\0Enable\0Rotate\0");
 	
-	m_waterBlockComponentOutOfDate |= ImGui::Checkbox("Block Falling", &m_blockFalling);
+	m_waterBlockComponentOutOfDate |= ImGui::Checkbox("Block falling", &m_blockFalling);
 	
-	m_waterBlockComponentOutOfDate |= ImGui::Checkbox("Never Block Water", &m_neverBlockWater);
+	m_waterBlockComponentOutOfDate |= ImGui::Checkbox("Never block water", &m_neverBlockWater);
+	
+	ImGui::Checkbox("Red from water", &m_redFromWater);
 }
 
 const void* GravityBarrierEnt::GetComponent(const std::type_info& type) const
@@ -298,18 +271,37 @@ void GravityBarrierEnt::Update(const WorldUpdateArgs& args)
 			m_opacity = std::min(m_opacity + args.dt / OPACITY_ANIMATION_TIME, 1.0f);
 	}
 	
+	if (m_waterBlockComponentOutOfDate)
+	{
+		m_waterBlockComponentOutOfDate = false;
+		UpdateWaterBlockedGravities();
+		m_waterBlockComp.InitFromAAQuadComponent(m_aaQuad, m_position);
+		m_waterBlockComp.editorVersion++;
+	}
+	
+	UpdateNearEntities(args.player, args.world->entManager);
+}
+
+static uint64_t lastFrameUpdatedNearEntities = UINT64_MAX;
+
+void GravityBarrierEnt::UpdateNearEntities(const Player* player, EntityManager& entityManager)
+{
+	if (eg::FrameIdx() == lastFrameUpdatedNearEntities)
+		return;
+	lastFrameUpdatedNearEntities = eg::FrameIdx();
+	
 	GravityBarrierMaterial::BarrierBufferData bufferData;
 	bufferData.gameTime = RenderSettings::instance->gameTime;
 	int itemsWritten = 0;
 	
-	if (args.player != nullptr)
+	if (player != nullptr)
 	{
-		bufferData.iaDownAxis[itemsWritten] = (int)args.player->CurrentDown() / 2;
-		bufferData.iaPosition[itemsWritten] = glm::vec4(args.player->Position(), 0.0f);
+		bufferData.iaDownAxis[itemsWritten] = (int)player->CurrentDown() / 2;
+		bufferData.iaPosition[itemsWritten] = glm::vec4(player->Position(), 0.0f);
 		itemsWritten++;
 	}
 	
-	args.world->entManager.ForEachWithFlag(EntTypeFlags::Interactable, [&](const Ent& entity)
+	entityManager.ForEachWithFlag(EntTypeFlags::Interactable, [&](const Ent& entity)
 	{
 		auto* comp = entity.GetComponent<GravityBarrierInteractableComp>();
 		if (comp != nullptr && itemsWritten < GravityBarrierMaterial::NUM_INTERACTABLES)
@@ -327,16 +319,7 @@ void GravityBarrierEnt::Update(const WorldUpdateArgs& args)
 		itemsWritten++;
 	}
 	
-	eg::DC.UpdateBuffer(material->m_barrierDataBuffer, 0, sizeof(GravityBarrierMaterial::BarrierBufferData), &bufferData);
-	material->m_barrierDataBuffer.UsageHint(eg::BufferUsage::UniformBuffer, eg::ShaderAccessFlags::Fragment);
-	
-	if (m_waterBlockComponentOutOfDate)
-	{
-		m_waterBlockComponentOutOfDate = false;
-		UpdateWaterBlockedGravities();
-		m_waterBlockComp.InitFromAAQuadComponent(m_aaQuad, m_position);
-		m_waterBlockComp.editorVersion++;
-	}
+	GravityBarrierMaterial::UpdateSharedDataBuffer(bufferData);
 }
 
 std::tuple<glm::vec3, glm::vec3> GravityBarrierEnt::GetTangents() const
@@ -367,6 +350,7 @@ void GravityBarrierEnt::Serialize(std::ostream& stream) const
 	gravBarrierPB.set_activate_action((uint32_t)activateAction);
 	gravBarrierPB.set_block_falling(m_blockFalling);
 	gravBarrierPB.set_never_block_water(m_neverBlockWater);
+	gravBarrierPB.set_red_from_water(m_redFromWater);
 	
 	gravBarrierPB.set_name(m_activatable.m_name);
 	
@@ -389,6 +373,7 @@ void GravityBarrierEnt::Deserialize(std::istream& stream)
 	activateAction = (ActivateAction)gravBarrierPB.activate_action();
 	m_blockFalling = gravBarrierPB.block_falling();
 	m_neverBlockWater = gravBarrierPB.never_block_water();
+	m_redFromWater = gravBarrierPB.red_from_water();
 	
 	UpdateWaterBlockedGravities();
 	m_waterBlockComp.InitFromAAQuadComponent(m_aaQuad, m_position);

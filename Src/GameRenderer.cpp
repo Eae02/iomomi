@@ -21,6 +21,7 @@ GameRenderer::GameRenderer(RenderContext& renderCtx)
 void GameRenderer::WorldChanged(World& world)
 {
 	m_waterSimulator.Init(world);
+	m_waterBarrierRenderer.Init(m_waterSimulator, world);
 	
 	m_pointLights.clear();
 	world.entManager.ForEach([&] (Ent& entity)
@@ -110,6 +111,8 @@ void GameRenderer::Render(World& world, float gameTime, float dt,
 			m_bloomRenderTarget.reset();
 		}
 	}
+	
+	m_waterBarrierRenderer.Update();
 	
 	if (m_particleManager && m_player)
 	{

@@ -4,10 +4,7 @@
 
 layout(location=0) in vec2 texCoord_in;
 layout(location=1) in vec3 worldPos_in;
-layout(location=2) in vec3 tangent_in;
-layout(location=3) in vec2 ypc_in;
-layout(location=4) in float opacity_in;
-layout(location=5) flat in uint blockedAxis_in;
+layout(location=2) in vec2 ypc_in;
 
 layout(location=0) out vec4 color_out;
 
@@ -35,6 +32,15 @@ float lineIntensity(float lx, float tx)
 	return 1.0 / ldist;
 }
 
+layout(push_constant) uniform PC
+{
+	vec3 position;
+	float opacity;
+	vec4 tangent;
+	vec4 bitangent;
+	uint blockedAxis;
+} pc;
+
 #if defined(VGame)
 const int NUM_INTERACTABLES = 8;
 
@@ -48,6 +54,10 @@ layout(binding=2, std140) uniform BarrierSettingsUB
 layout(binding=3) uniform sampler2D waterDepth;
 layout(binding=4) uniform sampler2D blurredGlassDepth;
 
+const float UINT_MAX = 4294967296.0; 
+layout(binding=5) uniform usampler2D waterDistanceTex;
+
+#define WATER_DEPTH_OFFSET 0.15
 #include "Water/WaterTransparent.glh"
 #endif
 
@@ -70,7 +80,7 @@ void main()
 		discard;
 #endif
 	
-	float tx = texCoord_in.x;
+	vec2 scaledTC = texCoord_in * vec2(pc.tangent.w, pc.bitangent.w);
 	float negScale = 0;
 	
 	float edgeDist = min((ypc_in.y - abs(ypc_in.x)) / EDGE_FADE_DIST, 1.0);
@@ -84,18 +94,30 @@ void main()
 		float d = length(toObject);
 		uint da = iaDownAxis[i / 4][i % 4];
 		
-		if (da == blockedAxis_in)
+		if (da == pc.blockedAxis)
 		{
 			negScale += 1.0 - smoothstep(1.0, 1.5, d);
 		}
 		else if (da != 3)
 		{
-			float ns = exp(-d * d) * dot(toObject, tangent_in);
+			float ns = exp(-d * d) * dot(toObject, pc.tangent.xyz);
 			stretch = abs(ns) > abs(stretch) ? ns : stretch;
 		}
 	}
 	
-	tx -= 0.3 * stretch * edgeDist;
+	vec2 waterTexSize = vec2(textureSize(waterDistanceTex, 0));
+	vec2 waterSamplePos = texCoord_in * waterTexSize;
+	vec2 waterSamplePosFloor = floor(waterSamplePos);
+	vec2 waterTCFilterDist = waterSamplePos - waterSamplePosFloor;
+	vec4 waterDistSamples = textureGather(waterDistanceTex, (waterSamplePosFloor + 0.5) / waterTexSize) / UINT_MAX;
+	float waterDist = mix(
+		mix(waterDistSamples.w, waterDistSamples.z, waterTCFilterDist.x),
+		mix(waterDistSamples.x, waterDistSamples.y, waterTCFilterDist.x),
+		waterTCFilterDist.y
+	);
+	negScale += 1.0 - smoothstep(0.5, 0.8, waterDist);
+
+	scaledTC.x -= 0.3 * stretch * edgeDist;
 	negScale = min(negScale, 1.0);
 #endif
 	
@@ -103,7 +125,7 @@ void main()
 	float intensity = 5;
 #endif
 	
-	float centerLn = floor(tx / LINE_SPACING);
+	float centerLn = floor(scaledTC.x / LINE_SPACING);
 	float offScale = edgeDist * mix(OFFSET_SCALE, OFFSET_SCALE_RED, negScale) / DUP_LINES;
 	
 	for (int d = 0; d < DUP_LINES; d++)
@@ -112,15 +134,15 @@ void main()
 		for (int j = 0; j < OFF_SAMPLES; j++)
 		{
 			float sx = ((centerLn * DUP_LINES + d) * OFF_SAMPLES + j) * 0.01;
-			float sy = (texCoord_in.y + 0.2 * gameTime * (j / float(OFF_SAMPLES - 1)));
+			float sy = (scaledTC.y + 0.2 * gameTime * (j / float(OFF_SAMPLES - 1)));
 			off += texture(noiseTex, vec2(sx, sy)).r;
 		}
-		intensity += lineIntensity(centerLn + 0.5 + off * offScale, tx);
+		intensity += lineIntensity(centerLn + 0.5 + off * offScale, scaledTC.x);
 	}
 	
-	intensity += lineIntensity(centerLn - 0.5, tx) * DUP_LINES;
-	intensity += lineIntensity(centerLn + 1.5, tx) * DUP_LINES;
-	intensity *= opacity_in;
+	intensity += lineIntensity(centerLn - 0.5, scaledTC.x) * DUP_LINES;
+	intensity += lineIntensity(centerLn + 1.5, scaledTC.x) * DUP_LINES;
+	intensity *= pc.opacity;
 	
 	vec3 color = mix(COLOR, COLOR_RED, negScale);
 	

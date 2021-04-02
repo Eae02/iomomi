@@ -3,7 +3,14 @@
 #include "../GraphicsCommon.hpp"
 #include "../RenderSettings.hpp"
 
-GravityBarrierMaterial::GravityBarrierMaterial()
+eg::Buffer GravityBarrierMaterial::s_sharedDataBuffer;
+
+eg::Pipeline GravityBarrierMaterial::s_pipelineGameBeforeWater;
+eg::Pipeline GravityBarrierMaterial::s_pipelineGameFinal;
+
+eg::Pipeline GravityBarrierMaterial::s_pipelineEditor;
+
+void GravityBarrierMaterial::OnInit()
 {
 	const auto& fs = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityBarrier.fs.glsl");
 	
@@ -16,12 +23,7 @@ GravityBarrierMaterial::GravityBarrierMaterial()
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityBarrier.vs.glsl").DefaultVariant();
 	pipelineCI.fragmentShader = fs.GetVariant("VGame");
 	pipelineCI.vertexBindings[0] = { 2, eg::InputRate::Vertex };
-	pipelineCI.vertexBindings[1] = { sizeof(InstanceData), eg::InputRate::Instance };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::UInt8Norm, 2, 0 };
-	pipelineCI.vertexAttributes[1] = { 1, eg::DataType::Float32, 3, offsetof(InstanceData, position) };
-	pipelineCI.vertexAttributes[2] = { 1, eg::DataType::UInt8, 2, offsetof(InstanceData, opacity) };
-	pipelineCI.vertexAttributes[3] = { 1, eg::DataType::Float32, 4, offsetof(InstanceData, tangent) };
-	pipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 4, offsetof(InstanceData, bitangent) };
 	pipelineCI.topology = eg::Topology::TriangleStrip;
 	pipelineCI.cullMode = eg::CullMode::None;
 	pipelineCI.enableDepthTest = true;
@@ -33,18 +35,35 @@ GravityBarrierMaterial::GravityBarrierMaterial()
 	
 	pipelineCI.label = "GravityBarrier[BeforeWater]";
 	pipelineCI.fragmentShader.specConstantsData = const_cast<int32_t*>(&WATER_MODE_BEFORE);
-	m_pipelineGameBeforeWater = eg::Pipeline::Create(pipelineCI);
+	s_pipelineGameBeforeWater = eg::Pipeline::Create(pipelineCI);
 	
 	pipelineCI.label = "GravityBarrier[Final]";
 	pipelineCI.fragmentShader.specConstantsData = const_cast<int32_t*>(&WATER_MODE_AFTER);
-	m_pipelineGameFinal = eg::Pipeline::Create(pipelineCI);
+	s_pipelineGameFinal = eg::Pipeline::Create(pipelineCI);
 	
 	pipelineCI.label = "GravityBarrier[Editor]";
 	pipelineCI.fragmentShader = fs.GetVariant("VEditor");
-	m_pipelineEditor = eg::Pipeline::Create(pipelineCI);
+	s_pipelineEditor = eg::Pipeline::Create(pipelineCI);
 	
-	m_barrierDataBuffer = eg::Buffer(eg::BufferFlags::Update | eg::BufferFlags::UniformBuffer,
-		sizeof(BarrierBufferData), nullptr);
+	s_sharedDataBuffer = eg::Buffer(eg::BufferFlags::Update | eg::BufferFlags::UniformBuffer,
+	                                sizeof(BarrierBufferData), nullptr);
+}
+
+void GravityBarrierMaterial::OnShutdown()
+{
+	s_pipelineGameBeforeWater.Destroy();
+	s_pipelineGameFinal.Destroy();
+	s_pipelineEditor.Destroy();
+	s_sharedDataBuffer.Destroy();
+}
+
+EG_ON_INIT(GravityBarrierMaterial::OnInit)
+EG_ON_SHUTDOWN(GravityBarrierMaterial::OnShutdown)
+
+void GravityBarrierMaterial::UpdateSharedDataBuffer(const BarrierBufferData& data)
+{
+	eg::DC.UpdateBuffer(s_sharedDataBuffer, 0, sizeof(GravityBarrierMaterial::BarrierBufferData), &data);
+	s_sharedDataBuffer.UsageHint(eg::BufferUsage::UniformBuffer, eg::ShaderAccessFlags::Fragment);
 }
 
 size_t GravityBarrierMaterial::PipelineHash() const
@@ -58,37 +77,37 @@ bool GravityBarrierMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* draw
 	
 	if (mDrawArgs->drawMode == MeshDrawMode::TransparentBeforeWater)
 	{
-		cmdCtx.BindPipeline(m_pipelineGameBeforeWater);
+		cmdCtx.BindPipeline(s_pipelineGameBeforeWater);
 		cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 		cmdCtx.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 0, 1);
-		cmdCtx.BindUniformBuffer(m_barrierDataBuffer, 0, 2, 0, sizeof(BarrierBufferData));
+		cmdCtx.BindUniformBuffer(s_sharedDataBuffer, 0, 2, 0, sizeof(BarrierBufferData));
 		cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 0, 3);
 		cmdCtx.BindTexture(blackPixelTexture, 0, 4);
 		return true;
 	}
 	if (mDrawArgs->drawMode == MeshDrawMode::TransparentBeforeBlur)
 	{
-		cmdCtx.BindPipeline(m_pipelineGameFinal);
+		cmdCtx.BindPipeline(s_pipelineGameFinal);
 		cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 		cmdCtx.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 0, 1);
-		cmdCtx.BindUniformBuffer(m_barrierDataBuffer, 0, 2, 0, sizeof(BarrierBufferData));
+		cmdCtx.BindUniformBuffer(s_sharedDataBuffer, 0, 2, 0, sizeof(BarrierBufferData));
 		cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 0, 3);
 		cmdCtx.BindTexture(mDrawArgs->rtManager->GetRenderTexture(RenderTex::BlurredGlassDepth), 0, 4);
 		return true;
 	}
 	else if (mDrawArgs->drawMode == MeshDrawMode::TransparentFinal)
 	{
-		cmdCtx.BindPipeline(m_pipelineGameFinal);
+		cmdCtx.BindPipeline(s_pipelineGameFinal);
 		cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 		cmdCtx.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 0, 1);
-		cmdCtx.BindUniformBuffer(m_barrierDataBuffer, 0, 2, 0, sizeof(BarrierBufferData));
+		cmdCtx.BindUniformBuffer(s_sharedDataBuffer, 0, 2, 0, sizeof(BarrierBufferData));
 		cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 0, 3);
 		cmdCtx.BindTexture(blackPixelTexture, 0, 4);
 		return true;
 	}
 	else if (mDrawArgs->drawMode == MeshDrawMode::Editor)
 	{
-		cmdCtx.BindPipeline(m_pipelineEditor);
+		cmdCtx.BindPipeline(s_pipelineEditor);
 		cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 		cmdCtx.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 0, 1);
 		return true;
@@ -97,7 +116,34 @@ bool GravityBarrierMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* draw
 	return false;
 }
 
+static float* timeScale = eg::TweakVarFloat("gb_time_scale", 0.25f, 0.0f);
+static float* opacityScale = eg::TweakVarFloat("gb_opacity_scale", 0.0004f, 0.0f, 1.0f);
+
 bool GravityBarrierMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
+	const bool isEditor = reinterpret_cast<MeshDrawArgs*>(drawArgs)->drawMode == MeshDrawMode::Editor;
+	
+	struct PushConstants
+	{
+		glm::vec3 position;
+		float opacity;
+		glm::vec4 tangent;
+		glm::vec4 bitangent;
+		uint blockedAxis;
+	};
+	
+	PushConstants pc;
+	pc.position = position;
+	pc.opacity = opacity * *opacityScale;
+	pc.tangent = glm::vec4(tangent, glm::length(tangent));
+	pc.bitangent = glm::vec4(bitangent, glm::length(bitangent) * *timeScale);
+	pc.blockedAxis = blockedAxis;
+	eg::DC.PushConstants(0, isEditor ? offsetof(PushConstants, blockedAxis) : sizeof(PushConstants), &pc);
+	
+	if (!isEditor && waterDistanceTexture.handle)
+	{
+		eg::DC.BindTexture(waterDistanceTexture, 0, 5, &framebufferNearestSampler);
+	}
+	
 	return true;
 }

@@ -1,7 +1,7 @@
 #include "WaterRenderer.hpp"
-#include "RenderSettings.hpp"
-#include "RenderTex.hpp"
-#include "../Settings.hpp"
+#include "../RenderSettings.hpp"
+#include "../RenderTex.hpp"
+#include "../../Settings.hpp"
 
 static eg::Texture dummyWaterDepthTexture;
 

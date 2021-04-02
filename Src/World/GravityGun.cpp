@@ -6,7 +6,7 @@
 #include "../Graphics/Materials/MeshDrawArgs.hpp"
 #include "../Settings.hpp"
 #include "../Graphics/RenderSettings.hpp"
-#include "../Graphics/WaterSimulator.hpp"
+#include "../Graphics/Water/WaterSimulator.hpp"
 
 #include <imgui.h>
 

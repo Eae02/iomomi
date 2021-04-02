@@ -43,6 +43,8 @@ struct WaterSimulatorImpl
 	
 	uint32_t numParticles;
 	uint32_t allocatedParticles;
+	uint32_t particleGravityVersion;
+	uint32_t particleGravityOutVersion;
 	
 	//Memory for particle data
 	void* dataMemory;
@@ -55,6 +57,7 @@ struct WaterSimulatorImpl
 	__m128* particleVel2;
 	float* particleRadius;
 	uint8_t* particleGravity;
+	uint8_t* particleGravityOut;
 	glm::vec2* particleDensity;
 	
 	//Stores which cell each particle belongs to
@@ -106,6 +109,8 @@ WaterSimulatorImpl* WSI_New(const WSINewArgs& args)
 	impl->isVoxelAir = args.isAirBuffer;
 	impl->numParticles = args.numParticles;
 	impl->allocatedParticles = args.numParticles + args.extraParticles;
+	impl->particleGravityVersion = 0;
+	impl->particleGravityOutVersion = 0;
 	
 	constexpr int GRID_CELLS_MARGIN = 5;
 	impl->partGridMin = glm::ivec3(glm::floor(glm::vec3(args.minBounds) / INFLUENCE_RADIUS)) - GRID_CELLS_MARGIN;
@@ -116,7 +121,7 @@ WaterSimulatorImpl* WSI_New(const WSINewArgs& args)
 	impl->cellParticles.resize(impl->cellNumParticles.size());
 	
 	//Allocates memory for particle data
-	size_t memoryBytes = impl->allocatedParticles * (sizeof(__m128) * 6 + sizeof(uint8_t) + sizeof(float) + sizeof(glm::vec2));
+	size_t memoryBytes = impl->allocatedParticles * (sizeof(__m128) * 6 + sizeof(uint8_t) * 2 + sizeof(float) + sizeof(glm::vec2));
 	impl->dataMemory = aligned_alloc(alignof(__m128), memoryBytes);
 	std::memset(impl->dataMemory, 0, memoryBytes);
 	
@@ -128,7 +133,8 @@ WaterSimulatorImpl* WSI_New(const WSINewArgs& args)
 	impl->particleVel2            = impl->particleVel + impl->allocatedParticles;
 	impl->particleCells           = reinterpret_cast<__m128i*>(impl->particleVel2 + impl->allocatedParticles);
 	impl->particleGravity         = reinterpret_cast<uint8_t*>(impl->particleCells + impl->allocatedParticles);
-	impl->particleRadius          = reinterpret_cast<float*>(impl->particleGravity + impl->allocatedParticles);
+	impl->particleGravityOut      = impl->particleGravity + impl->allocatedParticles;
+	impl->particleRadius          = reinterpret_cast<float*>(impl->particleGravityOut + impl->allocatedParticles);
 	impl->particleDensity         = reinterpret_cast<glm::vec2*>(impl->particleRadius + impl->allocatedParticles);
 	if (reinterpret_cast<char*>(impl->particleDensity + impl->allocatedParticles) != (char*)impl->dataMemory + memoryBytes)
 		std::abort();
@@ -138,6 +144,7 @@ WaterSimulatorImpl* WSI_New(const WSINewArgs& args)
 		impl->particleRadius[i] = radiusDist(impl->rng);
 	
 	std::fill_n(impl->particleGravity, impl->numParticles, (uint8_t)Dir::NegY);
+	std::fill_n(impl->particleGravityOut, impl->numParticles, (uint8_t)Dir::NegY);
 	
 	//Copies particle positions to m_particlePos
 	for (size_t i = 0; i < args.numParticles; i++)
@@ -184,10 +191,22 @@ void* WSI_GetOutputBuffer(WaterSimulatorImpl* impl)
 	return impl->particlePosOut;
 }
 
+void* WSI_GetGravitiesOutputBuffer(WaterSimulatorImpl* impl, uint32_t& versionOut)
+{
+	versionOut = impl->particleGravityOutVersion;
+	return impl->particleGravityOut;
+}
+
 void WSI_SwapBuffers(WaterSimulatorImpl* impl)
 {
 	std::swap(impl->particleVel2, impl->particleVel);
 	std::swap(impl->particlePos2, impl->particlePos);
+	
+	if (impl->particleGravityOutVersion != impl->particleGravityVersion)
+	{
+		std::memcpy(impl->particleGravityOut, impl->particleGravity, impl->numParticles);
+		impl->particleGravityOutVersion = impl->particleGravityVersion;
+	}
 }
 
 inline int CellIdx(WaterSimulatorImpl* impl, __m128i coord4)
@@ -313,6 +332,7 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 	// This is done by running a DFS across the graph of close particles, starting at the changed particle.
 	if (args.changeGravityParticle != -1)
 	{
+		impl->particleGravityVersion++;
 		std::vector<bool> seen(impl->numParticles, false);
 		seen[args.changeGravityParticle] = true;
 		std::vector<int> particlesStack;
