@@ -91,7 +91,7 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 	world->extraWaterParticles = worldPB.extra_water_particles();
 	world->playerHasGravityGun = worldPB.player_has_gravity_gun();
 	world->title = worldPB.title();
-	for (int i = 0; i < std::min(worldPB.control_hints_size(), NUM_CONTROL_HINTS); i++)
+	for (int i = 0; i < std::min(worldPB.control_hints_size(), NUM_OPTIONAL_CONTROL_HINTS); i++)
 	{
 		world->showControlHint[i] = worldPB.control_hints(i);
 	}

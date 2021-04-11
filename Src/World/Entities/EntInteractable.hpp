@@ -5,7 +5,7 @@
 struct InteractControlHint
 {
 	std::string_view message;
-	ControlHintType type;
+	std::optional<OptionalControlHintType> optControlHintType;
 	const struct KeyBinding* keyBinding;
 };
 

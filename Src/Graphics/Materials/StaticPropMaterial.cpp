@@ -50,7 +50,7 @@ public:
 		std::string normalMapPath = rootYaml["normalMap"].as<std::string>(std::string());
 		std::string miscMapPath = rootYaml["miscMap"].as<std::string>(std::string());
 		
-		if (albedoPath.empty())
+		if (albedoPath.empty() || normalMapPath.empty() || miscMapPath.empty())
 		{
 			eg::Log(eg::LogLevel::Error, "as", "Invalid static prop material '{0}', "
 			        "missing one of 'albedo', 'normalMap', or 'miscMap'", relSourcePath);

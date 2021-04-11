@@ -29,6 +29,10 @@ struct OrientedBox
 	glm::vec3 radius;
 	glm::vec3 center;
 	glm::quat rotation;
+	
+	static OrientedBox FromAABB(const eg::AABB& aabb);
+	
+	OrientedBox Transformed(const glm::mat4& matrix);
 };
 
 std::optional<glm::vec3> CheckCollisionAABBPolygon(const eg::AABB& aabb, eg::Span<const glm::vec3> polyVertices,

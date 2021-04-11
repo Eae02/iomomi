@@ -20,7 +20,8 @@ const static std::pair<std::string, std::vector<EntTypeID>> entityGroups[] =
 		{
 			EntTypeID::Cube,
 			EntTypeID::CubeSpawner,
-			EntTypeID::FloorButton
+			EntTypeID::FloorButton,
+			EntTypeID::PushButton
 		}
 	},
 	{

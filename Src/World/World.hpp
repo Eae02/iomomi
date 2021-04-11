@@ -30,14 +30,14 @@ struct GravityCorner
 	glm::mat3 MakeRotationMatrix() const;
 };
 
-enum class ControlHintType
+enum class OptionalControlHintType
 {
 	Movement,
 	FlipGravity,
 	PickUpCube
 };
 
-constexpr int NUM_CONTROL_HINTS = 3;
+constexpr int NUM_OPTIONAL_CONTROL_HINTS = 3;
 
 class World
 {
@@ -74,7 +74,7 @@ public:
 	glm::vec3 thumbnailCameraPos;
 	glm::vec3 thumbnailCameraDir;
 	
-	bool showControlHint[NUM_CONTROL_HINTS] = {};
+	bool showControlHint[NUM_OPTIONAL_CONTROL_HINTS] = {};
 	
 	eg::ColorSRGB ssrFallbackColor;
 	float ssrIntensity = 1;

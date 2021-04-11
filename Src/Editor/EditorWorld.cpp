@@ -171,8 +171,8 @@ void EditorWorld::RenderLevelSettings()
 	if (ImGui::CollapsingHeader("Control Hints", ImGuiTreeNodeFlags_DefaultOpen))
 	{
 		static const char* controlHintLabels[] = { "Movement", "Flip gravity", "Pick up cube" };
-		static_assert(std::size(controlHintLabels) == NUM_CONTROL_HINTS);
-		for (int i = 0; i < NUM_CONTROL_HINTS; i++)
+		static_assert(std::size(controlHintLabels) == NUM_OPTIONAL_CONTROL_HINTS);
+		for (int i = 0; i < NUM_OPTIONAL_CONTROL_HINTS; i++)
 		{
 			ImGui::Checkbox(controlHintLabels[i], &m_world->showControlHint[i]);
 		}
@@ -370,7 +370,7 @@ void EditorWorld::Draw(EditorTool currentTool, RenderContext& renderCtx, Prepare
 	}
 	
 	//Draws icons
-	const eg::Texture& iconsTexture = eg::GetAsset<eg::Texture>("Textures/EntityIcons.png");
+	const eg::Texture& iconsTexture = eg::GetAsset<eg::Texture>("Textures/UI/EntityIcons.png");
 	auto CreateSrcRectangle = [&] (int index)
 	{
 		return eg::Rectangle(index * 50, 0, 50, 50);

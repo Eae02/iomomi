@@ -280,9 +280,13 @@ void MainGameState::UpdateAndDrawHud(float dt)
 		controlHintTargetAlpha = 1;
 	};
 	
-	if (m_player.interactControlHint && m_world->showControlHint[(int)m_player.interactControlHint->type])
+	if (m_player.interactControlHint)
 	{
-		SetControlHint(m_player.interactControlHint->message, *m_player.interactControlHint->keyBinding);
+		auto optControlHint = m_player.interactControlHint->optControlHintType;
+		if (!optControlHint.has_value() || m_world->showControlHint[(int)*optControlHint])
+		{
+			SetControlHint(m_player.interactControlHint->message, *m_player.interactControlHint->keyBinding);
+		}
 	}
 	else if (m_gravityGun.shouldShowControlHint)
 	{

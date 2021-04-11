@@ -48,10 +48,8 @@ assets:
     loader: StaticPropMaterial
   
   #Textures:
-  - name: Textures/EntityIcons.png
-  - name: Textures/ThumbnailNA.png
   - regex: "Textures/UI/.*\\.png"
-    srgb: true
+    srgb: false
     format: rgba8
   - name: Textures/NoDraw.png
     mipShift: *MipShift

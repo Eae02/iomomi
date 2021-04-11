@@ -1,0 +1,17 @@
+syntax="proto3";
+
+package gravity_pb;
+
+import "Dir.proto";
+import "Activator.proto";
+
+message PushButtonEntity {
+  float posX = 1;
+  float posY = 2;
+  float posZ = 3;
+  Dir dir = 4;
+  int32 rotation = 5;
+  Activator activator = 6;
+  float activation_delay = 7;
+  float activation_duration = 8;
+}

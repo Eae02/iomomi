@@ -131,7 +131,7 @@ std::optional<InteractControlHint> GravitySwitchEnt::GetInteractControlHint() co
 	InteractControlHint hint;
 	hint.keyBinding = &settings.keyInteract;
 	hint.message = "Flip Gravity";
-	hint.type = ControlHintType::FlipGravity;
+	hint.optControlHintType = OptionalControlHintType::FlipGravity;
 	return hint;
 }
 

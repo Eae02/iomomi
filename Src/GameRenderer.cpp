@@ -112,7 +112,7 @@ void GameRenderer::Render(World& world, float gameTime, float dt,
 		}
 	}
 	
-	m_waterBarrierRenderer.Update();
+	m_waterBarrierRenderer.Update(dt);
 	
 	if (m_particleManager && m_player)
 	{

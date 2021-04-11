@@ -53,9 +53,7 @@ layout(binding=2, std140) uniform BarrierSettingsUB
 
 layout(binding=3) uniform sampler2D waterDepth;
 layout(binding=4) uniform sampler2D blurredGlassDepth;
-
-const float UINT_MAX = 4294967296.0; 
-layout(binding=5) uniform usampler2D waterDistanceTex;
+layout(binding=5) uniform sampler2D waterDistanceTex;
 
 #define WATER_DEPTH_OFFSET 0.15
 #include "Water/WaterTransparent.glh"
@@ -105,16 +103,7 @@ void main()
 		}
 	}
 	
-	vec2 waterTexSize = vec2(textureSize(waterDistanceTex, 0));
-	vec2 waterSamplePos = texCoord_in * waterTexSize;
-	vec2 waterSamplePosFloor = floor(waterSamplePos);
-	vec2 waterTCFilterDist = waterSamplePos - waterSamplePosFloor;
-	vec4 waterDistSamples = textureGather(waterDistanceTex, (waterSamplePosFloor + 0.5) / waterTexSize) / UINT_MAX;
-	float waterDist = mix(
-		mix(waterDistSamples.w, waterDistSamples.z, waterTCFilterDist.x),
-		mix(waterDistSamples.x, waterDistSamples.y, waterTCFilterDist.x),
-		waterTCFilterDist.y
-	);
+	float waterDist = texture(waterDistanceTex, texCoord_in).r;
 	negScale += 1.0 - smoothstep(0.5, 0.8, waterDist);
 
 	scaledTC.x -= 0.3 * stretch * edgeDist;

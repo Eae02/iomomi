@@ -169,3 +169,34 @@ bool CollisionResponseCombiner::Update(const glm::vec3& correction)
 	}
 	return false;
 }
+
+OrientedBox OrientedBox::FromAABB(const eg::AABB& aabb)
+{
+	OrientedBox ob;
+	ob.rotation = glm::quat();
+	ob.radius = aabb.Size() / 2.0f;
+	ob.center = aabb.Center();
+	return ob;
+}
+
+OrientedBox OrientedBox::Transformed(const glm::mat4& matrix)
+{
+	OrientedBox ob;
+	ob.center = matrix * glm::vec4(center, 1);
+	
+	glm::mat3 rs =
+		glm::mat3(matrix) *
+		glm::mat3_cast(rotation) *
+		glm::mat3(radius.x, 0, 0, 0, radius.y, 0, 0, 0, radius.z);
+	
+	ob.radius.x = glm::length(rs[0]);
+	ob.radius.y = glm::length(rs[1]);
+	ob.radius.z = glm::length(rs[2]);
+	
+	rs[0] /= ob.radius.x;
+	rs[1] /= ob.radius.y;
+	rs[2] /= ob.radius.z;
+	ob.rotation = glm::quat_cast(rs);
+	
+	return ob;
+}

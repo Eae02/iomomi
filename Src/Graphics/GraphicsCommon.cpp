@@ -61,10 +61,12 @@ static void OnInit()
 	framebufferSamplerDesc.wrapW = eg::WrapMode::ClampToEdge;
 	framebufferSamplerDesc.minFilter = eg::TextureFilter::Linear;
 	framebufferSamplerDesc.magFilter = eg::TextureFilter::Linear;
+	framebufferSamplerDesc.mipFilter = eg::TextureFilter::Nearest;
 	framebufferLinearSampler = eg::Sampler(framebufferSamplerDesc);
 	
 	framebufferSamplerDesc.minFilter = eg::TextureFilter::Nearest;
 	framebufferSamplerDesc.magFilter = eg::TextureFilter::Nearest;
+	framebufferSamplerDesc.mipFilter = eg::TextureFilter::Nearest;
 	framebufferNearestSampler = eg::Sampler(framebufferSamplerDesc);
 	
 	eg::TextureCreateInfo whiteTextureCI;

@@ -174,7 +174,7 @@ std::optional<InteractControlHint> CubeEnt::GetInteractControlHint() const
 	InteractControlHint hint;
 	hint.keyBinding = &settings.keyInteract;
 	hint.message = m_isPickedUp ? "Drop" : "Pick Up";
-	hint.type = ControlHintType::PickUpCube;
+	hint.optControlHintType = OptionalControlHintType::PickUpCube;
 	return hint;
 }
 

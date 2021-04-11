@@ -142,7 +142,7 @@ bool GravityBarrierMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* draw
 	
 	if (!isEditor && waterDistanceTexture.handle)
 	{
-		eg::DC.BindTexture(waterDistanceTexture, 0, 5, &framebufferNearestSampler);
+		eg::DC.BindTexture(waterDistanceTexture, 0, 5, &framebufferLinearSampler);
 	}
 	
 	return true;

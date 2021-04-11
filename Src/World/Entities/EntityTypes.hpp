@@ -23,10 +23,11 @@ enum class EntTypeID
 	Ladder               = 18,
 	PointLight           = 19,
 	Collider             = 20,
+	PushButton           = 21,
 	MAX
 };
  
-constexpr size_t NUM_UPDATABLE_ENTITY_TYPES = 11;
+constexpr size_t NUM_UPDATABLE_ENTITY_TYPES = 12;
 
 extern const EntTypeID entUpdateOrder[NUM_UPDATABLE_ENTITY_TYPES];
 

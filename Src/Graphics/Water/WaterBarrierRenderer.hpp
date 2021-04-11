@@ -9,19 +9,22 @@ public:
 	
 	void Init(class WaterSimulator& waterSimulator, class World& world);
 	
-	void Update();
+	void Update(float dt);
 	
 private:
-	eg::Pipeline m_pipeline;
+	eg::Pipeline m_calcPipeline;
+	eg::Pipeline m_fadePipeline;
 	
 	eg::Texture m_defaultTexture;
 	
 	struct Barrier
 	{
 		std::shared_ptr<GravityBarrierEnt> entity;
-		eg::Texture texture;
+		eg::Texture tmpTexture;
+		eg::Texture fadeTexture;
 		glm::mat4 transform;
-		eg::DescriptorSet descriptorSet;
+		eg::DescriptorSet descriptorSetCalc;
+		eg::DescriptorSet descriptorSetFade;
 	};
 	
 	std::vector<Barrier> m_barriers;
