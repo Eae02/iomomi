@@ -129,7 +129,7 @@ bool GravityBarrierMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* draw
 		float opacity;
 		glm::vec4 tangent;
 		glm::vec4 bitangent;
-		uint blockedAxis;
+		uint32_t blockedAxis;
 	};
 	
 	PushConstants pc;
