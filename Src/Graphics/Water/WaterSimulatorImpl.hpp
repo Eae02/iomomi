@@ -27,8 +27,12 @@ struct WSISimulateArgs
 {
 	float dt;
 	float gameTime;
-	int changeGravityParticle;
+	
+	bool shouldChangeParticleGravity;
+	bool changeGravityParticleHighlightOnly;
+	glm::vec3 changeGravityParticlePos;
 	Dir newGravity;
+	
 	size_t numWaterBlockers;
 	const WaterBlocker* waterBlockers;
 };

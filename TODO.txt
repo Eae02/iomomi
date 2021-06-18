@@ -3,7 +3,6 @@ fixes:
  - physics object rotation
  - aim assist
  - audio bug when changing levels
- - fix (seemingly) broken water component check
 
 misc:
  - gun should be rendered after ssr

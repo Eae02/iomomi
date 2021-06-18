@@ -91,6 +91,8 @@ static float LIGHT_INTENSITY_MAX = 20.0f;
 static float LIGHT_INTENSITY_FALL_TIME = 0.2f;
 static eg::ColorSRGB LIGHT_COLOR = eg::ColorSRGB::FromHex(0xb6fdff);
 
+static int* waterHighlightHovered = eg::TweakVarInt("water_highlight_hovered", 0, 0, 1);
+
 void GravityGun::SetBeamInstanceTransform(BeamInstance& instance)
 {
 	instance.particleEmitter.SetTransform(glm::translate(glm::mat4(1), instance.beamPos) * glm::mat4(instance.rotationMatrix));
@@ -197,8 +199,8 @@ void GravityGun::Update(World& world, const PhysicsEngine& physicsEngine, WaterS
 	
 	if (settings.keyShoot.IsDown() && !settings.keyShoot.WasDown())
 	{
-		auto[waterIntersectDst, waterIntersectParticle] = waterSim.RayIntersect(viewRay);
-		if (intersectObject || waterIntersectParticle != -1)
+		auto[waterIntersectDst, waterIntersectPos] = waterSim.RayIntersect(viewRay);
+		if (intersectObject || !std::isinf(waterIntersectDst))
 		{
 			BeamInstance& beamInstance = m_beamInstances.emplace_back();
 			
@@ -223,14 +225,22 @@ void GravityGun::Update(World& world, const PhysicsEngine& physicsEngine, WaterS
 			
 			m_fireAnimationTime = 1;
 			
-			if (waterIntersectParticle != -1 && waterIntersectDst < intersectDist)
+			if (waterIntersectDst < intersectDist)
 			{
-				waterSim.ChangeGravity(waterIntersectParticle, player.CurrentDown());
+				waterSim.ChangeGravity(waterIntersectPos, player.CurrentDown());
 			}
 			else
 			{
 				beamInstance.entityToCharge = entGravityChargeable;
 			}
+		}
+	}
+	else if (*waterHighlightHovered)
+	{
+		auto[waterIntersectDst, waterIntersectPos] = waterSim.RayIntersect(viewRay);
+		if (!std::isinf(waterIntersectDst))
+		{
+			waterSim.ChangeGravity(waterIntersectPos, Dir::NegY, true);
 		}
 	}
 }

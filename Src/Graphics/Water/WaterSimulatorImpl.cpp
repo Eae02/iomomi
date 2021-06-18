@@ -310,7 +310,7 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 			int cell = CellIdx(impl, _mm_add_epi32(centerCell, *reinterpret_cast<const __m128i*>(impl->cellProcOffsets + o)));
 			if (cell == -1)
 				continue;
-			for (int i = 0; i < impl->cellNumParticles[cell] && numClose < MAX_CLOSE; i++)
+			for (int i = 0; i < impl->cellNumParticles[cell]; i++)
 			{
 				uint16_t b = impl->cellParticles[cell][i];
 				if (b != p)
@@ -321,39 +321,66 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 					if (dist2 < INFLUENCE_RADIUS * INFLUENCE_RADIUS)
 					{
 						impl->closeParticles[p][numClose++] = b;
+						if (numClose == MAX_CLOSE) break;
 					}
 				}
 			}
+			if (numClose == MAX_CLOSE) break;
 		}
 		impl->numCloseParticles[p] = numClose;
 	});
 	
 	//Changes gravity for particles.
 	// This is done by running a DFS across the graph of close particles, starting at the changed particle.
-	if (args.changeGravityParticle != -1)
+	if (args.shouldChangeParticleGravity)
 	{
-		impl->particleGravityVersion++;
-		std::vector<bool> seen(impl->numParticles, false);
-		seen[args.changeGravityParticle] = true;
-		std::vector<int> particlesStack;
-		particlesStack.reserve(impl->numParticles);
-		particlesStack.push_back(args.changeGravityParticle);
-		while (!particlesStack.empty())
+		__m128 changePos = { args.changeGravityParticlePos.x, args.changeGravityParticlePos.y, args.changeGravityParticlePos.z, 0 };
+		
+		size_t changeGravityParticle = SIZE_MAX;
+		float closestParticleDist2 = INFINITY;
+		for (size_t i = 0; i < impl->numParticles; i++)
 		{
-			int cur = particlesStack.back();
-			particlesStack.pop_back();
-			
-			impl->particleGravity[cur] = (uint8_t)args.newGravity;
-			impl->particlePos[cur][3] = args.gameTime;
-			
-			for (uint16_t bI = 0; bI < impl->numCloseParticles[cur]; bI++)
+			__m128 sep = _mm_sub_ps(changePos, impl->particlePos[i]);
+			float dist2 = _mm_cvtss_f32(_mm_dp_ps(sep, sep, DP_IMM8));
+			if (dist2 < closestParticleDist2)
 			{
-				uint16_t b = impl->closeParticles[cur][bI];
-				if (!seen[b])
+				closestParticleDist2 = dist2;
+				changeGravityParticle = i;
+			}
+		}
+		
+		if (changeGravityParticle != SIZE_MAX)
+		{
+			std::vector<bool> seen(impl->numParticles, false);
+			seen[changeGravityParticle] = true;
+			std::vector<uint16_t> particlesStack;
+			particlesStack.reserve(impl->numParticles);
+			particlesStack.push_back(changeGravityParticle);
+			while (!particlesStack.empty())
+			{
+				uint16_t cur = particlesStack.back();
+				particlesStack.pop_back();
+				
+				if (!args.changeGravityParticleHighlightOnly)
 				{
-					particlesStack.push_back(b);
-					seen[b] = true;
+					impl->particleGravity[cur] = (uint8_t)args.newGravity;
 				}
+				impl->particlePos[cur][3] = args.gameTime;
+				
+				for (uint16_t bI = 0; bI < impl->numCloseParticles[cur]; bI++)
+				{
+					uint16_t b = impl->closeParticles[cur][bI];
+					if (!seen[b])
+					{
+						particlesStack.push_back(b);
+						seen[b] = true;
+					}
+				}
+			}
+			
+			if (!args.changeGravityParticleHighlightOnly)
+			{
+				impl->particleGravityVersion++;
 			}
 		}
 	}

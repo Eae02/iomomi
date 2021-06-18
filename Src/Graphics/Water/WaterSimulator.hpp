@@ -3,6 +3,7 @@
 #include <memory>
 #include <future>
 #include <thread>
+#include <optional>
 #include <mutex>
 
 #include "WaterSimulatorImpl.hpp"
@@ -58,15 +59,14 @@ public:
 	void Update(const World& world, const glm::vec3& cameraPos, bool paused);
 	
 	//Finds an intersection between the given ray and the water.
-	// Returns a pair of distance and particleIndex.
-	// particleIndex will be -1 if no intersection was found.
-	std::pair<float, int> RayIntersect(const eg::Ray& ray) const;
+	// Returns a pair of distance and particle position.
+	// distance will be infinity if no intersection was found.
+	std::pair<float, glm::vec3> RayIntersect(const eg::Ray& ray) const;
 	
-	//Changes gravitation for all particles connected to the given particle.
-	void ChangeGravity(int particle, Dir newGravity)
+	//Changes gravitation for all particles close to and connected to the given position.
+	void ChangeGravity(const glm::vec3& particlePos, Dir newGravity, bool highlightOnly = false)
 	{
-		m_changeGravityParticleMT = particle;
-		m_newGravityMT = newGravity;
+		m_changeGravityParticleMT = ChangeGravityParticleRef { particlePos, newGravity, highlightOnly };
 	}
 	
 	eg::BufferRef GetPositionsBuffer() const { return m_positionsBuffer; }
@@ -115,9 +115,15 @@ private:
 	uint32_t m_numParticles = 0;
 	uint32_t m_numParticlesToDraw = 0;
 	
-	int m_changeGravityParticleMT = -1;
-	Dir m_newGravityMT;
-	std::vector<std::pair<int, Dir>> m_changeGravityParticles;
+	struct ChangeGravityParticleRef
+	{
+		glm::vec3 particlePos;
+		Dir newGravity;
+		bool highlightOnly;
+	};
+	
+	std::optional<ChangeGravityParticleRef> m_changeGravityParticleMT;
+	std::vector<ChangeGravityParticleRef> m_changeGravityParticles;
 	
 	std::vector<WaterBlocker> m_waterBlockersMT;
 	std::vector<WaterBlocker> m_waterBlockersSH;

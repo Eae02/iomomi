@@ -149,7 +149,7 @@ void WaterSimulator::ThreadTarget()
 	while (true)
 	{
 		WSISimulateArgs simulateArgs;
-		simulateArgs.changeGravityParticle = -1;
+		simulateArgs.shouldChangeParticleGravity = false;
 		int stepsPerSecond;
 		
 		{
@@ -176,8 +176,10 @@ void WaterSimulator::ThreadTarget()
 			
 			if (!m_changeGravityParticles.empty())
 			{
-				simulateArgs.changeGravityParticle = m_changeGravityParticles.back().first;
-				simulateArgs.newGravity = m_changeGravityParticles.back().second;
+				simulateArgs.shouldChangeParticleGravity        = true;
+				simulateArgs.changeGravityParticlePos           = m_changeGravityParticles.back().particlePos;
+				simulateArgs.newGravity                         = m_changeGravityParticles.back().newGravity;
+				simulateArgs.changeGravityParticleHighlightOnly = m_changeGravityParticles.back().highlightOnly;
 				m_changeGravityParticles.pop_back();
 			}
 		}
@@ -292,10 +294,27 @@ void WaterSimulator::Update(const World& world, const glm::vec3& cameraPos, bool
 		
 		m_waterBlockersSH = m_waterBlockersMT;
 		
-		if (m_changeGravityParticleMT != -1)
+		if (m_changeGravityParticleMT.has_value())
 		{
-			m_changeGravityParticles.emplace_back(m_changeGravityParticleMT, m_newGravityMT);
-			m_changeGravityParticleMT = -1;
+			bool shouldPushBack = true;
+			if (m_changeGravityParticleMT->highlightOnly)
+			{
+				//If this is a highlight only particle reference, try to update an existing entry
+				for (ChangeGravityParticleRef& enqueuedRef : m_changeGravityParticles)
+				{
+					if (enqueuedRef.highlightOnly)
+					{
+						enqueuedRef = *m_changeGravityParticleMT;
+						shouldPushBack = false;
+						break;
+					}
+				}
+			}
+			if (shouldPushBack)
+			{
+				m_changeGravityParticles.push_back(*m_changeGravityParticleMT);
+			}
+			m_changeGravityParticleMT.reset();
 		}
 		
 		m_gameTimeSH = RenderSettings::instance->gameTime + GAME_TIME_OFFSET;
@@ -332,12 +351,16 @@ void WaterSimulator::Update(const World& world, const glm::vec3& cameraPos, bool
 		alignas(16) float cameraPos4[] = { cameraPos.x, cameraPos.y, cameraPos.z, 0 };
 		auto sortTimer = eg::StartCPUTimer("Water Sort");
  		WSI_SortOutputBuffer(m_impl, m_numParticlesToDraw, cameraPos4);
-		std::memcpy(m_positionsUploadBufferMemory + uploadBufferOffset, WSI_GetOutputBuffer(m_impl), m_numParticlesToDraw * sizeof(float) * 4);
+		std::memcpy(
+			m_positionsUploadBufferMemory + uploadBufferOffset,
+			WSI_GetOutputBuffer(m_impl),
+			m_numParticlesToDraw * sizeof(float) * 4
+		);
 	}
 	
 	const uint64_t uploadBufferRange = m_numParticlesToDraw * 4 * sizeof(float);
 	
-	m_changeGravityParticleMT = -1;
+	m_changeGravityParticleMT.reset();
 	
 	m_positionsUploadBuffer.Flush(uploadBufferOffset, uploadBufferRange);
 	m_currentParticlePositions = reinterpret_cast<float*>(m_positionsUploadBufferMemory + uploadBufferOffset);
@@ -346,10 +369,10 @@ void WaterSimulator::Update(const World& world, const glm::vec3& cameraPos, bool
 	m_positionsBuffer.UsageHint(eg::BufferUsage::StorageBufferRead, eg::ShaderAccessFlags::Vertex);
 }
 
-std::pair<float, int> WaterSimulator::RayIntersect(const eg::Ray& ray) const
+std::pair<float, glm::vec3> WaterSimulator::RayIntersect(const eg::Ray& ray) const
 {
 	float minDst = INFINITY;
-	int particle = -1;
+	glm::vec3 particlePos(0.0f);
 	if (m_currentParticlePositions != nullptr)
 	{
 		for (uint32_t i = 0; i < m_numParticlesToDraw; i++)
@@ -363,10 +386,10 @@ std::pair<float, int> WaterSimulator::RayIntersect(const eg::Ray& ray) const
 				if (dst > 0 && dst < minDst)
 				{
 					minDst = dst;
-					particle = i;
+					particlePos = posCopy;
 				}
 			}
 		}
 	}
-	return { minDst, particle };
+	return { minDst, particlePos };
 }
