@@ -25,6 +25,7 @@ features:
  - buttons that you press (not floor buttons)
  - moving force fields
  - water drains and emitters
+ - water pipes
  - cubes should displace water
  - the gun should be picked up rather than suddenly appearing
  - placable doors

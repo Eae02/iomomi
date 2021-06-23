@@ -10,6 +10,12 @@
 
 #ifdef _WIN32
 #pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
+
+extern "C"
+{
+	__declspec(dllexport) uint32_t NvOptimusEnablement = 1;
+	__declspec(dllexport) uint32_t AmdPowerXpressRequestHighPerformance = 1;
+}
 #endif
 
 static_assert(sizeof(int) == 4);

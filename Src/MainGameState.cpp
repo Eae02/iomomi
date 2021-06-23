@@ -382,8 +382,13 @@ void MainGameState::DrawOverlay(float dt)
 	m_player.DrawDebugOverlay();
 	ImGui::Separator();
 	ImGui::Text("Particles: %d", m_particleManager.ParticlesToDraw());
-	ImGui::Text("PSM Last Update: %lld/%lld", GameRenderer::instance->m_plShadowMapper.LastUpdateFrameIndex(), eg::FrameIdx());
-	ImGui::Text("PSM Updates: %lld", GameRenderer::instance->m_plShadowMapper.LastFrameUpdateCount());
+	ImGui::Text(
+		"PSM Last Update: %lld/%lld",
+		(unsigned long long)GameRenderer::instance->m_plShadowMapper.LastUpdateFrameIndex(),
+		(unsigned long long)eg::FrameIdx());
+	ImGui::Text(
+		"PSM Updates: %lld",
+		(unsigned long long)GameRenderer::instance->m_plShadowMapper.LastFrameUpdateCount());
 	ImGui::Text("Water Spheres: %d", GameRenderer::instance->m_waterSimulator.NumParticles());
 	ImGui::Text("Water Update Time: %.2fms", GameRenderer::instance->m_waterSimulator.LastUpdateTime() / 1E6);
 	ImGui::Text("Level: %s", m_currentLevelIndex == -1 ? "?" : levels[m_currentLevelIndex].name.c_str());
