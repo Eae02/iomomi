@@ -2,7 +2,6 @@ fixes:
  - water should be affected by force fields
  - physics object rotation
  - aim assist
- - audio bug when changing levels
 
 misc:
  - gun should be rendered after ssr
@@ -22,9 +21,11 @@ features:
  - zero gravity mode
  - barriers that prevent falling
  - levers
+ - conveyor belts
  - buttons that you press (not floor buttons)
  - moving force fields
  - water drains and emitters
+ - cubes should displace water
  - the gun should be picked up rather than suddenly appearing
  - placable doors
 

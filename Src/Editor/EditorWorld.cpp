@@ -166,6 +166,10 @@ void EditorWorld::RenderLevelSettings()
 	if (ImGui::DragInt("Extra Water Particles", &extraWaterParticles))
 		m_world->extraWaterParticles = std::max(extraWaterParticles, 0);
 	
+	int presimIterations = m_world->waterPresimIterations;
+	if (ImGui::DragInt("Water Presim Iterations", &presimIterations))
+		m_world->waterPresimIterations = std::max(presimIterations, 1);
+	
 	ImGui::InputText("Title", &m_world->title);
 	
 	if (ImGui::CollapsingHeader("Control Hints", ImGuiTreeNodeFlags_DefaultOpen))

@@ -104,6 +104,7 @@ private:
 	bool m_run = false;
 	
 	uint32_t m_presimIterationsCompleted = 0;
+	uint32_t m_targetPresimIterations = 0;
 	
 	uint32_t m_lastGravityBufferVersion = 0;
 	

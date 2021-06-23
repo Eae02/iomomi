@@ -317,12 +317,12 @@ std::optional<eg::ColorSRGB> RampEnt::EdGetBoxColor(bool selected) const
 
 glm::vec3 RampEnt::EdGetSize() const
 {
-	return m_size;
+	return m_size * 0.5f;
 }
 
 void RampEnt::EdResized(const glm::vec3& newSize)
 {
-	m_size = newSize;
+	m_size = newSize * 2.0f;
 }
 
 template <>

@@ -18,4 +18,5 @@ message World {
   float ssr_fallback_g = 13;
   float ssr_fallback_b = 14;
   float ssr_intensity = 15;
+  uint32 water_presim_iterations = 16;
 }

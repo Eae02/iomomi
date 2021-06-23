@@ -226,7 +226,7 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 	std::optional<Dir> forceFieldGravity = ForceFieldEnt::CheckIntersection(args.world->entManager, aabb);
 	if (forceFieldGravity.has_value() && m_currentDown != *forceFieldGravity)
 	{
-		if (m_isPickedUp)
+		if (m_isPickedUp && args.player)
 		{
 			m_isPickedUp = false;
 			args.player->m_isCarrying = false;
@@ -234,14 +234,14 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 		SetGravity(*forceFieldGravity);
 	}
 	
-	if (isSpawning)
+	if (isSpawning || (args.waterSim && !args.waterSim->IsPresimComplete()))
 	{
 		m_physicsObject.gravity = { };
 		m_collisionWithPlayerDisabled = true;
 	}
 	else if (!m_isPickedUp)
 	{
-		if (m_collisionWithPlayerDisabled && !args.player->GetAABB().Intersects(aabb))
+		if (m_collisionWithPlayerDisabled && args.player && !args.player->GetAABB().Intersects(aabb))
 		{
 			m_collisionWithPlayerDisabled = false;
 		}

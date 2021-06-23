@@ -70,6 +70,7 @@ public:
 	bool playerHasGravityGun = true;
 	std::string title;
 	uint32_t extraWaterParticles = 0;
+	uint32_t waterPresimIterations = 100;
 	
 	glm::vec3 thumbnailCameraPos;
 	glm::vec3 thumbnailCameraDir;

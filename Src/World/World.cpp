@@ -91,6 +91,8 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 	world->extraWaterParticles = worldPB.extra_water_particles();
 	world->playerHasGravityGun = worldPB.player_has_gravity_gun();
 	world->title = worldPB.title();
+	if (worldPB.water_presim_iterations() != 0)
+		world->waterPresimIterations = worldPB.water_presim_iterations();
 	for (int i = 0; i < std::min(worldPB.control_hints_size(), NUM_OPTIONAL_CONTROL_HINTS); i++)
 	{
 		world->showControlHint[i] = worldPB.control_hints(i);
@@ -164,6 +166,7 @@ void World::Save(std::ostream& outStream) const
 	worldPB.set_ssr_fallback_g(ssrFallbackColor.g);
 	worldPB.set_ssr_fallback_b(ssrFallbackColor.b);
 	worldPB.set_ssr_intensity(ssrIntensity);
+	worldPB.set_water_presim_iterations(waterPresimIterations);
 	for (bool controlHint : showControlHint)
 	{
 		worldPB.add_control_hints(controlHint);

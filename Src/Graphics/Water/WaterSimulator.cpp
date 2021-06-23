@@ -10,8 +10,6 @@
 #include <execution>
 #include <glm/gtx/hash.hpp>
 
-constexpr uint32_t PRESIM_LENGTH = 100;
-
 void WaterSimulator::Init(World& world)
 {
 	Stop();
@@ -104,6 +102,7 @@ void WaterSimulator::Init(World& world)
 	needParticleGravityBuffer = false;
 	m_lastGravityBufferVersion = UINT32_MAX;
 	m_presimIterationsCompleted = 0;
+	m_targetPresimIterations = world.waterPresimIterations;
 	m_run = true;
 	m_pausedSH = true;
 	m_thread = std::thread(&WaterSimulator::ThreadTarget, this);
@@ -133,7 +132,7 @@ void WaterSimulator::Stop()
 bool WaterSimulator::IsPresimComplete()
 {
 	std::lock_guard<std::mutex> lock(m_mutex);
-	return !m_run || m_presimIterationsCompleted == PRESIM_LENGTH;
+	return !m_run || m_presimIterationsCompleted >= m_targetPresimIterations;
 }
 
 static int* stepsPerSecondVar = eg::TweakVarInt("water_sps", 60, 1);
@@ -164,7 +163,7 @@ void WaterSimulator::ThreadTarget()
 			
 			if (m_presimIterationsCompleted != 0)
 				WSI_SwapBuffers(m_impl);
-			if (m_presimIterationsCompleted == PRESIM_LENGTH)
+			if (m_presimIterationsCompleted >= m_targetPresimIterations)
 				presimDone = true;
 			else
 				m_presimIterationsCompleted++;

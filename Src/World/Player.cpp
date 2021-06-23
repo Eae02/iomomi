@@ -637,7 +637,7 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 	if (m_onGround && !underwater)
 	{
 		glm::vec3 planeMove = m_physicsObject.actualMove - up * glm::dot(m_physicsObject.actualMove, up);
-		float distanceMoved = glm::length(planeMove);
+		float distanceMoved = std::min(glm::length(planeMove), glm::length(moveXZ));
 		if (distanceMoved < 1E-3f)
 		{
 			m_stepSoundRemDistance = distancePerStepSound * 0.25f;
