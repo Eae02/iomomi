@@ -73,7 +73,7 @@ private:
 		float maxTransitionProgress;
 	};
 	
-	static GenerateResult Generate(const VoxelBuffer& voxels, eg::Span<const WayPoint> points);
+	static GenerateResult Generate(const VoxelBuffer& voxels, std::span<const WayPoint> points);
 	
 	std::vector<WayPoint> GetWayPointsWithStartAndEnd() const;
 	

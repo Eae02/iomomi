@@ -95,7 +95,7 @@ LevelThumbnailUpdate* BeginUpdateLevelThumbnails(RenderContext& renderContext, e
 		entry.texture = eg::Texture::Create2D(textureCI);
 		eg::FramebufferAttachment framebufferAttachment;
 		framebufferAttachment.texture = entry.texture.handle;
-		entry.framebuffer = eg::Framebuffer(eg::Span<const eg::FramebufferAttachment>(&framebufferAttachment, 1));
+		entry.framebuffer = eg::Framebuffer(std::span<const eg::FramebufferAttachment>(&framebufferAttachment, 1));
 		
 		renderer->m_waterSimulator.Update(*world, world->thumbnailCameraPos, false);
 		

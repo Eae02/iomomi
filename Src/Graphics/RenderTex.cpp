@@ -74,7 +74,7 @@ void RenderTexManager::InitFramebufferEntry(RenderTexManager::FramebufferEntry& 
 	
 	eg::FramebufferCreateInfo framebufferCI = { };
 	framebufferCI.label = entry.label;
-	framebufferCI.colorAttachments = eg::Span<eg::FramebufferAttachment>(colorAttachments, numColorAttachments);
+	framebufferCI.colorAttachments = std::span<eg::FramebufferAttachment>(colorAttachments, numColorAttachments);
 	if (entry.depthTexture.has_value())
 	{
 		framebufferCI.depthStencilAttachment = renderTextures[(int)*entry.depthTexture].handle;

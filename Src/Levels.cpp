@@ -93,7 +93,7 @@ static void OnShutdown()
 
 EG_ON_SHUTDOWN(OnShutdown)
 
-void UpgradeLevelsCommand(eg::Span<const std::string_view> args, eg::console::Writer& writer)
+void UpgradeLevelsCommand(std::span<const std::string_view> args, eg::console::Writer& writer)
 {
 	int numUpgraded = 0;
 	for (const Level& level : levels)

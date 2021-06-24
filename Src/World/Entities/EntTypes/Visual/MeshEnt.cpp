@@ -365,7 +365,7 @@ void MeshEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 	}
 }
 
-eg::Span<const EditorSelectionMesh> MeshEnt::EdGetSelectionMeshes() const
+std::span<const EditorSelectionMesh> MeshEnt::EdGetSelectionMeshes() const
 {
 	return { m_editorSelectionMeshes.data(), m_editorSelectionMeshes.size() };
 }

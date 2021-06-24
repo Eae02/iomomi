@@ -29,7 +29,7 @@ public:
 	
 	void CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt) override;
 	
-	eg::Span<const EditorSelectionMesh> EdGetSelectionMeshes() const override;
+	std::span<const EditorSelectionMesh> EdGetSelectionMeshes() const override;
 	
 private:
 	glm::mat4 GetCommonTransform() const;

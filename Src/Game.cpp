@@ -23,20 +23,20 @@ Game::Game()
 	
 	SetCurrentGS(mainMenuGameState);
 	
-	eg::console::AddCommand("ed", 0, [&] (eg::Span<const std::string_view> args, eg::console::Writer& writer)
+	eg::console::AddCommand("ed", 0, [&] (std::span<const std::string_view> args, eg::console::Writer& writer)
 	{
 		SetCurrentGS(editor);
 		eg::console::Hide();
 	});
 	
-	eg::console::AddCommand("mm", 0, [&] (eg::Span<const std::string_view> args, eg::console::Writer& writer)
+	eg::console::AddCommand("mm", 0, [&] (std::span<const std::string_view> args, eg::console::Writer& writer)
 	{
 		mainMenuGameState->GoToMainScreen();
 		SetCurrentGS(mainMenuGameState);
 		eg::console::Hide();
 	});
 	
-	eg::console::AddCommand("compl", 1, [&] (eg::Span<const std::string_view> args, eg::console::Writer& writer)
+	eg::console::AddCommand("compl", 1, [&] (std::span<const std::string_view> args, eg::console::Writer& writer)
 	{
 		if (args[0] == "reset")
 		{
@@ -69,7 +69,7 @@ Game::Game()
 		}
 	});
 	
-	eg::console::SetCompletionProvider("compl", 0, [] (eg::Span<const std::string_view> args, eg::console::CompletionsList& list)
+	eg::console::SetCompletionProvider("compl", 0, [] (std::span<const std::string_view> args, eg::console::CompletionsList& list)
 	{
 		for (const Level& level : levels)
 			list.Add(level.name);
@@ -77,7 +77,7 @@ Game::Game()
 		list.Add("reset");
 	});
 	
-	eg::console::AddCommand("play", 1, [this] (eg::Span<const std::string_view> args, eg::console::Writer& writer)
+	eg::console::AddCommand("play", 1, [this] (std::span<const std::string_view> args, eg::console::Writer& writer)
 	{
 		int64_t levelIndex = FindLevel(args[0]);
 		if (levelIndex == -1)
@@ -96,13 +96,13 @@ Game::Game()
 		eg::console::Hide();
 	});
 	
-	eg::console::SetCompletionProvider("play", 0, [] (eg::Span<const std::string_view> args, eg::console::CompletionsList& list)
+	eg::console::SetCompletionProvider("play", 0, [] (std::span<const std::string_view> args, eg::console::CompletionsList& list)
 	{
 		for (const Level& level : levels)
 			list.Add(level.name);
 	});
 	
-	eg::console::AddCommand("updateThumbnails", 0, [&] (eg::Span<const std::string_view> args, eg::console::Writer& writer)
+	eg::console::AddCommand("updateThumbnails", 0, [&] (std::span<const std::string_view> args, eg::console::Writer& writer)
 	{
 		m_levelThumbnailUpdateFrameIdx = eg::FrameIdx();
 		m_levelThumbnailUpdate = BeginUpdateLevelThumbnails(m_renderCtx, writer);

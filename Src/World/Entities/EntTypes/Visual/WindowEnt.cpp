@@ -474,7 +474,7 @@ int WindowEnt::EdGetIconIndex() const
 	return -1;
 }
 
-eg::Span<const EditorSelectionMesh> WindowEnt::EdGetSelectionMeshes() const
+std::span<const EditorSelectionMesh> WindowEnt::EdGetSelectionMeshes() const
 {
 	return m_aaQuad.GetEditorSelectionMeshes(GetRenderTranslation(), m_depth);
 }

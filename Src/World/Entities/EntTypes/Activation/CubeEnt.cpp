@@ -382,7 +382,7 @@ int CubeEnt::EdGetIconIndex() const
 	return -1;
 }
 
-eg::Span<const EditorSelectionMesh> CubeEnt::EdGetSelectionMeshes() const
+std::span<const EditorSelectionMesh> CubeEnt::EdGetSelectionMeshes() const
 {
 	static EditorSelectionMesh selectionMesh;
 	selectionMesh.model = canFloat ? woodCubeModel : cubeModel;

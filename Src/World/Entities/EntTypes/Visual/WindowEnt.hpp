@@ -27,7 +27,7 @@ public:
 	
 	void EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
 	
-	eg::Span<const EditorSelectionMesh> EdGetSelectionMeshes() const override;
+	std::span<const EditorSelectionMesh> EdGetSelectionMeshes() const override;
 	glm::vec3 EdGetGridAlignment() const override;
 	int EdGetIconIndex() const override;
 	

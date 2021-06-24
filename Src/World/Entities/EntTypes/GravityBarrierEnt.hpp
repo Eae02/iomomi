@@ -45,7 +45,7 @@ public:
 	
 	int EdGetIconIndex() const override;
 	
-	eg::Span<const EditorSelectionMesh> EdGetSelectionMeshes() const override;
+	std::span<const EditorSelectionMesh> EdGetSelectionMeshes() const override;
 	
 	bool NeverBlockWater() const { return m_neverBlockWater; }
 	bool RedFromWater() const { return m_redFromWater; }

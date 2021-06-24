@@ -145,7 +145,7 @@ void InitOptionsMenu()
 	apiComboBox.getValue = [] { return (int)settings.graphicsAPI; };
 	apiComboBox.setValue = [] (int value) { settings.graphicsAPI = (eg::GraphicsAPI)value; };
 	
-	eg::Span<std::string> gpuNames = eg::gal::GetDeviceNames();
+	std::span<std::string> gpuNames = eg::gal::GetDeviceNames();
 	
 	ComboBox gpuComboBox;
 	gpuComboBox.label = "GPU";
@@ -197,7 +197,7 @@ void InitOptionsMenu()
 	fovSlider.getDisplayValueString = [] (float value) -> std::string_view
 	{
 		static char buffer[16];
-		snprintf(buffer, sizeof(buffer), u8"%d°", (int)std::round(value));
+		snprintf(buffer, sizeof(buffer), "%d°", (int)std::round(value));
 		return buffer;
 	};
 	leftWidgetList.AddWidget(std::move(fovSlider));

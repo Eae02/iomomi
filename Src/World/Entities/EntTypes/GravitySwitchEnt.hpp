@@ -37,7 +37,7 @@ public:
 		return Ent::GetAABB(1.0f, 0.2f, m_up);
 	}
 	
-	eg::Span<const EditorSelectionMesh> EdGetSelectionMeshes() const override;
+	std::span<const EditorSelectionMesh> EdGetSelectionMeshes() const override;
 	int EdGetIconIndex() const override;
 	
 	glm::vec3 GetPosition() const override { return m_position; }

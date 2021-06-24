@@ -293,7 +293,7 @@ void RampEnt::Deserialize(std::istream& stream)
 	std::array<glm::vec3, 4> vertices = GetTransformedVertices(GetTransformationMatrix());
 	
 	m_collisionMesh = eg::CollisionMesh::CreateV3(vertices,
-		eg::Span<const int>(m_flipped ? indicesFlipped : indicesNormal, std::size(indicesNormal)));
+		std::span<const int>(m_flipped ? indicesFlipped : indicesNormal, std::size(indicesNormal)));
 	m_collisionMesh.FlipWinding();
 	m_physicsObject.shape = &m_collisionMesh;
 }

@@ -1,7 +1,7 @@
 #include "Collision.hpp"
 #include "Dir.hpp"
 
-std::optional<glm::vec3> CheckCollisionAABBPolygon(const eg::AABB& aabb, eg::Span<const glm::vec3> polyVertices,
+std::optional<glm::vec3> CheckCollisionAABBPolygon(const eg::AABB& aabb, std::span<const glm::vec3> polyVertices,
 	const glm::vec3& moveDir, float shiftAmount)
 {
 	glm::vec3 planeNormal = glm::cross(polyVertices[1] - polyVertices[0], polyVertices[2] - polyVertices[0]);

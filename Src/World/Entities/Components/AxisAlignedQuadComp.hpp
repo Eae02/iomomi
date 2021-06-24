@@ -23,5 +23,5 @@ struct AxisAlignedQuadComp
 	EditorSelectionMesh GetEditorSelectionMesh(const glm::vec3& center, float depth) const;
 	
 	//Convenience wrapper around GetEditorSelectionMesh which returns a reference to a common EditorSelectionMesh.
-	eg::Span<const EditorSelectionMesh> GetEditorSelectionMeshes(const glm::vec3& center, float depth) const;
+	std::span<const EditorSelectionMesh> GetEditorSelectionMeshes(const glm::vec3& center, float depth) const;
 };

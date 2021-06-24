@@ -404,7 +404,7 @@ int GravityBarrierEnt::EdGetIconIndex() const
 	return -1;
 }
 
-eg::Span<const EditorSelectionMesh> GravityBarrierEnt::EdGetSelectionMeshes() const
+std::span<const EditorSelectionMesh> GravityBarrierEnt::EdGetSelectionMeshes() const
 {
 	return m_aaQuad.GetEditorSelectionMeshes(m_position, 0.1f);
 }

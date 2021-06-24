@@ -205,7 +205,7 @@ static const Dir ORTHO_DIRS[3][4] =
 	{ Dir::PosY, Dir::NegY, Dir::PosX, Dir::NegX },
 };
 
-ActivationLightStripEnt::GenerateResult ActivationLightStripEnt::Generate(const VoxelBuffer& voxels, eg::Span<const WayPoint> points)
+ActivationLightStripEnt::GenerateResult ActivationLightStripEnt::Generate(const VoxelBuffer& voxels, std::span<const WayPoint> points)
 {
 	struct NodeData
 	{

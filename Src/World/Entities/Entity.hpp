@@ -72,7 +72,7 @@ public:
 	
 	virtual glm::vec3 EdGetGridAlignment() const;
 	virtual int EdGetIconIndex() const;
-	virtual eg::Span<const EditorSelectionMesh> EdGetSelectionMeshes() const { return { }; }
+	virtual std::span<const EditorSelectionMesh> EdGetSelectionMeshes() const { return { }; }
 	virtual std::optional<eg::ColorSRGB> EdGetBoxColor(bool selected) const { return { }; }
 	
 	virtual void EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) { }

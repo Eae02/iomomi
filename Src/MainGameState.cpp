@@ -17,7 +17,7 @@ static int* relativeMouseMode = eg::TweakVarInt("relms", 1, 0, 1);
 
 MainGameState::MainGameState()
 {
-	eg::console::AddCommand("reload", 0, [this] (eg::Span<const std::string_view> args, eg::console::Writer& writer)
+	eg::console::AddCommand("reload", 0, [this] (std::span<const std::string_view> args, eg::console::Writer& writer)
 	{
 		if (!ReloadLevel())
 		{
@@ -29,7 +29,7 @@ MainGameState::MainGameState()
 		}
 	});
 	
-	eg::console::AddCommand("curlevel", 0, [this] (eg::Span<const std::string_view> args, eg::console::Writer& writer)
+	eg::console::AddCommand("curlevel", 0, [this] (std::span<const std::string_view> args, eg::console::Writer& writer)
 	{
 		if (m_currentLevelIndex == -1)
 		{
@@ -41,17 +41,17 @@ MainGameState::MainGameState()
 		}
 	});
 	
-	eg::console::AddCommand("ssrfbEdit", 0, [this] (eg::Span<const std::string_view> args, eg::console::Writer& writer)
+	eg::console::AddCommand("ssrfbEdit", 0, [this] (std::span<const std::string_view> args, eg::console::Writer& writer)
 	{
 		m_ssrReflectionColorEditorShown = !m_ssrReflectionColorEditorShown;
 	});
 	
-	eg::console::AddCommand("showExtraLevels", 0, [] (eg::Span<const std::string_view>, eg::console::Writer&)
+	eg::console::AddCommand("showExtraLevels", 0, [] (std::span<const std::string_view>, eg::console::Writer&)
 	{
 		settings.showExtraLevels = true;
 	});
 	
-	eg::console::AddCommand("crosshair", 0, [] (eg::Span<const std::string_view>, eg::console::Writer&)
+	eg::console::AddCommand("crosshair", 0, [] (std::span<const std::string_view>, eg::console::Writer&)
 	{
 		settings.drawCrosshair = !settings.drawCrosshair;
 	});

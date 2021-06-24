@@ -173,7 +173,7 @@ void GravitySwitchEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> 
 		m_up = *faceDirection;
 }
 
-eg::Span<const EditorSelectionMesh> GravitySwitchEnt::EdGetSelectionMeshes() const
+std::span<const EditorSelectionMesh> GravitySwitchEnt::EdGetSelectionMeshes() const
 {
 	static EditorSelectionMesh selectionMesh;
 	selectionMesh.model = s_model;

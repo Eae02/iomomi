@@ -94,7 +94,7 @@ EditorSelectionMesh AxisAlignedQuadComp::GetEditorSelectionMesh(const glm::vec3&
 	return mesh;
 }
 
-eg::Span<const EditorSelectionMesh> AxisAlignedQuadComp::GetEditorSelectionMeshes(const glm::vec3& center, float depth) const
+std::span<const EditorSelectionMesh> AxisAlignedQuadComp::GetEditorSelectionMeshes(const glm::vec3& center, float depth) const
 {
 	static EditorSelectionMesh selMesh;
 	selMesh = GetEditorSelectionMesh(center, depth);

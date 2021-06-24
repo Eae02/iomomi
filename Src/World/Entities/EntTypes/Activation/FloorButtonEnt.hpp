@@ -21,7 +21,7 @@ public:
 	
 	int EdGetIconIndex() const override;
 	
-	eg::Span<const EditorSelectionMesh> EdGetSelectionMeshes() const override;
+	std::span<const EditorSelectionMesh> EdGetSelectionMeshes() const override;
 	
 	void CommonDraw(const EntDrawArgs& args) override;
 	

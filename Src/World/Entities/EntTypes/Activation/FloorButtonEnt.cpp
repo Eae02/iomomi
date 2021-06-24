@@ -229,7 +229,7 @@ int FloorButtonEnt::EdGetIconIndex() const
 	return 15;
 }
 
-eg::Span<const EditorSelectionMesh> FloorButtonEnt::EdGetSelectionMeshes() const
+std::span<const EditorSelectionMesh> FloorButtonEnt::EdGetSelectionMeshes() const
 {
 	static EditorSelectionMesh selectionMesh;
 	selectionMesh.model = s_model;

@@ -22,7 +22,7 @@ static void OnInit()
 	s_attachmentSamplerDesc.magFilter = eg::TextureFilter::Nearest;
 	s_attachmentSamplerDesc.mipFilter = eg::TextureFilter::Nearest;
 	
-	eg::console::AddCommand("unlit", 0, [&] (eg::Span<const std::string_view>, eg::console::Writer&) {
+	eg::console::AddCommand("unlit", 0, [&] (std::span<const std::string_view>, eg::console::Writer&) {
 		unlit = !unlit;
 	});
 }
