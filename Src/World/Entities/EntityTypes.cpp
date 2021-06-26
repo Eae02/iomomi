@@ -22,6 +22,7 @@
 #include "EntTypes/SlidingWallEnt.hpp"
 #include "EntTypes/LadderEnt.hpp"
 #include "EntTypes/ColliderEnt.hpp"
+#include "EntTypes/PumpEnt.hpp"
 #include "EntTypes/Activation/PushButtonEnt.hpp"
 
 const EntTypeID entUpdateOrder[NUM_UPDATABLE_ENTITY_TYPES] =
@@ -87,4 +88,5 @@ void InitEntityTypes()
 	DefineEntityType<MeshEnt>("Mesh", "Mesh");
 	DefineEntityType<ColliderEnt>("Collider", "Collider");
 	DefineEntityType<PushButtonEnt>("PushButton", "Push Button");
+	DefineEntityType<PumpEnt>("Pump", "Water Pump");
 }

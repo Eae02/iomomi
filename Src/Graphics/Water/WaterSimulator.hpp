@@ -7,6 +7,7 @@
 #include <mutex>
 
 #include "WaterSimulatorImpl.hpp"
+#include "WaterPumpDescription.hpp"
 #include "../../World/Dir.hpp"
 
 class WaterSimulator
@@ -128,6 +129,9 @@ private:
 	
 	std::vector<WaterBlocker> m_waterBlockersMT;
 	std::vector<WaterBlocker> m_waterBlockersSH;
+	
+	std::vector<WaterPumpDescription> m_waterPumpsMT;
+	std::vector<WaterPumpDescription> m_waterPumpsSH;
 	
 	float m_gameTimeSH = 0;
 	

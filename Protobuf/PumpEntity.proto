@@ -1,0 +1,23 @@
+syntax="proto3";
+
+package gravity_pb;
+
+message PumpEntity {
+  float posX = 1;
+  float posY = 2;
+  float posZ = 3;
+  float rotX = 7;
+  float rotY = 8;
+  float rotZ = 9;
+  float rotW = 10;
+  float pump_lx = 11;
+  float pump_ly = 12;
+  float pump_lz = 13;
+  float pump_rx = 14;
+  float pump_ry = 15;
+  float pump_rz = 16;
+  bool initial_direction = 17;
+  float particles_per_second = 18;
+  float max_input_dist = 19;
+  float max_output_dist = 20;
+}

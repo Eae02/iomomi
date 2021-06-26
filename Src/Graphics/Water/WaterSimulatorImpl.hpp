@@ -1,6 +1,9 @@
 #pragma once
 
 #include "../../World/Dir.hpp"
+#include "WaterPumpDescription.hpp"
+
+#include <span>
 
 struct WSINewArgs
 {
@@ -33,8 +36,8 @@ struct WSISimulateArgs
 	glm::vec3 changeGravityParticlePos;
 	Dir newGravity;
 	
-	size_t numWaterBlockers;
-	const WaterBlocker* waterBlockers;
+	std::span<const WaterBlocker> waterBlockers;
+	std::span<const WaterPumpDescription> waterPumps;
 };
 
 struct WaterSimulatorImpl;

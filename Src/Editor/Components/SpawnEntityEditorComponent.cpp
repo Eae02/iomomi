@@ -42,7 +42,8 @@ const static std::pair<std::string, std::vector<EntTypeID>> entityGroups[] =
 		{
 			EntTypeID::GooPlane,
 			EntTypeID::WaterPlane,
-			EntTypeID::WaterWall
+			EntTypeID::WaterWall,
+			EntTypeID::Pump
 		}
 	}
 };

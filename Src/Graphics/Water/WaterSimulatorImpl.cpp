@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <execution>
+#include <pcg_random.hpp>
 #include <glm/gtx/fast_square_root.hpp>
 
 #include "WaterSimulatorImpl.hpp"
@@ -39,7 +40,7 @@ struct WaterSimulatorImpl
 {
 	alignas(16) int32_t cellProcOffsets[4 * 3 * 3 * 3];
 	
-	std::mt19937 rng;
+	pcg32_fast rng;
 	
 	uint32_t numParticles;
 	uint32_t allocatedParticles;
@@ -270,9 +271,63 @@ alignas(16) static const float gravities[6][4] =
 	{ 0, 0, -GRAVITY, 0 }
 };
 
+constexpr int MAX_PUMP_PER_ITERATION = 8;
+
 void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 {
 	float dt = args.dt;
+	
+	//Moves particles across pumps
+	for (const WaterPumpDescription& pump : args.waterPumps)
+	{
+		int numToMove = glm::clamp((int)std::round(pump.particlesPerSecond * args.dt), 1, MAX_PUMP_PER_ITERATION);
+		
+		uint16_t closestIndices[MAX_PUMP_PER_ITERATION];
+		float closestDist2[MAX_PUMP_PER_ITERATION];
+		std::fill_n(closestIndices, MAX_PUMP_PER_ITERATION, UINT16_MAX);
+		std::fill_n(closestDist2, MAX_PUMP_PER_ITERATION, INFINITY);
+		
+		__m128 sourcePos = { pump.source.x, pump.source.y, pump.source.z, 0 };
+		
+		for (size_t i = 0; i < impl->numParticles; i++)
+		{
+			__m128 sep = _mm_sub_ps(sourcePos, impl->particlePos[i]);
+			float dist2 = _mm_cvtss_f32(_mm_dp_ps(sep, sep, DP_IMM8));
+			if (dist2 > pump.maxInputDistSquared)
+				continue;
+			
+			size_t idx = std::lower_bound(closestDist2, closestDist2 + MAX_PUMP_PER_ITERATION, dist2) - closestDist2;
+			if (idx >= (size_t)MAX_PUMP_PER_ITERATION)
+				continue;
+			
+			for (size_t j = (size_t)MAX_PUMP_PER_ITERATION - 1; j > idx; j++)
+			{
+				closestIndices[j] = closestIndices[j - 1];
+				closestDist2[j] = closestDist2[j - 1];
+			}
+			closestIndices[idx] = i;
+			closestDist2[idx] = dist2;
+		}
+		
+		std::uniform_real_distribution<float> offsetDist(-pump.maxOutputDist, pump.maxOutputDist);
+		const float zero = 0.0f;
+		
+		for (int i = 0; i < numToMove; i++)
+		{
+			const uint16_t idx = closestIndices[i];
+			if (idx != UINT16_MAX)
+			{
+				alignas(16) float newPos[4] = {
+					pump.dest.x + offsetDist(impl->rng),
+					pump.dest.y + offsetDist(impl->rng),
+					pump.dest.z + offsetDist(impl->rng),
+					0.0f
+				};
+				impl->particlePos[idx] = _mm_load_ps(newPos);
+				impl->particleVel[idx] = _mm_load_ps1(&zero);
+			}
+		}
+	}
 	
 	std::memset(impl->cellNumParticles.data(), 0, impl->cellNumParticles.size() * sizeof(uint16_t));
 	
@@ -573,14 +628,13 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 				}
 			};
 			
-			for (size_t i = 0; i < args.numWaterBlockers; i++)
+			for (const WaterBlocker& blocker : args.waterBlockers)
 			{
-				if (!(args.waterBlockers[i].blockedGravities & particleGravityMask))
-					continue;
-				
-				CheckFace(args.waterBlockers[i].center, args.waterBlockers[i].normal, args.waterBlockers[i].tangent,
-				          args.waterBlockers[i].biTangent, args.waterBlockers[i].tangentLen,
-				          args.waterBlockers[i].biTangentLen, 0);
+				if (blocker.blockedGravities & particleGravityMask)
+				{
+					CheckFace(blocker.center, blocker.normal, blocker.tangent, blocker.biTangent,
+					          blocker.tangentLen, blocker.biTangentLen, 0);
+				}
 			}
 			
 			alignas(16) int32_t offset[4] = { };

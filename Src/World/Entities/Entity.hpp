@@ -169,9 +169,24 @@ inline void SerializePos(ST& st, const glm::vec3& position)
 }
 
 template <typename ST>
+inline void SerializeRotation(ST& st, const glm::quat& rotation)
+{
+	st.set_rotx(rotation.x);
+	st.set_roty(rotation.y);
+	st.set_rotz(rotation.z);
+	st.set_rotw(rotation.w);
+}
+
+template <typename ST>
 [[nodiscard]] inline glm::vec3 DeserializePos(const ST& st)
 {
 	return glm::vec3(st.posx(), st.posy(), st.posz());
+}
+
+template <typename ST>
+[[nodiscard]] inline glm::quat DeserializeRotation(const ST& st)
+{
+	return glm::quat(st.rotw(), st.rotx(), st.roty(), st.rotz());
 }
 
 EG_BIT_FIELD(EntTypeFlags)

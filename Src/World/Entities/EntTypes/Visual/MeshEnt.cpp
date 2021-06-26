@@ -256,13 +256,10 @@ void MeshEnt::Serialize(std::ostream& stream) const
 	gravity_pb::MeshEntity entityPB;
 	
 	SerializePos(entityPB, m_position);
+	SerializeRotation(entityPB, m_rotation);
 	entityPB.set_scalex(m_scale.x);
 	entityPB.set_scaley(m_scale.y);
 	entityPB.set_scalez(m_scale.z);
-	entityPB.set_rotx(m_rotation.x);
-	entityPB.set_roty(m_rotation.y);
-	entityPB.set_rotz(m_rotation.z);
-	entityPB.set_rotw(m_rotation.w);
 	
 	entityPB.set_model_name(m_model.has_value() ? modelOptions[*m_model].serializedName : "");
 	entityPB.set_material_index(m_material);
@@ -278,13 +275,10 @@ void MeshEnt::Deserialize(std::istream& stream)
 	entityPB.ParseFromIstream(&stream);
 	
 	m_position = DeserializePos(entityPB);
+	m_rotation = DeserializeRotation(entityPB);
 	m_scale.x = entityPB.scalex();
 	m_scale.y = entityPB.scaley();
 	m_scale.z = entityPB.scalez();
-	m_rotation.x = entityPB.rotx();
-	m_rotation.y = entityPB.roty();
-	m_rotation.z = entityPB.rotz();
-	m_rotation.w = entityPB.rotw();
 	m_numRepeats = entityPB.num_repeats();
 	m_hasCollision = !entityPB.disable_collision();
 	

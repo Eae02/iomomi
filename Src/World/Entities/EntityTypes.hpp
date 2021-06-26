@@ -24,6 +24,7 @@ enum class EntTypeID
 	PointLight           = 19,
 	Collider             = 20,
 	PushButton           = 21,
+	Pump                 = 22,
 	MAX
 };
  

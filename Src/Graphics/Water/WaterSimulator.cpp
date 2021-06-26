@@ -4,6 +4,7 @@
 #include "../../World/World.hpp"
 #include "../../World/Player.hpp"
 #include "../../World/Entities/EntTypes/WaterPlaneEnt.hpp"
+#include "../../World/Entities/EntTypes/PumpEnt.hpp"
 #include "../../World/Entities/Components/WaterBlockComp.hpp"
 
 #include <cstdlib>
@@ -142,6 +143,7 @@ void WaterSimulator::ThreadTarget()
 	using Clock = std::chrono::high_resolution_clock;
 	
 	std::vector<WaterBlocker> waterBlockers;
+	std::vector<WaterPumpDescription> waterPumps;
 	
 	bool presimDone = false;
 	Clock::time_point lastStepEnd = Clock::now();
@@ -171,6 +173,7 @@ void WaterSimulator::ThreadTarget()
 			stepsPerSecond = *stepsPerSecondVar;
 			
 			waterBlockers = m_waterBlockersSH;
+			waterPumps = m_waterPumpsSH;
 			simulateArgs.gameTime = m_gameTimeSH;
 			
 			if (!m_changeGravityParticles.empty())
@@ -184,8 +187,8 @@ void WaterSimulator::ThreadTarget()
 		}
 		
 		simulateArgs.dt = 1.0f / stepsPerSecond;
-		simulateArgs.numWaterBlockers = waterBlockers.size();
-		simulateArgs.waterBlockers = waterBlockers.data();
+		simulateArgs.waterBlockers = waterBlockers;
+		simulateArgs.waterPumps = waterPumps;
 		WSI_Simulate(m_impl, simulateArgs);
 		
 		for (const std::shared_ptr<QueryAABB>& qaabb : m_queryAABBsBT)
@@ -234,7 +237,7 @@ void WaterSimulator::Update(const World& world, const glm::vec3& cameraPos, bool
 		return;
 	}
 	
-	//Reads information about water blockers
+	//Collects information about water blockers
 	m_waterBlockersMT.clear();
 	const_cast<EntityManager&>(world.entManager).ForEachWithComponent<WaterBlockComp>([&] (const Ent& entity)
 	{
@@ -268,6 +271,16 @@ void WaterSimulator::Update(const World& world, const glm::vec3& cameraPos, bool
 		}
 	});
 	
+	//Collects information about water pumps
+	m_waterPumpsMT.clear();
+	const_cast<EntityManager&>(world.entManager).ForEachOfType<PumpEnt>([&] (const PumpEnt& ent)
+	{
+		if (std::optional<WaterPumpDescription> desc = ent.GetPumpDescription())
+		{
+			m_waterPumpsMT.push_back(*desc);
+		}
+	});
+	
 	const uint64_t uploadBufferOffset = eg::CFrameIdx() * m_numParticles * 4 * sizeof(float);
 	const uint64_t gravitiesUploadBufferOffset = eg::CFrameIdx() * m_numParticles;
 	bool gravitiesBufferChanged = false;
@@ -292,6 +305,7 @@ void WaterSimulator::Update(const World& world, const glm::vec3& cameraPos, bool
 		}
 		
 		m_waterBlockersSH = m_waterBlockersMT;
+		m_waterPumpsSH = m_waterPumpsMT;
 		
 		if (m_changeGravityParticleMT.has_value())
 		{
