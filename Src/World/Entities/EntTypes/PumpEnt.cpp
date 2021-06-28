@@ -1,6 +1,7 @@
 #include "PumpEnt.hpp"
 #include "../../Player.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
+#include "../../../Graphics/Materials/EmissiveMaterial.hpp"
 #include "../../../Settings.hpp"
 #include "../../../../Protobuf/Build/PumpEntity.pb.h"
 
@@ -16,7 +17,7 @@ static eg::CollisionMesh collisionMeshes[2];
 static void OnInit()
 {
 	pumpModel = &eg::GetAsset<eg::Model>("Models/Pump.aa.obj");
-	pumpBodyMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml");
+	pumpBodyMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Pump.yaml");
 	bodyMeshIndex = pumpModel->GetMeshIndex("PumpBody");
 	screenMeshIndex = pumpModel->GetMeshIndex("PumpScreen");
 	EG_ASSERT(pumpModel->NumMeshes() == 2 && bodyMeshIndex != -1 && screenMeshIndex != -1);
@@ -41,6 +42,12 @@ PumpEnt::PumpEnt()
 		m_editorSelectionMeshes[i].model = pumpModel;
 		m_editorSelectionMeshes[i].meshIndex = i;
 	}
+	
+	m_physicsObject.shape = collisionMeshes[bodyMeshIndex].BoundingBox();
+	m_physicsObject.rayIntersectMask = RAY_MASK_BLOCK_PICK_UP | RAY_MASK_BLOCK_GUN;
+	m_physicsObject.canBePushed = false;
+	m_physicsObject.debugColor = 0x12b81a;
+	m_physicsObject.owner = this;
 	
 	UpdateTransform();
 }
@@ -84,21 +91,36 @@ void PumpEnt::RenderSettings()
 
 void PumpEnt::CommonDraw(const EntDrawArgs& args)
 {
-	args.meshBatch->AddModel(
+	args.meshBatch->AddModelMesh(
 		*pumpModel,
+		bodyMeshIndex,
 		*pumpBodyMaterial,
 		StaticPropMaterial::InstanceData(m_transform)
+	);
+	
+	static const eg::ColorLin lightColor(eg::ColorSRGB::FromHex(0xa7dde6));
+	static const glm::vec4 lightColorV = 5.0f * glm::vec4(lightColor.r, lightColor.g, lightColor.b, 1);
+	
+	args.meshBatch->AddModelMesh(
+		*pumpModel,
+		screenMeshIndex,
+		EmissiveMaterial::instance,
+		EmissiveMaterial::InstanceData { m_transform, lightColorV }
 	);
 }
 
 void PumpEnt::Interact(Player& player)
 {
 	m_pumpLeft = !m_pumpLeft;
+	m_hasInteracted = true;
 }
 
 int PumpEnt::CheckInteraction(const Player& player, const PhysicsEngine& physicsEngine) const
 {
-	static constexpr float MAX_INTERACT_DIST = 1;
+	if (!player.OnGround())
+		return false;
+	
+	static constexpr float MAX_INTERACT_DIST = 1.75f;
 	static constexpr int INTERACT_PRIORITY = 2000;
 	eg::Ray ray(player.EyePosition(), player.Forward());
 	
@@ -108,7 +130,7 @@ int PumpEnt::CheckInteraction(const Player& player, const PhysicsEngine& physics
 	if (screenMeshIntersectDist > MAX_INTERACT_DIST)
 		return 0;
 	
-	auto[intersectObj, intersectDist] = physicsEngine.RayIntersect(ray, RAY_MASK_BLOCK_PICK_UP);
+	auto[intersectObj, intersectDist] = physicsEngine.RayIntersect(ray, RAY_MASK_BLOCK_PICK_UP, &m_physicsObject);
 	
 	if (intersectObj == nullptr || intersectDist > screenMeshIntersectDist)
 	{
@@ -122,7 +144,7 @@ std::optional<InteractControlHint> PumpEnt::GetInteractControlHint() const
 {
 	InteractControlHint hint;
 	hint.keyBinding = &settings.keyInteract;
-	hint.message = "Change Pump Direction";
+	hint.message = m_hasInteracted ? "Reverse Direction" : "Pump Water";
 	return hint;
 }
 
@@ -183,6 +205,11 @@ void PumpEnt::Deserialize(std::istream& stream)
 	UpdateTransform();
 }
 
+void PumpEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
+{
+	physicsEngine.RegisterObject(&m_physicsObject);
+}
+
 std::span<const EditorSelectionMesh> PumpEnt::EdGetSelectionMeshes() const
 {
 	return m_editorSelectionMeshes;
@@ -190,6 +217,9 @@ std::span<const EditorSelectionMesh> PumpEnt::EdGetSelectionMeshes() const
 
 void PumpEnt::UpdateTransform()
 {
+	m_physicsObject.position = m_position;
+	m_physicsObject.rotation = m_rotation;
+	
 	m_transform = glm::translate(glm::mat4(1), m_position) * glm::mat4_cast(m_rotation);
 	for (EditorSelectionMesh& selectionMesh : m_editorSelectionMeshes)
 	{
@@ -199,6 +229,9 @@ void PumpEnt::UpdateTransform()
 
 std::optional<WaterPumpDescription> PumpEnt::GetPumpDescription() const
 {
+	if (!m_hasInteracted)
+		return {};
+	
 	WaterPumpDescription desc = {};
 	desc.particlesPerSecond = m_particlesPerSecond;
 	desc.maxInputDistSquared = m_maxInputDistance * m_maxInputDistance;

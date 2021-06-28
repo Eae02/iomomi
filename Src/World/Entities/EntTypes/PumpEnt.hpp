@@ -12,7 +12,7 @@ public:
 	
 	static constexpr EntTypeID TypeID = EntTypeID::Pump;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
-		EntTypeFlags::Interactable | EntTypeFlags::ShadowDrawableS | EntTypeFlags::EditorRotatable;
+		EntTypeFlags::Interactable | EntTypeFlags::ShadowDrawableS | EntTypeFlags::EditorRotatable | EntTypeFlags::HasPhysics;
 	
 	void Serialize(std::ostream& stream) const override;
 	
@@ -31,6 +31,8 @@ public:
 	
 	glm::quat EdGetRotation() const override;
 	void EdRotated(const glm::quat& newRotation) override;
+	
+	void CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt) override;
 	
 	std::span<const EditorSelectionMesh> EdGetSelectionMeshes() const override;
 	
@@ -52,6 +54,9 @@ private:
 	float m_maxOutputDistance = 0;
 	
 	bool m_pumpLeft = false;
+	bool m_hasInteracted = false;
 	
 	EditorSelectionMesh m_editorSelectionMeshes[2];
+	
+	PhysicsObject m_physicsObject;
 };

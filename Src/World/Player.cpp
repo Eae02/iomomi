@@ -684,10 +684,13 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 	//Updates the eye position
 	m_eyePosition = Position() + up * EYE_OFFSET * m_eyeOffsetFade;
 	int downDim = (int)m_down / 2;
-	m_eyePosition[downDim] = std::round(m_eyePosition[downDim] / *eyeRoundPrecision) * *eyeRoundPrecision;
 	if (m_gravityTransitionMode == TransitionMode::Fall)
 	{
 		m_eyePosition = glm::mix(m_oldEyePosition + Position() - m_oldPosition, m_eyePosition, TransitionInterpol());
+	}
+	else if (!*noclipActive && !underwater)
+	{
+		m_eyePosition[downDim] = std::round(m_eyePosition[downDim] / *eyeRoundPrecision) * *eyeRoundPrecision;
 	}
 	
 	m_wasUnderwater = underwater;

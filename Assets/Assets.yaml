@@ -79,6 +79,7 @@ assets:
   - name: Textures/DefaultA.png
     srgb: true
     format: bc1
+    filtering: nearest
   - name: Textures/DefaultN.png
     srgb: false
     format: rgba8
