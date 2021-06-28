@@ -34,8 +34,10 @@ const std::vector<std::string_view> levelsOrder =
 	"water_ng1",
 	"water_ng2",
 	"water_ng3",
-	//"water_ng4",
+	"water_pump_ng1",
+	"water_pump_ng2",
 	"water_ng5",
+	"water_pump_ng3",
 	
 	"gravbarrier_ng4",
 	"gravbarrier_ng5",
