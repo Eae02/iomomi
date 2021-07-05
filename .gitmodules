@@ -5,3 +5,6 @@
 	path = Deps/imgui
 	url = https://github.com/ocornut/imgui.git
 	branch = "docking"
+[submodule "Deps/pcg"]
+	path = Deps/pcg
+	url = https://github.com/imneme/pcg-cpp.git
