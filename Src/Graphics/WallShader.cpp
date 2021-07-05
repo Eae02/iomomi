@@ -152,7 +152,7 @@ void BindWallShaderGame()
 	
 	eg::DC.BindDescriptorSet(wr.gameDescriptorSet, 0);
 	
-	float pc = settings.SSAOEnabled() ? 0 : 1;
+	float pc = settings.ssaoQuality == SSAOQuality::Off ? 1 : 0;
 	eg::DC.PushConstants(0, sizeof(float), &pc);
 }
 

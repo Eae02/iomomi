@@ -117,7 +117,7 @@ public:
 	{
 		std::shared_ptr<T> ent = std::make_shared<T>(std::forward<Args>(args)...);
 		ent->m_typeID = T::TypeID;
-		ent->Ent::m_name = static_cast<uint32_t>(s_nameGen());
+		ent->Ent::m_name = GenerateRandomName();
 		return ent;
 	}
 	
@@ -144,7 +144,7 @@ protected:
 	eg::AABB GetAABB(float scale, float upDist, Dir facingDirection) const;
 	
 private:
-	static std::mt19937 s_nameGen;
+	static uint32_t GenerateRandomName();
 	
 	uint32_t m_name = 0;
 	EntTypeID m_typeID = (EntTypeID)-1;

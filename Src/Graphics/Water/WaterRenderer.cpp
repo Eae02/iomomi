@@ -47,9 +47,7 @@ WaterRenderer::WaterRenderer()
 	eg::GraphicsPipelineCreateInfo pipelineCITemplate;
 	pipelineCITemplate.topology = eg::Topology::TriangleStrip;
 	pipelineCITemplate.vertexAttributes[0] = { 0, eg::DataType::Float32, 2, 0 };
-	//pipelineCITemplate.vertexAttributes[1] = { 1, eg::DataType::Float32, 4, 0 };
 	pipelineCITemplate.vertexBindings[0] = { sizeof(float) * 2, eg::InputRate::Vertex };
-	//pipelineCITemplate.vertexBindings[1] = { sizeof(float) * 4, eg::InputRate::Instance };
 	
 	eg::GraphicsPipelineCreateInfo pipelineDepthMinCI = pipelineCITemplate;
 	pipelineDepthMinCI.vertexShader = sphereVS.GetVariant("VDepthMin");
@@ -78,12 +76,6 @@ WaterRenderer::WaterRenderer()
 	
 	pipelinePostCI.fragmentShader = postFS.GetVariant("VHighQual");
 	m_pipelinePostHighQual = eg::Pipeline::Create(pipelinePostCI);
-	
-	m_pipelinesRefPost[(int)QualityLevel::VeryLow]  = m_pipelinePostStdQual;
-	m_pipelinesRefPost[(int)QualityLevel::Low]      = m_pipelinePostStdQual;
-	m_pipelinesRefPost[(int)QualityLevel::Medium]   = m_pipelinePostStdQual;
-	m_pipelinesRefPost[(int)QualityLevel::High]     = m_pipelinePostHighQual;
-	m_pipelinesRefPost[(int)QualityLevel::VeryHigh] = m_pipelinePostHighQual;
 	
 	m_currentQualityLevel = (QualityLevel)-1;
 	
@@ -133,19 +125,16 @@ high:  16 samples, 32-bit, HQ-Shader
 vhigh: 26 samples, 32-bit, HQ-Shader
 */
 
-static const int blurSamplesByQuality[] = { 6, 10, 10, 16, 24 };
-static const float baseBlurRadius[] = { 60.0f, 80.0f, 100.0f, 120.0f, 150.0f };
-
 void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParticles, RenderTexManager& rtManager)
 {
 	if (m_currentQualityLevel != settings.waterQuality)
 	{
 		m_currentQualityLevel = settings.waterQuality;
-		CreateDepthBlurPipelines(blurSamplesByQuality[(int)m_currentQualityLevel]);
+		CreateDepthBlurPipelines(qvar::waterBlurSamples(m_currentQualityLevel));
 	}
 	
-	int blurSamples = blurSamplesByQuality[(int)m_currentQualityLevel];
-	float relBlurRad = (*blurRadius * baseBlurRadius[(int)m_currentQualityLevel]) / blurSamples;
+	int blurSamples = qvar::waterBlurSamples(m_currentQualityLevel);
+	float relBlurRad = (*blurRadius * qvar::waterBaseBlurRadius(m_currentQualityLevel)) / blurSamples;
 	float relDistanceFalloff = *blurDistanceFalloff / blurSamples;
 	
 	// ** Depth min pass **
@@ -170,7 +159,6 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 	
 	eg::DC.BindVertexBuffer(0, m_quadVB, 0);
 	eg::DC.BindStorageBuffer(positionsBuffer, 0, 1, 0, numParticles * sizeof(float) * 4);
-	//eg::DC.BindVertexBuffer(1, positionsBuffer, 0);
 	eg::DC.Draw(0, 4, 0, numParticles);
 	
 	eg::DC.EndRenderPass();
@@ -199,7 +187,6 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 2);
 	
 	eg::DC.BindVertexBuffer(0, m_quadVB, 0);
-	//eg::DC.BindVertexBuffer(1, positionsBuffer, 0);
 	eg::DC.Draw(0, 4, 0, numParticles);
 	
 	eg::DC.EndRenderPass();
@@ -277,7 +264,8 @@ void WaterRenderer::RenderPost(RenderTexManager& rtManager)
 	rpBeginInfo.colorAttachments[0].clearValue = eg::ColorSRGB::FromHex(0x0c2b46);
 	eg::DC.BeginRenderPass(rpBeginInfo);
 	
-	eg::DC.BindPipeline(m_pipelinesRefPost[(int)settings.waterQuality]);
+	bool useHQShader = qvar::waterUseHQShader(settings.waterQuality);
+	eg::DC.BindPipeline(useHQShader ? m_pipelinePostHighQual : m_pipelinePostStdQual);
 	
 	float waterGlowIntensity = settings.gunFlash ? 4 : 0.5f;
 	

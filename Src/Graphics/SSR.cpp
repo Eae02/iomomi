@@ -3,27 +3,6 @@
 #include "RenderSettings.hpp"
 #include "../Settings.hpp"
 
-//Stores a pair of two SSR sample counts (for the linear search and the binary search respectively)
-// for each each reflection quality level. 0 means SSR is disabled
-std::pair<uint32_t, uint32_t> SSR_SAMPLES[] = 
-{
-	/* VeryLow  */ { 0, 0 },
-	/* Low      */ { 4, 4 },
-	/* Medium   */ { 4, 6 },
-	/* High     */ { 6, 6 },
-	/* VeryHigh */ { 8, 8 }
-};
-
-//Stores blur radii at different quality levels
-uint32_t SSR_BLUR_RADII[] =
-{
-	0,
-	0,
-	8,
-	12,
-	16
-};
-
 void SSR::CreatePipeline()
 {
 	const eg::ShaderModuleAsset& ssrBlurShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/SSRBlur.fs.glsl");
@@ -40,11 +19,11 @@ void SSR::CreatePipeline()
 	specConstEntries[2].size = sizeof(uint32_t);
 	specConstEntries[2].offset = 2 * sizeof(uint32_t);
 	
-	uint32_t blurRadius = SSR_BLUR_RADII[(int)settings.reflectionsQuality];
+	uint32_t blurRadius = qvar::ssrBlurRadius(settings.reflectionsQuality);
 	uint32_t specConstantData[3] =
 	{
-		SSR_SAMPLES[(int)settings.reflectionsQuality].first,
-		SSR_SAMPLES[(int)settings.reflectionsQuality].second,
+		qvar::ssrLinearSamples(settings.reflectionsQuality),
+		qvar::ssrBinSearchSamples(settings.reflectionsQuality),
 		blurRadius == 0
 	};
 	
@@ -90,7 +69,7 @@ void SSR::Render(eg::TextureRef waterDepth, RenderTex destinationTexture, Render
 		m_currentReflectionQualityLevel = settings.reflectionsQuality;
 	}
 	
-	bool renderDirect = settings.reflectionsQuality <= QualityLevel::Low;
+	const bool renderDirect = qvar::ssrBlurRadius(settings.reflectionsQuality) == 0;
 	RenderTex initialOutTexture = renderDirect ? destinationTexture : RenderTex::SSRTemp1;
 	
 	// ** Initial rendering **
@@ -125,7 +104,9 @@ void SSR::Render(eg::TextureRef waterDepth, RenderTex destinationTexture, Render
 	eg::DC.BeginRenderPass(rpBeginInfo);
 	eg::DC.BindPipeline(m_blur1Pipeline);
 	
-	const float relativeRadius = (float)SSR_BLUR_RADII[4] / (float)SSR_BLUR_RADII[(int)settings.reflectionsQuality];
+	const float relativeRadius =
+		(float)qvar::ssrBlurRadius(QualityLevel::VeryHigh) /
+		(float)qvar::ssrBlurRadius(settings.reflectionsQuality);
 	const float maxBlur = *ssrBlurMax * relativeRadius;
 	const float falloff = *ssrBlurFalloff;
 	const float pc1[4] = { *ssrBlurIntensity, 0, falloff, maxBlur };

@@ -17,6 +17,14 @@ enum class ViewBobbingLevel
 	Normal
 };
 
+enum class SSAOQuality
+{
+	Off,
+	Low,
+	Medium,
+	High
+};
+
 struct KeyBinding
 {
 	eg::Button kbmButton;
@@ -44,6 +52,7 @@ struct Settings
 	QualityLevel reflectionsQuality   = QualityLevel::Medium;
 	QualityLevel lightingQuality      = QualityLevel::High;
 	QualityLevel waterQuality         = QualityLevel::High;
+	SSAOQuality ssaoQuality           = SSAOQuality::Off;
 	float fieldOfViewDeg              = 80.0f;
 	
 	eg::GraphicsAPI graphicsAPI = eg::GraphicsAPI::OpenGL;
@@ -82,19 +91,9 @@ struct Settings
 		return lightingQuality >= QualityLevel::Low;
 	}
 	
-	bool SSREnabled() const
-	{
-		return reflectionsQuality >= QualityLevel::Low;
-	}
-	
 	bool BloomEnabled() const
 	{
 		return enableBloom && HDREnabled() && eg::GetGraphicsDeviceInfo().computeShader;
-	}
-	
-	bool SSAOEnabled() const
-	{
-		return lightingQuality >= QualityLevel::High;
 	}
 };
 

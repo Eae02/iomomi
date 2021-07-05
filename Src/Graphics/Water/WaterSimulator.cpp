@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <execution>
 #include <glm/gtx/hash.hpp>
+#include <pcg_random.hpp>
 
 void WaterSimulator::Init(World& world)
 {
@@ -22,7 +23,7 @@ void WaterSimulator::Init(World& world)
 	
 	std::uniform_real_distribution<float> offsetDist(0.3f, 0.7f);
 	
-	std::mt19937 rng(0);
+	pcg32_fast rng(0);
 	std::vector<float> positions;
 	
 	//Generates water

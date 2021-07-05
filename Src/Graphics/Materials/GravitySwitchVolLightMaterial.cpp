@@ -5,7 +5,6 @@
 #include "../../Settings.hpp"
 #include "../../Game.hpp"
 
-#include <random>
 #include <ctime>
 
 static eg::Pipeline gsVolLightPipelineBeforeWater;
@@ -141,20 +140,14 @@ void GravitySwitchVolLightMaterial::SetQuality(QualityLevel qualityLevel)
 		return;
 	currentQualityLevel = qualityLevel;
 	
-	if (qualityLevel < QualityLevel::Medium)
+	int raySteps = qvar::gravitySwitchVolLightSamples(qualityLevel);
+	if (raySteps == 0)
 		return;
 	
 	//Initializes the light data uniform buffer data
 	LightDataBuffer lightDataBufferStruct;
 	lightDataBufferStruct.tMax = std::tan(glm::radians(MAX_ANGLE));
 	lightDataBufferStruct.inverseMaxY = 1.0f / (YMAX * 0.9f);
-	
-	int raySteps = 20;
-	if (settings.lightingQuality == QualityLevel::High)
-		raySteps = 32;
-	else if (settings.lightingQuality == QualityLevel::VeryHigh)
-		raySteps = 40;
-	
 	lightDataBufferStruct.oneOverRaySteps = 1.0f / raySteps;
 	lightDataBufferStruct.quarterRaySteps = raySteps / 4;
 	
@@ -171,7 +164,7 @@ void GravitySwitchVolLightMaterial::SetQuality(QualityLevel qualityLevel)
 
 bool GravitySwitchVolLightMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
-	if (currentQualityLevel < QualityLevel::Medium)
+	if (qvar::gravitySwitchVolLightSamples(currentQualityLevel) == 0)
 		return false;
 	
 	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);

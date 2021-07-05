@@ -11,7 +11,7 @@ const eg::FramebufferFormatHint DeferredRenderer::GEOMETRY_FB_FORMAT =
 
 static eg::SamplerDescription s_attachmentSamplerDesc;
 
-static bool unlit = false;
+static int* unlit = eg::TweakVarInt("unlit", 0, 0, 1);
 
 static void OnInit()
 {
@@ -21,17 +21,33 @@ static void OnInit()
 	s_attachmentSamplerDesc.minFilter = eg::TextureFilter::Nearest;
 	s_attachmentSamplerDesc.magFilter = eg::TextureFilter::Nearest;
 	s_attachmentSamplerDesc.mipFilter = eg::TextureFilter::Nearest;
-	
-	eg::console::AddCommand("unlit", 0, [&] (std::span<const std::string_view>, eg::console::Writer&) {
-		unlit = !unlit;
-	});
 }
 
 EG_ON_INIT(OnInit)
 
-constexpr uint32_t SSAO_SAMPLES_HQ = 24;
-constexpr uint32_t SSAO_SAMPLES_LQ = 16;
+static const uint32_t SSAO_SAMPLES[3] = 
+{
+	/* Low    */ 10,
+	/* Medium */ 16,
+	/* High   */ 24,
+};
+
 constexpr uint32_t SSAO_ROTATIONS_RES = 32;
+
+static inline std::vector<glm::vec4> GenerateSSAOSamples(uint32_t count)
+{
+	std::uniform_real_distribution<float> distNeg1To1(-1.0f, 1.0f);
+	std::uniform_real_distribution<float> dist0To1(0.0f, 1.0f);
+	std::vector<glm::vec4> ssaoSamples(count);
+	for (uint32_t i = 0; i < count; i++)
+	{
+		float scale = (float)i / (float)count;
+		glm::vec3 sample(distNeg1To1(globalRNG), distNeg1To1(globalRNG), dist0To1(globalRNG));
+		sample = glm::normalize(sample) * dist0To1(globalRNG) * glm::mix(0.1f, 1.0f, scale * scale);
+		ssaoSamples[i] = glm::vec4(sample, 0);
+	}
+	return ssaoSamples;
+}
 
 DeferredRenderer::DeferredRenderer()
 {
@@ -48,19 +64,9 @@ DeferredRenderer::DeferredRenderer()
 	
 	CreatePipelines();
 	
-	//Initializes the SSAO samples buffer
-	std::uniform_real_distribution<float> distNeg1To1(-1.0f, 1.0f);
-	std::uniform_real_distribution<float> dist0To1(0.0f, 1.0f);
-	glm::vec4 ssaoSamples[SSAO_SAMPLES_HQ];
-	for (uint32_t i = 0; i < SSAO_SAMPLES_HQ; i++)
-	{
-		float scale = std::min((float)i / (float)SSAO_SAMPLES_LQ, 1.0f);
-		glm::vec3 sample(distNeg1To1(globalRNG), distNeg1To1(globalRNG), dist0To1(globalRNG));
-		sample = glm::normalize(sample) * dist0To1(globalRNG) * glm::mix(0.1f, 1.0f, scale * scale);
-		ssaoSamples[i] = glm::vec4(sample, 0);
-	}
-	m_ssaoSamplesBuffer = eg::Buffer(eg::BufferFlags::UniformBuffer, sizeof(ssaoSamples), ssaoSamples);
-	m_ssaoSamplesBuffer.UsageHint(eg::BufferUsage::UniformBuffer, eg::ShaderAccessFlags::Fragment);
+	m_ssaoSamplesBuffer = eg::Buffer(
+		eg::BufferFlags::UniformBuffer | eg::BufferFlags::Update,
+		sizeof(float) * 4 * SSAO_SAMPLES[2], nullptr);
 	
 	//Initializes SSAO rotation data
 	eg::UploadBuffer rotationDataUploadBuffer = eg::GetTemporaryUploadBuffer(SSAO_ROTATIONS_RES * SSAO_ROTATIONS_RES * sizeof(float), 8);
@@ -123,7 +129,7 @@ static inline eg::Pipeline CreateSSAOPipeline(uint32_t samples)
 	pipelineCI.fragmentShader.specConstantsDataSize = sizeof(SpecConstantData);
 	pipelineCI.fragmentShader.specConstants = specConstantEntries;
 	eg::Pipeline pipeline = eg::Pipeline::Create(pipelineCI);
-	pipeline.FramebufferFormatHint(eg::Format::R8_UNorm);
+	pipeline.FramebufferFormatHint(GetFormatForRenderTexture(RenderTex::SSAO));
 	return pipeline;
 }
 
@@ -187,8 +193,10 @@ void DeferredRenderer::CreatePipelines()
 	m_ssaoBlurPipeline = eg::Pipeline::Create(ssaoBlurPipelineCI);
 	m_ssaoBlurPipeline.FramebufferFormatHint(eg::Format::R8_UNorm);
 	
-	m_ssaoPipelineLQ = CreateSSAOPipeline(SSAO_SAMPLES_LQ);
-	m_ssaoPipelineHQ = CreateSSAOPipeline(SSAO_SAMPLES_HQ);
+	for (size_t i = 0; i < std::size(SSAO_SAMPLES); i++)
+	{
+		m_ssaoPipelines[i] = CreateSSAOPipeline(SSAO_SAMPLES[i]);
+	}
 }
 
 void DeferredRenderer::BeginGeometry(RenderTexManager& rtManager) const
@@ -246,9 +254,21 @@ static float* ssaoPower = eg::TweakVarFloat("ssao_power", 5.0f);
 static float* ssaoDepthFadeMin = eg::TweakVarFloat("ssao_df_min", 0.2f);
 static float* ssaoDepthFadeRate = eg::TweakVarFloat("ssao_df_rate", 0.05f);
 
-void DeferredRenderer::PrepareSSAO(RenderTexManager& rtManager) const
+void DeferredRenderer::PrepareSSAO(RenderTexManager& rtManager)
 {
 	// ** Initial SSAO Pass **
+	
+	const uint32_t numSSAOSamples = SSAO_SAMPLES[(int)settings.ssaoQuality - 1];
+	if (numSSAOSamples != m_ssaoSamplesBufferCurrentSamples)
+	{
+		m_ssaoSamplesBuffer.UsageHint(eg::BufferUsage::CopyDst);
+		
+		std::vector<glm::vec4> samples = GenerateSSAOSamples(numSSAOSamples);
+		eg::DC.UpdateBuffer(m_ssaoSamplesBuffer, 0, samples.size() * sizeof(float) * 4, samples.data());
+		
+		m_ssaoSamplesBuffer.UsageHint(eg::BufferUsage::UniformBuffer, eg::ShaderAccessFlags::Fragment);
+		m_ssaoSamplesBufferCurrentSamples = numSSAOSamples;
+	}
 	
 	eg::MultiStageGPUTimer timer;
 	timer.StartStage("SSAO - Initial");
@@ -258,12 +278,12 @@ void DeferredRenderer::PrepareSSAO(RenderTexManager& rtManager) const
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
 	eg::DC.BeginRenderPass(rpBeginInfo);
 	
-	eg::DC.BindPipeline(settings.lightingQuality == QualityLevel::VeryHigh ? m_ssaoPipelineHQ : m_ssaoPipelineLQ);
+	eg::DC.BindPipeline(m_ssaoPipelines[(int)settings.ssaoQuality - 1]);
 	
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 1);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor2), 0, 2);
-	eg::DC.BindUniformBuffer(m_ssaoSamplesBuffer, 0, 3, 0, sizeof(float) * 4 * SSAO_SAMPLES_HQ);
+	eg::DC.BindUniformBuffer(m_ssaoSamplesBuffer, 0, 3, 0, sizeof(float) * 4 * SSAO_SAMPLES[2]);
 	eg::DC.BindTexture(m_ssaoRotationsTexture, 0, 4);
 	
 	float pcData[] = {
@@ -310,7 +330,7 @@ static float* ambientIntensity = eg::TweakVarFloat("ambient_intensity", 0.1f);
 
 void DeferredRenderer::BeginLighting(RenderTexManager& rtManager)
 {
-	if (settings.SSAOEnabled())
+	if (settings.ssaoQuality != SSAOQuality::Off)
 	{
 		PrepareSSAO(rtManager);
 	}
@@ -322,12 +342,12 @@ void DeferredRenderer::BeginLighting(RenderTexManager& rtManager)
 	eg::DC.BeginRenderPass(rpBeginInfo);
 	
 	eg::ColorLin ambientColor = eg::ColorLin(eg::ColorSRGB::FromHex(0xf6f9fc));
-	if (!unlit)
+	if (*unlit == 0)
 	{
 		ambientColor = ambientColor.ScaleRGB(*ambientIntensity);
 	}
 	
-	if (settings.SSAOEnabled())
+	if (settings.ssaoQuality != SSAOQuality::Off)
 	{
 		eg::DC.BindPipeline(m_ambientPipelineWithSSAO);
 		eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::SSAO), 0, 5);
@@ -370,7 +390,7 @@ static const float shadowSoftnessByQualityLevel[] =
 void DeferredRenderer::DrawPointLights(const std::vector<std::shared_ptr<PointLight>>& pointLights,
 	eg::TextureRef waterDepthTexture, RenderTexManager& rtManager, uint32_t shadowResolution) const
 {
-	if (pointLights.empty() || unlit)
+	if (pointLights.empty() || *unlit == 1)
 		return;
 	
 	auto gpuTimer = eg::StartGPUTimer("Point Lights");

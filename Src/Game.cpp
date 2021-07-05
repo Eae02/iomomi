@@ -8,13 +8,13 @@
 #include "MainMenuGameState.hpp"
 #include "ThumbnailRenderer.hpp"
 
-std::mt19937 globalRNG;
-
 #include <fstream>
+
+pcg32_fast globalRNG;
 
 Game::Game()
 {
-	globalRNG = std::mt19937(std::time(nullptr));
+	globalRNG = pcg32_fast(std::time(nullptr));
 	GameRenderer::instance = new GameRenderer(m_renderCtx);
 	
 	editor = new Editor(m_renderCtx);
@@ -36,6 +36,7 @@ Game::Game()
 		eg::console::Hide();
 	});
 	
+#ifndef NDEBUG
 	eg::console::AddCommand("compl", 1, [&] (std::span<const std::string_view> args, eg::console::Writer& writer)
 	{
 		if (args[0] == "reset")
@@ -76,6 +77,7 @@ Game::Game()
 		list.Add("all");
 		list.Add("reset");
 	});
+#endif
 	
 	eg::console::AddCommand("play", 1, [this] (std::span<const std::string_view> args, eg::console::Writer& writer)
 	{
@@ -120,10 +122,14 @@ Game::~Game()
 	delete GameRenderer::instance;
 }
 
+static float* minSimulationFramerate = eg::TweakVarFloat("min_sim_fps", 20, 0);
+
 void Game::RunFrame(float dt)
 {
-	constexpr float MAX_DT = 1.0f / 20.0f;
-	dt = std::min(dt, MAX_DT);
+	if (*minSimulationFramerate > 1E-5f)
+	{
+		dt = std::min(dt, 1.0f / *minSimulationFramerate);
+	}
 	
 	if (m_levelThumbnailUpdate != nullptr && eg::FrameIdx() > m_levelThumbnailUpdateFrameIdx + 4)
 	{

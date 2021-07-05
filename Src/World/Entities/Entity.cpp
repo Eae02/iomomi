@@ -1,10 +1,17 @@
 #include "Entity.hpp"
 #include "Components/ActivatableComp.hpp"
+
 #include <imgui.h>
+#include <pcg_random.hpp>
 
 std::optional<EntType> entityTypes[(size_t)EntTypeID::MAX];
 
-std::mt19937 Ent::s_nameGen;
+extern pcg32_fast globalRNG;
+
+uint32_t Ent::GenerateRandomName()
+{
+	return globalRNG();
+}
 
 void Ent::RenderSettings()
 {

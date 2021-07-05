@@ -207,7 +207,7 @@ void GameRenderer::Render(World& world, float gameTime, float dt,
 		numPointLightMeshBatchesUsed++;
 	}, m_frustum);
 	
-	const bool renderBlurredGlass = m_blurredTexturesNeeded && settings.lightingQuality >= QualityLevel::Medium;
+	const bool renderBlurredGlass = m_blurredTexturesNeeded && qvar::renderBlurredGlass(settings.lightingQuality);
 	
 	MeshDrawArgs mDrawArgs;
 	mDrawArgs.rtManager = &m_rtManager;
@@ -222,7 +222,7 @@ void GameRenderer::Render(World& world, float gameTime, float dt,
 		m_rtManager.RedirectRenderTexture(RenderTex::LitWithoutWater, RenderTex::LitWithoutSSR);
 	}
 	
-	if (!settings.SSREnabled())
+	if (qvar::ssrLinearSamples(settings.reflectionsQuality) == 0)
 	{
 		m_rtManager.RedirectRenderTexture(RenderTex::LitWithoutSSR, RenderTex::Lit);
 	}
@@ -323,7 +323,7 @@ void GameRenderer::Render(World& world, float gameTime, float dt,
 		eg::DC.DebugLabelEnd();
 	}
 	
-	if (settings.SSREnabled())
+	if (qvar::ssrLinearSamples(settings.reflectionsQuality) != 0)
 	{
 		m_rtManager.RenderTextureUsageHintFS(RenderTex::LitWithoutSSR);
 		

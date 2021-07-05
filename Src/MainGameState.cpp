@@ -358,7 +358,7 @@ void MainGameState::UpdateAndDrawHud(float dt)
 	}
 }
 
-int* debugOverlay = eg::TweakVarInt("dbg_overlay", 1);
+int* debugOverlay = eg::TweakVarInt("dbg_overlay", 1, 0, 1);
 
 void MainGameState::DrawOverlay(float dt)
 {
@@ -366,7 +366,7 @@ void MainGameState::DrawOverlay(float dt)
 		return;
 	
 	ImGui::SetNextWindowPos(ImVec2(5, 5), ImGuiCond_Always);
-	ImGui::SetNextWindowSize(ImVec2(200, 0), ImGuiCond_Always);
+	ImGui::SetNextWindowSize(ImVec2(250, 0), ImGuiCond_Always);
 	ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.6f);
 	ImGui::Begin("Debug", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoTitleBar);
 	
@@ -391,7 +391,10 @@ void MainGameState::DrawOverlay(float dt)
 		(unsigned long long)GameRenderer::instance->m_plShadowMapper.LastFrameUpdateCount());
 	ImGui::Text("Water Spheres: %d", GameRenderer::instance->m_waterSimulator.NumParticles());
 	ImGui::Text("Water Update Time: %.2fms", GameRenderer::instance->m_waterSimulator.LastUpdateTime() / 1E6);
-	ImGui::Text("Level: %s", m_currentLevelIndex == -1 ? "?" : levels[m_currentLevelIndex].name.c_str());
+	if (m_currentLevelIndex != -1)
+	{
+		ImGui::Text("Level: %s", levels[m_currentLevelIndex].name.c_str());
+	}
 	
 	ImGui::End();
 	ImGui::PopStyleVar();

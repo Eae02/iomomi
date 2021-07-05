@@ -289,6 +289,7 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 		
 		__m128 sourcePos = { pump.source.x, pump.source.y, pump.source.z, 0 };
 		
+		//Selects candidate particles ordered by distance to the pump
 		for (size_t i = 0; i < impl->numParticles; i++)
 		{
 			__m128 sep = _mm_sub_ps(sourcePos, impl->particlePos[i]);
@@ -312,6 +313,7 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 		std::uniform_real_distribution<float> offsetDist(-pump.maxOutputDist, pump.maxOutputDist);
 		const float zero = 0.0f;
 		
+		//Moves particles
 		for (int i = 0; i < numToMove; i++)
 		{
 			const uint16_t idx = closestIndices[i];
@@ -391,6 +393,7 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 	{
 		__m128 changePos = { args.changeGravityParticlePos.x, args.changeGravityParticlePos.y, args.changeGravityParticlePos.z, 0 };
 		
+		//Finds the particle closest to the change gravity particle position
 		size_t changeGravityParticle = SIZE_MAX;
 		float closestParticleDist2 = INFINITY;
 		for (size_t i = 0; i < impl->numParticles; i++)
@@ -490,10 +493,10 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 				dist2 = _mm_cvtss_f32(_mm_dp_ps(sep, sep, DP_IMM8));
 			}
 			
-			const float dist    = std::sqrt(dist2);
-			const float q       = std::max(1.0f - dist / INFLUENCE_RADIUS, 0.0f);
-			const float q2      = q * q;
-			const float q3      = q2 * q;
+			const float dist = std::sqrt(dist2);
+			const float q    = std::max(1.0f - dist / INFLUENCE_RADIUS, 0.0f);
+			const float q2   = q * q;
+			const float q3   = q2 * q;
 			
 			const float densA     = impl->particleDensity[a].x;
 			const float densB     = impl->particleDensity[b].x;
@@ -564,13 +567,13 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 			__m128 velB = impl->particleVel[b];
 			
 			__m128 sep     = _mm_sub_ps(impl->particlePos[a], impl->particlePos[b]);
-			float dist     = glm::fastSqrt(_mm_cvtss_f32(_mm_dp_ps(sep, sep, DP_IMM8)));
-			__m128 sepDir  = _mm_div_ps(sep, _mm_load1_ps(&dist));
+			float invDist  = glm::fastInverseSqrt(_mm_cvtss_f32(_mm_dp_ps(sep, sep, DP_IMM8)));
+			__m128 sepDir  = _mm_mul_ps(sep, _mm_load1_ps(&invDist));
 			__m128 velDiff = _mm_sub_ps(velA, velB);
 			float velSep   = _mm_cvtss_f32(_mm_dp_ps(velDiff, sepDir, DP_IMM8));
 			if (velSep < 0.0f)
 			{
-				const float infl         = std::max(1.0f - dist / INFLUENCE_RADIUS, 0.0f);
+				const float infl         = std::max(1.0f - (1.0f / INFLUENCE_RADIUS) / invDist, 0.0f);
 				const float velSepA      = _mm_cvtss_f32(_mm_dp_ps(velA, sepDir, DP_IMM8));
 				const float velSepB      = _mm_cvtss_f32(_mm_dp_ps(velB, sepDir, DP_IMM8));
 				const float velSepTarget = (velSepA + velSepB) * 0.5f;

@@ -31,6 +31,7 @@ void LoadSettings()
 	settings.shadowQuality      = magic_enum::enum_cast<QualityLevel>(settingsNode["shadowQuality"].as<std::string>("")).value_or(QualityLevel::Medium);
 	settings.lightingQuality    = magic_enum::enum_cast<QualityLevel>(settingsNode["lightingQuality"].as<std::string>("")).value_or(QualityLevel::High);
 	settings.waterQuality       = magic_enum::enum_cast<QualityLevel>(settingsNode["waterQuality"].as<std::string>("")).value_or(QualityLevel::High);
+	settings.ssaoQuality        = magic_enum::enum_cast<SSAOQuality>(settingsNode["ssaoQuality"].as<std::string>("")).value_or(SSAOQuality::Off);
 	settings.fieldOfViewDeg = settingsNode["fieldOfView"].as<float>(settings.fieldOfViewDeg);
 	settings.exposure = settingsNode["exposure"].as<float>(settings.exposure);
 	settings.lookSensitivityMS = settingsNode["lookSensitivityMS"].as<float>(settings.lookSensitivityMS);
@@ -88,6 +89,7 @@ void SaveSettings()
 	emitter << YAML::Key << "shadowQuality"     << YAML::Value << std::string(magic_enum::enum_name(settings.shadowQuality));
 	emitter << YAML::Key << "lightingQuality"   << YAML::Value << std::string(magic_enum::enum_name(settings.lightingQuality));
 	emitter << YAML::Key << "waterQuality"      << YAML::Value << std::string(magic_enum::enum_name(settings.waterQuality));
+	emitter << YAML::Key << "ssaoQuality"       << YAML::Value << std::string(magic_enum::enum_name(settings.ssaoQuality));
 	emitter << YAML::Key << "fieldOfView"       << YAML::Value << settings.fieldOfViewDeg;
 	emitter << YAML::Key << "exposure"          << YAML::Value << settings.exposure;
 	emitter << YAML::Key << "lookSensitivityMS" << YAML::Value << settings.lookSensitivityMS;

@@ -14,8 +14,6 @@ public:
 	
 	static eg::TextureRef GetDummyDepthTexture();
 	
-	static constexpr QualityLevel HighPrecisionMinQL = QualityLevel::Medium;
-	
 private:
 	void CreateDepthBlurPipelines(uint32_t samples);
 	
@@ -29,7 +27,6 @@ private:
 	eg::Pipeline m_pipelineBlurPass2;
 	eg::Pipeline m_pipelinePostStdQual;
 	eg::Pipeline m_pipelinePostHighQual;
-	eg::PipelineRef m_pipelinesRefPost[5];
 	
 	eg::Texture* m_normalMapTexture;
 };

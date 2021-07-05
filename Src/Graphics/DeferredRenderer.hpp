@@ -28,7 +28,7 @@ public:
 private:
 	void CreatePipelines();
 	
-	void PrepareSSAO(RenderTexManager& rtManager) const;
+	void PrepareSSAO(RenderTexManager& rtManager);
 	
 	eg::Sampler m_shadowMapSampler;
 	
@@ -38,9 +38,9 @@ private:
 	eg::Pipeline m_pointLightPipelineSoftShadows;
 	eg::Pipeline m_pointLightPipelineHardShadows;
 	
-	eg::Pipeline m_ssaoPipelineLQ;
-	eg::Pipeline m_ssaoPipelineHQ;
+	eg::Pipeline m_ssaoPipelines[3];
 	eg::Pipeline m_ssaoBlurPipeline;
 	eg::Buffer m_ssaoSamplesBuffer;
+	uint32_t m_ssaoSamplesBufferCurrentSamples = 0;
 	eg::Texture m_ssaoRotationsTexture;
 };
