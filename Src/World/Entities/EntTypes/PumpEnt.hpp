@@ -4,6 +4,7 @@
 #include "../EntInteractable.hpp"
 #include "../../PhysicsEngine.hpp"
 #include "../../../Graphics/Water/WaterPumpDescription.hpp"
+#include "../../../Graphics/Materials/PumpScreenMaterial.hpp"
 
 class PumpEnt : public Ent, public EntInteractable
 {
@@ -11,7 +12,7 @@ public:
 	PumpEnt();
 	
 	static constexpr EntTypeID TypeID = EntTypeID::Pump;
-	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
+	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::DisableClone |
 		EntTypeFlags::Interactable | EntTypeFlags::ShadowDrawableS | EntTypeFlags::EditorRotatable | EntTypeFlags::HasPhysics;
 	
 	void Serialize(std::ostream& stream) const override;
@@ -21,6 +22,8 @@ public:
 	void RenderSettings() override;
 	
 	void CommonDraw(const EntDrawArgs& args) override;
+	
+	void Update(const struct WorldUpdateArgs& args) override;
 	
 	void Interact(class Player& player) override;
 	int CheckInteraction(const class Player& player, const PhysicsEngine& physicsEngine) const override;
@@ -59,4 +62,6 @@ private:
 	EditorSelectionMesh m_editorSelectionMeshes[2];
 	
 	PhysicsObject m_physicsObject;
+	
+	PumpScreenMaterial m_screenMaterial;
 };

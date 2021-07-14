@@ -1,5 +1,5 @@
 albedo: ../Textures/PumpA.png
-normalMap: ../Textures/DefaultN.png
+normalMap: ../Textures/PumpN.png
 miscMap: ../Textures/PumpM.png
-roughnessMin: 0.1
-roughnessMax: 0.4
+roughnessMin: 0.4
+roughnessMax: 0.7

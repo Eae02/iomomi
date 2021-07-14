@@ -19,14 +19,7 @@ void LoadSettings()
 	
 	YAML::Node settingsNode = YAML::Load(settingsStream);
 	
-	std::string textureQualStr = settingsNode["textureQuality"].as<std::string>("high");
-	if (textureQualStr == "low")
-		settings.textureQuality = eg::TextureQuality::Low;
-	else if (textureQualStr == "medium")
-		settings.textureQuality = eg::TextureQuality::Medium;
-	else if (textureQualStr == "high")
-		settings.textureQuality = eg::TextureQuality::High;
-	
+	settings.textureQuality     = magic_enum::enum_cast<eg::TextureQuality>(settingsNode["textureQuality"].as<std::string>("")).value_or(eg::TextureQuality::Medium);
 	settings.reflectionsQuality = magic_enum::enum_cast<QualityLevel>(settingsNode["reflQuality"].as<std::string>("")).value_or(QualityLevel::Medium);
 	settings.shadowQuality      = magic_enum::enum_cast<QualityLevel>(settingsNode["shadowQuality"].as<std::string>("")).value_or(QualityLevel::Medium);
 	settings.lightingQuality    = magic_enum::enum_cast<QualityLevel>(settingsNode["lightingQuality"].as<std::string>("")).value_or(QualityLevel::High);

@@ -38,7 +38,8 @@ const EntTypeID entUpdateOrder[NUM_UPDATABLE_ENTITY_TYPES] =
 	EntTypeID::GravitySwitch,
 	EntTypeID::SlidingWall,
 	EntTypeID::EntranceExit,
-	EntTypeID::WaterWall
+	EntTypeID::WaterWall,
+	EntTypeID::Pump,
 };
 
 extern std::optional<EntType> entityTypes[(size_t)EntTypeID::MAX];

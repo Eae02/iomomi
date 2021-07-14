@@ -87,6 +87,8 @@ MainMenuGameState::MainMenuGameState()
 static constexpr float TRANSITION_TIME = 0.1f;
 static constexpr float TRANSITION_SLIDE_DIST = 40;
 
+extern bool audioInitializationFailed;
+
 void MainMenuGameState::RunFrame(float dt)
 {
 	if (m_lastFrameIndex + 1 != eg::FrameIdx())
@@ -175,6 +177,17 @@ void MainMenuGameState::RunFrame(float dt)
 #endif
 	m_spriteBatch.DrawText(*style::UIFontSmall, infoLine, glm::vec2(5), eg::ColorLin(1, 1, 1, 0.2f), 1,
 	                       nullptr, eg::TextFlags::DropShadow);
+	
+	if (audioInitializationFailed)
+	{
+		std::string_view audioInfoText = "Audio system failed to initialize, no sounds will be played.";
+		float audioInfoTextW = style::UIFontSmall->GetTextExtents(audioInfoText).x;
+		m_spriteBatch.DrawText(
+			*style::UIFontSmall, audioInfoText,
+			glm::vec2(eg::CurrentResolutionX() - 5 - audioInfoTextW, 5),
+			eg::ColorSRGB::FromHex(0xff007f).ScaleAlpha(0.6f),
+			1, nullptr, eg::TextFlags::DropShadow);
+	}
 	
 	if (ComboBox::current)
 	{

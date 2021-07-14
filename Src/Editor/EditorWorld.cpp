@@ -18,6 +18,7 @@
 #include <imgui.h>
 #include <misc/cpp/imgui_stdlib.h>
 #include <imgui_internal.h>
+#include <magic_enum.hpp>
 
 struct EditorComponentsSet
 {
@@ -174,11 +175,10 @@ void EditorWorld::RenderLevelSettings()
 	
 	if (ImGui::CollapsingHeader("Control Hints", ImGuiTreeNodeFlags_DefaultOpen))
 	{
-		static const char* controlHintLabels[] = { "Movement", "Flip gravity", "Pick up cube" };
-		static_assert(std::size(controlHintLabels) == NUM_OPTIONAL_CONTROL_HINTS);
 		for (int i = 0; i < NUM_OPTIONAL_CONTROL_HINTS; i++)
 		{
-			ImGui::Checkbox(controlHintLabels[i], &m_world->showControlHint[i]);
+			std::string label = std::string(magic_enum::enum_name((OptionalControlHintType)i));
+			ImGui::Checkbox(label.c_str(), &m_world->showControlHint[i]);
 		}
 	}
 }

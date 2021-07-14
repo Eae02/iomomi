@@ -28,7 +28,7 @@ enum class EntTypeID
 	MAX
 };
  
-constexpr size_t NUM_UPDATABLE_ENTITY_TYPES = 12;
+constexpr size_t NUM_UPDATABLE_ENTITY_TYPES = 13;
 
 extern const EntTypeID entUpdateOrder[NUM_UPDATABLE_ENTITY_TYPES];
 

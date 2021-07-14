@@ -38,6 +38,11 @@ private:
 	std::string_view m_controlHintMessage;
 	eg::Button m_controlHintButton;
 	
+	float m_errorHintAlpha = 0;
+	std::string_view m_errorHintMessage;
+	
+	bool m_isPlayerCloseToExitWithWrongGravity = false;
+	
 	int64_t m_currentLevelIndex = -1;
 	
 	float m_gameTime = 0;

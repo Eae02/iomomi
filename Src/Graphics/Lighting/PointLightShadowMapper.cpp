@@ -79,25 +79,7 @@ void PointLightShadowMapper::SetQuality(QualityLevel quality)
 	if (quality == m_qualityLevel)
 		return;
 	m_qualityLevel = quality;
-	
-	switch (quality)
-	{
-	case QualityLevel::VeryLow:
-		m_resolution = 256;
-		break;
-	case QualityLevel::Low:
-		m_resolution = 512;
-		break;
-	case QualityLevel::Medium:
-		m_resolution = 512;
-		break;
-	case QualityLevel::High:
-		m_resolution = 768;
-		break;
-	case QualityLevel::VeryHigh:
-		m_resolution = 1024;
-		break;
-	}
+	m_resolution = qvar::shadowResolution(quality);
 	
 	for (LightEntry& entry : m_lights)
 	{
@@ -157,15 +139,6 @@ void PointLightShadowMapper::SetLightSources(const std::vector<std::shared_ptr<P
 		shadowMap.inUse = false;
 	}
 }
-
-const int MAX_UPDATES_PER_FRAME[] = 
-{
-	/* VeryLow  */ 5,
-	/* Low      */ 5,
-	/* Medium   */ 10,
-	/* High     */ 15,
-	/* VeryHigh */ 20,
-};
 
 void PointLightShadowMapper::UpdateShadowMaps(const RenderCallback& prepareCallback,
 	const RenderCallback& renderCallback, const eg::Frustum& viewFrustum)
@@ -262,7 +235,7 @@ void PointLightShadowMapper::UpdateShadowMaps(const RenderCallback& prepareCallb
 		}
 	}
 	
-	int remUpdateCount = MAX_UPDATES_PER_FRAME[(int)m_qualityLevel];
+	int remUpdateCount = qvar::shadowUpdateLimitPerFrame(m_qualityLevel);
 	std::optional<size_t> nextDynamicLightUpdatePos;
 	for (size_t i = m_dynamicLightUpdatePos; i < m_dynamicLightUpdatePos + m_lights.size(); i++)
 	{

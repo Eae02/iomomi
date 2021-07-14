@@ -32,7 +32,7 @@ public:
 		const bool castShadows = rootYaml["castShadows"].as<bool>(true);
 		const bool enableSSR = rootYaml["enableSSR"].as<bool>(true);
 		
-		QualityLevel minShadowQuality = QualityLevel::Low;
+		QualityLevel minShadowQuality = QualityLevel::VeryLow;
 		std::string minShadowQualityStr = rootYaml["minShadowQuality"].as<std::string>("");
 		if (!minShadowQualityStr.empty())
 		{

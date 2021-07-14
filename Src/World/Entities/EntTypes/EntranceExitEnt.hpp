@@ -66,6 +66,11 @@ public:
 		return m_shouldSwitchEntrance;
 	}
 	
+	bool IsPlayerCloseWithWrongGravity() const
+	{
+		return m_isPlayerCloseWithWrongGravity;
+	}
+	
 	bool IsPlayerInside() const
 	{
 		return m_isPlayerInside;
@@ -100,6 +105,7 @@ private:
 	bool m_door1Open = false;
 	bool m_door2Open = false;
 	bool m_doorHasOpened = false;
+	bool m_isPlayerCloseWithWrongGravity = false;
 	
 	std::string_view m_levelTitle;
 };

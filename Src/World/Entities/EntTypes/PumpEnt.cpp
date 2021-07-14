@@ -1,4 +1,5 @@
 #include "PumpEnt.hpp"
+#include "../../WorldUpdateArgs.hpp"
 #include "../../Player.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../Graphics/Materials/EmissiveMaterial.hpp"
@@ -98,21 +99,28 @@ void PumpEnt::CommonDraw(const EntDrawArgs& args)
 		StaticPropMaterial::InstanceData(m_transform)
 	);
 	
-	static const eg::ColorLin lightColor(eg::ColorSRGB::FromHex(0xa7dde6));
-	static const glm::vec4 lightColorV = 5.0f * glm::vec4(lightColor.r, lightColor.g, lightColor.b, 1);
-	
 	args.meshBatch->AddModelMesh(
 		*pumpModel,
 		screenMeshIndex,
-		EmissiveMaterial::instance,
-		EmissiveMaterial::InstanceData { m_transform, lightColorV }
+		m_screenMaterial,
+		StaticPropMaterial::InstanceData(m_transform)
 	);
+}
+
+void PumpEnt::Update(const WorldUpdateArgs& args)
+{
+	int dir = 0;
+	if (m_hasInteracted || args.mode == WorldMode::Editor)
+		dir = m_pumpLeft ? -1 : 1;
+	m_screenMaterial.Update(args.dt, dir);
 }
 
 void PumpEnt::Interact(Player& player)
 {
-	m_pumpLeft = !m_pumpLeft;
-	m_hasInteracted = true;
+	if (m_hasInteracted)
+		m_pumpLeft = !m_pumpLeft;
+	else
+		m_hasInteracted = true;
 }
 
 int PumpEnt::CheckInteraction(const Player& player, const PhysicsEngine& physicsEngine) const

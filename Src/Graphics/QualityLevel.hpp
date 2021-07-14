@@ -42,11 +42,11 @@ struct QualityVariable
 	template <class = std::enable_if<std::is_same_v<T, bool>>>
 	QualityVariable(QualityLevel minLevel) noexcept
 		: values{
-			minLevel >= QualityLevel::VeryLow,
-			minLevel >= QualityLevel::Low,
-			minLevel >= QualityLevel::Medium,
-			minLevel >= QualityLevel::High,
-			minLevel >= QualityLevel::VeryHigh
+			minLevel <= QualityLevel::VeryLow,
+			minLevel <= QualityLevel::Low,
+			minLevel <= QualityLevel::Medium,
+			minLevel <= QualityLevel::High,
+			minLevel <= QualityLevel::VeryHigh
 		} { }
 };
 
@@ -60,6 +60,10 @@ namespace qvar
 	extern QualityVariable<uint32_t> ssrLinearSamples;
 	extern QualityVariable<uint32_t> ssrBinSearchSamples;
 	extern QualityVariable<uint32_t> ssrBlurRadius;
+	
+	extern QualityVariable<float> shadowSoftness;
+	extern QualityVariable<int> shadowResolution;
+	extern QualityVariable<int> shadowUpdateLimitPerFrame;
 	
 	extern QualityVariable<int> gravitySwitchVolLightSamples;
 	

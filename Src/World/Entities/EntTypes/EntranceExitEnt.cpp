@@ -244,8 +244,14 @@ void EntranceExitEnt::Update(const WorldUpdateArgs& args)
 	bool open = m_activatable.AllSourcesActive() &&
 		glm::length2(toPlayer) < DOOR_OPEN_DIST * DOOR_OPEN_DIST && //Player is close to the door
 		glm::dot(toPlayer, openDirToPlayer) > minDist && //Player is on the right side of the door
-		args.player->CurrentDown() == OppositeDir(UP_VECTORS[(int)direction]) && //Player has the correct gravity mode
 		args.waterSim->IsPresimComplete();
+	
+	m_isPlayerCloseWithWrongGravity = false;
+	if (open && args.player->CurrentDown() != OppositeDir(UP_VECTORS[(int)direction]))
+	{
+		m_isPlayerCloseWithWrongGravity = true;
+		open = false;
+	}
 	
 	m_timeBeforeClose = open ? DOOR_CLOSE_DELAY : std::max(m_timeBeforeClose - args.dt, 0.0f);
 	

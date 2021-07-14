@@ -2,8 +2,7 @@
 #include "MeshDrawArgs.hpp"
 #include "../RenderSettings.hpp"
 
-static eg::Pipeline emissivePipelineEditor;
-static eg::Pipeline emissivePipelineGame;
+static eg::Pipeline emissivePipeline;
 
 static void OnInit()
 {
@@ -23,18 +22,15 @@ static void OnInit()
 	pipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
 	pipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 4, 4 * sizeof(float) * 4 };
 	pipelineCI.numColorAttachments = 1;
-	pipelineCI.label = "EmissiveGame";
-	emissivePipelineGame = eg::Pipeline::Create(pipelineCI);
+	pipelineCI.label = "Emissive";
+	emissivePipeline = eg::Pipeline::Create(pipelineCI);
 	
-	pipelineCI.label = "EmissiveEditor";
-	emissivePipelineEditor = eg::Pipeline::Create(pipelineCI);
-	emissivePipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
+	emissivePipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 }
 
 static void OnShutdown()
 {
-	emissivePipelineEditor.Destroy();
-	emissivePipelineGame.Destroy();
+	emissivePipeline.Destroy();
 }
 
 EG_ON_INIT(OnInit)
@@ -51,13 +47,10 @@ bool EmissiveMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) 
 {
 	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
 	
-	if (mDrawArgs->drawMode == MeshDrawMode::Emissive)
-		cmdCtx.BindPipeline(emissivePipelineGame);
-	else if (mDrawArgs->drawMode == MeshDrawMode::Editor)
-		cmdCtx.BindPipeline(emissivePipelineEditor);
-	else
+	if (mDrawArgs->drawMode != MeshDrawMode::Emissive && mDrawArgs->drawMode != MeshDrawMode::Editor)
 		return false;
 	
+	cmdCtx.BindPipeline(emissivePipeline);
 	cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 	
 	return true;

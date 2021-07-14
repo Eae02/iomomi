@@ -55,6 +55,10 @@ assets:
     mipShift: *MipShift
     srgb: true
     format: bc1
+  - name: Textures/PumpDisplayArrow.png
+    mipShift: *MipShift
+    srgb: false
+    format: r8
   - name: Textures/Entrance/EditorEntrance.png
     mipShift: *MipShift
     srgb: true

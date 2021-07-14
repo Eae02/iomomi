@@ -75,6 +75,7 @@ void MainGameState::SetWorld(std::unique_ptr<World> newWorld, int64_t levelIndex
 	m_pausedMenu.shouldRestartLevel = false;
 	m_pausedMenu.isFromEditor = fromEditor;
 	m_ssrReflectionColorEditorShown = false;
+	m_isPlayerCloseToExitWithWrongGravity = false;
 	
 	AudioPlayers::gameSFXPlayer.StopAll();
 	
@@ -148,8 +149,11 @@ void MainGameState::RunFrame(float dt)
 		
 		EntranceExitEnt* currentExit = nullptr;
 		
+		m_isPlayerCloseToExitWithWrongGravity = false;
 		m_world->entManager.ForEachOfType<EntranceExitEnt>([&] (EntranceExitEnt& entity)
 		{
+			if (entity.IsPlayerCloseWithWrongGravity())
+				m_isPlayerCloseToExitWithWrongGravity = true;
 			if (entity.ShouldSwitchEntrance())
 				currentExit = &entity;
 		});
@@ -270,6 +274,11 @@ void MainGameState::RunFrame(float dt)
 	}
 }
 
+constexpr float CONTROL_HINT_ANIMATION_TIME = 0.1f;
+
+float* errorHintFontScale = eg::TweakVarFloat("ehint_font_scale", 0.8f, 0.0f);
+float* controlHintFontScale = eg::TweakVarFloat("chint_font_scale", 1.0f, 0.0f);
+
 void MainGameState::UpdateAndDrawHud(float dt)
 {
 	float controlHintTargetAlpha = 0;
@@ -279,6 +288,8 @@ void MainGameState::UpdateAndDrawHud(float dt)
 		m_controlHintButton = IsControllerButton(eg::InputState::Current().PressedButton()) ? binding.controllerButton : binding.kbmButton;
 		controlHintTargetAlpha = 1;
 	};
+	
+	const std::string_view currentLevelName = m_currentLevelIndex != -1 ? std::string_view(levels[m_currentLevelIndex].name) : "";
 	
 	if (m_player.interactControlHint)
 	{
@@ -293,8 +304,7 @@ void MainGameState::UpdateAndDrawHud(float dt)
 		SetControlHint("Change Gravitation", settings.keyShoot);
 	}
 	//For jump hint in intro_2:
-	else if (m_currentLevelIndex != -1 && levels[m_currentLevelIndex].name == "intro_2" &&
-	         m_player.OnGround() && m_player.CurrentDown() == Dir::NegX)
+	else if (currentLevelName == "intro_2" && m_player.OnGround() && m_player.CurrentDown() == Dir::NegX)
 	{
 		const glm::vec3 controlHintMin(8, 5, -9);
 		const glm::vec3 controlHintMax(11, 7, -4);
@@ -306,23 +316,38 @@ void MainGameState::UpdateAndDrawHud(float dt)
 		}
 	}
 	
-	constexpr float CONTROL_HINT_ANIMATION_TIME = 0.1f;
+	float errorHintTargetAlpha = 0;
+	if (m_world->showControlHint[(int)OptionalControlHintType::CannotChangeGravityWhenCarrying] &&
+		m_player.IsCarryingAndTouchingGravityCorner())
+	{
+		m_errorHintMessage = "It is not possible to change gravity while carrying a cube";
+		errorHintTargetAlpha = 1;
+	}
+	else if (m_world->showControlHint[(int)OptionalControlHintType::CannotExitWithWrongGravity] &&
+		m_isPlayerCloseToExitWithWrongGravity)
+	{
+		m_errorHintMessage = "Your gravity must point down in order to exit";
+		errorHintTargetAlpha = 1;
+	}
+	
 	m_controlHintAlpha = eg::AnimateTo(m_controlHintAlpha, controlHintTargetAlpha, dt / CONTROL_HINT_ANIMATION_TIME);
+	m_errorHintAlpha = eg::AnimateTo(m_errorHintAlpha, errorHintTargetAlpha, dt / CONTROL_HINT_ANIMATION_TIME);
 	
 	//Draws the control hint
 	if (m_controlHintAlpha > 0)
 	{
-		constexpr float FONT_SCALE = 1.0f;
+		const float controlHintY = eg::CurrentResolutionY() * 0.15f;
+		
 		constexpr float BUTTON_BORDER_PADDING = 10;
 		constexpr float BUTTON_MESSAGE_SPACING = 30;
 		
 		const std::string_view buttonName = eg::ButtonDisplayName(m_controlHintButton);
-		const float buttonNameLen = style::UIFont->GetTextExtents(buttonName).x * FONT_SCALE;
-		const float messageLen = style::UIFont->GetTextExtents(m_controlHintMessage).x * FONT_SCALE;
-		const float buttonBoxSize = std::max(buttonNameLen, style::UIFont->LineHeight() * FONT_SCALE);
+		const float buttonNameLen = style::UIFont->GetTextExtents(buttonName).x * *controlHintFontScale;
+		const float messageLen = style::UIFont->GetTextExtents(m_controlHintMessage).x * *controlHintFontScale;
+		const float buttonBoxSize = std::max(buttonNameLen, style::UIFont->LineHeight() * *controlHintFontScale);
 		
 		const float totalLen = buttonBoxSize + BUTTON_MESSAGE_SPACING + messageLen;
-		glm::vec2 leftPos((eg::CurrentResolutionX() - totalLen) / 2.0f, eg::CurrentResolutionY() * 0.15f);
+		glm::vec2 leftPos((eg::CurrentResolutionX() - totalLen) / 2.0f, controlHintY);
 		
 		eg::ColorLin color(1, 1, 1, m_controlHintAlpha);
 		
@@ -330,15 +355,41 @@ void MainGameState::UpdateAndDrawHud(float dt)
 			leftPos.x + buttonNameLen / 2.0f - BUTTON_BORDER_PADDING - buttonBoxSize / 2.0f + 1,
 			leftPos.y - BUTTON_BORDER_PADDING - 3,
 			BUTTON_BORDER_PADDING * 2 + buttonBoxSize,
-			BUTTON_BORDER_PADDING * 2 + style::UIFont->LineHeight() * FONT_SCALE
+			BUTTON_BORDER_PADDING * 2 + style::UIFont->LineHeight() * *controlHintFontScale
 		);
 		
 		eg::SpriteBatch::overlay.DrawRect(buttonRect, eg::ColorLin(0, 0, 0, m_controlHintAlpha * 0.3f));
 		eg::SpriteBatch::overlay.DrawRectBorder(buttonRect, color, 1);
-		eg::SpriteBatch::overlay.DrawText(*style::UIFont, buttonName, leftPos, color, FONT_SCALE, nullptr, eg::TextFlags::DropShadow);
+		eg::SpriteBatch::overlay.DrawText(
+			*style::UIFont, buttonName, leftPos, color, *controlHintFontScale, nullptr, eg::TextFlags::DropShadow);
 		eg::SpriteBatch::overlay.DrawText(
 			*style::UIFont, m_controlHintMessage, glm::vec2(leftPos.x + buttonBoxSize + BUTTON_MESSAGE_SPACING, leftPos.y),
-			color, FONT_SCALE, nullptr, eg::TextFlags::DropShadow);
+			color, *controlHintFontScale, nullptr, eg::TextFlags::DropShadow);
+	}
+	
+	//Draws the error hint
+	if (m_errorHintAlpha > 0)
+	{
+		const float errorHintY = eg::CurrentResolutionY() * 0.9f - style::UIFont->LineHeight() * *errorHintFontScale;
+		
+		const eg::ColorLin color = eg::ColorLin(eg::ColorSRGB::FromHex(0xffb3c1)).ScaleAlpha(m_errorHintAlpha);
+		
+		const float messageLen = style::UIFont->GetTextExtents(m_errorHintMessage).x * *errorHintFontScale;
+		const float leftX = (eg::CurrentResolutionX() - messageLen) / 2.0f;
+		
+		constexpr float RECT_PADDING = 10;
+		
+		eg::SpriteBatch::overlay.DrawRect(
+			eg::Rectangle(
+				leftX - RECT_PADDING,
+				errorHintY - RECT_PADDING,
+				messageLen + RECT_PADDING * 2,
+				style::UIFont->LineHeight() * *errorHintFontScale + RECT_PADDING * 2),
+			eg::ColorLin(0, 0, 0, 0.3f));
+		
+		eg::SpriteBatch::overlay.DrawText(
+			*style::UIFont, m_errorHintMessage, glm::vec2(leftX, errorHintY),
+			color, *errorHintFontScale, nullptr, eg::TextFlags::DropShadow);
 	}
 	
 	//Draws the crosshair

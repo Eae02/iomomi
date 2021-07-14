@@ -34,10 +34,12 @@ enum class OptionalControlHintType
 {
 	Movement,
 	FlipGravity,
-	PickUpCube
+	PickUpCube,
+	CannotChangeGravityWhenCarrying,
+	CannotExitWithWrongGravity,
 };
 
-constexpr int NUM_OPTIONAL_CONTROL_HINTS = 3;
+constexpr int NUM_OPTIONAL_CONTROL_HINTS = 5;
 
 class World
 {

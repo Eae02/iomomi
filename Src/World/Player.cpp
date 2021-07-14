@@ -416,9 +416,12 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 	glm::vec3 moveY = velocityY * dt;
 	
 	//Checks for intersections with gravity corners along the move (XZ) vector
-	if (m_gravityTransitionMode == TransitionMode::None && m_onGround && !m_isCarrying)
+	m_isCarryingAndTouchingGravityCorner = false;
+	if (m_gravityTransitionMode == TransitionMode::None && m_onGround)
 	{
-		if (const GravityCorner* corner = world.FindGravityCorner(GetAABB(), moveXZ, m_down))
+		const GravityCorner* corner = world.FindGravityCorner(GetAABB(), moveXZ, m_down);
+		m_isCarryingAndTouchingGravityCorner = corner != nullptr && m_isCarrying;
+		if (corner != nullptr && !m_isCarrying)
 		{
 			//A gravity corner was found, this code begins transitioning to another gravity
 			
@@ -799,6 +802,7 @@ void Player::Reset()
 	m_gravityTransitionMode = TransitionMode::None;
 	m_nextStepSoundRightIndex = -1;
 	m_stepSoundRemDistance = 0;
+	m_isCarryingAndTouchingGravityCorner = false;
 }
 
 glm::vec3 Player::FeetPosition() const

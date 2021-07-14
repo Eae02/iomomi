@@ -63,6 +63,9 @@ public:
 		m_physicsObject.position = position;
 	}
 	
+	bool IsCarryingAndTouchingGravityCorner() const
+	{ return m_isCarryingAndTouchingGravityCorner; }
+	
 	static constexpr float HEIGHT = 1.9f;
 	static constexpr float WIDTH = 0.8f;
 	static constexpr float EYE_HEIGHT = HEIGHT * 0.8f;
@@ -88,6 +91,8 @@ private:
 	bool m_wasClimbingLadder = false;
 	float m_leftWaterTime = 0;
 	float m_dragIntensity = 0;
+	
+	bool m_isCarryingAndTouchingGravityCorner = false;
 	
 	float m_stepSoundRemDistance = 0;
 	int m_nextStepSoundRightIndex = -1;

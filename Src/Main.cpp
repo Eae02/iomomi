@@ -23,6 +23,8 @@ static_assert(sizeof(float) == 4);
 
 const char* version = __DATE__;
 
+bool audioInitializationFailed = false;
+
 int main(int argc, char** argv)
 {
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -68,6 +70,7 @@ int main(int argc, char** argv)
 		if (!eg::InitializeAudio())
 		{
 			eg::Log(eg::LogLevel::Error, "audio", "Failed to initialize audio, sounds will not be played.");
+			audioInitializationFailed = true;
 		}
 		UpdateVolumeSettings();
 		
