@@ -47,8 +47,7 @@ void WaterSimulator::Init(World& world)
 				{
 					for (int z = 0; z < generatePerVoxel.z; z++)
 					{
-						glm::vec3 pos = glm::vec3(cell) +
-							glm::vec3(x + offsetDist(rng), y + offsetDist(rng), z + offsetDist(rng)) / glm::vec3(generatePerVoxel);
+						glm::vec3 pos = glm::vec3(cell) + glm::vec3(x + offsetDist(rng), y + offsetDist(rng), z + offsetDist(rng)) / glm::vec3(generatePerVoxel);
 						if (pos.y > waterPlaneEntity.GetPosition().y)
 							continue;
 						positions.push_back(pos.x);
@@ -90,15 +89,19 @@ void WaterSimulator::Init(World& world)
 	uint64_t bufferSize = sizeof(float) * 4 * m_numParticles;
 	m_positionsBuffer = eg::Buffer(eg::BufferFlags::CopyDst | eg::BufferFlags::StorageBuffer, bufferSize, nullptr);
 	
-	m_positionsUploadBuffer = eg::Buffer(eg::BufferFlags::HostAllocate | eg::BufferFlags::CopySrc | eg::BufferFlags::MapWrite,
-	                                     bufferSize * eg::MAX_CONCURRENT_FRAMES, nullptr);
+	m_positionsUploadBuffer = eg::Buffer(
+		eg::BufferFlags::HostAllocate | eg::BufferFlags::CopySrc | eg::BufferFlags::MapWrite,
+		bufferSize * eg::MAX_CONCURRENT_FRAMES, nullptr);
 	m_positionsUploadBufferMemory = (char*)m_positionsUploadBuffer.Map(0, bufferSize * eg::MAX_CONCURRENT_FRAMES);
 	
 	uint64_t gravitiesBufferSize = sizeof(uint8_t) * eg::RoundToNextMultiple(m_numParticles, 4);
-	m_gravitiesBuffer = eg::Buffer(eg::BufferFlags::CopyDst | eg::BufferFlags::StorageBuffer, gravitiesBufferSize, nullptr);
+	m_gravitiesBuffer = eg::Buffer(
+		eg::BufferFlags::CopyDst | eg::BufferFlags::StorageBuffer, gravitiesBufferSize,
+		nullptr);
 	
-	m_gravitiesUploadBuffer = eg::Buffer(eg::BufferFlags::HostAllocate | eg::BufferFlags::CopySrc | eg::BufferFlags::MapWrite,
-	                                     gravitiesBufferSize * eg::MAX_CONCURRENT_FRAMES, nullptr);
+	m_gravitiesUploadBuffer = eg::Buffer(
+		eg::BufferFlags::HostAllocate | eg::BufferFlags::CopySrc | eg::BufferFlags::MapWrite,
+		gravitiesBufferSize * eg::MAX_CONCURRENT_FRAMES, nullptr);
 	m_gravitiesUploadBufferMemory = (char*)m_gravitiesUploadBuffer.Map(0, gravitiesBufferSize * eg::MAX_CONCURRENT_FRAMES);
 	
 	needParticleGravityBuffer = false;
@@ -341,7 +344,10 @@ void WaterSimulator::Update(const World& world, const glm::vec3& cameraPos, bool
 			void* gravitiesBufferData = WSI_GetGravitiesOutputBuffer(m_impl, gravityBufferVersion);
 			if (m_lastGravityBufferVersion != gravityBufferVersion)
 			{
-				std::memcpy(m_gravitiesUploadBufferMemory + gravitiesUploadBufferOffset, gravitiesBufferData, m_numParticles);
+				std::memcpy(
+					m_gravitiesUploadBufferMemory + gravitiesUploadBufferOffset,
+					gravitiesBufferData,
+					m_numParticles);
 				m_lastGravityBufferVersion = gravityBufferVersion;
 				gravitiesBufferChanged = true;
 			}

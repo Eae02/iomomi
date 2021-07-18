@@ -95,7 +95,9 @@ ImGuiInterface::ImGuiInterface()
 	io.Fonts->GetTexDataAsRGBA32(&fontTexPixels, &fontTexWidth, &fontTexHeight);
 	
 	uint64_t fontTexBytes = fontTexWidth * fontTexHeight * 4;
-	eg::Buffer fontUploadBuffer(eg::BufferFlags::CopySrc | eg::BufferFlags::HostAllocate | eg::BufferFlags::MapWrite, fontTexBytes, nullptr);
+	eg::Buffer fontUploadBuffer(
+		eg::BufferFlags::CopySrc | eg::BufferFlags::HostAllocate | eg::BufferFlags::MapWrite,
+		fontTexBytes, nullptr);
 	void* fontUploadMem = fontUploadBuffer.Map(0, fontTexBytes);
 	std::memcpy(fontUploadMem, fontTexPixels, fontTexBytes);
 	fontUploadBuffer.Flush(0, fontTexBytes);

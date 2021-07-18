@@ -310,7 +310,8 @@ void LoadLevelThumbnail(Level& level)
 	textureCI.defaultSamplerDescription = &samplerDesc;
 	
 	level.thumbnail = eg::Texture::Create2D(textureCI);
-	eg::UploadBuffer uploadBuffer = eg::GetTemporaryUploadBufferWith<uint8_t>({ data.get(), (size_t)(loader.Width() * loader.Height() * 4) });
+	size_t uploadBufferSize = loader.Width() * loader.Height() * 4;
+	eg::UploadBuffer uploadBuffer = eg::GetTemporaryUploadBufferWith<uint8_t>({ data.get(), uploadBufferSize });
 	
 	eg::TextureRange texRange = {};
 	

@@ -56,7 +56,9 @@ static void OnInit()
 	entrance.editorEntModel = &eg::GetAsset<eg::Model>("Models/EditorEntrance.aa.obj");
 	entrance.editorExitModel = &eg::GetAsset<eg::Model>("Models/EditorExit.aa.obj");
 	
-	entrance.materials.resize(entrance.model->NumMaterials(), &eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml"));
+	entrance.materials.resize(
+		entrance.model->NumMaterials(),
+		&eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml"));
 	AssignMaterial("Floor",       "Materials/Entrance/Floor.yaml");
 	AssignMaterial("WallPadding", "Materials/Entrance/Padding.yaml");
 	AssignMaterial("CeilPipe",    "Materials/Pipe2.yaml");
@@ -284,7 +286,10 @@ void EntranceExitEnt::Update(const WorldUpdateArgs& args)
 	m_pointLight->position = GetTransform() * glm::vec4(pointLightPos, 1.0f);
 	m_pointLight->enabled = m_isPlayerInside;
 	
-	glm::vec3 fanLightPos(fanRotationCenter.x, fanRotationCenter.y + *fanLightYOffset, fanRotationCenter.z + *fanLightZOffset);
+	const glm::vec3 fanLightPos(
+		fanRotationCenter.x,
+		fanRotationCenter.y + *fanLightYOffset,
+		fanRotationCenter.z + *fanLightZOffset);
 	m_fanPointLight->position = GetTransform() * glm::vec4(fanLightPos, 1.0f);
 	m_fanPointLight->enabled = m_isPlayerInside && settings.shadowQuality >= QualityLevel::Medium;
 	if (args.plShadowMapper && m_fanPointLight->enabled)

@@ -90,9 +90,13 @@ void Editor::RunFrame(float dt)
 			m_worlds[i]->RenderImGui();
 			
 			ImDrawList* drawList = ImGui::GetWindowDrawList();
-			glm::vec2 imguiCursorPos = ImGui::GetCursorScreenPos();
+			const glm::vec2 imguiCursorPos = ImGui::GetCursorScreenPos();
 			
-			eg::Rectangle windowRect(imguiCursorPos.x, imguiCursorPos.y, ImGui::GetWindowContentRegionWidth(), ImGui::GetWindowHeight());
+			const eg::Rectangle windowRect(
+				imguiCursorPos.x,
+				imguiCursorPos.y, 
+				ImGui::GetWindowContentRegionWidth(),
+				ImGui::GetWindowHeight());
 			m_worlds[i]->SetWindowRect(windowRect);
 			
 			const bool flipY = eg::CurrentGraphicsAPI() == eg::GraphicsAPI::OpenGL;

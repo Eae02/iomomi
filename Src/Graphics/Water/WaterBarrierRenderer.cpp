@@ -10,11 +10,13 @@ static constexpr uint32_t LOCAL_SIZE_FADE = 8;
 WaterBarrierRenderer::WaterBarrierRenderer()
 {
 	eg::ComputePipelineCreateInfo pipelineCI;
-	pipelineCI.computeShader.shaderModule = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterBarrierDist.cs.glsl").DefaultVariant();
+	pipelineCI.computeShader.shaderModule =
+		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterBarrierDist.cs.glsl").DefaultVariant();
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	m_calcPipeline = eg::Pipeline::Create(pipelineCI);
 	
-	pipelineCI.computeShader.shaderModule = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterBarrierFade.cs.glsl").DefaultVariant();
+	pipelineCI.computeShader.shaderModule =
+		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterBarrierFade.cs.glsl").DefaultVariant();
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	m_fadePipeline = eg::Pipeline::Create(pipelineCI);
 	
@@ -65,8 +67,11 @@ void WaterBarrierRenderer::Init(WaterSimulator& waterSimulator, World& world)
 		entity.waterDistanceTexture = barrier.fadeTexture;
 		
 		barrier.descriptorSetCalc = eg::DescriptorSet(m_calcPipeline, 0);
-		barrier.descriptorSetCalc.BindStorageBuffer(waterSimulator.GetPositionsBuffer(), 0, 0, waterSimulator.NumParticles() * sizeof(float) * 4);
-		barrier.descriptorSetCalc.BindStorageBuffer(waterSimulator.GetGravitiesBuffer(), 1, 0, waterSimulator.NumParticles());
+		barrier.descriptorSetCalc.BindStorageBuffer(
+			waterSimulator.GetPositionsBuffer(), 0, 0,
+			waterSimulator.NumParticles() * sizeof(float) * 4);
+		barrier.descriptorSetCalc.BindStorageBuffer(
+			waterSimulator.GetGravitiesBuffer(), 1, 0, waterSimulator.NumParticles());
 		barrier.descriptorSetCalc.BindStorageImage(barrier.tmpTexture, 2);
 		
 		barrier.descriptorSetFade = eg::DescriptorSet(m_fadePipeline, 0);

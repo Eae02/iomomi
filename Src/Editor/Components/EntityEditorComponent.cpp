@@ -125,7 +125,8 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 		}
 		else
 		{
-			float dragDist = m_boxResizeDragRay.GetClosestPoint(editorState.viewRay) - m_boxResizeInitialRayPos + m_boxResizeBeginSize;
+			float dragDist = m_boxResizeDragRay.GetClosestPoint(editorState.viewRay)
+				- m_boxResizeInitialRayPos + m_boxResizeBeginSize;
 			if (!std::isnan(dragDist))
 			{
 				dragDist = SnapToGrid(std::max(dragDist, 0.0f));

@@ -77,8 +77,11 @@ void SpawnEntityEditorComponent::Update(float dt, const EditorState& editorState
 		
 		for (const auto& entityGroup : entityGroups)
 		{
-			if (!entityGroup.first.empty() && !hasSearchString && !ImGui::CollapsingHeader(entityGroup.first.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+			if (!entityGroup.first.empty() && !hasSearchString &&
+			    !ImGui::CollapsingHeader(entityGroup.first.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+			{
 				continue;
+			}
 			
 			for (EntTypeID entityTypeId : entityGroup.second)
 			{
@@ -100,7 +103,8 @@ void SpawnEntityEditorComponent::Update(float dt, const EditorState& editorState
 				}
 				
 				bool chooseOnEnter = hasSearchString && isFirstItem;
-				if (ImGui::MenuItem(entityName.c_str(), chooseOnEnter ? "Enter" : "") || (chooseOnEnter && eg::IsButtonDown(eg::Button::Enter)))
+				if (ImGui::MenuItem(entityName.c_str(), chooseOnEnter ? "Enter" : "") ||
+				    (chooseOnEnter && eg::IsButtonDown(eg::Button::Enter)))
 				{
 					std::shared_ptr<Ent> entity = entityType->create();
 					entity->EdMoved(m_spawnEntityPickResult.intersectPosition, m_spawnEntityPickResult.normalDir);

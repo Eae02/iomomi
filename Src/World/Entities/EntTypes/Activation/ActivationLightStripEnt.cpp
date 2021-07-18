@@ -84,8 +84,11 @@ std::vector<ActivationLightStripEnt::WayPoint> ActivationLightStripEnt::GetWayPo
 	points[0].wallNormal = activatorEnt->GetFacingDirection();
 	std::copy(activator->waypoints.begin(), activator->waypoints.end(), points.begin() + 1);
 	
-	std::vector<glm::vec3> connectionPoints = activatableEnt->GetComponent<ActivatableComp>()->GetConnectionPoints(*activatableEnt);
-	points.back().position = connectionPoints[std::min<size_t>(activator->targetConnectionIndex, connectionPoints.size() - 1)];
+	std::vector<glm::vec3> connectionPoints =
+		activatableEnt->GetComponent<ActivatableComp>()->GetConnectionPoints(*activatableEnt);
+	
+	const size_t lastPointIndex = std::min<size_t>(activator->targetConnectionIndex, connectionPoints.size() - 1);
+	points.back().position = connectionPoints[lastPointIndex];
 	
 	return points;
 }
@@ -205,7 +208,8 @@ static const Dir ORTHO_DIRS[3][4] =
 	{ Dir::PosY, Dir::NegY, Dir::PosX, Dir::NegX },
 };
 
-ActivationLightStripEnt::GenerateResult ActivationLightStripEnt::Generate(const VoxelBuffer& voxels, std::span<const WayPoint> points)
+ActivationLightStripEnt::GenerateResult ActivationLightStripEnt::Generate(
+	const VoxelBuffer& voxels, std::span<const WayPoint> points)
 {
 	struct NodeData
 	{
@@ -236,7 +240,8 @@ ActivationLightStripEnt::GenerateResult ActivationLightStripEnt::Generate(const 
 			{
 				for (int dn = 0; dn < 2; dn++)
 				{
-					glm::ivec3 actPos = glm::floor(glm::vec3(pos.doublePos - dirU * du - dirV * dv + dirN * (dn * 2 - 1)) / 2.0f);
+					const glm::ivec3 actPos =
+						glm::floor(glm::vec3(pos.doublePos - dirU * du - dirV * dv + dirN * (dn * 2 - 1)) / 2.0f);
 					isAir[du][dv][dn] = voxels.IsAir(actPos);
 				}
 			}

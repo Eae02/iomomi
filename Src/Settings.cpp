@@ -19,12 +19,24 @@ void LoadSettings()
 	
 	YAML::Node settingsNode = YAML::Load(settingsStream);
 	
-	settings.textureQuality     = magic_enum::enum_cast<eg::TextureQuality>(settingsNode["textureQuality"].as<std::string>("")).value_or(eg::TextureQuality::Medium);
-	settings.reflectionsQuality = magic_enum::enum_cast<QualityLevel>(settingsNode["reflQuality"].as<std::string>("")).value_or(QualityLevel::Medium);
-	settings.shadowQuality      = magic_enum::enum_cast<QualityLevel>(settingsNode["shadowQuality"].as<std::string>("")).value_or(QualityLevel::Medium);
-	settings.lightingQuality    = magic_enum::enum_cast<QualityLevel>(settingsNode["lightingQuality"].as<std::string>("")).value_or(QualityLevel::High);
-	settings.waterQuality       = magic_enum::enum_cast<QualityLevel>(settingsNode["waterQuality"].as<std::string>("")).value_or(QualityLevel::High);
-	settings.ssaoQuality        = magic_enum::enum_cast<SSAOQuality>(settingsNode["ssaoQuality"].as<std::string>("")).value_or(SSAOQuality::Off);
+	settings.textureQuality =
+		magic_enum::enum_cast<eg::TextureQuality>(settingsNode["textureQuality"].as<std::string>(""))
+		.value_or(eg::TextureQuality::Medium);
+	settings.reflectionsQuality =
+		magic_enum::enum_cast<QualityLevel>(settingsNode["reflQuality"].as<std::string>(""))
+		.value_or(QualityLevel::Medium);
+	settings.shadowQuality =
+		magic_enum::enum_cast<QualityLevel>(settingsNode["shadowQuality"].as<std::string>(""))
+		.value_or(QualityLevel::Medium);
+	settings.lightingQuality =
+		magic_enum::enum_cast<QualityLevel>(settingsNode["lightingQuality"].as<std::string>(""))
+		.value_or(QualityLevel::High);
+	settings.waterQuality =
+		magic_enum::enum_cast<QualityLevel>(settingsNode["waterQuality"].as<std::string>(""))
+		.value_or(QualityLevel::High);
+	settings.ssaoQuality =
+		magic_enum::enum_cast<SSAOQuality>(settingsNode["ssaoQuality"].as<std::string>(""))
+		.value_or(SSAOQuality::Off);
 	settings.fieldOfViewDeg = settingsNode["fieldOfView"].as<float>(settings.fieldOfViewDeg);
 	settings.exposure = settingsNode["exposure"].as<float>(settings.exposure);
 	settings.lookSensitivityMS = settingsNode["lookSensitivityMS"].as<float>(settings.lookSensitivityMS);
@@ -36,11 +48,17 @@ void LoadSettings()
 	settings.gunFlash = settingsNode["gunFlash"].as<bool>(true);
 	settings.drawCrosshair = settingsNode["crosshair"].as<bool>(true);
 	
-	settings.graphicsAPI = magic_enum::enum_cast<eg::GraphicsAPI>(settingsNode["graphicsAPI"].as<std::string>("")).value_or(eg::GraphicsAPI::OpenGL);
+	settings.graphicsAPI =
+		magic_enum::enum_cast<eg::GraphicsAPI>(settingsNode["graphicsAPI"].as<std::string>(""))
+		.value_or(eg::GraphicsAPI::OpenGL);
 	settings.preferredGPUName = settingsNode["prefGPUName"].as<std::string>("");
 	
-	settings.displayMode = magic_enum::enum_cast<DisplayMode>(settingsNode["displayMode"].as<std::string>("")).value_or(DisplayMode::Windowed);
-	settings.viewBobbingLevel = magic_enum::enum_cast<ViewBobbingLevel>(settingsNode["displayMode"].as<std::string>("")).value_or(ViewBobbingLevel::Normal);
+	settings.displayMode =
+		magic_enum::enum_cast<DisplayMode>(settingsNode["displayMode"].as<std::string>(""))
+		.value_or(DisplayMode::Windowed);
+	settings.viewBobbingLevel =
+		magic_enum::enum_cast<ViewBobbingLevel>(settingsNode["displayMode"].as<std::string>(""))
+		.value_or(ViewBobbingLevel::Normal);
 	
 	settings.fullscreenDisplayMode.resolutionX = settingsNode["resx"].as<uint32_t>(0);
 	settings.fullscreenDisplayMode.resolutionY = settingsNode["resy"].as<uint32_t>(0);

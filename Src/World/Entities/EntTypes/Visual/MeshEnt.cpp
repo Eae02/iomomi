@@ -24,9 +24,10 @@ struct ModelOption
 	
 	eg::CollisionMesh selectionMesh;
 	
-	ModelOption(std::string_view modelName, std::string_view meshName, std::initializer_list<const char*> materialOptionNames)
-		: model(&eg::GetAsset<eg::Model>(modelName)),
-		  materialOptions(materialOptionNames.size())
+	ModelOption(std::string_view modelName, std::string_view meshName,
+	            std::initializer_list<const char*> materialOptionNames)
+	    : model(&eg::GetAsset<eg::Model>(modelName)),
+	      materialOptions(materialOptionNames.size())
 	{
 		std::transform(materialOptionNames.begin(), materialOptionNames.end(), materialOptions.begin(),
 		               [&] (const char* materialName) -> std::pair<const char*, const eg::IMaterial*>
@@ -72,7 +73,8 @@ static void OnInit()
 	ModelOption pipeStraight("Models/Pipe.aa.obj", "straight", {"Materials/PipeCenter.yaml" });
 	pipeStraight.name = "Pipe (straight)";
 	pipeStraight.serializedName = "PipeS";
-	pipeStraight.collisionMesh = pipeStraight.model->MakeCollisionMesh(pipeStraight.model->RequireMeshIndex("straight.col"));
+	pipeStraight.collisionMesh =
+		pipeStraight.model->MakeCollisionMesh(pipeStraight.model->RequireMeshIndex("straight.col"));
 	pipeStraight.collisionMesh->FlipWinding();
 	pipeStraight.repeatAxis = 1;
 	pipeStraight.repeatDistance = 1;
@@ -144,8 +146,8 @@ void MeshEnt::RenderSettings()
 		ImGui::EndCombo();
 	}
 	
-	const bool materialDisabled = !m_model.has_value() || modelOptions[*m_model].materialOptions.size() == 1;
-	const char* currentMaterialName = m_model.has_value() ? modelOptions[*m_model].materialOptions[m_material].first : nullptr;
+	const bool materialDisabled = !m_model || modelOptions[*m_model].materialOptions.size() == 1;
+	const char* currentMaterialName = m_model ? modelOptions[*m_model].materialOptions[m_material].first : nullptr;
 	ImPushDisabled(materialDisabled);
 	if (ImGui::BeginCombo("Material", currentMaterialName))
 	{
@@ -220,7 +222,9 @@ void MeshEnt::CommonDraw(const EntDrawArgs& args)
 		{
 			if (modelOptions[*m_model].meshIndex == -1 || (size_t)modelOptions[*m_model].meshIndex == m)
 			{
-				eg::AABB aabb = modelOptions[*m_model].model->GetMesh(m).boundingAABB->TransformedBoundingBox(transform);
+				const eg::AABB aabb =
+					modelOptions[*m_model].model->GetMesh(m).boundingAABB
+					->TransformedBoundingBox(transform);
 				if (args.frustum == nullptr || args.frustum->Intersects(aabb))
 				{
 					args.meshBatch->AddModelMesh(

@@ -255,7 +255,10 @@ void GameRenderer::Render(World& world, float gameTime, float dt,
 		auto gpuTimerWater = eg::StartGPUTimer("Water (early)");
 		auto cpuTimerWater = eg::StartCPUTimer("Water (early)");
 		eg::DC.DebugLabelBegin("Water (early)");
-		m_renderCtx->waterRenderer.RenderEarly(m_waterSimulator.GetPositionsBuffer(), m_waterSimulator.NumParticlesToDraw(), m_rtManager);
+		m_renderCtx->waterRenderer.RenderEarly(
+			m_waterSimulator.GetPositionsBuffer(),
+			m_waterSimulator.NumParticlesToDraw(),
+			m_rtManager);
 		eg::DC.DebugLabelEnd();
 	}
 	
@@ -368,7 +371,9 @@ void GameRenderer::Render(World& world, float gameTime, float dt,
 			srcRange.sizeZ = 1;
 			
 			m_rtManager.RenderTextureUsageHint(RenderTex::Lit, eg::TextureUsage::CopySrc, eg::ShaderAccessFlags::None);
-			eg::DC.CopyTexture(m_rtManager.GetRenderTexture(RenderTex::Lit), m_rtManager.GetRenderTexture(RenderTex::LitWithoutBlurredGlass),
+			eg::DC.CopyTexture(
+				m_rtManager.GetRenderTexture(RenderTex::Lit),
+				m_rtManager.GetRenderTexture(RenderTex::LitWithoutBlurredGlass),
 				srcRange, eg::TextureOffset());
 			
 			m_renderCtx->renderer.BeginTransparent(RenderTex::LitWithoutBlurredGlass, m_rtManager);

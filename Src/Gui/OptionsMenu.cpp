@@ -81,7 +81,8 @@ Slider InitVolumeSlider(float Settings::*member, std::string label)
 	return slider;
 }
 
-ToggleButton InitSettingsToggleButton(bool Settings::*member, std::string label, std::string trueString, std::string falseString)
+ToggleButton InitSettingsToggleButton(bool Settings::*member, std::string label,
+                                      std::string trueString, std::string falseString)
 {
 	ToggleButton button;
 	button.label = std::move(label);
@@ -126,9 +127,9 @@ void InitOptionsMenu()
 		{
 			fullscreenDisplayModeIndex = i;
 		}
-		resolutionCB.options.push_back(
-			std::to_string(mode.resolutionX) + "x" + std::to_string(mode.resolutionY) + " \e@" + std::to_string(mode.refreshRate) + "Hz\e"
-		);
+		std::ostringstream labelStream;
+		labelStream << mode.resolutionX << "x" << mode.resolutionY << " \e@" << mode.refreshRate << "Hz\e";
+		resolutionCB.options.push_back(labelStream.str());
 	}
 	resolutionCB.getValue = [] { return fullscreenDisplayModeIndex; };
 	resolutionCB.setValue = [] (int value)
@@ -282,7 +283,8 @@ void UpdateOptionsMenu(float dt, const glm::vec2& positionOffset, bool allowInte
 
 void DrawOptionsMenu(eg::SpriteBatch& spriteBatch)
 {
-	spriteBatch.PushScissor(0, optionsScrollPanel.screenRectangle.y, eg::CurrentResolutionX(), optionsScrollPanel.screenRectangle.h);
+	spriteBatch.PushScissor(0, optionsScrollPanel.screenRectangle.y,
+	                        eg::CurrentResolutionX(), optionsScrollPanel.screenRectangle.h);
 	leftWidgetList.Draw(spriteBatch);
 	rightWidgetList.Draw(spriteBatch);
 	spriteBatch.PopScissor();

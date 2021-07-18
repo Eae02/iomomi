@@ -85,26 +85,26 @@ float* cubeGAPulseTime = eg::TweakVarFloat("cube_ga_pulse_time", 2, 0);
 
 void CubeEnt::GameDraw(const EntGameDrawArgs& args)
 {
-	if (args.frustum->Intersects(GetSphere()))
-	{
-		glm::mat4 worldMatrix = glm::translate(glm::mat4(1), m_physicsObject.displayPosition);
-		worldMatrix *= glm::scale(glm::mat4(1), glm::vec3(RADIUS));
-		Draw(*args.meshBatch, worldMatrix);
-		
-		if (m_gravityHasChanged)
-		{
-			GravityIndicatorMaterial::InstanceData instanceData(worldMatrix);
-			instanceData.down = glm::vec3(DirectionVector(m_currentDown));
-			
-			float flashIntensity = settings.gunFlash ? *cubeGAIntenstiyFlash : 1.0f;
-			float t = RenderSettings::instance->gameTime * eg::TWO_PI / *cubeGAPulseTime;
-			float intensity = glm::mix(0.25f, 1.0f, std::sin(t) * 0.5f + 0.5f);
-			instanceData.minIntensity = glm::mix(*cubeGAIntenstiyMin * intensity, flashIntensity, m_gravityIndicatorFlashIntensity);
-			instanceData.maxIntensity = glm::mix(*cubeGAIntenstiyMax * intensity, flashIntensity, m_gravityIndicatorFlashIntensity);
-			
-			args.meshBatch->AddModel(*(canFloat ? woodCubeModel : cubeModel), GravityIndicatorMaterial::instance, instanceData);
-		}
-	}
+	if (!args.frustum->Intersects(GetSphere()))
+		return;
+	
+	glm::mat4 worldMatrix = glm::translate(glm::mat4(1), m_physicsObject.displayPosition);
+	worldMatrix *= glm::scale(glm::mat4(1), glm::vec3(RADIUS));
+	Draw(*args.meshBatch, worldMatrix);
+	
+	if (!m_gravityHasChanged)
+		return;
+	
+	GravityIndicatorMaterial::InstanceData instanceData(worldMatrix);
+	instanceData.down = glm::vec3(DirectionVector(m_currentDown));
+	
+	float flashIntensity = settings.gunFlash ? *cubeGAIntenstiyFlash : 1.0f;
+	float t = RenderSettings::instance->gameTime * eg::TWO_PI / *cubeGAPulseTime;
+	float intensity = glm::mix(0.25f, 1.0f, std::sin(t) * 0.5f + 0.5f);
+	instanceData.minIntensity = glm::mix(*cubeGAIntenstiyMin * intensity, flashIntensity, m_gravityIndicatorFlashIntensity);
+	instanceData.maxIntensity = glm::mix(*cubeGAIntenstiyMax * intensity, flashIntensity, m_gravityIndicatorFlashIntensity);
+	
+	args.meshBatch->AddModel(*(canFloat ? woodCubeModel : cubeModel), GravityIndicatorMaterial::instance, instanceData);
 }
 
 glm::mat4 CubeEnt::GetEditorWorldMatrix() const

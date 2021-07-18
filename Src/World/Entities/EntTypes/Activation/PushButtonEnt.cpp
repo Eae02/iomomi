@@ -81,10 +81,11 @@ int PushButtonEnt::CheckInteraction(const Player& player, const PhysicsEngine& p
 {
 	static constexpr float MAX_INTERACT_DIST = 1;
 	static constexpr int INTERACT_PRIORITY = 2000;
-	eg::Ray ray(player.EyePosition(), player.Forward());
 	
-	eg::AABB boundingAABB = *pushButtonModel->GetMesh(pushButtonModel->GetMeshIndex("Cube")).boundingAABB;
-	std::optional<float> buttonIntersectDist = RayIntersectOrientedBox(ray, OrientedBox::FromAABB(boundingAABB).Transformed(GetTransform()));
+	const eg::Ray ray(player.EyePosition(), player.Forward());
+	const eg::AABB boundingAABB = *pushButtonModel->GetMesh(pushButtonModel->GetMeshIndex("Cube")).boundingAABB;
+	const std::optional<float> buttonIntersectDist =
+		RayIntersectOrientedBox(ray, OrientedBox::FromAABB(boundingAABB).Transformed(GetTransform()));
 	if (buttonIntersectDist.has_value() && *buttonIntersectDist < MAX_INTERACT_DIST)
 	{
 		auto[intersectObj, intersectDist] = physicsEngine.RayIntersect(ray, RAY_MASK_BLOCK_PICK_UP);

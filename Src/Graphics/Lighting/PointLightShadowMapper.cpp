@@ -36,7 +36,7 @@ PointLightShadowMapper::PointLightShadowMapper()
 	
 	for (uint32_t face = 0; face < 6; face++)
 	{
-		const glm::mat3 invRotation = glm::transpose(glm::mat3(glm::lookAt(glm::vec3(0), shadowMatrixF[face], shadowMatrixU[face])));
+		glm::mat3 invRotation = glm::transpose(glm::lookAt(glm::vec3(0), shadowMatrixF[face], shadowMatrixU[face]));
 		for (size_t plane = 0; plane < 4; plane++)
 		{
 			m_frustumPlanes[face][plane] = glm::normalize(invRotation * localNormals[plane]);
@@ -107,7 +107,8 @@ int PointLightShadowMapper::AllocateShadowMap()
 	eg::TextureCreateInfo textureCI;
 	textureCI.format = SHADOW_MAP_FORMAT;
 	textureCI.width = m_resolution;
-	textureCI.flags = eg::TextureFlags::ShaderSample | eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ManualBarrier;
+	textureCI.flags =
+		eg::TextureFlags::ShaderSample | eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ManualBarrier;
 	textureCI.mipLevels = 1;
 	shadowMap.texture = eg::Texture::CreateCube(textureCI);
 	

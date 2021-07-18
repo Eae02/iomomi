@@ -285,7 +285,8 @@ void MainGameState::UpdateAndDrawHud(float dt)
 	auto SetControlHint = [&] (std::string_view message, const KeyBinding& binding)
 	{
 		m_controlHintMessage = message;
-		m_controlHintButton = IsControllerButton(eg::InputState::Current().PressedButton()) ? binding.controllerButton : binding.kbmButton;
+		m_controlHintButton = IsControllerButton(eg::InputState::Current().PressedButton())
+			? binding.controllerButton : binding.kbmButton;
 		controlHintTargetAlpha = 1;
 	};
 	
@@ -419,7 +420,8 @@ void MainGameState::DrawOverlay(float dt)
 	ImGui::SetNextWindowPos(ImVec2(5, 5), ImGuiCond_Always);
 	ImGui::SetNextWindowSize(ImVec2(250, 0), ImGuiCond_Always);
 	ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.6f);
-	ImGui::Begin("Debug", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoTitleBar);
+	ImGui::Begin("Debug", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
+	             ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoTitleBar);
 	
 	const char* graphicsAPIName = "?";
 	if (eg::CurrentGraphicsAPI() == eg::GraphicsAPI::OpenGL)

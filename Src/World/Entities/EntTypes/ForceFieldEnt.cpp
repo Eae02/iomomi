@@ -197,8 +197,11 @@ std::optional<Dir> ForceFieldEnt::CheckIntersection(EntityManager& entityManager
 	std::optional<Dir> result;
 	entityManager.ForEachOfType<ForceFieldEnt>([&] (const ForceFieldEnt& entity)
 	{
-		if (entity.m_enabled && aabb.Intersects(eg::AABB(entity.m_position - entity.radius, entity.m_position + entity.radius)))
+		if (entity.m_enabled &&
+			aabb.Intersects(eg::AABB(entity.m_position - entity.radius, entity.m_position + entity.radius)))
+		{
 			result = entity.m_effectiveNewGravity;
+		}
 	});
 	return result;
 }

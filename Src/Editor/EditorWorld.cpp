@@ -217,8 +217,10 @@ void EditorWorld::Update(float dt, EditorTool currentTool)
 			m_thumbnailCamera.Update(dt);
 		}
 		
-		RenderSettings::instance->viewProjection = m_editorState.projection.Matrix() * m_thumbnailCamera.ViewMatrix();
-		RenderSettings::instance->invViewProjection = m_thumbnailCamera.InverseViewMatrix() * m_editorState.projection.InverseMatrix();
+		RenderSettings::instance->viewProjection =
+			m_editorState.projection.Matrix() * m_thumbnailCamera.ViewMatrix();
+		RenderSettings::instance->invViewProjection =
+			m_thumbnailCamera.InverseViewMatrix() * m_editorState.projection.InverseMatrix();
 		RenderSettings::instance->cameraPosition = m_thumbnailCamera.Position();
 		RenderSettings::instance->UpdateBuffer();
 		
@@ -294,7 +296,10 @@ void EditorWorld::Update(float dt, EditorTool currentTool)
 	m_icons.push_back(m_editorState.CreateIcon(m_world->thumbnailCameraPos, nullptr));
 	m_icons.back().iconIndex = 11;
 	
-	m_icons.erase(std::remove_if(m_icons.begin(), m_icons.end(), [&] (const EditorIcon& icon) { return icon.m_behindScreen; }), m_icons.end());
+	m_icons.erase(std::remove_if(m_icons.begin(), m_icons.end(), [&] (const EditorIcon& icon)
+	{
+		return icon.m_behindScreen;
+	}), m_icons.end());
 	std::sort(m_icons.begin(), m_icons.end(), [&] (const EditorIcon& a, const EditorIcon& b)
 	{
 		return a.m_depth > b.m_depth;
@@ -388,7 +393,8 @@ void EditorWorld::Draw(EditorTool currentTool, RenderContext& renderCtx, Prepare
 		
 		//Draws the background sprite
 		m_spriteBatch.Draw(iconsTexture, m_icons[i].m_rectangle, color,
-		                   CreateSrcRectangle(m_icons[i].selected ? 1 : ((int)i == m_hoveredIcon ? 10 : 0)), eg::SpriteFlags::None);
+		                   CreateSrcRectangle(m_icons[i].selected ? 1 : ((int)i == m_hoveredIcon ? 10 : 0)),
+		                   eg::SpriteFlags::None);
 		
 		//Draws the icon
 		m_spriteBatch.Draw(iconsTexture, m_icons[i].m_rectangle, color,
@@ -463,12 +469,14 @@ void EditorWorld::Draw(EditorTool currentTool, RenderContext& renderCtx, Prepare
 	
 	if (m_isUpdatingThumbnailView)
 	{
-		std::string_view label = "Press space to set view\nPress escape to cancel";
-		eg::Rectangle labelRect(10, m_editorState.windowRect.h - 60, 210, 50);
+		const std::string_view label = "Press space to set view\nPress escape to cancel";
+		const eg::Rectangle labelRect(10, m_editorState.windowRect.h - 60, 210, 50);
+		const float labelY = labelRect.MaxY() - 5 - eg::SpriteFont::DevFont().LineHeight();
+		
 		m_spriteBatch.DrawRect(labelRect, eg::ColorLin(0, 0, 0, 0.8f));
-		m_spriteBatch.DrawTextMultiline(eg::SpriteFont::DevFont(), label,
-		                                glm::vec2(labelRect.x + 5, labelRect.MaxY() - 5 - eg::SpriteFont::DevFont().LineHeight()),
-		                                eg::ColorLin(eg::ColorLin::White));
+		m_spriteBatch.DrawTextMultiline(
+			eg::SpriteFont::DevFont(), label, glm::vec2(labelRect.x + 5, labelY),
+			eg::ColorLin(eg::ColorLin::White));
 	}
 	
 	eg::RenderPassBeginInfo spriteRPBeginInfo;

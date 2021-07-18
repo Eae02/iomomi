@@ -43,7 +43,10 @@ eg::AABB Ent::GetAABB(float scale, float upDist, Dir facingDirection) const
 	glm::vec3 diag(scale);
 	diag[(int)facingDirection / 2] = 0;
 	
-	return eg::AABB(GetPosition() - diag, GetPosition() + diag + glm::vec3(DirectionVector(facingDirection)) * (upDist * scale));
+	return eg::AABB(
+		GetPosition() - diag,
+		GetPosition() + diag + glm::vec3(DirectionVector(facingDirection)) * (upDist * scale)
+	);
 }
 
 EntTypeFlags Ent::TypeFlags() const

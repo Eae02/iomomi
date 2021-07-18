@@ -153,7 +153,9 @@ void PlatformEnt::EditorDraw(const EntEditorDrawArgs& args)
 		{
 			ComputeLaunchVelocity();
 			
-			glm::vec3 startPos = glm::mix(m_basePosition, FinalPosition(), LAUNCH_TIME) + glm::vec3(DirectionVector(m_forwardDir));
+			const glm::vec3 startPos =
+				glm::mix(m_basePosition, FinalPosition(), LAUNCH_TIME) +
+				glm::vec3(DirectionVector(m_forwardDir));
 			m_editorLaunchTrajectory.push_back(startPos);
 			auto posAt = [&] (float dst)
 			{
@@ -260,7 +262,10 @@ void PlatformEnt::Deserialize(std::istream& stream)
 	m_slideOffset = glm::vec2(platformPB.slide_offset_x(), platformPB.slide_offset_y());
 	m_slideTime = platformPB.slide_time();
 	m_launchSpeed = platformPB.launch_speed();
-	m_physicsObject.shape = eg::AABB(glm::vec3(-0.99, -0.1f, -1.99), glm::vec3(0.99, 0, -0.01)).TransformedBoundingBox(GetBaseTransform());
+	
+	m_physicsObject.shape =
+		eg::AABB(glm::vec3(-0.99, -0.1f, -1.99), glm::vec3(0.99, 0, -0.01))
+		.TransformedBoundingBox(GetBaseTransform());
 	
 	ComputeLaunchVelocity();
 	

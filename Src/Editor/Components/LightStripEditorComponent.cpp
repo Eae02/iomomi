@@ -61,8 +61,11 @@ bool LightStripEditorComponent::CollectIcons(const EditorState& editorState, std
 			//Adds icons to connect this activator to a new connection point
 			editorState.world->entManager.ForEach([&] (Ent& activatableEntity)
 			{
+				if (eg::HasFlag(activatableEntity.TypeFlags(), EntTypeFlags::EditorInvisible))
+					return;
+				
 				const ActivatableComp* activatableComp = activatableEntity.GetComponent<ActivatableComp>();
-				if (eg::HasFlag(activatableEntity.TypeFlags(), EntTypeFlags::EditorInvisible) || activatableComp == nullptr)
+				if (activatableComp == nullptr)
 					return;
 				
 				std::vector<glm::vec3> connectionPoints = activatableComp->GetConnectionPoints(activatableEntity);

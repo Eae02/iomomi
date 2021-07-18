@@ -225,7 +225,11 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 	
 	const float titleTextureWidth = std::min(eg::CurrentResolutionX() * 0.25f, (float)titleTexture.Width());
 	const float titleTextureHeight = titleTextureWidth * titleTexture.Height() / titleTexture.Width();
-	const eg::Rectangle titleRect(boxLX + xOffset, eg::CurrentResolutionY() - 75 - titleTextureHeight, titleTextureWidth, titleTextureHeight);
+	const eg::Rectangle titleRect(
+		boxLX + xOffset,
+		eg::CurrentResolutionY() - 75 - titleTextureHeight,
+		titleTextureWidth,
+		titleTextureHeight);
 	m_spriteBatch.Draw(titleTexture, titleRect, eg::ColorLin(1, 1, 1, 1));
 	
 	const float boxStartY = eg::CurrentResolutionY() - 100 - titleTextureHeight;
@@ -264,7 +268,8 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 		}
 		
 		eg::Rectangle rect(x, y, levelBoxW, levelBoxH);
-		bool hovered = cursorInLevelsArea && rect.Contains(flippedCursorPos) && level.status != LevelStatus::Locked && xOffset == 0;
+		const bool hovered = cursorInLevelsArea && rect.Contains(flippedCursorPos) &&
+			level.status != LevelStatus::Locked && xOffset == 0;
 		if (hovered && clicked)
 		{
 			if (std::unique_ptr<World> world = LoadLevelWorld(level, false))
@@ -313,8 +318,10 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 		
 		if (level.status == LevelStatus::Locked)
 		{
-			eg::Rectangle lockTextureRect = eg::Rectangle::CreateCentered(inflatedRect.Center(), lockTexture.Width(), lockTexture.Height());
-			m_spriteBatch.Draw(lockTexture, lockTextureRect, eg::ColorLin(1, 1, 1, 1));
+			m_spriteBatch.Draw(
+				lockTexture,
+				eg::Rectangle::CreateCentered(inflatedRect.Center(), lockTexture.Width(), lockTexture.Height()),
+				eg::ColorLin(1, 1, 1, 1));
 		}
 		else if (level.status == LevelStatus::Completed)
 		{
@@ -419,9 +426,13 @@ void MainMenuGameState::RenderWorld(float dt)
 	
 	eg::Rectangle dstRect;
 	if (eg::CurrentGraphicsAPI() == eg::GraphicsAPI::Vulkan)
+	{
 		dstRect = eg::Rectangle(0, 0, eg::CurrentResolutionX(), eg::CurrentResolutionY());
+	}
 	else
+	{
 		dstRect = eg::Rectangle(0, eg::CurrentResolutionY(), eg::CurrentResolutionX(), -eg::CurrentResolutionY());
+	}
 	
 	m_spriteBatch.Draw(m_worldBlurRenderer.OutputTexture(), dstRect, eg::ColorLin(1, 1, 1, m_worldFadeInProgress),
 	                   eg::SpriteFlags::ForceLowestMipLevel);

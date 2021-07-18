@@ -76,16 +76,23 @@ void CubeSpawnerEnt::CommonDraw(const EntDrawArgs& args)
 	{
 		if (cubeSpawnerModel->GetMesh(m).materialIndex == lightsMaterialIndex)
 		{
-			args.meshBatch->AddModelMesh(*cubeSpawnerModel, m, EmissiveMaterial::instance, EmissiveMaterial::InstanceData { transform, emissiveV4 });
+			args.meshBatch->AddModelMesh(*cubeSpawnerModel, m, EmissiveMaterial::instance,
+				EmissiveMaterial::InstanceData { transform, emissiveV4 });
 		}
 		else
 		{
 			glm::mat4 transformHere = transform;
 			if (m == door1MeshIndex)
+			{
 				transformHere = glm::translate(transform, glm::vec3(0, 0, -openProgressSmooth));
+			}
 			else if (m == door2MeshIndex)
+			{
 				transformHere = glm::translate(transform, glm::vec3(0, 0, openProgressSmooth));
-			args.meshBatch->AddModelMesh(*cubeSpawnerModel, m, *cubeSpawnerMaterial, StaticPropMaterial::InstanceData(transformHere));
+			}
+			
+			args.meshBatch->AddModelMesh(*cubeSpawnerModel, m, *cubeSpawnerMaterial,
+				StaticPropMaterial::InstanceData(transformHere));
 		}
 	}
 }
@@ -121,7 +128,8 @@ void CubeSpawnerEnt::Update(const WorldUpdateArgs& args)
 		}
 		if (spawnNew)
 		{
-			glm::vec3 spawnPos = m_position - glm::vec3(DirectionVector(m_direction)) * (CubeEnt::RADIUS + SPAWN_DIST_INSIDE);
+			const glm::vec3 spawnPos = m_position -
+				glm::vec3(DirectionVector(m_direction)) * (CubeEnt::RADIUS + SPAWN_DIST_INSIDE);
 			
 			cube = Ent::Create<CubeEnt>(spawnPos, m_cubeCanFloat);
 			cube->isSpawning = true;

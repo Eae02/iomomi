@@ -69,7 +69,8 @@ DeferredRenderer::DeferredRenderer()
 		sizeof(float) * 4 * SSAO_SAMPLES[2], nullptr);
 	
 	//Initializes SSAO rotation data
-	eg::UploadBuffer rotationDataUploadBuffer = eg::GetTemporaryUploadBuffer(SSAO_ROTATIONS_RES * SSAO_ROTATIONS_RES * sizeof(float), 8);
+	const size_t rotationDataSize = SSAO_ROTATIONS_RES * SSAO_ROTATIONS_RES * sizeof(float);
+	eg::UploadBuffer rotationDataUploadBuffer = eg::GetTemporaryUploadBuffer(rotationDataSize, 8);
 	volatile float* rotationDataPtr = reinterpret_cast<float*>(rotationDataUploadBuffer.Map());
 	for (uint32_t i = 0; i < SSAO_ROTATIONS_RES * SSAO_ROTATIONS_RES; i++)
 	{

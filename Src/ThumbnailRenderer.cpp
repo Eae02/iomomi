@@ -47,7 +47,8 @@ LevelThumbnailUpdate* BeginUpdateLevelThumbnails(RenderContext& renderContext, e
 	{
 		std::string levelPath = GetLevelPath(level.name);
 		std::string thumbnailPath = GetLevelThumbnailPath(level.name);
-		if (eg::FileExists(thumbnailPath.c_str()) && eg::LastWriteTime(thumbnailPath.c_str()) >= eg::LastWriteTime(levelPath.c_str()))
+		if (eg::FileExists(thumbnailPath.c_str()) &&
+		    eg::LastWriteTime(thumbnailPath.c_str()) >= eg::LastWriteTime(levelPath.c_str()))
 		{
 			continue;
 		}
@@ -101,9 +102,8 @@ LevelThumbnailUpdate* BeginUpdateLevelThumbnails(RenderContext& renderContext, e
 		
 		renderer->Render(*world, 0, 0, entry.framebuffer.handle, LEVEL_THUMBNAIL_RES_X, LEVEL_THUMBNAIL_RES_Y);
 		
-		entry.downloadBuffer = eg::Buffer(
-			eg::BufferFlags::MapRead | eg::BufferFlags::CopyDst | eg::BufferFlags::Download | eg::BufferFlags::HostAllocate,
-			THUMBNAIL_BYTES, nullptr);
+		entry.downloadBuffer = eg::Buffer(eg::BufferFlags::MapRead | eg::BufferFlags::CopyDst |
+			eg::BufferFlags::Download | eg::BufferFlags::HostAllocate, THUMBNAIL_BYTES, nullptr);
 		
 		eg::TextureRange range = {};
 		range.sizeX = LEVEL_THUMBNAIL_RES_X;

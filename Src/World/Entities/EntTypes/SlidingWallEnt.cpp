@@ -26,8 +26,9 @@ glm::vec3 SlidingWallEnt::ConstrainMove(const PhysicsObject& object, const glm::
 {
 	SlidingWallEnt& ent = *(SlidingWallEnt*)std::get<Ent*>(object.owner);
 	
-	float posSlideTime = glm::dot(object.position - ent.m_initialPosition, ent.m_slideOffset) / glm::length2(ent.m_slideOffset);
-	float slideDist = glm::dot(move, ent.m_slideOffset) / glm::length2(ent.m_slideOffset);
+	const float posSlideTime =
+		glm::dot(object.position - ent.m_initialPosition, ent.m_slideOffset) / glm::length2(ent.m_slideOffset);
+	const float slideDist = glm::dot(move, ent.m_slideOffset) / glm::length2(ent.m_slideOffset);
 	
 	return ent.m_slideOffset * glm::clamp(slideDist, -posSlideTime, 1 - posSlideTime);
 }

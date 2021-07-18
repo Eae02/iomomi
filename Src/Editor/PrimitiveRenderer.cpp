@@ -117,14 +117,16 @@ void PrimitiveRenderer::End()
 	if (m_vertexBufferCapacity < verticesBytes)
 	{
 		m_vertexBufferCapacity = eg::RoundToNextMultiple(verticesBytes, 1024 * sizeof(Vertex));
-		m_vertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer | eg::BufferFlags::CopyDst, m_vertexBufferCapacity, nullptr);
+		m_vertexBuffer =
+			eg::Buffer(eg::BufferFlags::VertexBuffer | eg::BufferFlags::CopyDst, m_vertexBufferCapacity, nullptr);
 	}
 	
 	//Reallocates the index buffer if it's currently too small
 	if (m_indexBufferCapacity < indicesBytes)
 	{
 		m_indexBufferCapacity = eg::RoundToNextMultiple(indicesBytes, 1024 * 3 * sizeof(uint32_t));
-		m_indexBuffer = eg::Buffer(eg::BufferFlags::IndexBuffer | eg::BufferFlags::CopyDst, m_indexBufferCapacity, nullptr);
+		m_indexBuffer =
+			eg::Buffer(eg::BufferFlags::IndexBuffer | eg::BufferFlags::CopyDst, m_indexBufferCapacity, nullptr);
 	}
 	
 	//Allocates an upload buffer and copies vertices and indices to it

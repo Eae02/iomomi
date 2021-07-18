@@ -92,7 +92,8 @@ void RenderTexManager::BeginFrame(uint32_t resX, uint32_t resY)
 	
 	const bool waterHighPrecision = qvar::waterUse32BitDepth(settings.waterQuality);
 	
-	if (resX != m_resX || resY != m_resY || settings.HDREnabled() != wasHDREnabled || waterHighPrecision != wasWaterHighPrecision)
+	if (resX != m_resX || resY != m_resY || settings.HDREnabled() != wasHDREnabled ||
+	    waterHighPrecision != wasWaterHighPrecision)
 	{
 		m_resX = resX;
 		m_resY = resY;
