@@ -13,12 +13,14 @@ enum class LadderComponent
 
 static const eg::Model* ladderModel;
 static const eg::IMaterial* laddderMaterial;
+static std::vector<eg::CollisionMesh> ladderCollisionMeshes;
 static std::vector<LadderComponent> meshComponents;
 
 static void OnInit()
 {
 	ladderModel = &eg::GetAsset<eg::Model>("Models/Ladder.aa.obj");
 	meshComponents.resize(ladderModel->NumMeshes());
+	ladderCollisionMeshes.reserve(ladderModel->NumMeshes());
 	for (size_t i = 0; i < ladderModel->NumMeshes(); i++)
 	{
 		std::string_view meshNamePrefix(ladderModel->GetMesh(i).name.c_str(), 3);
@@ -30,6 +32,7 @@ static void OnInit()
 			meshComponents[i] = LadderComponent::Bottom;
 		else
 			EG_PANIC("Unknown mesh prefix")
+		ladderCollisionMeshes.emplace_back(ladderModel->MakeCollisionMesh(i));
 	}
 	
 	laddderMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Ladder.yaml");
@@ -46,7 +49,7 @@ void LadderEnt::RenderSettings()
 {
 	Ent::RenderSettings();
 	
-	if (ImGui::DragInt("Length", &m_length, 1, 1, INT_MAX, nullptr, ImGuiSliderFlags_AlwaysClamp))
+	if (ImGui::DragInt("Length", &m_length, 0.1f, 1, INT_MAX, nullptr, ImGuiSliderFlags_AlwaysClamp))
 	{
 		UpdateTransformAndAABB();
 	}
@@ -57,11 +60,22 @@ void LadderEnt::RenderSettings()
 	}
 }
 
+template <typename CallbackTp>
+void LadderEnt::IterateParts(CallbackTp callback)
+{
+	callback(m_commonTransform, LadderComponent::Top);
+	for (int i = 0; i < m_length; i++)
+	{
+		callback(glm::translate(m_commonTransform, glm::vec3(0, i * -2, 0)), LadderComponent::Middle);
+	}
+	callback(glm::translate(m_commonTransform, glm::vec3(0, m_length * -2 + 2, 0)), LadderComponent::Bottom);
+}
+
 void LadderEnt::CommonDraw(const EntDrawArgs& args)
 {
-	auto DrawPart = [&] (float yOffset, LadderComponent comp)
+	IterateParts([&] (const glm::mat4& transform, LadderComponent comp)
 	{
-		StaticPropMaterial::InstanceData instanceData(glm::translate(m_commonTransform, glm::vec3(0, yOffset, 0)));
+		StaticPropMaterial::InstanceData instanceData(transform);
 		for (size_t i = 0; i < meshComponents.size(); i++)
 		{
 			if (meshComponents[i] == comp)
@@ -69,14 +83,7 @@ void LadderEnt::CommonDraw(const EntDrawArgs& args)
 				args.meshBatch->AddModelMesh(*ladderModel, i, *laddderMaterial, instanceData);
 			}
 		}
-	};
-	
-	DrawPart(0, LadderComponent::Top);
-	for (int i = 0; i < m_length; i++)
-	{
-		DrawPart(i * -2, LadderComponent::Middle);
-	}
-	DrawPart(m_length * -2 + 2, LadderComponent::Bottom);
+	});
 }
 
 void LadderEnt::UpdateTransformAndAABB()
@@ -95,6 +102,22 @@ void LadderEnt::UpdateTransformAndAABB()
 		.TransformedBoundingBox(m_commonTransform);
 	
 	m_downVector = glm::normalize(glm::vec3(m_commonTransform * glm::vec4(0, -1, 0, 0)));
+	
+	m_editorSelectionMeshes.clear();
+	IterateParts([&] (const glm::mat4& transform, LadderComponent comp)
+	{
+		for (size_t i = 0; i < meshComponents.size(); i++)
+		{
+			if (meshComponents[i] == comp)
+			{
+				EditorSelectionMesh& selectionMesh = m_editorSelectionMeshes.emplace_back();
+				selectionMesh.transform = transform;
+				selectionMesh.meshIndex = i;
+				selectionMesh.model = ladderModel;
+				selectionMesh.collisionMesh = &ladderCollisionMeshes[i];
+			}
+		}
+	});
 }
 
 void LadderEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
@@ -103,6 +126,11 @@ void LadderEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDir
 	if (faceDirection)
 		m_forward = *faceDirection;
 	UpdateTransformAndAABB();
+}
+
+std::span<const EditorSelectionMesh> LadderEnt::EdGetSelectionMeshes() const
+{
+	return m_editorSelectionMeshes;
 }
 
 void LadderEnt::Serialize(std::ostream& stream) const

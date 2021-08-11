@@ -29,8 +29,13 @@ public:
 	
 	const glm::vec3& GetDownVector() const { return m_downVector; }
 	
+	std::span<const EditorSelectionMesh> EdGetSelectionMeshes() const override;
+	
 private:
 	void UpdateTransformAndAABB();
+	
+	template <typename CallbackTp>
+	void IterateParts(CallbackTp callback);
 	
 	glm::mat4 m_commonTransform;
 	eg::AABB m_aabb;
@@ -41,4 +46,6 @@ private:
 	
 	int m_length = 1;
 	int m_downDirection = 0;
+	
+	std::vector<EditorSelectionMesh> m_editorSelectionMeshes;
 };
