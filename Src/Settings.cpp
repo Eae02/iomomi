@@ -11,7 +11,7 @@ Settings settings;
 
 void LoadSettings()
 {
-	settingsPath = eg::AppDataPath() + "EaeGravity/Settings.yaml";
+	settingsPath = eg::AppDataPath() + "iomomi/settings.yaml";
 	
 	std::ifstream settingsStream(settingsPath);
 	if (!settingsStream)

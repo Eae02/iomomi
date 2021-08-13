@@ -213,7 +213,7 @@ void InitLevels()
 	}
 	
 	//Loads the progress file if it exists
-	progressPath = eg::AppDataPath() + "EaeGravity/Progress.txt";
+	progressPath = eg::AppDataPath() + "iomomi/progress.txt";
 	std::ifstream progressFileStream(progressPath);
 	if (progressFileStream)
 	{

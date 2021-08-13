@@ -29,7 +29,7 @@ int main(int argc, char** argv)
 {
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
 	
-	std::string appDataDirPath = eg::AppDataPath() + "/eae_iomomi";
+	std::string appDataDirPath = eg::AppDataPath() + "/iomomi";
 	if (!eg::FileExists(appDataDirPath.c_str()))
 	{
 		eg::CreateDirectory(appDataDirPath.c_str());
