@@ -86,7 +86,7 @@ glm::vec3 WaterWallEnt::GetPosition() const
 
 void WaterWallEnt::Serialize(std::ostream& stream) const
 {
-	gravity_pb::WaterWallEntity waterWallPB;
+	iomomi_pb::WaterWallEntity waterWallPB;
 	
 	SerializePos(waterWallPB, m_position);
 	
@@ -100,7 +100,7 @@ void WaterWallEnt::Serialize(std::ostream& stream) const
 
 void WaterWallEnt::Deserialize(std::istream& stream)
 {
-	gravity_pb::WaterWallEntity waterWallPB;
+	iomomi_pb::WaterWallEntity waterWallPB;
 	waterWallPB.ParseFromIstream(&stream);
 	
 	m_position = DeserializePos(waterWallPB);

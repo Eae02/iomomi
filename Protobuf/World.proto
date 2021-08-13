@@ -1,6 +1,6 @@
 syntax="proto3";
 
-package gravity_pb;
+package iomomi_pb;
 
 message World {
   float thumbnail_camera_x = 1;

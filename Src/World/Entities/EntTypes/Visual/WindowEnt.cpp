@@ -353,7 +353,7 @@ const void* WindowEnt::GetComponent(const std::type_info& type) const
 
 void WindowEnt::Serialize(std::ostream& stream) const
 {
-	gravity_pb::WindowEntity windowPB;
+	iomomi_pb::WindowEntity windowPB;
 	
 	SerializePos(windowPB, m_physicsObject.position);
 	
@@ -379,7 +379,7 @@ void WindowEnt::Serialize(std::ostream& stream) const
 
 void WindowEnt::Deserialize(std::istream& stream)
 {
-	gravity_pb::WindowEntity windowPB;
+	iomomi_pb::WindowEntity windowPB;
 	windowPB.ParseFromIstream(&stream);
 	
 	m_physicsObject.position = DeserializePos(windowPB);

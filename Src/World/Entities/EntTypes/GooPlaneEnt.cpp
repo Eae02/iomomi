@@ -39,17 +39,17 @@ const void* GooPlaneEnt::GetComponent(const std::type_info& type) const
 
 void GooPlaneEnt::Serialize(std::ostream& stream) const
 {
-	gravity_pb::GooPlaneEntity gooPlanePB;
+	iomomi_pb::GooPlaneEntity gooPlanePB;
 	
 	SerializePos(gooPlanePB, m_liquidPlane.position);
-	gooPlanePB.set_wall_dir((gravity_pb::Dir)m_liquidPlane.wallForward);
+	gooPlanePB.set_wall_dir((iomomi_pb::Dir)m_liquidPlane.wallForward);
 	
 	gooPlanePB.SerializeToOstream(&stream);
 }
 
 void GooPlaneEnt::Deserialize(std::istream& stream)
 {
-	gravity_pb::GooPlaneEntity gooPlanePB;
+	iomomi_pb::GooPlaneEntity gooPlanePB;
 	gooPlanePB.ParseFromIstream(&stream);
 	m_liquidPlane.position = DeserializePos(gooPlanePB);
 	m_liquidPlane.wallForward = (Dir)gooPlanePB.wall_dir();

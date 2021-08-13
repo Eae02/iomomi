@@ -1,6 +1,6 @@
 syntax="proto3";
 
-package gravity_pb;
+package iomomi_pb;
 
 option cc_enable_arenas = true;
 

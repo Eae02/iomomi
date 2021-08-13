@@ -116,9 +116,9 @@ const void* PushButtonEnt::GetComponent(const std::type_info& type) const
 
 void PushButtonEnt::Serialize(std::ostream& stream) const
 {
-	gravity_pb::PushButtonEntity buttonPB;
+	iomomi_pb::PushButtonEntity buttonPB;
 	
-	buttonPB.set_dir((gravity_pb::Dir)m_direction);
+	buttonPB.set_dir((iomomi_pb::Dir)m_direction);
 	buttonPB.set_rotation(m_rotation);
 	SerializePos(buttonPB, m_position);
 	
@@ -131,7 +131,7 @@ void PushButtonEnt::Serialize(std::ostream& stream) const
 
 void PushButtonEnt::Deserialize(std::istream& stream)
 {
-	gravity_pb::PushButtonEntity buttonPB;
+	iomomi_pb::PushButtonEntity buttonPB;
 	buttonPB.ParseFromIstream(&stream);
 	
 	m_direction = (Dir)buttonPB.dir();

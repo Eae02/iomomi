@@ -236,9 +236,9 @@ const void* PlatformEnt::GetComponent(const std::type_info& type) const
 
 void PlatformEnt::Serialize(std::ostream& stream) const
 {
-	gravity_pb::PlatformEntity platformPB;
+	iomomi_pb::PlatformEntity platformPB;
 	
-	platformPB.set_dir((gravity_pb::Dir)m_forwardDir);
+	platformPB.set_dir((iomomi_pb::Dir)m_forwardDir);
 	SerializePos(platformPB, m_basePosition);
 	
 	platformPB.set_slide_offset_x(m_slideOffset.x);
@@ -253,7 +253,7 @@ void PlatformEnt::Serialize(std::ostream& stream) const
 
 void PlatformEnt::Deserialize(std::istream& stream)
 {
-	gravity_pb::PlatformEntity platformPB;
+	iomomi_pb::PlatformEntity platformPB;
 	platformPB.ParseFromIstream(&stream);
 	
 	m_basePosition = DeserializePos(platformPB);

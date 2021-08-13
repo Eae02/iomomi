@@ -104,13 +104,13 @@ void DecalEnt::EditorDraw(const EntEditorDrawArgs& args)
 
 void DecalEnt::Serialize(std::ostream& stream) const
 {
-	gravity_pb::DecalEntity decalPB;
+	iomomi_pb::DecalEntity decalPB;
 	
 	SerializePos(decalPB, m_position);
 	
 	decalPB.set_material_name(GetMaterialName());
 	
-	decalPB.set_dir((gravity_pb::Dir)m_direction);
+	decalPB.set_dir((iomomi_pb::Dir)m_direction);
 	decalPB.set_rotation(rotation);
 	decalPB.set_scale(scale);
 	decalPB.set_extension_x(m_repetitions.x);
@@ -121,7 +121,7 @@ void DecalEnt::Serialize(std::ostream& stream) const
 
 void DecalEnt::Deserialize(std::istream& stream)
 {
-	gravity_pb::DecalEntity decalPB;
+	iomomi_pb::DecalEntity decalPB;
 	decalPB.ParseFromIstream(&stream);
 	
 	m_position = DeserializePos(decalPB);

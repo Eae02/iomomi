@@ -17,8 +17,8 @@ public:
 	
 	static void Initialize(class EntityManager& entityManager);
 	
-	void LoadProtobuf(const gravity_pb::Activator& activator);
-	gravity_pb::Activator* SaveProtobuf(google::protobuf::Arena* arena) const;
+	void LoadProtobuf(const iomomi_pb::Activator& activator);
+	iomomi_pb::Activator* SaveProtobuf(google::protobuf::Arena* arena) const;
 	
 	bool IsActivated() const
 	{

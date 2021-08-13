@@ -18,16 +18,16 @@ const void* WaterPlaneEnt::GetComponent(const std::type_info& type) const
 
 void WaterPlaneEnt::Serialize(std::ostream& stream) const
 {
-	gravity_pb::WaterPlaneEntity waterPlanePB;
+	iomomi_pb::WaterPlaneEntity waterPlanePB;
 	SerializePos(waterPlanePB, liquidPlane.position);
 	waterPlanePB.set_density_boost(densityBoost);
-	waterPlanePB.set_wall_dir((gravity_pb::Dir)liquidPlane.wallForward);
+	waterPlanePB.set_wall_dir((iomomi_pb::Dir)liquidPlane.wallForward);
 	waterPlanePB.SerializeToOstream(&stream);
 }
 
 void WaterPlaneEnt::Deserialize(std::istream& stream)
 {
-	gravity_pb::WaterPlaneEntity waterPlanePB;
+	iomomi_pb::WaterPlaneEntity waterPlanePB;
 	waterPlanePB.ParseFromIstream(&stream);
 	densityBoost = waterPlanePB.density_boost();
 	liquidPlane.position = DeserializePos(waterPlanePB);

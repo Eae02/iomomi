@@ -208,14 +208,14 @@ std::optional<Dir> ForceFieldEnt::CheckIntersection(EntityManager& entityManager
 
 void ForceFieldEnt::Serialize(std::ostream& stream) const
 {
-	gravity_pb::ForceFieldEntity forceFieldPB;
+	iomomi_pb::ForceFieldEntity forceFieldPB;
 	
 	SerializePos(forceFieldPB, m_position);
 	
 	forceFieldPB.set_radx(radius.x);
 	forceFieldPB.set_rady(radius.y);
 	forceFieldPB.set_radz(radius.z);
-	forceFieldPB.set_new_gravity((gravity_pb::Dir)newGravity);
+	forceFieldPB.set_new_gravity((iomomi_pb::Dir)newGravity);
 	forceFieldPB.set_activate_action((uint32_t)activateAction);
 	forceFieldPB.set_name(m_activatable.m_name);
 	
@@ -224,7 +224,7 @@ void ForceFieldEnt::Serialize(std::ostream& stream) const
 
 void ForceFieldEnt::Deserialize(std::istream& stream)
 {
-	gravity_pb::ForceFieldEntity forceFieldPB;
+	iomomi_pb::ForceFieldEntity forceFieldPB;
 	forceFieldPB.ParseFromIstream(&stream);
 	
 	m_position = DeserializePos(forceFieldPB);

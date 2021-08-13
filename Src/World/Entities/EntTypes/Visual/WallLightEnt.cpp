@@ -85,9 +85,9 @@ int WallLightEnt::EdGetIconIndex() const
 
 void WallLightEnt::Serialize(std::ostream& stream) const
 {
-	gravity_pb::WallLightEntity entityPB;
+	iomomi_pb::WallLightEntity entityPB;
 	
-	entityPB.set_dir((gravity_pb::Dir)m_forwardDir);
+	entityPB.set_dir((iomomi_pb::Dir)m_forwardDir);
 	SerializePos(entityPB, m_position);
 	
 	entityPB.set_colorr(m_color.r);
@@ -101,7 +101,7 @@ void WallLightEnt::Serialize(std::ostream& stream) const
 
 void WallLightEnt::Deserialize(std::istream& stream)
 {
-	gravity_pb::WallLightEntity entityPB;
+	iomomi_pb::WallLightEntity entityPB;
 	entityPB.ParseFromIstream(&stream);
 	
 	m_forwardDir = (Dir)entityPB.dir();

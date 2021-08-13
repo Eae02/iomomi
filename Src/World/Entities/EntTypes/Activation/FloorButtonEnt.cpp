@@ -168,9 +168,9 @@ const void* FloorButtonEnt::GetComponent(const std::type_info& type) const
 
 void FloorButtonEnt::Serialize(std::ostream& stream) const
 {
-	gravity_pb::FloorButtonEntity buttonPB;
+	iomomi_pb::FloorButtonEntity buttonPB;
 	
-	buttonPB.set_dir((gravity_pb::Dir)m_direction);
+	buttonPB.set_dir((iomomi_pb::Dir)m_direction);
 	SerializePos(buttonPB, m_ringPhysicsObject.position);
 	
 	buttonPB.set_allocated_activator(m_activator.SaveProtobuf(nullptr));
@@ -181,7 +181,7 @@ void FloorButtonEnt::Serialize(std::ostream& stream) const
 
 void FloorButtonEnt::Deserialize(std::istream& stream)
 {
-	gravity_pb::FloorButtonEntity buttonPB;
+	iomomi_pb::FloorButtonEntity buttonPB;
 	buttonPB.ParseFromIstream(&stream);
 	
 	m_direction = (Dir)buttonPB.dir();

@@ -175,7 +175,7 @@ void PumpEnt::EdRotated(const glm::quat& newRotation)
 
 void PumpEnt::Serialize(std::ostream& stream) const
 {
-	gravity_pb::PumpEntity entityPB;
+	iomomi_pb::PumpEntity entityPB;
 	
 	SerializePos(entityPB, m_position);
 	SerializeRotation(entityPB, m_rotation);
@@ -196,7 +196,7 @@ void PumpEnt::Serialize(std::ostream& stream) const
 
 void PumpEnt::Deserialize(std::istream& stream)
 {
-	gravity_pb::PumpEntity entityPB;
+	iomomi_pb::PumpEntity entityPB;
 	entityPB.ParseFromIstream(&stream);
 	
 	m_position = DeserializePos(entityPB);

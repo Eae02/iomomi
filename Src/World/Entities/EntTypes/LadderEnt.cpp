@@ -135,9 +135,9 @@ std::span<const EditorSelectionMesh> LadderEnt::EdGetSelectionMeshes() const
 
 void LadderEnt::Serialize(std::ostream& stream) const
 {
-	gravity_pb::LadderEntity entityPB;
+	iomomi_pb::LadderEntity entityPB;
 	
-	entityPB.set_dir((gravity_pb::Dir)m_forward);
+	entityPB.set_dir((iomomi_pb::Dir)m_forward);
 	SerializePos(entityPB, m_position);
 	
 	entityPB.set_length(m_length);
@@ -148,7 +148,7 @@ void LadderEnt::Serialize(std::ostream& stream) const
 
 void LadderEnt::Deserialize(std::istream& stream)
 {
-	gravity_pb::LadderEntity entityPB;
+	iomomi_pb::LadderEntity entityPB;
 	entityPB.ParseFromIstream(&stream);
 	
 	m_position = DeserializePos(entityPB);

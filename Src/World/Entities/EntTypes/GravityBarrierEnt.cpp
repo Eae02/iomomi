@@ -339,7 +339,7 @@ void GravityBarrierEnt::Spawned(bool isEditor)
 
 void GravityBarrierEnt::Serialize(std::ostream& stream) const
 {
-	gravity_pb::GravityBarrierEntity gravBarrierPB;
+	iomomi_pb::GravityBarrierEntity gravBarrierPB;
 	
 	SerializePos(gravBarrierPB, m_position);
 	
@@ -359,7 +359,7 @@ void GravityBarrierEnt::Serialize(std::ostream& stream) const
 
 void GravityBarrierEnt::Deserialize(std::istream& stream)
 {
-	gravity_pb::GravityBarrierEntity gravBarrierPB;
+	iomomi_pb::GravityBarrierEntity gravBarrierPB;
 	gravBarrierPB.ParseFromIstream(&stream);
 	
 	m_position = DeserializePos(gravBarrierPB);

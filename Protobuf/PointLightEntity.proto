@@ -1,6 +1,6 @@
 syntax="proto3";
 
-package gravity_pb;
+package iomomi_pb;
 
 message PointLightEntity {
 	float posX = 1;

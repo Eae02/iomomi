@@ -137,9 +137,9 @@ std::optional<InteractControlHint> GravitySwitchEnt::GetInteractControlHint() co
 
 void GravitySwitchEnt::Serialize(std::ostream& stream) const
 {
-	gravity_pb::GravitySwitchEntity switchPB;
+	iomomi_pb::GravitySwitchEntity switchPB;
 	
-	switchPB.set_dir((gravity_pb::Dir)m_up);
+	switchPB.set_dir((iomomi_pb::Dir)m_up);
 	SerializePos(switchPB, m_position);
 	
 	switchPB.set_name(m_activatable.m_name);
@@ -149,7 +149,7 @@ void GravitySwitchEnt::Serialize(std::ostream& stream) const
 
 void GravitySwitchEnt::Deserialize(std::istream& stream)
 {
-	gravity_pb::GravitySwitchEntity switchPB;
+	iomomi_pb::GravitySwitchEntity switchPB;
 	switchPB.ParseFromIstream(&stream);
 	
 	m_position = DeserializePos(switchPB);

@@ -340,7 +340,7 @@ void CubeEnt::UpdateAfterSimulation(const WorldUpdateArgs& args)
 
 void CubeEnt::Serialize(std::ostream& stream) const
 {
-	gravity_pb::CubeEntity cubePB;
+	iomomi_pb::CubeEntity cubePB;
 	
 	SerializePos(cubePB, m_physicsObject.position);
 	
@@ -357,7 +357,7 @@ void CubeEnt::Serialize(std::ostream& stream) const
 
 void CubeEnt::Deserialize(std::istream& stream)
 {
-	gravity_pb::CubeEntity cubePB;
+	iomomi_pb::CubeEntity cubePB;
 	cubePB.ParseFromIstream(&stream);
 	
 	m_physicsObject.position = DeserializePos(cubePB);

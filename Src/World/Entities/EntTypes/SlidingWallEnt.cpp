@@ -151,7 +151,7 @@ glm::vec3 SlidingWallEnt::GetPosition() const
 
 void SlidingWallEnt::Serialize(std::ostream& stream) const
 {
-	gravity_pb::SlidingWallEntity entityPB;
+	iomomi_pb::SlidingWallEntity entityPB;
 	
 	entityPB.set_forward_plane(m_aaQuadComp.upPlane);
 	entityPB.set_up_plane(m_upPlane);
@@ -168,7 +168,7 @@ void SlidingWallEnt::Serialize(std::ostream& stream) const
 
 void SlidingWallEnt::Deserialize(std::istream& stream)
 {
-	gravity_pb::SlidingWallEntity entityPB;
+	iomomi_pb::SlidingWallEntity entityPB;
 	entityPB.ParseFromIstream(&stream);
 	
 	m_initialPosition = m_physicsObject.position = DeserializePos(entityPB);

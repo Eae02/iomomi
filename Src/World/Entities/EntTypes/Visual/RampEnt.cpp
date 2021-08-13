@@ -242,7 +242,7 @@ std::array<glm::vec3, 4> RampEnt::GetTransformedVertices(const glm::mat4& matrix
 
 void RampEnt::Serialize(std::ostream& stream) const
 {
-	gravity_pb::RampEntity rampPB;
+	iomomi_pb::RampEntity rampPB;
 	
 	SerializePos(rampPB, m_position);
 	
@@ -262,7 +262,7 @@ void RampEnt::Serialize(std::ostream& stream) const
 
 void RampEnt::Deserialize(std::istream& stream)
 {
-	gravity_pb::RampEntity rampPB;
+	iomomi_pb::RampEntity rampPB;
 	rampPB.ParseFromIstream(&stream);
 	
 	m_rotation = rampPB.yaw();

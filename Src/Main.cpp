@@ -29,7 +29,7 @@ int main(int argc, char** argv)
 {
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
 	
-	std::string appDataDirPath = eg::AppDataPath() + "/EaeGravity";
+	std::string appDataDirPath = eg::AppDataPath() + "/eae_iomomi";
 	if (!eg::FileExists(appDataDirPath.c_str()))
 	{
 		eg::CreateDirectory(appDataDirPath.c_str());
@@ -53,7 +53,7 @@ int main(int argc, char** argv)
 	if (eg::HasFlag(runConfig.flags, eg::RunFlags::PreferIntegratedGPU))
 		runConfig.preferredGPUName.clear();
 	
-	runConfig.gameName = "Gravity Game";
+	runConfig.gameName = "Iomomi";
 	runConfig.flags |= eg::RunFlags::DefaultFramebufferSRGB;
 	runConfig.defaultDepthStencilFormat = eg::Format::Depth32;
 	runConfig.framerateCap = 200;

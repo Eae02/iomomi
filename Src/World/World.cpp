@@ -82,7 +82,7 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 	uint64_t dataSize = eg::BinRead<uint64_t>(stream);
 	std::vector<char> data(dataSize);
 	stream.read(data.data(), dataSize);
-	gravity_pb::World worldPB;
+	iomomi_pb::World worldPB;
 	worldPB.ParseFromArray(data.data(), dataSize);
 	
 	//Writes protobuf data to the world's fields
@@ -151,7 +151,7 @@ void World::Save(std::ostream& outStream) const
 	
 	eg::WriteCompressedSection(outStream, voxelData.data(), voxelData.size() * sizeof(VoxelData));
 	
-	gravity_pb::World worldPB;
+	iomomi_pb::World worldPB;
 	worldPB.set_thumbnail_camera_x(thumbnailCameraPos.x);
 	worldPB.set_thumbnail_camera_y(thumbnailCameraPos.y);
 	worldPB.set_thumbnail_camera_z(thumbnailCameraPos.z);

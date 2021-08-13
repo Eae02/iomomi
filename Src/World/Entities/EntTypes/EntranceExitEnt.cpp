@@ -443,12 +443,12 @@ const void* EntranceExitEnt::GetComponent(const std::type_info& type) const
 
 void EntranceExitEnt::Serialize(std::ostream& stream) const
 {
-	gravity_pb::EntranceEntity entrancePB;
+	iomomi_pb::EntranceEntity entrancePB;
 	
 	SerializePos(entrancePB, m_position);
 	
 	entrancePB.set_isexit(m_type == Type::Exit);
-	entrancePB.set_dir((gravity_pb::Dir)OppositeDir(m_direction));
+	entrancePB.set_dir((iomomi_pb::Dir)OppositeDir(m_direction));
 	entrancePB.set_name(m_activatable.m_name);
 	
 	entrancePB.SerializeToOstream(&stream);
@@ -456,7 +456,7 @@ void EntranceExitEnt::Serialize(std::ostream& stream) const
 
 void EntranceExitEnt::Deserialize(std::istream& stream)
 {
-	gravity_pb::EntranceEntity entrancePB;
+	iomomi_pb::EntranceEntity entrancePB;
 	entrancePB.ParseFromIstream(&stream);
 	
 	m_position = DeserializePos(entrancePB);

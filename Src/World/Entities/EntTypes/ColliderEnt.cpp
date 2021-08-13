@@ -97,7 +97,7 @@ void ColliderEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 
 void ColliderEnt::Serialize(std::ostream& stream) const
 {
-	gravity_pb::ColliderEntity entityPB;
+	iomomi_pb::ColliderEntity entityPB;
 	
 	SerializePos(entityPB, m_physicsObject.position);
 	
@@ -120,7 +120,7 @@ void ColliderEnt::Serialize(std::ostream& stream) const
 
 void ColliderEnt::Deserialize(std::istream& stream)
 {
-	gravity_pb::ColliderEntity entityPB;
+	iomomi_pb::ColliderEntity entityPB;
 	entityPB.ParseFromIstream(&stream);
 	
 	m_physicsObject.position = DeserializePos(entityPB);

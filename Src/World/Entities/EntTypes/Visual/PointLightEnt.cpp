@@ -54,7 +54,7 @@ int PointLightEnt::EdGetIconIndex() const
 
 void PointLightEnt::Serialize(std::ostream& stream) const
 {
-	gravity_pb::PointLightEntity entityPB;
+	iomomi_pb::PointLightEntity entityPB;
 	
 	SerializePos(entityPB, m_position);
 	
@@ -69,7 +69,7 @@ void PointLightEnt::Serialize(std::ostream& stream) const
 
 void PointLightEnt::Deserialize(std::istream& stream)
 {
-	gravity_pb::PointLightEntity entityPB;
+	iomomi_pb::PointLightEntity entityPB;
 	entityPB.ParseFromIstream(&stream);
 	
 	m_position = DeserializePos(entityPB);

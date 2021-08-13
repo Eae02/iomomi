@@ -257,7 +257,7 @@ void MeshEnt::EdRotated(const glm::quat& newRotation)
 
 void MeshEnt::Serialize(std::ostream& stream) const
 {
-	gravity_pb::MeshEntity entityPB;
+	iomomi_pb::MeshEntity entityPB;
 	
 	SerializePos(entityPB, m_position);
 	SerializeRotation(entityPB, m_rotation);
@@ -275,7 +275,7 @@ void MeshEnt::Serialize(std::ostream& stream) const
 
 void MeshEnt::Deserialize(std::istream& stream)
 {
-	gravity_pb::MeshEntity entityPB;
+	iomomi_pb::MeshEntity entityPB;
 	entityPB.ParseFromIstream(&stream);
 	
 	m_position = DeserializePos(entityPB);
