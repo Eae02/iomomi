@@ -1,5 +1,6 @@
 #include "Settings.hpp"
 #include "AudioPlayers.hpp"
+#include "FileUtils.hpp"
 
 #include <yaml-cpp/yaml.h>
 #include <fstream>
@@ -11,7 +12,7 @@ Settings settings;
 
 void LoadSettings()
 {
-	settingsPath = eg::AppDataPath() + "iomomi/settings.yaml";
+	settingsPath = appDataDirPath + "settings.yaml";
 	
 	std::ifstream settingsStream(settingsPath);
 	if (!settingsStream)
@@ -146,6 +147,9 @@ void SaveSettings()
 	{
 		settingsStream << emitter.c_str();
 	}
+	settingsStream.close();
+	
+	SyncFileSystem();
 }
 
 int settingsGeneration = 0;

@@ -1,7 +1,7 @@
 template <typename CallbackTp>
 void EntityManager::ForEachInEntityVector(std::vector<std::weak_ptr<Ent>>& entities, CallbackTp callback)
 {
-	for (int64_t i = entities.size() - 1; i >= 0; i--)
+	for (int64_t i = (int64_t)entities.size() - 1; i >= 0; i--)
 	{
 		if (std::shared_ptr<Ent> ent = entities[i].lock())
 		{

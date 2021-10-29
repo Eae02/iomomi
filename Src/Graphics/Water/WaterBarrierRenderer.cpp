@@ -2,6 +2,12 @@
 #include "WaterSimulator.hpp"
 #include "../../World/World.hpp"
 
+#ifdef __EMSCRIPTEN__
+WaterBarrierRenderer::WaterBarrierRenderer() { }
+void WaterBarrierRenderer::Init(class WaterSimulator& waterSimulator, class World& world) { }
+void WaterBarrierRenderer::Update(float dt) { }
+#else
+
 static constexpr float TEXTURE_DENSITY = 2;
 static constexpr uint32_t LOCAL_SIZE_X = 64;
 
@@ -157,3 +163,5 @@ void WaterBarrierRenderer::Update(float dt)
 		barrier.fadeTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 	}
 }
+
+#endif

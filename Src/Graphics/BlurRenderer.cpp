@@ -1,6 +1,12 @@
 #include "BlurRenderer.hpp"
 #include "GraphicsCommon.hpp"
 
+#ifdef __EMSCRIPTEN__
+void BlurRenderer::MaybeUpdateResolution(uint32_t newWidth, uint32_t newHeight) { }
+void BlurRenderer::Render(eg::TextureRef inputTexture) const { }
+void BlurRenderer::DoBlurPass(const glm::vec2& blurVector, eg::TextureRef inputTexture, int inputLod, eg::FramebufferRef dstFramebuffer) const { }
+#else
+
 static eg::Pipeline glassBlurPipeline;
 
 static void OnInit()
@@ -67,8 +73,7 @@ void BlurRenderer::MaybeUpdateResolution(uint32_t newWidth, uint32_t newHeight)
 	}
 }
 
-void BlurRenderer::DoBlurPass(const glm::vec2& blurVector, eg::TextureRef inputTexture,
-                                   int inputLod, eg::FramebufferRef dstFramebuffer) const
+void BlurRenderer::DoBlurPass(const glm::vec2& blurVector, eg::TextureRef inputTexture, int inputLod, eg::FramebufferRef dstFramebuffer) const
 {
 	eg::RenderPassBeginInfo rp1BeginInfo;
 	rp1BeginInfo.framebuffer = dstFramebuffer.handle;
@@ -117,3 +122,5 @@ void BlurRenderer::Render(eg::TextureRef inputTexture) const
 		ChangeUsageForShaderSample(m_blurTextureOut, i);
 	}
 }
+
+#endif

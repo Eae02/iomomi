@@ -35,6 +35,13 @@ eg::TextureRef WaterRenderer::GetDummyDepthTexture()
 	return dummyWaterDepthTexture;
 }
 
+#ifdef __EMSCRIPTEN__
+WaterRenderer::WaterRenderer() { }
+void WaterRenderer::CreateDepthBlurPipelines(uint32_t samples) { }
+void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParticles, RenderTexManager& rtManager) { }
+void WaterRenderer::RenderPost(RenderTexManager& rtManager) { }
+#else
+
 WaterRenderer::WaterRenderer()
 {
 	float quadVBData[] = { -1, -1, -1, 1, 1, -1, 1, 1 };
@@ -103,14 +110,13 @@ void WaterRenderer::CreateDepthBlurPipelines(uint32_t samples)
 	m_pipelineBlurPass2.FramebufferFormatHint(eg::Format::R16G16B16A16_Float);
 }
 
-#pragma pack(push, 1)
-struct WaterBlurPC
+struct __attribute__ ((__packed__, __may_alias__)) WaterBlurPC
 {
-	glm::vec2 blurDir;
+	float blurDirX;
+	float blurDirY;
 	float blurDistanceFalloff;
 	float blurDepthFalloff;
 };
-#pragma pack(pop)
 
 static float* blurRadius          = eg::TweakVarFloat("wblur_radius", 1.0f, 0.0f);
 static float* blurDistanceFalloff = eg::TweakVarFloat("wblur_distfall", 0.5f, 0.0f);
@@ -208,7 +214,8 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 	eg::DC.BeginRenderPass(depthBlur1RPBeginInfo);
 	
 	WaterBlurPC blurPC;
-	blurPC.blurDir = glm::vec2(0, relBlurRad / rtManager.ResY());
+	blurPC.blurDirX = 0;
+	blurPC.blurDirY = relBlurRad / rtManager.ResY();
 	blurPC.blurDepthFalloff = *blurDepthFalloff;
 	blurPC.blurDistanceFalloff = relDistanceFalloff;
 	
@@ -230,7 +237,8 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 	depthBlurBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
 	eg::DC.BeginRenderPass(depthBlurBeginInfo);
 	
-	blurPC.blurDir = glm::vec2(relBlurRad / rtManager.ResX(), 0);
+	blurPC.blurDirX = relBlurRad / rtManager.ResX();
+	blurPC.blurDirY = 0;
 	blurPC.blurDepthFalloff = *blurDepthFalloff;
 	blurPC.blurDistanceFalloff = relDistanceFalloff;
 	
@@ -297,3 +305,5 @@ void WaterRenderer::RenderPost(RenderTexManager& rtManager)
 	
 	eg::DC.EndRenderPass();
 }
+
+#endif

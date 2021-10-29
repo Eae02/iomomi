@@ -69,7 +69,7 @@ GravityGun::GravityGun()
 	for (size_t i = 0; i < m_model->NumMeshes(); i++)
 	{
 		std::string_view name = m_model->GetMesh(i).name;
-		m_meshIsPartOfFront[i] = (eg::StringStartsWith(name, "Front") || eg::StringStartsWith(name, "EnergyCyl"));
+		m_meshIsPartOfFront[i] = name.starts_with("Front") || name.starts_with("EnergyCyl");
 	}
 	
 	light = std::make_shared<PointLight>();

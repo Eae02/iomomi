@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(iomomi CXX)
+project(iomomi)
 
 set(BUILD_DIR_NAME ${CMAKE_BUILD_TYPE})
 
@@ -22,18 +22,15 @@ add_executable(iomomi ${SOURCE_FILES} ${IMGUI_FILES})
 
 target_precompile_headers(iomomi PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Inc/Common.hpp)
 
+target_compile_options(iomomi PRIVATE -Wall -Wextra -Wshadow -pedantic -Wno-unused-parameter -Wno-delete-non-virtual-dtor -Wno-missing-field-initializers)
+
 #Adds compiler specific options
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-	target_compile_options(iomomi PRIVATE -Wall -Wextra -Wshadow -pedantic -msse4.1 --std=c++20 -Wno-unused-parameter -Wno-delete-non-virtual-dtor -Wno-missing-field-initializers)
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	set_source_files_properties(Src/Graphics/Water/WaterSimulatorImpl.cpp PROPERTIES COMPILE_FLAGS "-O1 -g0")
-	set_source_files_properties(Src/World/Collision.cpp PROPERTIES COMPILE_FLAGS "-O3 -g0")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-	target_compile_options(iomomi PRIVATE /wd4250 /wd4307 /wd4251 /wd4244 /wd4068 /wd4996 /wd4275 /D_CRT_SECURE_NO_WARNINGS
-		/D_DISABLE_EXTENDED_ALIGNED_STORAGE)
+	set_source_files_properties(Src/World/Collision.cpp PROPERTIES COMPILE_FLAGS "-O2 -g0")
 endif()
 
-target_link_libraries(iomomi stdc++fs tbb yaml-cpp)
-target_link_libraries(iomomi EGame yaml-cpp)
+target_link_libraries(iomomi yaml-cpp EGame)
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 	set_target_properties(iomomi PROPERTIES
@@ -47,6 +44,8 @@ endif()
 set_target_properties(iomomi PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Bin/${CMAKE_BUILD_TYPE}-${CMAKE_SYSTEM_NAME}
 	OUTPUT_NAME "iomomi"
+	LINKER_LANGUAGE CXX
+	CXX_STANDARD 20
 )
 
 string(TIMESTAMP BUILD_DATE "%d-%m-%Y")
@@ -69,7 +68,27 @@ function (fixIncludes TARGET)
 	set_target_properties(${TARGET} PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${INC}")
 endfunction()
 
-find_package(Protobuf REQUIRED)
-fixIncludes(protobuf::libprotobuf)
-
-target_link_libraries(iomomi protobuf::libprotobuf)
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
+	add_library(minizip STATIC ${MINIZIP_SRC_DIR}/minizip.c ${MINIZIP_SRC_DIR}/unzip.c ${MINIZIP_SRC_DIR}/ioapi.c)
+	set_target_properties(minizip PROPERTIES LINKER_LANGUAGE C)
+	target_link_libraries(iomomi minizip)
+	
+	set(EMCC_FLAGS "-lidbfs.js -lopenal -s ALLOW_MEMORY_GROWTH=1 -s WASM=1 -s USE_WEBGL2=1 -s FULL_ES3=1 -s USE_ZLIB=1 -s FORCE_FILESYSTEM=1 -s FETCH=1 -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0")
+	
+	if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+		set(EMCC_FLAGS "${EMCC_FLAGS} -gsource-map")
+		target_compile_options(iomomi PRIVATE -gsource-map)
+	endif()
+	
+	target_link_libraries(iomomi "${PROTOBUF_SRC_DIR}/.libs/libprotobuf.a")
+	target_include_directories(iomomi SYSTEM PRIVATE ${PROTOBUF_SRC_DIR} ${MINIZIP_SRC_DIR})
+	
+	target_compile_options(iomomi PRIVATE -Wno-sign-conversion -Wno-shorten-64-to-32 -Wno-mismatched-tags)
+	set_target_properties(iomomi PROPERTIES LINK_FLAGS "-s EXPORTED_RUNTIME_METHODS=['cwrap'] -s EXPORTED_FUNCTIONS=['_WebMain'] ${EMCC_FLAGS}")
+else()
+	find_package(Protobuf REQUIRED)
+	fixIncludes(protobuf::libprotobuf)
+	target_link_libraries(iomomi protobuf::libprotobuf stdc++fs tbb)
+	
+	target_compile_options(iomomi PRIVATE -msse4.1)
+endif()

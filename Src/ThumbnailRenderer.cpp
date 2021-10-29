@@ -4,6 +4,13 @@
 #include "World/World.hpp"
 #include "GameRenderer.hpp"
 
+#ifdef __EMSCRIPTEN__
+
+LevelThumbnailUpdate* BeginUpdateLevelThumbnails(struct RenderContext& renderContext, eg::console::Writer& writer) { return nullptr; }
+void EndUpdateLevelThumbnails(LevelThumbnailUpdate* update) { }
+
+#else
+
 #include <fstream>
 #include <EGame/Graphics/ImageWriter.hpp>
 
@@ -164,3 +171,5 @@ void EndUpdateLevelThumbnails(LevelThumbnailUpdate* update)
 	
 	delete update;
 }
+
+#endif

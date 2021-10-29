@@ -75,9 +75,13 @@ private:
 	
 	static GenerateResult Generate(const VoxelBuffer& voxels, std::span<const WayPoint> points);
 	
+	void SetGenerateResult(GenerateResult& result);
+	
 	std::vector<WayPoint> GetWayPointsWithStartAndEnd() const;
 	
+#ifndef __EMSCRIPTEN__
 	std::future<GenerateResult> m_generationFuture;
+#endif
 	
 	static const eg::Model* s_models[MV_Count];
 	static const eg::IMaterial* s_materials[MV_Count];

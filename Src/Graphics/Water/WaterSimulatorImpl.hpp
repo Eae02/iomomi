@@ -1,5 +1,7 @@
 #pragma once
 
+#ifndef __EMSCRIPTEN__
+
 #include "../../World/Dir.hpp"
 #include "WaterPumpDescription.hpp"
 
@@ -57,3 +59,7 @@ int WSI_Query(WaterSimulatorImpl* impl, const eg::AABB& aabb, glm::vec3& waterVe
 void WSI_SwapBuffers(WaterSimulatorImpl* impl);
 
 void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args);
+
+#else
+struct WaterBlocker { };
+#endif

@@ -8,3 +8,6 @@
 [submodule "Deps/pcg"]
 	path = Deps/pcg
 	url = https://github.com/imneme/pcg-cpp.git
+[submodule "Deps/minizip"]
+	path = Deps/minizip
+	url = https://github.com/zlib-ng/minizip-ng.git

@@ -26,15 +26,11 @@ struct RampMaterial
 		: name(_name), material(_material) { }
 };
 
-static DecalMaterial* edgeDecalMaterial;
 static std::vector<RampMaterial> rampMaterials;
 
-float* rampDecalSize = eg::TweakVarFloat("ramp_decal_size", 0.4f, 0.0f);
-
+//Cannot be called by EG_ON_INIT because wallMaterials need to be initialized before
 static void Initialize()
 {
-	edgeDecalMaterial = &eg::GetAsset<DecalMaterial>("Decals/RampEdge.yaml");
-	
 	rampMaterials.emplace_back(
 		"Ramp", &eg::GetAsset<StaticPropMaterial>("Materials/Ramp.yaml")
 	);
@@ -56,13 +52,13 @@ static void Initialize()
 
 RampEnt::RampEnt()
 {
-	if (edgeDecalMaterial == nullptr)
+	m_physicsObject.canBePushed = false;
+	m_physicsObject.owner = this;
+	
+	if (rampMaterials.empty())
 	{
 		Initialize();
 	}
-	
-	m_physicsObject.canBePushed = false;
-	m_physicsObject.owner = this;
 }
 
 void RampEnt::RenderSettings()
@@ -93,9 +89,6 @@ void RampEnt::RenderSettings()
 		ImGui::EndCombo();
 	}
 	
-	if (ImGui::Checkbox("Edge Decals", &m_hasEdgeDecals))
-		m_meshOutOfDate = true;
-	
 	ImGui::DragFloat("Texture Scale", &m_textureScale, 0.5f, 0.0f, INFINITY);
 	if (ImGui::SliderInt("Texture Rotation", &m_textureRotation, 0, 4))
 		m_meshOutOfDate = true;
@@ -122,14 +115,6 @@ void RampEnt::CommonDraw(const EntDrawArgs& args)
 	mesh.vertexBuffer = m_vertexBuffer;
 	args.meshBatch->Add(mesh, *rampMaterials[m_material].material,
 		StaticPropMaterial::InstanceData(glm::mat4(1), textureScale));
-	
-	if (m_hasEdgeDecals && args.shadowDrawArgs == nullptr)
-	{
-		for (const DecalMaterial::InstanceData& decalInstance : m_edgeDecalInstances)
-		{
-			args.meshBatch->Add(DecalMaterial::GetMesh(), *edgeDecalMaterial, decalInstance, 1);
-		}
-	}
 }
 
 void RampEnt::InitializeVertexBuffer()
@@ -178,35 +163,6 @@ void RampEnt::InitializeVertexBuffer()
 	
 	eg::DC.UpdateBuffer(m_vertexBuffer, 0, sizeof(vertices), vertices);
 	m_vertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
-	
-	// ** Generates decal instances for the edge of the ramp **
-	m_edgeDecalInstances.clear();
-	if (m_hasEdgeDecals)
-	{
-		const int numDecals = std::max((int)std::round(m_rampLength / *rampDecalSize), 1);
-		const float decalWorldSize = m_rampLength / numDecals;
-		
-		const glm::mat4 decalRotationMatrix = glm::mat4(glm::mat3(
-			xDir * decalWorldSize * 0.5f,
-			normal * decalWorldSize * 0.5f,
-			aDir * decalWorldSize * 0.5f
-		));
-		
-		const glm::mat4 decalTransforms[] = 
-		{
-			glm::translate({}, transformedPos[0]) * decalRotationMatrix,
-			glm::translate({}, transformedPos[1]) * decalRotationMatrix * glm::scale({}, glm::vec3(-1, 1, 1))
-		};
-		
-		for (int y = 1; y < numDecals * 2; y++)
-		{
-			for (int x = 0; x < 2; x++)
-			{
-				const glm::mat4 matrix = decalTransforms[x] * glm::translate(glm::mat4(1), glm::vec3(1, 0, y));
-				m_edgeDecalInstances.emplace_back(matrix, glm::vec2(1, 0), glm::vec2(0, 1));
-			}
-		}
-	}
 }
 
 glm::mat4 RampEnt::GetTransformationMatrix() const
@@ -253,7 +209,6 @@ void RampEnt::Serialize(std::ostream& stream) const
 	rampPB.set_scalez(m_size.z);
 	rampPB.set_texture_scale(m_textureScale);
 	rampPB.set_stretch_texture_v(m_stretchTextureV);
-	rampPB.set_no_edge_decals(!m_hasEdgeDecals);
 	rampPB.set_material(eg::HashFNV1a32(rampMaterials[m_material].name));
 	rampPB.set_texture_rotation(m_textureRotation);
 	
@@ -273,7 +228,6 @@ void RampEnt::Deserialize(std::istream& stream)
 	m_position = DeserializePos(rampPB);
 	m_textureScale = rampPB.texture_scale();
 	m_stretchTextureV = rampPB.stretch_texture_v();
-	m_hasEdgeDecals = !rampPB.no_edge_decals();
 	m_textureRotation = rampPB.texture_rotation();
 	
 	m_material = 0;
@@ -335,7 +289,6 @@ std::shared_ptr<Ent> CloneEntity<RampEnt>(const Ent& entity)
 	clone->m_flipped = src.m_flipped;
 	clone->m_size = src.m_size;
 	clone->m_position = src.m_position;
-	clone->m_hasEdgeDecals = src.m_hasEdgeDecals;
 	clone->m_stretchTextureV = src.m_stretchTextureV;
 	clone->m_textureScale = src.m_textureScale;
 	clone->m_textureRotation = src.m_textureRotation;

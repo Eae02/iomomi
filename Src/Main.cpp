@@ -1,6 +1,7 @@
 #include "Game.hpp"
 #include "Levels.hpp"
 #include "Settings.hpp"
+#include "FileUtils.hpp"
 #include "Graphics/Materials/StaticPropMaterial.hpp"
 #include "Graphics/Materials/DecalMaterial.hpp"
 
@@ -25,15 +26,9 @@ const char* version = __DATE__;
 
 bool audioInitializationFailed = false;
 
-int main(int argc, char** argv)
+void Run(int argc, char** argv)
 {
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
-	
-	std::string appDataDirPath = eg::AppDataPath() + "/iomomi";
-	if (!eg::FileExists(appDataDirPath.c_str()))
-	{
-		eg::CreateDirectory(appDataDirPath.c_str());
-	}
 	
 	eg::RunConfig runConfig;
 #ifndef NDEBUG
@@ -61,11 +56,14 @@ int main(int argc, char** argv)
 	runConfig.minWindowH = 700;
 	runConfig.initialize = []
 	{
-		if (!eg::Contains(eg::FullscreenDisplayModes(), settings.fullscreenDisplayMode))
+		if (!eg::FullscreenDisplayModes().empty())
 		{
-			settings.fullscreenDisplayMode = eg::FullscreenDisplayModes()[eg::NativeDisplayModeIndex()];
+			if (!eg::Contains(eg::FullscreenDisplayModes(), settings.fullscreenDisplayMode))
+			{
+				settings.fullscreenDisplayMode = eg::FullscreenDisplayModes()[eg::NativeDisplayModeIndex()];
+			}
+			UpdateDisplayMode();
 		}
-		UpdateDisplayMode();
 		
 		if (!eg::InitializeAudio())
 		{
@@ -87,7 +85,27 @@ int main(int argc, char** argv)
 	};
 	
 	eg::Run<Game>(runConfig);
+}
+
+#ifdef __EMSCRIPTEN__
+extern "C" void WebMain()
+{
+	appDataDirPath = "/data/";
+	char argv[] = "iomomi";
+	char* argvPtr = argv;
+	Run(1, &argvPtr);
+}
+#else
+int main(int argc, char** argv)
+{
+	appDataDirPath = eg::AppDataPath() + "/iomomi/";
+	if (!eg::FileExists(appDataDirPath.c_str()))
+	{
+		eg::CreateDirectory(appDataDirPath.c_str());
+	}
 	
+	Run(argc, argv);
 	SaveProgress();
 	SaveSettings();
 }
+#endif

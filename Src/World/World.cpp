@@ -29,8 +29,7 @@ World::World()
 static const uint32_t CURRENT_VERSION = 9;
 static char MAGIC[] = { (char)0xFF, 'G', 'W', 'D' };
 
-#pragma pack(push, 1)
-struct VoxelData
+struct __attribute__ ((__packed__, __may_alias__)) VoxelData
 {
 	int32_t x;
 	int32_t y;
@@ -38,8 +37,6 @@ struct VoxelData
 	uint8_t materials[6];
 	uint16_t hasGravityCorner;
 };
-#pragma pack(pop)
-
 
 std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 {
@@ -374,16 +371,8 @@ eg::CollisionMesh World::BuildMesh(std::vector<WallVertex>& vertices, std::vecto
 			
 			bool shouldDraw = !eg::Contains(cubeSpawnerPositions2, faceCenter2);
 			
-			//Emits indices
-			static const uint32_t indicesRelative[] = {0, 1, 2, 2, 1, 3};
-			if (shouldDraw)
-			{
-				const uint32_t baseIndex = (uint32_t)vertices.size();
-				for (uint32_t i : indicesRelative)
-					indices.push_back(baseIndex + i);
-			}
-			
-			uint32_t baseIndexCol = collisionVertices.size();
+			WallVertex pendingVertices[4];
+			bool allVerticesHiddenByDoor = true;
 			bool hasCollision = true;
 			
 			//Emits vertices
@@ -406,44 +395,46 @@ eg::CollisionMesh World::BuildMesh(std::vector<WallVertex>& vertices, std::vecto
 					}
 					const float doorDist255 = (glm::clamp(doorDist, -1.0f, 1.0f) + 1.0f) * 127.0f;
 					
-					if (shouldDraw)
-					{
-						WallVertex& vertex = vertices.emplace_back();
-						vertex.position = pos;
-						vertex.misc[WallVertex::M_TexLayer] = texture;
-						vertex.misc[WallVertex::M_DoorDist] = (uint8_t)doorDist255;
-						vertex.misc[WallVertex::M_AO] = 0;
-						vertex.SetNormal(normal);
-						vertex.SetTangent(tangent);
-						
-						if (!voxels.IsAir(voxel.first + tDir))
-							vertex.misc[WallVertex::M_AO] |= fy + 1;
-						if (!voxels.IsAir(voxel.first + bDir))
-							vertex.misc[WallVertex::M_AO] |= (fx + 1) << 2;
-						if (!voxels.IsAir(voxel.first + diagDir) && vertex.misc[WallVertex::M_AO] == 0)
-							vertex.misc[WallVertex::M_AO] = 1 << (fx + 2 * fy);
-					}
+					WallVertex& vertex = pendingVertices[fx * 2 + fy];
+					vertex.position = pos;
+					vertex.misc[WallVertex::M_TexLayer] = texture;
+					vertex.misc[WallVertex::M_DoorDist] = (uint8_t)doorDist255;
+					vertex.misc[WallVertex::M_AO] = 0;
+					vertex.SetNormal(normal);
+					vertex.SetTangent(tangent);
+					
+					if (!voxels.IsAir(voxel.first + tDir))
+						vertex.misc[WallVertex::M_AO] |= fy + 1;
+					if (!voxels.IsAir(voxel.first + bDir))
+						vertex.misc[WallVertex::M_AO] |= (fx + 1) << 2;
+					if (!voxels.IsAir(voxel.first + diagDir) && vertex.misc[WallVertex::M_AO] == 0)
+						vertex.misc[WallVertex::M_AO] = 1 << (fx + 2 * fy);
 					
 					if (doorDist < 0.0f)
 						hasCollision = false;
-					if (hasCollision)
-						collisionVertices.push_back(pos);
+					if (doorDist >= 0.0f)
+						allVerticesHiddenByDoor = false;
 				}
+			}
+			
+			static const uint32_t indicesRelative[] = {0, 1, 2, 2, 1, 3};
+			
+			if (shouldDraw && !allVerticesHiddenByDoor)
+			{
+				const uint32_t baseIndex = (uint32_t)vertices.size();
+				for (const WallVertex& vertex : pendingVertices)
+					vertices.push_back(vertex);
+				for (uint32_t i : indicesRelative)
+					indices.push_back(baseIndex + i);
 			}
 			
 			if (hasCollision)
 			{
+				uint32_t baseIndexCol = collisionVertices.size();
+				for (const WallVertex& vertex : pendingVertices)
+					collisionVertices.push_back(vertex.position);
 				for (uint32_t i : indicesRelative)
-				{
 					collisionIndices.push_back(baseIndexCol + i);
-				}
-			}
-			else
-			{
-				while (collisionVertices.size() > baseIndexCol)
-				{
-					collisionVertices.pop_back();
-				}
 			}
 		}
 	}

@@ -55,9 +55,8 @@ void PostProcessor::Render(eg::TextureRef input, const eg::BloomRenderer::Render
 	
 	eg::DC.BeginRenderPass(rpBeginInfo);
 	
-	const float pc[] = {
-		1.0f / outputResX,
-		1.0f / outputResY,
+	const float pc[] =
+	{
 		settings.exposure,
 		*bloomIntensity,
 		colorScale,

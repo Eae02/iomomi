@@ -332,6 +332,10 @@ bool StaticPropMaterial::CheckInstanceDataType(const std::type_info* instanceDat
 
 const StaticPropMaterial& StaticPropMaterial::GetFromWallMaterial(uint32_t index)
 {
+#ifdef __EMSCRIPTEN__
+	return eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml");
+#endif
+	
 	EG_ASSERT(index != 0);
 	if (staticPropWallMaterials[index] == nullptr)
 	{

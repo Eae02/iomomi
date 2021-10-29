@@ -23,10 +23,9 @@ static void OnInit()
 	arrowTexture = &eg::GetAsset<eg::Texture>("Textures/PumpDisplayArrow.png");
 	
 	eg::SamplerDescription samplerDesc;
-	samplerDesc.wrapU = eg::WrapMode::ClampToBorder;
-	samplerDesc.wrapV = eg::WrapMode::ClampToBorder;
-	samplerDesc.wrapW = eg::WrapMode::ClampToBorder;
-	samplerDesc.borderColor = eg::BorderColor::F0000;
+	samplerDesc.wrapU = eg::WrapMode::ClampToEdge;
+	samplerDesc.wrapV = eg::WrapMode::ClampToEdge;
+	samplerDesc.wrapW = eg::WrapMode::ClampToEdge;
 	arrowTextureSampler = eg::Sampler(samplerDesc);
 }
 

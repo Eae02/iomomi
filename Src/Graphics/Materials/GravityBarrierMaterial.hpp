@@ -5,14 +5,12 @@ class GravityBarrierMaterial : public eg::IMaterial
 public:
 	static constexpr int NUM_INTERACTABLES = 8;
 	
-#pragma pack(push, 1)
-	struct BarrierBufferData
+	struct __attribute__ ((__packed__, __may_alias__)) BarrierBufferData
 	{
 		uint32_t iaDownAxis[NUM_INTERACTABLES];
-		glm::vec4 iaPosition[NUM_INTERACTABLES];
+		float iaPosition[NUM_INTERACTABLES][4];
 		float gameTime;
 	};
-#pragma pack(pop)
 	
 	GravityBarrierMaterial() = default;
 	

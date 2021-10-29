@@ -88,7 +88,7 @@ static void OnInit()
 	int doorFrameMaterialIndex = entrance.model->GetMaterialIndex("DoorFrame");
 	for (size_t m = 0; m < entrance.model->NumMeshes(); m++)
 	{
-		if (eg::StringStartsWith(entrance.model->GetMesh(m).name, "Wall") &&
+		if (entrance.model->GetMesh(m).name.starts_with("Wall") &&
 			entrance.model->GetMesh(m).materialIndex == doorFrameMaterialIndex)
 		{
 			entrance.onlyRenderIfInside[m] = false;
@@ -105,7 +105,7 @@ static void OnInit()
 			bool found = false;
 			for (size_t m = 0; m < entrance.model->NumMeshes(); m++)
 			{
-				if (eg::StringStartsWith(entrance.model->GetMesh(m).name, prefixSV))
+				if (entrance.model->GetMesh(m).name.starts_with(prefixSV))
 				{
 					entrance.doorMeshIndices[d][h] = m;
 					entrance.onlyRenderIfInside[m] = false;

@@ -139,7 +139,7 @@ void ForceFieldEnt::Update(const WorldUpdateArgs& args)
 	//Simulated particles
 	const float radDown = radius[(int)m_effectiveNewGravity / 2];
 	const float maxS = radDown * 2 + 1.0f;
-	for (int64_t i = m_particles.size() - 1; i >= 0; i--)
+	for (int64_t i = (int64_t)m_particles.size() - 1; i >= 0; i--)
 	{
 		m_particles[i].elapsedTime += args.dt;
 		float s = *particleGravity * m_particles[i].elapsedTime * m_particles[i].elapsedTime;

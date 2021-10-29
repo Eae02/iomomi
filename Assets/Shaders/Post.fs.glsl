@@ -13,7 +13,6 @@ layout(binding=1) uniform sampler2D bloomSampler;
 
 layout (push_constant) uniform PC
 {
-	vec2 pixelSize;
 	float exposure;
 	float bloomIntensity;
 	float finalColorScale;
@@ -30,10 +29,10 @@ vec3 doFXAA()
 	float REDUCE_MIN = 1 / 128.0;
 	float REDUCE_MUL = 1 / 8.0;
 	
-	float lumaTL = dot(luma, texture(inputSampler, texCoord_in - pixelSize).xyz);
-	float lumaTR = dot(luma, texture(inputSampler, texCoord_in + vec2(pixelSize.x, -pixelSize.y)).xyz);
-	float lumaBL = dot(luma, texture(inputSampler, texCoord_in + vec2(-pixelSize.x, pixelSize.y)).xyz);
-	float lumaBR = dot(luma, texture(inputSampler, texCoord_in + pixelSize).xyz);
+	float lumaTL = dot(luma, textureOffset(inputSampler, texCoord_in, ivec2(-1, -1)).xyz);
+	float lumaTR = dot(luma, textureOffset(inputSampler, texCoord_in, ivec2(1, -1)).xyz);
+	float lumaBL = dot(luma, textureOffset(inputSampler, texCoord_in, ivec2(-1, 1)).xyz);
+	float lumaBR = dot(luma, textureOffset(inputSampler, texCoord_in, ivec2(1, 1)).xyz);
 	float lumaMid = dot(luma, texture(inputSampler, texCoord_in).xyz);
 	
 	vec2 dir = vec2(0, 0);
@@ -43,7 +42,7 @@ vec3 doFXAA()
 	float dirReduce = max((lumaTL + lumaTR + lumaBL + lumaBR) * (REDUCE_MUL * 0.25), REDUCE_MIN);
 	float scale = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);
 	
-	dir = min(vec2(SPAN_MAX, SPAN_MAX), max(vec2(-SPAN_MAX, -SPAN_MAX), dir * scale)) * pixelSize;
+	dir = min(vec2(SPAN_MAX, SPAN_MAX), max(vec2(-SPAN_MAX, -SPAN_MAX), dir * scale)) / vec2(textureSize(inputSampler, 0));
 	
 	vec3 result1 = 0.5 * (
 		texture(inputSampler, texCoord_in + (dir * vec2(1 / 3.0 - 0.5))).xyz + 

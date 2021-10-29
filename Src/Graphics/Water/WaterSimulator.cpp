@@ -1,3 +1,4 @@
+#ifndef __EMSCRIPTEN__
 #include "WaterSimulator.hpp"
 #include "WaterSimulatorImpl.hpp"
 #include "../RenderSettings.hpp"
@@ -413,3 +414,5 @@ std::pair<float, glm::vec3> WaterSimulator::RayIntersect(const eg::Ray& ray) con
 	}
 	return { minDst, particlePos };
 }
+
+#endif

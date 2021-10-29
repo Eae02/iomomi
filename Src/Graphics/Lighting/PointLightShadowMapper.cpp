@@ -107,8 +107,7 @@ int PointLightShadowMapper::AllocateShadowMap()
 	eg::TextureCreateInfo textureCI;
 	textureCI.format = SHADOW_MAP_FORMAT;
 	textureCI.width = m_resolution;
-	textureCI.flags =
-		eg::TextureFlags::ShaderSample | eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ManualBarrier;
+	textureCI.flags = eg::TextureFlags::ShaderSample | eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ManualBarrier;
 	textureCI.mipLevels = 1;
 	shadowMap.texture = eg::Texture::CreateCube(textureCI);
 	
@@ -213,6 +212,8 @@ void PointLightShadowMapper::UpdateShadowMaps(const RenderCallback& prepareCallb
 		m_lastFrameUpdateCount++;
 	};
 	
+	//Updates static shadow maps, disabled in WebGL because image views are not supported
+#ifndef __EMSCRIPTEN__
 	renderArgs.renderDynamic = false;
 	renderArgs.renderStatic = true;
 	for (LightEntry& entry : m_lights)
@@ -235,6 +236,7 @@ void PointLightShadowMapper::UpdateShadowMaps(const RenderCallback& prepareCallb
 			}
 		}
 	}
+#endif
 	
 	int remUpdateCount = qvar::shadowUpdateLimitPerFrame(m_qualityLevel);
 	std::optional<size_t> nextDynamicLightUpdatePos;

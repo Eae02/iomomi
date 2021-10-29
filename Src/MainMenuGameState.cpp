@@ -434,7 +434,12 @@ void MainMenuGameState::RenderWorld(float dt)
 		dstRect = eg::Rectangle(0, eg::CurrentResolutionY(), eg::CurrentResolutionX(), -eg::CurrentResolutionY());
 	}
 	
-	m_spriteBatch.Draw(m_worldBlurRenderer.OutputTexture(), dstRect, eg::ColorLin(1, 1, 1, m_worldFadeInProgress),
+	const eg::Texture* blurredTexture = &m_worldBlurRenderer.OutputTexture();
+#ifdef __EMSCRIPTEN__
+	blurredTexture = &m_worldRenderTexture;
+#endif
+	
+	m_spriteBatch.Draw(*blurredTexture, dstRect, eg::ColorLin(1, 1, 1, m_worldFadeInProgress),
 	                   eg::SpriteFlags::ForceLowestMipLevel);
 }
 

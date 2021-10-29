@@ -1,16 +1,11 @@
 #include "Levels.hpp"
 #include "World/World.hpp"
+#include "FileUtils.hpp"
 
-#ifdef __EMSCRIPTEN__
-#include <experimental/filesystem>
-using namespace std::experimental::filesystem;
-#else
 #include <filesystem>
 #include <fstream>
-#include <EGame/Graphics/ImageLoader.hpp>
 
 using namespace std::filesystem;
-#endif
 
 std::vector<Level> levels;
 
@@ -27,7 +22,7 @@ const std::vector<std::string_view> levelsOrder =
 	
 	"gravbarrier_ng0",
 	"gravbarrier_ng1",
-    "gravbarrier_ng2",
+	"gravbarrier_ng2",
 	"gravbarrier_ng3",
 	
 	"water_ng0",
@@ -95,47 +90,7 @@ static void OnShutdown()
 
 EG_ON_SHUTDOWN(OnShutdown)
 
-void UpgradeLevelsCommand(std::span<const std::string_view> args, eg::console::Writer& writer)
-{
-	int numUpgraded = 0;
-	for (const Level& level : levels)
-	{
-		std::string path = GetLevelPath(level.name);
-		
-		std::ifstream inputStream(path, std::ios::binary);
-		if (!inputStream)
-		{
-			std::string message = "Could not open " + path + "!";
-			writer.WriteLine(eg::console::InfoColor, message);
-		}
-		else
-		{
-			std::unique_ptr<World> world = World::Load(inputStream, false);
-			inputStream.close();
-			
-			if (world->IsLatestVersion())
-				continue;
-			
-			std::string text = "Upgrading " + path + "...";
-			writer.WriteLine(eg::console::InfoColor, text);
-			
-			std::ofstream outStream(path, std::ios::binary);
-			world->Save(outStream);
-			
-			numUpgraded++;
-		}
-	}
-	
-	std::string endMessage = "Upgraded " + std::to_string(numUpgraded) + " level(s)";
-	writer.WriteLine(eg::console::InfoColor, endMessage);
-}
-
-std::unique_ptr<World> LoadLevelWorld(const Level& level, bool isEditor)
-{
-	std::string levelPath = GetLevelPath(level.name);
-	std::ifstream levelStream(levelPath, std::ios::binary);
-	return World::Load(levelStream, isEditor);
-}
+void InitLevelsPlatformDependent();
 
 void MarkLevelCompleted(Level& level)
 {
@@ -151,35 +106,12 @@ void MarkLevelCompleted(Level& level)
 }
 
 static std::string progressPath;
-static std::string levelsDirPath;
+std::string levelsDirPath;
 
 void InitLevels()
 {
-	eg::console::AddCommand("upgradeLevels", 0, &UpgradeLevelsCommand);
-	
-	levelsDirPath = eg::ExeRelPath("Levels");
-	if (!eg::FileExists(levelsDirPath.c_str()))
-	{
-		levelsDirPath = "./Levels";
-		if (!eg::FileExists(levelsDirPath.c_str()))
-		{
-			eg::ReleasePanic("Missing directory \"Levels\".");
-		}
-	}
-	
-	std::string thumbnailsPath = levelsDirPath + "/img";
-	eg::CreateDirectory(thumbnailsPath.c_str());
-	
 	levels.clear();
-	
-	//Adds all gwd files in the levels directory to the levels list
-	for (const auto& entry : directory_iterator(levelsDirPath))
-	{
-		if (is_regular_file(entry.status()) && entry.path().extension() == ".gwd")
-		{
-			levels.push_back({entry.path().stem().string()});
-		}
-	}
+	InitLevelsPlatformDependent();
 	
 	//Sorts levels by name so that these can be binary searched over later
 	std::sort(levels.begin(), levels.end(), [&] (const Level& a, const Level& b)
@@ -213,7 +145,7 @@ void InitLevels()
 	}
 	
 	//Loads the progress file if it exists
-	progressPath = eg::AppDataPath() + "iomomi/progress.txt";
+	progressPath = appDataDirPath + "progress.txt";
 	std::ifstream progressFileStream(progressPath);
 	if (progressFileStream)
 	{
@@ -259,6 +191,8 @@ void SaveProgress()
 			progressFileStream << level.name << "\n";
 		}
 	}
+	
+	SyncFileSystem();
 }
 
 int64_t FindLevel(std::string_view name)
@@ -278,20 +212,11 @@ std::string GetLevelPath(std::string_view name)
 	return eg::Concat({ levelsDirPath, "/", name, ".gwd" });
 }
 
-std::string GetLevelThumbnailPath(std::string_view name)
-{
-	return eg::Concat({ levelsDirPath, "/img/", name, ".jpg" });
-}
+std::tuple<std::unique_ptr<uint8_t, eg::FreeDel>, uint32_t, uint32_t> PlatformGetLevelThumbnailData(Level& level);
 
 void LoadLevelThumbnail(Level& level)
 {
-	std::string path = GetLevelThumbnailPath(level.name);
-	std::ifstream stream(path, std::ios::binary);
-	if (!stream)
-		return;
-	eg::ImageLoader loader(stream);
-	auto data = loader.Load(4);
-	stream.close();
+	auto [data, width, height] = PlatformGetLevelThumbnailData(level);
 	if (!data)
 		return;
 	
@@ -301,22 +226,22 @@ void LoadLevelThumbnail(Level& level)
 	samplerDesc.wrapW = eg::WrapMode::ClampToEdge;
 	
 	eg::TextureCreateInfo textureCI;
-	textureCI.width = loader.Width();
-	textureCI.height = loader.Height();
+	textureCI.width = width;
+	textureCI.height = height;
 	textureCI.depth = 1;
-	textureCI.mipLevels = eg::Texture::MaxMipLevels(std::max(loader.Width(), loader.Height()));
+	textureCI.mipLevels = eg::Texture::MaxMipLevels(std::max(width, height));
 	textureCI.flags = eg::TextureFlags::CopyDst | eg::TextureFlags::ShaderSample | eg::TextureFlags::GenerateMipmaps;
 	textureCI.format = eg::Format::R8G8B8A8_sRGB;
 	textureCI.defaultSamplerDescription = &samplerDesc;
 	
 	level.thumbnail = eg::Texture::Create2D(textureCI);
-	size_t uploadBufferSize = loader.Width() * loader.Height() * 4;
+	size_t uploadBufferSize = width * height * 4;
 	eg::UploadBuffer uploadBuffer = eg::GetTemporaryUploadBufferWith<uint8_t>({ data.get(), uploadBufferSize });
 	
 	eg::TextureRange texRange = {};
 	
-	texRange.sizeX = loader.Width();
-	texRange.sizeY = loader.Height();
+	texRange.sizeX = width;
+	texRange.sizeY = height;
 	texRange.sizeZ = 1;
 	eg::DC.SetTextureData(level.thumbnail, texRange, uploadBuffer.buffer, uploadBuffer.offset);
 	

@@ -23,11 +23,19 @@ Game::Game()
 	
 	SetCurrentGS(mainMenuGameState);
 	
+#ifndef __EMSCRIPTEN__
+	eg::console::AddCommand("updateThumbnails", 0, [&] (std::span<const std::string_view> args, eg::console::Writer& writer)
+	{
+		m_levelThumbnailUpdateFrameIdx = eg::FrameIdx();
+		m_levelThumbnailUpdate = BeginUpdateLevelThumbnails(m_renderCtx, writer);
+	});
+	
 	eg::console::AddCommand("ed", 0, [&] (std::span<const std::string_view> args, eg::console::Writer& writer)
 	{
 		SetCurrentGS(editor);
 		eg::console::Hide();
 	});
+#endif
 	
 	eg::console::AddCommand("mm", 0, [&] (std::span<const std::string_view> args, eg::console::Writer& writer)
 	{
@@ -36,7 +44,6 @@ Game::Game()
 		eg::console::Hide();
 	});
 	
-#ifndef NDEBUG
 	eg::console::AddCommand("compl", 1, [&] (std::span<const std::string_view> args, eg::console::Writer& writer)
 	{
 		if (args[0] == "reset")
@@ -77,9 +84,8 @@ Game::Game()
 		list.Add("all");
 		list.Add("reset");
 	});
-#endif
 	
-	eg::console::AddCommand("play", 1, [this] (std::span<const std::string_view> args, eg::console::Writer& writer)
+	eg::console::AddCommand("play", 1, [] (std::span<const std::string_view> args, eg::console::Writer& writer)
 	{
 		int64_t levelIndex = FindLevel(args[0]);
 		if (levelIndex == -1)
@@ -102,12 +108,6 @@ Game::Game()
 	{
 		for (const Level& level : levels)
 			list.Add(level.name);
-	});
-	
-	eg::console::AddCommand("updateThumbnails", 0, [&] (std::span<const std::string_view> args, eg::console::Writer& writer)
-	{
-		m_levelThumbnailUpdateFrameIdx = eg::FrameIdx();
-		m_levelThumbnailUpdate = BeginUpdateLevelThumbnails(m_renderCtx, writer);
 	});
 	
 	InitializeWallShader();

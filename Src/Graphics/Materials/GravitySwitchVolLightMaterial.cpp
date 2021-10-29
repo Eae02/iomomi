@@ -36,8 +36,7 @@ static const float cubeVertices[] =
 
 static constexpr float MAX_ANGLE = 30.0f;
 
-#pragma pack(push, 1)
-struct LightDataBuffer
+struct __attribute__ ((__packed__, __may_alias__)) LightDataBuffer
 {
 	//These two values derive from the previous constants
 	float tMax;
@@ -50,7 +49,6 @@ struct LightDataBuffer
 	// distributed along the ray and are recalculated if the number of steps changes (as a result of a quality change).
 	float samplePoints[48];
 };
-#pragma pack(pop)
 
 static QualityLevel currentQualityLevel = QualityLevel::VeryLow;
 

@@ -20,8 +20,6 @@ layout(push_constant, std140) uniform PC
 	float specularIntensity;
 } pc;
 
-layout(location=1) noperspective in vec2 screenCoord_in;
-
 layout(set=0, binding=5) uniform sampler2D waterDepth;
 
 layout(set=0, binding=6) uniform sampler3D causticsTexture;
@@ -76,7 +74,7 @@ vec3 CalculateLighting(GBData gbData)
 		discard;
 	
 	vec3 radiance = pc.radiance * shadow;
-	vec4 waterDepth4 = texture(waterDepth, screenCoord_in);
+	vec4 waterDepth4 = texture(waterDepth, vec2(gl_FragCoord.xy) / vec2(textureSize(waterDepth, 0).xy));
 	float lDepth = linearizeDepth(gbData.hDepth);
 	float maxWaterDepth = waterDepth4.g + (waterDepth4.r < 0.5 ? 0.2 : 0.4);
 	if (lDepth > waterDepth4.r + 0.2 && lDepth < maxWaterDepth)

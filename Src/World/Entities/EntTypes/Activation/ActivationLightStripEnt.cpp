@@ -93,6 +93,13 @@ std::vector<ActivationLightStripEnt::WayPoint> ActivationLightStripEnt::GetWayPo
 	return points;
 }
 
+void ActivationLightStripEnt::SetGenerateResult(GenerateResult& result)
+{
+	m_instances.swap(result.instances);
+	m_path.swap(result.path);
+	m_maxTransitionProgress = result.maxTransitionProgress;
+}
+
 void ActivationLightStripEnt::Update(const WorldUpdateArgs& args)
 {
 	const float TRANSITION_SPEED = 100;
@@ -108,12 +115,18 @@ void ActivationLightStripEnt::Update(const WorldUpdateArgs& args)
 	
 	const ActivatorComp* activator = activatorEnt->GetComponent<ActivatorComp>();
 	
+#ifdef __EMSCRIPTEN__
+	if (regenerate)
+	{
+		GenerateResult result = Generate(args.world->voxels, GetWayPointsWithStartAndEnd());
+		SetGenerateResult(result);
+		regenerate = false;
+	}
+#else
 	if (m_generationFuture.valid() && m_generationFuture.wait_for(std::chrono::seconds(0)) == std::future_status::ready)
 	{
 		GenerateResult result = m_generationFuture.get();
-		m_instances.swap(result.instances);
-		m_path.swap(result.path);
-		m_maxTransitionProgress = result.maxTransitionProgress;
+		SetGenerateResult(result);
 		m_generationFuture = {};
 	}
 	if (!m_generationFuture.valid() && regenerate)
@@ -129,6 +142,7 @@ void ActivationLightStripEnt::Update(const WorldUpdateArgs& args)
 		});
 		regenerate = false;
 	}
+#endif
 	
 	bool activated = activator && activator->IsActivated();
 	
@@ -302,7 +316,7 @@ ActivationLightStripEnt::GenerateResult ActivationLightStripEnt::Generate(
 			pq.pop();
 			
 			if (curEntry.pos.doublePos == targetPos &&
-			    (i == points.size() - 1 || curEntry.pos.wallNormal == points[i].wallNormal))
+			    (i + 1 == points.size() || curEntry.pos.wallNormal == points[i].wallNormal))
 			{
 				lastPos = curEntry.pos;
 				break;
@@ -397,7 +411,7 @@ ActivationLightStripEnt::GenerateResult ActivationLightStripEnt::Generate(
 	
 	//Builds the path mesh
 	int accDistance = 0;
-	for (int i = path.size() - 1; i >= 1; i--)
+	for (int i = (int)path.size() - 1; i >= 1; i--)
 	{
 		LightStripMaterial::InstanceData* instanceData = nullptr;
 		

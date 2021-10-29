@@ -27,7 +27,7 @@ void main()
 	for (int i = 0; i < NUM_ARROWS; i++)
 	{
 		vec2 tc = (texCoord_in.yx - data.arrowRects[i].xy) * data.arrowRects[i].zw;
-		float ti = clamp((texture(arrowTexture, tc).r - ARROW_SDF_EDGE_LO) / (ARROW_SDF_EDGE_HI - ARROW_SDF_EDGE_LO), 0, 1);
+		float ti = clamp((texture(arrowTexture, tc).r * step(abs(tc.y - 0.5), 0.5) - ARROW_SDF_EDGE_LO) / (ARROW_SDF_EDGE_HI - ARROW_SDF_EDGE_LO), 0, 1);
 		arrowIntensity = max(arrowIntensity, ti * data.arrowOpacities[i / 4][i % 4]);
 	}
 	color_out = data.color * mix(0.5, 5.0, arrowIntensity);

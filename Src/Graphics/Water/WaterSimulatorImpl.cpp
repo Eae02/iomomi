@@ -1,3 +1,4 @@
+#ifndef __EMSCRIPTEN__
 #include <cstdlib>
 #include <execution>
 #include <pcg_random.hpp>
@@ -704,3 +705,5 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 		impl->particleVel2[a] = vel;
 	});
 }
+
+#endif

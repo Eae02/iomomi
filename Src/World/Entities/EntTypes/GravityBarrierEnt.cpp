@@ -291,14 +291,23 @@ void GravityBarrierEnt::UpdateNearEntities(const Player* player, EntityManager& 
 	lastFrameUpdatedNearEntities = eg::FrameIdx();
 	
 	GravityBarrierMaterial::BarrierBufferData bufferData;
+	memset(&bufferData, 0, sizeof(bufferData));
 	bufferData.gameTime = RenderSettings::instance->gameTime;
 	int itemsWritten = 0;
 	
+	auto AddInteractable = [&] (Dir down, const glm::vec3& pos)
+	{
+		bufferData.iaDownAxis[itemsWritten] = (int)down / 2;
+		for (int i = 0; i < 3; i++)
+		{
+			bufferData.iaPosition[itemsWritten][i] = pos[i];
+		}
+		itemsWritten++;
+	};
+	
 	if (player != nullptr)
 	{
-		bufferData.iaDownAxis[itemsWritten] = (int)player->CurrentDown() / 2;
-		bufferData.iaPosition[itemsWritten] = glm::vec4(player->Position(), 0.0f);
-		itemsWritten++;
+		AddInteractable(player->CurrentDown(), player->Position());
 	}
 	
 	entityManager.ForEachWithFlag(EntTypeFlags::Interactable, [&](const Ent& entity)
@@ -306,17 +315,13 @@ void GravityBarrierEnt::UpdateNearEntities(const Player* player, EntityManager& 
 		auto* comp = entity.GetComponent<GravityBarrierInteractableComp>();
 		if (comp != nullptr && itemsWritten < GravityBarrierMaterial::NUM_INTERACTABLES)
 		{
-			bufferData.iaDownAxis[itemsWritten] = (int)comp->currentDown / 2;
-			bufferData.iaPosition[itemsWritten] = glm::vec4(entity.GetPosition(), 0.0f);
-			itemsWritten++;
+			AddInteractable(comp->currentDown, entity.GetPosition());
 		}
 	});
 	
 	while (itemsWritten < GravityBarrierMaterial::NUM_INTERACTABLES)
 	{
-		bufferData.iaDownAxis[itemsWritten] = 3;
-		bufferData.iaPosition[itemsWritten] = glm::vec4(0.0f);
-		itemsWritten++;
+		bufferData.iaDownAxis[itemsWritten++] = 3;
 	}
 	
 	GravityBarrierMaterial::UpdateSharedDataBuffer(bufferData);

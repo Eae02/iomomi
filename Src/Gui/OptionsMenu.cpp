@@ -36,13 +36,13 @@ ComboBox InitSettingsCB(T Settings::*member, std::string label, bool reverseOpti
 	{
 		int v = (int)(settings.*member);
 		if (reverseOptions)
-			v = settingsCBOptions<T>.size() - 1 - v;
+			v = (int)settingsCBOptions<T>.size() - 1 - v;
 		return v;
 	};
 	cb.setValue = [=] (int value)
 	{
 		if (reverseOptions)
-			value = settingsCBOptions<T>.size() - 1 - value;
+			value = (int)settingsCBOptions<T>.size() - 1 - value;
 		settings.*member = (T)value;
 		SettingsChanged();
 	};
@@ -117,6 +117,7 @@ std::string FilterGPUNameString(std::string_view inputString)
 
 void InitOptionsMenu()
 {
+#ifndef __EMSCRIPTEN__
 	ComboBox resolutionCB;
 	resolutionCB.label = "Fullscreen Resolution";
 	fullscreenDisplayModeIndex = eg::NativeDisplayModeIndex();
@@ -137,6 +138,11 @@ void InitOptionsMenu()
 		fullscreenDisplayModeIndex = value;
 		settings.fullscreenDisplayMode = eg::FullscreenDisplayModes()[value];
 	};
+	
+	leftWidgetList.AddWidget(SubtitleWidget("Display"));
+	leftWidgetList.AddWidget(InitSettingsCB(&Settings::displayMode, "Display Mode"));
+	leftWidgetList.AddWidget(std::move(resolutionCB));
+	leftWidgetList.AddWidget(InitSettingsToggleButton(&Settings::vsync, "VSync", "On", "Off"));
 	
 	ComboBox apiComboBox;
 	apiComboBox.label = "Graphics API";
@@ -173,12 +179,9 @@ void InitOptionsMenu()
 		settings.preferredGPUName = gpuNames[value];
 	};
 	
-	leftWidgetList.AddWidget(SubtitleWidget("Display"));
-	leftWidgetList.AddWidget(InitSettingsCB(&Settings::displayMode, "Display Mode"));
-	leftWidgetList.AddWidget(std::move(resolutionCB));
-	leftWidgetList.AddWidget(InitSettingsToggleButton(&Settings::vsync, "VSync", "On", "Off"));
 	leftWidgetList.AddWidget(std::move(apiComboBox));
 	leftWidgetList.AddWidget(std::move(gpuComboBox));
+#endif
 	
 	leftWidgetList.AddWidget(SubtitleWidget("Graphics"));
 	ComboBox textureQualityCB = InitSettingsCB(&Settings::textureQuality, "Textures", true);
@@ -258,12 +261,15 @@ void UpdateOptionsMenu(float dt, const glm::vec2& positionOffset, bool allowInte
 	const glm::vec2 flippedCursorPos(eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY());
 	
 	optionsScrollPanel.contentHeight = std::max(leftWidgetList.Height(), rightWidgetList.Height());
-	const float screenRectH = std::min(eg::CurrentResolutionY() - Y_MARGIN_TOP - Y_MARGIN_BTM, optionsScrollPanel.contentHeight);
 	
-	optionsScrollPanel.screenRectangle.x = std::max(eg::CurrentResolutionX() / 2 - WIDGET_LIST_SPACING / 2 - WIDGET_LIST_WIDTH, 0.0f) + positionOffset.x;
-	optionsScrollPanel.screenRectangle.w = std::min(WIDGET_LIST_SPACING + WIDGET_LIST_WIDTH * 2 + 20, (float)eg::CurrentResolutionX());
-	optionsScrollPanel.screenRectangle.h = screenRectH;
-	optionsScrollPanel.screenRectangle.y = std::max((eg::CurrentResolutionY() - screenRectH) / 2, Y_MARGIN_BTM) + positionOffset.y;
+	optionsScrollPanel.screenRectangle.x =
+		std::max(eg::CurrentResolutionX() / 2 - WIDGET_LIST_SPACING / 2 - WIDGET_LIST_WIDTH, 0.0f) + positionOffset.x;
+	optionsScrollPanel.screenRectangle.w =
+		std::min(WIDGET_LIST_SPACING + WIDGET_LIST_WIDTH * 2 + 20, (float)eg::CurrentResolutionX());
+	optionsScrollPanel.screenRectangle.h =
+		std::min(eg::CurrentResolutionY() - Y_MARGIN_TOP - Y_MARGIN_BTM, optionsScrollPanel.contentHeight);
+	optionsScrollPanel.screenRectangle.y =
+		std::max((eg::CurrentResolutionY() - optionsScrollPanel.screenRectangle.h) / 2, Y_MARGIN_BTM) + positionOffset.y;
 	
 	optionsScrollPanel.Update(dt, ComboBox::current == nullptr);
 	

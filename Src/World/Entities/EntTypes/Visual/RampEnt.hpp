@@ -37,7 +37,6 @@ public:
 	
 	int m_rotation = 0;
 	bool m_flipped = false;
-	bool m_hasEdgeDecals = true;
 	bool m_stretchTextureV = false;
 	float m_textureScale = 1;
 	int m_textureRotation = 0;
@@ -56,8 +55,6 @@ private:
 	eg::Buffer m_vertexBuffer;
 	
 	float m_rampLength = 0;
-	
-	std::vector<DecalMaterial::InstanceData> m_edgeDecalInstances;
 	
 	eg::CollisionMesh m_collisionMesh;
 	PhysicsObject m_physicsObject;

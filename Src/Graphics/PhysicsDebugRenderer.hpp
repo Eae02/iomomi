@@ -2,15 +2,13 @@
 
 #include "GraphicsCommon.hpp"
 
-#pragma pack(push, 1)
-struct PhysicsDebugVertex
+struct __attribute__ ((__packed__, __may_alias__)) PhysicsDebugVertex
 {
 	float x;
 	float y;
 	float z;
 	uint32_t color;
 };
-#pragma pack(pop)
 
 struct PhysicsDebugRenderData
 {

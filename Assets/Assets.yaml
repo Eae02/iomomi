@@ -76,9 +76,6 @@ assets:
     format: bc3
   - name: Textures/ForceFieldParticle.png
     format: bc4
-  - name: Textures/RampEdgeA.png
-    srgb: true
-    format: bc3
     
   - name: Textures/DefaultA.png
     srgb: true
@@ -163,7 +160,7 @@ assets:
     format: bc1
     layers:
       - WallTextures/TactileGrayA.png
-      - WallTextures/Metal1A.png
+      - WallTextures/HexPanelsA.png
       - WallTextures/MetalGridA.png
       - WallTextures/CementA.png
       - WallTextures/Panels1A.png
@@ -175,10 +172,10 @@ assets:
     loader: Texture2D
     mipShift: *MipShift
     srgb: false
-    format: bc5
+    format: bc1
     layers:
       - WallTextures/TactileGrayN.png
-      - WallTextures/Metal1N.png
+      - WallTextures/HexPanelsN.png
       - WallTextures/MetalGridN.png
       - WallTextures/CementN.png
       - WallTextures/Panels1N.png
@@ -193,7 +190,7 @@ assets:
     format: bc1
     layers:
       - WallTextures/TactileGrayM.png
-      - WallTextures/Metal1M.png
+      - WallTextures/HexPanelsM.png
       - WallTextures/MetalGridM.png
       - WallTextures/CementM.png
       - WallTextures/Panels1M.png
