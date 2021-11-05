@@ -11,7 +11,6 @@ struct
 	eg::Pipeline pipelineEditor;
 	eg::Pipeline pipelineBorderEditor;
 	eg::Pipeline pipelinePLShadow;
-	eg::Buffer materialSettingsBuffer;
 	eg::Texture* diffuseTexture;
 	eg::Texture* normalMapTexture;
 	eg::Texture* miscMapTexture;
@@ -52,22 +51,29 @@ void InitializeWallShader()
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.vertexBindings[0] = { sizeof(WallVertex), eg::InputRate::Vertex };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32,   3, (uint32_t)offsetof(WallVertex, position) };
-	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::UInt8,     4, (uint32_t)offsetof(WallVertex, misc) };
-	pipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallVertex, normal) };
-	pipelineCI.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallVertex, tangent) };
-	pipelineCI.numClipDistances = 1;
+	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::Float32,   3, (uint32_t)offsetof(WallVertex, texCoord) };
+	pipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 4, (uint32_t)offsetof(WallVertex, normalAndRoughnessLo) };
+	pipelineCI.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 4, (uint32_t)offsetof(WallVertex, tangentAndRoughnessHi) };
 	wr.pipelineDeferredGeom = eg::Pipeline::Create(pipelineCI);
 	wr.pipelineDeferredGeom.FramebufferFormatHint(DeferredRenderer::GEOMETRY_FB_FORMAT);
 	
 	//Creates the editor pipeline
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall.vs.glsl").DefaultVariant();
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall-Editor.fs.glsl").DefaultVariant();
-	pipelineCI.enableDepthWrite = true;
-	pipelineCI.depthCompare = eg::CompareOp::Less;
-	pipelineCI.frontFaceCCW = false;
-	pipelineCI.numColorAttachments = 1;
-	pipelineCI.numClipDistances = 0;
-	wr.pipelineEditor = eg::Pipeline::Create(pipelineCI);
+	eg::GraphicsPipelineCreateInfo editorPipelineCI;
+	editorPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall-Editor.vs.glsl").DefaultVariant();
+	editorPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall-Editor.fs.glsl").DefaultVariant();
+	editorPipelineCI.enableDepthWrite = true;
+	editorPipelineCI.enableDepthTest = true;
+	editorPipelineCI.cullMode = eg::CullMode::Back;
+	editorPipelineCI.depthCompare = eg::CompareOp::Less;
+	editorPipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
+	editorPipelineCI.frontFaceCCW = false;
+	editorPipelineCI.numColorAttachments = 1;
+	editorPipelineCI.vertexBindings[0] = { sizeof(WallVertex), eg::InputRate::Vertex };
+	editorPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32,   3, (uint32_t)offsetof(WallVertex, position) };
+	editorPipelineCI.vertexAttributes[1] = { 0, eg::DataType::Float32,   3, (uint32_t)offsetof(WallVertex, texCoord) };
+	editorPipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallVertex, normalAndRoughnessLo) };
+	editorPipelineCI.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallVertex, tangentAndRoughnessHi) };
+	wr.pipelineEditor = eg::Pipeline::Create(editorPipelineCI);
 	wr.pipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
 	//Creates the editor border pipeline
@@ -93,10 +99,8 @@ void InitializeWallShader()
 	plsPipelineCI.enableDepthTest = true;
 	plsPipelineCI.frontFaceCCW = eg::CurrentGraphicsAPI() == eg::GraphicsAPI::Vulkan;
 	plsPipelineCI.cullMode = eg::CullMode::Back;
-	plsPipelineCI.numClipDistances = 1;
 	plsPipelineCI.vertexBindings[0] = { sizeof(WallVertex), eg::InputRate::Vertex };
 	plsPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32,   3, (uint32_t)offsetof(WallVertex, position) };
-	plsPipelineCI.vertexAttributes[1] = { 0, eg::DataType::UInt8Norm, 1, (uint32_t)offsetof(WallVertex, misc) + 1 };
 	wr.pipelinePLShadow = eg::Pipeline::Create(plsPipelineCI);
 	
 	eg::FramebufferFormatHint plsFormatHint;
@@ -120,23 +124,18 @@ void InitializeWallShader()
 		settingsDst[3] = 0;
 	}
 	
-	wr.materialSettingsBuffer = eg::Buffer(eg::BufferFlags::UniformBuffer, sizeof(materialSettings), materialSettings);
-	wr.materialSettingsBuffer.UsageHint(eg::BufferUsage::UniformBuffer, eg::ShaderAccessFlags::Vertex);
-	
 	wr.gameDescriptorSet = { wr.pipelineDeferredGeom, 0 };
 	wr.gameDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
-	wr.gameDescriptorSet.BindUniformBuffer(wr.materialSettingsBuffer, 1, 0, sizeof(materialSettings));
-	wr.gameDescriptorSet.BindTexture(*wr.diffuseTexture, 2, &commonTextureSampler);
-	wr.gameDescriptorSet.BindTexture(*wr.normalMapTexture, 3, &commonTextureSampler);
-	wr.gameDescriptorSet.BindTexture(*wr.miscMapTexture, 4, &commonTextureSampler);
+	wr.gameDescriptorSet.BindTexture(*wr.diffuseTexture, 1, &commonTextureSampler);
+	wr.gameDescriptorSet.BindTexture(*wr.normalMapTexture, 2, &commonTextureSampler);
+	wr.gameDescriptorSet.BindTexture(*wr.miscMapTexture, 3, &commonTextureSampler);
 	
 	wr.editorDescriptorSet = { wr.pipelineEditor, 0 };
 	wr.editorDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
-	wr.editorDescriptorSet.BindUniformBuffer(wr.materialSettingsBuffer, 1, 0, sizeof(materialSettings));
-	wr.editorDescriptorSet.BindTexture(*wr.diffuseTexture, 2, &commonTextureSampler);
-	wr.editorDescriptorSet.BindTexture(*wr.normalMapTexture, 3, &commonTextureSampler);
-	wr.editorDescriptorSet.BindTexture(*wr.gridTexture, 4);
-	wr.editorDescriptorSet.BindTexture(*wr.noDrawTexture, 5);
+	wr.editorDescriptorSet.BindTexture(*wr.diffuseTexture, 1, &commonTextureSampler);
+	wr.editorDescriptorSet.BindTexture(*wr.normalMapTexture, 2, &commonTextureSampler);
+	wr.editorDescriptorSet.BindTexture(*wr.gridTexture, 3);
+	wr.editorDescriptorSet.BindTexture(*wr.noDrawTexture, 4);
 }
 
 static void OnShutdown()
@@ -151,9 +150,6 @@ void BindWallShaderGame()
 	eg::DC.BindPipeline(wr.pipelineDeferredGeom);
 	
 	eg::DC.BindDescriptorSet(wr.gameDescriptorSet, 0);
-	
-	float pc = settings.ssaoQuality == SSAOQuality::Off ? 1 : 0;
-	eg::DC.PushConstants(0, sizeof(float), &pc);
 }
 
 void BindWallShaderEditor(bool drawGrid)

@@ -3,17 +3,17 @@
 #include "Inc/EditorLight.glh"
 #include "Inc/NormalMap.glh"
 
-layout(location=0) in vec4 texCoord_in;
+layout(location=0) in vec3 texCoord_in;
 layout(location=1) in vec3 normal_in;
 layout(location=2) in vec3 tangent_in;
-layout(location=3) in vec4 ao_in;
+layout(location=3) in vec2 gridTexCoord_in;
 
 layout(location=0) out vec4 color_out;
 
-layout(binding=2) uniform sampler2DArray albedoSampler;
-layout(binding=3) uniform sampler2DArray normalMapSampler;
-layout(binding=4) uniform sampler2D gridSampler;
-layout(binding=5) uniform sampler2D noDrawSampler;
+layout(binding=1) uniform sampler2DArray albedoSampler;
+layout(binding=2) uniform sampler2DArray normalMapSampler;
+layout(binding=3) uniform sampler2D gridSampler;
+layout(binding=4) uniform sampler2D noDrawSampler;
 
 layout(push_constant) uniform PC
 {
@@ -39,13 +39,9 @@ void main()
 		normal = normalMapToWorld(texture(normalMapSampler, texCoord_in.xyz).xy, tbn);
 	}
 	
-	vec2 ao2 = vec2(min(ao_in.x, ao_in.y), min(ao_in.w, ao_in.z));
-	ao2 = pow(clamp(ao2, vec2(0.0), vec2(1.0)), vec2(0.5));
-	float ao = ao2.x * ao2.y;
+	color *= CalcEditorLight(normal, 1.0);
 	
-	color *= CalcEditorLight(normal, ao);
-	
-	float gridA = gridIntensity * texture(gridSampler, texCoord_in.xy * texCoord_in.w).r;
+	float gridA = gridIntensity * texture(gridSampler, gridTexCoord_in).r;
 	color = mix(color, vec3(1.0), gridA);
 	
 	color_out = vec4(color, 1.0);

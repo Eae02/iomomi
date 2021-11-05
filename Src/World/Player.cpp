@@ -140,7 +140,7 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 		*noclipActive = 1 - *noclipActive;
 	}
 	
-	if (m_gravityTransitionMode == TransitionMode::None && !eg::IsButtonDown(eg::Button::F8))
+	if (m_gravityTransitionMode == TransitionMode::None && !(eg::DevMode() && eg::IsButtonDown(eg::Button::F8)))
 	{
 		glm::vec2 rotationDelta = glm::vec2(eg::CursorPosDelta()) * -settings.lookSensitivityMS;
 		

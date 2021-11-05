@@ -20,5 +20,5 @@ gravity: 0
 textures:
   - x: 0
     y: 0
-    width: 85
-    height: 85
+    width: 84
+    height: 84

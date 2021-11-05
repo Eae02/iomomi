@@ -352,6 +352,8 @@ eg::CollisionMesh World::BuildMesh(std::vector<WallVertex>& vertices, std::vecto
 	std::vector<glm::vec3> collisionVertices;
 	std::vector<uint32_t> collisionIndices;
 	
+	std::vector<WallVertex> pendingVertices;
+	
 	for (const auto& voxel : voxels.m_voxels)
 	{
 		for (int s = 0; s < 6; s++)
@@ -362,79 +364,110 @@ eg::CollisionMesh World::BuildMesh(std::vector<WallVertex>& vertices, std::vecto
 			//Only emit triangles for voxels that face into a solid voxel
 			if (voxels.IsAir(nPos))
 				continue;
-			int texture = voxel.second.materials[s];
-			if (texture == 0 && !includeNoDraw)
+			int materialIndex = voxel.second.materials[s];
+			if (materialIndex == 0 && !includeNoDraw)
 				continue;
 			
 			//The center of the face to be emitted
 			const glm::ivec3 faceCenter2 = voxel.first * 2 + 1 - normal;
 			
 			bool shouldDraw = !eg::Contains(cubeSpawnerPositions2, faceCenter2);
-			
-			WallVertex pendingVertices[4];
-			bool allVerticesHiddenByDoor = true;
 			bool hasCollision = true;
 			
-			//Emits vertices
 			const glm::ivec3 tangent = voxel::tangents[s];
 			const glm::ivec3 biTangent = voxel::biTangents[s];
-			for (int fx = 0; fx < 2; fx++)
+			struct QuadVertex
 			{
-				for (int fy = 0; fy < 2; fy++)
+				int fx;
+				int fy;
+				glm::ivec3 tDir;
+				glm::ivec3 bDir;
+				glm::vec3 pos;
+				float doorDist;
+			};
+			QuadVertex quadVertices[4] = 
+			{
+				{ 0, 0, -tangent, -biTangent },
+				{ 1, 0,  tangent, -biTangent },
+				{ 1, 1,  tangent,  biTangent },
+				{ 0, 1, -tangent,  biTangent },
+			};
+			for (QuadVertex& vertex : quadVertices)
+			{
+				vertex.pos = glm::vec3(faceCenter2 + vertex.tDir + vertex.bDir) * 0.5f;
+				
+				vertex.doorDist = 100;
+				for (const Door& door : m_doors)
 				{
-					const glm::ivec3 tDir = tangent * (fy * 2 - 1);
-					const glm::ivec3 bDir = biTangent * (fx * 2 - 1);
-					const glm::ivec3 diagDir = tDir + bDir;
-					const glm::vec3 pos = glm::vec3(faceCenter2 + diagDir) * 0.5f;
-					
-					float doorDist = INFINITY;
-					for (const Door& door : m_doors)
+					if (std::abs(glm::dot(door.normal, glm::vec3(normal))) > 0.5f)
 					{
-						if (std::abs(glm::dot(door.normal, glm::vec3(normal))) > 0.5f)
-							doorDist = std::min(doorDist, glm::distance(pos, door.position) - door.radius);
+						vertex.doorDist = std::min(vertex.doorDist, glm::distance(vertex.pos, door.position) - door.radius);
 					}
-					const float doorDist255 = (glm::clamp(doorDist, -1.0f, 1.0f) + 1.0f) * 127.0f;
-					
-					WallVertex& vertex = pendingVertices[fx * 2 + fy];
-					vertex.position = pos;
-					vertex.misc[WallVertex::M_TexLayer] = texture;
-					vertex.misc[WallVertex::M_DoorDist] = (uint8_t)doorDist255;
-					vertex.misc[WallVertex::M_AO] = 0;
-					vertex.SetNormal(normal);
-					vertex.SetTangent(tangent);
-					
-					if (!voxels.IsAir(voxel.first + tDir))
-						vertex.misc[WallVertex::M_AO] |= fy + 1;
-					if (!voxels.IsAir(voxel.first + bDir))
-						vertex.misc[WallVertex::M_AO] |= (fx + 1) << 2;
-					if (!voxels.IsAir(voxel.first + diagDir) && vertex.misc[WallVertex::M_AO] == 0)
-						vertex.misc[WallVertex::M_AO] = 1 << (fx + 2 * fy);
-					
-					if (doorDist < 0.0f)
-						hasCollision = false;
-					if (doorDist >= 0.0f)
-						allVerticesHiddenByDoor = false;
+				}
+				
+				if (vertex.doorDist < 0.0f)
+					hasCollision = false;
+			}
+			
+			pendingVertices.clear();
+			auto PushVertex = [&] (const glm::vec3& pos)
+			{
+				WallVertex& vertex = pendingVertices.emplace_back();
+				for (int i = 0; i < 3; i++)
+					vertex.position[i] = pos[i];
+				
+				vertex.texCoord[0] = glm::dot(glm::vec3(biTangent), pos) / wallMaterials[materialIndex].textureScale;
+				vertex.texCoord[1] = -glm::dot(glm::vec3(tangent), pos) / wallMaterials[materialIndex].textureScale;
+				vertex.texCoord[2] = materialIndex - 1;
+				vertex.normalAndRoughnessLo[3] = eg::FloatToSNorm(wallMaterials[materialIndex].minRoughness * 2 - 1);
+				vertex.tangentAndRoughnessHi[3] = eg::FloatToSNorm(wallMaterials[materialIndex].maxRoughness * 2 - 1);
+				
+				vertex.SetNormal(normal);
+				vertex.SetTangent(tangent);
+			};
+			
+			for (int i = 0; i < 4; i++)
+			{
+				//Adds this vertex if it's not hidden by a door
+				if (quadVertices[i].doorDist > 0)
+				{
+					PushVertex(quadVertices[i].pos);
+				}
+				
+				//Adds a border vertex if one of this or the next vertex are hidden by a door
+				int nextI = (i + 1) % 4;
+				if ((quadVertices[i].doorDist > 0) != (quadVertices[nextI].doorDist > 0))
+				{
+					float a = -quadVertices[nextI].doorDist / (quadVertices[i].doorDist - quadVertices[nextI].doorDist);
+					PushVertex(glm::mix(quadVertices[nextI].pos, quadVertices[i].pos, glm::clamp(a, 0.0f, 1.0f)));
 				}
 			}
 			
-			static const uint32_t indicesRelative[] = {0, 1, 2, 2, 1, 3};
+			if (pendingVertices.size() < 3)
+				continue;
 			
-			if (shouldDraw && !allVerticesHiddenByDoor)
+			auto PushIndices = [&] (std::vector<uint32_t>& indicesOut, uint32_t baseIndex)
 			{
-				const uint32_t baseIndex = (uint32_t)vertices.size();
+				for (uint32_t i = 2; i < pendingVertices.size(); i++)
+				{
+					indicesOut.push_back(baseIndex);
+					indicesOut.push_back(baseIndex + i - 1);
+					indicesOut.push_back(baseIndex + i);
+				}
+			};
+			
+			if (shouldDraw)
+			{
+				PushIndices(indices, (uint32_t)vertices.size());
 				for (const WallVertex& vertex : pendingVertices)
 					vertices.push_back(vertex);
-				for (uint32_t i : indicesRelative)
-					indices.push_back(baseIndex + i);
 			}
 			
 			if (hasCollision)
 			{
-				uint32_t baseIndexCol = collisionVertices.size();
+				PushIndices(collisionIndices, (uint32_t)collisionVertices.size());
 				for (const WallVertex& vertex : pendingVertices)
-					collisionVertices.push_back(vertex.position);
-				for (uint32_t i : indicesRelative)
-					collisionIndices.push_back(baseIndexCol + i);
+					collisionVertices.emplace_back(vertex.position[0], vertex.position[1], vertex.position[2]);
 			}
 		}
 	}

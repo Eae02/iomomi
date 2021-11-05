@@ -4,26 +4,19 @@ void VecEncode(const glm::vec3& v, int8_t* out);
 
 struct WallVertex
 {
-	enum Misc
-	{
-		M_TexLayer,
-		M_DoorDist,
-		M_AO
-	};
-	
-	glm::vec3 position;
-	uint8_t misc[4];
-	int8_t normal[4];
-	int8_t tangent[4];
+	float position[3];
+	float texCoord[3];
+	int8_t normalAndRoughnessLo[4];
+	int8_t tangentAndRoughnessHi[3];
 	
 	void SetNormal(const glm::vec3& _normal)
 	{
-		VecEncode(_normal, normal);
+		VecEncode(_normal, normalAndRoughnessLo);
 	}
 	
 	void SetTangent(const glm::vec3& _tangent)
 	{
-		VecEncode(_tangent, tangent);
+		VecEncode(_tangent, tangentAndRoughnessHi);
 	}
 };
 
