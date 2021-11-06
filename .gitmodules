@@ -1,6 +1,3 @@
-[submodule "Deps/yaml-cpp"]
-	path = Deps/yaml-cpp
-	url = https://github.com/jbeder/yaml-cpp.git
 [submodule "Deps/imgui"]
 	path = Deps/imgui
 	url = https://github.com/ocornut/imgui.git
@@ -8,6 +5,3 @@
 [submodule "Deps/pcg"]
 	path = Deps/pcg
 	url = https://github.com/imneme/pcg-cpp.git
-[submodule "Deps/minizip"]
-	path = Deps/minizip
-	url = https://github.com/zlib-ng/minizip-ng.git
