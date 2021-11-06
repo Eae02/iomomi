@@ -213,18 +213,6 @@ void DeferredRenderer::BeginGeometry(RenderTexManager& rtManager) const
 	eg::DC.BeginRenderPass(rpBeginInfo);
 }
 
-void DeferredRenderer::BeginGeometryFlags(RenderTexManager& rtManager) const
-{
-	eg::DC.EndRenderPass();
-	
-	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = rtManager.GetFramebuffer(RenderTex::Flags, {}, RenderTex::GBDepth, "GeometryFlags");
-	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Load;
-	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
-	rpBeginInfo.colorAttachments[0].clearValue = eg::ColorSRGB(0, 0, 0, 0);
-	eg::DC.BeginRenderPass(rpBeginInfo);
-}
-
 void DeferredRenderer::EndGeometry(RenderTexManager& rtManager) const
 {
 	eg::DC.EndRenderPass();
@@ -232,7 +220,6 @@ void DeferredRenderer::EndGeometry(RenderTexManager& rtManager) const
 	rtManager.RenderTextureUsageHintFS(RenderTex::GBColor1);
 	rtManager.RenderTextureUsageHintFS(RenderTex::GBColor2);
 	rtManager.RenderTextureUsageHintFS(RenderTex::GBDepth);
-	rtManager.RenderTextureUsageHintFS(RenderTex::Flags);
 }
 
 void DeferredRenderer::BeginTransparent(RenderTex destinationTexture, RenderTexManager& rtManager)
@@ -362,7 +349,6 @@ void DeferredRenderer::BeginLighting(RenderTexManager& rtManager)
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor1), 0, 1);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor2), 0, 2);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 3);
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::Flags), 0, 4);
 	
 	eg::DC.PushConstants(0, sizeof(float) * 3, &ambientColor.r);
 	
@@ -408,9 +394,8 @@ void DeferredRenderer::DrawPointLights(const std::vector<std::shared_ptr<PointLi
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor1), 0, 1);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor2), 0, 2);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 3);
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::Flags), 0, 4);
-	eg::DC.BindTexture(waterDepthTexture, 0, 5);
-	eg::DC.BindTexture(eg::GetAsset<eg::Texture>("Caustics"), 0, 6);
+	eg::DC.BindTexture(waterDepthTexture, 0, 4);
+	eg::DC.BindTexture(eg::GetAsset<eg::Texture>("Caustics"), 0, 5);
 	
 	struct PointLightPC
 	{
@@ -445,7 +430,7 @@ void DeferredRenderer::DrawPointLights(const std::vector<std::shared_ptr<PointLi
 		pc.specularIntensity = light->enableSpecularHighlights ? 1 : 0;
 		eg::DC.PushConstants(0, pc);
 		
-		eg::DC.BindTexture(light->shadowMap, 0, 7, &m_shadowMapSampler);
+		eg::DC.BindTexture(light->shadowMap, 0, 6, &m_shadowMapSampler);
 		
 		eg::DC.DrawIndexed(0, POINT_LIGHT_MESH_INDICES, 0, 0, 1);
 	}

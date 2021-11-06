@@ -13,8 +13,7 @@ layout(binding=1) uniform sampler2D inputColorSampler;
 layout(binding=2) uniform sampler2D gbColor1Sampler;
 layout(binding=3) uniform sampler2D gbColor2Sampler;
 layout(binding=4) uniform sampler2D gbDepthSampler;
-layout(binding=5) uniform usampler2D gbFlagsSampler;
-layout(binding=6) uniform sampler2D waterDepthSampler;
+layout(binding=5) uniform sampler2D waterDepthSampler;
 
 layout(constant_id=0) const int ssrLinearSamples = 8;
 layout(constant_id=1) const int ssrBinarySamples = 8;
@@ -85,17 +84,12 @@ layout(location=0) out vec4 color_out;
 
 void main()
 {
-	uint flags = texelFetch(gbFlagsSampler, ivec2(gl_FragCoord.xy), 0).r;
-	
 	color_out = vec4(0.0);
-
+	
 	if (isDirect == 1)
 	{
 		color_out = texture(inputColorSampler, texCoord_in);
 	}
-	
-	if ((flags & (RF_NO_SSR | RF_NO_LIGHTING)) != 0)
-		return;
 	
 	float hDepth = texture(gbDepthSampler, texCoord_in).r;;
 	if (getWaterHDepth(texCoord_in) < hDepth)
@@ -105,7 +99,6 @@ void main()
 	vec4 gbc2 = texture(gbColor2Sampler, texCoord_in);
 	
 	GBData data;
-	data.flags = flags;
 	data.hDepth = hDepth;
 	data.worldPos = WorldPosFromDepth(hDepth, texCoord_in, renderSettings.invViewProjection);
 	data.normal = SMDecode(gbc2.xy);

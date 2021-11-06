@@ -59,6 +59,8 @@ private:
 	
 	PhysicsEngine m_physicsEngine;
 	PhysicsDebugRenderer m_physicsDebugRenderer;
+	
+	std::optional<eg::EventListener<eg::RelativeMouseModeLostEvent>> m_relativeMouseModeLostListener;
 };
 
 extern MainGameState* mainGameState;

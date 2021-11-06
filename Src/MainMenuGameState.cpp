@@ -435,9 +435,6 @@ void MainMenuGameState::RenderWorld(float dt)
 	}
 	
 	const eg::Texture* blurredTexture = &m_worldBlurRenderer.OutputTexture();
-#ifdef __EMSCRIPTEN__
-	blurredTexture = &m_worldRenderTexture;
-#endif
 	
 	m_spriteBatch.Draw(*blurredTexture, dstRect, eg::ColorLin(1, 1, 1, m_worldFadeInProgress),
 	                   eg::SpriteFlags::ForceLowestMipLevel);

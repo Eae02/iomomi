@@ -9,7 +9,7 @@ using namespace std::filesystem;
 
 std::vector<Level> levels;
 
-const std::vector<std::string_view> levelsOrder = 
+std::vector<std::string_view> levelsOrder = 
 {
 	"intro_0",
 	"intro_1",

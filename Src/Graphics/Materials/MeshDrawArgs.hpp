@@ -6,7 +6,6 @@
 enum class MeshDrawMode
 {
 	Game,
-	ObjectFlags,
 	BlurredGlassDepthOnly,
 	TransparentBeforeWater,
 	TransparentBeforeBlur,

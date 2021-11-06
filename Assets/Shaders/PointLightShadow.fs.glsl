@@ -1,10 +1,10 @@
 #version 450 core
 
-#pragma variants VDefault VAlbedo
+#pragma variants VNoAlphaTest VAlphaTest
 
 layout(location=0) in vec3 position_in;
 
-#ifdef VAlbedo
+#ifdef VAlphaTest
 layout(location=1) in vec2 texCoord_in;
 
 layout(set=0, binding=1) uniform sampler2D albedo;
@@ -18,7 +18,7 @@ layout(push_constant) uniform PC
 
 void main()
 {
-#ifdef VAlbedo
+#ifdef VAlphaTest
 	if (texture(albedo, texCoord_in).a < 0.5)
 		discard;
 #endif

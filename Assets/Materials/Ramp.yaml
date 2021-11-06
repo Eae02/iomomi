@@ -5,3 +5,4 @@ roughnessMin: 0.4
 roughnessMax: 0.7
 castShadows: true
 backfaceCullEd: true
+alphaTest: true

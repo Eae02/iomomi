@@ -10,7 +10,6 @@ public:
 	DeferredRenderer();
 	
 	void BeginGeometry(RenderTexManager& rtManager) const;
-	void BeginGeometryFlags(RenderTexManager& rtManager) const;
 	void EndGeometry(RenderTexManager& rtManager) const;
 	
 	void BeginTransparent(RenderTex destinationTexture, RenderTexManager& rtManager);

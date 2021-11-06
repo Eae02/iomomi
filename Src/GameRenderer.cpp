@@ -238,14 +238,6 @@ void GameRenderer::Render(World& world, float gameTime, float dt,
 		mDrawArgs.drawMode = MeshDrawMode::Game;
 		m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
 		
-		eg::DC.DebugLabelEnd();
-		eg::DC.DebugLabelBegin("Geometry Flags");
-		
-		m_renderCtx->renderer.BeginGeometryFlags(m_rtManager);
-		
-		mDrawArgs.drawMode = MeshDrawMode::ObjectFlags;
-		m_renderCtx->meshBatch.Draw(eg::DC, &mDrawArgs);
-		
 		m_renderCtx->renderer.EndGeometry(m_rtManager);
 		eg::DC.DebugLabelEnd();
 	}

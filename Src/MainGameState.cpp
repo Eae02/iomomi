@@ -111,6 +111,7 @@ void MainGameState::OnDeactivate()
 	GameRenderer::instance->m_waterSimulator.Stop();
 	AudioPlayers::gameSFXPlayer.StopAll();
 	m_world.reset();
+	m_relativeMouseModeLostListener.reset();
 }
 
 extern std::weak_ptr<World> runningEditorWorld;
@@ -138,6 +139,12 @@ void MainGameState::RunFrame(float dt)
 		m_player.GetViewMatrix(viewMatrix, inverseViewMatrix);
 		GameRenderer::instance->SetViewMatrix(viewMatrix, inverseViewMatrix, !frozenFrustum);
 	};
+	
+	if (!m_relativeMouseModeLostListener.has_value())
+	{
+		m_relativeMouseModeLostListener = eg::EventListener<eg::RelativeMouseModeLostEvent>();
+	}
+	m_relativeMouseModeLostListener->ProcessLast([&] (auto&) { m_pausedMenu.isPaused = true; });
 	
 	m_pausedMenu.Update(dt);
 	if (m_world == nullptr)

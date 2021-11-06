@@ -20,11 +20,11 @@ layout(push_constant, std140) uniform PC
 	float specularIntensity;
 } pc;
 
-layout(set=0, binding=5) uniform sampler2D waterDepth;
+layout(set=0, binding=4) uniform sampler2D waterDepth;
 
-layout(set=0, binding=6) uniform sampler3D causticsTexture;
+layout(set=0, binding=5) uniform sampler3D causticsTexture;
 
-layout(set=0, binding=7) uniform samplerCubeShadow shadowMap;
+layout(set=0, binding=6) uniform samplerCubeShadow shadowMap;
 
 const vec3 SAMPLE_OFFSETS[] = vec3[]
 (
@@ -46,9 +46,6 @@ float sampleCaustics(vec2 pos)
 
 vec3 CalculateLighting(GBData gbData)
 {
-	if ((gbData.flags & RF_NO_LIGHTING) != 0)
-		discard;
-	
 	vec3 toLight = pc.position - gbData.worldPos;
 	float dist = length(toLight);
 	toLight = normalize(toLight);

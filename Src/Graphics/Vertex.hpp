@@ -7,7 +7,7 @@ struct WallVertex
 	float position[3];
 	float texCoord[3];
 	int8_t normalAndRoughnessLo[4];
-	int8_t tangentAndRoughnessHi[3];
+	int8_t tangentAndRoughnessHi[4];
 	
 	void SetNormal(const glm::vec3& _normal)
 	{

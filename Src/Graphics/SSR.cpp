@@ -88,8 +88,7 @@ void SSR::Render(eg::TextureRef waterDepth, RenderTex destinationTexture, Render
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor1), 0, 2);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor2), 0, 3);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 4);
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::Flags), 0, 5);
-	eg::DC.BindTexture(waterDepth, 0, 6);
+	eg::DC.BindTexture(waterDepth, 0, 5);
 	
 	eg::DC.Draw(0, 3, 0, 1);
 	

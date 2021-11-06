@@ -1,12 +1,6 @@
 #include "BlurRenderer.hpp"
 #include "GraphicsCommon.hpp"
 
-#ifdef __EMSCRIPTEN__
-void BlurRenderer::MaybeUpdateResolution(uint32_t newWidth, uint32_t newHeight) { }
-void BlurRenderer::Render(eg::TextureRef inputTexture) const { }
-void BlurRenderer::DoBlurPass(const glm::vec2& blurVector, eg::TextureRef inputTexture, int inputLod, eg::FramebufferRef dstFramebuffer) const { }
-#else
-
 static eg::Pipeline glassBlurPipeline;
 
 static void OnInit()
@@ -73,7 +67,8 @@ void BlurRenderer::MaybeUpdateResolution(uint32_t newWidth, uint32_t newHeight)
 	}
 }
 
-void BlurRenderer::DoBlurPass(const glm::vec2& blurVector, eg::TextureRef inputTexture, int inputLod, eg::FramebufferRef dstFramebuffer) const
+void BlurRenderer::DoBlurPass(const glm::vec2& blurVector, eg::TextureRef inputTexture,
+                              int inputLod, eg::FramebufferRef dstFramebuffer) const
 {
 	eg::RenderPassBeginInfo rp1BeginInfo;
 	rp1BeginInfo.framebuffer = dstFramebuffer.handle;
@@ -82,12 +77,10 @@ void BlurRenderer::DoBlurPass(const glm::vec2& blurVector, eg::TextureRef inputT
 	
 	eg::DC.BindPipeline(glassBlurPipeline);
 	
-	eg::TextureSubresource subresource;
-	subresource.firstMipLevel = inputLod;
-	subresource.numMipLevels = 1;
-	eg::DC.BindTexture(inputTexture, 0, 0, &framebufferLinearSampler, subresource);
+	float pc[] = { blurVector.x, blurVector.y, (float)inputLod };
+	eg::DC.BindTexture(inputTexture, 0, 0, &framebufferLinearSampler);
 	
-	eg::DC.PushConstants(0, sizeof(float) * 2, &blurVector.x);
+	eg::DC.PushConstants(0, sizeof(pc), pc);
 	
 	eg::DC.Draw(0, 3, 0, 1);
 	
@@ -122,5 +115,3 @@ void BlurRenderer::Render(eg::TextureRef inputTexture) const
 		ChangeUsageForShaderSample(m_blurTextureOut, i);
 	}
 }
-
-#endif

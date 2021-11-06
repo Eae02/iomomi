@@ -17,9 +17,6 @@ layout(push_constant, std140) uniform PC
 
 vec3 CalculateLighting(GBData gbData)
 {
-	if ((gbData.flags & RF_NO_LIGHTING) != 0)
-		discard;
-	
 	vec3 toLight = pc.position - gbData.worldPos;
 	float dist = length(toLight);
 	toLight /= dist;

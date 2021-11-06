@@ -17,6 +17,12 @@ static std::unordered_map<std::string, LevelData> levelData;
 
 void InitLevelsPlatformDependent()
 {
+	for (int64_t i = (int64_t)levelsOrder.size() - 1; i >= 0; i--)
+	{
+		if (levelsOrder[i].find("water") != std::string_view::npos)
+			levelsOrder.erase(levelsOrder.begin() + i);
+	}
+	
 	unzFile zipfile = unzOpen("Levels.zip");
 	if (zipfile == nullptr)
 	{

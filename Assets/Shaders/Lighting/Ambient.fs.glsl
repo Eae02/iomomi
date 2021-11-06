@@ -17,9 +17,6 @@ layout(push_constant) uniform PC
 
 vec3 CalculateLighting(GBData gbData)
 {
-	if ((gbData.flags & RF_NO_LIGHTING) != 0)
-		return gbData.albedo;
-	
 	vec3 toEye = normalize(renderSettings.cameraPosition - gbData.worldPos);
 	vec3 fresnel = calcFresnel(gbData, toEye);
 	vec3 kd = (1.0 - fresnel) * (1.0 - gbData.metallic);

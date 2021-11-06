@@ -52,7 +52,6 @@ inline static eg::PipelineRef GetPipeline(const MeshDrawArgs& drawArgs)
 	{
 	case MeshDrawMode::Emissive: return gravitySwitchPipelineGame;
 	case MeshDrawMode::Editor: return gravitySwitchPipelineEditor;
-	//case MeshDrawMode::ObjectFlags: return StaticPropMaterial::FlagsPipelineBackCull;
 	default: return eg::PipelineRef();
 	}
 }
@@ -66,27 +65,12 @@ bool GravitySwitchMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawA
 	
 	cmdCtx.BindPipeline(pipeline);
 	
-	if (mDrawArgs->drawMode != MeshDrawMode::ObjectFlags)
-	{
-		cmdCtx.BindDescriptorSet(gravitySwitchDescriptorSet, 0);
-	}
-	
 	return true;
 }
 
 bool GravitySwitchMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
-	if (static_cast<MeshDrawArgs*>(drawArgs)->drawMode == MeshDrawMode::ObjectFlags)
-	{
-		StaticPropMaterial::FlagsPipelinePushConstantData pc;
-		pc.viewProj = RenderSettings::instance->viewProjection;
-		pc.flags = ObjectRenderFlags::NoSSR | ObjectRenderFlags::Unlit;
-		cmdCtx.PushConstants(0, sizeof(pc), &pc);
-	}
-	else
-	{
-		float pc[2] = { intensity, timeOffset * 10 };
-		cmdCtx.PushConstants(0, sizeof(pc), pc);
-	}
+	float pc[2] = { intensity, timeOffset * 10 };
+	cmdCtx.PushConstants(0, sizeof(pc), pc);
 	return true;
 }

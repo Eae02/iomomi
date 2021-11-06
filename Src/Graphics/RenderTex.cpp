@@ -25,7 +25,6 @@ eg::Format GetFormatForRenderTexture(RenderTex texture)
 	case RenderTex::GBDepth:            return GB_DEPTH_FORMAT;
 	case RenderTex::GBColor1:           return GB_COLOR_FORMAT;
 	case RenderTex::GBColor2:           return GB_COLOR_FORMAT;
-	case RenderTex::Flags:              return eg::Format::R8_UInt;
 	case RenderTex::WaterGlowIntensity: return eg::Format::R8_UNorm;
 	case RenderTex::WaterMinDepth:      return eg::Format::Depth16;
 	case RenderTex::WaterMaxDepth:      return eg::Format::Depth16;

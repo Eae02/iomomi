@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../QualityLevel.hpp"
+#include "MeshDrawArgs.hpp"
 
 class StaticPropMaterial : public eg::IMaterial
 {
@@ -50,16 +51,14 @@ public:
 	
 	static bool AssetLoader(const eg::AssetLoadContext& loadContext);
 	
-	static eg::PipelineRef FlagsPipelineBackCull;
-	static eg::PipelineRef FlagsPipelineNoCull;
-	
 private:
+	eg::PipelineRef GetPipeline(MeshDrawMode drawMode) const;
+	
 	const eg::Texture* m_albedoTexture;
 	const eg::Texture* m_normalMapTexture;
 	const eg::Texture* m_miscMapTexture;
-	uint32_t m_textureLayer = 0;
+	std::optional<uint32_t> m_textureLayer;
 	mutable eg::DescriptorSet m_descriptorSet;
-	mutable eg::DescriptorSet m_descriptorSetEditor;
 	mutable bool m_descriptorsInitialized = false;
 	float m_roughnessMin;
 	float m_roughnessMax;
@@ -67,6 +66,6 @@ private:
 	bool m_backfaceCull = true;
 	bool m_backfaceCullEditor = false;
 	bool m_castShadows = true;
+	bool m_alphaTest = false;
 	QualityLevel m_minShadowQuality = QualityLevel::Medium;
-	uint32_t m_objectFlags = 0;
 };

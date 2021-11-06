@@ -10,6 +10,7 @@ public:
 		uint32_t iaDownAxis[NUM_INTERACTABLES];
 		float iaPosition[NUM_INTERACTABLES][4];
 		float gameTime;
+		float _padding[3];
 	};
 	
 	GravityBarrierMaterial() = default;

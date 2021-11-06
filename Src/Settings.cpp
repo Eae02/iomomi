@@ -10,8 +10,133 @@ std::string settingsPath;
 
 Settings settings;
 
+struct SettingEntry
+{
+	std::function<void(Settings& settings, const YAML::Node& settingsNode)> load;
+	std::function<void(const Settings& settings, YAML::Emitter& emitter)> save;
+};
+
+template <typename T>
+SettingEntry MakeEnumSetting(std::string name, T Settings::*setting)
+{
+	SettingEntry s;
+	s.load = [=] (Settings& st, const YAML::Node& settingsNode)
+	{
+		if (std::optional<T> value = magic_enum::enum_cast<T>(settingsNode[name].as<std::string>("")))
+		{
+			st.*setting = *value;
+		}
+	};
+	s.save = [=] (const Settings& st, YAML::Emitter& emitter)
+	{
+		emitter << YAML::Key << name << YAML::Value << std::string(magic_enum::enum_name(st.*setting));
+	};
+	return s;
+}
+
+template <typename T>
+SettingEntry MakeNumberSetting(std::string name, T Settings::*setting)
+{
+	SettingEntry s;
+	s.load = [=] (Settings& st, const YAML::Node& settingsNode)
+	{
+		st.*setting = settingsNode[name].as<T>(st.*setting);
+	};
+	s.save = [=] (const Settings& st, YAML::Emitter& emitter)
+	{
+		emitter << YAML::Key << name << YAML::Value << st.*setting;
+	};
+	return s;
+}
+
+SettingEntry MakeDisplayModeSetting(std::string name, uint32_t eg::FullscreenDisplayMode::*setting)
+{
+	SettingEntry s;
+	s.load = [=] (Settings& st, const YAML::Node& settingsNode)
+	{
+		st.fullscreenDisplayMode.*setting = settingsNode[name].as<uint32_t>(st.fullscreenDisplayMode.*setting);
+	};
+	s.save = [=] (const Settings& st, YAML::Emitter& emitter)
+	{
+		emitter << YAML::Key << name << YAML::Value << st.fullscreenDisplayMode.*setting;
+	};
+	return s;
+}
+
+SettingEntry MakeKeySetting(std::string name, KeyBinding Settings::*setting)
+{
+	SettingEntry s;
+	s.load = [=] (Settings& st, const YAML::Node& settingsNode)
+	{
+		std::string value = settingsNode[name].as<std::string>("");
+		size_t spacePos = value.find(' ');
+		if (spacePos != std::string::npos)
+		{
+			(st.*setting).kbmButton = eg::ButtonFromString(std::string_view(value.data(), spacePos));
+			(st.*setting).controllerButton = eg::ButtonFromString(std::string_view(value.data() + spacePos + 1));
+		}
+	};
+	s.save = [=] (const Settings& st, YAML::Emitter& emitter)
+	{
+		std::string value = eg::Concat({
+			eg::ButtonToString((st.*setting).kbmButton), " ",
+			eg::ButtonToString((st.*setting).controllerButton)
+		});
+		emitter << YAML::Key << name << YAML::Value << value;
+	};
+	return s;
+}
+
+const SettingEntry settingEntries[] =
+{
+	MakeEnumSetting("textureQuality", &Settings::textureQuality),
+	MakeEnumSetting("reflQuality", &Settings::reflectionsQuality),
+	MakeEnumSetting("shadowQuality", &Settings::shadowQuality),
+	MakeEnumSetting("lightingQuality", &Settings::lightingQuality),
+	MakeEnumSetting("waterQuality", &Settings::waterQuality),
+	MakeEnumSetting("ssaoQuality", &Settings::ssaoQuality),
+	
+	MakeNumberSetting("showExtraLevels", &Settings::showExtraLevels),
+	MakeNumberSetting("fieldOfView", &Settings::fieldOfViewDeg),
+	MakeNumberSetting("exposure", &Settings::exposure),
+	MakeNumberSetting("lookSensitivityMS", &Settings::lookSensitivityMS),
+	MakeNumberSetting("lookSensitivityGP", &Settings::lookSensitivityGP),
+	MakeNumberSetting("lookInvertY", &Settings::lookInvertY),
+	MakeNumberSetting("flipJoysticks", &Settings::flipJoysticks),
+	MakeNumberSetting("fxaa", &Settings::enableFXAA),
+	MakeNumberSetting("bloom", &Settings::enableBloom),
+	MakeNumberSetting("gunFlash", &Settings::gunFlash),
+	MakeNumberSetting("crosshair", &Settings::drawCrosshair),
+	MakeEnumSetting("viewBobbing", &Settings::viewBobbingLevel),
+	
+	MakeDisplayModeSetting("resx", &eg::FullscreenDisplayMode::resolutionX),
+	MakeDisplayModeSetting("resy", &eg::FullscreenDisplayMode::resolutionY),
+	MakeDisplayModeSetting("refreshRate", &eg::FullscreenDisplayMode::refreshRate),
+	MakeNumberSetting("vsync", &Settings::vsync),
+	MakeNumberSetting("prefGPUName", &Settings::preferredGPUName),
+	MakeEnumSetting("displayMode", &Settings::displayMode),
+	MakeEnumSetting("graphicsAPI", &Settings::graphicsAPI),
+	
+	MakeNumberSetting("masterVolume", &Settings::masterVolume),
+	MakeNumberSetting("sfxVolume", &Settings::sfxVolume),
+	MakeNumberSetting("ambienceVolume", &Settings::ambienceVolume),
+	
+	MakeKeySetting("keyMoveF", &Settings::keyMoveF),
+	MakeKeySetting("keyMoveB", &Settings::keyMoveB),
+	MakeKeySetting("keyMoveL", &Settings::keyMoveL),
+	MakeKeySetting("keyMoveR", &Settings::keyMoveR),
+	MakeKeySetting("keyJump", &Settings::keyJump),
+	MakeKeySetting("keyInteract", &Settings::keyInteract),
+	MakeKeySetting("keyMenu", &Settings::keyMenu),
+	MakeKeySetting("keyShoot", &Settings::keyShoot),
+};
+
 void LoadSettings()
 {
+#ifdef __EMSCRIPTEN__
+	settings.SetToLowGraphics();
+#endif
+	
 	settingsPath = appDataDirPath + "settings.yaml";
 	
 	std::ifstream settingsStream(settingsPath);
@@ -20,74 +145,10 @@ void LoadSettings()
 	
 	YAML::Node settingsNode = YAML::Load(settingsStream);
 	
-	settings.textureQuality =
-		magic_enum::enum_cast<eg::TextureQuality>(settingsNode["textureQuality"].as<std::string>(""))
-		.value_or(eg::TextureQuality::Medium);
-	settings.reflectionsQuality =
-		magic_enum::enum_cast<QualityLevel>(settingsNode["reflQuality"].as<std::string>(""))
-		.value_or(QualityLevel::Medium);
-	settings.shadowQuality =
-		magic_enum::enum_cast<QualityLevel>(settingsNode["shadowQuality"].as<std::string>(""))
-		.value_or(QualityLevel::Medium);
-	settings.lightingQuality =
-		magic_enum::enum_cast<QualityLevel>(settingsNode["lightingQuality"].as<std::string>(""))
-		.value_or(QualityLevel::High);
-	settings.waterQuality =
-		magic_enum::enum_cast<QualityLevel>(settingsNode["waterQuality"].as<std::string>(""))
-		.value_or(QualityLevel::High);
-	settings.ssaoQuality =
-		magic_enum::enum_cast<SSAOQuality>(settingsNode["ssaoQuality"].as<std::string>(""))
-		.value_or(SSAOQuality::Off);
-	settings.fieldOfViewDeg = settingsNode["fieldOfView"].as<float>(settings.fieldOfViewDeg);
-	settings.exposure = settingsNode["exposure"].as<float>(settings.exposure);
-	settings.lookSensitivityMS = settingsNode["lookSensitivityMS"].as<float>(settings.lookSensitivityMS);
-	settings.lookSensitivityGP = settingsNode["lookSensitivityGP"].as<float>(settings.lookSensitivityGP);
-	settings.lookInvertY = settingsNode["lookInvertY"].as<bool>(false);
-	settings.enableFXAA = settingsNode["fxaa"].as<bool>(true);
-	settings.enableBloom = settingsNode["bloom"].as<bool>(true);
-	settings.showExtraLevels = settingsNode["showExtraLevels"].as<bool>(false);
-	settings.gunFlash = settingsNode["gunFlash"].as<bool>(true);
-	settings.drawCrosshair = settingsNode["crosshair"].as<bool>(true);
-	
-	settings.graphicsAPI =
-		magic_enum::enum_cast<eg::GraphicsAPI>(settingsNode["graphicsAPI"].as<std::string>(""))
-		.value_or(eg::GraphicsAPI::OpenGL);
-	settings.preferredGPUName = settingsNode["prefGPUName"].as<std::string>("");
-	
-	settings.displayMode =
-		magic_enum::enum_cast<DisplayMode>(settingsNode["displayMode"].as<std::string>(""))
-		.value_or(DisplayMode::Windowed);
-	settings.viewBobbingLevel =
-		magic_enum::enum_cast<ViewBobbingLevel>(settingsNode["displayMode"].as<std::string>(""))
-		.value_or(ViewBobbingLevel::Normal);
-	
-	settings.fullscreenDisplayMode.resolutionX = settingsNode["resx"].as<uint32_t>(0);
-	settings.fullscreenDisplayMode.resolutionY = settingsNode["resy"].as<uint32_t>(0);
-	settings.fullscreenDisplayMode.refreshRate = settingsNode["refreshRate"].as<uint32_t>(0);
-	settings.vsync = settingsNode["vsync"].as<bool>(true);
-	
-	settings.masterVolume = settingsNode["masterVolume"].as<float>(settings.masterVolume);
-	settings.sfxVolume = settingsNode["sfxVolume"].as<float>(settings.sfxVolume);
-	settings.ambienceVolume = settingsNode["ambienceVolume"].as<float>(settings.ambienceVolume);
-	
-	auto ReadKeyBinding = [&] (const char* name, KeyBinding& binding)
+	for (const SettingEntry& entry : settingEntries)
 	{
-		std::string value = settingsNode[name].as<std::string>("");
-		size_t spacePos = value.find(' ');
-		if (spacePos != std::string::npos)
-		{
-			binding.kbmButton = eg::ButtonFromString(std::string_view(value.data(), spacePos));
-			binding.controllerButton = eg::ButtonFromString(std::string_view(value.data() + spacePos + 1));
-		}
-	};
-	ReadKeyBinding("keyMoveF", settings.keyMoveF);
-	ReadKeyBinding("keyMoveB", settings.keyMoveB);
-	ReadKeyBinding("keyMoveL", settings.keyMoveL);
-	ReadKeyBinding("keyMoveR", settings.keyMoveR);
-	ReadKeyBinding("keyJump", settings.keyJump);
-	ReadKeyBinding("keyInteract", settings.keyInteract);
-	ReadKeyBinding("keyMenu", settings.keyMenu);
-	ReadKeyBinding("keyShoot", settings.keyShoot);
+		entry.load(settings, settingsNode);
+	}
 }
 
 void SaveSettings()
@@ -95,50 +156,11 @@ void SaveSettings()
 	YAML::Emitter emitter;
 	
 	emitter << YAML::BeginMap;
-	emitter << YAML::Key << "showExtraLevels"   << YAML::Value << settings.showExtraLevels;
-	emitter << YAML::Key << "textureQuality"    << YAML::Value << std::string(magic_enum::enum_name(settings.textureQuality));
-	emitter << YAML::Key << "reflQuality"       << YAML::Value << std::string(magic_enum::enum_name(settings.reflectionsQuality));
-	emitter << YAML::Key << "shadowQuality"     << YAML::Value << std::string(magic_enum::enum_name(settings.shadowQuality));
-	emitter << YAML::Key << "lightingQuality"   << YAML::Value << std::string(magic_enum::enum_name(settings.lightingQuality));
-	emitter << YAML::Key << "waterQuality"      << YAML::Value << std::string(magic_enum::enum_name(settings.waterQuality));
-	emitter << YAML::Key << "ssaoQuality"       << YAML::Value << std::string(magic_enum::enum_name(settings.ssaoQuality));
-	emitter << YAML::Key << "fieldOfView"       << YAML::Value << settings.fieldOfViewDeg;
-	emitter << YAML::Key << "exposure"          << YAML::Value << settings.exposure;
-	emitter << YAML::Key << "lookSensitivityMS" << YAML::Value << settings.lookSensitivityMS;
-	emitter << YAML::Key << "lookSensitivityGP" << YAML::Value << settings.lookSensitivityGP;
-	emitter << YAML::Key << "lookInvertY"       << YAML::Value << settings.lookInvertY;
-	emitter << YAML::Key << "flipJoysticks"     << YAML::Value << settings.flipJoysticks;
-	emitter << YAML::Key << "fxaa"              << YAML::Value << settings.enableFXAA;
-	emitter << YAML::Key << "bloom"             << YAML::Value << settings.enableBloom;
-	emitter << YAML::Key << "gunFlash"          << YAML::Value << settings.gunFlash;
-	emitter << YAML::Key << "crosshair"         << YAML::Value << settings.drawCrosshair;
-	emitter << YAML::Key << "viewBobbing"       << YAML::Value << std::string(magic_enum::enum_name(settings.viewBobbingLevel));
 	
-	emitter << YAML::Key << "displayMode" << YAML::Value << std::string(magic_enum::enum_name(settings.displayMode));
-	emitter << YAML::Key << "resx"        << YAML::Value << settings.fullscreenDisplayMode.resolutionX;
-	emitter << YAML::Key << "resy"        << YAML::Value << settings.fullscreenDisplayMode.resolutionY;
-	emitter << YAML::Key << "refreshRate" << YAML::Value << settings.fullscreenDisplayMode.refreshRate;
-	emitter << YAML::Key << "vsync"       << YAML::Value << settings.vsync;
-	emitter << YAML::Key << "prefGPUName" << YAML::Value << settings.preferredGPUName;
-	emitter << YAML::Key << "graphicsAPI" << YAML::Value << std::string(magic_enum::enum_name(settings.graphicsAPI));
-	
-	emitter << YAML::Key << "masterVolume"   << YAML::Value << settings.masterVolume;
-	emitter << YAML::Key << "sfxVolume"      << YAML::Value << settings.sfxVolume;
-	emitter << YAML::Key << "ambienceVolume" << YAML::Value << settings.ambienceVolume;
-	
-	auto WriteKeyBinding = [&] (const char* name, const KeyBinding& binding)
+	for (const SettingEntry& entry : settingEntries)
 	{
-		std::string value = eg::Concat({ eg::ButtonToString(binding.kbmButton), " ", eg::ButtonToString(binding.controllerButton) });
-		emitter << YAML::Key << name << YAML::Value << value;
-	};
-	WriteKeyBinding("keyMoveF", settings.keyMoveF);
-	WriteKeyBinding("keyMoveB", settings.keyMoveB);
-	WriteKeyBinding("keyMoveL", settings.keyMoveL);
-	WriteKeyBinding("keyMoveR", settings.keyMoveR);
-	WriteKeyBinding("keyJump", settings.keyJump);
-	WriteKeyBinding("keyInteract", settings.keyInteract);
-	WriteKeyBinding("keyMenu", settings.keyMenu);
-	WriteKeyBinding("keyShoot", settings.keyShoot);
+		entry.save(settings, emitter);
+	}
 	
 	emitter << YAML::EndMap;
 	
@@ -150,6 +172,18 @@ void SaveSettings()
 	settingsStream.close();
 	
 	SyncFileSystem();
+}
+
+void Settings::SetToLowGraphics()
+{
+	textureQuality = eg::TextureQuality::Low;
+	shadowQuality = QualityLevel::VeryLow;
+	reflectionsQuality = QualityLevel::VeryLow;
+	lightingQuality = QualityLevel::VeryLow;
+	waterQuality = QualityLevel::VeryLow;
+	ssaoQuality = SSAOQuality::Off;
+	enableFXAA = false;
+	enableBloom = false;
 }
 
 int settingsGeneration = 0;
