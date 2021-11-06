@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<link rel="shortcut icon" type="image/png" href="favicon.png"/>
+		<style>
+			body {
+				overflow: hidden;
+				padding: 0;
+				margin: 0;
+				font-family: sans-serif;
+			}
+			
+			#infoWrap {
+				position: absolute;
+				width: 100vw;
+				height: 100vh;
+				text-align: center;
+				line-height: 100vh;
+				background-color: #0a394a;
+			}
+			
+			#infoWrap[data-mode="err"] {
+				background-color: #7b1e08;
+			}
+			
+			#infoWrap[data-mode="hide"] {
+				display: none;
+			}
+			
+			#infoText {
+				font-size: 3vh;
+				vertical-align: middle;
+				display: inline-block;
+				line-height: normal;
+				color: white;
+				text-shadow: 0 0 0.2em black;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="infoWrap" data-mode="load">
+			<span id="infoText">Loading...</span>
+		</div>
+		<canvas id="canvas" tabindex=-1></canvas>
+		<script type="text/javascript" src="iomomi.js"></script>
+		<script>
+			hasError = false;
+			function displayError(msg) {
+				if (!hasError) {
+					document.getElementById("infoWrap").dataset.mode = "err";
+					document.getElementById("infoText").innerText = msg;
+					hasError = true;
+				}
+			}
+			Module.canvas = document.getElementById("canvas");
+			Module.canvas.focus();
+			Module.canvas.addEventListener("webglcontextlost", function(event) {
+				displayError("WebGL Context Lost");
+				event.preventDefault();
+			}, false);
+			function setCanvasSize() {
+				Module.canvas.width = window.innerWidth;
+				Module.canvas.height = window.innerHeight;
+			};
+			window.onresize = setCanvasSize;
+			setCanvasSize();
+			Module.preRun = function() {
+				FS.createPreloadedFile("/", "Assets.eap", "Assets.eap", true, false);
+				FS.createPreloadedFile("/", "Levels.zip", "Levels.zip", true, false);
+				FS.mkdir('/data');
+				FS.mount(IDBFS, {}, '/data');
+				FS.syncfs(true, function (err) { });
+			};
+			Module.onRuntimeInitialized = function() {
+				document.getElementById("infoWrap").dataset.mode = "hide"
+				Module.cwrap("WebMain", "", [])();
+			};
+			Module.onAbort = function() {
+				displayError("Unknown Error");
+			};
+		</script>
+	</body>
+</html>
