@@ -95,6 +95,7 @@ const SettingEntry settingEntries[] =
 	MakeEnumSetting("lightingQuality", &Settings::lightingQuality),
 	MakeEnumSetting("waterQuality", &Settings::waterQuality),
 	MakeEnumSetting("ssaoQuality", &Settings::ssaoQuality),
+	MakeEnumSetting("bloomQuality", &Settings::bloomQuality),
 	
 	MakeNumberSetting("showExtraLevels", &Settings::showExtraLevels),
 	MakeNumberSetting("fieldOfView", &Settings::fieldOfViewDeg),
@@ -104,7 +105,6 @@ const SettingEntry settingEntries[] =
 	MakeNumberSetting("lookInvertY", &Settings::lookInvertY),
 	MakeNumberSetting("flipJoysticks", &Settings::flipJoysticks),
 	MakeNumberSetting("fxaa", &Settings::enableFXAA),
-	MakeNumberSetting("bloom", &Settings::enableBloom),
 	MakeNumberSetting("gunFlash", &Settings::gunFlash),
 	MakeNumberSetting("crosshair", &Settings::drawCrosshair),
 	MakeEnumSetting("viewBobbing", &Settings::viewBobbingLevel),
@@ -182,8 +182,8 @@ void Settings::SetToLowGraphics()
 	lightingQuality = QualityLevel::VeryLow;
 	waterQuality = QualityLevel::VeryLow;
 	ssaoQuality = SSAOQuality::Off;
+	bloomQuality = BloomQuality::Off;
 	enableFXAA = false;
-	enableBloom = false;
 }
 
 int settingsGeneration = 0;

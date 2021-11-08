@@ -78,7 +78,12 @@ void BlurRenderer::DoBlurPass(const glm::vec2& blurVector, eg::TextureRef inputT
 	eg::DC.BindPipeline(glassBlurPipeline);
 	
 	float pc[] = { blurVector.x, blurVector.y, (float)inputLod };
-	eg::DC.BindTexture(inputTexture, 0, 0, &framebufferLinearSampler);
+	eg::TextureSubresource subresource;
+#ifndef __EMSCRIPTEN__
+	subresource.firstMipLevel = inputLod;
+	subresource.numMipLevels = 1;
+#endif
+	eg::DC.BindTexture(inputTexture, 0, 0, &framebufferLinearSampler, subresource);
 	
 	eg::DC.PushConstants(0, sizeof(pc), pc);
 	

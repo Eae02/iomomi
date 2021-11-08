@@ -12,7 +12,7 @@ public:
 		eg::FramebufferHandle output, uint32_t outputResX, uint32_t outputResY, float colorScale);
 	
 private:
-	void InitPipeline();
+	void InitPipeline(bool bloomEnabled);
 	
 	std::optional<bool> m_bloomWasEnabled;
 	std::optional<bool> m_fxaaWasEnabled;

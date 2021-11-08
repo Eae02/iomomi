@@ -21,6 +21,7 @@ std::vector<std::string> settingsCBOptions;
 template <> std::vector<std::string> settingsCBOptions<ViewBobbingLevel> { "Off", "Low", "Normal" };
 template <> std::vector<std::string> settingsCBOptions<eg::TextureQuality> { "Low", "Medium", "High" };
 template <> std::vector<std::string> settingsCBOptions<SSAOQuality> { "Off", "Low", "Medium", "High" };
+template <> std::vector<std::string> settingsCBOptions<BloomQuality> { "Off", "Low", "High" };
 template <> std::vector<std::string> settingsCBOptions<QualityLevel> { "Very Low", "Low", "Medium", "High", "Very High" };
 template <> std::vector<std::string> settingsCBOptions<DisplayMode> { "Windowed", "Fullscreen", "Fullscreen Windowed" };
 
@@ -192,7 +193,7 @@ void InitOptionsMenu()
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::lightingQuality, "Lighting", true));
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::ssaoQuality, "SSAO", true));
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::waterQuality, "Water", true));
-	leftWidgetList.AddWidget(InitSettingsToggleButton(&Settings::enableBloom, "Bloom", "On", "Off"));
+	leftWidgetList.AddWidget(InitSettingsCB(&Settings::bloomQuality, "Bloom", true));
 	leftWidgetList.AddWidget(InitSettingsToggleButton(&Settings::enableFXAA, "FXAA", "On", "Off"));
 	leftWidgetList.AddWidget(InitSettingsToggleButton(&Settings::gunFlash, "Gun Flash", "Enabled", "Disabled"));
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::viewBobbingLevel, "View Bobbing", true));

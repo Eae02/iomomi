@@ -25,6 +25,13 @@ enum class SSAOQuality
 	High
 };
 
+enum class BloomQuality
+{
+	Off,
+	Low,
+	High
+};
+
 struct KeyBinding
 {
 	eg::Button kbmButton;
@@ -53,6 +60,7 @@ struct Settings
 	QualityLevel lightingQuality      = QualityLevel::High;
 	QualityLevel waterQuality         = QualityLevel::High;
 	SSAOQuality ssaoQuality           = SSAOQuality::Off;
+	BloomQuality bloomQuality         = BloomQuality::High;
 	float fieldOfViewDeg              = 80.0f;
 	
 	eg::GraphicsAPI graphicsAPI = eg::GraphicsAPI::OpenGL;
@@ -61,7 +69,6 @@ struct Settings
 	float exposure = 0.9f;
 	
 	bool enableFXAA         = true;
-	bool enableBloom        = true;
 	bool gunFlash           = true;
 	bool drawCrosshair      = true;
 	
@@ -91,11 +98,6 @@ struct Settings
 	bool HDREnabled() const
 	{
 		return lightingQuality >= QualityLevel::Low;
-	}
-	
-	bool BloomEnabled() const
-	{
-		return enableBloom && HDREnabled() && eg::GetGraphicsDeviceInfo().computeShader;
 	}
 };
 

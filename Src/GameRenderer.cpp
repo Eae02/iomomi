@@ -68,6 +68,7 @@ void GameRenderer::SetViewMatrixFromThumbnailCamera(const World& world)
 }
 
 static int* physicsDebug = eg::TweakVarInt("phys_dbg_draw", 0, 0, 1);
+static int* bloomLevels = eg::TweakVarInt("bloom_levels", 3, 0, 10);
 
 void GameRenderer::Render(World& world, float gameTime, float dt,
                           eg::FramebufferHandle outputFramebuffer, uint32_t outputResX, uint32_t outputResY)
@@ -75,22 +76,33 @@ void GameRenderer::Render(World& world, float gameTime, float dt,
 	m_projection.SetResolution(outputResX, outputResY);
 	m_rtManager.BeginFrame(outputResX, outputResY);
 	
-	if (settings.BloomEnabled())
+	if (settings.bloomQuality != BloomQuality::Off)
 	{
 		bool outOfDate = m_bloomRenderTarget == nullptr ||
+			m_oldBloomQuality != settings.bloomQuality ||
 			m_bloomRenderTarget->InputWidth() != outputResX ||
 			m_bloomRenderTarget->InputHeight() != outputResY;
 		
 		if (outOfDate)
 		{
+			eg::Format bloomFormat = eg::Format::R8G8B8A8_UNorm;
+			if (settings.bloomQuality == BloomQuality::High)
+				bloomFormat = eg::Format::R16G16B16A16_Float;
+			
 			m_bloomRenderTarget = std::make_unique<eg::BloomRenderer::RenderTarget>(
-				outputResX, outputResY, 3);
+				outputResX, outputResY, *bloomLevels, bloomFormat);
 			
 			if (m_bloomRenderer == nullptr)
 			{
 				m_bloomRenderer = std::make_unique<eg::BloomRenderer>();
 			}
+			
+			m_oldBloomQuality = settings.bloomQuality;
 		}
+	}
+	else
+	{
+		m_bloomRenderTarget = nullptr;
 	}
 	
 	m_glassBlurRenderer.MaybeUpdateResolution(outputResX, outputResY);

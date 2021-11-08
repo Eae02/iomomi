@@ -10,6 +10,7 @@
 #include "Graphics/Water/WaterSimulator.hpp"
 #include "Graphics/Water/WaterBarrierRenderer.hpp"
 #include "Graphics/PhysicsDebugRenderer.hpp"
+#include "Settings.hpp"
 
 class GameRenderer
 {
@@ -58,6 +59,7 @@ private:
 	
 	QualityLevel m_lightingQuality = QualityLevel::Low;
 	
+	BloomQuality m_oldBloomQuality = BloomQuality::Off;
 	std::unique_ptr<eg::BloomRenderer::RenderTarget> m_bloomRenderTarget;
 	eg::Texture m_renderOutputTexture;
 	

@@ -2,13 +2,13 @@
 #include "../Settings.hpp"
 #include "GraphicsCommon.hpp"
 
-static float* bloomIntensity = eg::TweakVarFloat("bloom_intensity", 0.5f, 0);
+static float* bloomIntensity = eg::TweakVarFloat("bloom_intensity", 0.4f, 0);
 
 static float* vignetteMinRad = eg::TweakVarFloat("vign_min_rad", 0.2f, 0);
 static float* vignetteMaxRad = eg::TweakVarFloat("vign_max_rad", 0.75f, 0);
 static float* vignettePower = eg::TweakVarFloat("vign_power", 1.2f, 0);
 
-void PostProcessor::InitPipeline()
+void PostProcessor::InitPipeline(bool bloomEnabled)
 {
 	struct SpecConstData
 	{
@@ -16,7 +16,7 @@ void PostProcessor::InitPipeline()
 		uint32_t enableFXAA;
 	};
 	SpecConstData specConstData;
-	specConstData.enableBloom = settings.BloomEnabled();
+	specConstData.enableBloom = bloomEnabled;
 	specConstData.enableFXAA = settings.enableFXAA;
 	
 	eg::SpecializationConstantEntry specConstEntries[2];
@@ -37,16 +37,17 @@ void PostProcessor::InitPipeline()
 	m_pipeline = eg::Pipeline::Create(postPipelineCI);
 	m_pipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
-	m_bloomWasEnabled = settings.BloomEnabled();
+	m_bloomWasEnabled = bloomEnabled;
 	m_fxaaWasEnabled = settings.enableFXAA;
 }
 
 void PostProcessor::Render(eg::TextureRef input, const eg::BloomRenderer::RenderTarget* bloomRenderTarget,
 	eg::FramebufferHandle output, uint32_t outputResX, uint32_t outputResY, float colorScale)
 {
-	if (m_bloomWasEnabled != settings.BloomEnabled() || m_fxaaWasEnabled != settings.enableFXAA)
+	bool bloomEnabled = bloomRenderTarget != nullptr;
+	if (m_bloomWasEnabled != bloomEnabled || m_fxaaWasEnabled != settings.enableFXAA)
 	{
-		InitPipeline();
+		InitPipeline(bloomEnabled);
 	}
 	
 	eg::RenderPassBeginInfo rpBeginInfo;

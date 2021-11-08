@@ -64,6 +64,7 @@ bool GravitySwitchMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawA
 		return false;
 	
 	cmdCtx.BindPipeline(pipeline);
+	cmdCtx.BindDescriptorSet(gravitySwitchDescriptorSet, 0);
 	
 	return true;
 }
