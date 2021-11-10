@@ -5,7 +5,9 @@ set(BUILD_DIR_NAME ${CMAKE_BUILD_TYPE})
 
 set(BUILD_ID "" CACHE STRING "Build id to be included in the main menu.")
 
-include("${EGAME_CMAKE_DIR}/EGameTargets.cmake")
+#include("${EGAME_CMAKE_DIR}/EGameTargets.cmake")
+
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Deps/egame)
 
 file(GLOB_RECURSE SOURCE_FILES Src/*.cpp Src/*.hpp Src/*.inl Protobuf/Build/*.cc)
 
@@ -30,7 +32,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	set_source_files_properties(Src/World/Collision.cpp PROPERTIES COMPILE_FLAGS "-O2 -g0")
 endif()
 
-target_link_libraries(iomomi yaml-cpp EGame)
+target_link_libraries(iomomi EGame)
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 	set_target_properties(iomomi PROPERTIES
