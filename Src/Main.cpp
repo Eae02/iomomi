@@ -4,6 +4,7 @@
 #include "FileUtils.hpp"
 #include "Graphics/Materials/StaticPropMaterial.hpp"
 #include "Graphics/Materials/DecalMaterial.hpp"
+#include "Graphics/GraphicsCommon.hpp"
 
 #include <EGame/Audio/AudioPlayer.hpp>
 
@@ -47,6 +48,9 @@ void Run(int argc, char** argv)
 	eg::ParseCommandLineArgs(runConfig, argc, argv);
 	if (eg::HasFlag(runConfig.flags, eg::RunFlags::PreferIntegratedGPU))
 		runConfig.preferredGPUName.clear();
+#ifndef __EMSCRIPTEN__
+	useGLESPath = eg::HasFlag(runConfig.flags, eg::RunFlags::PreferGLESPath);
+#endif
 	
 	runConfig.gameName = "Iomomi";
 	runConfig.flags |= eg::RunFlags::DefaultFramebufferSRGB;

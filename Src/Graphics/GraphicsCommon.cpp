@@ -4,6 +4,10 @@
 
 #include <magic_enum.hpp>
 
+#ifndef __EMSCRIPTEN__
+bool useGLESPath;
+#endif
+
 const glm::ivec3 cubeMesh::vertices[8] =
 {
 	{ -1, -1, -1 },

@@ -79,10 +79,12 @@ void BlurRenderer::DoBlurPass(const glm::vec2& blurVector, eg::TextureRef inputT
 	
 	float pc[] = { blurVector.x, blurVector.y, (float)inputLod };
 	eg::TextureSubresource subresource;
-#ifndef __EMSCRIPTEN__
-	subresource.firstMipLevel = inputLod;
-	subresource.numMipLevels = 1;
-#endif
+	if (!useGLESPath) //Cannot be done in GLES because image views are not supported
+	{
+		subresource.firstMipLevel = inputLod;
+		subresource.numMipLevels = 1;
+	}
+	
 	eg::DC.BindTexture(inputTexture, 0, 0, &framebufferLinearSampler, subresource);
 	
 	eg::DC.PushConstants(0, sizeof(pc), pc);

@@ -212,31 +212,32 @@ void PointLightShadowMapper::UpdateShadowMaps(const RenderCallback& prepareCallb
 		m_lastFrameUpdateCount++;
 	};
 	
-	//Updates static shadow maps, disabled in WebGL because image views are not supported
-#ifndef __EMSCRIPTEN__
-	renderArgs.renderDynamic = false;
-	renderArgs.renderStatic = true;
-	for (LightEntry& entry : m_lights)
+	//Updates static shadow maps, disabled in GLES because image views are not supported
+	if (!useGLESPath)
 	{
-		if (entry.light->enabled && entry.light->castsShadows && !entry.light->willMoveEveryFrame &&
-			(entry.staticShadowMap == -1 || entry.HasMoved()) && viewFrustum.Intersects(entry.light->GetSphere()))
+		renderArgs.renderDynamic = false;
+		renderArgs.renderStatic = true;
+		for (LightEntry& entry : m_lights)
 		{
-			if (entry.staticShadowMap == -1)
+			if (entry.light->enabled && entry.light->castsShadows && !entry.light->willMoveEveryFrame &&
+				(entry.staticShadowMap == -1 || entry.HasMoved()) && viewFrustum.Intersects(entry.light->GetSphere()))
 			{
-				entry.staticShadowMap = AllocateShadowMap();
-				if (entry.dynamicShadowMap == -1)
+				if (entry.staticShadowMap == -1)
 				{
-					entry.light->shadowMap = m_shadowMaps[entry.staticShadowMap].texture;
+					entry.staticShadowMap = AllocateShadowMap();
+					if (entry.dynamicShadowMap == -1)
+					{
+						entry.light->shadowMap = m_shadowMaps[entry.staticShadowMap].texture;
+					}
 				}
-			}
-			
-			for (uint32_t face = 0; face < 6; face++)
-			{
-				UpdateShadowMap(entry.staticShadowMap, -1, *entry.light, face);
+				
+				for (uint32_t face = 0; face < 6; face++)
+				{
+					UpdateShadowMap(entry.staticShadowMap, -1, *entry.light, face);
+				}
 			}
 		}
 	}
-#endif
 	
 	int remUpdateCount = qvar::shadowUpdateLimitPerFrame(m_qualityLevel);
 	std::optional<size_t> nextDynamicLightUpdatePos;

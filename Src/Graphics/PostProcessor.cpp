@@ -8,46 +8,34 @@ static float* vignetteMinRad = eg::TweakVarFloat("vign_min_rad", 0.2f, 0);
 static float* vignetteMaxRad = eg::TweakVarFloat("vign_max_rad", 0.75f, 0);
 static float* vignettePower = eg::TweakVarFloat("vign_power", 1.2f, 0);
 
-void PostProcessor::InitPipeline(bool bloomEnabled)
+void PostProcessor::InitPipeline()
 {
-	struct SpecConstData
-	{
-		uint32_t enableBloom;
-		uint32_t enableFXAA;
-	};
-	SpecConstData specConstData;
-	specConstData.enableBloom = bloomEnabled;
-	specConstData.enableFXAA = settings.enableFXAA;
+	uint32_t enableFXAA = settings.enableFXAA;
 	
-	eg::SpecializationConstantEntry specConstEntries[2];
+	eg::SpecializationConstantEntry specConstEntries[1];
 	specConstEntries[0].constantID = 0;
 	specConstEntries[0].size = sizeof(uint32_t);
-	specConstEntries[0].offset = offsetof(SpecConstData, enableBloom);
-	specConstEntries[1].constantID = 1;
-	specConstEntries[1].size = sizeof(uint32_t);
-	specConstEntries[1].offset = offsetof(SpecConstData, enableFXAA);
+	specConstEntries[0].offset = 0;
 	
 	eg::GraphicsPipelineCreateInfo postPipelineCI;
 	postPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
 	postPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.fs.glsl").DefaultVariant();
 	postPipelineCI.label = "PostProcess";
 	postPipelineCI.fragmentShader.specConstants = specConstEntries;
-	postPipelineCI.fragmentShader.specConstantsData = &specConstData;
-	postPipelineCI.fragmentShader.specConstantsDataSize = sizeof(SpecConstData);
+	postPipelineCI.fragmentShader.specConstantsData = &enableFXAA;
+	postPipelineCI.fragmentShader.specConstantsDataSize = sizeof(enableFXAA);
 	m_pipeline = eg::Pipeline::Create(postPipelineCI);
 	m_pipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
-	m_bloomWasEnabled = bloomEnabled;
 	m_fxaaWasEnabled = settings.enableFXAA;
 }
 
 void PostProcessor::Render(eg::TextureRef input, const eg::BloomRenderer::RenderTarget* bloomRenderTarget,
 	eg::FramebufferHandle output, uint32_t outputResX, uint32_t outputResY, float colorScale)
 {
-	bool bloomEnabled = bloomRenderTarget != nullptr;
-	if (m_bloomWasEnabled != bloomEnabled || m_fxaaWasEnabled != settings.enableFXAA)
+	if (m_fxaaWasEnabled != settings.enableFXAA)
 	{
-		InitPipeline(bloomEnabled);
+		InitPipeline();
 	}
 	
 	eg::RenderPassBeginInfo rpBeginInfo;

@@ -12,9 +12,8 @@ public:
 		eg::FramebufferHandle output, uint32_t outputResX, uint32_t outputResY, float colorScale);
 	
 private:
-	void InitPipeline(bool bloomEnabled);
+	void InitPipeline();
 	
-	std::optional<bool> m_bloomWasEnabled;
 	std::optional<bool> m_fxaaWasEnabled;
 	
 	eg::Pipeline m_pipeline;

@@ -1,7 +1,6 @@
 #version 450 core
 
-layout(constant_id=0) const int enableBloom = 0;
-layout(constant_id=1) const int enableFXAA = 0;
+layout(constant_id=0) const int enableFXAA = 0;
 
 layout(location=0) in vec2 texCoord_in;
 
@@ -71,10 +70,7 @@ void main()
 	else
 		color = texture(inputSampler, texCoord_in).rgb;
 	
-	if (enableBloom != 0)
-	{
-		color += texture(bloomSampler, texCoord_in).rgb * bloomIntensity;
-	}
+	color += texture(bloomSampler, texCoord_in).rgb * bloomIntensity;
 	
 	float vignette = pow(clamp((length(texCoord_in - 0.5) - vignetteRadMin) * vignetteRadScale, 0, 1), vignettePower);
 	color_out = vec4((vec3(1.0) - exp(-exposure * color)) * (1.0 - vignette) * finalColorScale, 1.0);

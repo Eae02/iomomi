@@ -10,6 +10,12 @@ extern eg::Texture whitePixelTexture;
 extern eg::Texture blackPixelTexture;
 extern eg::Texture defaultShadowMap;
 
+#ifdef __EMSCRIPTEN__
+constexpr bool useGLESPath = true;
+#else
+extern bool useGLESPath;
+#endif
+
 namespace cubeMesh
 {
 	extern const glm::ivec3 vertices[8];

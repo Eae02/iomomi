@@ -95,7 +95,7 @@ void Editor::RunFrame(float dt)
 			const eg::Rectangle windowRect(
 				imguiCursorPos.x,
 				imguiCursorPos.y, 
-				ImGui::GetWindowContentRegionWidth(),
+				ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x,
 				ImGui::GetWindowHeight());
 			m_worlds[i]->SetWindowRect(windowRect);
 			
