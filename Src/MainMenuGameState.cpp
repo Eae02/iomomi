@@ -75,7 +75,9 @@ MainMenuGameState::MainMenuGameState()
 		optionsMenuOpen = true;
 		m_transitionToMainScreen = false;
 	}));
+#ifndef __EMSCRIPTEN__
 	m_mainWidgetList.AddWidget(Button("Quit", [&] { eg::Close(); }));
+#endif
 	
 	m_mainWidgetList.relativeOffset = glm::vec2(-0.5f, 0.5f);
 	
@@ -207,6 +209,7 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 	glm::vec2 flippedCursorPos(eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY());
 	
 	const eg::Texture& thumbnailNaTexture = eg::GetAsset<eg::Texture>("Textures/UI/ThumbnailNA.png");
+	const eg::Texture& loadingLevelTexture = eg::GetAsset<eg::Texture>("Textures/UI/LoadingLevel.png");
 	const eg::Texture& lockTexture = eg::GetAsset<eg::Texture>("Textures/UI/Lock.png");
 	const eg::Texture& completedTexture = eg::GetAsset<eg::Texture>("Textures/UI/LevelCompleted.png");
 	const eg::Texture& titleTexture = eg::GetAsset<eg::Texture>("Textures/UI/LevelSelect.png");
@@ -267,9 +270,11 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 			                       eg::ColorLin(1, 1, 1, 0.75f));
 		}
 		
+		const bool loadingComplete = IsLevelLoadingComplete(level.name);
+		const bool canInteract = level.status != LevelStatus::Locked && xOffset == 0 && loadingComplete;
+		
 		eg::Rectangle rect(x, y, levelBoxW, levelBoxH);
-		const bool hovered = cursorInLevelsArea && rect.Contains(flippedCursorPos) &&
-			level.status != LevelStatus::Locked && xOffset == 0;
+		const bool hovered = cursorInLevelsArea && rect.Contains(flippedCursorPos) && canInteract;
 		if (hovered && clicked)
 		{
 			if (std::unique_ptr<World> world = LoadLevelWorld(level, false))
@@ -292,7 +297,9 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 		}
 		
 		const eg::Texture* texture = &thumbnailNaTexture;
-		if (level.thumbnail.handle != nullptr)
+		if (!loadingComplete)
+			texture = &loadingLevelTexture;
+		else if (level.thumbnail.handle != nullptr)
 			texture = &level.thumbnail;
 		
 		float inflate = level.status == LevelStatus::Locked ? 0 : highlightIntensity * style::ButtonInflatePercent;
@@ -351,7 +358,7 @@ void MainMenuGameState::RenderWorld(float dt)
 {
 	if (m_world == nullptr)
 	{
-		if (backgroundLevel == nullptr)
+		if (backgroundLevel == nullptr || !IsLevelLoadingComplete(backgroundLevel->name))
 			return;
 		m_world = LoadLevelWorld(*backgroundLevel, false);
 		m_physicsEngine = {};

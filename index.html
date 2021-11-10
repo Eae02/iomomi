@@ -67,7 +67,6 @@
 			setCanvasSize();
 			Module.preRun = function() {
 				FS.createPreloadedFile("/", "Assets.eap", "Assets.eap", true, false);
-				FS.createPreloadedFile("/", "Levels.zip", "Levels.zip", true, false);
 				FS.mkdir('/data');
 				FS.mount(IDBFS, {}, '/data');
 				FS.syncfs(true, function (err) { });

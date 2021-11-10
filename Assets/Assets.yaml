@@ -50,7 +50,7 @@ assets:
   
   #Textures:
   - regex: "Textures/UI/.*\\.png"
-    srgb: false
+    srgb: true
     format: rgba8
   - name: Textures/NoDraw.png
     mipShift: *MipShift

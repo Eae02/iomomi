@@ -108,16 +108,18 @@ void MarkLevelCompleted(Level& level)
 static std::string progressPath;
 std::string levelsDirPath;
 
-void InitLevels()
+void SortLevels()
 {
-	levels.clear();
-	InitLevelsPlatformDependent();
-	
-	//Sorts levels by name so that these can be binary searched over later
 	std::sort(levels.begin(), levels.end(), [&] (const Level& a, const Level& b)
 	{
 		return a.name < b.name;
 	});
+}
+
+void InitLevels()
+{
+	levels.clear();
+	InitLevelsPlatformDependent();
 	
 	//Sets the next level index
 	int64_t levelIndex = FindLevel(levelsOrder[0]);
@@ -137,12 +139,6 @@ void InitLevels()
 	}
 	
 	ResetProgress();
-	
-	//Loads thumbnails
-	for (Level& level : levels)
-	{
-		LoadLevelThumbnail(level);
-	}
 	
 	//Loads the progress file if it exists
 	progressPath = appDataDirPath + "progress.txt";

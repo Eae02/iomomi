@@ -140,9 +140,12 @@ bool GravityBarrierMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* draw
 	pc.blockedAxis = blockedAxis;
 	eg::DC.PushConstants(0, isEditor ? offsetof(PushConstants, blockedAxis) : sizeof(PushConstants), &pc);
 	
-	if (!isEditor && waterDistanceTexture.handle)
+	if (!isEditor)
 	{
-		eg::DC.BindTexture(waterDistanceTexture, 0, 5, &framebufferLinearSampler);
+		if (waterDistanceTexture.handle)
+			eg::DC.BindTexture(waterDistanceTexture, 0, 5, &framebufferLinearSampler);
+		else
+			eg::DC.BindTexture(whitePixelTexture, 0, 5, &framebufferLinearSampler);
 	}
 	
 	return true;

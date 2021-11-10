@@ -72,9 +72,12 @@ void InitLevelsPlatformDependent()
 	{
 		if (is_regular_file(entry.status()) && entry.path().extension() == ".gwd")
 		{
-			levels.push_back({entry.path().stem().string()});
+			Level& level = levels.emplace_back(entry.path().stem().string());
+			LoadLevelThumbnail(level);
 		}
 	}
+	
+	SortLevels();
 }
 
 std::string GetLevelThumbnailPath(std::string_view name)
@@ -90,6 +93,11 @@ std::tuple<std::unique_ptr<uint8_t, eg::FreeDel>, uint32_t, uint32_t> PlatformGe
 		return { };
 	eg::ImageLoader loader(stream);
 	return { loader.Load(4), loader.Width(), loader.Height() };
+}
+
+bool IsLevelLoadingComplete(std::string_view name)
+{
+	return true;
 }
 
 #endif

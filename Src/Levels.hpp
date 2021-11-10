@@ -17,6 +17,9 @@ struct Level
 	bool isExtra = true;
 	int64_t nextLevelIndex = -1;
 	eg::Texture thumbnail;
+	
+	explicit Level(std::string _name = "")
+		: name(std::move(_name)) { }
 };
 
 extern std::vector<Level> levels;
@@ -38,3 +41,7 @@ std::string GetLevelPath(std::string_view name);
 std::string GetLevelThumbnailPath(std::string_view name);
 
 int64_t FindLevel(std::string_view name);
+
+void SortLevels();
+
+bool IsLevelLoadingComplete(std::string_view name);

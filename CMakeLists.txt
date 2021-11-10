@@ -71,10 +71,6 @@ function (fixIncludes TARGET)
 endfunction()
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
-	add_library(minizip STATIC ${MINIZIP_SRC_DIR}/minizip.c ${MINIZIP_SRC_DIR}/unzip.c ${MINIZIP_SRC_DIR}/ioapi.c)
-	set_target_properties(minizip PROPERTIES LINKER_LANGUAGE C)
-	target_link_libraries(iomomi minizip)
-	
 	set(EMCC_FLAGS "-lidbfs.js -lopenal -s ALLOW_MEMORY_GROWTH=1 -s WASM=1 -s USE_WEBGL2=1 -s FULL_ES3=1 -s USE_ZLIB=1 -s FORCE_FILESYSTEM=1 -s FETCH=1 -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0")
 	
 	if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
@@ -83,7 +79,7 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
 	endif()
 	
 	target_link_libraries(iomomi "${PROTOBUF_SRC_DIR}/.libs/libprotobuf.a")
-	target_include_directories(iomomi SYSTEM PRIVATE ${PROTOBUF_SRC_DIR} ${MINIZIP_SRC_DIR})
+	target_include_directories(iomomi SYSTEM PRIVATE ${PROTOBUF_SRC_DIR})
 	
 	target_compile_options(iomomi PRIVATE -Wno-sign-conversion -Wno-shorten-64-to-32 -Wno-mismatched-tags)
 	set_target_properties(iomomi PROPERTIES LINK_FLAGS "-s EXPORTED_RUNTIME_METHODS=['cwrap'] -s EXPORTED_FUNCTIONS=['_WebMain'] ${EMCC_FLAGS}")

@@ -105,7 +105,7 @@ void main()
 	
 	float waterDist = texture(waterDistanceTex, texCoord_in).r;
 	negScale += 1.0 - smoothstep(0.5, 0.8, waterDist);
-
+	
 	scaledTC.x -= 0.3 * stretch * edgeDist;
 	negScale = min(negScale, 1.0);
 #endif

@@ -98,7 +98,11 @@ void ComboBox::Draw(eg::SpriteBatch& spriteBatch) const
 	std::string_view warningToShow = warning;
 	if (warningToShow.empty() && m_initialValue.has_value() && restartRequiredIfChanged && value != *m_initialValue)
 	{
+#ifdef __EMSCRIPTEN__
+		warningToShow = "Reload req.";
+#else
 		warningToShow = "Restart req.";
+#endif
 	}
 	glm::vec2 warningTextExtents = style::UIFont->GetTextExtents(warningToShow) * FONT_SCALE;
 	
