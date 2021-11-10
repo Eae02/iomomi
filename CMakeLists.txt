@@ -5,9 +5,11 @@ set(BUILD_DIR_NAME ${CMAKE_BUILD_TYPE})
 
 set(BUILD_ID "" CACHE STRING "Build id to be included in the main menu.")
 
-#include("${EGAME_CMAKE_DIR}/EGameTargets.cmake")
-
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Deps/egame)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Deps/egame_override")
+	add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Deps/egame_override)
+else()
+	add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Deps/egame)
+endif()
 
 file(GLOB_RECURSE SOURCE_FILES Src/*.cpp Src/*.hpp Src/*.inl Protobuf/Build/*.cc)
 
