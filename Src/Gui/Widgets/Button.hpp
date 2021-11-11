@@ -18,7 +18,7 @@ public:
 	std::string text;
 	
 	glm::vec2 position;
-	float width;
+	float width = 0;
 	
 	bool enabled = true;
 	
