@@ -11,8 +11,6 @@
 static const eg::Model* pumpModel;
 static const eg::IMaterial* pumpBodyMaterial;
 
-static eg::AABB pumpBoundingBox;
-
 static eg::CollisionMesh fullCollisionMesh;
 static eg::CollisionMesh buttonLCollisionMesh;
 static eg::CollisionMesh buttonRCollisionMesh;
@@ -53,10 +51,6 @@ static void OnInit()
 			meshButtonPumpDirection[i] = PumpDirection::Right;
 			buttonRCollisionMeshes.push_back(cm);
 		}
-		else if (meshName == "PumpBody")
-		{
-			pumpBoundingBox = cm.BoundingBox();
-		}
 		allCollisionMeshes.push_back(std::move(cm));
 	}
 	
@@ -76,7 +70,7 @@ PumpEnt::PumpEnt()
 	m_editorSelectionMesh.collisionMesh = &fullCollisionMesh;
 	m_editorSelectionMesh.model = pumpModel;
 	
-	m_physicsObject.shape = pumpBoundingBox;
+	m_physicsObject.shape = fullCollisionMesh.BoundingBox();
 	m_physicsObject.rayIntersectMask = RAY_MASK_BLOCK_PICK_UP | RAY_MASK_BLOCK_GUN;
 	m_physicsObject.canBePushed = false;
 	m_physicsObject.debugColor = 0x12b81a;
