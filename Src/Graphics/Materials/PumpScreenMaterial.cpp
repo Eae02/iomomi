@@ -38,11 +38,15 @@ static void OnShutdown()
 EG_ON_INIT(OnInit)
 EG_ON_SHUTDOWN(OnShutdown)
 
-static constexpr int NUM_ARROWS = 8;
+const eg::ColorLin PumpScreenMaterial::backgroundColor = eg::ColorLin(eg::ColorSRGB::FromHex(0xd8a7e6));
+const eg::ColorLin PumpScreenMaterial::color = eg::ColorLin(eg::ColorSRGB::FromHex(0xa7dde6));
+
+static constexpr int NUM_ARROWS = 4;
 
 struct PumpMaterialData
 {
 	eg::ColorLin color;
+	eg::ColorLin backgroundColor;
 	glm::vec4 arrowRects[NUM_ARROWS];
 	float arrowOpacities[NUM_ARROWS];
 };
@@ -56,10 +60,10 @@ PumpScreenMaterial::PumpScreenMaterial()
 	m_descriptorSet.BindUniformBuffer(m_dataBuffer, 1, 0, sizeof(PumpMaterialData));
 	m_descriptorSet.BindTexture(*arrowTexture, 2, &arrowTextureSampler);
 	
-	Update(0, 0);
+	Update(0, PumpDirection::None);
 }
 
-constexpr float SCREEN_AR = 0.319;
+constexpr float SCREEN_AR = 0.7615894039735099;
 
 static float* pumpAnimationSpeed = eg::TweakVarFloat("pump_anim_speed", 3.0f);
 static float* pumpAnimationGradient = eg::TweakVarFloat("pump_anim_grad", 1.3f);
@@ -67,12 +71,12 @@ static float* pumpAnimationFadeS = eg::TweakVarFloat("pump_anim_fade_s", 0.05f);
 static float* pumpAnimationFadeE = eg::TweakVarFloat("pump_anim_fade_e", 0.2f);
 static float* pumpDirFadeTime = eg::TweakVarFloat("pump_dir_fade_time", 0.1f);
 
-void PumpScreenMaterial::Update(float dt, int direction)
+void PumpScreenMaterial::Update(float dt, PumpDirection direction)
 {
 	if (m_currentDirection != direction)
 	{
 		m_opacity -= dt / *pumpDirFadeTime;
-		if (m_opacity <= 0 || m_currentDirection == 0)
+		if (m_opacity <= 0 || m_currentDirection == PumpDirection::None)
 		{
 			m_opacity = 0;
 			m_currentDirection = direction;
@@ -86,19 +90,20 @@ void PumpScreenMaterial::Update(float dt, int direction)
 	m_animationProgress = std::fmod(m_animationProgress + dt * *pumpAnimationSpeed, 1.0f);
 	
 	PumpMaterialData materialData = {};
-	materialData.color = eg::ColorLin(eg::ColorSRGB::FromHex(0xa7dde6));
+	materialData.color = color.ScaleRGB(6.0f);
+	materialData.backgroundColor = backgroundColor;
 	
 	const float arrowHeightTS = 0.75f;
 	const float arrowWidthTS = arrowHeightTS * ((float)arrowTexture->Width() / (float)arrowTexture->Height()) * SCREEN_AR;
 	const float minX = -arrowWidthTS;
 	const float maxX = 1;
 	
-	if (m_currentDirection != 0)
+	if (m_currentDirection != PumpDirection::None)
 	{
 		for (int arrow = 0; arrow < NUM_ARROWS; arrow++)
 		{
 			float a = (arrow + m_animationProgress) / (float)(NUM_ARROWS);
-			if (m_currentDirection == -1)
+			if (m_currentDirection == PumpDirection::Left)
 				a = 1 - a;
 			
 			float a2 = a * a;
@@ -111,7 +116,7 @@ void PumpScreenMaterial::Update(float dt, int direction)
 				1.0f / arrowHeightTS
 			);
 			
-			if (m_currentDirection == -1)
+			if (m_currentDirection == PumpDirection::Left)
 			{
 				materialData.arrowRects[arrow].x += arrowWidthTS;
 				materialData.arrowRects[arrow].z *= -1;

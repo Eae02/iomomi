@@ -56,10 +56,17 @@ private:
 	float m_maxInputDistance = 0;
 	float m_maxOutputDistance = 0;
 	
-	bool m_pumpLeft = false;
-	bool m_hasInteracted = false;
+	PumpDirection GetHoveredButton(const Player& player, const PhysicsEngine* physicsEngine) const;
 	
-	EditorSelectionMesh m_editorSelectionMeshes[2];
+	PumpDirection m_currentDirection = PumpDirection::None;
+	
+	float m_buttonLPushTimer = 0;
+	float m_buttonRPushTimer = 0;
+	
+	float m_buttonLActivationGlow = 0;
+	float m_buttonRActivationGlow = 0;
+	
+	EditorSelectionMesh m_editorSelectionMesh;
 	
 	PhysicsObject m_physicsObject;
 	

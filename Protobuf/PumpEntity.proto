@@ -16,7 +16,6 @@ message PumpEntity {
   float pump_rx = 14;
   float pump_ry = 15;
   float pump_rz = 16;
-  bool initial_direction = 17;
   float particles_per_second = 18;
   float max_input_dist = 19;
   float max_output_dist = 20;
