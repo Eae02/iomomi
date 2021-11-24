@@ -20,7 +20,9 @@ public:
 private:
 	float m_gameTime = 0;
 	
+#ifndef IOMOMI_NO_EDITOR
 	ImGuiInterface m_imGuiInterface;
+#endif
 	
 	RenderContext m_renderCtx;
 	

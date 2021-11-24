@@ -1,5 +1,7 @@
 #pragma once
 
+#ifndef IOMOMI_NO_EDITOR
+
 class SelectionRenderer
 {
 public:
@@ -18,3 +20,5 @@ private:
 	bool m_hasRendered = false;
 	eg::Framebuffer m_framebuffer;
 };
+
+#endif

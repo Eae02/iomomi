@@ -1,6 +1,6 @@
 #pragma once
 
-#ifndef __EMSCRIPTEN__
+#ifndef IOMOMI_NO_WATER
 
 #include "../../World/Dir.hpp"
 #include "WaterPumpDescription.hpp"

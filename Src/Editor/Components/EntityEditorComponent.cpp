@@ -1,3 +1,4 @@
+#ifndef IOMOMI_NO_EDITOR
 #include "EntityEditorComponent.hpp"
 #include "../SelectionRenderer.hpp"
 #include "../PrimitiveRenderer.hpp"
@@ -606,3 +607,5 @@ void EntityEditorComponent::LateDraw(const EditorState& editorState) const
 		m_rotationGizmo.Draw(editorState.viewProjection);
 	}
 }
+
+#endif

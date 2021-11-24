@@ -17,7 +17,15 @@ Game::Game()
 	globalRNG = pcg32_fast(std::time(nullptr));
 	GameRenderer::instance = new GameRenderer(m_renderCtx);
 	
+#ifndef IOMOMI_NO_EDITOR
 	editor = new Editor(m_renderCtx);
+	eg::console::AddCommand("ed", 0, [&] (std::span<const std::string_view> args, eg::console::Writer& writer)
+	{
+		SetCurrentGS(editor);
+		eg::console::Hide();
+	});
+#endif
+	
 	mainGameState = new MainGameState;
 	mainMenuGameState = new MainMenuGameState();
 	
@@ -28,12 +36,6 @@ Game::Game()
 	{
 		m_levelThumbnailUpdateFrameIdx = eg::FrameIdx();
 		m_levelThumbnailUpdate = BeginUpdateLevelThumbnails(m_renderCtx, writer);
-	});
-	
-	eg::console::AddCommand("ed", 0, [&] (std::span<const std::string_view> args, eg::console::Writer& writer)
-	{
-		SetCurrentGS(editor);
-		eg::console::Hide();
 	});
 #endif
 	
@@ -115,7 +117,9 @@ Game::Game()
 
 Game::~Game()
 {
+#ifndef IOMOMI_NO_EDITOR
 	delete editor;
+#endif
 	delete mainGameState;
 	delete mainMenuGameState;
 	delete RenderSettings::instance;
@@ -137,7 +141,9 @@ void Game::RunFrame(float dt)
 		m_levelThumbnailUpdate = nullptr;
 	}
 	
+#ifndef IOMOMI_NO_EDITOR
 	m_imGuiInterface.NewFrame();
+#endif
 	
 	if (CurrentGS() != nullptr)
 	{
@@ -152,7 +158,9 @@ void Game::RunFrame(float dt)
 		eg::DC.EndRenderPass();
 	}
 	
+#ifndef IOMOMI_NO_EDITOR
 	m_imGuiInterface.EndFrame();
+#endif
 	
 	m_gameTime += dt;
 }

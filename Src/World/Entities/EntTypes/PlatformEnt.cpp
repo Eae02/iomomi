@@ -2,11 +2,10 @@
 #include "../../Entities/EntityManager.hpp"
 #include "../../WorldUpdateArgs.hpp"
 #include "../../World.hpp"
+#include "../../../Settings.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../Graphics/Lighting/PointLightShadowMapper.hpp"
-#include "../../../Editor/PrimitiveRenderer.hpp"
 #include "../../../../Protobuf/Build/PlatformEntity.pb.h"
-#include "../../../Settings.hpp"
 
 #include <imgui.h>
 

@@ -151,23 +151,14 @@ void DeferredRenderer::CreatePipelines()
 	m_ambientPipelineWithoutSSAO.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
 	m_ambientPipelineWithoutSSAO.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
 	
-	eg::GraphicsPipelineCreateInfo slPipelineCI;
-	slPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/SpotLight.vs.glsl").DefaultVariant();
-	slPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/SpotLight.fs.glsl").DefaultVariant();
-	slPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
-	slPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
-	slPipelineCI.vertexBindings[0] = { sizeof(float) * 3, eg::InputRate::Vertex };
-	slPipelineCI.cullMode = eg::CullMode::Front;
-	m_spotLightPipeline = eg::Pipeline::Create(slPipelineCI);
-	m_spotLightPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
-	m_spotLightPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
-	
-	eg::SpecializationConstantEntry pointLightSpecConstEntries[1];
+	eg::SpecializationConstantEntry pointLightSpecConstEntries[2];
 	pointLightSpecConstEntries[0].constantID = 0;
 	pointLightSpecConstEntries[0].size = sizeof(uint32_t);
 	pointLightSpecConstEntries[0].offset = 0;
-	uint32_t PL_SPEC_CONST_DATA_SOFT_SHADOWS = 1;
-	uint32_t PL_SPEC_CONST_DATA_HARD_SHADOWS = 0;
+	pointLightSpecConstEntries[1].constantID = 1;
+	pointLightSpecConstEntries[1].size = sizeof(uint32_t);
+	pointLightSpecConstEntries[1].offset = sizeof(uint32_t);
+	uint32_t pointLightSpecConstants[2];
 	
 	eg::GraphicsPipelineCreateInfo plPipelineCI;
 	plPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/PointLight.vs.glsl").DefaultVariant();
@@ -177,16 +168,24 @@ void DeferredRenderer::CreatePipelines()
 	plPipelineCI.vertexBindings[0] = { sizeof(float) * 3, eg::InputRate::Vertex };
 	plPipelineCI.cullMode = eg::CullMode::Back;
 	plPipelineCI.fragmentShader.specConstants = pointLightSpecConstEntries;
-	plPipelineCI.fragmentShader.specConstantsData = &PL_SPEC_CONST_DATA_SOFT_SHADOWS;
-	plPipelineCI.fragmentShader.specConstantsDataSize = sizeof(uint32_t);
-	m_pointLightPipelineSoftShadows = eg::Pipeline::Create(plPipelineCI);
-	m_pointLightPipelineSoftShadows.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
-	m_pointLightPipelineSoftShadows.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
+	plPipelineCI.fragmentShader.specConstantsData = pointLightSpecConstants;
+	plPipelineCI.fragmentShader.specConstantsDataSize = sizeof(pointLightSpecConstants);
 	
-	plPipelineCI.fragmentShader.specConstantsData = &PL_SPEC_CONST_DATA_HARD_SHADOWS;
-	m_pointLightPipelineHardShadows = eg::Pipeline::Create(plPipelineCI);
-	m_pointLightPipelineHardShadows.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
-	m_pointLightPipelineHardShadows.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
+	for (uint32_t shadowMode = 0; shadowMode <= 2; shadowMode++)
+	{
+#ifdef IOMOMI_NO_WATER
+		const uint32_t waterMode = 0;
+#else
+		for (uint32_t waterMode = 0; waterMode <= 1; waterMode++)
+#endif
+		{
+			pointLightSpecConstants[0] = shadowMode;
+			pointLightSpecConstants[1] = waterMode;
+			m_pointLightPipelines[shadowMode][waterMode] = eg::Pipeline::Create(plPipelineCI);
+			m_pointLightPipelines[shadowMode][waterMode].FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
+			m_pointLightPipelines[shadowMode][waterMode].FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
+		}
+	}
 	
 	eg::GraphicsPipelineCreateInfo ssaoBlurPipelineCI;
 	ssaoBlurPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
@@ -364,18 +363,10 @@ static float* causticsIntensity = eg::TweakVarFloat("cau_intensity", 10);
 static float* causticsColorOffset = eg::TweakVarFloat("cau_clr_offset", 1.5f);
 static float* causticsPanSpeed = eg::TweakVarFloat("cau_pan_speed", 0.05f);
 static float* causticsTexScale = eg::TweakVarFloat("cau_tex_scale", 0.5f);
-
-static const float shadowSoftnessByQualityLevel[] =
-{
-	0.0f,
-	0.0f,
-	1.0f,
-	1.3f,
-	1.6f
-};
+static int* drawShadows = eg::TweakVarInt("draw_shadows", 1, 0, 1);
 
 void DeferredRenderer::DrawPointLights(const std::vector<std::shared_ptr<PointLight>>& pointLights,
-	eg::TextureRef waterDepthTexture, RenderTexManager& rtManager, uint32_t shadowResolution) const
+	bool hasWater, eg::TextureRef waterDepthTexture, RenderTexManager& rtManager, uint32_t shadowResolution) const
 {
 	if (pointLights.empty() || *unlit == 1)
 		return;
@@ -383,9 +374,19 @@ void DeferredRenderer::DrawPointLights(const std::vector<std::shared_ptr<PointLi
 	auto gpuTimer = eg::StartGPUTimer("Point Lights");
 	auto cpuTimer = eg::StartCPUTimer("Point Lights");
 	
-	bool softShadows = settings.shadowQuality >= QualityLevel::Medium;
+	float shadowSoftness = qvar::shadowSoftness(settings.shadowQuality);
 	
-	eg::DC.BindPipeline(softShadows ? m_pointLightPipelineSoftShadows : m_pointLightPipelineHardShadows);
+	int shadowMode;
+	if (*drawShadows == 0)
+		shadowMode = SHADOW_MODE_NONE;
+	else if (shadowSoftness > 0)
+		shadowMode = SHADOW_MODE_SOFT;
+	else
+		shadowMode = SHADOW_MODE_HARD;
+	
+	int renderCaustics = hasWater && qvar::waterRenderCaustics(settings.waterQuality);
+	
+	eg::DC.BindPipeline(m_pointLightPipelines[shadowMode][renderCaustics]);
 	
 	BindPointLightMesh();
 	
@@ -394,15 +395,23 @@ void DeferredRenderer::DrawPointLights(const std::vector<std::shared_ptr<PointLi
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor1), 0, 1);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor2), 0, 2);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 3);
-	eg::DC.BindTexture(waterDepthTexture, 0, 4);
-	eg::DC.BindTexture(eg::GetAsset<eg::Texture>("Caustics"), 0, 5);
 	
-	struct PointLightPC
+	if (hasWater)
 	{
-		glm::vec3 position;
+		eg::DC.BindTexture(waterDepthTexture, 0, 4);
+		eg::DC.BindTexture(eg::GetAsset<eg::Texture>("Caustics"), 0, 5);
+	}
+	
+	struct __attribute__((packed)) PointLightPC
+	{
+		float positionX;
+		float positionY;
+		float positionZ;
 		float range;
-		glm::vec3 radiance;
-		float invRange;
+		float radianceX;
+		float radianceY;
+		float radianceZ;
+		float _radiancePad;
 		float causticsScale;
 		float causticsColorOffset;
 		float causticsPanSpeed;
@@ -411,26 +420,30 @@ void DeferredRenderer::DrawPointLights(const std::vector<std::shared_ptr<PointLi
 		float specularIntensity;
 	};
 	
-	PointLightPC pc;
+	PointLightPC pc = { };
 	pc.causticsScale = *causticsIntensity;
 	pc.causticsColorOffset = *causticsColorOffset;
 	pc.causticsPanSpeed = *causticsPanSpeed;
 	pc.causticsTexScale = *causticsTexScale;
-	pc.shadowSampleDist = shadowSoftnessByQualityLevel[(int)settings.shadowQuality] / shadowResolution;
+	pc.shadowSampleDist = shadowSoftness / shadowResolution;
 	
 	for (const std::shared_ptr<PointLight>& light : pointLights)
 	{
 		if (!light->enabled || light->shadowMap.handle == nullptr)
 			continue;
 		
-		pc.position = light->position;
+		pc.positionX = light->position.x;
+		pc.positionY = light->position.y;
+		pc.positionZ = light->position.z;
+		pc.radianceX = light->Radiance().x;
+		pc.radianceY = light->Radiance().y;
+		pc.radianceZ = light->Radiance().z;
 		pc.range = light->Range();
-		pc.radiance = light->Radiance();
-		pc.invRange = 1.0f / pc.range;
 		pc.specularIntensity = light->enableSpecularHighlights ? 1 : 0;
 		eg::DC.PushConstants(0, pc);
 		
-		eg::DC.BindTexture(light->shadowMap, 0, 6, &m_shadowMapSampler);
+		if (*drawShadows)
+			eg::DC.BindTexture(light->shadowMap, 0, 6, &m_shadowMapSampler);
 		
 		eg::DC.DrawIndexed(0, POINT_LIGHT_MESH_INDICES, 0, 0, 1);
 	}

@@ -1,7 +1,6 @@
 #include "ColliderEnt.hpp"
 #include "Activation/CubeEnt.hpp"
 #include "../../Player.hpp"
-#include "../../../Editor/PrimitiveRenderer.hpp"
 #include "../../../../Protobuf/Build/ColliderEntity.pb.h"
 
 #include <imgui.h>

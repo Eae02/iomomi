@@ -90,7 +90,6 @@ private:
 	bool m_wasUnderwater = false;
 	bool m_wasClimbingLadder = false;
 	float m_leftWaterTime = 0;
-	float m_dragIntensity = 0;
 	
 	bool m_isCarryingAndTouchingGravityCorner = false;
 	

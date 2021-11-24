@@ -1,3 +1,4 @@
+#ifndef IOMOMI_NO_EDITOR
 #include "EditorWorld.hpp"
 #include "Editor.hpp"
 #include "Components/EntityEditorComponent.hpp"
@@ -522,3 +523,5 @@ void EditorWorld::ResetCamera()
 		glm::distance(glm::vec3(voxelMin), glm::vec3(voxelMax)) / 2.0f
 	));
 }
+
+#endif

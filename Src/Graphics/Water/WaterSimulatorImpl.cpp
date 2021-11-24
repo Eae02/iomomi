@@ -1,4 +1,4 @@
-#ifndef __EMSCRIPTEN__
+#ifndef IOMOMI_NO_WATER
 #include <cstdlib>
 #include <execution>
 #include <pcg_random.hpp>

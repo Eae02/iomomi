@@ -1,3 +1,4 @@
+#ifndef IOMOMI_NO_EDITOR
 #include "AAQuadDragEditorComponent.hpp"
 #include "../PrimitiveRenderer.hpp"
 #include "../../World/Entities/Components/AxisAlignedQuadComp.hpp"
@@ -68,3 +69,5 @@ bool AAQuadDragEditorComponent::CollectIcons(const EditorState& editorState, std
 	
 	return activeEntity != nullptr;
 }
+
+#endif

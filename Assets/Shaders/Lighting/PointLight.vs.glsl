@@ -9,10 +9,8 @@ layout(location=0) in vec3 position_in;
 
 layout(push_constant, std140) uniform PC
 {
-	vec3 position;
-	float range;
-	vec3 radiance;
-	float invRange;
+	vec4 positionAndRange;
+	vec4 radiance;
 	float causticsScale;
 	float causticsColorOffset;
 	float causticsPanSpeed;
@@ -23,6 +21,6 @@ layout(push_constant, std140) uniform PC
 
 void main()
 {
-	vec3 worldPos = pc.position + position_in * pc.range;
+	vec3 worldPos = pc.positionAndRange.xyz + position_in * pc.positionAndRange.w;
 	gl_Position = renderSettings.viewProjection * vec4(worldPos, 1.0);
 }

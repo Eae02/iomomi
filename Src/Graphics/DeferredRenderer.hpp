@@ -18,7 +18,7 @@ public:
 	void EndTransparent();
 	
 	void DrawPointLights(const std::vector<std::shared_ptr<PointLight>>& pointLights,
-		eg::TextureRef waterDepthTexture, RenderTexManager& rtManager, uint32_t shadowResolution) const;
+		bool hasWater, eg::TextureRef waterDepthTexture, RenderTexManager& rtManager, uint32_t shadowResolution) const;
 	
 	void End() const;
 	
@@ -31,11 +31,16 @@ private:
 	
 	eg::Sampler m_shadowMapSampler;
 	
+	enum
+	{
+		SHADOW_MODE_NONE = 0,
+		SHADOW_MODE_HARD = 1,
+		SHADOW_MODE_SOFT = 2
+	};
+	
 	eg::Pipeline m_ambientPipelineWithSSAO;
 	eg::Pipeline m_ambientPipelineWithoutSSAO;
-	eg::Pipeline m_spotLightPipeline;
-	eg::Pipeline m_pointLightPipelineSoftShadows;
-	eg::Pipeline m_pointLightPipelineHardShadows;
+	eg::Pipeline m_pointLightPipelines[3][2]; //first index is shadow mode, second index is water mode
 	
 	eg::Pipeline m_ssaoPipelines[3];
 	eg::Pipeline m_ssaoBlurPipeline;

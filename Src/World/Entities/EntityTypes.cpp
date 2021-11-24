@@ -71,7 +71,6 @@ void InitEntityTypes()
 	DefineEntityType<WallLightEnt>("WallLight", "Wall Light");
 	DefineEntityType<DecalEnt>("Decal", "Decal");
 	DefineEntityType<GooPlaneEnt>("GooPlane", "Goo Plane");
-	DefineEntityType<WaterPlaneEnt>("WaterPlane", "Water Plane");
 	DefineEntityType<GravitySwitchEnt>("GravitySwitch", "Gravity Switch");
 	DefineEntityType<FloorButtonEnt>("FloorButton", "Floor Button");
 	DefineEntityType<ActivationLightStripEnt>("ActivationLightStrip", "Activation Light Strip");
@@ -82,12 +81,16 @@ void InitEntityTypes()
 	DefineEntityType<GravityBarrierEnt>("GravityBarrier", "Gravity Barrier");
 	DefineEntityType<RampEnt>("Ramp", "Ramp");
 	DefineEntityType<WindowEnt>("Window", "Window");
-	DefineEntityType<WaterWallEnt>("WaterWall", "Water Wall");
 	DefineEntityType<SlidingWallEnt>("SlidingWall", "Sliding Wall");
 	DefineEntityType<LadderEnt>("Ladder", "Ladder");
 	DefineEntityType<PointLightEnt>("PointLight", "Point Light");
 	DefineEntityType<MeshEnt>("Mesh", "Mesh");
 	DefineEntityType<ColliderEnt>("Collider", "Collider");
 	DefineEntityType<PushButtonEnt>("PushButton", "Push Button");
+	
+#ifndef IOMOMI_NO_WATER
+	DefineEntityType<WaterPlaneEnt>("WaterPlane", "Water Plane");
+	DefineEntityType<WaterWallEnt>("WaterWall", "Water Wall");
 	DefineEntityType<PumpEnt>("Pump", "Water Pump");
+#endif
 }

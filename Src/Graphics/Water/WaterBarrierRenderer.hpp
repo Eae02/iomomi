@@ -12,6 +12,7 @@ public:
 	void Update(float dt);
 	
 private:
+#ifndef IOMOMI_NO_WATER
 	eg::Pipeline m_calcPipeline;
 	eg::Pipeline m_fadePipeline;
 	
@@ -31,4 +32,5 @@ private:
 	
 	uint32_t m_numParticles;
 	uint32_t m_dispatchCount;
+#endif
 };

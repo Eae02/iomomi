@@ -1,5 +1,7 @@
 #pragma once
 
+#ifndef IOMOMI_NO_EDITOR
+
 #include "../EditorComponent.hpp"
 
 class AAQuadDragEditorComponent : public EditorComponent
@@ -14,3 +16,5 @@ private:
 	bool draggingBitangent = false;
 	bool draggingNegative = false;
 };
+
+#endif

@@ -273,7 +273,9 @@ void GameRenderer::Render(World& world, float gameTime, float dt,
 		
 		m_renderCtx->renderer.BeginLighting(m_rtManager);
 		
-		m_renderCtx->renderer.DrawPointLights(m_pointLights, mDrawArgs.waterDepthTexture, m_rtManager, m_plShadowMapper.Resolution());
+		m_renderCtx->renderer.DrawPointLights(
+			m_pointLights, m_waterSimulator.NumParticlesToDraw() > 0, mDrawArgs.waterDepthTexture,
+			m_rtManager, m_plShadowMapper.Resolution());
 		
 		m_renderCtx->renderer.End();
 		eg::DC.DebugLabelEnd();

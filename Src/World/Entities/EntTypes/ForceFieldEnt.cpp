@@ -1,7 +1,6 @@
 #include "ForceFieldEnt.hpp"
 #include "../EntityManager.hpp"
 #include "../../WorldUpdateArgs.hpp"
-#include "../../../Editor/PrimitiveRenderer.hpp"
 #include "../../../Graphics/Materials/ForceFieldMaterial.hpp"
 #include "../../../Graphics/RenderSettings.hpp"
 #include "../../../../Protobuf/Build/ForceFieldEntity.pb.h"

@@ -1,3 +1,4 @@
+#ifndef IOMOMI_NO_WATER
 #include "PumpEnt.hpp"
 #include "../../WorldUpdateArgs.hpp"
 #include "../../Player.hpp"
@@ -341,3 +342,5 @@ std::optional<WaterPumpDescription> PumpEnt::GetPumpDescription() const
 	
 	return desc;
 }
+
+#endif

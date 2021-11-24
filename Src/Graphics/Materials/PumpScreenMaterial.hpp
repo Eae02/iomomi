@@ -1,5 +1,7 @@
 #pragma once
 
+#ifndef IOMOMI_NO_WATER
+
 #include "StaticPropMaterial.hpp"
 
 enum class PumpDirection
@@ -34,3 +36,5 @@ private:
 	float m_opacity = 0;
 	PumpDirection m_currentDirection = PumpDirection::None;
 };
+
+#endif

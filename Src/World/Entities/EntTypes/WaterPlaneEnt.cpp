@@ -1,3 +1,4 @@
+#ifndef IOMOMI_NO_WATER
 #include "WaterPlaneEnt.hpp"
 #include "../../../../Protobuf/Build/WaterPlaneEntity.pb.h"
 
@@ -59,3 +60,5 @@ int WaterPlaneEnt::EdGetIconIndex() const
 {
 	return 16;
 }
+
+#endif

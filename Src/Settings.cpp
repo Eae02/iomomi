@@ -134,7 +134,12 @@ const SettingEntry settingEntries[] =
 void LoadSettings()
 {
 #ifdef __EMSCRIPTEN__
-	settings.SetToLowGraphics();
+	settings.textureQuality = eg::TextureQuality::Low;
+	settings.shadowQuality = QualityLevel::Low;
+	settings.reflectionsQuality = QualityLevel::VeryLow;
+	settings.lightingQuality = QualityLevel::Medium;
+	settings.ssaoQuality = SSAOQuality::Off;
+	settings.bloomQuality = BloomQuality::Off;
 #endif
 	
 	settingsPath = appDataDirPath + "settings.yaml";
@@ -172,18 +177,6 @@ void SaveSettings()
 	settingsStream.close();
 	
 	SyncFileSystem();
-}
-
-void Settings::SetToLowGraphics()
-{
-	textureQuality = eg::TextureQuality::Low;
-	shadowQuality = QualityLevel::VeryLow;
-	reflectionsQuality = QualityLevel::VeryLow;
-	lightingQuality = QualityLevel::VeryLow;
-	waterQuality = QualityLevel::VeryLow;
-	ssaoQuality = SSAOQuality::Off;
-	bloomQuality = BloomQuality::Off;
-	enableFXAA = false;
 }
 
 int settingsGeneration = 0;

@@ -1,5 +1,7 @@
 #pragma once
 
+#ifndef IOMOMI_NO_EDITOR
+
 #include "../EditorComponent.hpp"
 
 class WallDragEditorComponent : public EditorComponent
@@ -44,3 +46,5 @@ private:
 	
 	std::vector<glm::ivec3> m_finishedSelection;
 };
+
+#endif
