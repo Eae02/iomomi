@@ -127,7 +127,7 @@ void main()
 	//If the world is closer than the water, don't render water
 	if (worldDepthH < waterDepthH && !underwater)
 	{
-		color_out = vec4(worldColor, 1.0);
+		color_out = vec4(worldColor, worldDepthH * 1000);
 		return;
 	}
 	
@@ -262,7 +262,7 @@ void main()
 	
 	if (underwater)
 	{
-		color_out = vec4(refractColor, 1.0);
+		color_out = vec4(refractColor, min(worldDepthH, waterDepthH));
 	}
 	else
 	{
@@ -277,8 +277,9 @@ void main()
 		vec3 foamColor = vec3(1.0);
 		
 		vec3 waterColor = mix(refractColor, reflectColor, fresnel) * light;
-		color_out = vec4(mix(oriWorldColor, mix(foamColor, waterColor, foam), shore), 1.0);
+		color_out = vec4(mix(oriWorldColor, mix(foamColor, waterColor, foam), shore), waterDepthH);
 	}
 	
 	color_out.rgb += glowColor * texture(waterGlowSampler, texCoord_in).r;
+	color_out.a *= 1000;
 }

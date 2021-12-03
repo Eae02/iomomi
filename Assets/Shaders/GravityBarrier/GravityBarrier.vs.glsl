@@ -4,7 +4,6 @@ layout(location=0) in vec2 locPos_in;
 
 layout(location=0) out vec2 texCoord_out;
 layout(location=1) out vec3 worldPos_out;
-layout(location=2) out vec2 ypc_out;
 
 layout(push_constant) uniform PC
 {
@@ -16,12 +15,13 @@ layout(push_constant) uniform PC
 } pc;
 
 #define RENDER_SETTINGS_BINDING 0
-#include "Inc/RenderSettings.glh"
+#include "../Inc/RenderSettings.glh"
 
 void main()
 {
 	texCoord_out = locPos_in;
-	worldPos_out = pc.position + (locPos_in.x - 0.5) * pc.tangent.xyz + (locPos_in.y - 0.5) * pc.bitangent.xyz;
-	ypc_out = vec2((locPos_in.y - 0.5) * pc.bitangent.w, pc.bitangent.w * 0.5);
+	
+	vec2 rescaledPos = (locPos_in - vec2(0.5)) * vec2(pc.tangent.w, pc.bitangent.w);
+	worldPos_out = pc.position + rescaledPos.x * pc.tangent.xyz + rescaledPos.y * pc.bitangent.xyz;
 	gl_Position = renderSettings.viewProjection * vec4(worldPos_out, 1.0);
 }

@@ -2,6 +2,7 @@
 
 #pragma variants VSSAO VNoSSAO
 
+#define HDEPTH_TO_ALPHA
 #include "../Inc/DeferredLight.glh"
 #include "../Inc/Depth.glh"
 #include "../Inc/Light.glh"

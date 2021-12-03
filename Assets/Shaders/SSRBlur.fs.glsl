@@ -23,7 +23,7 @@ layout(constant_id=0) const int FILTER_RADIUS = 16;
 void main()
 {
 	vec4 centerSample = texture(inputSSRSampler, texCoord_in);
-	vec2 scaledBlurDir = blurDir * centerSample.a / float(FILTER_RADIUS);
+	vec2 scaledBlurDir = blurDir * centerSample.a;
 	scaledBlurDir = min(abs(scaledBlurDir), vec2(maxBlurDist) / vec2(textureSize(inputSSRSampler, 0).xy));
 	
 	vec3 blurSum = centerSample.rgb;

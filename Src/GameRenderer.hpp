@@ -19,6 +19,8 @@ public:
 	
 	void WorldChanged(class World& world);
 	
+	void UpdateSSRParameters(const class World& world);
+	
 	void SetViewMatrix(const glm::mat4& viewMatrix, const glm::mat4& viewMatrixInverse, bool updateFrustum = true);
 	void SetViewMatrixFromThumbnailCamera(const class World& world);
 	
@@ -41,9 +43,6 @@ public:
 	WaterSimulator m_waterSimulator;
 	float postColorScale = 1;
 	
-	eg::ColorSRGB ssrFallbackColor;
-	float ssrIntensity = 1;
-	
 private:
 	RenderTexManager m_rtManager;
 	
@@ -52,6 +51,8 @@ private:
 	eg::PerspectiveProjection m_projection;
 	RenderContext* m_renderCtx;
 	BlurRenderer m_glassBlurRenderer;
+	
+	SSR::SSRRenderArgs m_ssrRenderArgs;
 	
 	WaterBarrierRenderer m_waterBarrierRenderer;
 	

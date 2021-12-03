@@ -16,6 +16,8 @@ GameRenderer::GameRenderer(RenderContext& renderCtx)
 {
 	m_projection.SetZNear(0.02f);
 	m_projection.SetZFar(200.0f);
+	
+	m_ssrRenderArgs.destinationTexture = RenderTex::Lit;
 }
 
 void GameRenderer::WorldChanged(World& world)
@@ -42,8 +44,13 @@ void GameRenderer::WorldChanged(World& world)
 			m_blurredTexturesNeeded = true;
 	});
 	
-	ssrFallbackColor = world.ssrFallbackColor;
-	ssrIntensity = world.ssrIntensity;
+	UpdateSSRParameters(world);
+}
+
+void GameRenderer::UpdateSSRParameters(const World& world)
+{
+	m_ssrRenderArgs.fallbackColor = eg::ColorLin(world.ssrFallbackColor);
+	m_ssrRenderArgs.intensity = world.ssrIntensity;
 }
 
 void GameRenderer::SetViewMatrix(const glm::mat4& viewMatrix, const glm::mat4& inverseViewMatrix, bool updateFrustum)
@@ -234,10 +241,9 @@ void GameRenderer::Render(World& world, float gameTime, float dt,
 		m_rtManager.RedirectRenderTexture(RenderTex::LitWithoutWater, RenderTex::LitWithoutSSR);
 	}
 	
-	if (qvar::ssrLinearSamples(settings.reflectionsQuality) == 0)
-	{
+	const bool ssrEnabled = qvar::ssrLinearSamples(settings.reflectionsQuality) != 0 && settings.HDREnabled();
+	if (!ssrEnabled)
 		m_rtManager.RedirectRenderTexture(RenderTex::LitWithoutSSR, RenderTex::Lit);
-	}
 	
 	{
 		auto gpuTimerGeom = eg::StartGPUTimer("Geometry");
@@ -330,14 +336,22 @@ void GameRenderer::Render(World& world, float gameTime, float dt,
 		eg::DC.DebugLabelEnd();
 	}
 	
-	if (qvar::ssrLinearSamples(settings.reflectionsQuality) != 0)
+	if (ssrEnabled)
 	{
 		m_rtManager.RenderTextureUsageHintFS(RenderTex::LitWithoutSSR);
 		
 		auto gpuTimerTransparent = eg::StartGPUTimer("SSR");
 		eg::DC.DebugLabelBegin("SSR");
 		
-		m_renderCtx->ssr.Render(mDrawArgs.waterDepthTexture, RenderTex::Lit, m_rtManager, ssrFallbackColor, ssrIntensity);
+		m_ssrRenderArgs.renderAdditionalCallback = [&] ()
+		{
+			mDrawArgs.drawMode = MeshDrawMode::AdditionalSSR;
+			m_renderCtx->transparentMeshBatch.Draw(eg::DC, &mDrawArgs);
+		};
+		
+		m_ssrRenderArgs.rtManager = &m_rtManager;
+		m_ssrRenderArgs.waterDepth = mDrawArgs.waterDepthTexture;
+		m_renderCtx->ssr.Render(m_ssrRenderArgs);
 		
 		eg::DC.DebugLabelEnd();
 	}

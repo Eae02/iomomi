@@ -43,7 +43,11 @@ eg::Format GetFormatForRenderTexture(RenderTex texture)
 		
 	case RenderTex::SSRTemp1:
 	case RenderTex::SSRTemp2:
-		return eg::Format::R16G16B16A16_Float;
+		if (qvar::ssrUse16BitColor(settings.reflectionsQuality))
+			return eg::Format::R16G16B16A16_Float;
+		return eg::Format::R8G8B8A8_UNorm;
+	case RenderTex::SSRDepth:
+		return eg::Format::Depth16;
 		
 	case RenderTex::LitWithoutWater:
 	case RenderTex::LitWithoutBlurredGlass:

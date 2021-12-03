@@ -60,6 +60,7 @@ namespace qvar
 	extern QualityVariable<uint32_t> ssrLinearSamples;
 	extern QualityVariable<uint32_t> ssrBinSearchSamples;
 	extern QualityVariable<uint32_t> ssrBlurRadius;
+	extern QualityVariable<bool>     ssrUse16BitColor;
 	
 	extern QualityVariable<float> shadowSoftness;
 	extern QualityVariable<int> shadowResolution;

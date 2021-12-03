@@ -7,7 +7,8 @@ QualityVariable<bool> qvar::waterUse32BitDepth(QualityLevel::Medium);
 
 QualityVariable<uint32_t> qvar::ssrLinearSamples(0, 4, 4, 6, 8);
 QualityVariable<uint32_t> qvar::ssrBinSearchSamples(0, 4, 6, 6, 8);
-QualityVariable<uint32_t> qvar::ssrBlurRadius(0, 0, 8, 12, 16);
+QualityVariable<uint32_t> qvar::ssrBlurRadius(0, 8, 12, 12, 16);
+QualityVariable<bool>     qvar::ssrUse16BitColor(QualityLevel::High);
 
 QualityVariable<float> qvar::shadowSoftness(0.0f, 0.0f, 1.0f, 1.3f, 1.6f);
 QualityVariable<int> qvar::shadowResolution(256, 512, 512, 768, 1024);

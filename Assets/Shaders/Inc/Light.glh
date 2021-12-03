@@ -3,8 +3,7 @@
 
 #include "GBData.glh"
 #include "Fresnel.glh"
-
-const float PI = 3.141;
+#include "Utils.glh"
 
 vec3 calcFresnel(GBData data, vec3 toEye)
 {

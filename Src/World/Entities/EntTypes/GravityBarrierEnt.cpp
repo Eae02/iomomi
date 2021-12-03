@@ -284,6 +284,8 @@ void GravityBarrierEnt::Update(const WorldUpdateArgs& args)
 
 static uint64_t lastFrameUpdatedNearEntities = UINT64_MAX;
 
+static float* animationSpeed = eg::TweakVarFloat("gb_anim_speed", 0.2f, 0.0f);
+
 void GravityBarrierEnt::UpdateNearEntities(const Player* player, EntityManager& entityManager)
 {
 	if (eg::FrameIdx() == lastFrameUpdatedNearEntities)
@@ -292,7 +294,7 @@ void GravityBarrierEnt::UpdateNearEntities(const Player* player, EntityManager& 
 	
 	GravityBarrierMaterial::BarrierBufferData bufferData;
 	memset(&bufferData, 0, sizeof(bufferData));
-	bufferData.gameTime = RenderSettings::instance->gameTime;
+	bufferData.gameTime = RenderSettings::instance->gameTime * *animationSpeed;
 	int itemsWritten = 0;
 	
 	auto AddInteractable = [&] (Dir down, const glm::vec3& pos)

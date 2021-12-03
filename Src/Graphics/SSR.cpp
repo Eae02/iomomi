@@ -3,43 +3,62 @@
 #include "RenderSettings.hpp"
 #include "../Settings.hpp"
 
+const float SSR::MAX_DISTANCE = 20;
+
+struct SSRSpecConstants
+{
+	uint32_t linearSamples;
+	uint32_t binarySamples;
+	float maxDistance;
+};
+
 void SSR::CreatePipeline()
 {
 	const eg::ShaderModuleAsset& ssrBlurShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/SSRBlur.fs.glsl");
 	eg::ShaderModuleHandle postVertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
 	
-	eg::SpecializationConstantEntry specConstEntries[3];
-	specConstEntries[0].constantID = 0;
-	specConstEntries[0].size = sizeof(uint32_t);
-	specConstEntries[0].offset = 0 * sizeof(uint32_t);
-	specConstEntries[1].constantID = 1;
-	specConstEntries[1].size = sizeof(uint32_t);
-	specConstEntries[1].offset = 1 * sizeof(uint32_t);
-	specConstEntries[2].constantID = 2;
-	specConstEntries[2].size = sizeof(uint32_t);
-	specConstEntries[2].offset = 2 * sizeof(uint32_t);
+	SSRSpecConstants specConstants;
+	specConstants.linearSamples = qvar::ssrLinearSamples(settings.reflectionsQuality);
+	specConstants.binarySamples = qvar::ssrBinSearchSamples(settings.reflectionsQuality);
+	specConstants.maxDistance = MAX_DISTANCE;
 	
-	uint32_t blurRadius = qvar::ssrBlurRadius(settings.reflectionsQuality);
-	uint32_t specConstantData[3] =
+	eg::SpecializationConstantEntry specConstEntries[] = 
 	{
-		qvar::ssrLinearSamples(settings.reflectionsQuality),
-		qvar::ssrBinSearchSamples(settings.reflectionsQuality),
-		blurRadius == 0
+		{ 0, offsetof(SSRSpecConstants, linearSamples), sizeof(SSRSpecConstants::linearSamples) },
+		{ 1, offsetof(SSRSpecConstants, binarySamples), sizeof(SSRSpecConstants::binarySamples) },
+		{ 2, offsetof(SSRSpecConstants, maxDistance), sizeof(SSRSpecConstants::maxDistance) }
 	};
 	
 	eg::GraphicsPipelineCreateInfo pipeline1CI;
 	pipeline1CI.vertexShader = postVertexShader;
 	pipeline1CI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/SSR.fs.glsl").DefaultVariant();
 	pipeline1CI.fragmentShader.specConstants = specConstEntries;
-	pipeline1CI.fragmentShader.specConstantsData = specConstantData;
-	pipeline1CI.fragmentShader.specConstantsDataSize = sizeof(specConstantData);
+	pipeline1CI.fragmentShader.specConstantsData = &specConstants;
+	pipeline1CI.fragmentShader.specConstantsDataSize = sizeof(specConstants);
+	pipeline1CI.enableDepthWrite = true;
+	pipeline1CI.enableDepthTest = true;
+	pipeline1CI.depthCompare = eg::CompareOp::Always;
 	m_pipelineInitial = eg::Pipeline::Create(pipeline1CI);
-	m_pipelineInitial.FramebufferFormatHint(GetFormatForRenderTexture(RenderTex::SSRTemp1));
+	m_pipelineInitial.FramebufferFormatHint(GetFormatForRenderTexture(RenderTex::SSRTemp1), GetFormatForRenderTexture(RenderTex::SSRDepth));
+	
+	eg::GraphicsPipelineCreateInfo pipelineBlendPassCI;
+	pipelineBlendPassCI.vertexShader = postVertexShader;
+	pipelineBlendPassCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/SSRBlendPass.fs.glsl").DefaultVariant();
+	pipelineBlendPassCI.enableDepthWrite = false;
+	pipelineBlendPassCI.enableDepthTest = false;
+	pipelineBlendPassCI.blendStates[0] = eg::BlendState(
+		eg::BlendFunc::Add, eg::BlendFunc::Add,
+		eg::BlendFactor::DstColor, eg::BlendFactor::DstAlpha,
+		eg::BlendFactor::Zero, eg::BlendFactor::Zero);
+	m_pipelineBlendPass = eg::Pipeline::Create(pipelineBlendPassCI);
+	m_pipelineBlendPass.FramebufferFormatHint(GetFormatForRenderTexture(RenderTex::SSRTemp1), GetFormatForRenderTexture(RenderTex::SSRDepth));
 	
 	eg::SpecializationConstantEntry specConstEntryBlur;
 	specConstEntryBlur.constantID = 0;
 	specConstEntryBlur.size = sizeof(uint32_t);
 	specConstEntryBlur.offset = 0;
+	
+	uint32_t blurRadius = qvar::ssrBlurRadius(settings.reflectionsQuality);
 	
 	eg::GraphicsPipelineCreateInfo pipelineBlurCI;
 	pipelineBlurCI.vertexShader = postVertexShader;
@@ -56,12 +75,11 @@ void SSR::CreatePipeline()
 	m_blur2Pipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
 }
 
-float* ssrBlurIntensity = eg::TweakVarFloat("ssr_blur_scale", 0.05f, 0.0f);
-float* ssrBlurFalloff = eg::TweakVarFloat("ssr_blur_fo", 5.0f, 0.0f);
-float* ssrBlurMax = eg::TweakVarFloat("ssr_blur_max", 4.0f, 0.0f);
+static float* ssrBlurIntensity = eg::TweakVarFloat("ssr_blur_scale", 0.05f, 0.0f);
+static float* ssrBlurFalloff = eg::TweakVarFloat("ssr_blur_fo", 5.0f, 0.0f);
+static float* ssrBlurMax = eg::TweakVarFloat("ssr_blur_max", 4.0f, 0.0f);
 
-void SSR::Render(eg::TextureRef waterDepth, RenderTex destinationTexture, RenderTexManager& rtManager,
-	const eg::ColorSRGB& fallbackColor, float intensityScale)
+void SSR::Render(const SSRRenderArgs& renderArgs)
 {
 	if (settings.reflectionsQuality != m_currentReflectionQualityLevel)
 	{
@@ -69,63 +87,88 @@ void SSR::Render(eg::TextureRef waterDepth, RenderTex destinationTexture, Render
 		m_currentReflectionQualityLevel = settings.reflectionsQuality;
 	}
 	
-	const bool renderDirect = qvar::ssrBlurRadius(settings.reflectionsQuality) == 0;
-	RenderTex initialOutTexture = renderDirect ? destinationTexture : RenderTex::SSRTemp1;
+	eg::MultiStageGPUTimer timer;
 	
 	// ** Initial rendering **
 	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = rtManager.GetFramebuffer(initialOutTexture, {}, {}, "SSR");
+	rpBeginInfo.framebuffer = renderArgs.rtManager->GetFramebuffer(RenderTex::SSRTemp1, {}, RenderTex::SSRDepth, "SSR");
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
+	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Clear;
+	rpBeginInfo.depthClearValue = 1;
 	eg::DC.BeginRenderPass(rpBeginInfo);
 	
-	eg::ColorLin fallbackColorLin(fallbackColor);
-	const float pcInitial[4] = { fallbackColorLin.r, fallbackColorLin.g, fallbackColorLin.b, intensityScale };
+	timer.StartStage("Initial");
 	
 	eg::DC.BindPipeline(m_pipelineInitial);
-	eg::DC.PushConstants(0, sizeof(pcInitial), pcInitial);
+	eg::DC.PushConstants(0, sizeof(float) * 3, &renderArgs.fallbackColor.r);
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::LitWithoutSSR), 0, 1, &framebufferLinearSampler);
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor1), 0, 2);
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor2), 0, 3);
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 4);
-	eg::DC.BindTexture(waterDepth, 0, 5);
+	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::LitWithoutSSR), 0, 1, &framebufferLinearSampler);
+	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::GBColor2), 0, 2);
+	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::GBDepth), 0, 3);
+	eg::DC.BindTexture(renderArgs.waterDepth, 0, 4);
 	
 	eg::DC.Draw(0, 3, 0, 1);
 	
+	timer.StartStage("Additional");
+	
+	if (renderArgs.renderAdditionalCallback)
+	{
+		renderArgs.renderAdditionalCallback();
+	}
+	
+	timer.StartStage("Blend");
+	
+	// ** Blend pass **
+	eg::DC.BindPipeline(m_pipelineBlendPass);
+	eg::DC.PushConstants(0, sizeof(float), &renderArgs.intensity);
+	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::GBColor1), 0, 1);
+	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::GBColor2), 0, 2);
+	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::GBDepth), 0, 3);
+	eg::DC.Draw(0, 3, 0, 1);
+	
 	eg::DC.EndRenderPass();
-	rtManager.RenderTextureUsageHintFS(initialOutTexture);
-	if (renderDirect)
-		return;
+	renderArgs.rtManager->RenderTextureUsageHintFS(RenderTex::SSRTemp1);
 	
 	// ** First blur pass **
-	rpBeginInfo.framebuffer = rtManager.GetFramebuffer(RenderTex::SSRTemp2, {}, {}, "SSR-B1");
+	rpBeginInfo.framebuffer = renderArgs.rtManager->GetFramebuffer(RenderTex::SSRTemp2, {}, {}, "SSR-B1");
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
 	eg::DC.BeginRenderPass(rpBeginInfo);
 	eg::DC.BindPipeline(m_blur1Pipeline);
 	
+	timer.StartStage("Blur 1");
+	
 	const float relativeRadius =
 		(float)qvar::ssrBlurRadius(QualityLevel::VeryHigh) /
 		(float)qvar::ssrBlurRadius(settings.reflectionsQuality);
+	const float blurDistance = *ssrBlurIntensity * MAX_DISTANCE / (float)qvar::ssrBlurRadius(settings.reflectionsQuality);
 	const float maxBlur = *ssrBlurMax * relativeRadius;
 	const float falloff = *ssrBlurFalloff;
-	const float pc1[4] = { *ssrBlurIntensity, 0, falloff, maxBlur };
+	const float pc1[4] = { blurDistance, 0.0f, falloff, maxBlur };
 	eg::DC.PushConstants(0, sizeof(pc1), pc1);
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::SSRTemp1), 0, 0, &framebufferLinearSampler);
+	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::SSRTemp1), 0, 0, &framebufferLinearSampler);
 	eg::DC.Draw(0, 3, 0, 1);
 	eg::DC.EndRenderPass();
-	rtManager.RenderTextureUsageHintFS(RenderTex::SSRTemp2);
+	renderArgs.rtManager->RenderTextureUsageHintFS(RenderTex::SSRTemp2);
 	
 	// ** Second blur pass **
-	rpBeginInfo.framebuffer = rtManager.GetFramebuffer(destinationTexture, {}, {}, "SSR-B2");
+	rpBeginInfo.framebuffer = renderArgs.rtManager->GetFramebuffer(renderArgs.destinationTexture, {}, {}, "SSR-B2");
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
 	eg::DC.BeginRenderPass(rpBeginInfo);
 	eg::DC.BindPipeline(m_blur2Pipeline);
 	
-	const float pc2[4] = { 0, *ssrBlurIntensity * (float)rtManager.ResY() / (float)rtManager.ResX(), falloff, maxBlur };
+	timer.StartStage("Blur 2");
+	
+	const float pc2[4] =
+	{
+		0.0f,
+		blurDistance * (float)renderArgs.rtManager->ResY() / (float)renderArgs.rtManager->ResX(),
+		falloff,
+		maxBlur
+	};
 	eg::DC.PushConstants(0, sizeof(pc2), pc2);
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::SSRTemp2), 0, 0, &framebufferLinearSampler);
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::LitWithoutSSR), 0, 1);
+	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::SSRTemp2), 0, 0, &framebufferLinearSampler);
+	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::LitWithoutSSR), 0, 1);
 	eg::DC.Draw(0, 3, 0, 1);
 	eg::DC.EndRenderPass();
-	rtManager.RenderTextureUsageHintFS(destinationTexture);
+	renderArgs.rtManager->RenderTextureUsageHintFS(renderArgs.destinationTexture);
 }

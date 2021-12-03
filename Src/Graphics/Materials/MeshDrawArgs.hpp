@@ -13,7 +13,7 @@ enum class MeshDrawMode
 	Emissive,
 	Editor,
 	PointLightShadow,
-	SpotLightShadow
+	AdditionalSSR
 };
 
 struct MeshDrawArgs

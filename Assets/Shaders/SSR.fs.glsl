@@ -10,19 +10,17 @@
 layout(location=0) in vec2 texCoord_in;
 
 layout(binding=1) uniform sampler2D inputColorSampler;
-layout(binding=2) uniform sampler2D gbColor1Sampler;
-layout(binding=3) uniform sampler2D gbColor2Sampler;
-layout(binding=4) uniform sampler2D gbDepthSampler;
-layout(binding=5) uniform sampler2D waterDepthSampler;
+layout(binding=2) uniform sampler2D gbColor2Sampler;
+layout(binding=3) uniform sampler2D gbDepthSampler;
+layout(binding=4) uniform sampler2D waterDepthSampler;
 
 layout(constant_id=0) const int ssrLinearSamples = 8;
 layout(constant_id=1) const int ssrBinarySamples = 8;
-layout(constant_id=2) const int isDirect = 1;
+layout(constant_id=2) const float ssrMaxDistance = 20;
 
 layout(push_constant) uniform PC
 {
 	vec3 fallbackColor;
-	float ssrIntensity;
 };
 
 float getWaterHDepth(vec2 texCoord)
@@ -44,14 +42,13 @@ bool behindDepthBuffer(vec3 worldPos)
 	return depthTo01(ndc.z) > min(texture(gbDepthSampler, sampleTC).r, getWaterHDepth(sampleTC));
 }
 
+const float FADE_BEGIN = 0.75; //Percentage of screen radius to begin fading out at
+
 vec4 calcReflection(vec3 surfacePos, vec3 dirToEye, vec3 normal)
 {
 	surfacePos += normal * 0.01;
 	
-	const float MAX_DIST   = 20;   //Maximum distance to reflection
-	const float FADE_BEGIN = 0.75; //Percentage of screen radius to begin fading out at
-	
-	float rayDirLen = MAX_DIST / ssrLinearSamples;
+	float rayDirLen = ssrMaxDistance / ssrLinearSamples;
 	vec3 rayDir = normalize(reflect(-dirToEye, normal)) * rayDirLen;
 	
 	for (uint i = 1; i <= ssrLinearSamples; i++)
@@ -73,52 +70,31 @@ vec4 calcReflection(vec3 surfacePos, vec3 dirToEye, vec3 normal)
 			
 			float fade01 = max(abs(ndc.x), abs(ndc.y));
 			float fade = 1 - clamp((fade01 - 1) / (1 - FADE_BEGIN) + 1, 0, 1);
-			return vec4(mix(fallbackColor, texture(inputColorSampler, sampleTC).rgb, fade), mid * rayDirLen);
+			vec3 reflectColor = mix(fallbackColor, texture(inputColorSampler, sampleTC).rgb, fade);
+			return vec4(reflectColor, mid * rayDirLen / ssrMaxDistance);
 		}
 	}
 	
-	return vec4(fallbackColor, MAX_DIST);
+	return vec4(fallbackColor, 1);
 }
 
 layout(location=0) out vec4 color_out;
 
 void main()
 {
+	gl_FragDepth = 0;
 	color_out = vec4(0.0);
 	
-	if (isDirect == 1)
-	{
-		color_out = texture(inputColorSampler, texCoord_in);
-	}
-	
-	float hDepth = texture(gbDepthSampler, texCoord_in).r;;
+	float hDepth = texture(gbDepthSampler, texCoord_in).r;
 	if (getWaterHDepth(texCoord_in) < hDepth)
 		return;
 	
-	vec4 gbc1 = texture(gbColor1Sampler, texCoord_in);
 	vec4 gbc2 = texture(gbColor2Sampler, texCoord_in);
 	
-	GBData data;
-	data.hDepth = hDepth;
-	data.worldPos = WorldPosFromDepth(hDepth, texCoord_in, renderSettings.invViewProjection);
-	data.normal = SMDecode(gbc2.xy);
-	data.albedo = gbc1.xyz;
-	data.roughness = gbc2.z;
-	data.metallic = gbc2.w;
-	data.ao = gbc1.w;
+	vec3 worldPos = WorldPosFromDepth(hDepth, texCoord_in, renderSettings.invViewProjection);
+	vec3 normal = SMDecode(gbc2.xy);
 	
-	vec3 toEye = normalize(renderSettings.cameraPosition - data.worldPos);
-	vec3 fresnel = calcFresnel(data, toEye);
-	vec4 reflection = calcReflection(data.worldPos, toEye, data.normal);
-	vec3 ssrColor = reflection.rgb * fresnel * (1 - data.roughness) * ssrIntensity;
-	
-	if (isDirect == 1)
-	{
-		color_out += vec4(ssrColor, 0);
-	}
-	else
-	{
-		float blur = reflection.a * data.roughness / distance(data.worldPos, renderSettings.cameraPosition);
-		color_out = vec4(ssrColor, blur);
-	}
+	vec3 toEye = normalize(renderSettings.cameraPosition - worldPos);
+	color_out = calcReflection(worldPos, toEye, normal);
+	gl_FragDepth = color_out.a;
 }

@@ -2,13 +2,13 @@
 #include "MeshDrawArgs.hpp"
 #include "../RenderSettings.hpp"
 
+static eg::Pipeline emissiveGeometryPipeline;
 static eg::Pipeline emissivePipeline;
 
 static void OnInit()
 {
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Emissive.vs.glsl").DefaultVariant();
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Emissive.fs.glsl").DefaultVariant();
 	pipelineCI.enableDepthWrite = true;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.depthCompare = eg::CompareOp::LessOrEqual;
@@ -21,15 +21,28 @@ static void OnInit()
 	pipelineCI.vertexAttributes[3] = { 1, eg::DataType::Float32, 4, 2 * sizeof(float) * 4 };
 	pipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
 	pipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 4, 4 * sizeof(float) * 4 };
+	
+	pipelineCI.label = "EmissiveGeometry";
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/EmissiveGeom.fs.glsl").DefaultVariant();
+	pipelineCI.numColorAttachments = 2;
+	emissiveGeometryPipeline = eg::Pipeline::Create(pipelineCI);
+	
+	pipelineCI.enableDepthWrite = false;
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Emissive.fs.glsl").DefaultVariant();
 	pipelineCI.numColorAttachments = 1;
+	pipelineCI.blendStates[0] = eg::BlendState(
+		eg::BlendFunc::Add, eg::BlendFunc::Add,
+		eg::BlendFactor::One, eg::BlendFactor::Zero,
+		eg::BlendFactor::SrcAlpha, eg::BlendFactor::One
+	);
 	pipelineCI.label = "Emissive";
 	emissivePipeline = eg::Pipeline::Create(pipelineCI);
-	
 	emissivePipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 }
 
 static void OnShutdown()
 {
+	emissiveGeometryPipeline.Destroy();
 	emissivePipeline.Destroy();
 }
 
@@ -47,10 +60,23 @@ bool EmissiveMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) 
 {
 	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
 	
-	if (mDrawArgs->drawMode != MeshDrawMode::Emissive && mDrawArgs->drawMode != MeshDrawMode::Editor)
+	switch (mDrawArgs->drawMode)
+	{
+	case MeshDrawMode::Emissive:
+		cmdCtx.BindPipeline(emissivePipeline);
+		cmdCtx.PushConstants(0, 1.0f);
+		break;
+	case MeshDrawMode::Editor:
+		cmdCtx.BindPipeline(emissivePipeline);
+		cmdCtx.PushConstants(0, 0.0f);
+		break;
+	case MeshDrawMode::Game:
+		cmdCtx.BindPipeline(emissiveGeometryPipeline);
+		break;
+	default:
 		return false;
+	}
 	
-	cmdCtx.BindPipeline(emissivePipeline);
 	cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 	
 	return true;

@@ -1,36 +1,20 @@
-#version 450 core
+#ifndef GB_COMMON_H
+#define GB_COMMON_H
 
-#pragma variants VGame VEditor
-
-layout(location=0) in vec2 texCoord_in;
-layout(location=1) in vec3 worldPos_in;
-layout(location=2) in vec2 ypc_in;
-
-layout(location=0) out vec4 color_out;
+#include "../Inc/Utils.glh"
 
 const vec3 COLOR = vec3(0.1, 0.7, 0.9);
 const vec3 COLOR_RED = vec3(1.0, 0.2, 0.3) * 2;
 
 const int OFF_SAMPLES = 4;
 const int DUP_LINES = 6;
-const float PI = 3.141;
 const float OFFSET_SCALE = 0.8;
 const float OFFSET_SCALE_RED = 1.5;
 const float LINE_SPACING = 0.5;
 const float LINE_WIDTH = 0.003;
 const float MAX_INTENSITY = 0.9;
 const float EDGE_FADE_DIST = 0.2;
-
-layout(binding=1) uniform sampler2D noiseTex;
-
-float lineIntensity(float lx, float tx)
-{
-	float dist = tx - lx * LINE_SPACING;
-	if (abs(dist) < 0.01 && length(vec2(dFdx(dist), dFdy(dist))) > abs(dist * 2.0))
-		dist = 0;
-	float ldist = (max(abs(dist), LINE_WIDTH) - LINE_WIDTH * MAX_INTENSITY);
-	return 1.0 / ldist;
-}
+const float TIME_AXIS_SCALE = 0.25;
 
 layout(push_constant) uniform PC
 {
@@ -41,54 +25,38 @@ layout(push_constant) uniform PC
 	uint blockedAxis;
 } pc;
 
-#if defined(VGame)
-const int NUM_INTERACTABLES = 8;
+float lineIntensity(float lx, float tx)
+{
+	float dist = tx - lx * LINE_SPACING;
+	if (abs(dist) < 0.01 && length(vec2(dFdx(dist), dFdy(dist))) > abs(dist * 2.0))
+		dist = 0;
+	float ldist = (max(abs(dist), LINE_WIDTH) - LINE_WIDTH * MAX_INTENSITY);
+	return 1.0 / ldist;
+}
 
+layout(binding=1) uniform sampler2D noiseTex;
+
+float calcEdgeDist(vec2 scaledTC)
+{
+	float halfSize = pc.bitangent.w * 0.5;
+	return min((halfSize - abs(scaledTC.y - halfSize)) * TIME_AXIS_SCALE / EDGE_FADE_DIST, 1.0);
+}
+
+#ifdef GB_WITH_BARRIER_SETTINGS_UB
+const int NUM_INTERACTABLES = 8;
 layout(binding=2, std140) uniform BarrierSettingsUB
 {
 	uvec4 iaDownAxis[NUM_INTERACTABLES / 4];
 	vec4 iaPosition[NUM_INTERACTABLES];
-	float gameTime;
+	float barrierAnimTime;
 };
-
-layout(binding=3) uniform sampler2D waterDepth;
-layout(binding=4) uniform sampler2D blurredGlassDepth;
-layout(binding=5) uniform sampler2D waterDistanceTex;
-
-#define WATER_DEPTH_OFFSET 0.15
-#include "Water/WaterTransparent.glh"
-#endif
-
-#ifdef VEditor
-bool CheckWaterDiscard() { return false; }
-const float gameTime = 0;
-#endif
-
-void main()
+float getInteractablesNegScale(vec3 worldPos, inout vec2 scaledTC, float waterDist)
 {
-	if (CheckWaterDiscard())
-	{
-		color_out = vec4(0);
-		return;
-	}
-	
-#ifdef VGame
-	vec2 screenCoord = ivec2(gl_FragCoord.xy) / vec2(textureSize(blurredGlassDepth, 0).xy);
-	if (gl_FragCoord.z < texture(blurredGlassDepth, screenCoord).r)
-		discard;
-#endif
-	
-	vec2 scaledTC = texCoord_in * vec2(pc.tangent.w, pc.bitangent.w);
-	float negScale = 0;
-	
-	float edgeDist = min((ypc_in.y - abs(ypc_in.x)) / EDGE_FADE_DIST, 1.0);
-	
-#ifdef VGame
-	float intensity = 0;
+	float negScale = 1.0 - smoothstep(0.5, 0.8, waterDist);
 	float stretch = 0;
 	for (int i = 0; i < NUM_INTERACTABLES; i++)
 	{
-		vec3 toObject = worldPos_in - iaPosition[i].xyz;
+		vec3 toObject = worldPos - iaPosition[i].xyz;
 		float d = length(toObject);
 		uint da = iaDownAxis[i / 4][i % 4];
 		
@@ -98,22 +66,24 @@ void main()
 		}
 		else if (da != 3)
 		{
-			float ns = exp(-d * d) * dot(toObject, pc.tangent.xyz);
+			float ns = exp(-d * d) * dot(toObject, pc.tangent.xyz) * pc.tangent.w;
 			stretch = abs(ns) > abs(stretch) ? ns : stretch;
 		}
 	}
 	
-	float waterDist = texture(waterDistanceTex, texCoord_in).r;
-	negScale += 1.0 - smoothstep(0.5, 0.8, waterDist);
-	
+	float edgeDist = calcEdgeDist(scaledTC);
 	scaledTC.x -= 0.3 * stretch * edgeDist;
-	negScale = min(negScale, 1.0);
+	return clamp(negScale, 0.0, 1.0);
+}
+#else
+const float barrierAnimTime = 0;
 #endif
+
+vec4 calculateColor(vec2 scaledTC, float negScale, float baseIntensity)
+{
+	float intensity = baseIntensity;
 	
-#ifdef VEditor
-	float intensity = 5;
-#endif
-	
+	float edgeDist = calcEdgeDist(scaledTC);
 	float centerLn = floor(scaledTC.x / LINE_SPACING);
 	float offScale = edgeDist * mix(OFFSET_SCALE, OFFSET_SCALE_RED, negScale) / DUP_LINES;
 	
@@ -123,7 +93,7 @@ void main()
 		for (int j = 0; j < OFF_SAMPLES; j++)
 		{
 			float sx = ((centerLn * DUP_LINES + d) * OFF_SAMPLES + j) * 0.01;
-			float sy = (scaledTC.y + 0.2 * gameTime * (j / float(OFF_SAMPLES - 1)));
+			float sy = scaledTC.y * TIME_AXIS_SCALE + barrierAnimTime * (j / float(OFF_SAMPLES - 1));
 			off += texture(noiseTex, vec2(sx, sy)).r;
 		}
 		intensity += lineIntensity(centerLn + 0.5 + off * offScale, scaledTC.x);
@@ -133,7 +103,7 @@ void main()
 	intensity += lineIntensity(centerLn + 1.5, scaledTC.x) * DUP_LINES;
 	intensity *= pc.opacity;
 	
-	vec3 color = mix(COLOR, COLOR_RED, negScale);
-	
-	color_out = vec4(color * intensity, min(intensity, 1.0));
+	return vec4(mix(COLOR, COLOR_RED, negScale) * intensity, min(intensity, 1.0));
 }
+
+#endif

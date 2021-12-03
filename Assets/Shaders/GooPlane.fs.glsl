@@ -36,7 +36,7 @@ void main()
 	const float VISIBILITY_DEPTH = 1.5;
 	
 	float depth = 100;
-	float alpha = mix(0.1, 1.0, depth / VISIBILITY_DEPTH);
+	float alpha = mix(0.1, 1.0, clamp(depth / VISIBILITY_DEPTH, 0, 1));
 	
 	vec3 normal = vec3(0.0);
 	float brightness = 0.0;
@@ -51,12 +51,12 @@ void main()
 	normal = normalize(normal);
 	brightness /= NM_SAMPLES;
 	
-	const float MAX_BRIGHTNESS = 15.0;
+	const float MAX_BRIGHTNESS = 12.0;
 	const float CUTOFF = 0.45;
-	vec3 waterColor = color * mix(minBrightness, 1.0, brightness);
+	vec3 waterColor = color * mix(minBrightness, 1.0, clamp(brightness + edgeFade, 0, 1));
 	
-	float glow = max(brightness - CUTOFF, 0.0) * MAX_BRIGHTNESS / (1.0 - CUTOFF);
-	waterColor += color * glow * (1 - edgeFade);
+	float glow = max(brightness + edgeFade * 0.3 - CUTOFF, 0.0) * MAX_BRIGHTNESS / (1.0 - CUTOFF);
+	waterColor += color * glow;
 	
-	color_out = vec4(mix(waterColor, color * minBrightness, edgeFade), mix(1, 0.3, edgeFade));
+	color_out = vec4(mix(waterColor, color * minBrightness, 0), alpha);
 }

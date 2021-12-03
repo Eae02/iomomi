@@ -21,6 +21,8 @@ public:
 	
 	bool BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const override;
 	
+	virtual OrderRequirement GetOrderRequirement() const override { return OrderRequirement::OnlyOrdered; }
+	
 	glm::vec3 position;
 	glm::vec3 tangent;
 	glm::vec3 bitangent;
@@ -38,5 +40,6 @@ private:
 	static eg::Pipeline s_pipelineGameBeforeWater;
 	static eg::Pipeline s_pipelineGameFinal;
 	static eg::Pipeline s_pipelineEditor;
+	static eg::Pipeline s_pipelineSSR;
 	static eg::Buffer s_sharedDataBuffer;
 };
