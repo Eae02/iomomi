@@ -93,8 +93,6 @@ struct Settings
 	
 	std::array<bool, (int)EntTypeID::MAX> edEntityIconEnabled;
 	
-	void SetToLowGraphics();
-	
 	bool HDREnabled() const
 	{
 		return lightingQuality >= QualityLevel::Low;

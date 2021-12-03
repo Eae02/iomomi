@@ -1,5 +1,7 @@
 #pragma once
 
+#ifndef IOMOMI_NO_WATER
+
 #include "../Entity.hpp"
 #include "../EntInteractable.hpp"
 #include "../../PhysicsEngine.hpp"
@@ -72,3 +74,5 @@ private:
 	
 	PumpScreenMaterial m_screenMaterial;
 };
+
+#endif

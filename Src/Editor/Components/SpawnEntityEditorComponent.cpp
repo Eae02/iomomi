@@ -1,3 +1,4 @@
+#ifndef IOMOMI_NO_EDITOR
 #include "SpawnEntityEditorComponent.hpp"
 
 #include <imgui.h>
@@ -143,3 +144,5 @@ bool SpawnEntityEditorComponent::UpdateInput(float dt, const EditorState& editor
 	}
 	return false;
 }
+
+#endif

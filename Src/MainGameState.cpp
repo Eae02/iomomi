@@ -114,7 +114,9 @@ void MainGameState::OnDeactivate()
 	m_relativeMouseModeLostListener.reset();
 }
 
+#ifndef IOMOMI_NO_EDITOR
 extern std::weak_ptr<World> runningEditorWorld;
+#endif
 
 static int* playerUnderwaterSpheres = eg::TweakVarInt("pl_underwater_spheres", 15, 0);
 
@@ -235,6 +237,7 @@ void MainGameState::RunFrame(float dt)
 		UpdateViewProjMatrices();
 	}
 	
+#ifndef IOMOMI_NO_EDITOR
 	if (m_ssrReflectionColorEditorShown)
 	{
 		ImGui::Begin("SSR Reflection Color Editor", &m_ssrReflectionColorEditorShown);
@@ -256,6 +259,7 @@ void MainGameState::RunFrame(float dt)
 		
 		ImGui::End();
 	}
+#endif
 	
 	m_playerWaterAABB->SetAABB(m_player.GetAABB());
 	
@@ -422,6 +426,7 @@ int* debugOverlay = eg::TweakVarInt("dbg_overlay", 1, 0, 1);
 
 void MainGameState::DrawOverlay(float dt)
 {
+#if !defined(__EMSCRIPTEN__) && !defined(IOMOMI_NO_EDITOR)
 	if (!*debugOverlay || !eg::DevMode())
 		return;
 	
@@ -459,6 +464,7 @@ void MainGameState::DrawOverlay(float dt)
 	
 	ImGui::End();
 	ImGui::PopStyleVar();
+#endif
 }
 
 bool MainGameState::ReloadLevel()

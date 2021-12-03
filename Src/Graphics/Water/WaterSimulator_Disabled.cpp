@@ -1,4 +1,4 @@
-#ifdef __EMSCRIPTEN__
+#ifdef IOMOMI_NO_WATER
 #include "WaterSimulator.hpp"
 
 void WaterSimulator::Init(class World& world) { }

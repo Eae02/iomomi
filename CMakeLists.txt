@@ -83,7 +83,11 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
 	target_link_libraries(iomomi "${PROTOBUF_SRC_DIR}/.libs/libprotobuf.a")
 	target_include_directories(iomomi SYSTEM PRIVATE ${PROTOBUF_SRC_DIR})
 	
-	target_compile_options(iomomi PRIVATE -Wno-sign-conversion -Wno-shorten-64-to-32 -Wno-mismatched-tags)
+	target_compile_options(iomomi PRIVATE
+		-Wno-sign-conversion -Wno-shorten-64-to-32 -Wno-mismatched-tags
+		-DIOMOMI_NO_WATER
+		-DIOMOMI_NO_EDITOR
+		)
 	set_target_properties(iomomi PROPERTIES LINK_FLAGS "-s EXPORTED_RUNTIME_METHODS=['cwrap'] -s EXPORTED_FUNCTIONS=['_WebMain'] ${EMCC_FLAGS}")
 else()
 	find_package(Protobuf REQUIRED)

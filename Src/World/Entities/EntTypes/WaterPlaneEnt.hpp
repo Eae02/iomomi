@@ -1,5 +1,7 @@
 #pragma once
 
+#ifndef IOMOMI_NO_WATER
+
 #include "../Entity.hpp"
 #include "../Components/LiquidPlaneComp.hpp"
 
@@ -27,3 +29,5 @@ public:
 	LiquidPlaneComp liquidPlane;
 	int densityBoost = 0;
 };
+
+#endif

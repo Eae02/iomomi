@@ -11,8 +11,6 @@
 #include <google/protobuf/stubs/common.h>
 
 #ifdef _WIN32
-#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
-
 extern "C"
 {
 	__declspec(dllexport) uint32_t NvOptimusEnablement = 1;

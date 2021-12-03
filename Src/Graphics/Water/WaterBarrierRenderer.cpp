@@ -2,7 +2,7 @@
 #include "WaterSimulator.hpp"
 #include "../../World/World.hpp"
 
-#ifdef __EMSCRIPTEN__
+#ifdef IOMOMI_NO_WATER
 WaterBarrierRenderer::WaterBarrierRenderer() { }
 void WaterBarrierRenderer::Init(class WaterSimulator& waterSimulator, class World& world) { }
 void WaterBarrierRenderer::Update(float dt) { }

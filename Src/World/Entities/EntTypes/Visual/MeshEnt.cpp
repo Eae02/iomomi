@@ -1,7 +1,6 @@
 #include "MeshEnt.hpp"
 #include "../../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../../../Protobuf/Build/MeshEntity.pb.h"
-#include "../../../../ImGuiInterface.hpp"
 #include "../../../../Game.hpp"
 
 #include <imgui.h>

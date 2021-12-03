@@ -24,7 +24,7 @@ struct Level
 
 extern std::vector<Level> levels;
 
-extern std::vector<std::string_view> levelsOrder;
+extern const std::vector<std::string_view> levelsOrder;
 
 std::unique_ptr<World> LoadLevelWorld(const Level& level, bool isEditor);
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#ifndef IOMOMI_NO_EDITOR
+
 class EditorCamera
 {
 public:
@@ -26,3 +28,5 @@ private:
 	
 	glm::vec3 m_focus;
 };
+
+#endif

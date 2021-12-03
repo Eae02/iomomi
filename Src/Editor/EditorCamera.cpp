@@ -1,5 +1,7 @@
 #include "EditorCamera.hpp"
 
+#ifndef IOMOMI_NO_EDITOR
+
 EditorCamera::EditorCamera()
 {
 	Reset(eg::Sphere(glm::vec3(0.0f), 5.0f));
@@ -102,3 +104,5 @@ void EditorCamera::UpdateRotationMatrix()
 	m_rotationMatrix = glm::rotate(glm::mat4(1), m_yaw, glm::vec3(0, 1, 0)) *
 		glm::rotate(glm::mat4(1), m_pitch, glm::vec3(1, 0, 0));
 }
+
+#endif

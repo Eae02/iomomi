@@ -1,6 +1,9 @@
 #pragma once
 
 #include <imgui.h>
+
+#ifndef IOMOMI_NO_EDITOR
+
 #include "Graphics/GraphicsCommon.hpp"
 
 class ImGuiInterface
@@ -28,6 +31,13 @@ private:
 };
 
 ImTextureID MakeImTextureID(eg::TextureRef texture, int layer = -1);
-
 void ImPushDisabled(bool disabled);
 void ImPopDisabled(bool disabled);
+
+#else
+
+inline ImTextureID MakeImTextureID(eg::TextureRef texture, int layer = -1) { return { }; }
+inline void ImPushDisabled(bool disabled) { }
+inline void ImPopDisabled(bool disabled) { }
+
+#endif

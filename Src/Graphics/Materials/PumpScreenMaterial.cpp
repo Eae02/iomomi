@@ -1,3 +1,4 @@
+#ifndef IOMOMI_NO_WATER
 #include "PumpScreenMaterial.hpp"
 #include "MeshDrawArgs.hpp"
 #include "../RenderSettings.hpp"
@@ -154,3 +155,5 @@ bool PumpScreenMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs
 	
 	return true;
 }
+
+#endif

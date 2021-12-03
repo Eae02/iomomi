@@ -192,9 +192,9 @@ void InitOptionsMenu()
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::reflectionsQuality, "Reflections", true));
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::lightingQuality, "Lighting", true));
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::ssaoQuality, "SSAO", true));
-#ifndef __EMSCRIPTEN__
+#ifndef IOMOMI_NO_WATER
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::waterQuality, "Water", true));
-	#endif
+#endif
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::bloomQuality, "Bloom", true));
 	leftWidgetList.AddWidget(InitSettingsToggleButton(&Settings::enableFXAA, "FXAA", "On", "Off"));
 	leftWidgetList.AddWidget(InitSettingsToggleButton(&Settings::gunFlash, "Gun Flash", "Enabled", "Disabled"));

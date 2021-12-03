@@ -1,6 +1,6 @@
+#ifndef IOMOMI_NO_WATER
 #include "WaterWallEnt.hpp"
 #include "../../WorldUpdateArgs.hpp"
-#include "../../../Editor/PrimitiveRenderer.hpp"
 #include "../../../../Protobuf/Build/WaterWallEntity.pb.h"
 
 #include <imgui.h>
@@ -120,3 +120,5 @@ int WaterWallEnt::EdGetIconIndex() const
 {
 	return 18;
 }
+
+#endif

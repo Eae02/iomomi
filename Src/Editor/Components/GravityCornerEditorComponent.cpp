@@ -1,3 +1,4 @@
+#ifndef IOMOMI_NO_EDITOR
 #include "GravityCornerEditorComponent.hpp"
 #include "../PrimitiveRenderer.hpp"
 
@@ -112,3 +113,5 @@ void GravityCornerEditorComponent::EarlyDraw(const EditorState& editorState) con
 		editorState.primitiveRenderer->AddQuad(lineCorners + 4, color);
 	}
 }
+
+#endif

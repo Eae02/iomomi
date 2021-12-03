@@ -1,5 +1,7 @@
 #pragma once
 
+#ifndef IOMOMI_NO_EDITOR
+
 #include "../EditorComponent.hpp"
 
 class SpawnEntityEditorComponent : public EditorComponent
@@ -17,3 +19,5 @@ private:
 	std::vector<char> m_searchBuffer;
 	bool m_open = false;
 };
+
+#endif

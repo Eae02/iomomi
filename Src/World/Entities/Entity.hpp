@@ -3,6 +3,7 @@
 #include "EntityTypes.hpp"
 #include "../Dir.hpp"
 #include "../../Graphics/Lighting/PointLight.hpp"
+#include "../../Editor/IPrimitiveRenderer.hpp"
 
 struct EntDrawArgs
 {
@@ -25,7 +26,7 @@ enum class EntEditorDrawMode
 struct EntEditorDrawArgs : EntDrawArgs
 {
 	eg::SpriteBatch* spriteBatch;
-	class PrimitiveRenderer* primitiveRenderer;
+	IPrimitiveRenderer* primitiveRenderer;
 	std::function<EntEditorDrawMode(const class Ent*)> getDrawMode;
 };
 

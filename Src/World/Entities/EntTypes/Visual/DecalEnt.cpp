@@ -1,6 +1,5 @@
 #include "DecalEnt.hpp"
 #include "../../../../Graphics/Materials/DecalMaterial.hpp"
-#include "../../../../Editor/PrimitiveRenderer.hpp"
 #include "../../../../../Protobuf/Build/DecalEntity.pb.h"
 
 #include <imgui.h>

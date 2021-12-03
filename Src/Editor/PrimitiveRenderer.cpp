@@ -1,3 +1,4 @@
+#ifndef IOMOMI_NO_EDITOR
 #include "PrimitiveRenderer.hpp"
 #include "../Graphics/DeferredRenderer.hpp"
 
@@ -165,3 +166,5 @@ void PrimitiveRenderer::Draw() const
 	
 	eg::DC.DrawIndexed(0, (uint32_t)m_triangles.size() * 3, 0, 0, 1);
 }
+
+#endif

@@ -1,3 +1,4 @@
+#ifndef IOMOMI_NO_EDITOR
 #include "LiquidPlaneRenderer.hpp"
 #include "../World/World.hpp"
 #include "../Graphics/RenderSettings.hpp"
@@ -61,3 +62,5 @@ void LiquidPlaneRenderer::Render() const
 		eg::DC.DrawIndexed(0, plane.NumIndices(), 0, 0, 1);
 	}
 }
+
+#endif

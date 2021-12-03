@@ -73,15 +73,8 @@ void InitLevelsPlatformDependent()
 {
 	for (int64_t i = (int64_t)levelsOrder.size() - 1; i >= 0; i--)
 	{
-		if (levelsOrder[i].find("water") != std::string_view::npos)
-		{
-			levelsOrder.erase(levelsOrder.begin() + i);
-		}
-		else
-		{
-			levelData.emplace(levelsOrder[i], LevelData(levelsOrder[i]));
-			levels.emplace_back(std::string(levelsOrder[i]));
-		}
+		levelData.emplace(levelsOrder[i], LevelData(levelsOrder[i]));
+		levels.emplace_back(std::string(levelsOrder[i]));
 	}
 	
 	SortLevels();

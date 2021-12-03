@@ -1,3 +1,4 @@
+#ifndef IOMOMI_NO_EDITOR
 #include "WallDragEditorComponent.hpp"
 #include "../PrimitiveRenderer.hpp"
 #include "../../Graphics/WallShader.hpp"
@@ -392,3 +393,5 @@ void WallDragEditorComponent::RenderSettings(const EditorState& editorState)
 		}
 	}
 }
+
+#endif

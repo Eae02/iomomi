@@ -9,7 +9,7 @@ using namespace std::filesystem;
 
 std::vector<Level> levels;
 
-std::vector<std::string_view> levelsOrder = 
+const std::vector<std::string_view> levelsOrder = 
 {
 	"intro_0",
 	"intro_1",
@@ -25,6 +25,7 @@ std::vector<std::string_view> levelsOrder =
 	"gravbarrier_ng2",
 	"gravbarrier_ng3",
 	
+#ifndef IOMOMI_NO_WATER
 	"water_ng0",
 	"water_ng1",
 	"water_ng2",
@@ -33,6 +34,7 @@ std::vector<std::string_view> levelsOrder =
 	"water_pump_ng2",
 	"water_ng5",
 	"water_pump_ng3",
+#endif
 	
 	"gravbarrier_ng4",
 	"gravbarrier_ng5",
@@ -59,6 +61,7 @@ std::vector<std::string_view> levelsOrder =
 	"forcefield_3",
 	"forcefield_4",
 	
+#ifndef IOMOMI_NO_WATER
 	"water_0",
 	"water_1",
 	"water_2",
@@ -66,6 +69,8 @@ std::vector<std::string_view> levelsOrder =
 	"water_4",
 	"water_5",
 	"water_6",
+#endif
+	
 	"launch_0",
 	"launch_1",
 	"gravbarrier_cube_1",

@@ -1,5 +1,7 @@
 #pragma once
 
+#ifndef IOMOMI_NO_EDITOR
+
 #include "../EditorComponent.hpp"
 
 class GravityCornerEditorComponent : public EditorComponent
@@ -17,3 +19,5 @@ private:
 	int m_modCornerDim = -1;
 	glm::ivec3 m_modCornerPos;
 };
+
+#endif

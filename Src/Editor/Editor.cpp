@@ -1,3 +1,4 @@
+#ifndef IOMOMI_NO_EDITOR
 #include "Editor.hpp"
 #include "../Levels.hpp"
 #include "../MainGameState.hpp"
@@ -290,3 +291,5 @@ void Editor::RunFrame(float dt)
 		}
 	}
 }
+
+#endif

@@ -24,15 +24,15 @@ PausedMenu::PausedMenu()
 	m_widgetList.AddWidget(Button("Options", [&] { optionsMenuOpen = true; }));
 	m_mainMenuWidgetIndex = m_widgetList.AddWidget(Button("", [&]
 	{
+#ifndef IOMOMI_NO_EDITOR
 		if (isFromEditor)
 		{
 			SetCurrentGS(editor);
+			return;
 		}
-		else
-		{
-			mainMenuGameState->GoToMainScreen();
-			SetCurrentGS(mainMenuGameState);
-		}
+#endif
+		mainMenuGameState->GoToMainScreen();
+		SetCurrentGS(mainMenuGameState);
 	}));
 	
 	m_widgetList.relativeOffset = glm::vec2(-0.5f, 0.5f);

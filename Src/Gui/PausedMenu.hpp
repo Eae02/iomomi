@@ -12,8 +12,8 @@ public:
 	
 	bool isPaused = false;
 	bool shouldRestartLevel = false;
-	bool isFromEditor = false;
 	float fade = 0;
+	bool isFromEditor = false;
 	
 private:
 	int m_buttonKeyboardFocus = -1;

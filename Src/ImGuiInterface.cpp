@@ -1,3 +1,4 @@
+#ifndef IOMOMI_NO_EDITOR
 #include "ImGuiInterface.hpp"
 
 #include <imgui.h>
@@ -320,3 +321,5 @@ void ImPopDisabled(bool disabled)
 		ImGui::PopItemFlag();
 	}
 }
+
+#endif
