@@ -32,7 +32,7 @@ static void OnInit()
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.blendStates[0] = eg::BlendState(
 		eg::BlendFunc::Add, eg::BlendFunc::Add,
-		eg::BlendFactor::One, eg::BlendFactor::Zero,
+		eg::BlendFactor::One, eg::BlendFactor::One,
 		eg::BlendFactor::SrcAlpha, eg::BlendFactor::One
 	);
 	pipelineCI.label = "Emissive";

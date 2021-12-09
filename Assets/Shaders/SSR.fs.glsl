@@ -86,7 +86,7 @@ void main()
 	color_out = vec4(0.0);
 	
 	float hDepth = texture(gbDepthSampler, texCoord_in).r;
-	if (getWaterHDepth(texCoord_in) < hDepth)
+	if (texture(inputColorSampler, texCoord_in).a > 0.1)
 		return;
 	
 	vec4 gbc2 = texture(gbColor2Sampler, texCoord_in);

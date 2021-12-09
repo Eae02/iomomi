@@ -36,10 +36,6 @@ void main()
 	data.ao = c1.w;
 	
 	color_out = vec4(CalculateLighting(data), 0);
-	
-#ifdef HDEPTH_TO_ALPHA
-	color_out.a = data.hDepth * 1000;
-#endif
 }
 
 #endif

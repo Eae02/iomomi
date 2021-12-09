@@ -81,7 +81,7 @@ bool ForceFieldMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs
 		return true;
 	}
 	
-	return true;
+	return false;
 }
 
 bool ForceFieldMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const

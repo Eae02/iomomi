@@ -118,7 +118,7 @@ void main()
 	
 	bool underwater = waterDepths.r < UNDERWATER_DEPTH;
 	
-	vec3 worldColor = texture(worldColorSampler, texCoord_in).rgb;
+	vec4 worldColor = texture(worldColorSampler, texCoord_in);
 	
 	float waterDepthL = underwater ? waterDepths.g : waterDepths.r;
 	float waterDepthH = hyperDepth(waterDepthL);
@@ -127,12 +127,12 @@ void main()
 	//If the world is closer than the water, don't render water
 	if (worldDepthH < waterDepthH && !underwater)
 	{
-		color_out = vec4(worldColor, worldDepthH * 1000);
+		color_out = worldColor;
 		return;
 	}
 	
 	//Stores values without refraction applied for fading later
-	vec3 oriWorldColor = worldColor;
+	vec3 oriWorldColor = worldColor.rgb;
 	float worldDepthL = linearizeDepth(worldDepthH);
 	float fadeDepth = worldDepthL - waterDepthL;
 	
@@ -237,7 +237,7 @@ void main()
 	}
 	
 	//Updates variables with the new texture coordinate
-	worldColor = texture(worldColorSampler, refractTexcoord).rgb;
+	worldColor = texture(worldColorSampler, refractTexcoord);
 	targetPos = WorldPosFromDepth(worldDepthH, refractTexcoord, renderSettings.invViewProjection);
 	waterDepths = texture(waterDepthSampler, refractTexcoord).xy;
 	
@@ -253,7 +253,7 @@ void main()
 	vec3 light = vec3(0.8, 0.9, 1.0) * abs(dot(underwater ? -normal : normal, normalize(vec3(1, 1, 1)))) * 0.25 + 0.5;
 	float fresnel = R0 + (1.0 - R0) * pow(1.0 - max(dot(normal, dirToEye), 0.0), 5.0);
 	
-	vec3 refractColor = worldColor;
+	vec3 refractColor = worldColor.rgb;
 	if (underwater && waterSurface)
 	{
 		refractColor = mix(refractColor, reflectColor, fresnel) * light;
@@ -262,7 +262,7 @@ void main()
 	
 	if (underwater)
 	{
-		color_out = vec4(refractColor, min(worldDepthH, waterDepthH));
+		color_out = vec4(refractColor, waterDepthH < worldDepthH ? 1.0 : worldColor.a);
 	}
 	else
 	{
@@ -277,9 +277,8 @@ void main()
 		vec3 foamColor = vec3(1.0);
 		
 		vec3 waterColor = mix(refractColor, reflectColor, fresnel) * light;
-		color_out = vec4(mix(oriWorldColor, mix(foamColor, waterColor, foam), shore), waterDepthH);
+		color_out = vec4(mix(oriWorldColor, mix(foamColor, waterColor, foam), shore), 1.0);
 	}
 	
 	color_out.rgb += glowColor * texture(waterGlowSampler, texCoord_in).r;
-	color_out.a *= 1000;
 }
