@@ -8,8 +8,6 @@
 #include "../Graphics/WallShader.hpp"
 #include "../../Protobuf/Build/World.pb.h"
 
-#include <yaml-cpp/yaml.h>
-
 World::World()
 {
 	ssrFallbackColor = eg::ColorSRGB::FromHex(0x625F46);
