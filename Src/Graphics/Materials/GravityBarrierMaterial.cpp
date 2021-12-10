@@ -144,7 +144,12 @@ bool GravityBarrierMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* draw
 	return false;
 }
 
-static float* opacityScale = eg::TweakVarFloat("gb_opacity_scale", 0.0004f, 0.0f, 1.0f);
+static float* opacityScale = eg::TweakVarFloat("gb_opacity_scale", 1.6f, 0.0f);
+static float* lineWidth = eg::TweakVarFloat("gb_line_width", 0.001f, 0.0f);
+static float* intensityDecay = eg::TweakVarFloat("gb_glow_decay", 15.0f, 0.0f);
+static float* glowIntensity = eg::TweakVarFloat("gb_glow_intensity", 0.1f, 0.0f);
+
+static constexpr float REF_DISTANCE = 0.001f;
 
 bool GravityBarrierMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
@@ -157,6 +162,10 @@ bool GravityBarrierMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* draw
 		glm::vec4 tangent;
 		glm::vec4 bitangent;
 		uint32_t blockedAxis;
+		float noiseSampleOffset;
+		float lineWidth;
+		float lineGlowDecay;
+		float lineGlowIntensity;
 	};
 	
 	PushConstants pc;
@@ -165,6 +174,10 @@ bool GravityBarrierMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* draw
 	pc.tangent = glm::vec4(glm::normalize(tangent), glm::length(tangent));
 	pc.bitangent = glm::vec4(glm::normalize(bitangent), glm::length(bitangent));
 	pc.blockedAxis = blockedAxis;
+	pc.noiseSampleOffset = noiseSampleOffset;
+	pc.lineWidth = *lineWidth;
+	pc.lineGlowDecay = -*intensityDecay;
+	pc.lineGlowIntensity = *glowIntensity;
 	eg::DC.PushConstants(0, drawMode == MeshDrawMode::Editor ? offsetof(PushConstants, blockedAxis) : sizeof(PushConstants), &pc);
 	
 	if (drawMode != MeshDrawMode::Editor)

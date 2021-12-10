@@ -6,13 +6,10 @@
 const vec3 COLOR = vec3(0.1, 0.7, 0.9);
 const vec3 COLOR_RED = vec3(1.0, 0.2, 0.3) * 2;
 
-const int OFF_SAMPLES = 4;
-const int DUP_LINES = 6;
-const float OFFSET_SCALE = 0.8;
-const float OFFSET_SCALE_RED = 1.5;
+const float OFFSET_SCALE = 0.25;
+const float OFFSET_SCALE_RED = 0.4;
 const float LINE_SPACING = 0.5;
 const float LINE_WIDTH = 0.003;
-const float MAX_INTENSITY = 0.9;
 const float EDGE_FADE_DIST = 0.2;
 const float TIME_AXIS_SCALE = 0.25;
 
@@ -23,18 +20,11 @@ layout(push_constant) uniform PC
 	vec4 tangent;
 	vec4 bitangent;
 	uint blockedAxis;
+	float noiseSampleOffset;
+	float lineWidth;
+	float glowDecay;
+	float glowIntensity;
 } pc;
-
-float lineIntensity(float lx, float tx)
-{
-	float dist = tx - lx * LINE_SPACING;
-	if (abs(dist) < 0.01 && length(vec2(dFdx(dist), dFdy(dist))) > abs(dist * 2.0))
-		dist = 0;
-	float ldist = (max(abs(dist), LINE_WIDTH) - LINE_WIDTH * MAX_INTENSITY);
-	return 1.0 / ldist;
-}
-
-layout(binding=1) uniform sampler2D noiseTex;
 
 float calcEdgeDist(vec2 scaledTC)
 {
@@ -50,7 +40,7 @@ layout(binding=2, std140) uniform BarrierSettingsUB
 	vec4 iaPosition[NUM_INTERACTABLES];
 	float barrierAnimTime;
 };
-float getInteractablesNegScale(vec3 worldPos, inout vec2 scaledTC, float waterDist)
+float getInteractablesNegScale(vec3 worldPos, inout vec2 scaledTC, float edgeDist, float waterDist)
 {
 	float negScale = 1.0 - smoothstep(0.5, 0.8, waterDist);
 	float stretch = 0;
@@ -71,7 +61,6 @@ float getInteractablesNegScale(vec3 worldPos, inout vec2 scaledTC, float waterDi
 		}
 	}
 	
-	float edgeDist = calcEdgeDist(scaledTC);
 	scaledTC.x -= 0.3 * stretch * edgeDist;
 	return clamp(negScale, 0.0, 1.0);
 }
@@ -79,29 +68,25 @@ float getInteractablesNegScale(vec3 worldPos, inout vec2 scaledTC, float waterDi
 const float barrierAnimTime = 0;
 #endif
 
-vec4 calculateColor(vec2 scaledTC, float negScale, float baseIntensity)
+layout(binding=1) uniform sampler2D noiseTex;
+
+vec4 calculateColor(vec2 scaledTC, float edgeDist, float negScale, float baseIntensity)
 {
 	float intensity = baseIntensity;
 	
-	float edgeDist = calcEdgeDist(scaledTC);
 	float centerLn = floor(scaledTC.x / LINE_SPACING);
-	float offScale = edgeDist * mix(OFFSET_SCALE, OFFSET_SCALE_RED, negScale) / DUP_LINES;
+	float offScale = edgeDist * mix(OFFSET_SCALE, OFFSET_SCALE_RED, negScale);
 	
-	for (int d = 0; d < DUP_LINES; d++)
-	{
-		float off = -0.5 * OFF_SAMPLES;
-		for (int j = 0; j < OFF_SAMPLES; j++)
-		{
-			float sx = ((centerLn * DUP_LINES + d) * OFF_SAMPLES + j) * 0.01;
-			float sy = scaledTC.y * TIME_AXIS_SCALE + barrierAnimTime * (j / float(OFF_SAMPLES - 1));
-			off += texture(noiseTex, vec2(sx, sy)).r;
-		}
-		intensity += lineIntensity(centerLn + 0.5 + off * offScale, scaledTC.x);
-	}
+	vec2 noiseSamplePos = vec2(centerLn * 1.3 + pc.noiseSampleOffset, TIME_AXIS_SCALE + barrierAnimTime) + scaledTC.y * vec2(0.08, 0.05);
+	vec4 noiseSample = textureLod(noiseTex, noiseSamplePos, 0);
 	
-	intensity += lineIntensity(centerLn - 0.5, scaledTC.x) * DUP_LINES;
-	intensity += lineIntensity(centerLn + 1.5, scaledTC.x) * DUP_LINES;
-	intensity *= pc.opacity;
+	vec4 linePos4 = centerLn + 0.5 + (noiseSample - vec4(0.5)) * offScale;
+	vec4 dist = abs(vec4(scaledTC.x) - linePos4 * LINE_SPACING);
+	vec4 intensity4 =
+		pc.glowIntensity * exp(dist * pc.glowDecay) +
+		clamp(1 + 100 * (vec4(pc.lineWidth) - dist), vec4(0.0), vec4(1.0));
+	
+	intensity += dot(intensity4, vec4(1.0)) * pc.opacity;
 	
 	return vec4(mix(COLOR, COLOR_RED, negScale) * intensity, min(intensity, 1.0));
 }

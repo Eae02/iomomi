@@ -111,7 +111,7 @@ void SSR::Render(const SSRRenderArgs& renderArgs)
 	
 	timer.StartStage("Additional");
 	
-	if (renderArgs.renderAdditionalCallback)
+	if (renderArgs.renderAdditionalCallback && settings.reflectionsQuality >= QualityLevel::High)
 	{
 		renderArgs.renderAdditionalCallback();
 	}

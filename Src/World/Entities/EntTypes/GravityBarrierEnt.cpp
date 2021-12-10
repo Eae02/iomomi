@@ -9,6 +9,7 @@
 #include "../../../../Protobuf/Build/GravityBarrierEntity.pb.h"
 
 #include <imgui.h>
+#include <pcg_random.hpp>
 
 static eg::Buffer vertexBuffer;
 static eg::MeshBatch::Mesh barrierMesh;
@@ -45,6 +46,8 @@ static void OnShutdown()
 EG_ON_INIT(OnInit)
 EG_ON_SHUTDOWN(OnShutdown)
 
+extern pcg32_fast globalRNG;
+
 GravityBarrierEnt::GravityBarrierEnt()
 	: m_activatable(&GravityBarrierEnt::GetConnectionPoints)
 {
@@ -53,6 +56,7 @@ GravityBarrierEnt::GravityBarrierEnt()
 	m_physicsObject.owner = this;
 	m_physicsObject.shouldCollide = &GravityBarrierEnt::ShouldCollide;
 	m_physicsObject.debugColor = 0xcf24cf;
+	m_material.noiseSampleOffset = std::uniform_real_distribution<float>(0.0f, 1.0f)(globalRNG);
 }
 
 bool GravityBarrierEnt::ShouldCollide(const PhysicsObject& self, const PhysicsObject& other)
@@ -284,7 +288,7 @@ void GravityBarrierEnt::Update(const WorldUpdateArgs& args)
 
 static uint64_t lastFrameUpdatedNearEntities = UINT64_MAX;
 
-static float* animationSpeed = eg::TweakVarFloat("gb_anim_speed", 0.2f, 0.0f);
+static float* animationSpeed = eg::TweakVarFloat("gb_anim_speed", 0.05f, 0.0f);
 
 void GravityBarrierEnt::UpdateNearEntities(const Player* player, EntityManager& entityManager)
 {

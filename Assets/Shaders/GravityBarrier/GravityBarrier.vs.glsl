@@ -12,6 +12,10 @@ layout(push_constant) uniform PC
 	vec4 tangent;
 	vec4 bitangent;
 	uint blockedAxis;
+	float noiseSampleOffset;
+	float lineWidth;
+	float glowDecay;
+	float glowIntensity;
 } pc;
 
 #define RENDER_SETTINGS_BINDING 0

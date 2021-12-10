@@ -28,6 +28,7 @@ public:
 	glm::vec3 bitangent;
 	float opacity = 0;
 	int blockedAxis = 0;
+	float noiseSampleOffset = 0;
 	
 	eg::TextureRef waterDistanceTexture;
 	

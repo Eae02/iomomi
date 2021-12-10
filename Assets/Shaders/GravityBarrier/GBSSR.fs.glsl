@@ -54,8 +54,9 @@ void main()
 	vec2 scaledTC = scaledTCCentered + barrierRad;
 	
 	float waterDist = texture(waterDistanceTex, scaledTC / barrierSize).r;
-	float negScale = getInteractablesNegScale(intersectPos, scaledTC, waterDist);
-	vec4 barrierColor = calculateColor(scaledTC, negScale, 0);
+	float edgeDist = calcEdgeDist(scaledTC);
+	float negScale = getInteractablesNegScale(intersectPos, scaledTC, edgeDist, waterDist);
+	vec4 barrierColor = calculateColor(scaledTC, edgeDist, negScale, 0);
 	if (barrierColor.a < 0.95)
 		discard;
 	

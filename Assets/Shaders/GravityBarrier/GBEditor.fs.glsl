@@ -6,10 +6,10 @@ layout(location=0) in vec2 texCoord_in;
 
 layout(location=0) out vec4 color_out;
 
-const float BASE_INTENSITY = 5;
+const float BASE_INTENSITY = 0.2;
 
 void main()
 {
 	vec2 scaledTC = texCoord_in * vec2(pc.tangent.w, pc.bitangent.w);
-	color_out = calculateColor(scaledTC, 0, BASE_INTENSITY);
+	color_out = calculateColor(scaledTC, calcEdgeDist(scaledTC), 0, BASE_INTENSITY);
 }

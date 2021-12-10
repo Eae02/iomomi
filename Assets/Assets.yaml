@@ -121,7 +121,8 @@ assets:
     format: r8
   - name: Textures/LineNoise.png
     srgb: false
-    format: bc4
+    mipLevels: 1
+    format: rgba8
     
   - name: Textures/GravitySwitchVolEmi.png
     srgb: false

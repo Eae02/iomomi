@@ -28,7 +28,8 @@ void main()
 		discard;
 	
 	vec2 scaledTC = texCoord_in * vec2(pc.tangent.w, pc.bitangent.w);
-	float negScale = getInteractablesNegScale(worldPos_in, scaledTC, texture(waterDistanceTex, texCoord_in).r);
+	float edgeDist = calcEdgeDist(scaledTC);
+	float negScale = getInteractablesNegScale(worldPos_in, scaledTC, edgeDist, texture(waterDistanceTex, texCoord_in).r);
 	
-	color_out = calculateColor(scaledTC, negScale, 0);
+	color_out = calculateColor(scaledTC, edgeDist, negScale, 0);
 }

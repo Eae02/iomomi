@@ -1,7 +1,6 @@
 #include "OptionsMenu.hpp"
 #include "Widgets/WidgetList.hpp"
 #include "Scroll.hpp"
-#include "../Settings.hpp"
 
 static constexpr float WIDGET_LIST_WIDTH = 420;
 static constexpr float WIDGET_LIST_SPACING = 50;
