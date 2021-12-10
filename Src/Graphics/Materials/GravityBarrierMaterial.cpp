@@ -149,8 +149,6 @@ static float* lineWidth = eg::TweakVarFloat("gb_line_width", 0.001f, 0.0f);
 static float* intensityDecay = eg::TweakVarFloat("gb_glow_decay", 15.0f, 0.0f);
 static float* glowIntensity = eg::TweakVarFloat("gb_glow_intensity", 0.1f, 0.0f);
 
-static constexpr float REF_DISTANCE = 0.001f;
-
 bool GravityBarrierMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
 	MeshDrawMode drawMode = reinterpret_cast<MeshDrawArgs*>(drawArgs)->drawMode;

@@ -47,11 +47,9 @@ public:
 	
 	static void InitializeForCommon3DVS(eg::GraphicsPipelineCreateInfo& pipelineCI);
 	
-	static void InitAssetTypes();
-	
-	static bool AssetLoader(const eg::AssetLoadContext& loadContext);
-	
 private:
+	friend bool StaticPropMaterialAssetLoader(const eg::AssetLoadContext& loadContext);
+	
 	eg::PipelineRef GetPipeline(MeshDrawMode drawMode) const;
 	
 	const eg::Texture* m_albedoTexture;

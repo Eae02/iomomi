@@ -4,7 +4,6 @@
 #include "../../../Graphics/Materials/EmissiveMaterial.hpp"
 #include "../../../Graphics/Lighting/PointLightShadowMapper.hpp"
 #include "../../../Graphics/Water/WaterSimulator.hpp"
-#include "../../../YAMLUtils.hpp"
 #include "../../../Settings.hpp"
 #include "../../../../Protobuf/Build/EntranceEntity.pb.h"
 

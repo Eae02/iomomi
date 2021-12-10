@@ -33,21 +33,17 @@ public:
 		return m_albedoTexture;
 	}
 	
-	static void InitAssetTypes();
-	
-	static bool AssetLoader(const eg::AssetLoadContext& loadContext);
-	
 	static eg::MeshBatch::Mesh GetMesh();
+	
+	float m_opacity = 1;
+	float m_roughness = 1;
+	bool m_inheritNormals = false;
 	
 private:
 	eg::TextureRef m_albedoTexture;
 	eg::TextureRef m_normalMapTexture;
 	
 	float m_aspectRatio;
-	
-	float m_opacity;
-	float m_roughness;
-	bool m_inheritNormals;
 	
 	mutable eg::DescriptorSet m_descriptorSet;
 	mutable bool m_descriptorSetInitialized = false;

@@ -2,8 +2,6 @@
 #include "Levels.hpp"
 #include "Settings.hpp"
 #include "FileUtils.hpp"
-#include "Graphics/Materials/StaticPropMaterial.hpp"
-#include "Graphics/Materials/DecalMaterial.hpp"
 #include "Graphics/GraphicsCommon.hpp"
 
 #include <EGame/Audio/AudioPlayer.hpp>
@@ -24,6 +22,9 @@ static_assert(sizeof(float) == 4);
 const char* version = __DATE__;
 
 bool audioInitializationFailed = false;
+
+void InitializeStaticPropMaterialAsset();
+void InitializeDecalMaterialAsset();
 
 void Run(int argc, char** argv)
 {
@@ -76,8 +77,8 @@ void Run(int argc, char** argv)
 		
 		eg::SpriteFont::LoadDevFont();
 		eg::console::Init();
-		StaticPropMaterial::InitAssetTypes();
-		DecalMaterial::InitAssetTypes();
+		InitializeStaticPropMaterialAsset();
+		InitializeDecalMaterialAsset();
 		if (!eg::LoadAssets("Assets", "/"))
 		{
 			EG_PANIC("Failed to load assets, make sure assets.eap exists.");

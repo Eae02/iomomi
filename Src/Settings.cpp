@@ -2,7 +2,7 @@
 #include "AudioPlayers.hpp"
 #include "FileUtils.hpp"
 
-#include <yaml-cpp/yaml.h>
+#include <charconv>
 #include <fstream>
 #include <magic_enum.hpp>
 
@@ -12,78 +12,107 @@ Settings settings;
 
 struct SettingEntry
 {
-	std::function<void(Settings& settings, const YAML::Node& settingsNode)> load;
-	std::function<void(const Settings& settings, YAML::Emitter& emitter)> save;
+	std::string name;
+	std::function<void(Settings& settings, std::string_view value)> load;
+	std::function<std::string(const Settings& settings)> save;
 };
 
 template <typename T>
 SettingEntry MakeEnumSetting(std::string name, T Settings::*setting)
 {
 	SettingEntry s;
-	s.load = [=] (Settings& st, const YAML::Node& settingsNode)
+	s.load = [=] (Settings& st, std::string_view value)
 	{
-		if (std::optional<T> value = magic_enum::enum_cast<T>(settingsNode[name].as<std::string>("")))
+		if (std::optional<T> parsedValue = magic_enum::enum_cast<T>(value))
 		{
-			st.*setting = *value;
+			st.*setting = *parsedValue;
 		}
 	};
-	s.save = [=] (const Settings& st, YAML::Emitter& emitter)
+	s.save = [=] (const Settings& st)
 	{
-		emitter << YAML::Key << name << YAML::Value << std::string(magic_enum::enum_name(st.*setting));
+		return std::string(magic_enum::enum_name(st.*setting));
 	};
+	s.name = std::move(name);
 	return s;
 }
 
-template <typename T>
-SettingEntry MakeNumberSetting(std::string name, T Settings::*setting)
+SettingEntry MakeNumberSetting(std::string name, float Settings::*setting)
 {
 	SettingEntry s;
-	s.load = [=] (Settings& st, const YAML::Node& settingsNode)
+	s.load = [=] (Settings& st, std::string_view str)
 	{
-		st.*setting = settingsNode[name].as<T>(st.*setting);
+		std::from_chars(str.data(), str.data() + str.size(), st.*setting);
 	};
-	s.save = [=] (const Settings& st, YAML::Emitter& emitter)
+	s.save = [=] (const Settings& st)
 	{
-		emitter << YAML::Key << name << YAML::Value << st.*setting;
+		return std::to_string(st.*setting);
 	};
+	s.name = std::move(name);
+	return s;
+}
+
+SettingEntry MakeStringSetting(std::string name, std::string Settings::*setting)
+{
+	SettingEntry s;
+	s.load = [=] (Settings& st, std::string_view str) { st.*setting = std::string(str); };
+	s.save = [=] (const Settings& st) -> std::string { return st.*setting; };
+	s.name = std::move(name);
+	return s;
+}
+
+SettingEntry MakeBoolSetting(std::string name, bool Settings::*setting)
+{
+	SettingEntry s;
+	s.load = [=] (Settings& st, std::string_view str)
+	{
+		if (str == "true")
+			st.*setting = true;
+		else if (str == "false")
+			st.*setting = false;
+	};
+	s.save = [=] (const Settings& st)
+	{
+		return st.*setting ? "true" : "false";
+	};
+	s.name = std::move(name);
 	return s;
 }
 
 SettingEntry MakeDisplayModeSetting(std::string name, uint32_t eg::FullscreenDisplayMode::*setting)
 {
 	SettingEntry s;
-	s.load = [=] (Settings& st, const YAML::Node& settingsNode)
+	s.load = [=] (Settings& st, std::string_view str)
 	{
-		st.fullscreenDisplayMode.*setting = settingsNode[name].as<uint32_t>(st.fullscreenDisplayMode.*setting);
+		std::from_chars(str.data(), str.data() + str.size(), st.fullscreenDisplayMode.*setting);
 	};
-	s.save = [=] (const Settings& st, YAML::Emitter& emitter)
+	s.save = [=] (const Settings& st)
 	{
-		emitter << YAML::Key << name << YAML::Value << st.fullscreenDisplayMode.*setting;
+		return std::to_string(st.fullscreenDisplayMode.*setting);
 	};
+	s.name = std::move(name);
 	return s;
 }
 
 SettingEntry MakeKeySetting(std::string name, KeyBinding Settings::*setting)
 {
 	SettingEntry s;
-	s.load = [=] (Settings& st, const YAML::Node& settingsNode)
+	s.load = [=] (Settings& st, std::string_view value)
 	{
-		std::string value = settingsNode[name].as<std::string>("");
 		size_t spacePos = value.find(' ');
 		if (spacePos != std::string::npos)
 		{
-			(st.*setting).kbmButton = eg::ButtonFromString(std::string_view(value.data(), spacePos));
-			(st.*setting).controllerButton = eg::ButtonFromString(std::string_view(value.data() + spacePos + 1));
+			(st.*setting).kbmButton = eg::ButtonFromString(value.substr(0, spacePos));
+			(st.*setting).controllerButton = eg::ButtonFromString(value.substr(spacePos + 1));
 		}
 	};
-	s.save = [=] (const Settings& st, YAML::Emitter& emitter)
+	s.save = [=] (const Settings& st)
 	{
-		std::string value = eg::Concat({
+		return eg::Concat({
 			eg::ButtonToString((st.*setting).kbmButton), " ",
 			eg::ButtonToString((st.*setting).controllerButton)
 		});
-		emitter << YAML::Key << name << YAML::Value << value;
 	};
+	s.name = std::move(name);
 	return s;
 }
 
@@ -97,23 +126,23 @@ const SettingEntry settingEntries[] =
 	MakeEnumSetting("ssaoQuality", &Settings::ssaoQuality),
 	MakeEnumSetting("bloomQuality", &Settings::bloomQuality),
 	
-	MakeNumberSetting("showExtraLevels", &Settings::showExtraLevels),
+	MakeBoolSetting("showExtraLevels", &Settings::showExtraLevels),
 	MakeNumberSetting("fieldOfView", &Settings::fieldOfViewDeg),
 	MakeNumberSetting("exposure", &Settings::exposure),
 	MakeNumberSetting("lookSensitivityMS", &Settings::lookSensitivityMS),
 	MakeNumberSetting("lookSensitivityGP", &Settings::lookSensitivityGP),
-	MakeNumberSetting("lookInvertY", &Settings::lookInvertY),
-	MakeNumberSetting("flipJoysticks", &Settings::flipJoysticks),
-	MakeNumberSetting("fxaa", &Settings::enableFXAA),
-	MakeNumberSetting("gunFlash", &Settings::gunFlash),
-	MakeNumberSetting("crosshair", &Settings::drawCrosshair),
+	MakeBoolSetting("lookInvertY", &Settings::lookInvertY),
+	MakeBoolSetting("flipJoysticks", &Settings::flipJoysticks),
+	MakeBoolSetting("fxaa", &Settings::enableFXAA),
+	MakeBoolSetting("gunFlash", &Settings::gunFlash),
+	MakeBoolSetting("crosshair", &Settings::drawCrosshair),
 	MakeEnumSetting("viewBobbing", &Settings::viewBobbingLevel),
 	
 	MakeDisplayModeSetting("resx", &eg::FullscreenDisplayMode::resolutionX),
 	MakeDisplayModeSetting("resy", &eg::FullscreenDisplayMode::resolutionY),
 	MakeDisplayModeSetting("refreshRate", &eg::FullscreenDisplayMode::refreshRate),
-	MakeNumberSetting("vsync", &Settings::vsync),
-	MakeNumberSetting("prefGPUName", &Settings::preferredGPUName),
+	MakeBoolSetting("vsync", &Settings::vsync),
+	MakeStringSetting("prefGPUName", &Settings::preferredGPUName),
 	MakeEnumSetting("displayMode", &Settings::displayMode),
 	MakeEnumSetting("graphicsAPI", &Settings::graphicsAPI),
 	
@@ -134,7 +163,7 @@ const SettingEntry settingEntries[] =
 void LoadSettings()
 {
 #ifdef __EMSCRIPTEN__
-	settings.textureQuality = eg::TextureQuality::Low;
+	settings.textureQuality = eg::TextureQuality::Medium;
 	settings.shadowQuality = QualityLevel::Low;
 	settings.reflectionsQuality = QualityLevel::VeryLow;
 	settings.lightingQuality = QualityLevel::Medium;
@@ -148,32 +177,36 @@ void LoadSettings()
 	if (!settingsStream)
 		return;
 	
-	YAML::Node settingsNode = YAML::Load(settingsStream);
-	
-	for (const SettingEntry& entry : settingEntries)
+	std::string line;
+	while (std::getline(settingsStream, line))
 	{
-		entry.load(settings, settingsNode);
+		size_t colPos = line.find(':');
+		if (colPos == std::string::npos) continue;
+		
+		std::string_view name(line.data(), colPos);
+		
+		for (const SettingEntry& entry : settingEntries)
+		{
+			if (entry.name == name)
+			{
+				entry.load(settings, eg::TrimString(line.substr(colPos + 1)));
+				break;
+			}
+		}
 	}
 }
 
 void SaveSettings()
 {
-	YAML::Emitter emitter;
-	
-	emitter << YAML::BeginMap;
+	std::ofstream settingsStream(settingsPath);
+	if (!settingsStream)
+		return;
 	
 	for (const SettingEntry& entry : settingEntries)
 	{
-		entry.save(settings, emitter);
+		settingsStream << entry.name << ": " << entry.save(settings) << "\n";
 	}
 	
-	emitter << YAML::EndMap;
-	
-	std::ofstream settingsStream(settingsPath);
-	if (settingsStream)
-	{
-		settingsStream << emitter.c_str();
-	}
 	settingsStream.close();
 	
 	SyncFileSystem();
