@@ -462,13 +462,10 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 			glm::vec3 activatePos = cornerRotation * glm::vec3(0.3f, 0.3f, cornerL.z) + corner->position;
 			GravityCornerLightMaterial::instance.Activate(activatePos);
 			
-			//For some reason this specific sound effect is broken in emscripten. TODO: Fix
-#ifndef __EMSCRIPTEN__
 			eg::AudioLocationParameters locationParams = {};
 			locationParams.position = corner->position;
 			locationParams.direction = -glm::normalize(glm::vec3(DirectionVector(corner->down1) + DirectionVector(corner->down2)));
 			AudioPlayers::gameSFXPlayer.Play(*gravityCornerSound, *gravityCornerVolume, 1, &locationParams);
-#endif
 		}
 	}
 	
