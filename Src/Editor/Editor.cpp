@@ -101,7 +101,7 @@ void Editor::RunFrame(float dt)
 			m_worlds[i]->SetWindowRect(windowRect);
 			
 			const bool flipY = eg::CurrentGraphicsAPI() == eg::GraphicsAPI::OpenGL;
-			drawList->AddImage(MakeImTextureID(m_worlds[i]->renderTexture),
+			drawList->AddImage(MakeImTextureID(m_worlds[i]->renderTexture.GetView()),
 			                   imguiCursorPos, windowRect.Max(),
 			                   ImVec2(0, flipY ? 1 : 0), ImVec2(1, flipY ? 0 : 1));
 		}
@@ -154,7 +154,8 @@ void Editor::RunFrame(float dt)
 				if (level.thumbnail.handle != nullptr && ImGui::IsItemHovered())
 				{
 					ImGui::BeginTooltip();
-					ImGui::Image(MakeImTextureID(level.thumbnail), ImVec2(LEVEL_THUMBNAIL_RES_X / 2.0f, LEVEL_THUMBNAIL_RES_Y / 2.0f));
+					ImGui::Image(MakeImTextureID(level.thumbnail.GetView()),
+								 ImVec2(LEVEL_THUMBNAIL_RES_X / 2.0f, LEVEL_THUMBNAIL_RES_Y / 2.0f));
 					ImGui::EndTooltip();
 				}
 				

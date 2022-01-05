@@ -35,5 +35,5 @@ public:
 	bool highPriority = false;
 	glm::vec3 position;
 	
-	eg::TextureRef shadowMap;
+	eg::TextureViewHandle shadowMap = nullptr;
 };

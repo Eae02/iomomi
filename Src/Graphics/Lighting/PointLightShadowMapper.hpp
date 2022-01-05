@@ -32,6 +32,8 @@ private:
 	{
 		eg::Texture texture;
 		eg::Framebuffer framebuffers[6];
+		eg::TextureViewHandle wholeTextureView;
+		eg::TextureViewHandle layerViews[6];
 		bool inUse;
 	};
 	

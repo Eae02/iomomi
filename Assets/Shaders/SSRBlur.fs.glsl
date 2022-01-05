@@ -14,8 +14,8 @@ layout(binding=1) uniform sampler2D litNoSSRColorSampler;
 layout(push_constant) uniform PC
 {
 	vec2 blurDir;
-	float blurScale;
 	float maxBlurDist;
+	vec4 blurCoeff[4];
 };
 
 layout(constant_id=0) const int FILTER_RADIUS = 16;
@@ -26,20 +26,14 @@ void main()
 	vec2 scaledBlurDir = blurDir * centerSample.a;
 	scaledBlurDir = min(abs(scaledBlurDir), vec2(maxBlurDist) / vec2(textureSize(inputSSRSampler, 0).xy));
 	
-	vec3 blurSum = centerSample.rgb;
-	float wSum = 1;
-	for (int x = 1; x <= FILTER_RADIUS; x++)
+	vec3 blurSum = centerSample.rgb * blurCoeff[0][0];
+	for (int x = 1; x < FILTER_RADIUS; x++)
 	{
-		float r = (x * blurScale) / float(FILTER_RADIUS);
-		float w = exp(-r * r);
-		wSum += 2 * w;
-		
+		float w = blurCoeff[x/4][x%4];
 		vec3 s1 = texture(inputSSRSampler, texCoord_in + float(x) * scaledBlurDir).rgb;
 		vec3 s2 = texture(inputSSRSampler, texCoord_in - float(x) * scaledBlurDir).rgb;
 		blurSum += (s1 + s2) * w;
 	}
-	
-	blurSum /= wSum;
 	
 #ifdef VPass2
 	color_out = texture(litNoSSRColorSampler, texCoord_in) + vec4(blurSum, 0);

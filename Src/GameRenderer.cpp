@@ -12,7 +12,7 @@
 GameRenderer* GameRenderer::instance;
 
 GameRenderer::GameRenderer(RenderContext& renderCtx)
-	: m_renderCtx(&renderCtx), m_glassBlurRenderer(4, eg::Format::R16G16B16A16_Float)
+	: m_renderCtx(&renderCtx), m_glassBlurRenderer(3, eg::Format::R16G16B16A16_Float)
 {
 	m_projection.SetZNear(0.02f);
 	m_projection.SetZFar(200.0f);

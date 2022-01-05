@@ -30,7 +30,12 @@ private:
 	ResizableBuffer m_indexBuffer;
 };
 
-ImTextureID MakeImTextureID(eg::TextureRef texture, int layer = -1);
+inline ImTextureID MakeImTextureID(eg::TextureViewHandle viewHandle)
+{
+	static_assert(sizeof(ImTextureID) == sizeof(eg::TextureViewHandle));
+	return reinterpret_cast<ImTextureID>(viewHandle);
+}
+
 void ImPushDisabled(bool disabled);
 void ImPopDisabled(bool disabled);
 

@@ -117,7 +117,7 @@ ImGuiInterface::ImGuiInterface()
 	
 	m_fontTexture = eg::Texture::Create2D(fontTexCreateInfo);
 	eg::DC.SetTextureData(m_fontTexture, { 0, 0, 0, (uint32_t)fontTexWidth, (uint32_t)fontTexHeight, 1, 0 }, fontUploadBuffer, 0);
-	io.Fonts->TexID = reinterpret_cast<ImTextureID>(0);
+	io.Fonts->TexID = MakeImTextureID(m_fontTexture.GetView());
 	
 	m_fontTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 	
@@ -125,13 +125,8 @@ ImGuiInterface::ImGuiInterface()
 	m_indexBuffer.flags = eg::BufferFlags::IndexBuffer | eg::BufferFlags::CopyDst;
 }
 
-static std::vector<std::pair<eg::TextureRef, int>> imguiTextures;
-
 void ImGuiInterface::NewFrame()
 {
-	imguiTextures.clear();
-	imguiTextures.emplace_back(m_fontTexture, -1);
-	
 	ImGuiIO& io = ImGui::GetIO();
 	
 	using namespace std::chrono;
@@ -261,18 +256,7 @@ void ImGuiInterface::EndFrame()
 		
 		for (const ImDrawCmd& drawCommand : commandList->CmdBuffer)
 		{
-			auto [texture, layer] = imguiTextures[reinterpret_cast<intptr_t>(drawCommand.TextureId)];
-			if (layer != -1)
-			{
-				eg::TextureSubresource subresource;
-				subresource.firstArrayLayer = layer;
-				subresource.numArrayLayers = 1;
-				eg::DC.BindTexture(texture, 0, 0, nullptr, subresource, eg::TextureBindFlags::ArrayLayerAsTexture2D);
-			}
-			else
-			{
-				eg::DC.BindTexture(texture, 0, 0);
-			}
+			eg::DC.BindTextureView(reinterpret_cast<eg::TextureViewHandle>(drawCommand.TextureId), 0, 0);
 			
 			if (drawCommand.UserCallback != nullptr)
 			{
@@ -296,12 +280,6 @@ void ImGuiInterface::EndFrame()
 	}
 	
 	eg::DC.EndRenderPass();
-}
-
-ImTextureID MakeImTextureID(eg::TextureRef texture, int layer)
-{
-	imguiTextures.emplace_back(texture, layer);
-	return reinterpret_cast<ImTextureID>(static_cast<intptr_t>(imguiTextures.size() - 1));
 }
 
 void ImPushDisabled(bool disabled)

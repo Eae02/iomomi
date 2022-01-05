@@ -4,8 +4,6 @@
 
 #include <magic_enum.hpp>
 
-static_assert(magic_enum::enum_count<RenderTex>() == NUM_RENDER_TEXTURES);
-
 static inline eg::TextureFlags GetFlagsForRenderTexture(RenderTex texture)
 {
 	switch (texture)
@@ -15,6 +13,19 @@ static inline eg::TextureFlags GetFlagsForRenderTexture(RenderTex texture)
 	case RenderTex::LitWithoutBlurredGlass:
 		return eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample | eg::TextureFlags::CopyDst;
 	default: return eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample;
+	}
+}
+
+static inline bool RenderTextureHalfResolution(RenderTex texture)
+{
+	switch (texture)
+	{
+	case RenderTex::SSAOUnblurred:
+	case RenderTex::SSAOTempBlur:
+	case RenderTex::SSAO:
+		return true;
+	default:
+		return false;
 	}
 }
 
@@ -60,6 +71,10 @@ eg::Format GetFormatForRenderTexture(RenderTex texture)
 	}
 }
 
+RenderTexManager::RenderTexManager()
+	: renderTextures(magic_enum::enum_count<RenderTex>()),
+	  renderTexturesRedirect(magic_enum::enum_count<RenderTex>()) { }
+
 //Initializes the framebuffer of a framebuffer entry given that all other attributes are set
 void RenderTexManager::InitFramebufferEntry(RenderTexManager::FramebufferEntry& entry)
 {
@@ -88,7 +103,7 @@ void RenderTexManager::InitFramebufferEntry(RenderTexManager::FramebufferEntry& 
 
 void RenderTexManager::BeginFrame(uint32_t resX, uint32_t resY)
 {
-	for (size_t i = 0; i < NUM_RENDER_TEXTURES; i++)
+	for (size_t i = 0; i < magic_enum::enum_count<RenderTex>(); i++)
 	{
 		renderTexturesRedirect[i] = (RenderTex)i;
 	}
@@ -115,14 +130,16 @@ void RenderTexManager::BeginFrame(uint32_t resX, uint32_t resY)
 		samplerDesc.minFilter = eg::TextureFilter::Nearest;
 		samplerDesc.magFilter = eg::TextureFilter::Nearest;
 		
-		for (size_t i = 0; i < NUM_RENDER_TEXTURES; i++)
+		for (size_t i = 0; i < magic_enum::enum_count<RenderTex>(); i++)
 		{
 			std::string label = eg::Concat({"RenderTex::", magic_enum::enum_name((RenderTex)i)});
 			
+			uint32_t resolutionShift = RenderTextureHalfResolution((RenderTex)i);
+			
 			eg::TextureCreateInfo textureCI;
 			textureCI.format = GetFormatForRenderTexture((RenderTex)i);
-			textureCI.width = resX;
-			textureCI.height = resY;
+			textureCI.width = resX >> resolutionShift;
+			textureCI.height = resY >> resolutionShift;
 			textureCI.mipLevels = 1;
 			textureCI.flags = GetFlagsForRenderTexture((RenderTex)i);
 			textureCI.defaultSamplerDescription = &samplerDesc;

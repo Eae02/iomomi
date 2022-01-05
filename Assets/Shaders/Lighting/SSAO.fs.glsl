@@ -13,7 +13,7 @@ layout(push_constant) uniform PC
 	float sampleRadius;
 	float depthFadeBegin;
 	float depthFadeRate;
-	float power;
+	float ssaoMax;
 };
 
 const int MAX_SAMPLES = 24;
@@ -30,13 +30,13 @@ layout(set=0, binding=4) uniform sampler2D rotationsTex;
 
 layout(location=0) out float ssao_out;
 
+layout(location=0) in vec2 screenCoord_in;
+
 void main()
 {
-	vec2 screenCoord01 = vec2(gl_FragCoord.xy) / vec2(textureSize(gbColor2Sampler, 0).xy);
-	
-	float centerHDepth = texelFetch(gbDepthSampler, ivec2(gl_FragCoord.xy), 0).r;
-	vec3 worldPos = WorldPosFromDepth(centerHDepth, screenCoord01, renderSettings.invViewProjection);
-	vec3 normal = SMDecode(texelFetch(gbColor2Sampler, ivec2(gl_FragCoord.xy), 0).xy);
+	float centerHDepth = texture(gbDepthSampler, screenCoord_in).r;
+	vec3 worldPos = WorldPosFromDepth(centerHDepth, screenCoord_in, renderSettings.invViewProjection);
+	vec3 normal = SMDecode(texture(gbColor2Sampler, screenCoord_in).xy);
 	
 	vec2 rSinCos = texture(rotationsTex, vec2(gl_FragCoord.xy) * rotationsTexScale).xy;
 	vec3 tangent = vec3(1, 0, 0);
@@ -69,5 +69,7 @@ void main()
 			ssao += clamp(1 - (depthDiff - depthFadeBegin) * depthFadeRate, 0, 1);
 		}
 	}
-	ssao_out = pow(1 - ssao / float(numSamples), power);
+	ssao = 1 - ssao / float(numSamples);
+	float ssaoSquared = ssao * ssao;
+	ssao_out = min(ssaoSquared * ssaoSquared * ssaoSquared * ssaoMax, 1);
 }

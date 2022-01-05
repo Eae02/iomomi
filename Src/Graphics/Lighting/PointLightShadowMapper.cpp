@@ -85,7 +85,7 @@ void PointLightShadowMapper::SetQuality(QualityLevel quality)
 	{
 		entry.staticShadowMap = -1;
 		entry.dynamicShadowMap = -1;
-		entry.light->shadowMap = eg::TextureRef();
+		entry.light->shadowMap = nullptr;
 	}
 	m_shadowMaps.clear();
 }
@@ -111,6 +111,8 @@ int PointLightShadowMapper::AllocateShadowMap()
 	textureCI.mipLevels = 1;
 	shadowMap.texture = eg::Texture::CreateCube(textureCI);
 	
+	shadowMap.wholeTextureView = shadowMap.texture.GetView();
+	
 	for (uint32_t i = 0; i < 6; i++)
 	{
 		eg::FramebufferAttachment dsAttachment;
@@ -118,6 +120,11 @@ int PointLightShadowMapper::AllocateShadowMap()
 		dsAttachment.subresource.firstArrayLayer = i;
 		dsAttachment.subresource.numArrayLayers = 1;
 		shadowMap.framebuffers[i] = eg::Framebuffer({ }, dsAttachment);
+		
+		if (eg::GetGraphicsDeviceInfo().partialTextureViews)
+		{
+			shadowMap.layerViews[i] = shadowMap.texture.GetView(dsAttachment.subresource.AsSubresource(), eg::TextureViewType::Flat2D);
+		}
 	}
 	
 	return (int)m_shadowMaps.size() - 1;
@@ -131,7 +138,7 @@ void PointLightShadowMapper::SetLightSources(const std::vector<std::shared_ptr<P
 		m_lights[i].light = lights[i];
 		m_lights[i].staticShadowMap = -1;
 		m_lights[i].dynamicShadowMap = -1;
-		lights[i]->shadowMap = eg::TextureRef();
+		lights[i]->shadowMap = nullptr;
 	}
 	
 	for (ShadowMap& shadowMap : m_shadowMaps)
@@ -185,11 +192,7 @@ void PointLightShadowMapper::UpdateShadowMaps(const RenderCallback& prepareCallb
 		{
 			eg::DC.BindPipeline(m_depthCopyPipeline);
 			
-			eg::TextureSubresource subresource;
-			subresource.firstArrayLayer = face;
-			subresource.numArrayLayers = 1;
-			eg::DC.BindTexture(m_shadowMaps[baseShadowMap].texture, 0, 0, &framebufferNearestSampler,
-			                   subresource, eg::TextureBindFlags::ArrayLayerAsTexture2D);
+			eg::DC.BindTextureView(m_shadowMaps[baseShadowMap].layerViews[face], 0, 0, &framebufferNearestSampler);
 			
 			eg::DC.Draw(0, 3, 0, 1);
 		}
@@ -212,8 +215,8 @@ void PointLightShadowMapper::UpdateShadowMaps(const RenderCallback& prepareCallb
 		m_lastFrameUpdateCount++;
 	};
 	
-	//Updates static shadow maps, disabled in GLES because image views are not supported
-	if (!useGLESPath)
+	//Updates static shadow maps, disabled if partial texture views are not supported
+	if (eg::GetGraphicsDeviceInfo().partialTextureViews)
 	{
 		renderArgs.renderDynamic = false;
 		renderArgs.renderStatic = true;
@@ -227,7 +230,7 @@ void PointLightShadowMapper::UpdateShadowMaps(const RenderCallback& prepareCallb
 					entry.staticShadowMap = AllocateShadowMap();
 					if (entry.dynamicShadowMap == -1)
 					{
-						entry.light->shadowMap = m_shadowMaps[entry.staticShadowMap].texture;
+						entry.light->shadowMap = m_shadowMaps[entry.staticShadowMap].wholeTextureView;
 					}
 				}
 				
@@ -258,7 +261,7 @@ void PointLightShadowMapper::UpdateShadowMaps(const RenderCallback& prepareCallb
 		if (entry.dynamicShadowMap == -1)
 		{
 			entry.dynamicShadowMap = AllocateShadowMap();
-			entry.light->shadowMap = m_shadowMaps[entry.dynamicShadowMap].texture;
+			entry.light->shadowMap = m_shadowMaps[entry.dynamicShadowMap].wholeTextureView;
 			updateAll = true;
 		}
 		

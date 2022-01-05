@@ -79,12 +79,37 @@ static float* ssrBlurIntensity = eg::TweakVarFloat("ssr_blur_scale", 0.05f, 0.0f
 static float* ssrBlurFalloff = eg::TweakVarFloat("ssr_blur_fo", 5.0f, 0.0f);
 static float* ssrBlurMax = eg::TweakVarFloat("ssr_blur_max", 4.0f, 0.0f);
 
+struct SSRPushConstants
+{
+	float blurDirX;
+	float blurDirY;
+	float maxBlurDist;
+	float _padding;
+	float blurCoeff[16];
+};
+
 void SSR::Render(const SSRRenderArgs& renderArgs)
 {
 	if (settings.reflectionsQuality != m_currentReflectionQualityLevel)
 	{
 		CreatePipeline();
 		m_currentReflectionQualityLevel = settings.reflectionsQuality;
+	}
+	
+	const uint32_t blurRadius = qvar::ssrBlurRadius(settings.reflectionsQuality);
+	
+	SSRPushConstants pc = {};
+	float coeffSum = 1;
+	pc.blurCoeff[0] = 1;
+	for (uint32_t i = 1; i < blurRadius; i++)
+	{
+		float r = ((float)i * *ssrBlurFalloff) / (float)(blurRadius - 1);
+		pc.blurCoeff[i] = std::exp(-r * r);
+		coeffSum += 2 * pc.blurCoeff[i];
+	}
+	for (uint32_t i = 0; i < blurRadius; i++)
+	{
+		pc.blurCoeff[i] /= coeffSum;
 	}
 	
 	eg::MultiStageGPUTimer timer;
@@ -137,14 +162,13 @@ void SSR::Render(const SSRRenderArgs& renderArgs)
 	
 	timer.StartStage("Blur 1");
 	
-	const float relativeRadius =
-		(float)qvar::ssrBlurRadius(QualityLevel::VeryHigh) /
-		(float)qvar::ssrBlurRadius(settings.reflectionsQuality);
+	const float relativeRadius = (float)qvar::ssrBlurRadius(QualityLevel::VeryHigh) / (float)blurRadius;
 	const float blurDistance = *ssrBlurIntensity * MAX_DISTANCE / (float)qvar::ssrBlurRadius(settings.reflectionsQuality);
 	const float maxBlur = *ssrBlurMax * relativeRadius;
-	const float falloff = *ssrBlurFalloff;
-	const float pc1[4] = { blurDistance, 0.0f, falloff, maxBlur };
-	eg::DC.PushConstants(0, sizeof(pc1), pc1);
+	pc.blurDirX = blurDistance;
+	pc.blurDirY = 0;
+	pc.maxBlurDist = maxBlur;
+	eg::DC.PushConstants(0, sizeof(pc), &pc);
 	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::SSRTemp1), 0, 0, &framebufferLinearSampler);
 	eg::DC.Draw(0, 3, 0, 1);
 	eg::DC.EndRenderPass();
@@ -158,14 +182,9 @@ void SSR::Render(const SSRRenderArgs& renderArgs)
 	
 	timer.StartStage("Blur 2");
 	
-	const float pc2[4] =
-	{
-		0.0f,
-		blurDistance * (float)renderArgs.rtManager->ResY() / (float)renderArgs.rtManager->ResX(),
-		falloff,
-		maxBlur
-	};
-	eg::DC.PushConstants(0, sizeof(pc2), pc2);
+	pc.blurDirX = 0;
+	pc.blurDirY = blurDistance * (float)renderArgs.rtManager->ResY() / (float)renderArgs.rtManager->ResX();
+	eg::DC.PushConstants(0, sizeof(pc), &pc);
 	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::SSRTemp2), 0, 0, &framebufferLinearSampler);
 	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::LitWithoutSSR), 0, 1);
 	eg::DC.Draw(0, 3, 0, 1);

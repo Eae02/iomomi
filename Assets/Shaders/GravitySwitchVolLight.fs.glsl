@@ -9,7 +9,7 @@ layout(push_constant) uniform PC
 	vec3 switchPos;
 	float intensity;
 	mat3 rotationMatrix;
-};
+} pc;
 
 #define RENDER_SETTINGS_BINDING 0
 #include "Inc/RenderSettings.glh"
@@ -65,11 +65,11 @@ float lenSq(vec3 v)
 
 vec3 volLight(vec3 worldPos)
 {
-	vec3 toSwitchLocal = transpose(rotationMatrix) * (worldPos - switchPos);
+	vec3 toSwitchLocal = transpose(pc.rotationMatrix) * (worldPos - pc.switchPos);
 	
 	vec2 emiPos = toSwitchLocal.xz / (MESH_SCALE * (tMax * toSwitchLocal.y + 1.0));
 	float emiIntensity = sampleEmiMap(emiPos);
-	float atten = lenSq(toSwitchLocal * vec3(1, 3, 1));
+	float atten = max(lenSq(toSwitchLocal * vec3(1, 3, 1)), 0.01);
 	
 	return COLOR * max((emiIntensity / atten) * (1.0 - toSwitchLocal.y * inverseMaxY), 0.0);
 }
@@ -98,5 +98,5 @@ void main()
 		}
 	}
 	
-	color_out = vec4(color * intensity, 0.0);
+	color_out = vec4(color * pc.intensity, 0.0);
 }

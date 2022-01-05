@@ -67,7 +67,7 @@ void BlurRenderer::MaybeUpdateResolution(uint32_t newWidth, uint32_t newHeight)
 	}
 }
 
-void BlurRenderer::DoBlurPass(const glm::vec2& blurVector, eg::TextureRef inputTexture,
+void BlurRenderer::DoBlurPass(const glm::vec2& blurVector, const glm::vec2& sampleOffset, eg::TextureRef inputTexture,
                               int inputLod, eg::FramebufferRef dstFramebuffer) const
 {
 	eg::RenderPassBeginInfo rp1BeginInfo;
@@ -77,7 +77,7 @@ void BlurRenderer::DoBlurPass(const glm::vec2& blurVector, eg::TextureRef inputT
 	
 	eg::DC.BindPipeline(glassBlurPipeline);
 	
-	float pc[] = { blurVector.x, blurVector.y, (float)inputLod };
+	float pc[] = { blurVector.x, blurVector.y, sampleOffset.x, sampleOffset.y, (float)inputLod };
 	eg::TextureSubresource subresource;
 	if (!useGLESPath) //Cannot be done in GLES because image views are not supported
 	{
@@ -112,13 +112,14 @@ void BlurRenderer::Render(eg::TextureRef inputTexture) const
 	
 	for (int i = 0; i < (int)m_levels; i++)
 	{
-		DoBlurPass(glm::vec2(pixelSize.x, 0), i != 0 ? eg::TextureRef(m_blurTextureOut) : inputTexture,
+		DoBlurPass(glm::vec2(2 * pixelSize.x, 0), pixelSize / 2.0f,
+			i != 0 ? eg::TextureRef(m_blurTextureOut) : inputTexture,
 			std::max(i - 1, 0), m_framebuffersTmp[i]);
 		ChangeUsageForShaderSample(m_blurTextureTmp, i);
 		
 		pixelSize *= 2.0f;
 		
-		DoBlurPass(glm::vec2(0, pixelSize.y), m_blurTextureTmp, i, m_framebuffersOut[i]);
+		DoBlurPass(glm::vec2(0, 2 * pixelSize.y), -pixelSize / 2.0f, m_blurTextureTmp, i, m_framebuffersOut[i]);
 		ChangeUsageForShaderSample(m_blurTextureOut, i);
 	}
 }

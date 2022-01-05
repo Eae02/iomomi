@@ -23,8 +23,6 @@ enum class RenderTex
 	Lit
 };
 
-constexpr size_t NUM_RENDER_TEXTURES = 19;
-
 constexpr eg::Format GB_DEPTH_FORMAT = eg::Format::Depth32;
 constexpr eg::Format GB_COLOR_FORMAT = eg::Format::R8G8B8A8_UNorm;
 constexpr eg::Format LIGHT_COLOR_FORMAT_LDR = eg::Format::R8G8B8A8_UNorm;
@@ -35,7 +33,7 @@ eg::Format GetFormatForRenderTexture(RenderTex texture);
 class RenderTexManager
 {
 public:
-	RenderTexManager() = default;
+	RenderTexManager();
 	
 	void BeginFrame(uint32_t resX, uint32_t resY);
 	
@@ -72,8 +70,8 @@ private:
 	bool wasHDREnabled = false;
 	bool wasWaterHighPrecision = false;
 	
-	eg::Texture renderTextures[NUM_RENDER_TEXTURES];
-	RenderTex renderTexturesRedirect[NUM_RENDER_TEXTURES];
+	std::vector<eg::Texture> renderTextures;
+	std::vector<RenderTex> renderTexturesRedirect;
 	
 	struct FramebufferEntry
 	{

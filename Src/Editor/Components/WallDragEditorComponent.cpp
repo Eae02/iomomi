@@ -383,7 +383,20 @@ void WallDragEditorComponent::RenderSettings(const EditorState& editorState)
 			}
 			ImGui::PopID();
 			
-			drawList->AddImage(i ? MakeImTextureID(albedoTex, i - 1) : MakeImTextureID(noDrawTex),
+			eg::TextureViewHandle textureView;
+			if (i == 0 || !eg::GetGraphicsDeviceInfo().partialTextureViews)
+			{
+				textureView = noDrawTex.GetView();
+			}
+			else
+			{
+				eg::TextureSubresource subresource;
+				subresource.firstArrayLayer = i;
+				subresource.numArrayLayers = 1;
+				textureView = albedoTex.GetView(subresource, eg::TextureViewType::Flat2D);
+			}
+			
+			drawList->AddImage(MakeImTextureID(textureView),
 			                   ImVec2(imguiCursorPos.x + ICON_PADDING, imguiCursorPos.y + ICON_PADDING),
 			                   ImVec2(imguiCursorPos.x + ITEM_HEIGHT - ICON_PADDING,
 			                          imguiCursorPos.y + ITEM_HEIGHT - ICON_PADDING));

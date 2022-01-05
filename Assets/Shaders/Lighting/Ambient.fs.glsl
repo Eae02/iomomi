@@ -23,8 +23,8 @@ vec3 CalculateLighting(GBData gbData)
 	
 	float ao = gbData.ao;
 #ifdef VSSAO
-	ao *= texelFetch(ssaoSampler, ivec2(gl_FragCoord.xy), 0).r;
+	ao *= texture(ssaoSampler, screenCoord01).r;
 #endif
-	
+	//return vec3(ao);
 	return (gbData.albedo * kd + fresnel * (1 - gbData.roughness)) * ambient * ao;
 }
