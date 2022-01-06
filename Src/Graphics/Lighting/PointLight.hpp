@@ -32,6 +32,7 @@ public:
 	bool castsShadows = true;
 	bool enableSpecularHighlights = true;
 	bool willMoveEveryFrame = false;
+	bool limitRangeByInitialPosition = false;
 	bool highPriority = false;
 	glm::vec3 position;
 	

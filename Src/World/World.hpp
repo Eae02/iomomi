@@ -65,6 +65,8 @@ public:
 	
 	const GravityCorner* FindGravityCorner(const eg::AABB& aabb, glm::vec3 move, Dir currentDown) const;
 	
+	float MaxDistanceToWallVertex(const glm::vec3& pos) const;
+	
 	EntityManager entManager;
 	
 	bool IsLatestVersion() const { return m_isLatestVersion; }

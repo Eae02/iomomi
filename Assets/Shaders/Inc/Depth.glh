@@ -3,6 +3,7 @@
 
 #include <EGame.glh>
 
+//Should be the same as in Src/Graphics/GraphicsCommon.hpp
 const float ZNear = 0.02;
 const float ZFar = 200.0;
 

@@ -5,6 +5,7 @@
 #include "World/Player.hpp"
 #include "World/PrepareDrawArgs.hpp"
 #include "World/GravityGun.hpp"
+#include "Graphics/GraphicsCommon.hpp"
 #include "Graphics/Materials/MeshDrawArgs.hpp"
 #include "Graphics/Materials/GravitySwitchVolLightMaterial.hpp"
 #include "Graphics/Materials/GravityCornerLightMaterial.hpp"
@@ -14,8 +15,8 @@ GameRenderer* GameRenderer::instance;
 GameRenderer::GameRenderer(RenderContext& renderCtx)
 	: m_renderCtx(&renderCtx), m_glassBlurRenderer(3, eg::Format::R16G16B16A16_Float)
 {
-	m_projection.SetZNear(0.02f);
-	m_projection.SetZFar(200.0f);
+	m_projection.SetZNear(Z_NEAR);
+	m_projection.SetZFar(Z_FAR);
 	
 	m_ssrRenderArgs.destinationTexture = RenderTex::Lit;
 }

@@ -391,7 +391,7 @@ void WallDragEditorComponent::RenderSettings(const EditorState& editorState)
 			else
 			{
 				eg::TextureSubresource subresource;
-				subresource.firstArrayLayer = i;
+				subresource.firstArrayLayer = i - 1;
 				subresource.numArrayLayers = 1;
 				textureView = albedoTex.GetView(subresource, eg::TextureViewType::Flat2D);
 			}

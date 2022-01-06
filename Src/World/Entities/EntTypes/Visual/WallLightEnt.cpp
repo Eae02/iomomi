@@ -51,6 +51,7 @@ void WallLightEnt::CollectPointLights(std::vector<std::shared_ptr<PointLight>>& 
 	glm::vec3 lightPos = m_position + glm::vec3(DirectionVector(m_forwardDir)) * LIGHT_DIST;
 	auto pointLight = std::make_shared<PointLight>(lightPos, m_color, m_intensity);
 	pointLight->enableSpecularHighlights = m_enableSpecularHighlights;
+	pointLight->limitRangeByInitialPosition = true;
 	lights.push_back(std::move(pointLight));
 }
 

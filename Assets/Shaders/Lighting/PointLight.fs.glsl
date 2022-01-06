@@ -35,8 +35,6 @@ const vec3 SAMPLE_OFFSETS[] = vec3[]
 	vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1)
 );
 
-const float DEPTH_BIAS = 0.001;
-
 float sampleCaustics(vec2 pos)
 {
 	pos *= pc.causticsTexScale;
@@ -57,7 +55,7 @@ vec3 CalculateLighting(GBData gbData)
 	
 	if (shadowMode != SHADOW_MODE_NONE)
 	{
-		float compare = dist / pc.positionAndRange.w - DEPTH_BIAS;
+		float compare = dist / pc.positionAndRange.w;
 		float shadow = 0.0;
 		if (shadowMode == SHADOW_MODE_SOFT)
 		{

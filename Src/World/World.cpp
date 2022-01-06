@@ -631,3 +631,13 @@ bool World::HasCollision(const glm::ivec3& pos, Dir side) const
 	
 	return true;
 }
+
+float World::MaxDistanceToWallVertex(const glm::vec3& pos) const
+{
+	float maxDist = 0;
+	for (const glm::vec3& v : m_collisionMesh.Vertices())
+	{
+		maxDist = std::max(maxDist, glm::distance2(pos, v));
+	}
+	return std::sqrt(maxDist);
+}

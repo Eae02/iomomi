@@ -43,3 +43,7 @@ constexpr uint32_t COMMON_3D_DEPTH_OFFSET_CONST_ID = 151;
 
 extern const int32_t WATER_MODE_BEFORE;
 extern const int32_t WATER_MODE_AFTER;
+
+//Should be the same as in Assets/Shaders/Inc/Depth.glh
+constexpr float Z_NEAR = 0.02f;
+constexpr float Z_FAR = 200.0f;

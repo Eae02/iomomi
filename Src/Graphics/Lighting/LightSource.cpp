@@ -17,7 +17,7 @@ void LightSource::SetRadiance(const eg::ColorSRGB& color, float intensity)
 	m_radiance.b = eg::SRGBToLinear(color.b) * intensity;
 	
 	const float maxChannel = std::max(m_radiance.r, std::max(m_radiance.g, m_radiance.b));
-	m_range = std::sqrt(256 * maxChannel + 1.0f);
+	m_range = std::min(maxRange, std::sqrt(256 * maxChannel + 1.0f));
 	
 	m_color = color;
 	m_intensity = intensity;

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../GraphicsCommon.hpp"
+
 class LightSource
 {
 public:
@@ -31,6 +33,8 @@ public:
 	{
 		return m_instanceID;
 	}
+	
+	float maxRange = Z_FAR;
 	
 	static uint64_t NextInstanceID();
 	

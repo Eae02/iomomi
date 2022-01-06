@@ -39,6 +39,7 @@ void PointLightEnt::CollectPointLights(std::vector<std::shared_ptr<PointLight>>&
 {
 	auto pointLight = std::make_shared<PointLight>(m_position, m_color, m_intensity);
 	pointLight->enableSpecularHighlights = m_enableSpecularHighlights;
+	pointLight->limitRangeByInitialPosition = true;
 	lights.push_back(std::move(pointLight));
 }
 

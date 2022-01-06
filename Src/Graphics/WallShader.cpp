@@ -36,6 +36,9 @@ static inline void InitializeMaterials()
 	wallMaterials[8] = { true, "Tiles",               2.0f, 0.1f, 0.5f };
 }
 
+static constexpr float FRONT_FACE_SHADOW_BIAS = 0.5f;
+static constexpr float BACK_FACE_SHADOW_BIAS = -0.05f;
+
 void InitializeWallShader()
 {
 	InitializeMaterials();
@@ -91,6 +94,9 @@ void InitializeWallShader()
 	wr.pipelineBorderEditor = eg::Pipeline::Create(borderPipelineCI);
 	wr.pipelineBorderEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
+	const eg::SpecializationConstantEntry plsPipelineSpecConstants[2] = { { 10, 0, 4 }, { 11, 4, 4 } };
+	float plsPipelineSpecConstantData[2] = { FRONT_FACE_SHADOW_BIAS, BACK_FACE_SHADOW_BIAS };
+	
 	//Creates the point light shadow pipeline
 	eg::GraphicsPipelineCreateInfo plsPipelineCI;
 	plsPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall-PLShadow.vs.glsl").DefaultVariant();
@@ -98,9 +104,12 @@ void InitializeWallShader()
 	plsPipelineCI.enableDepthWrite = true;
 	plsPipelineCI.enableDepthTest = true;
 	plsPipelineCI.frontFaceCCW = eg::CurrentGraphicsAPI() == eg::GraphicsAPI::Vulkan;
-	plsPipelineCI.cullMode = eg::CullMode::Back;
+	plsPipelineCI.cullMode = eg::CullMode::None;
 	plsPipelineCI.vertexBindings[0] = { sizeof(WallVertex), eg::InputRate::Vertex };
 	plsPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32,   3, (uint32_t)offsetof(WallVertex, position) };
+	plsPipelineCI.fragmentShader.specConstants = plsPipelineSpecConstants;
+	plsPipelineCI.fragmentShader.specConstantsData = plsPipelineSpecConstantData;
+	plsPipelineCI.fragmentShader.specConstantsDataSize = sizeof(plsPipelineSpecConstantData);
 	wr.pipelinePLShadow = eg::Pipeline::Create(plsPipelineCI);
 	
 	eg::FramebufferFormatHint plsFormatHint;

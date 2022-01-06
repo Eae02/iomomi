@@ -219,21 +219,27 @@ void InitOptionsMenu()
 	rightWidgetList.AddWidget(InitSettingsToggleButton(&Settings::lookInvertY, "Look Invert Y", "Yes", "No"));
 	rightWidgetList.AddWidget(InitSettingsSlider(&Settings::lookSensitivityMS, "Mouse Sensitivity", 0.001f, 0.02f));
 	
-	ComboBox joystickAxesCB;
-	joystickAxesCB.label = "Joystick Mapping";
-	joystickAxesCB.options = { "\eLeft: \eMove\e, Right:\e Look", "\eLeft: \eLook, \eRight:\e Move" };
-	joystickAxesCB.getValue = [] { return (int)settings.flipJoysticks; };
-	joystickAxesCB.setValue = [] (int value) { settings.flipJoysticks = value == 1; SettingsChanged(); };
-	rightWidgetList.AddWidget(std::move(joystickAxesCB));
-	rightWidgetList.AddWidget(InitSettingsSlider(&Settings::lookSensitivityGP, "Joystick Sensitivity", 0.5f, 4.0f));
+	if (!eg::GameControllers().empty())
+	{
+		ComboBox joystickAxesCB;
+		joystickAxesCB.label = "Joystick Mapping";
+		joystickAxesCB.options = { "\eLeft: \eMove\e, Right:\e Look", "\eLeft: \eLook, \eRight:\e Move" };
+		joystickAxesCB.getValue = [] { return (int)settings.flipJoysticks; };
+		joystickAxesCB.setValue = [] (int value) { settings.flipJoysticks = value == 1; SettingsChanged(); };
+		rightWidgetList.AddWidget(std::move(joystickAxesCB));
+		rightWidgetList.AddWidget(InitSettingsSlider(&Settings::lookSensitivityGP, "Joystick Sensitivity", 0.5f, 4.0f));
+	}
 	
 	rightWidgetList.AddWidget(SubtitleWidget("Key Bindings"));
-	ComboBox keyBindingsConfigureModeCB;
-	keyBindingsConfigureModeCB.label = "Bindings to Configure";
-	keyBindingsConfigureModeCB.options = { "Keyboard & Mouse", "Controller" };
-	keyBindingsConfigureModeCB.getValue = [] { return (int)KeyBindingWidget::isConfiguringGamePad; };
-	keyBindingsConfigureModeCB.setValue = [] (int value) { KeyBindingWidget::isConfiguringGamePad = value == 1; };
-	rightWidgetList.AddWidget(std::move(keyBindingsConfigureModeCB));
+	if (!eg::GameControllers().empty())
+	{
+		ComboBox keyBindingsConfigureModeCB;
+		keyBindingsConfigureModeCB.label = "Bindings to Configure";
+		keyBindingsConfigureModeCB.options = { "Keyboard & Mouse", "Controller" };
+		keyBindingsConfigureModeCB.getValue = [] { return (int)KeyBindingWidget::isConfiguringGamePad; };
+		keyBindingsConfigureModeCB.setValue = [] (int value) { KeyBindingWidget::isConfiguringGamePad = value == 1; };
+		rightWidgetList.AddWidget(std::move(keyBindingsConfigureModeCB));
+	}
 	rightWidgetList.AddWidget(KeyBindingWidget("Move Forward", settings.keyMoveF));
 	rightWidgetList.AddWidget(KeyBindingWidget("Move Backward", settings.keyMoveB));
 	rightWidgetList.AddWidget(KeyBindingWidget("Move Left", settings.keyMoveL));
