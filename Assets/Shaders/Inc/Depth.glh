@@ -22,6 +22,11 @@ float linearizeDepth(float hDepth)
 	return ZFar * ZNear / (ZFar - (hDepth * (ZFar - ZNear)));
 }
 
+vec4 linearizeDepth4(vec4 hDepth)
+{
+	return ZFar * ZNear / (ZFar - (hDepth * (ZFar - ZNear)));
+}
+
 float hyperDepth(float lDepth)
 {
 	return ((ZNear * ZFar) / lDepth - ZFar) / (ZNear - ZFar);

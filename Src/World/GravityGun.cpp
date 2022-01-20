@@ -171,11 +171,11 @@ void GravityGun::Update(World& world, const PhysicsEngine& physicsEngine, WaterS
 	}
 	
 	//Removes dead beam instances
-	for (long i = (long)m_beamInstances.size() - 1; i >= 0; i--)
+	for (int64_t i = (int64_t)m_beamInstances.size() - 1; i >= 0; i--)
 	{
 		if (m_beamInstances[i].lightIntensity < 0)
 		{
-			if (i != (long)m_beamInstances.size() - 1)
+			if (i != (int64_t)m_beamInstances.size() - 1)
 			{
 				m_beamInstances.back() = std::move(m_beamInstances[i]);
 			}

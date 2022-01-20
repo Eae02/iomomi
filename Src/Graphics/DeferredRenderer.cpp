@@ -84,8 +84,8 @@ DeferredRenderer::DeferredRenderer()
 	ssaoRotationsSampler.wrapU = eg::WrapMode::Repeat;
 	ssaoRotationsSampler.wrapV = eg::WrapMode::Repeat;
 	ssaoRotationsSampler.wrapW = eg::WrapMode::Repeat;
-	ssaoRotationsSampler.minFilter = eg::TextureFilter::Linear;
-	ssaoRotationsSampler.magFilter = eg::TextureFilter::Linear;
+	ssaoRotationsSampler.minFilter = eg::TextureFilter::Nearest;
+	ssaoRotationsSampler.magFilter = eg::TextureFilter::Nearest;
 	
 	//Creates the SSAO rotation texture
 	eg::TextureCreateInfo textureCI;
@@ -187,6 +187,12 @@ void DeferredRenderer::CreatePipelines()
 		}
 	}
 	
+	eg::GraphicsPipelineCreateInfo ssaoDepthLinPipelineCI;
+	ssaoDepthLinPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
+	ssaoDepthLinPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/SSAODepthLin.fs.glsl").DefaultVariant();
+	m_ssaoDepthLinPipeline = eg::Pipeline::Create(ssaoDepthLinPipelineCI);
+	m_ssaoDepthLinPipeline.FramebufferFormatHint(eg::Format::R32_Float);
+	
 	eg::GraphicsPipelineCreateInfo ssaoBlurPipelineCI;
 	ssaoBlurPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
 	ssaoBlurPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/SSAOBlur.fs.glsl").DefaultVariant();
@@ -240,6 +246,9 @@ static float* ssaoRadius = eg::TweakVarFloat("ssao_radius", 0.5f);
 static float* ssaoDepthFadeMin = eg::TweakVarFloat("ssao_df_min", 0.2f);
 static float* ssaoDepthFadeRate = eg::TweakVarFloat("ssao_df_rate", 0.05f);
 static float* ssaoTolerance = eg::TweakVarFloat("ssao_tol", 0.95f);
+static float* ssaoBlur = eg::TweakVarFloat("ssao_blur", 1.0f);
+
+static int* ambientOnlyOcc = eg::TweakVarInt("amb_only_occ", 0, 0, 1);
 
 void DeferredRenderer::PrepareSSAO(RenderTexManager& rtManager)
 {
@@ -258,9 +267,20 @@ void DeferredRenderer::PrepareSSAO(RenderTexManager& rtManager)
 	}
 	
 	eg::MultiStageGPUTimer timer;
-	timer.StartStage("SSAO - Initial");
+	
+	timer.StartStage("SSAO - Depth Linearize");
 	
 	eg::RenderPassBeginInfo rpBeginInfo;
+	rpBeginInfo.framebuffer = rtManager.GetFramebuffer(RenderTex::SSAOGBDepthLinear, {}, {}, "SSAO Depth Linearize");
+	eg::DC.BeginRenderPass(rpBeginInfo);
+	eg::DC.BindPipeline(m_ssaoDepthLinPipeline);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 0, &framebufferNearestSampler);
+	eg::DC.Draw(0, 3, 0, 1);
+	eg::DC.EndRenderPass();
+	rtManager.RenderTextureUsageHintFS(RenderTex::SSAOGBDepthLinear);
+	
+	timer.StartStage("SSAO - Main");
+	
 	rpBeginInfo.framebuffer = rtManager.GetFramebuffer(RenderTex::SSAOUnblurred, {}, {}, "SSAO");
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
 	eg::DC.BeginRenderPass(rpBeginInfo);
@@ -268,16 +288,18 @@ void DeferredRenderer::PrepareSSAO(RenderTexManager& rtManager)
 	eg::DC.BindPipeline(m_ssaoPipelines[(int)settings.ssaoQuality - 1]);
 	
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 1, &framebufferLinearSampler);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::SSAOGBDepthLinear), 0, 1, &framebufferLinearSampler);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor2), 0, 2, &framebufferNearestSampler);
-	eg::DC.BindUniformBuffer(m_ssaoSamplesBuffer, 0, 3, 0, sizeof(float) * 4 * SSAO_SAMPLES[2]);
-	eg::DC.BindTexture(m_ssaoRotationsTexture, 0, 4);
+	eg::DC.BindTexture(m_ssaoRotationsTexture, 0, 3);
+	eg::DC.BindUniformBuffer(m_ssaoSamplesBuffer, 0, 4, 0, sizeof(float) * 4 * SSAO_SAMPLES[2]);
 	
 	float pcData[] = {
 		*ssaoRadius,
 		*ssaoDepthFadeMin,
 		1.0f / *ssaoDepthFadeRate,
-		1.0f / *ssaoTolerance
+		1.0f / *ssaoTolerance,
+		1.0f / eg::CurrentResolutionX(),
+		1.0f / eg::CurrentResolutionY(),
 	};
 	eg::DC.PushConstants(0, sizeof(pcData), pcData);
 	
@@ -298,7 +320,8 @@ void DeferredRenderer::PrepareSSAO(RenderTexManager& rtManager)
 	
 	eg::DC.BindPipeline(m_ssaoBlurPipeline);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::SSAOUnblurred), 0, 0, &framebufferLinearSampler);
-	eg::DC.PushConstants(0, glm::vec4(2 * pixelW, 0, pixelW / 2, pixelH / 2));
+	float pc1[4] = { 2 * pixelW * *ssaoBlur, 0.0f, pixelW / 2, pixelH / 2 };
+	eg::DC.PushConstants(0, sizeof(pc1), pc1);
 	eg::DC.Draw(0, 3, 0, 1);
 	
 	eg::DC.EndRenderPass();
@@ -309,7 +332,8 @@ void DeferredRenderer::PrepareSSAO(RenderTexManager& rtManager)
 	
 	eg::DC.BindPipeline(m_ssaoBlurPipeline);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::SSAOTempBlur), 0, 0, &framebufferLinearSampler);
-	eg::DC.PushConstants(0, glm::vec4(0, 2 * pixelH, -pixelW / 2, -pixelH / 2));
+	float pc2[4] = { 0.0f, 2 * pixelH * *ssaoBlur, -pixelW / 2, -pixelH / 2 };
+	eg::DC.PushConstants(0, sizeof(pc2), pc2);
 	eg::DC.Draw(0, 3, 0, 1);
 	
 	eg::DC.EndRenderPass();
@@ -352,7 +376,8 @@ void DeferredRenderer::BeginLighting(RenderTexManager& rtManager)
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor2), 0, 2);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 3);
 	
-	eg::DC.PushConstants(0, sizeof(float) * 3, &ambientColor.r);
+	float pc[4] = { ambientColor.r, ambientColor.g, ambientColor.b, (float)*ambientOnlyOcc };
+	eg::DC.PushConstants(0, sizeof(pc), pc);
 	
 	eg::DC.Draw(0, 3, 0, 1);
 }

@@ -42,6 +42,7 @@ private:
 	eg::Pipeline m_ambientPipelineWithoutSSAO;
 	eg::Pipeline m_pointLightPipelines[3][2]; //first index is shadow mode, second index is water mode
 	
+	eg::Pipeline m_ssaoDepthLinPipeline;
 	eg::Pipeline m_ssaoPipelines[3];
 	eg::Pipeline m_ssaoBlurPipeline;
 	eg::Buffer m_ssaoSamplesBuffer;

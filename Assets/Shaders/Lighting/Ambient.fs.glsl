@@ -13,6 +13,7 @@ layout(set=0, binding=5) uniform sampler2D ssaoSampler;
 layout(push_constant) uniform PC
 {
 	vec3 ambient;
+	float onlyAO;
 };
 
 vec3 CalculateLighting(GBData gbData)
@@ -25,6 +26,5 @@ vec3 CalculateLighting(GBData gbData)
 #ifdef VSSAO
 	ao *= texture(ssaoSampler, screenCoord01).r;
 #endif
-	//return vec3(ao);
-	return (gbData.albedo * kd + fresnel * (1 - gbData.roughness)) * ambient * ao;
+	return max((gbData.albedo * kd + fresnel * (1 - gbData.roughness)) * ambient, vec3(onlyAO)) * ao;
 }

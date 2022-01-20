@@ -10,6 +10,7 @@ enum class RenderTex
 	WaterMaxDepth,
 	WaterDepthBlurred1,
 	WaterDepthBlurred2,
+	SSAOGBDepthLinear,
 	SSAOUnblurred,
 	SSAOTempBlur,
 	SSAO,

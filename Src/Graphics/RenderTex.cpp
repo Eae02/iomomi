@@ -41,6 +41,9 @@ eg::Format GetFormatForRenderTexture(RenderTex texture)
 	case RenderTex::WaterMaxDepth:      return eg::Format::Depth16;
 	case RenderTex::BlurredGlassDepth:  return GB_DEPTH_FORMAT;
 	
+	case RenderTex::SSAOGBDepthLinear:
+		return eg::Format::R32_Float;
+	
 	case RenderTex::SSAOUnblurred:
 	case RenderTex::SSAOTempBlur:
 	case RenderTex::SSAO:
@@ -129,6 +132,7 @@ void RenderTexManager::BeginFrame(uint32_t resX, uint32_t resY)
 		samplerDesc.wrapW = eg::WrapMode::ClampToEdge;
 		samplerDesc.minFilter = eg::TextureFilter::Nearest;
 		samplerDesc.magFilter = eg::TextureFilter::Nearest;
+		samplerDesc.mipFilter = eg::TextureFilter::Nearest;
 		
 		for (size_t i = 0; i < magic_enum::enum_count<RenderTex>(); i++)
 		{

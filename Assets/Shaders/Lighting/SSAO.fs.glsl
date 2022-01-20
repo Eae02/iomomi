@@ -5,7 +5,7 @@
 #include "../Inc/RenderSettings.glh"
 #include <Deferred.glh>
 
-layout(binding=1) uniform sampler2D gbDepthSampler;
+layout(binding=1) uniform sampler2D gbDepthLinSampler;
 layout(binding=2) uniform sampler2D gbColor2Sampler;
 
 layout(push_constant) uniform PC
@@ -14,6 +14,7 @@ layout(push_constant) uniform PC
 	float depthFadeBegin;
 	float depthFadeRate;
 	float ssaoMax;
+	vec2 oriPixelSize;
 };
 
 const int MAX_SAMPLES = 24;
@@ -21,12 +22,12 @@ const int MAX_SAMPLES = 24;
 layout(constant_id=0) const int numSamples = 24;
 layout(constant_id=1) const float rotationsTexScale = 1;
 
-layout(set=0, binding=3, std140) uniform SSAOData
+layout(set=0, binding=3) uniform sampler2D rotationsTex;
+
+layout(set=0, binding=4, std140) uniform SSAOData
 {
 	vec4 sampleVectors[MAX_SAMPLES];
 };
-
-layout(set=0, binding=4) uniform sampler2D rotationsTex;
 
 layout(location=0) out float ssao_out;
 
@@ -34,7 +35,7 @@ layout(location=0) in vec2 screenCoord_in;
 
 void main()
 {
-	float centerHDepth = texture(gbDepthSampler, screenCoord_in).r;
+	float centerHDepth = hyperDepth(texture(gbDepthLinSampler, screenCoord_in).r);
 	vec3 worldPos = WorldPosFromDepth(centerHDepth, screenCoord_in, renderSettings.invViewProjection);
 	vec3 normal = SMDecode(texture(gbColor2Sampler, screenCoord_in).xy);
 	
@@ -56,20 +57,19 @@ void main()
 		
 		vec4 samplePos4 = renderSettings.viewProjection * vec4(samplePos, 1.0);
 		vec3 samplePosNDC = samplePos4.xyz / samplePos4.w;
-		float samplePosDepthH = depthTo01(samplePosNDC.z);
+		float samplePosDepth = linearizeDepth(depthTo01(samplePosNDC.z));
 		
 		vec2 sampleTC = samplePosNDC.xy * 0.5 + 0.5;
 		if (!EG_OPENGL)
 			sampleTC.y = 1 - sampleTC.y;
 		
-		float sampledDepthH = texture(gbDepthSampler, sampleTC).r;
-		if (sampledDepthH < samplePosDepthH)
+		float sampledDepth = texture(gbDepthLinSampler, sampleTC).r;
+		if (sampledDepth < samplePosDepth)
 		{
-			float depthDiff = linearizeDepth(samplePosDepthH) - linearizeDepth(sampledDepthH);
-			ssao += clamp(1 - (depthDiff - depthFadeBegin) * depthFadeRate, 0, 1);
+			ssao += clamp(1 - (samplePosDepth - sampledDepth - depthFadeBegin) * depthFadeRate, 0, 1);
 		}
 	}
-	ssao = 1 - ssao / float(numSamples);
+	ssao = 1.0 - ssao / float(numSamples);
 	float ssaoSquared = ssao * ssao;
 	ssao_out = min(ssaoSquared * ssaoSquared * ssaoSquared * ssaoMax, 1);
 }

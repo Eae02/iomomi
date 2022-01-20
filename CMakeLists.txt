@@ -76,7 +76,7 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
 	set(EMCC_FLAGS "-lidbfs.js -lopenal -s ALLOW_MEMORY_GROWTH=1 -s WASM=1 -s USE_WEBGL2=1 -s FULL_ES3=1 -s USE_ZLIB=1 -s FORCE_FILESYSTEM=1 -s FETCH=1 -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0")
 	
 	if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-		set(EMCC_FLAGS "${EMCC_FLAGS} -gsource-map")
+		set(EMCC_FLAGS "${EMCC_FLAGS} -g4 --source-map-base='http://0.0.0.0:7000/'")
 		target_compile_options(iomomi PRIVATE -gsource-map)
 	endif()
 	
