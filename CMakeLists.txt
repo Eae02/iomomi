@@ -92,7 +92,13 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
 else()
 	find_package(Protobuf REQUIRED)
 	fixIncludes(protobuf::libprotobuf)
-	target_link_libraries(iomomi protobuf::libprotobuf stdc++fs tbb)
+	
+	find_package(PkgConfig)
+	pkg_check_modules(TBB REQUIRED tbb)
+	
+	target_link_libraries(iomomi protobuf::libprotobuf stdc++fs ${TBB_LIBRARIES})
+	target_include_directories(iomomi PRIVATE ${TBB_INCLUDE_DIRS})
+	target_compile_options(iomomi PRIVATE ${TBB_CFLAGS_OTHER})
 	
 	target_compile_options(iomomi PRIVATE -msse4.1)
 endif()
