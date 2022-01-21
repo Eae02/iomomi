@@ -12,12 +12,13 @@
 			}
 			
 			#infoWrap {
-				position: absolute;
 				width: 100vw;
 				height: 100vh;
-				text-align: center;
-				line-height: 100vh;
 				background-color: #0a394a;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				flex-direction: column;
 			}
 			
 			#infoWrap[data-mode="err"] {
@@ -28,19 +29,23 @@
 				display: none;
 			}
 			
-			#infoText {
+			#infoText, #infoLabel {
 				font-size: 3vh;
-				vertical-align: middle;
-				display: inline-block;
-				line-height: normal;
 				color: white;
 				text-shadow: 0 0 0.2em black;
+			}
+			
+			#infoLabel {
+				font-size: 2vh;
+				margin-top: 1vh;
+				opacity: 0.8;
 			}
 		</style>
 	</head>
 	<body>
 		<div id="infoWrap" data-mode="load">
-			<span id="infoText">Loading...</span>
+			<div id="infoText">Loading...</div>
+			<div id="infoLabel"></div>
 		</div>
 		<canvas id="canvas" tabindex=-1></canvas>
 		<script type="text/javascript" src="iomomi.js"></script>
@@ -52,6 +57,14 @@
 					document.getElementById("infoText").innerText = msg;
 					hasError = true;
 				}
+			}
+			function setInfoLabel(msg) {
+				if (!hasError) {
+					document.getElementById("infoLabel").innerText = msg;
+				}
+			}
+			function loadingComplete() {
+				document.getElementById("infoWrap").dataset.mode = "hide";
 			}
 			Module.canvas = document.getElementById("canvas");
 			Module.canvas.focus();
@@ -72,11 +85,10 @@
 				FS.syncfs(true, function (err) { });
 			};
 			Module.onRuntimeInitialized = function() {
-				document.getElementById("infoWrap").dataset.mode = "hide"
 				Module.cwrap("WebMain", "", [])();
 			};
 			Module.onAbort = function() {
-				displayError("Unknown Error");
+				displayError("Unexpected Error");
 			};
 		</script>
 	</body>
