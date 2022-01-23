@@ -15,6 +15,7 @@
 				width: 100vw;
 				height: 100vh;
 				background-color: #0a394a;
+				position: absolute;
 				display: flex;
 				align-items: center;
 				justify-content: center;
@@ -79,7 +80,6 @@
 			window.onresize = setCanvasSize;
 			setCanvasSize();
 			Module.preRun = function() {
-				FS.createPreloadedFile("/", "Assets.eap", "Assets.eap", true, false);
 				FS.mkdir('/data');
 				FS.mount(IDBFS, {}, '/data');
 				FS.syncfs(true, function (err) { });
