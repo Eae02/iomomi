@@ -58,7 +58,10 @@ void PausedMenu::Update(float dt)
 		fadeTarget = 1;
 		optionsFadeTarget = optionsMenuOpen ? 1 : 0;
 		
-		UpdateOptionsMenu(dt, glm::vec2(0), optionsMenuOpen);
+		if (m_optionsMenuOverlayFade > 0)
+		{
+			UpdateOptionsMenu(dt, glm::vec2(0), optionsMenuOpen);
+		}
 		
 		std::get<Button>(m_widgetList.GetWidget(m_mainMenuWidgetIndex)).text =
 			isFromEditor ? "Return to Editor" : "Main Menu";
