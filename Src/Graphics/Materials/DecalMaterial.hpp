@@ -16,28 +16,22 @@ public:
 	DecalMaterial(const eg::Texture& albedoTexture, const eg::Texture& normalMapTexture);
 	
 	size_t PipelineHash() const override;
-	
 	bool BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const override;
-	
 	bool BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const override;
 	
 	bool CheckInstanceDataType(const std::type_info* instanceDataType) const override;
 	
-	float AspectRatio() const
-	{
-		return m_aspectRatio;
-	}
-	
-	eg::TextureRef AlbedoTexture() const
-	{
-		return m_albedoTexture;
-	}
+	float AspectRatio() const { return m_aspectRatio; }
+	eg::TextureRef AlbedoTexture() const { return m_albedoTexture; }
+	eg::TextureRef NormalMapTexture() const { return m_normalMapTexture; }
 	
 	static eg::MeshBatch::Mesh GetMesh();
 	
-	float m_opacity = 1;
-	float m_roughness = 1;
-	bool m_inheritNormals = false;
+	static void LazyInitGlobals();
+	
+	float opacity = 1;
+	float roughness = 1;
+	bool inheritNormals = false;
 	
 private:
 	eg::TextureRef m_albedoTexture;
@@ -45,6 +39,5 @@ private:
 	
 	float m_aspectRatio;
 	
-	mutable eg::DescriptorSet m_descriptorSet;
-	mutable bool m_descriptorSetInitialized = false;
+	eg::DescriptorSet m_descriptorSet;
 };

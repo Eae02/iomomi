@@ -14,8 +14,11 @@ static_assert(offsetof(DecalMaterial::InstanceData, transform) == 0);
 static_assert(offsetof(DecalMaterial::InstanceData, textureMin) == sizeof(float) * 12);
 static_assert(offsetof(DecalMaterial::InstanceData, textureMax) == sizeof(float) * 14);
 
-static void OnInit()
+void DecalMaterial::LazyInitGlobals()
 {
+	if (decalsGamePipeline.handle != nullptr)
+		return;
+	
 	const eg::ShaderModuleAsset& vs = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Decal.vs.glsl");
 	const eg::ShaderModuleAsset& fs = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Decal.fs.glsl");
 	
@@ -70,16 +73,21 @@ static void OnShutdown()
 	decalVertexBuffer.Destroy();
 }
 
-EG_ON_INIT(OnInit)
 EG_ON_SHUTDOWN(OnShutdown)
 
 DecalMaterial::DecalMaterial(const eg::Texture& albedoTexture, const eg::Texture& normalMapTexture)
 	: m_albedoTexture(albedoTexture), m_normalMapTexture(normalMapTexture),
-	  m_aspectRatio(albedoTexture.Width() / (float)albedoTexture.Height()) { }
+	  m_aspectRatio(albedoTexture.Width() / (float)albedoTexture.Height()),
+	  m_descriptorSet(decalsGamePipeline, 0)
+{
+	m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+	m_descriptorSet.BindTexture(m_albedoTexture, 1);
+	m_descriptorSet.BindTexture(m_normalMapTexture, 2);
+}
 
 size_t DecalMaterial::PipelineHash() const
 {
-	return typeid(DecalMaterial).hash_code() + m_inheritNormals;
+	return typeid(DecalMaterial).hash_code() + inheritNormals;
 }
 
 bool DecalMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const
@@ -88,7 +96,7 @@ bool DecalMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) con
 	
 	if (mDrawArgs->drawMode == MeshDrawMode::Game)
 	{
-		cmdCtx.BindPipeline(m_inheritNormals ? decalsGamePipelineInheritNormals : decalsGamePipeline);
+		cmdCtx.BindPipeline(inheritNormals ? decalsGamePipelineInheritNormals : decalsGamePipeline);
 	}
 	else if (mDrawArgs->drawMode == MeshDrawMode::Editor)
 	{
@@ -104,21 +112,7 @@ bool DecalMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) con
 
 bool DecalMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
-	if (!m_descriptorSetInitialized)
-	{
-		m_descriptorSet = eg::DescriptorSet(decalsGamePipeline, 0);
-		
-		m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
-		m_descriptorSet.BindTexture(m_albedoTexture, 1);
-		m_descriptorSet.BindTexture(m_normalMapTexture, 2);
-		
-		m_descriptorSetInitialized = true;
-	}
-	
-	float pc[2];
-	pc[0] = m_roughness;
-	pc[1] = m_opacity;
-	
+	float pc[2] = { roughness, opacity };
 	cmdCtx.PushConstants(0, sizeof(pc), &pc);
 	
 	cmdCtx.BindDescriptorSet(m_descriptorSet, 0);

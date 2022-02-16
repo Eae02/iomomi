@@ -63,10 +63,13 @@ public:
 	
 	uint32_t ResX() const { return m_resX; }
 	uint32_t ResY() const { return m_resY; }
+	uint32_t Generation() const { return m_generation; }
 	
 private:
 	uint32_t m_resX = 0;
 	uint32_t m_resY = 0;
+	
+	uint32_t m_generation = 1;
 	
 	bool wasHDREnabled = false;
 	bool wasWaterHighPrecision = false;
@@ -85,4 +88,18 @@ private:
 	std::vector<FramebufferEntry> framebuffers;
 	
 	void InitFramebufferEntry(RenderTexManager::FramebufferEntry& entry);
+};
+
+class DescriptorSetRenderTexBinding
+{
+public:
+	DescriptorSetRenderTexBinding() = default;
+	
+	void Update(eg::DescriptorSet& descriptorSet, uint32_t binding,
+	            const RenderTexManager& renderTexManager, RenderTex texture,
+	            const eg::Sampler* sampler = nullptr);
+	
+private:
+	uint32_t m_generation = 0;
+	RenderTex m_redirectedRenderTex;
 };

@@ -14,6 +14,7 @@ static void OnInit()
 	pipelineCI.enableDepthWrite = true;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::Back;
+	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
 	pipelineCI.vertexBindings[1] = { sizeof(LightStripMaterial::InstanceData), eg::InputRate::Instance };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(eg::StdVertex, position) };
@@ -58,7 +59,7 @@ bool LightStripMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs
 	else
 		return false;
 	
-	cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
+	RenderSettings::instance->BindVertexShaderDescriptorSet();
 	
 	return true;
 }

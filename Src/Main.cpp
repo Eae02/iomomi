@@ -89,6 +89,8 @@ void Run(int argc, char** argv)
 		InitializeStaticPropMaterialAsset();
 		InitializeDecalMaterialAsset();
 		
+		RenderSettings::instance = new RenderSettings;
+		
 		bool assetLoadOK = false;
 		if (!preloadedAssetBinary.empty())
 		{
@@ -105,7 +107,6 @@ void Run(int argc, char** argv)
 			EG_PANIC("Failed to load assets, make sure assets.eap exists.");
 		}
 		
-		RenderSettings::instance = new RenderSettings;
 		InitLevels();
 		
 #ifdef __EMSCRIPTEN__

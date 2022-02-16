@@ -87,8 +87,8 @@ static const uint16_t coneMeshIndices[] =
 	8, 7, 6, 6, 5, 4, 4, 3, 2, 2, 16, 14, 14, 12, 10, 10, 8, 6, 6, 4, 2, 2, 14, 6
 };
 
-const uint32_t SPOT_LIGHT_MESH_INDICES = eg::ArrayLen(coneMeshIndices);
-const uint32_t POINT_LIGHT_MESH_INDICES = eg::ArrayLen(sphereMeshIndices);
+const uint32_t SPOT_LIGHT_MESH_INDICES = std::size(coneMeshIndices);
+const uint32_t POINT_LIGHT_MESH_INDICES = std::size(sphereMeshIndices);
 
 static eg::Buffer indexBuffer;
 static eg::Buffer vertexBuffer;

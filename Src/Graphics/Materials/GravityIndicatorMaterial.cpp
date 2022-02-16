@@ -47,11 +47,6 @@ static void OnShutdown()
 EG_ON_INIT(OnInit)
 EG_ON_SHUTDOWN(OnShutdown)
 
-GravityIndicatorMaterial::GravityIndicatorMaterial()
-{
-	
-}
-
 size_t GravityIndicatorMaterial::PipelineHash() const
 {
 	return typeid(GravityIndicatorMaterial).hash_code();

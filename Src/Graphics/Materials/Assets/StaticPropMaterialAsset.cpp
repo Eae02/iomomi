@@ -3,7 +3,7 @@
 #include <magic_enum.hpp>
 #include <fstream>
 
-static const eg::AssetFormat StaticPropMaterialAssetFormat { "StaticPropMaterial", 9 };
+static const eg::AssetFormat StaticPropMaterialAssetFormat { "StaticPropMaterial", 10 };
 
 #ifdef EG_HAS_YAML_CPP
 class StaticPropMaterialAssetGenerator : public eg::AssetGenerator
@@ -70,6 +70,11 @@ public:
 		generateContext.AddLoadDependency(std::move(normalMapPath));
 		generateContext.AddLoadDependency(std::move(miscMapPath));
 		
+		generateContext.AddLoadDependency("/Shaders/Common3D.vs.glsl");
+		generateContext.AddLoadDependency("/Shaders/StaticModel.fs.glsl");
+		generateContext.AddLoadDependency("/Shaders/PointLightShadow.fs.glsl");
+		generateContext.AddLoadDependency("/Shaders/Common3D-PLShadow.vs.glsl");
+		
 		return true;
 	}
 };
@@ -77,6 +82,8 @@ public:
 
 bool StaticPropMaterialAssetLoader(const eg::AssetLoadContext& loadContext)
 {
+	StaticPropMaterial::LazyInitGlobals();
+	
 	eg::MemoryStreambuf memoryStreambuf(loadContext.Data());
 	std::istream stream(&memoryStreambuf);
 	
@@ -103,6 +110,8 @@ bool StaticPropMaterialAssetLoader(const eg::AssetLoadContext& loadContext)
 	material.m_castShadows = eg::BinRead<uint8_t>(stream);
 	material.m_minShadowQuality = (QualityLevel)eg::BinRead<uint8_t>(stream);
 	material.m_alphaTest = eg::BinRead<uint8_t>(stream);
+	
+	material.CreateDescriptorSet();
 	
 	return true;
 }

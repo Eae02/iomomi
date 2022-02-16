@@ -2,7 +2,7 @@
 
 #include <fstream>
 
-static const eg::AssetFormat DecalMaterialAssetFormat { "DecalMaterial", 2 };
+static const eg::AssetFormat DecalMaterialAssetFormat { "DecalMaterial", 3 };
 
 #ifdef EG_HAS_YAML_CPP
 class DecalMaterialAssetGenerator : public eg::AssetGenerator
@@ -39,6 +39,9 @@ public:
 		generateContext.AddLoadDependency(std::move(albedoPath));
 		generateContext.AddLoadDependency(std::move(normalMapPath));
 		
+		generateContext.AddLoadDependency("/Shaders/Decal.vs.glsl");
+		generateContext.AddLoadDependency("/Shaders/Decal.fs.glsl");
+		
 		return true;
 	}
 };
@@ -55,14 +58,16 @@ bool DecalMaterialAssetLoader(const eg::AssetLoadContext& loadContext)
 	std::string albedoTexturePath = eg::Concat({ loadContext.DirPath(), albedoTextureName} );
 	std::string normalMapTexturePath = eg::Concat({ loadContext.DirPath(), normalMapTextureName} );
 	
+	DecalMaterial::LazyInitGlobals();
+	
 	DecalMaterial& material = loadContext.CreateResult<DecalMaterial>(
 		eg::GetAsset<eg::Texture>(albedoTexturePath),
 		eg::GetAsset<eg::Texture>(normalMapTexturePath)
 	);
 	
-	material.m_roughness = eg::BinRead<float>(stream);
-	material.m_opacity = eg::BinRead<float>(stream);
-	material.m_inheritNormals = eg::BinRead<uint8_t>(stream);
+	material.roughness = eg::BinRead<float>(stream);
+	material.opacity = eg::BinRead<float>(stream);
+	material.inheritNormals = eg::BinRead<uint8_t>(stream);
 	
 	return true;
 }

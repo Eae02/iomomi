@@ -14,7 +14,7 @@ public:
 			: transform(glm::transpose(_transform)) { }
 	};
 	
-	GravityIndicatorMaterial();
+	GravityIndicatorMaterial() = default;
 	
 	size_t PipelineHash() const override;
 	
@@ -27,7 +27,4 @@ public:
 	bool CheckInstanceDataType(const std::type_info* instanceDataType) const override;
 	
 	static GravityIndicatorMaterial instance;
-	
-private:
-	
 };

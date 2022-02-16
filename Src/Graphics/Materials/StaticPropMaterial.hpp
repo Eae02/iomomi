@@ -47,8 +47,12 @@ public:
 	
 	static void InitializeForCommon3DVS(eg::GraphicsPipelineCreateInfo& pipelineCI);
 	
+	static void LazyInitGlobals();
+	
 private:
 	friend bool StaticPropMaterialAssetLoader(const eg::AssetLoadContext& loadContext);
+	
+	void CreateDescriptorSet();
 	
 	eg::PipelineRef GetPipeline(MeshDrawMode drawMode) const;
 	
@@ -56,8 +60,7 @@ private:
 	const eg::Texture* m_normalMapTexture;
 	const eg::Texture* m_miscMapTexture;
 	std::optional<uint32_t> m_textureLayer;
-	mutable eg::DescriptorSet m_descriptorSet;
-	mutable bool m_descriptorsInitialized = false;
+	eg::DescriptorSet m_descriptorSet;
 	float m_roughnessMin;
 	float m_roughnessMax;
 	glm::vec2 m_textureScale;

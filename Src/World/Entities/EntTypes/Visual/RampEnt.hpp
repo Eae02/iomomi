@@ -5,7 +5,6 @@
 #include "../../../../Graphics/Materials/DecalMaterial.hpp"
 
 #include <optional>
-#include <EGame/AABB.hpp>
 
 class RampEnt : public Ent
 {

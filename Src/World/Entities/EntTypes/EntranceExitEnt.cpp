@@ -99,7 +99,7 @@ static void OnInit()
 		for (int h = 0; h < 2; h++)
 		{
 			char prefix[] = { 'D', 'o', 'o', 'r', d ? '2' : '1', h ? 'B' : 'A' };
-			std::string_view prefixSV(prefix, eg::ArrayLen(prefix));
+			std::string_view prefixSV(prefix, std::size(prefix));
 			
 			bool found = false;
 			for (size_t m = 0; m < entrance.model->NumMeshes(); m++)

@@ -17,6 +17,8 @@ struct
 	eg::Pipeline pipelinePLShadow[2][2];
 	
 	std::unique_ptr<StaticPropMaterial> wallMaterials[MAX_WALL_MATERIALS];
+	
+	bool initialized = false;
 } staticPropMaterialGlobals;
 
 void StaticPropMaterial::InitializeForCommon3DVS(eg::GraphicsPipelineCreateInfo& pipelineCI)
@@ -35,8 +37,12 @@ void StaticPropMaterial::InitializeForCommon3DVS(eg::GraphicsPipelineCreateInfo&
 	pipelineCI.vertexAttributes[7] = { 1, eg::DataType::Float32, 4, offsetof(StaticPropMaterial::InstanceData, textureRange) };
 }
 
-static void OnInit()
+void StaticPropMaterial::LazyInitGlobals()
 {
+	if (staticPropMaterialGlobals.initialized)
+		return;
+	staticPropMaterialGlobals.initialized = true;
+	
 	const eg::ShaderModuleAsset& fs = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/StaticModel.fs.glsl");
 	
 	eg::GraphicsPipelineCreateInfo pipelineCI;
@@ -122,8 +128,17 @@ static void OnShutdown()
 	staticPropMaterialGlobals = {};
 }
 
-EG_ON_INIT(OnInit)
 EG_ON_SHUTDOWN(OnShutdown)
+
+void StaticPropMaterial::CreateDescriptorSet()
+{
+	m_descriptorSet = eg::DescriptorSet(GetPipeline(MeshDrawMode::Game), 0);
+	
+	m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+	m_descriptorSet.BindTexture(*m_albedoTexture, 1, nullptr);
+	m_descriptorSet.BindTexture(*m_normalMapTexture, 2, nullptr);
+	m_descriptorSet.BindTexture(*m_miscMapTexture, 3, nullptr);
+}
 
 size_t StaticPropMaterial::PipelineHash() const
 {
@@ -180,17 +195,6 @@ bool StaticPropMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs
 		return true;
 	}
 	
-	if (!m_descriptorsInitialized)
-	{
-		m_descriptorSet = eg::DescriptorSet(GetPipeline(MeshDrawMode::Game), 0);
-		m_descriptorsInitialized = true;
-		
-		m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
-		m_descriptorSet.BindTexture(*m_albedoTexture, 1, nullptr);
-		m_descriptorSet.BindTexture(*m_normalMapTexture, 2, nullptr);
-		m_descriptorSet.BindTexture(*m_miscMapTexture, 3, nullptr);
-	}
-	
 	if (mDrawArgs->drawMode == MeshDrawMode::Editor || mDrawArgs->drawMode == MeshDrawMode::Game)
 	{
 		cmdCtx.BindDescriptorSet(m_descriptorSet, 0);
@@ -215,6 +219,7 @@ bool StaticPropMaterial::CheckInstanceDataType(const std::type_info* instanceDat
 const StaticPropMaterial& StaticPropMaterial::GetFromWallMaterial(uint32_t index)
 {
 	EG_ASSERT(index != 0)
+	LazyInitGlobals();
 	if (staticPropMaterialGlobals.wallMaterials[index] == nullptr)
 	{
 		auto material = std::make_unique<StaticPropMaterial>();
@@ -227,6 +232,7 @@ const StaticPropMaterial& StaticPropMaterial::GetFromWallMaterial(uint32_t index
 		material->m_textureScale = glm::vec2(1.0f / wallMaterials[index].textureScale);
 		material->m_backfaceCullEditor = true;
 		material->m_alphaTest = false;
+		material->CreateDescriptorSet();
 		staticPropMaterialGlobals.wallMaterials[index] = std::move(material);
 	}
 	return *staticPropMaterialGlobals.wallMaterials[index];

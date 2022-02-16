@@ -120,6 +120,7 @@ void RenderTexManager::BeginFrame(uint32_t resX, uint32_t resY)
 		m_resY = resY;
 		wasHDREnabled = settings.HDREnabled();
 		wasWaterHighPrecision = waterHighPrecision;
+		m_generation++;
 		
 		for (eg::Texture& tex : renderTextures)
 			tex.Destroy();
@@ -154,6 +155,8 @@ void RenderTexManager::BeginFrame(uint32_t resX, uint32_t resY)
 		
 		for (FramebufferEntry& entry : framebuffers)
 			InitFramebufferEntry(entry);
+		
+		eg::Log(eg::LogLevel::Info, "gfx", "Created render textures @{0}x{1}", resX, resY);
 	}
 }
 
@@ -226,4 +229,16 @@ eg::FramebufferHandle RenderTexManager::GetFramebuffer(
 	InitFramebufferEntry(newEntry);
 	
 	return newEntry.framebuffer.handle;
+}
+
+void DescriptorSetRenderTexBinding::Update(eg::DescriptorSet& descriptorSet, uint32_t binding,
+		const RenderTexManager& renderTexManager, RenderTex texture, const eg::Sampler* sampler)
+{
+	RenderTex redirected = renderTexManager.ResolveRedirects(texture);
+	if (m_generation != renderTexManager.Generation() || redirected != m_redirectedRenderTex)
+	{
+		descriptorSet.BindTexture(renderTexManager.GetRenderTexture(redirected), binding, sampler);
+		m_generation = renderTexManager.Generation();
+		m_redirectedRenderTex = redirected;
+	}
 }

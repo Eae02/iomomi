@@ -25,7 +25,13 @@ public:
 	
 	static RenderSettings* instance;
 	
+	void BindVertexShaderDescriptorSet(uint32_t set = 0) const
+	{
+		eg::DC.BindDescriptorSet(m_vertexShaderDescriptorSet, set);
+	}
+	
 private:
+	eg::DescriptorSet m_vertexShaderDescriptorSet;
 	eg::Buffer m_buffer;
 };
 
