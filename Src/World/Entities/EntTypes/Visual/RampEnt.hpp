@@ -31,6 +31,7 @@ public:
 	std::optional<eg::ColorSRGB> EdGetBoxColor(bool selected) const override;
 	
 	glm::vec3 EdGetSize() const override;
+	glm::quat EdGetRotation() const override;
 	
 	void EdResized(const glm::vec3& newSize) override;
 	
@@ -47,6 +48,7 @@ public:
 private:
 	void InitializeVertexBuffer();
 	
+	std::pair<glm::vec3, float> GetAngleAxisRotation() const;
 	glm::mat4 GetTransformationMatrix() const;
 	std::array<glm::vec3, 4> GetTransformedVertices(const glm::mat4& matrix) const;
 	

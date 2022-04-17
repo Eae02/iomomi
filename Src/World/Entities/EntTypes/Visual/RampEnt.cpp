@@ -165,25 +165,31 @@ void RampEnt::InitializeVertexBuffer()
 	m_vertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
 }
 
+std::pair<glm::vec3, float> RampEnt::GetAngleAxisRotation() const
+{
+	switch (m_rotation)
+	{
+	case 0:
+	case 1:
+	case 2:
+	case 3:
+		return { glm::vec3(0, 1, 0), (float)m_rotation * eg::HALF_PI };
+	case 4:
+		return { glm::vec3(0, 0, 1), -eg::HALF_PI };
+	case 5:
+		return { glm::vec3(0, 0, 1), eg::HALF_PI };
+	default:
+		EG_UNREACHABLE
+	}
+}
+
 glm::mat4 RampEnt::GetTransformationMatrix() const
 {
-	glm::vec3 size = 0.5f * m_size;
+	auto [rotationAxis, rotationAngle] = GetAngleAxisRotation();
 	
-	glm::mat4 rotationMatrix;
-	if (m_rotation < 4)
-	{
-		rotationMatrix = glm::rotate(glm::mat4(1), (float)m_rotation * eg::HALF_PI, glm::vec3(0, 1, 0));
-	}
-	else if (m_rotation == 4)
-	{
-		rotationMatrix = glm::rotate(glm::mat4(1), -eg::HALF_PI, glm::vec3(0, 0, 1));
-	}
-	else if (m_rotation == 5)
-	{
-		rotationMatrix = glm::rotate(glm::mat4(1), eg::HALF_PI, glm::vec3(0, 0, 1));
-	}
-	
-	return glm::translate(glm::mat4(1), m_position) * rotationMatrix * glm::scale(glm::mat4(1), size);
+	return glm::translate(glm::mat4(1), m_position) *
+		glm::rotate(glm::mat4(1), rotationAngle, rotationAxis) *
+		glm::scale(glm::mat4(1), 0.5f * m_size);
 }
 
 std::array<glm::vec3, 4> RampEnt::GetTransformedVertices(const glm::mat4& matrix) const
@@ -277,6 +283,12 @@ glm::vec3 RampEnt::EdGetSize() const
 void RampEnt::EdResized(const glm::vec3& newSize)
 {
 	m_size = newSize * 2.0f;
+}
+
+glm::quat RampEnt::EdGetRotation() const
+{
+	auto [rotationAxis, rotationAngle] = GetAngleAxisRotation();
+	return glm::angleAxis(rotationAngle, rotationAxis);
 }
 
 template <>
