@@ -42,5 +42,4 @@ sounds:
 
 ui:
  - hints for restart (?)
- - draggable scrollbar in level select screen
  - control menus using keyboard / controller
