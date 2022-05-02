@@ -5,6 +5,8 @@ set(BUILD_DIR_NAME ${CMAKE_BUILD_TYPE})
 
 set(BUILD_ID "" CACHE STRING "Build id to be included in the main menu.")
 
+set(BUILD_ASSETMAN OFF CACHE BOOL "" FORCE)
+
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Deps/egame_override")
 	add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Deps/egame_override)
 else()
