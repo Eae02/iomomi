@@ -3,7 +3,7 @@
 #include "../../../AudioPlayers.hpp"
 #include "../../../Graphics/Materials/EmissiveMaterial.hpp"
 #include "../../../Graphics/Lighting/PointLightShadowMapper.hpp"
-#include "../../../Graphics/Water/WaterSimulator.hpp"
+#include "../../../Graphics/Water/IWaterSimulator.hpp"
 #include "../../../Settings.hpp"
 #include "../../../../Protobuf/Build/EntranceEntity.pb.h"
 
@@ -245,7 +245,7 @@ void EntranceExitEnt::Update(const WorldUpdateArgs& args)
 	bool open = m_activatable.AllSourcesActive() &&
 		glm::length2(toPlayer) < DOOR_OPEN_DIST * DOOR_OPEN_DIST && //Player is close to the door
 		glm::dot(toPlayer, openDirToPlayer) > minDist && //Player is on the right side of the door
-		args.waterSim->IsPresimComplete();
+		(args.waterSim == nullptr || args.waterSim->IsPresimComplete());
 	
 	m_isPlayerCloseWithWrongGravity = false;
 	if (open && args.player->CurrentDown() != OppositeDir(UP_VECTORS[(int)direction]))

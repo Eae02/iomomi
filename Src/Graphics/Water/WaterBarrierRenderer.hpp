@@ -7,7 +7,7 @@ class WaterBarrierRenderer
 public:
 	WaterBarrierRenderer();
 	
-	void Init(class WaterSimulator& waterSimulator, class World& world);
+	void Init(class IWaterSimulator* waterSimulator, class World& world);
 	
 	void Update(float dt);
 	

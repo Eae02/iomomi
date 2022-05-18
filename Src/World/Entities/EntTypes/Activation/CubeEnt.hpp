@@ -6,7 +6,7 @@
 #include "../../EntGravityChargeable.hpp"
 #include "../../../Dir.hpp"
 #include "../../../PhysicsEngine.hpp"
-#include "../../../../Graphics/Water/WaterSimulator.hpp"
+#include "../../../../Graphics/Water/IWaterSimulator.hpp"
 
 class CubeEnt : public Ent, public EntInteractable, public EntGravityChargeable
 {
@@ -84,5 +84,5 @@ private:
 	
 	float m_gravityIndicatorFlashIntensity = 0;
 	
-	std::shared_ptr<WaterSimulator::QueryAABB> m_waterQueryAABB;
+	std::shared_ptr<IWaterSimulator::IQueryAABB> m_waterQueryAABB;
 };

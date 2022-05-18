@@ -5,6 +5,7 @@
 #include "World/Player.hpp"
 #include "World/PrepareDrawArgs.hpp"
 #include "World/GravityGun.hpp"
+#include "Graphics/Water/IWaterSimulator.hpp"
 #include "Graphics/GraphicsCommon.hpp"
 #include "Graphics/Materials/MeshDrawArgs.hpp"
 #include "Graphics/Materials/GravitySwitchVolLightMaterial.hpp"
@@ -23,8 +24,8 @@ GameRenderer::GameRenderer(RenderContext& renderCtx)
 
 void GameRenderer::WorldChanged(World& world)
 {
-	m_waterSimulator.Init(world);
-	m_waterBarrierRenderer.Init(m_waterSimulator, world);
+	m_waterSimulator = CreateWaterSimulator(world);
+	m_waterBarrierRenderer.Init(m_waterSimulator.get(), world);
 	
 	m_pointLights.clear();
 	world.entManager.ForEach([&] (Ent& entity)
@@ -229,10 +230,12 @@ void GameRenderer::Render(World& world, float gameTime, float dt,
 	
 	const bool renderBlurredGlass = m_blurredTexturesNeeded && qvar::renderBlurredGlass(settings.lightingQuality);
 	
+	const uint32_t numWaterParticles = m_waterSimulator ? m_waterSimulator->NumParticlesToDraw() : 0;
+	
 	MeshDrawArgs mDrawArgs;
 	mDrawArgs.rtManager = &m_rtManager;
 	mDrawArgs.plShadowRenderArgs = nullptr;
-	if (m_waterSimulator.NumParticlesToDraw() > 0)
+	if (numWaterParticles > 0)
 	{
 		mDrawArgs.waterDepthTexture = m_rtManager.GetRenderTexture(RenderTex::WaterDepthBlurred2);
 	}
@@ -261,15 +264,12 @@ void GameRenderer::Render(World& world, float gameTime, float dt,
 		eg::DC.DebugLabelEnd();
 	}
 	
-	if (m_waterSimulator.NumParticlesToDraw() > 0)
+	if (numWaterParticles > 0)
 	{
 		auto gpuTimerWater = eg::StartGPUTimer("Water (early)");
 		auto cpuTimerWater = eg::StartCPUTimer("Water (early)");
 		eg::DC.DebugLabelBegin("Water (early)");
-		m_renderCtx->waterRenderer.RenderEarly(
-			m_waterSimulator.GetPositionsBuffer(),
-			m_waterSimulator.NumParticlesToDraw(),
-			m_rtManager);
+		m_renderCtx->waterRenderer.RenderEarly(m_waterSimulator->GetPositionsGPUBuffer(), numWaterParticles, m_rtManager);
 		eg::DC.DebugLabelEnd();
 	}
 	
@@ -281,14 +281,14 @@ void GameRenderer::Render(World& world, float gameTime, float dt,
 		m_renderCtx->renderer.BeginLighting(m_rtManager);
 		
 		m_renderCtx->renderer.DrawPointLights(
-			m_pointLights, m_waterSimulator.NumParticlesToDraw() > 0, mDrawArgs.waterDepthTexture,
+			m_pointLights, numWaterParticles > 0, mDrawArgs.waterDepthTexture,
 			m_rtManager, m_plShadowMapper.Resolution());
 		
 		m_renderCtx->renderer.End();
 		eg::DC.DebugLabelEnd();
 	}
 	
-	if (m_waterSimulator.NumParticlesToDraw() > 0)
+	if (numWaterParticles > 0)
 	{
 		auto gpuTimerTransparent = eg::StartGPUTimer("Transparent (pre-water)");
 		auto cpuTimerTransparent = eg::StartCPUTimer("Transparent (pre-water)");

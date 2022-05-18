@@ -7,6 +7,7 @@
 #include "World/GravityGun.hpp"
 #include "Gui/PausedMenu.hpp"
 #include "GameRenderer.hpp"
+#include "Graphics/Water/IWaterSimulator.hpp"
 #include "Graphics/PhysicsDebugRenderer.hpp"
 
 class MainGameState : public GameState
@@ -51,7 +52,7 @@ private:
 	Player m_player;
 	GravityGun m_gravityGun;
 	
-	std::shared_ptr<WaterSimulator::QueryAABB> m_playerWaterAABB;
+	std::shared_ptr<IWaterSimulator::IQueryAABB> m_playerWaterAABB;
 	
 	PausedMenu m_pausedMenu;
 	

@@ -59,9 +59,6 @@ MainGameState::MainGameState()
 	const eg::Texture& particlesTexture = eg::GetAsset<eg::Texture>("Textures/Particles.png");
 	m_particleManager.SetTextureSize(particlesTexture.Width(), particlesTexture.Height());
 	
-	m_playerWaterAABB = std::make_shared<WaterSimulator::QueryAABB>();
-	GameRenderer::instance->m_waterSimulator.AddQueryAABB(m_playerWaterAABB);
-	
 	m_crosshairTexture = &eg::GetAsset<eg::Texture>("Textures/UI/Crosshair.png");
 }
 
@@ -100,6 +97,11 @@ void MainGameState::SetWorld(std::unique_ptr<World> newWorld, int64_t levelIndex
 	GameRenderer::instance->m_gravityGun = &m_gravityGun;
 	GameRenderer::instance->WorldChanged(*m_world);
 	
+	if (GameRenderer::instance->m_waterSimulator)
+		m_playerWaterAABB = GameRenderer::instance->m_waterSimulator->AddQueryAABB({});
+	else
+		m_playerWaterAABB = nullptr;
+	
 	if (levelIndex != -1)
 	{
 		mainMenuGameState->backgroundLevel = &levels[levelIndex];
@@ -108,7 +110,7 @@ void MainGameState::SetWorld(std::unique_ptr<World> newWorld, int64_t levelIndex
 
 void MainGameState::OnDeactivate()
 {
-	GameRenderer::instance->m_waterSimulator.Stop();
+	GameRenderer::instance->m_waterSimulator = nullptr;
 	AudioPlayers::gameSFXPlayer.StopAll();
 	m_world.reset();
 	m_relativeMouseModeLostListener.reset();
@@ -184,7 +186,7 @@ void MainGameState::RunFrame(float dt)
 		updateArgs.dt = dt;
 		updateArgs.player = &m_player;
 		updateArgs.world = m_world.get();
-		updateArgs.waterSim = &GameRenderer::instance->m_waterSimulator;
+		updateArgs.waterSim = GameRenderer::instance->m_waterSimulator.get();
 		updateArgs.physicsEngine = &m_physicsEngine;
 		updateArgs.plShadowMapper = &GameRenderer::instance->m_plShadowMapper;
 		
@@ -203,7 +205,9 @@ void MainGameState::RunFrame(float dt)
 		
 		{
 			auto playerUpdateCPUTimer = eg::StartCPUTimer("Player Update");
-			bool underwater = m_playerWaterAABB->GetResults().numIntersecting > *playerUnderwaterSpheres;
+			bool underwater = false;
+			if (m_playerWaterAABB)
+				underwater = m_playerWaterAABB->GetResults().numIntersecting > *playerUnderwaterSpheres;
 			m_player.Update(*m_world, m_physicsEngine, dt, underwater);
 		}
 		
@@ -227,8 +231,8 @@ void MainGameState::RunFrame(float dt)
 		if (m_world->playerHasGravityGun)
 		{
 			auto gunUpdateCPUTimer = eg::StartCPUTimer("Gun Update");
-			m_gravityGun.Update(*m_world, m_physicsEngine, GameRenderer::instance->m_waterSimulator, m_particleManager,
-			                    m_player, GameRenderer::instance->GetInverseViewProjMatrix(), dt);
+			m_gravityGun.Update(*m_world, m_physicsEngine, GameRenderer::instance->m_waterSimulator.get(),
+			                    m_particleManager, m_player, GameRenderer::instance->GetInverseViewProjMatrix(), dt);
 		}
 	}
 	else
@@ -261,11 +265,15 @@ void MainGameState::RunFrame(float dt)
 	}
 #endif
 	
-	m_playerWaterAABB->SetAABB(m_player.GetAABB());
+	if (m_playerWaterAABB)
+	{
+		m_playerWaterAABB->SetAABB(m_player.GetAABB());
+	}
 	
+	if (GameRenderer::instance->m_waterSimulator)
 	{
 		auto waterUpdateTimer = eg::StartCPUTimer("Water Update MT");
-		GameRenderer::instance->m_waterSimulator.Update(*m_world, m_player.EyePosition(), m_pausedMenu.isPaused);
+		GameRenderer::instance->m_waterSimulator->Update(*m_world, m_player.EyePosition(), m_pausedMenu.isPaused);
 	}
 	
 	GameRenderer::instance->Render(*m_world, m_gameTime, dt, nullptr, eg::CurrentResolutionX(), eg::CurrentResolutionY());
@@ -455,8 +463,13 @@ void MainGameState::DrawOverlay(float dt)
 	ImGui::Text(
 		"PSM Updates: %lld",
 		(unsigned long long)GameRenderer::instance->m_plShadowMapper.LastFrameUpdateCount());
-	ImGui::Text("Water Spheres: %d", GameRenderer::instance->m_waterSimulator.NumParticles());
-	ImGui::Text("Water Update Time: %.2fms", GameRenderer::instance->m_waterSimulator.LastUpdateTime() / 1E6);
+	
+	if (const IWaterSimulator* waterSim = GameRenderer::instance->m_waterSimulator.get())
+	{
+		ImGui::Text("Water Spheres: %d", waterSim->NumParticles());
+		ImGui::Text("Water Update Time: %.2fms", waterSim->LastUpdateTime() / 1E6);
+	}
+	
 	if (m_currentLevelIndex != -1)
 	{
 		ImGui::Text("Level: %s", levels[m_currentLevelIndex].name.c_str());

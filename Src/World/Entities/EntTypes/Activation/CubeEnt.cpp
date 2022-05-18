@@ -251,7 +251,7 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 		//Water interaction
 		if (m_waterQueryAABB != nullptr)
 		{
-			WaterSimulator::QueryResults waterQueryRes = m_waterQueryAABB->GetResults();
+			IWaterSimulator::QueryResults waterQueryRes = m_waterQueryAABB->GetResults();
 			
 			glm::vec3 relVelocity = waterQueryRes.waterVelocity - m_physicsObject.velocity;
 			glm::vec3 pullForce = relVelocity * *cubeWaterDrag;
@@ -329,13 +329,14 @@ void CubeEnt::UpdateAfterSimulation(const WorldUpdateArgs& args)
 	const glm::vec3 down(DirectionVector(m_currentDown));
 	const eg::AABB cubeAABB(m_physicsObject.position - RADIUS, m_physicsObject.position + RADIUS);
 	
-	if (m_waterQueryAABB == nullptr)
+	if (m_waterQueryAABB == nullptr && args.waterSim != nullptr)
 	{
-		m_waterQueryAABB = std::make_shared<WaterSimulator::QueryAABB>();
-		args.waterSim->AddQueryAABB(m_waterQueryAABB);
+		m_waterQueryAABB = args.waterSim->AddQueryAABB(cubeAABB);
 	}
-	
-	m_waterQueryAABB->SetAABB(cubeAABB);
+	else if (m_waterQueryAABB != nullptr)
+	{
+		m_waterQueryAABB->SetAABB(cubeAABB);
+	}
 }
 
 void CubeEnt::Serialize(std::ostream& stream) const

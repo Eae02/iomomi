@@ -398,7 +398,7 @@ void MainMenuGameState::RenderWorld(float dt)
 	updateArgs.mode = WorldMode::Menu;
 	updateArgs.dt = dt;
 	updateArgs.world = m_world.get();
-	updateArgs.waterSim = &GameRenderer::instance->m_waterSimulator;
+	updateArgs.waterSim = GameRenderer::instance->m_waterSimulator.get();
 	updateArgs.physicsEngine = &m_physicsEngine;
 	updateArgs.plShadowMapper = &GameRenderer::instance->m_plShadowMapper;
 	
@@ -416,13 +416,14 @@ void MainMenuGameState::RenderWorld(float dt)
 	
 	m_world->UpdateAfterPhysics(updateArgs);
 	
+	if (GameRenderer::instance->m_waterSimulator)
 	{
 		auto waterUpdateTimer = eg::StartCPUTimer("Water Update MT");
-		GameRenderer::instance->m_waterSimulator.Update(*m_world, m_world->thumbnailCameraPos, false);
+		GameRenderer::instance->m_waterSimulator->Update(*m_world, m_world->thumbnailCameraPos, false);
+		if (!GameRenderer::instance->m_waterSimulator->IsPresimComplete())
+			return;
 	}
 	
-	if (!GameRenderer::instance->m_waterSimulator.IsPresimComplete())
-		return;
 	m_worldFadeInProgress = std::min(m_worldFadeInProgress + dt * 2, 1.0f);
 	
 	GameRenderer::instance->Render(*m_world, m_worldGameTime, dt, m_worldRenderFramebuffer.handle,
@@ -449,7 +450,7 @@ void MainMenuGameState::RenderWorld(float dt)
 
 void MainMenuGameState::OnDeactivate()
 {
-	GameRenderer::instance->m_waterSimulator.Stop();
+	GameRenderer::instance->m_waterSimulator = nullptr;
 	m_physicsEngine = {};
 	m_world = {};
 }

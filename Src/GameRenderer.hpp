@@ -7,7 +7,6 @@
 #include "Graphics/Lighting/PointLightShadowMapper.hpp"
 #include "Graphics/PostProcessor.hpp"
 #include "Graphics/ParticleRenderer.hpp"
-#include "Graphics/Water/WaterSimulator.hpp"
 #include "Graphics/Water/WaterBarrierRenderer.hpp"
 #include "Graphics/PhysicsDebugRenderer.hpp"
 #include "Settings.hpp"
@@ -39,8 +38,8 @@ public:
 	class PhysicsEngine* m_physicsEngine = nullptr;
 	class PhysicsDebugRenderer* m_physicsDebugRenderer = nullptr;
 	
+	std::unique_ptr<IWaterSimulator> m_waterSimulator;
 	PointLightShadowMapper m_plShadowMapper;
-	WaterSimulator m_waterSimulator;
 	float postColorScale = 1;
 	
 private:

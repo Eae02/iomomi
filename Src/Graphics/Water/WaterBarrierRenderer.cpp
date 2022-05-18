@@ -1,10 +1,10 @@
 #include "WaterBarrierRenderer.hpp"
-#include "WaterSimulator.hpp"
+#include "IWaterSimulator.hpp"
 #include "../../World/World.hpp"
 
 #ifdef IOMOMI_NO_WATER
 WaterBarrierRenderer::WaterBarrierRenderer() { }
-void WaterBarrierRenderer::Init(class WaterSimulator& waterSimulator, class World& world) { }
+void WaterBarrierRenderer::Init(class WaterSimulator* waterSimulator, class World& world) { }
 void WaterBarrierRenderer::Update(float dt) { }
 #else
 
@@ -38,19 +38,19 @@ WaterBarrierRenderer::WaterBarrierRenderer()
 	m_defaultTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 }
 
-void WaterBarrierRenderer::Init(WaterSimulator& waterSimulator, World& world)
+void WaterBarrierRenderer::Init(IWaterSimulator* waterSimulator, World& world)
 {
 	m_barriers.clear();
 	
 	world.entManager.ForEachOfType<GravityBarrierEnt>([&] (GravityBarrierEnt& entity)
 	{
-		if (waterSimulator.NumParticles() == 0 || !entity.RedFromWater())
+		if (waterSimulator == nullptr || !entity.RedFromWater())
 		{
 			entity.waterDistanceTexture = m_defaultTexture;
 			return;
 		}
 		
-		waterSimulator.needParticleGravityBuffer = true;
+		waterSimulator->EnableGravitiesGPUBuffer();
 		
 		Barrier& barrier = m_barriers.emplace_back();
 		barrier.entity = std::dynamic_pointer_cast<GravityBarrierEnt>(entity.shared_from_this());
@@ -74,10 +74,10 @@ void WaterBarrierRenderer::Init(WaterSimulator& waterSimulator, World& world)
 		
 		barrier.descriptorSetCalc = eg::DescriptorSet(m_calcPipeline, 0);
 		barrier.descriptorSetCalc.BindStorageBuffer(
-			waterSimulator.GetPositionsBuffer(), 0, 0,
-			waterSimulator.NumParticles() * sizeof(float) * 4);
+			waterSimulator->GetPositionsGPUBuffer(), 0, 0,
+			waterSimulator->NumParticles() * sizeof(float) * 4);
 		barrier.descriptorSetCalc.BindStorageBuffer(
-			waterSimulator.GetGravitiesBuffer(), 1, 0, waterSimulator.NumParticles());
+			waterSimulator->GetGravitiesGPUBuffer(), 1, 0, waterSimulator->NumParticles());
 		barrier.descriptorSetCalc.BindStorageImage(barrier.tmpTexture, 2);
 		
 		barrier.descriptorSetFade = eg::DescriptorSet(m_fadePipeline, 0);
@@ -92,8 +92,16 @@ void WaterBarrierRenderer::Init(WaterSimulator& waterSimulator, World& world)
 		eg::DC.ClearColorTexture(barrier.fadeTexture, 0, eg::Color(1, 1, 1));
 	});
 	
-	m_numParticles = waterSimulator.NumParticles();
-	m_dispatchCount = (waterSimulator.NumParticles() + LOCAL_SIZE_X - 1) / LOCAL_SIZE_X;
+	if (waterSimulator != nullptr)
+	{
+		m_numParticles = waterSimulator->NumParticles();
+		m_dispatchCount = (waterSimulator->NumParticles() + LOCAL_SIZE_X - 1) / LOCAL_SIZE_X;
+	}
+	else
+	{
+		m_numParticles = 0;
+		m_dispatchCount = 0;
+	}
 }
 
 static float* fadeSpeed = eg::TweakVarFloat("gb_water_fade_speed", 0.5f);

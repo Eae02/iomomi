@@ -6,7 +6,7 @@
 #include "../Graphics/Materials/MeshDrawArgs.hpp"
 #include "../Settings.hpp"
 #include "../Graphics/RenderSettings.hpp"
-#include "../Graphics/Water/WaterSimulator.hpp"
+#include "../Graphics/Water/IWaterSimulator.hpp"
 
 #include <imgui.h>
 
@@ -103,7 +103,7 @@ void GravityGun::ChangeLevel(const glm::quat& oldPlayerRotation, const glm::quat
 	m_gunOffset = newPlayerRotation * glm::inverse(oldPlayerRotation) * m_gunOffset;
 }
 
-void GravityGun::Update(World& world, const PhysicsEngine& physicsEngine, WaterSimulator& waterSim,
+void GravityGun::Update(World& world, const PhysicsEngine& physicsEngine, IWaterSimulator* waterSim,
 	eg::ParticleManager& particleManager, const Player& player, const glm::mat4& inverseViewProj, float dt)
 {
 	glm::mat3 rotationMatrix = (glm::mat3_cast(player.Rotation()));
@@ -199,7 +199,7 @@ void GravityGun::Update(World& world, const PhysicsEngine& physicsEngine, WaterS
 	
 	if (settings.keyShoot.IsDown() && !settings.keyShoot.WasDown())
 	{
-		auto[waterIntersectDst, waterIntersectPos] = waterSim.RayIntersect(viewRay);
+		auto[waterIntersectDst, waterIntersectPos] = WaterRayIntersect(waterSim, viewRay);
 		if (intersectObject || !std::isinf(waterIntersectDst))
 		{
 			BeamInstance& beamInstance = m_beamInstances.emplace_back();
@@ -227,7 +227,7 @@ void GravityGun::Update(World& world, const PhysicsEngine& physicsEngine, WaterS
 			
 			if (waterIntersectDst < intersectDist)
 			{
-				waterSim.ChangeGravity(waterIntersectPos, player.CurrentDown());
+				waterSim->ChangeGravity(waterIntersectPos, player.CurrentDown());
 			}
 			else
 			{
@@ -237,10 +237,10 @@ void GravityGun::Update(World& world, const PhysicsEngine& physicsEngine, WaterS
 	}
 	else if (*waterHighlightHovered)
 	{
-		auto[waterIntersectDst, waterIntersectPos] = waterSim.RayIntersect(viewRay);
+		auto[waterIntersectDst, waterIntersectPos] = WaterRayIntersect(waterSim, viewRay);
 		if (!std::isinf(waterIntersectDst))
 		{
-			waterSim.ChangeGravity(waterIntersectPos, Dir::NegY, true);
+			waterSim->ChangeGravity(waterIntersectPos, Dir::NegY, true);
 		}
 	}
 }

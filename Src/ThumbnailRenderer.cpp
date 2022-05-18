@@ -1,6 +1,7 @@
 #include "ThumbnailRenderer.hpp"
 #include "Levels.hpp"
 #include "Graphics/RenderContext.hpp"
+#include "Graphics/Water/IWaterSimulator.hpp"
 #include "World/World.hpp"
 #include "GameRenderer.hpp"
 
@@ -89,7 +90,7 @@ LevelThumbnailUpdate* BeginUpdateLevelThumbnails(RenderContext& renderContext, e
 		WorldUpdateArgs updateArgs = {};
 		updateArgs.mode = WorldMode::Thumbnail;
 		updateArgs.world = world.get();
-		updateArgs.waterSim = &renderer->m_waterSimulator;
+		updateArgs.waterSim = renderer->m_waterSimulator.get();
 		world->Update(updateArgs);
 		
 		renderer->SetViewMatrixFromThumbnailCamera(*world);
@@ -105,7 +106,10 @@ LevelThumbnailUpdate* BeginUpdateLevelThumbnails(RenderContext& renderContext, e
 		framebufferAttachment.texture = entry.texture.handle;
 		entry.framebuffer = eg::Framebuffer(std::span<const eg::FramebufferAttachment>(&framebufferAttachment, 1));
 		
-		renderer->m_waterSimulator.Update(*world, world->thumbnailCameraPos, false);
+		if (renderer->m_waterSimulator)
+		{
+			renderer->m_waterSimulator->Update(*world, world->thumbnailCameraPos, false);
+		}
 		
 		renderer->Render(*world, 0, 0, entry.framebuffer.handle, LEVEL_THUMBNAIL_RES_X, LEVEL_THUMBNAIL_RES_Y);
 		
