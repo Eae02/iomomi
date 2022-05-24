@@ -7,6 +7,7 @@
 #include "Gui/GuiCommon.hpp"
 #include "AudioPlayers.hpp"
 
+#include <iomanip>
 #include <fstream>
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -430,54 +431,89 @@ void MainGameState::UpdateAndDrawHud(float dt)
 	}
 }
 
-int* debugOverlay = eg::TweakVarInt("dbg_overlay", 1, 0, 1);
+int* debugOverlay = eg::TweakVarInt("dbg_overlay", 0, 0, 1);
 
 void MainGameState::DrawOverlay(float dt)
 {
-#if !defined(__EMSCRIPTEN__) && !defined(IOMOMI_NO_EDITOR)
-	if (!*debugOverlay || !eg::DevMode())
-		return;
+#ifdef NDEBUG
+	if (!*debugOverlay) return;
+#else
+	if (*debugOverlay) return;
+#endif
 	
-	ImGui::SetNextWindowPos(ImVec2(5, 5), ImGuiCond_Always);
-	ImGui::SetNextWindowSize(ImVec2(250, 0), ImGuiCond_Always);
-	ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.6f);
-	ImGui::Begin("Debug", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
-	             ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoTitleBar);
+	std::ostringstream textStream;
+	textStream << std::setprecision(2) << std::fixed;
 	
-	const char* graphicsAPIName = "?";
+	textStream << "FPS: " << (int)(1.0f / dt) << "Hz | " << (dt * 1000.0f) << "ms\n";
+	
+	textStream << "GfxAPI: ";
 	if (eg::CurrentGraphicsAPI() == eg::GraphicsAPI::OpenGL)
-		graphicsAPIName = "OpenGL";
+		textStream << "OpenGL";
 	else if (eg::CurrentGraphicsAPI() == eg::GraphicsAPI::Vulkan)
-		graphicsAPIName = "Vulkan";
+		textStream << "Vulkan";
+	else
+		textStream << "?";
+	textStream << "\n";
 	
-	ImGui::Text("FPS: %dHz | %.2fms", (int)(1.0f / dt), dt * 1000.0f);
-	ImGui::Text("Graphics API: %s", graphicsAPIName);
-	ImGui::Separator();
-	m_player.DrawDebugOverlay();
-	ImGui::Separator();
-	ImGui::Text("Particles: %d", m_particleManager.ParticlesToDraw());
-	ImGui::Text(
-		"PSM Last Update: %lld/%lld",
-		(unsigned long long)GameRenderer::instance->m_plShadowMapper.LastUpdateFrameIndex(),
-		(unsigned long long)eg::FrameIdx());
-	ImGui::Text(
-		"PSM Updates: %lld",
-		(unsigned long long)GameRenderer::instance->m_plShadowMapper.LastFrameUpdateCount());
+	textStream << "GfxDevice: " << eg::GetGraphicsDeviceInfo().deviceName << "\n";
+	
+	if (eg::gal::GetMemoryStat)
+	{
+		eg::GraphicsMemoryStat memoryStat = eg::gal::GetMemoryStat();
+		textStream << "GfxMemUsage: " <<
+			eg::ReadableBytesSize(memoryStat.allocatedBytesGPU) << " " <<
+			eg::ReadableBytesSize(memoryStat.allocatedBytes) << "\n";
+	}
+	
+	textStream << "-\n";
+	
+	m_player.GetDebugText(textStream);
+	
+	textStream << "-\n";
+	textStream << "Particles: " << m_particleManager.ParticlesToDraw() << "\n";
+	
+	textStream << "PSM Last Update: " <<
+		GameRenderer::instance->m_plShadowMapper.LastUpdateFrameIndex() << "/" << eg::FrameIdx() << "\n";
+	
+	textStream << "PSM Updates: " << GameRenderer::instance->m_plShadowMapper.LastFrameUpdateCount() << "\n";
 	
 	if (const IWaterSimulator* waterSim = GameRenderer::instance->m_waterSimulator.get())
 	{
-		ImGui::Text("Water Spheres: %d", waterSim->NumParticles());
-		ImGui::Text("Water Update Time: %.2fms", waterSim->LastUpdateTime() / 1E6);
+		textStream << "Water Spheres: " << waterSim->NumParticles() << "\n";
+		textStream << "Water Update Time: " << (waterSim->LastUpdateTime() / 1E6) << "ms\n";
 	}
 	
 	if (m_currentLevelIndex != -1)
 	{
-		ImGui::Text("Level: %s", levels[m_currentLevelIndex].name.c_str());
+		textStream << "Level: " << levels[m_currentLevelIndex].name << "\n";
 	}
 	
-	ImGui::End();
-	ImGui::PopStyleVar();
-#endif
+	std::string text = textStream.str();
+	std::vector<std::string_view> lines;
+	eg::SplitString(text, '\n', lines);
+	
+	const float lineHeight = eg::SpriteFont::DevFont().LineHeight();
+	const float padding = 5;
+	const float separatorSpacing = 3;
+	const eg::ColorLin textColor(1, 1, 1, 0.75f);
+	const eg::ColorLin loTextColor(1, 0.8f, 0.8f, 0.5f);
+	
+	float y = eg::CurrentResolutionY() - padding;
+	for (std::string_view line : lines)
+	{
+		if (line == "-")
+		{
+			float lineY = y - separatorSpacing / 2;
+			eg::SpriteBatch::overlay.DrawLine(glm::vec2(padding, lineY), glm::vec2(100 - padding, lineY), textColor, 0.5f);
+			y -= separatorSpacing;
+		}
+		else
+		{
+			y -= lineHeight;
+			eg::SpriteBatch::overlay.DrawText(eg::SpriteFont::DevFont(), line, glm::vec2(padding, y),
+			                                  textColor, 1, nullptr, eg::TextFlags::DropShadow, &loTextColor);
+		}
+	}
 }
 
 bool MainGameState::ReloadLevel()

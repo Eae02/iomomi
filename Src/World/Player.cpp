@@ -9,7 +9,8 @@
 #include "../Settings.hpp"
 #include "../Game.hpp"
 
-#include <imgui.h>
+#include <magic_enum.hpp>
+#include <iomanip>
 
 static float* walkSpeed         = eg::TweakVarFloat("pl_walk_speed",     4.0f,  0.0f);
 static float* swimSpeed         = eg::TweakVarFloat("pl_swim_speed",     5.0f,  0.0f);
@@ -765,13 +766,14 @@ glm::vec3 Player::Forward() const
 	return m_rotation * glm::vec3(0, 0, -1);
 }
 
-void Player::DrawDebugOverlay()
+void Player::GetDebugText(std::ostringstream& stream)
 {
-	ImGui::Text("Pos: %.2f, %.2f, %.2f", Position().x, Position().y, Position().z);
-	ImGui::Text("Vel: %.2f, %.2f, %.2f, Speed: %.2f)",
-			 m_physicsObject.velocity.x, m_physicsObject.velocity.y, m_physicsObject.velocity.z,
-			 glm::length(m_physicsObject.velocity));
-	ImGui::Text("Eye Pos: %.2f, %.2f, %.2f", m_eyePosition.x, m_eyePosition.y, m_eyePosition.z);
+	stream << std::showpos;
+	stream << "Pos: " << Position().x << " " << Position().y << " " << Position().z << "\n";
+	stream << "Eye: " << m_eyePosition.x << " " << m_eyePosition.y << " " << m_eyePosition.z << "\n";
+	
+	stream << "Vel: " << m_physicsObject.velocity.x << " " << m_physicsObject.velocity.y << " " << m_physicsObject.velocity.z <<
+		std::noshowpos << " Speed: " << glm::length(m_physicsObject.velocity) << "\n";
 	
 	const glm::vec3 forward = m_rotation * glm::vec3(0, 0, -1);
 	const glm::vec3 absForward = glm::abs(forward);
@@ -782,11 +784,25 @@ void Player::DrawDebugOverlay()
 			maxDir = i;
 	}
 	
-	const char* dirNames = "XYZ";
-	ImGui::Text("Facing: %c%c", forward[maxDir] < 0 ? '-' : '+', dirNames[maxDir]);
+	auto BoolString = [&] (bool b, std::string_view s)
+	{
+		if (!b)
+			stream << "\e" << s << "\e ";
+		else
+			stream << s << " ";
+	};
 	
-	ImGui::Text("On ground: %d", (int)m_onGround);
-	ImGui::Text("On ladder: %d", (int)m_wasClimbingLadder);
+	stream
+		<< "F:" << "+-"[forward[maxDir] < 0] << "XYZ"[maxDir]
+		<< " G:" << DirectionName(m_down)
+		<< " GTM:" << magic_enum::enum_name(m_gravityTransitionMode) << "\n";
+	
+	BoolString(m_onGround, "G");
+	BoolString(m_wasUnderwater, "W");
+	BoolString(m_wasClimbingLadder, "L");
+	BoolString(m_isCarrying, "C");
+	BoolString(*noclipActive, "NC");
+	stream << "\n";
 }
 
 void Player::Reset()

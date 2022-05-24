@@ -14,7 +14,6 @@ layout(push_constant) uniform PC
 	float depthFadeBegin;
 	float depthFadeRate;
 	float ssaoMax;
-	vec2 oriPixelSize;
 };
 
 const int MAX_SAMPLES = 24;

@@ -19,6 +19,8 @@ public:
 		virtual QueryResults GetResults() = 0;
 	};
 	
+	virtual ~IWaterSimulator() { }
+	
 	virtual void Update(const class World& world, const glm::vec3& cameraPos, bool paused) = 0;
 	
 	//Finds an intersection between the given ray and the water.

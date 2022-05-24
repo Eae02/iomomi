@@ -2,7 +2,7 @@
 
 const char* DirectionNames[6] = 
 {
-	"+x", "-x", "+y", "-y", "+z", "-z"
+	"+X", "-X", "+Y", "-Y", "+Z", "-Z"
 };
 
 std::optional<Dir> ParseDirection(std::string_view directionName)

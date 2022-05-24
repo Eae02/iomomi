@@ -436,6 +436,9 @@ public:
 	
 	void EnableGravitiesGPUBuffer() override
 	{
+		if (m_gravitiesBuffer.handle)
+			return;
+		
 		uint64_t gravitiesBufferSize = sizeof(uint8_t) * eg::RoundToNextMultiple(m_numParticles, 4);
 		m_gravitiesBuffer = eg::Buffer(
 			eg::BufferFlags::CopyDst | eg::BufferFlags::StorageBuffer, gravitiesBufferSize,

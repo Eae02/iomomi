@@ -23,21 +23,29 @@ const std::vector<std::string_view> levelsOrder =
 	"gravbarrier_ng0",
 	"gravbarrier_ng1",
 	"gravbarrier_ng2",
-	"gravbarrier_ng3",
 	
 #ifndef IOMOMI_NO_WATER
 	"water_ng0",
 	"water_ng1",
 	"water_ng2",
 	"water_ng3",
+#endif
+	
+	"gravbarrier_ng3",
+	
+#ifndef IOMOMI_NO_WATER
 	"water_pump_ng1",
 	"water_pump_ng2",
-	"water_ng5",
-	"water_pump_ng3",
+	//"water_ng5",
 #endif
 	
 	"gravbarrier_ng4",
 	"gravbarrier_ng5",
+	
+#ifndef IOMOMI_NO_WATER
+	"water_pump_ng3",
+#endif
+	
 	"gravbarrier_ng6",
 	"gravbarrier_ng7",
 	
@@ -47,24 +55,31 @@ const std::vector<std::string_view> levelsOrder =
 	"gravgun_2",
 	"gravgun_4",
 	
-	"forcefield_1",
-	"forcefield_2",
-	
 	"gravbarrier_1",
 	"gravbarrier_2",
-	"gravbarrier_3",
-	"gravbarrier_4",
-	
-	"gravgun_5",
-	"gravgun_6",
-	
-	"forcefield_3",
-	"forcefield_4",
 	
 #ifndef IOMOMI_NO_WATER
 	"water_0",
 	"water_1",
+#endif
+	
+	"forcefield_1",
+	"forcefield_2",
+	
+	"gravbarrier_3",
+	"gravbarrier_4",
+	
+	"forcefield_3",
+	"forcefield_4",
+	
+	"gravgun_5",
+	"gravgun_6",
+	
+#ifndef IOMOMI_NO_WATER
 	"water_2",
+#endif
+	
+#ifndef IOMOMI_NO_WATER
 	"water_3",
 	"water_4",
 	"water_5",
@@ -72,8 +87,8 @@ const std::vector<std::string_view> levelsOrder =
 #endif
 	
 	"launch_0",
-	"launch_1",
 	"gravbarrier_cube_1",
+	"launch_1",
 	"gravbarrier_cube_2",
 	"cubeflip_0",
 	"launch_2",

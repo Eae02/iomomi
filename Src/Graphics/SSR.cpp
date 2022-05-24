@@ -146,6 +146,7 @@ void SSR::Render(const SSRRenderArgs& renderArgs)
 	// ** Blend pass **
 	eg::DC.BindPipeline(m_pipelineBlendPass);
 	eg::DC.PushConstants(0, sizeof(float), &renderArgs.intensity);
+	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::GBColor1), 0, 1);
 	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::GBColor2), 0, 2);
 	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::GBDepth), 0, 3);

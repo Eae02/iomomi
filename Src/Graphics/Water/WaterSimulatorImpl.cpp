@@ -72,8 +72,11 @@ struct WaterSimulatorImpl
 	std::vector<std::array<uint16_t, MAX_PER_PART_CELL>> cellParticles;
 	
 	__m128i worldMin;
-	glm::ivec3 worldSize;
+	__m128i worldSizeMinus1;
+	int voxelAirStrideZ;
 	uint8_t* isVoxelAir;
+	
+	glm::ivec3 worldSize;
 	
 	glm::ivec3 partGridMin;
 	glm::ivec3 partGridNumCellGroups;
@@ -102,12 +105,10 @@ WaterSimulatorImpl* WSI_New(const WSINewArgs& args)
 		}
 	}
 	
-	for (int i = 0; i < 3; i++)
-	{
-		reinterpret_cast<int32_t*>(&impl->worldMin)[i] = args.minBounds[i];
-	}
-	
+	impl->worldMin = _mm_set_epi32(0, args.minBounds.z, args.minBounds.y, args.minBounds.x);
 	impl->worldSize = args.maxBounds - args.minBounds;
+	impl->worldSizeMinus1 = _mm_set_epi32(0, impl->worldSize.z - 1, impl->worldSize.y - 1, impl->worldSize.x - 1);
+	impl->voxelAirStrideZ = impl->worldSize.x * impl->worldSize.y;
 	impl->isVoxelAir = args.isAirBuffer;
 	impl->numParticles = args.numParticles;
 	impl->allocatedParticles = args.numParticles + args.extraParticles;
@@ -127,18 +128,25 @@ WaterSimulatorImpl* WSI_New(const WSINewArgs& args)
 	impl->dataMemory = aligned_alloc(alignof(__m128), memoryBytes);
 	std::memset(impl->dataMemory, 0, memoryBytes);
 	
+	size_t dataMemoryOffset = 0;
+	auto AllocateParticleMemory = [&] <typename T> (T** ptr) {
+		EG_ASSERT((dataMemoryOffset % alignof(T)) == 0);
+		*ptr = reinterpret_cast<T*>(static_cast<char*>(impl->dataMemory) + dataMemoryOffset);
+		dataMemoryOffset += sizeof(T) * impl->allocatedParticles;
+	};
+	
 	//Sets up SoA particle data
-	impl->particlePos             = reinterpret_cast<__m128*>(impl->dataMemory);
-	impl->particlePos2            = impl->particlePos + impl->allocatedParticles;
-	impl->particlePosOut          = impl->particlePos2 + impl->allocatedParticles;
-	impl->particleVel             = impl->particlePosOut + impl->allocatedParticles;
-	impl->particleVel2            = impl->particleVel + impl->allocatedParticles;
-	impl->particleCells           = reinterpret_cast<__m128i*>(impl->particleVel2 + impl->allocatedParticles);
-	impl->particleGravity         = reinterpret_cast<uint8_t*>(impl->particleCells + impl->allocatedParticles);
-	impl->particleGravityOut      = impl->particleGravity + impl->allocatedParticles;
-	impl->particleRadius          = reinterpret_cast<float*>(impl->particleGravityOut + impl->allocatedParticles);
-	impl->particleDensity         = reinterpret_cast<glm::vec2*>(impl->particleRadius + impl->allocatedParticles);
-	if (reinterpret_cast<char*>(impl->particleDensity + impl->allocatedParticles) != (char*)impl->dataMemory + memoryBytes)
+	AllocateParticleMemory(&impl->particlePos);
+	AllocateParticleMemory(&impl->particlePos2);
+	AllocateParticleMemory(&impl->particlePosOut);
+	AllocateParticleMemory(&impl->particleVel);
+	AllocateParticleMemory(&impl->particleVel2);
+	AllocateParticleMemory(&impl->particleCells);
+	AllocateParticleMemory(&impl->particleRadius);
+	AllocateParticleMemory(&impl->particleDensity);
+	AllocateParticleMemory(&impl->particleGravity);
+	AllocateParticleMemory(&impl->particleGravityOut);
+	if (dataMemoryOffset != memoryBytes)
 		std::abort();
 	
 	//Generates random particle radii
@@ -149,12 +157,11 @@ WaterSimulatorImpl* WSI_New(const WSINewArgs& args)
 	std::fill_n(impl->particleGravityOut, impl->numParticles, (uint8_t)Dir::NegY);
 	
 	//Copies particle positions to m_particlePos
+	alignas(16) float positionLoadBuffer[4] = {};
 	for (size_t i = 0; i < args.numParticles; i++)
 	{
-		for (int j = 0; j < 3; j++)
-		{
-			reinterpret_cast<float*>(impl->particlePos + i)[j] = args.particlePositions[i * 3 + j];
-		}
+		std::copy_n(args.particlePositions + i * 3, 3, positionLoadBuffer);
+		impl->particlePos[i] = _mm_load_ps(positionLoadBuffer);
 	}
 	
 	impl->closeParticles.resize(impl->allocatedParticles);
@@ -213,7 +220,8 @@ void WSI_SwapBuffers(WaterSimulatorImpl* impl)
 
 inline int CellIdx(WaterSimulatorImpl* impl, __m128i coord4)
 {
-	const int32_t* coord = reinterpret_cast<const int32_t*>(&coord4);
+	alignas(16) int32_t coord[4];
+	_mm_store_si128((__m128i*)coord, coord4);
 	
 	if (coord[0] < 0 || coord[1] < 0 || coord[2] < 0 ||
 	    coord[0] >= impl->partGridNumCells.x || coord[1] >= impl->partGridNumCells.y || coord[2] >= impl->partGridNumCells.z)
@@ -232,32 +240,49 @@ inline int CellIdx(WaterSimulatorImpl* impl, __m128i coord4)
 inline bool IsVoxelAir(WaterSimulatorImpl* impl, __m128i voxel)
 {
 	__m128i rVoxel = _mm_sub_epi32(voxel, impl->worldMin);
-	int32_t* rVoxelI = reinterpret_cast<int32_t*>(&rVoxel);
 	
-	if (rVoxelI[0] < 0 || rVoxelI[1] < 0 || rVoxelI[2] < 0 ||
-	    rVoxelI[0] >= impl->worldSize.x || rVoxelI[1] >= impl->worldSize.y || rVoxelI[2] >= impl->worldSize.z)
-	{
+	EG_DEBUG_ASSERT(_mm_extract_epi32(rVoxel, 3) == 0);
+	
+	if (_mm_movemask_epi8(_mm_cmplt_epi32(rVoxel, _mm_setzero_si128())))
 		return false;
-	}
-	size_t idx = rVoxelI[0] + rVoxelI[1] * impl->worldSize.x + rVoxelI[2] * impl->worldSize.x * impl->worldSize.y;
+	if (_mm_movemask_epi8(_mm_cmpgt_epi32(rVoxel, impl->worldSizeMinus1)))
+		return false;
+	
+	alignas(16) int32_t rVoxelI[4];
+	_mm_store_si128((__m128i*)rVoxelI, rVoxel);
+	size_t idx = rVoxelI[0] + rVoxelI[1] * impl->worldSize.x + rVoxelI[2] * impl->voxelAirStrideZ;
 	return impl->isVoxelAir[idx / 8] & (1 << (idx % 8));
 }
 
 int WSI_Query(WaterSimulatorImpl* impl, const eg::AABB& aabb, glm::vec3& waterVelocity, glm::vec3& buoyancy)
 {
+	__m128 aabbMin = _mm_set_ps(-INFINITY, aabb.min.z, aabb.min.y, aabb.min.x);
+	__m128 aabbMax = _mm_set_ps(INFINITY, aabb.max.z, aabb.max.y, aabb.max.x);
+	__m128 querylo = _mm_min_ps(aabbMin, aabbMax);
+	__m128 queryhi = _mm_max_ps(aabbMin, aabbMax);
+	
+	__m128 waterVelM = _mm_setzero_ps();
+	
 	int numIntersecting = 0;
 	for (uint32_t p = 0; p < impl->numParticles; p++)
 	{
-		glm::vec3 pos = *reinterpret_cast<glm::vec3*>(&impl->particlePos2[p]);
-		eg::AABB particleAABB(pos - impl->particleRadius[p], pos + impl->particleRadius[p]);
-		
-		if (aabb.Intersects(particleAABB))
+		__m128 particleRadius = _mm_set1_ps(impl->particleRadius[p]);
+		__m128 poslo = _mm_sub_ps(impl->particlePos2[p], particleRadius);
+		__m128 poshi = _mm_add_ps(impl->particlePos2[p], particleRadius);
+		if (_mm_movemask_ps(_mm_or_ps(_mm_cmpgt_ps(querylo, poshi), _mm_cmplt_ps(queryhi, poslo))) == 0)
 		{
 			numIntersecting++;
-			waterVelocity += *reinterpret_cast<glm::vec3*>(&impl->particleVel2[p]);
+			waterVelM = _mm_add_ps(waterVelM, impl->particleVel2[p]);
 			buoyancy -= DirectionVector((Dir)impl->particleGravity[p]);
 		}
 	}
+	
+	alignas(16) float waterVelBuffer[4];
+	_mm_store_ps(waterVelBuffer, waterVelM);
+	waterVelocity.x = waterVelBuffer[0];
+	waterVelocity.y = waterVelBuffer[1];
+	waterVelocity.z = waterVelBuffer[2];
+	
 	return numIntersecting;
 }
 
@@ -272,7 +297,48 @@ alignas(16) static const float gravities[6][4] =
 	{ 0, 0, -GRAVITY, 0 }
 };
 
+alignas(16) static const int32_t voxelNormalsI[][4] =
+{
+	{ -1, 0, 0, 0}, { 1, 0, 0, 0 },
+	{ 0, -1, 0, 0}, { 0, 1, 0, 0 },
+	{ 0, 0, -1, 0}, { 0, 0, 1, 0 }
+};
+alignas(16) static const float voxelNormalsF[][4] =
+{
+	{ -1, 0, 0, 0}, { 1, 0, 0, 0 },
+	{ 0, -1, 0, 0}, { 0, 1, 0, 0 },
+	{ 0, 0, -1, 0}, { 0, 0, 1, 0 }
+};
+
+alignas(16) static const int32_t voxelTangentsI[][4] =
+{
+	{ 0, 0, 1, 0 }, { 0, 0, 1, 0 },
+	{ 1, 0, 0, 0 }, { 1, 0, 0, 0 },
+	{ 0, 1, 0, 0 }, { 0, 1, 0, 0 }
+};
+alignas(16) static const float voxelTangentsF[][4] =
+{
+	{ 0, 0, 1, 0 }, { 0, 0, 1, 0 },
+	{ 1, 0, 0, 0 }, { 1, 0, 0, 0 },
+	{ 0, 1, 0, 0 }, { 0, 1, 0, 0 }
+};
+
+alignas(16) static const int32_t voxelBitangentsI[][4] =
+{
+	{ 0, 0, 1, 0 }, { 0, 0, 1, 0 },
+	{ 1, 0, 0, 0 }, { 1, 0, 0, 0 },
+	{ 0, 1, 0, 0 }, { 0, 1, 0, 0 }
+};
+alignas(16) static const float voxelBitangentsF[][4] =
+{
+	{ 0, 1, 0, 0 }, { 0, 1, 0, 0 },
+	{ 0, 0, 1, 0 }, { 0, 0, 1, 0 },
+	{ 1, 0, 0, 0 }, { 1, 0, 0, 0 }
+};
+
 constexpr int MAX_PUMP_PER_ITERATION = 8;
+
+__m128i and3Comp = _mm_set_epi32(0, -1, -1, -1);
 
 void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 {
@@ -312,7 +378,6 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 		}
 		
 		std::uniform_real_distribution<float> offsetDist(-pump.maxOutputDist, pump.maxOutputDist);
-		const float zero = 0.0f;
 		
 		//Moves particles
 		for (int i = 0; i < numToMove; i++)
@@ -327,14 +392,14 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 					0.0f
 				};
 				impl->particlePos[idx] = _mm_load_ps(newPos);
-				impl->particleVel[idx] = _mm_load_ps1(&zero);
+				impl->particleVel[idx] = _mm_setzero_ps();
 			}
 		}
 	}
 	
 	std::memset(impl->cellNumParticles.data(), 0, impl->cellNumParticles.size() * sizeof(uint16_t));
 	
-	__m128 gridCell4 = _mm_load1_ps(&INFLUENCE_RADIUS);
+	__m128 gridCell4 = _mm_set1_ps(INFLUENCE_RADIUS);
 	alignas(16) const int32_t gridCellsMin4[] = { impl->partGridMin.x, impl->partGridMin.y, impl->partGridMin.z, 0 };
 	
 	//Partitions particles into grid cells so that detecting close particles will be faster.
@@ -474,7 +539,7 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 		
 		//Initializes acceleration to the gravitational acceleration
 		const float relativeDensity = (impl->particleDensity[a].x - AMBIENT_DENSITY) / impl->particleDensity[a].x;
-		__m128 accel = _mm_mul_ps(_mm_load1_ps(&relativeDensity),
+		__m128 accel = _mm_mul_ps(_mm_set1_ps(relativeDensity),
 			*reinterpret_cast<const __m128*>(gravities[impl->particleGravity[a]]));
 		
 		//Applies acceleration due to pressure
@@ -506,51 +571,12 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 			const float pressure  = STIFFNESS * (densA + densB - 2.0f * TARGET_NUMBER_DENSITY);
 			const float pressNear = STIFFNESS * NEAR_TO_FAR * ( nearDensA + nearDensB );
 			const float accelScale = (pressure * q2 + pressNear * q3) / (dist + FLT_EPSILON);
-			accel = _mm_add_ps(accel, _mm_mul_ps(sep, _mm_load1_ps(&accelScale)));
+			accel = _mm_add_ps(accel, _mm_mul_ps(sep, _mm_set1_ps(accelScale)));
 		}
 		
 		//Applies acceleration to the particle's velocity
 		impl->particleVel[a] = _mm_add_ps(impl->particleVel[a], _mm_mul_ps(accel, dt4));
 	});
-	
-	alignas(16) static const int32_t voxelNormalsI[][4] =
-	{
-		{ -1, 0, 0, 0}, { 1, 0, 0, 0 },
-		{ 0, -1, 0, 0}, { 0, 1, 0, 0 },
-		{ 0, 0, -1, 0}, { 0, 0, 1, 0 }
-	};
-	alignas(16) static const float voxelNormalsF[][4] =
-	{
-		{ -1, 0, 0, 0}, { 1, 0, 0, 0 },
-		{ 0, -1, 0, 0}, { 0, 1, 0, 0 },
-		{ 0, 0, -1, 0}, { 0, 0, 1, 0 }
-	};
-	
-	alignas(16) static const int32_t voxelTangentsI[][4] =
-	{
-		{ 0, 0, 1, 0 }, { 0, 0, 1, 0 },
-		{ 1, 0, 0, 0 }, { 1, 0, 0, 0 },
-		{ 0, 1, 0, 0 }, { 0, 1, 0, 0 }
-	};
-	alignas(16) static const float voxelTangentsF[][4] =
-	{
-		{ 0, 0, 1, 0 }, { 0, 0, 1, 0 },
-		{ 1, 0, 0, 0 }, { 1, 0, 0, 0 },
-		{ 0, 1, 0, 0 }, { 0, 1, 0, 0 }
-	};
-	
-	alignas(16) static const int32_t voxelBitangentsI[][4] =
-	{
-		{ 0, 0, 1, 0 }, { 0, 0, 1, 0 },
-		{ 1, 0, 0, 0 }, { 1, 0, 0, 0 },
-		{ 0, 1, 0, 0 }, { 0, 1, 0, 0 }
-	};
-	alignas(16) static const float voxelBitangentsF[][4] =
-	{
-		{ 0, 1, 0, 0 }, { 0, 1, 0, 0 },
-		{ 0, 0, 1, 0 }, { 0, 0, 1, 0 },
-		{ 1, 0, 0, 0 }, { 1, 0, 0, 0 }
-	};
 	
 	//Velocity diffusion & collision
 	std::for_each_n(std::execution::par_unseq, impl->particlePos, impl->numParticles, [&] (__m128& aPos)
@@ -569,7 +595,7 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 			
 			__m128 sep     = _mm_sub_ps(impl->particlePos[a], impl->particlePos[b]);
 			float invDist  = glm::fastInverseSqrt(_mm_cvtss_f32(_mm_dp_ps(sep, sep, DP_IMM8)));
-			__m128 sepDir  = _mm_mul_ps(sep, _mm_load1_ps(&invDist));
+			__m128 sepDir  = _mm_mul_ps(sep, _mm_set1_ps(invDist));
 			__m128 velDiff = _mm_sub_ps(velA, velB);
 			float velSep   = _mm_cvtss_f32(_mm_dp_ps(velDiff, sepDir, DP_IMM8));
 			if (velSep < 0.0f)
@@ -580,7 +606,7 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 				const float velSepTarget = (velSepA + velSepB) * 0.5f;
 				const float diffSepA     = velSepTarget - velSepA;
 				const float changeSepA   = RADIAL_VISCOSITY_GAIN * diffSepA * infl;
-				const __m128 changeA     = _mm_mul_ps(_mm_load1_ps(&changeSepA), sepDir);
+				const __m128 changeA     = _mm_mul_ps(_mm_set1_ps(changeSepA), sepDir);
 				vel = _mm_add_ps(vel, changeA);
 			}
 		}
@@ -588,27 +614,27 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 		//Applies the velocity to the particle's position
 		const float VEL_SCALE = 0.998f;
 		const float MAX_MOVE = 0.2f;
-		vel = _mm_mul_ps(vel, _mm_load1_ps(&VEL_SCALE));
+		vel = _mm_mul_ps(vel, _mm_set1_ps(VEL_SCALE));
 		__m128 move = _mm_mul_ps(vel, dt4);
 		float moveDistSquared = _mm_cvtss_f32(_mm_dp_ps(move, move, DP_IMM8));
 		if (moveDistSquared > MAX_MOVE * MAX_MOVE)
 		{
 			float scale = MAX_MOVE * glm::fastInverseSqrt(moveDistSquared);
-			move = _mm_mul_ps(move, _mm_load1_ps(&scale));
+			move = _mm_mul_ps(move, _mm_set1_ps(scale));
 		}
 		impl->particlePos2[a] = _mm_add_ps(impl->particlePos[a], move);
 		
-		alignas(16) static const float half[] = { 0.5f, 0.5f, 0.5f, 0.5f };
-		const __m128& halfM = *reinterpret_cast<const __m128*>(half);
+		__m128 halfM = _mm_set1_ps(0.5f);
 		
 		//Collision detection. This works by looping over all voxels close to the particle (within CHECK_RAD), then
 		// checking all faces that face from a solid voxel to an air voxel.
 		for (int tr = 0; tr < 5; tr++)
 		{
-			__m128i centerVx = _mm_cvtps_epi32(_mm_floor_ps(impl->particlePos2[a]));
+			__m128i centerVx = _mm_and_si128(_mm_cvtps_epi32(_mm_floor_ps(impl->particlePos2[a])), and3Comp);
+			EG_DEBUG_ASSERT(_mm_extract_epi32(centerVx, 3) == 0);
 			
 			float minDist = 0;
-			__m128 displaceNormal;
+			__m128 displaceNormal = _mm_setzero_ps();
 			
 			auto CheckFace = [&] (__m128 planePoint, __m128 normal, __m128 tangent, __m128 bitangent,
 				float tangentLen, float biTangentLen, float minDistC)
@@ -618,7 +644,7 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 				
 				if (distC > minDistC && distE < minDist)
 				{
-					__m128 iPos = _mm_sub_ps(_mm_add_ps(impl->particlePos2[a], _mm_mul_ps(_mm_load1_ps(&distC), normal)), planePoint);
+					__m128 iPos = _mm_sub_ps(_mm_add_ps(impl->particlePos2[a], _mm_mul_ps(_mm_set1_ps(distC), normal)), planePoint);
 					float iDotT = _mm_cvtss_f32(_mm_dp_ps(iPos, tangent, DP_IMM8));
 					float iDotBT = _mm_cvtss_f32(_mm_dp_ps(iPos, bitangent, DP_IMM8));
 					float iDotN = _mm_cvtss_f32(_mm_dp_ps(iPos, normal, DP_IMM8));
@@ -693,7 +719,7 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 			if (minDist < 0)
 			{
 				float vDotDisplace = _mm_cvtss_f32(_mm_dp_ps(vel, displaceNormal, DP_IMM8)) * IMPACT_COEFFICIENT;
-				__m128 impulse = _mm_mul_ps(displaceNormal, _mm_load1_ps(&vDotDisplace));
+				__m128 impulse = _mm_mul_ps(displaceNormal, _mm_set1_ps(vDotDisplace));
 				vel = _mm_sub_ps(vel, impulse);
 			}
 			

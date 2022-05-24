@@ -32,7 +32,8 @@ target_compile_options(iomomi PRIVATE -Wall -Wextra -Wshadow -pedantic -Wno-unus
 
 #Adds compiler specific options
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-	set_source_files_properties(Src/Graphics/Water/WaterSimulatorImpl.cpp PROPERTIES COMPILE_FLAGS "-O1 -g0")
+	set_source_files_properties(Src/Graphics/Water/WaterSimulatorImpl.cpp PROPERTIES COMPILE_FLAGS "-O2 -g0")
+#	set_source_files_properties(Src/Graphics/Water/WaterSimulatorWorker.cpp PROPERTIES COMPILE_FLAGS "-O2 -g0")
 	set_source_files_properties(Src/World/Collision.cpp PROPERTIES COMPILE_FLAGS "-O2 -g0")
 endif()
 

@@ -60,7 +60,7 @@ void InitLevelsPlatformDependent()
 		levelsDirPath = "./Levels";
 		if (!eg::FileExists(levelsDirPath.c_str()))
 		{
-			eg::ReleasePanic("Missing directory \"Levels\".");
+			EG_PANIC("Missing directory \"Levels\".");
 		}
 	}
 	

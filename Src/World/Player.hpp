@@ -4,6 +4,8 @@
 #include "Dir.hpp"
 #include "Entities/EntInteractable.hpp"
 
+#include <sstream>
+
 class Player
 {
 public:
@@ -13,7 +15,7 @@ public:
 	
 	void GetViewMatrix(glm::mat4& matrixOut, glm::mat4& inverseMatrixOut) const;
 	
-	void DrawDebugOverlay();
+	void GetDebugText(std::ostringstream& stream);
 	
 	const glm::vec3& EyePosition() const
 	{

@@ -298,8 +298,6 @@ void DeferredRenderer::PrepareSSAO(RenderTexManager& rtManager)
 		*ssaoDepthFadeMin,
 		1.0f / *ssaoDepthFadeRate,
 		1.0f / *ssaoTolerance,
-		1.0f / eg::CurrentResolutionX(),
-		1.0f / eg::CurrentResolutionY(),
 	};
 	eg::DC.PushConstants(0, sizeof(pcData), pcData);
 	
@@ -423,12 +421,8 @@ void DeferredRenderer::DrawPointLights(const std::vector<std::shared_ptr<PointLi
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor1), 0, 1);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor2), 0, 2);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 3);
-	
-	if (hasWater)
-	{
-		eg::DC.BindTexture(waterDepthTexture, 0, 4);
-		eg::DC.BindTexture(eg::GetAsset<eg::Texture>("Caustics"), 0, 5);
-	}
+	eg::DC.BindTexture(waterDepthTexture, 0, 4);
+	eg::DC.BindTexture(eg::GetAsset<eg::Texture>("Caustics"), 0, 5);
 	
 	struct __attribute__((packed)) PointLightPC
 	{
