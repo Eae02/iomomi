@@ -3,9 +3,8 @@
 #include "../../WorldUpdateArgs.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../Graphics/Lighting/PointLightShadowMapper.hpp"
+#include "../../../ImGui.hpp"
 #include "../../../../Protobuf/Build/SlidingWallEntity.pb.h"
-
-#include <imgui.h>
 
 constexpr float HALF_DEPTH = 0.1f;
 
@@ -35,6 +34,7 @@ glm::vec3 SlidingWallEnt::ConstrainMove(const PhysicsObject& object, const glm::
 
 void SlidingWallEnt::RenderSettings()
 {
+#ifdef EG_HAS_IMGUI
 	Ent::RenderSettings();
 	
 	ImGui::DragFloat3("Slide Offset", &m_slideOffset.x, 0.1f);
@@ -43,6 +43,7 @@ void SlidingWallEnt::RenderSettings()
 	
 	ImGui::Combo("Forward Plane", &m_aaQuadComp.upPlane, "X\0Y\0Z\0");
 	ImGui::Combo("Up Plane", &m_upPlane, "X\0Y\0Z\0");
+#endif
 }
 
 void SlidingWallEnt::CommonDraw(const EntDrawArgs& args)

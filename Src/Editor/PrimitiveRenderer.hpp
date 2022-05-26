@@ -1,7 +1,5 @@
 #pragma once
 
-#ifndef IOMOMI_NO_EDITOR
-
 #include "IPrimitiveRenderer.hpp"
 
 class PrimitiveRenderer : public IPrimitiveRenderer
@@ -60,5 +58,3 @@ private:
 	eg::Buffer m_vertexBuffer;
 	eg::Buffer m_indexBuffer;
 };
-
-#endif

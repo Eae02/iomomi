@@ -1,7 +1,6 @@
-#ifndef IOMOMI_NO_EDITOR
 #include "SpawnEntityEditorComponent.hpp"
 
-#include <imgui.h>
+#include <EGameImGui.hpp>
 
 const static std::pair<std::string, std::vector<EntTypeID>> entityGroups[] = 
 {
@@ -144,5 +143,3 @@ bool SpawnEntityEditorComponent::UpdateInput(float dt, const EditorState& editor
 	}
 	return false;
 }
-
-#endif

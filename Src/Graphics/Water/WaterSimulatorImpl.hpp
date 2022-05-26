@@ -1,6 +1,6 @@
 #pragma once
 
-#ifndef IOMOMI_NO_WATER
+#ifdef IOMOMI_ENABLE_WATER
 
 #include "../../World/Dir.hpp"
 #include "WaterPumpDescription.hpp"

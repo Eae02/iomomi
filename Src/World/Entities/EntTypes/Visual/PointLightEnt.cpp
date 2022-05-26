@@ -1,14 +1,14 @@
 #include "PointLightEnt.hpp"
 #include "../../../World.hpp"
+#include "../../../../ImGui.hpp"
 #include "../../../../../Protobuf/Build/PointLightEntity.pb.h"
-
-#include <imgui.h>
 
 const eg::ColorSRGB PointLightEnt::DefaultColor = eg::ColorSRGB::FromHex(0xD1F8FE);
 const float PointLightEnt::DefaultIntensity = 15;
 
 void PointLightEnt::ColorAndIntensitySettings(eg::ColorSRGB& color, float& intensity, bool& enableSpecularHighlights)
 {
+#ifdef EG_HAS_IMGUI
 	ImGui::ColorPicker3("Color", &color.r);
 	ImGui::DragFloat("Intensity", &intensity, 0.1f);
 	ImGui::Checkbox("Specular Highlights", &enableSpecularHighlights);
@@ -21,6 +21,7 @@ void PointLightEnt::ColorAndIntensitySettings(eg::ColorSRGB& color, float& inten
 		color = eg::ColorSRGB::FromHex(0xEED8BA);
 	if (ImGui::Button("Set Color Green"))
 		color = eg::ColorSRGB::FromHex(0x68E427);
+#endif
 }
 
 PointLightEnt::PointLightEnt()

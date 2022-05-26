@@ -1,7 +1,5 @@
 #pragma once
 
-#ifndef IOMOMI_NO_WATER
-
 #include <optional>
 #include "../Entity.hpp"
 #include "../Components/WaterBlockComp.hpp"
@@ -40,5 +38,3 @@ private:
 	bool m_onlyInitially = false;
 	float m_timeUntilDisable = 0;
 };
-
-#endif

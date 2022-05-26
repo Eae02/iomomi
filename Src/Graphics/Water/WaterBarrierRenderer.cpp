@@ -2,9 +2,9 @@
 #include "IWaterSimulator.hpp"
 #include "../../World/World.hpp"
 
-#ifdef IOMOMI_NO_WATER
+#ifndef IOMOMI_ENABLE_WATER
 WaterBarrierRenderer::WaterBarrierRenderer() { }
-void WaterBarrierRenderer::Init(class WaterSimulator* waterSimulator, class World& world) { }
+void WaterBarrierRenderer::Init(class IWaterSimulator* waterSimulator, class World& world) { }
 void WaterBarrierRenderer::Update(float dt) { }
 #else
 

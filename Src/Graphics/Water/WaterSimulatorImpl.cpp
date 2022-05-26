@@ -1,4 +1,4 @@
-#ifndef IOMOMI_NO_WATER
+#ifdef IOMOMI_ENABLE_WATER
 #include <cstdlib>
 #include <execution>
 #include <pcg_random.hpp>

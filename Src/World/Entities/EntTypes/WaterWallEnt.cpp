@@ -1,9 +1,7 @@
-#ifndef IOMOMI_NO_WATER
 #include "WaterWallEnt.hpp"
 #include "../../WorldUpdateArgs.hpp"
+#include "../../../ImGui.hpp"
 #include "../../../../Protobuf/Build/WaterWallEntity.pb.h"
-
-#include <imgui.h>
 
 WaterWallEnt::WaterWallEnt()
 {
@@ -13,6 +11,7 @@ WaterWallEnt::WaterWallEnt()
 
 void WaterWallEnt::RenderSettings()
 {
+#ifdef EG_HAS_IMGUI
 	bool geometryChanged = false;
 	
 	geometryChanged |= ImGui::DragFloat2("Size", &m_aaQuad.radius.x, 0.5f);
@@ -26,6 +25,7 @@ void WaterWallEnt::RenderSettings()
 		m_waterBlockComp.InitFromAAQuadComponent(m_aaQuad, m_position);
 		m_waterBlockComp.editorVersion++;
 	}
+#endif
 }
 
 void WaterWallEnt::EditorDraw(const EntEditorDrawArgs& args)
@@ -120,5 +120,3 @@ int WaterWallEnt::EdGetIconIndex() const
 {
 	return 18;
 }
-
-#endif

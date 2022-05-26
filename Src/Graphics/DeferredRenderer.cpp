@@ -173,10 +173,10 @@ void DeferredRenderer::CreatePipelines()
 	
 	for (uint32_t shadowMode = 0; shadowMode <= 2; shadowMode++)
 	{
-#ifdef IOMOMI_NO_WATER
-		const uint32_t waterMode = 0;
-#else
+#ifdef IOMOMI_ENABLE_WATER
 		for (uint32_t waterMode = 0; waterMode <= 1; waterMode++)
+#else
+		const uint32_t waterMode = 0;
 #endif
 		{
 			pointLightSpecConstants[0] = shadowMode;

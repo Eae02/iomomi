@@ -1,7 +1,5 @@
 #pragma once
 
-#ifndef IOMOMI_NO_EDITOR
-
 #include "../EditorComponent.hpp"
 #include "../../World/Entities/EntTypes/Activation/ActivationLightStripEnt.hpp"
 
@@ -21,5 +19,3 @@ private:
 	std::weak_ptr<ActivationLightStripEnt> m_editingLightStripEntity;
 	int m_editingWayPointIndex = -1;
 };
-
-#endif

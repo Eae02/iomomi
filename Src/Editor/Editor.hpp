@@ -1,7 +1,5 @@
 #pragma once
 
-#ifndef IOMOMI_NO_EDITOR
-
 #include "../World/World.hpp"
 #include "../World/PrepareDrawArgs.hpp"
 #include "../Graphics/RenderContext.hpp"
@@ -38,5 +36,3 @@ private:
 };
 
 extern Editor* editor;
-
-#endif

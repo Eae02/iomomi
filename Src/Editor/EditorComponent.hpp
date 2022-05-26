@@ -1,7 +1,5 @@
 #pragma once
 
-#ifndef IOMOMI_NO_EDITOR
-
 #include "EditorCamera.hpp"
 #include "../World/World.hpp"
 
@@ -101,5 +99,3 @@ public:
 	virtual void RenderSettings(const EditorState& editorState) { }
 	virtual bool CollectIcons(const EditorState& editorState, std::vector<EditorIcon>& icons) { return false; }
 };
-
-#endif

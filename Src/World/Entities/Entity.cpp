@@ -1,7 +1,7 @@
 #include "Entity.hpp"
 #include "Components/ActivatableComp.hpp"
+#include "../../ImGui.hpp"
 
-#include <imgui.h>
 #include <pcg_random.hpp>
 
 std::optional<EntType> entityTypes[(size_t)EntTypeID::MAX];
@@ -15,11 +15,13 @@ uint32_t Ent::GenerateRandomName()
 
 void Ent::RenderSettings()
 {
+#ifdef EG_HAS_IMGUI
 	glm::vec3 position = GetPosition();
 	if (ImGui::DragFloat3("Position", &position.x, 0.1f))
 	{
 		EdMoved(position, {});
 	}
+#endif
 }
 
 void Ent::CommonDraw(const EntDrawArgs& args) { }

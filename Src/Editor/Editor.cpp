@@ -1,14 +1,12 @@
-#ifndef IOMOMI_NO_EDITOR
 #include "Editor.hpp"
 #include "../Levels.hpp"
 #include "../MainGameState.hpp"
 #include "../World/Entities/Components/ActivatorComp.hpp"
-#include "../ImGuiInterface.hpp"
 #include "../ThumbnailRenderer.hpp"
 #include "../MainMenuGameState.hpp"
 
 #include <fstream>
-#include <imgui.h>
+#include <EGameImGui.hpp>
 #include <misc/cpp/imgui_stdlib.h>
 
 Editor* editor;
@@ -101,7 +99,7 @@ void Editor::RunFrame(float dt)
 			m_worlds[i]->SetWindowRect(windowRect);
 			
 			const bool flipY = eg::CurrentGraphicsAPI() == eg::GraphicsAPI::OpenGL;
-			drawList->AddImage(MakeImTextureID(m_worlds[i]->renderTexture.GetView()),
+			drawList->AddImage(eg::imgui::MakeImTextureID(m_worlds[i]->renderTexture.GetView()),
 			                   imguiCursorPos, windowRect.Max(),
 			                   ImVec2(0, flipY ? 1 : 0), ImVec2(1, flipY ? 0 : 1));
 		}
@@ -154,8 +152,8 @@ void Editor::RunFrame(float dt)
 				if (level.thumbnail.handle != nullptr && ImGui::IsItemHovered())
 				{
 					ImGui::BeginTooltip();
-					ImGui::Image(MakeImTextureID(level.thumbnail.GetView()),
-								 ImVec2(LEVEL_THUMBNAIL_RES_X / 2.0f, LEVEL_THUMBNAIL_RES_Y / 2.0f));
+					ImGui::Image(eg::imgui::MakeImTextureID(level.thumbnail.GetView()),
+					             ImVec2(LEVEL_THUMBNAIL_RES_X / 2.0f, LEVEL_THUMBNAIL_RES_Y / 2.0f));
 					ImGui::EndTooltip();
 				}
 				
@@ -292,5 +290,3 @@ void Editor::RunFrame(float dt)
 		}
 	}
 }
-
-#endif

@@ -1,8 +1,7 @@
 #include "LadderEnt.hpp"
-#include "../../../../Protobuf/Build/LadderEntity.pb.h"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
-
-#include <imgui.h>
+#include "../../../ImGui.hpp"
+#include "../../../../Protobuf/Build/LadderEntity.pb.h"
 
 enum class LadderComponent
 {
@@ -47,6 +46,7 @@ LadderEnt::LadderEnt()
 
 void LadderEnt::RenderSettings()
 {
+#ifdef EG_HAS_IMGUI
 	Ent::RenderSettings();
 	
 	if (ImGui::DragInt("Length", &m_length, 0.1f, 1, INT_MAX, nullptr, ImGuiSliderFlags_AlwaysClamp))
@@ -58,6 +58,7 @@ void LadderEnt::RenderSettings()
 	{
 		UpdateTransformAndAABB();
 	}
+#endif
 }
 
 template <typename CallbackTp>

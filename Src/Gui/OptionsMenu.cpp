@@ -191,7 +191,7 @@ void InitOptionsMenu()
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::reflectionsQuality, "Reflections", true));
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::lightingQuality, "Lighting", true));
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::ssaoQuality, "SSAO", true));
-#ifndef IOMOMI_NO_WATER
+#ifdef IOMOMI_ENABLE_WATER
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::waterQuality, "Water", true));
 #endif
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::bloomQuality, "Bloom", true));

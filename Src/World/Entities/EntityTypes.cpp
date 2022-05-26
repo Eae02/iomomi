@@ -87,10 +87,7 @@ void InitEntityTypes()
 	DefineEntityType<MeshEnt>("Mesh", "Mesh");
 	DefineEntityType<ColliderEnt>("Collider", "Collider");
 	DefineEntityType<PushButtonEnt>("PushButton", "Push Button");
-	
-#ifndef IOMOMI_NO_WATER
 	DefineEntityType<WaterPlaneEnt>("WaterPlane", "Water Plane");
 	DefineEntityType<WaterWallEnt>("WaterWall", "Water Wall");
 	DefineEntityType<PumpEnt>("Pump", "Water Pump");
-#endif
 }

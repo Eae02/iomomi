@@ -1,4 +1,3 @@
-#ifndef IOMOMI_NO_EDITOR
 #include "LightStripEditorComponent.hpp"
 #include "../../World/Entities/Components/ActivatableComp.hpp"
 #include "../../World/Entities/Components/ActivatorComp.hpp"
@@ -172,5 +171,3 @@ bool LightStripEditorComponent::CollectIcons(const EditorState& editorState, std
 	
 	return false;
 }
-
-#endif

@@ -1,8 +1,7 @@
 #include "DecalEnt.hpp"
+#include "../../../../ImGui.hpp"
 #include "../../../../Graphics/Materials/DecalMaterial.hpp"
 #include "../../../../../Protobuf/Build/DecalEntity.pb.h"
-
-#include <imgui.h>
 
 static const char* decalMaterials[] = 
 {
@@ -58,6 +57,7 @@ glm::mat4 DecalEnt::GetDecalTransform() const
 
 void DecalEnt::RenderSettings()
 {
+#ifdef EG_HAS_IMGUI
 	Ent::RenderSettings();
 	
 	if (ImGui::Combo("Material", &m_decalMaterialIndex, decalMaterials, std::size(decalMaterials)))
@@ -69,6 +69,7 @@ void DecalEnt::RenderSettings()
 	ImGui::SliderAngle("Rotation", &rotation);
 	
 	ImGui::DragInt2("Repetitions", &m_repetitions.x);
+#endif
 }
 
 void DecalEnt::CommonDraw(const EntDrawArgs& args)

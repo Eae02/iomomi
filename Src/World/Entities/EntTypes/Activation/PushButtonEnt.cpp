@@ -1,10 +1,9 @@
 #include "PushButtonEnt.hpp"
 #include "../../../Player.hpp"
 #include "../../../../Graphics/Materials/StaticPropMaterial.hpp"
-#include "../../../../../Protobuf/Build/PushButtonEntity.pb.h"
+#include "../../../../ImGui.hpp"
 #include "../../../../Settings.hpp"
-
-#include <imgui.h>
+#include "../../../../../Protobuf/Build/PushButtonEntity.pb.h"
 
 static const eg::Model* pushButtonModel;
 static std::vector<const eg::IMaterial*> pushButtonMaterials;
@@ -26,6 +25,7 @@ PushButtonEnt::PushButtonEnt()
 
 void PushButtonEnt::RenderSettings()
 {
+#ifdef EG_HAS_IMGUI
 	Ent::RenderSettings();
 	
 	ImGui::SliderInt("Rotation", &m_rotation, 0, 3);
@@ -34,6 +34,7 @@ void PushButtonEnt::RenderSettings()
 	
 	ImGui::DragFloat("Activation Delay", &m_activationDelay, 0.1f);
 	ImGui::DragFloat("Activation Duration", &m_activationDuration, 0.1f);
+#endif
 }
 
 glm::mat4 PushButtonEnt::GetTransform() const

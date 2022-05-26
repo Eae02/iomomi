@@ -3,7 +3,10 @@
 #include "../GameState.hpp"
 #include "../MainMenuGameState.hpp"
 #include "../Settings.hpp"
+
+#ifdef IOMOMI_ENABLE_EDITOR
 #include "../Editor/Editor.hpp"
+#endif
 
 constexpr float BUTTON_W = 200;
 
@@ -24,7 +27,7 @@ PausedMenu::PausedMenu()
 	m_widgetList.AddWidget(Button("Options", [&] { optionsMenuOpen = true; }));
 	m_mainMenuWidgetIndex = m_widgetList.AddWidget(Button("", [&]
 	{
-#ifndef IOMOMI_NO_EDITOR
+#ifdef IOMOMI_ENABLE_EDITOR
 		if (isFromEditor)
 		{
 			SetCurrentGS(editor);

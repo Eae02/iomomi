@@ -8,8 +8,6 @@
 #include "../Graphics/RenderSettings.hpp"
 #include "../Graphics/Water/IWaterSimulator.hpp"
 
-#include <imgui.h>
-
 GravityGun::MidMaterial::MidMaterial()
 {
 	eg::GraphicsPipelineCreateInfo pipelineCI;

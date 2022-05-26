@@ -1,9 +1,8 @@
 #include "ColliderEnt.hpp"
 #include "Activation/CubeEnt.hpp"
 #include "../../Player.hpp"
+#include "../../../ImGui.hpp"
 #include "../../../../Protobuf/Build/ColliderEntity.pb.h"
-
-#include <imgui.h>
 
 bool ColliderEnt::drawInEditor = true;
 
@@ -48,6 +47,7 @@ ColliderEnt::ColliderEnt()
 
 void ColliderEnt::RenderSettings()
 {
+#ifdef EG_HAS_IMGUI
 	Ent::RenderSettings();
 	ImGui::DragFloat3("Radius", &m_radius.x, 0.1f);
 	ImGui::Separator();
@@ -66,6 +66,7 @@ void ColliderEnt::RenderSettings()
 	ImGui::Checkbox("Block -Y", &m_blockedGravityModes[3]);
 	ImGui::Checkbox("Block +Z", &m_blockedGravityModes[4]);
 	ImGui::Checkbox("Block -Z", &m_blockedGravityModes[5]);
+#endif
 }
 
 std::optional<eg::ColorSRGB> ColliderEnt::EdGetBoxColor(bool selected) const

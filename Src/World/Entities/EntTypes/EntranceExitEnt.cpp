@@ -5,9 +5,8 @@
 #include "../../../Graphics/Lighting/PointLightShadowMapper.hpp"
 #include "../../../Graphics/Water/IWaterSimulator.hpp"
 #include "../../../Settings.hpp"
+#include "../../../ImGui.hpp"
 #include "../../../../Protobuf/Build/EntranceEntity.pb.h"
-
-#include <imgui.h>
 
 static constexpr float MESH_LENGTH = 4.7f;
 static constexpr float MESH_HEIGHT = 3.0f;
@@ -387,9 +386,11 @@ void EntranceExitEnt::EditorDraw(const EntEditorDrawArgs& args)
 
 void EntranceExitEnt::RenderSettings()
 {
+#ifdef EG_HAS_IMGUI
 	Ent::RenderSettings();
 	ImGui::Separator();
 	ImGui::Combo("Type", reinterpret_cast<int*>(&m_type), "Entrance\0Exit\0");
+#endif
 }
 
 static const float forwardRotations[6] = { eg::PI * 0.5f, eg::PI * 1.5f, 0, 0, eg::PI * 2.0f, eg::PI * 1.0f };

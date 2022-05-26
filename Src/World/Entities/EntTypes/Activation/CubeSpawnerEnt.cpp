@@ -3,9 +3,8 @@
 #include "../../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../../Graphics/Materials/EmissiveMaterial.hpp"
 #include "../../../../Graphics/Lighting/PointLightShadowMapper.hpp"
+#include "../../../../ImGui.hpp"
 #include "../../../../../Protobuf/Build/CubeSpawnerEntity.pb.h"
-
-#include <imgui.h>
 
 static const eg::Model* cubeSpawnerModel;
 static int lightsMaterialIndex;
@@ -27,12 +26,14 @@ EG_ON_INIT(OnInit)
 
 void CubeSpawnerEnt::RenderSettings()
 {
+#ifdef EG_HAS_IMGUI
 	Ent::RenderSettings();
 	
 	ImGui::Checkbox("Float", &m_cubeCanFloat);
 	
 	ImGui::Checkbox("Require Activation", &m_requireActivation);
 	ImGui::Checkbox("Reset on Activation", &m_activationResets);
+#endif
 }
 
 static const eg::ColorSRGB emissiveColor = eg::ColorSRGB::FromHex(0xD1F8FE);

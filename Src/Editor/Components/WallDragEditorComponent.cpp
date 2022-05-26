@@ -2,9 +2,8 @@
 #include "WallDragEditorComponent.hpp"
 #include "../PrimitiveRenderer.hpp"
 #include "../../Graphics/WallShader.hpp"
-#include "../../ImGuiInterface.hpp"
 
-#include <imgui.h>
+#include <EGameImGui.hpp>
 
 void WallDragEditorComponent::Update(float dt, const EditorState& editorState)
 {
@@ -396,7 +395,7 @@ void WallDragEditorComponent::RenderSettings(const EditorState& editorState)
 				textureView = albedoTex.GetView(subresource, eg::TextureViewType::Flat2D);
 			}
 			
-			drawList->AddImage(MakeImTextureID(textureView),
+			drawList->AddImage(eg::imgui::MakeImTextureID(textureView),
 			                   ImVec2(imguiCursorPos.x + ICON_PADDING, imguiCursorPos.y + ICON_PADDING),
 			                   ImVec2(imguiCursorPos.x + ITEM_HEIGHT - ICON_PADDING,
 			                          imguiCursorPos.y + ITEM_HEIGHT - ICON_PADDING));

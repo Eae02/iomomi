@@ -6,8 +6,7 @@
 #include "../../../../Protobuf/Build/ForceFieldEntity.pb.h"
 #include "../../../Graphics/GraphicsCommon.hpp"
 #include "../../../Game.hpp"
-
-#include <imgui.h>
+#include "../../../ImGui.hpp"
 
 static ForceFieldMaterial* forceFieldMaterial;
 static eg::Buffer* forceFieldQuadBuffer;
@@ -36,6 +35,7 @@ EG_ON_SHUTDOWN(OnShutdown)
 
 void ForceFieldEnt::RenderSettings()
 {
+#ifdef EG_HAS_IMGUI
 	Ent::RenderSettings();
 	
 	ImGui::DragFloat3("Radius", &radius.x, 0.1f);
@@ -43,6 +43,7 @@ void ForceFieldEnt::RenderSettings()
 	ImGui::Combo("Set Gravity", reinterpret_cast<int*>(&newGravity), DirectionNames, std::size(DirectionNames));
 	
 	ImGui::Combo("Activate Action", reinterpret_cast<int*>(&activateAction), "Enable\0Disable\0Flip\0");
+#endif
 }
 
 static inline glm::vec4 MakeTransformVectorWithLen(const glm::vec3& v)

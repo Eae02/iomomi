@@ -9,8 +9,11 @@
 
 #include <iomanip>
 #include <fstream>
+
+#ifdef EG_HAS_IMGUI
 #include <imgui.h>
 #include <imgui_internal.h>
+#endif
 
 MainGameState* mainGameState;
 
@@ -117,7 +120,7 @@ void MainGameState::OnDeactivate()
 	m_relativeMouseModeLostListener.reset();
 }
 
-#ifndef IOMOMI_NO_EDITOR
+#ifdef IOMOMI_ENABLE_EDITOR
 extern std::weak_ptr<World> runningEditorWorld;
 #endif
 
@@ -242,7 +245,7 @@ void MainGameState::RunFrame(float dt)
 		UpdateViewProjMatrices();
 	}
 	
-#ifndef IOMOMI_NO_EDITOR
+#ifdef EG_HAS_IMGUI
 	if (m_ssrReflectionColorEditorShown)
 	{
 		ImGui::Begin("SSR Reflection Color Editor", &m_ssrReflectionColorEditorShown);

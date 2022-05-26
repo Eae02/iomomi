@@ -2,8 +2,7 @@
 #include "../../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../../../Protobuf/Build/MeshEntity.pb.h"
 #include "../../../../Game.hpp"
-
-#include <imgui.h>
+#include "../../../../ImGui.hpp"
 
 struct ModelOption
 {
@@ -105,6 +104,7 @@ MeshEnt::MeshEnt()
 
 void MeshEnt::RenderSettings()
 {
+#ifdef EG_HAS_IMGUI
 	Ent::RenderSettings();
 	
 	float uniformScale = (m_scale.x + m_scale.y + m_scale.z) / 3.0f;
@@ -177,6 +177,7 @@ void MeshEnt::RenderSettings()
 	if (!collisionToggleDisabled)
 		m_hasCollision = hasCollision;
 	ImPopDisabled(collisionToggleDisabled);
+#endif
 }
 
 glm::mat4 MeshEnt::GetCommonTransform() const

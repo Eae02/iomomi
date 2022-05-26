@@ -1,8 +1,6 @@
-#ifndef IOMOMI_NO_WATER
 #include "WaterPlaneEnt.hpp"
+#include "../../../ImGui.hpp"
 #include "../../../../Protobuf/Build/WaterPlaneEntity.pb.h"
-
-#include <imgui.h>
 
 WaterPlaneEnt::WaterPlaneEnt()
 {
@@ -52,13 +50,13 @@ void WaterPlaneEnt::RenderSettings()
 {
 	Ent::RenderSettings();
 	
+#ifdef EG_HAS_IMGUI
 	if (ImGui::DragInt("Density Boost", &densityBoost))
 		densityBoost = std::max(densityBoost, 0);
+#endif
 }
 
 int WaterPlaneEnt::EdGetIconIndex() const
 {
 	return 16;
 }
-
-#endif

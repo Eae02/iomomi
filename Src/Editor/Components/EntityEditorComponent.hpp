@@ -1,7 +1,5 @@
 #pragma once
 
-#ifndef IOMOMI_NO_EDITOR
-
 #include "../EditorComponent.hpp"
 
 #include <EGame/RotationGizmo.hpp>
@@ -65,5 +63,3 @@ private:
 	
 	uint64_t m_lastUpdateFrameIndex = 0;
 };
-
-#endif

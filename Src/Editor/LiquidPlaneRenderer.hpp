@@ -1,7 +1,5 @@
 #pragma once
 
-#ifndef IOMOMI_NO_EDITOR
-
 class LiquidPlaneRenderer
 {
 public:
@@ -16,5 +14,3 @@ private:
 	
 	eg::Pipeline m_pipeline;
 };
-
-#endif

@@ -1,6 +1,6 @@
 #include "IWaterSimulator.hpp"
 
-#ifndef IOMOMI_NO_WATER
+#ifdef IOMOMI_ENABLE_WATER
 #include "WaterSimulatorImpl.hpp"
 #include "../RenderSettings.hpp"
 #include "../../World/World.hpp"

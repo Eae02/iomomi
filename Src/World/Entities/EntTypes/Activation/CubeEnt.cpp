@@ -6,8 +6,8 @@
 #include "../../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../../Graphics/Materials/GravityIndicatorMaterial.hpp"
 #include "../../../../Settings.hpp"
+#include "../../../../ImGui.hpp"
 #include "../../../../../Protobuf/Build/CubeEntity.pb.h"
-#include <imgui.h>
 
 static float* cubeBuoyancyScale = eg::TweakVarFloat("cube_bcy_scale", 0.5f, 0.0f);
 static float* cubeBuoyancyLimit = eg::TweakVarFloat("cube_bcy_lim", 25.0f, 0.0f);
@@ -64,10 +64,12 @@ bool CubeEnt::ShouldCollide(const PhysicsObject& self, const PhysicsObject& othe
 
 void CubeEnt::RenderSettings()
 {
+#ifdef EG_HAS_IMGUI
 	Ent::RenderSettings();
 	
 	ImGui::Checkbox("Float", &canFloat);
 	ImGui::Checkbox("Gravity control hint", &m_showChangeGravityControlHint);
+#endif
 }
 
 void CubeEnt::Draw(eg::MeshBatch& meshBatch, const glm::mat4& transform) const

@@ -1,13 +1,11 @@
-#ifndef IOMOMI_NO_WATER
 #include "PumpEnt.hpp"
 #include "../../WorldUpdateArgs.hpp"
 #include "../../Player.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../Graphics/Materials/EmissiveMaterial.hpp"
 #include "../../../Settings.hpp"
+#include "../../../ImGui.hpp"
 #include "../../../../Protobuf/Build/PumpEntity.pb.h"
-
-#include <imgui.h>
 
 static const eg::Model* pumpModel;
 static const eg::IMaterial* pumpBodyMaterial;
@@ -82,6 +80,7 @@ PumpEnt::PumpEnt()
 
 void PumpEnt::RenderSettings()
 {
+#ifdef EG_HAS_IMGUI
 	Ent::RenderSettings();
 	
 	if (ImGui::Button("Reset Rotation"))
@@ -106,6 +105,7 @@ void PumpEnt::RenderSettings()
 		m_maxInputDistance = std::max(m_maxInputDistance, 0.0f);
 	if (ImGui::DragFloat("Max Output Distance", &m_maxOutputDistance, 0.01f))
 		m_maxOutputDistance = std::max(m_maxOutputDistance, 0.0f);
+#endif
 }
 
 constexpr float BUTTON_PUSH_ANIMATION_TIME = 0.5f;
@@ -342,5 +342,3 @@ std::optional<WaterPumpDescription> PumpEnt::GetPumpDescription() const
 	
 	return desc;
 }
-
-#endif

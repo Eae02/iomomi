@@ -1,13 +1,10 @@
-#ifndef IOMOMI_NO_EDITOR
 #include "EntityEditorComponent.hpp"
 #include "../SelectionRenderer.hpp"
 #include "../PrimitiveRenderer.hpp"
 #include "../../World/Entities/EntTypes/Activation/ActivationLightStripEnt.hpp"
 #include "../../World/Entities/Components/ActivatorComp.hpp"
-#include "../../ImGuiInterface.hpp"
 #include "../../Settings.hpp"
-
-#include <imgui.h>
+#include "../../ImGui.hpp"
 
 EntityEditorComponent::EntityEditorComponent()
 {
@@ -607,5 +604,3 @@ void EntityEditorComponent::LateDraw(const EditorState& editorState) const
 		m_rotationGizmo.Draw(editorState.viewProjection);
 	}
 }
-
-#endif

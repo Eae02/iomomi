@@ -6,9 +6,12 @@
 #include "../../../../Graphics/WallShader.hpp"
 #include "../../../../../Protobuf/Build/WindowEntity.pb.h"
 
+#ifdef EG_HAS_IMGUI
 #include <imgui.h>
-#include <glm/glm.hpp>
 #include <imgui_internal.h>
+#endif
+
+#include <glm/glm.hpp>
 
 struct WindowType
 {
@@ -141,6 +144,7 @@ WindowEnt::WindowEnt()
 
 void WindowEnt::RenderSettings()
 {
+#ifdef EG_HAS_IMGUI
 	Ent::RenderSettings();
 	
 	ImGui::DragFloat2("Size", &m_aaQuad.radius.x, 0.5f);
@@ -215,6 +219,7 @@ void WindowEnt::RenderSettings()
 	{
 		UpdateWaterBlock();
 	}
+#endif
 }
 
 void WindowEnt::UpdateWaterBlock()

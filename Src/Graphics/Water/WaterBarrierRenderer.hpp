@@ -12,7 +12,7 @@ public:
 	void Update(float dt);
 	
 private:
-#ifndef IOMOMI_NO_WATER
+#ifdef IOMOMI_ENABLE_WATER
 	eg::Pipeline m_calcPipeline;
 	eg::Pipeline m_fadePipeline;
 	

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "ImGuiInterface.hpp"
 #include "Graphics/RenderContext.hpp"
 #include "World/World.hpp"
 #include "World/Player.hpp"
@@ -20,11 +19,9 @@ public:
 private:
 	float m_gameTime = 0;
 	
-#ifndef IOMOMI_NO_EDITOR
-	ImGuiInterface m_imGuiInterface;
-#endif
-	
 	RenderContext m_renderCtx;
+	
+	class GameState* m_editorGameState;
 	
 	uint64_t m_levelThumbnailUpdateFrameIdx = 0;
 	struct LevelThumbnailUpdate* m_levelThumbnailUpdate = nullptr;

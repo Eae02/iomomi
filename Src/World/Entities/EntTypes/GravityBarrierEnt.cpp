@@ -6,9 +6,9 @@
 #include "../../../Graphics/Materials/MeshDrawArgs.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../Graphics/Materials/EmissiveMaterial.hpp"
+#include "../../../ImGui.hpp"
 #include "../../../../Protobuf/Build/GravityBarrierEntity.pb.h"
 
-#include <imgui.h>
 #include <pcg_random.hpp>
 
 static eg::Buffer vertexBuffer;
@@ -196,6 +196,7 @@ int GravityBarrierEnt::BlockedAxis() const
 
 void GravityBarrierEnt::RenderSettings()
 {
+#ifdef EG_HAS_IMGUI
 	Ent::RenderSettings();
 	
 	m_waterBlockComponentOutOfDate |= ImGui::DragFloat2("Size", &m_aaQuad.radius.x, 0.5f);
@@ -215,6 +216,7 @@ void GravityBarrierEnt::RenderSettings()
 	m_waterBlockComponentOutOfDate |= ImGui::Checkbox("Never block water", &m_neverBlockWater);
 	
 	ImGui::Checkbox("Red from water", &m_redFromWater);
+#endif
 }
 
 const void* GravityBarrierEnt::GetComponent(const std::type_info& type) const

@@ -1,4 +1,3 @@
-#ifndef IOMOMI_NO_EDITOR
 #include "EditorComponent.hpp"
 #include "../Graphics/RenderSettings.hpp"
 #include "../World/Entities/Components/LiquidPlaneComp.hpp"
@@ -63,5 +62,3 @@ void EditorState::InvalidateWater() const
 }
 
 static_assert(EDITOR_NUM_TOOLS == magic_enum::enum_count<EditorTool>());
-
-#endif

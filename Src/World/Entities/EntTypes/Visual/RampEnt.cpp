@@ -1,10 +1,10 @@
 #include "RampEnt.hpp"
 #include "../../../Collision.hpp"
+#include "../../../../ImGui.hpp"
 #include "../../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../../Graphics/WallShader.hpp"
 #include "../../../../../Protobuf/Build/Ramp.pb.h"
 
-#include <imgui.h>
 #include <glm/glm.hpp>
 
 static const glm::vec3 untransformedPositions[4] = 
@@ -63,6 +63,7 @@ RampEnt::RampEnt()
 
 void RampEnt::RenderSettings()
 {
+#ifdef EG_HAS_IMGUI
 	Ent::RenderSettings();
 	
 	if (ImGui::DragFloat3("Size", &m_size.x))
@@ -93,6 +94,7 @@ void RampEnt::RenderSettings()
 	if (ImGui::SliderInt("Texture Rotation", &m_textureRotation, 0, 4))
 		m_meshOutOfDate = true;
 	ImGui::Checkbox("Stretch Texture V", &m_stretchTextureV);
+#endif
 }
 
 void RampEnt::CommonDraw(const EntDrawArgs& args)

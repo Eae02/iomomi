@@ -1,7 +1,5 @@
 #include "LightSource.hpp"
 
-#include <imgui.h>
-
 static std::atomic<uint64_t> nextInstanceID(0);
 
 LightSource::LightSource(const eg::ColorSRGB& color, float intensity)

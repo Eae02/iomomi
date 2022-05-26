@@ -3,9 +3,8 @@
 #include "../../../World.hpp"
 #include "../../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../../Graphics/Materials/EmissiveMaterial.hpp"
+#include "../../../../ImGui.hpp"
 #include "../../../../../Protobuf/Build/FloorButtonEntity.pb.h"
-
-#include <imgui.h>
 
 static eg::Model* s_model;
 static eg::CollisionMesh s_collisionMesh;
@@ -63,7 +62,9 @@ FloorButtonEnt::FloorButtonEnt()
 
 void FloorButtonEnt::RenderSettings()
 {
+#ifdef EG_HAS_IMGUI
 	ImGui::SliderFloat("Linger Time", &m_lingerTime, 0.0f, 2.0f, "%.2f s");
+#endif
 	
 	Ent::RenderSettings();
 }

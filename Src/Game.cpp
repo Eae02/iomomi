@@ -7,6 +7,7 @@
 #include "Graphics/WallShader.hpp"
 #include "MainMenuGameState.hpp"
 #include "ThumbnailRenderer.hpp"
+#include "ImGui.hpp"
 
 #include <fstream>
 
@@ -17,19 +18,34 @@ Game::Game()
 	globalRNG = pcg32_fast(std::time(nullptr));
 	GameRenderer::instance = new GameRenderer(m_renderCtx);
 	
-#ifndef IOMOMI_NO_EDITOR
+#ifdef IOMOMI_ENABLE_EDITOR
 	editor = new Editor(m_renderCtx);
-	eg::console::AddCommand("ed", 0, [&] (std::span<const std::string_view> args, eg::console::Writer& writer)
-	{
-		SetCurrentGS(editor);
-		eg::console::Hide();
-	});
+	m_editorGameState = editor;
+#endif
+	
+#ifdef EG_HAS_IMGUI
+	eg::imgui::InitializeArgs imguiInitArgs;
+	imguiInitArgs.enableImGuiIni = eg::DevMode();
+	eg::imgui::Initialize(imguiInitArgs);
 #endif
 	
 	mainGameState = new MainGameState;
 	mainMenuGameState = new MainMenuGameState();
 	
 	SetCurrentGS(mainMenuGameState);
+	
+	eg::console::AddCommand("ed", 0, [&] (std::span<const std::string_view> args, eg::console::Writer& writer)
+	{
+		if (m_editorGameState != nullptr)
+		{
+			SetCurrentGS(m_editorGameState);
+			eg::console::Hide();
+		}
+		else
+		{
+			writer.WriteLine(eg::console::ErrorColor, "This version of iomomi was not compiled with the editor enabled");
+		}
+	});
 	
 #ifndef __EMSCRIPTEN__
 	eg::console::AddCommand("updateThumbnails", 0, [&] (std::span<const std::string_view> args, eg::console::Writer& writer)
@@ -117,9 +133,7 @@ Game::Game()
 
 Game::~Game()
 {
-#ifndef IOMOMI_NO_EDITOR
-	delete editor;
-#endif
+	delete m_editorGameState;
 	delete mainGameState;
 	delete mainMenuGameState;
 	delete RenderSettings::instance;
@@ -141,10 +155,6 @@ void Game::RunFrame(float dt)
 		m_levelThumbnailUpdate = nullptr;
 	}
 	
-#ifndef IOMOMI_NO_EDITOR
-	m_imGuiInterface.NewFrame();
-#endif
-	
 	if (CurrentGS() != nullptr)
 	{
 		CurrentGS()->RunFrame(dt);
@@ -157,10 +167,6 @@ void Game::RunFrame(float dt)
 		eg::DC.BeginRenderPass(rpBeginInfo);
 		eg::DC.EndRenderPass();
 	}
-	
-#ifndef IOMOMI_NO_EDITOR
-	m_imGuiInterface.EndFrame();
-#endif
 	
 	m_gameTime += dt;
 }

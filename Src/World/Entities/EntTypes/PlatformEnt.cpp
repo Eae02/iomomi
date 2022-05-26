@@ -5,9 +5,8 @@
 #include "../../../Settings.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../Graphics/Lighting/PointLightShadowMapper.hpp"
+#include "../../../ImGui.hpp"
 #include "../../../../Protobuf/Build/PlatformEntity.pb.h"
-
-#include <imgui.h>
 
 static eg::Model* platformModel;
 static eg::IMaterial* platformMaterial;
@@ -70,6 +69,7 @@ std::vector<glm::vec3> PlatformEnt::GetConnectionPoints(const Ent& entity)
 
 void PlatformEnt::RenderSettings()
 {
+#ifdef EG_HAS_IMGUI
 	Ent::RenderSettings();
 	
 	if (ImGui::DragFloat2("Slide Offset", &m_slideOffset.x, 0.1f))
@@ -87,6 +87,7 @@ void PlatformEnt::RenderSettings()
 		m_launchSpeed = std::max(m_launchSpeed, 0.0f);
 		m_editorLaunchTrajectory.clear();
 	}
+#endif
 }
 
 void PlatformEnt::DrawSliderMesh(eg::MeshBatch& meshBatch, const eg::Frustum& frustum,

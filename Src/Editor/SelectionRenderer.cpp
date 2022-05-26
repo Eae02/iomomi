@@ -1,4 +1,3 @@
-#ifndef IOMOMI_NO_EDITOR
 #include "SelectionRenderer.hpp"
 
 static eg::Pipeline modelPipeline;
@@ -122,5 +121,3 @@ void SelectionRenderer::EndFrame()
 	eg::DC.PushConstants(0, sizeof(float) * 3, &color);
 	eg::DC.Draw(0, 3, 0, 1);
 }
-
-#endif
