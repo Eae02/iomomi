@@ -2,8 +2,6 @@
 
 #include "../EditorComponent.hpp"
 
-#include <EGame/RotationGizmo.hpp>
-
 class EntityEditorComponent : public EditorComponent
 {
 public:

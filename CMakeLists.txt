@@ -91,7 +91,7 @@ if (${IOMOMI_WATER})
 endif()
 
 # finds and adds protobuf
-if (${PROTOBUF_SRC_DIR})
+if (PROTOBUF_SRC_DIR)
 	target_link_libraries(iomomi "${PROTOBUF_SRC_DIR}/.libs/libprotobuf.a")
 	target_include_directories(iomomi SYSTEM PRIVATE ${PROTOBUF_SRC_DIR})
 else()

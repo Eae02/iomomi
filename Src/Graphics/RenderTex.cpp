@@ -74,6 +74,29 @@ eg::Format GetFormatForRenderTexture(RenderTex texture)
 	}
 }
 
+void AssertRenderTextureFormatSupport()
+{
+	for (uint32_t renderTexInt = 0; renderTexInt < magic_enum::enum_count<RenderTex>(); renderTexInt++)
+	{
+		eg::Format format = GetFormatForRenderTexture((RenderTex)renderTexInt);
+		
+		eg::FormatCapabilities capabilities = eg::FormatCapabilities::SampledImage;
+		if (eg::GetFormatType(format) == eg::FormatTypes::DepthStencil)
+			capabilities |= eg::FormatCapabilities::DepthStencilAttachment;
+		else
+			capabilities |= eg::FormatCapabilities::SampledImageFilterLinear | eg::FormatCapabilities::ColorAttachment;
+		
+		eg::AssertFormatSupport(format, capabilities);
+	}
+	
+	eg::AssertFormatSupport(GB_COLOR_FORMAT, eg::FormatCapabilities::SampledImage |
+		eg::FormatCapabilities::SampledImageFilterLinear | eg::FormatCapabilities::ColorAttachment | eg::FormatCapabilities::ColorAttachmentBlend);
+	eg::AssertFormatSupport(LIGHT_COLOR_FORMAT_LDR, eg::FormatCapabilities::SampledImage |
+		eg::FormatCapabilities::SampledImageFilterLinear | eg::FormatCapabilities::ColorAttachment | eg::FormatCapabilities::ColorAttachmentBlend);
+	eg::AssertFormatSupport(LIGHT_COLOR_FORMAT_HDR, eg::FormatCapabilities::SampledImage |
+		eg::FormatCapabilities::SampledImageFilterLinear | eg::FormatCapabilities::ColorAttachment | eg::FormatCapabilities::ColorAttachmentBlend);
+}
+
 RenderTexManager::RenderTexManager()
 	: renderTextures(magic_enum::enum_count<RenderTex>()),
 	  renderTexturesRedirect(magic_enum::enum_count<RenderTex>()) { }

@@ -31,6 +31,8 @@ constexpr eg::Format LIGHT_COLOR_FORMAT_HDR = eg::Format::R16G16B16A16_Float;
 
 eg::Format GetFormatForRenderTexture(RenderTex texture);
 
+void AssertRenderTextureFormatSupport();
+
 class RenderTexManager
 {
 public:

@@ -2,18 +2,12 @@
 #include "Levels.hpp"
 #include "Settings.hpp"
 #include "FileUtils.hpp"
+#include "WebAssetDownload.hpp"
 #include "Graphics/GraphicsCommon.hpp"
 
 #include <EGame/Audio/AudioPlayer.hpp>
 
 #include <google/protobuf/stubs/common.h>
-
-#ifdef __EMSCRIPTEN__
-#include <sstream>
-#include <iomanip>
-#include <emscripten/emscripten.h>
-#include <emscripten/fetch.h>
-#endif
 
 #ifdef _WIN32
 extern "C"
@@ -21,6 +15,10 @@ extern "C"
 	__declspec(dllexport) uint32_t NvOptimusEnablement = 1;
 	__declspec(dllexport) uint32_t AmdPowerXpressRequestHighPerformance = 1;
 }
+#endif
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
 #endif
 
 static_assert(sizeof(int) == 4);
@@ -33,9 +31,7 @@ bool audioInitializationFailed = false;
 void InitializeStaticPropMaterialAsset();
 void InitializeDecalMaterialAsset();
 
-std::vector<char> preloadedAssetBinary;
-
-void Run(int argc, char** argv)
+void Run(int argc, char** argv, std::unique_ptr<DownloadedAssetBinary> downloadedAssetBinary)
 {
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
 	
@@ -66,8 +62,10 @@ void Run(int argc, char** argv)
 	runConfig.framerateCap = 200;
 	runConfig.minWindowW = 1000;
 	runConfig.minWindowH = 700;
-	runConfig.initialize = []
+	runConfig.initialize = [&]
 	{
+		AssertRenderTextureFormatSupport();
+		
 		if (!eg::FullscreenDisplayModes().empty())
 		{
 			if (!eg::Contains(eg::FullscreenDisplayModes(), settings.fullscreenDisplayMode))
@@ -92,11 +90,10 @@ void Run(int argc, char** argv)
 		RenderSettings::instance = new RenderSettings;
 		
 		bool assetLoadOK = false;
-		if (!preloadedAssetBinary.empty())
+		if (downloadedAssetBinary)
 		{
-			eg::MemoryStreambuf streambuf(preloadedAssetBinary);
-			std::istream eapStream(&streambuf);
-			assetLoadOK = eg::LoadAssetsFromEAPStream(eapStream, "/");
+			assetLoadOK = eg::LoadAssetsFromEAPStream(downloadedAssetBinary->GetStream(), "/");
+			downloadedAssetBinary.reset();
 		}
 		else
 		{
@@ -118,72 +115,22 @@ void Run(int argc, char** argv)
 }
 
 #ifdef __EMSCRIPTEN__
-void AssetDownloadCompleted(emscripten_fetch_t* fetch)
-{
-	EM_ASM( setInfoLabel(""); );
-	
-	preloadedAssetBinary.resize(fetch->numBytes);
-	std::memcpy(preloadedAssetBinary.data(), fetch->data, fetch->numBytes);
-	emscripten_fetch_close(fetch);
-	
-	emscripten_async_call([] (void*)
-	{
-		appDataDirPath = "/data/";
-		char argv[] = "iomomi";
-		char* argvPtr = argv;
-		Run(1, &argvPtr);
-	}, nullptr, 0);
-}
-
-void AssetDownloadFailed(emscripten_fetch_t* fetch)
-{
-	EM_ASM({
-		setInfoLabel('Got response: ' + $0);
-		displayError('Failed to download assets');
-	}, fetch->status);
-	emscripten_fetch_close(fetch);
-}
-
-void AssetDownloadProgress(emscripten_fetch_t* fetch)
-{
-	std::ostringstream messageStream;
-	messageStream << "Downloading assets... (";
-	
-	if (fetch->totalBytes)
-	{
-		messageStream
-			<< std::setprecision(1) << std::fixed << ((double)fetch->dataOffset / 1048576.0) << " / "
-			<< std::setprecision(1) << std::fixed << ((double)fetch->totalBytes / 1048576.0);
-	}
-	else
-	{
-		messageStream << std::setprecision(1) << std::fixed << ((double)(fetch->dataOffset + fetch->numBytes) / 1048576.0);
-	}
-	messageStream << " MiB)";
-	
-	std::string message = messageStream.str();
-	EM_ASM({
-		setInfoLabel(UTF8ToString($0));
-	}, message.c_str());
-}
-
 extern "C" void WebMain()
 {
 	eg::releasePanicCallback = [] (const std::string& message)
 	{
-		EM_ASM({
-			setInfoLabel(UTF8ToString($0));
-		}, message.c_str());
+		EM_ASM({ setInfoLabel(UTF8ToString($0)); }, message.c_str());
 	};
 	
-	emscripten_fetch_attr_t attr;
-	emscripten_fetch_attr_init(&attr);
-	strcpy(attr.requestMethod, "GET");
-	attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
-	attr.onsuccess = AssetDownloadCompleted;
-	attr.onerror = AssetDownloadFailed;
-	attr.onprogress = AssetDownloadProgress;
-	emscripten_fetch(&attr, "Assets.eap");
+	appDataDirPath = "/data/";
+	
+	BeginDownloadAssets([] (std::unique_ptr<DownloadedAssetBinary> downloadedAssetBinary)
+	{
+		EM_ASM( setInfoLabel(""); );
+		char argv[] = "iomomi";
+		char* argvPtr = argv;
+		Run(1, &argvPtr, std::move(downloadedAssetBinary));
+	});
 }
 #else
 int main(int argc, char** argv)
@@ -194,7 +141,7 @@ int main(int argc, char** argv)
 		eg::CreateDirectory(appDataDirPath.c_str());
 	}
 	
-	Run(argc, argv);
+	Run(argc, argv, nullptr);
 	SaveProgress();
 	SaveSettings();
 }
