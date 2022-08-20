@@ -79,13 +79,12 @@
 			};
 			window.onresize = setCanvasSize;
 			setCanvasSize();
-			Module.preRun = function() {
+			Module.onRuntimeInitialized = function() {
 				FS.mkdir('/data');
 				FS.mount(IDBFS, {}, '/data');
-				FS.syncfs(true, function (err) { });
-			};
-			Module.onRuntimeInitialized = function() {
-				Module.cwrap("WebMain", "", [])();
+				FS.syncfs(true, function (err) {
+					Module.cwrap("WebMain", "", [])();
+				});
 			};
 			Module.onAbort = function() {
 				displayError("Unexpected Error");

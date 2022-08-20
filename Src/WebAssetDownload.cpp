@@ -8,6 +8,7 @@
 
 #include <sstream>
 #include <iomanip>
+#include <iostream>
 #include <fstream>
 #include <emscripten/emscripten.h>
 #include <emscripten/fetch.h>
@@ -41,23 +42,33 @@ struct CachedAssetBinary : DownloadedAssetBinary
 
 static AssetDownloadCompletedCallback onAssetDownloadComplete;
 
-static void AssetDownloadCompleted(emscripten_fetch_t* fetch)
+static void WriteAssetsToCache(std::span<const char> data)
 {
 	std::ofstream cachedAssetsStream(cachedAssetsFilePath, std::ios::binary);
-	if (cachedAssetsStream)
+	if (!cachedAssetsStream)
 	{
-		cachedAssetsStream.write(fetch->data, fetch->numBytes);
-		cachedAssetsStream.close();
-		
-		std::ofstream cachedAssetsIdStream(cachedAssetsIdFilePath);
-		if (cachedAssetsIdStream)
-		{
-			cachedAssetsIdStream.write(BUILD_ID, strlen(BUILD_ID));
-		}
-		cachedAssetsIdStream.close();
-		
-		SyncFileSystem();
+		std::cout << "[assetcache] Failed to open " << cachedAssetsFilePath << " for writing" << std::endl;
+		return;
 	}
+	cachedAssetsStream.write(data.data(), data.size());
+	cachedAssetsStream.close();
+	
+	std::ofstream cachedAssetsIdStream(cachedAssetsIdFilePath);
+	if (!cachedAssetsIdStream)
+	{
+		std::cout << "[assetcache] Failed to open " << cachedAssetsIdFilePath << " for writing" << std::endl;
+		return;
+	}
+	
+	cachedAssetsIdStream.write(BUILD_ID, strlen(BUILD_ID));
+	cachedAssetsIdStream.close();
+	
+	SyncFileSystem();
+}
+
+static void AssetDownloadCompleted(emscripten_fetch_t* fetch)
+{
+	WriteAssetsToCache({ fetch->data, static_cast<size_t>(fetch->numBytes) });
 	
 	emscripten_async_call([] (void* userdata)
 	{
@@ -101,27 +112,33 @@ static std::unique_ptr<CachedAssetBinary> TryLoadCachedAssets()
 {
 	std::ifstream cachedAssetsIdStream(cachedAssetsIdFilePath);
 	if (!cachedAssetsIdStream)
+	{
+		std::cout << "[assetcache] Failed to open " << cachedAssetsIdFilePath << std::endl;
 		return nullptr;
+	}
 	
 	std::string cachedId;
 	std::getline(cachedAssetsIdStream, cachedId);
 	if (eg::TrimString(cachedId) != BUILD_ID)
 	{
-		eg::Log(eg::LogLevel::Info, "as", "Cached assets version mismatch (got {0} expected " BUILD_ID ")", cachedId);
+		std::cout << "[assetcache] Version mismatch (got " << cachedId << " expected " BUILD_ID ")" << std::endl;
 		return nullptr;
 	}
 	cachedAssetsIdStream.close();
 	
 	std::ifstream cachedAssetsStream(cachedAssetsFilePath, std::ios::binary);
 	if (!cachedAssetsStream)
+	{
+		std::cout << "[assetcache] Failed to open " << cachedAssetsFilePath << std::endl;
 		return nullptr;
+	}
 	
 	static const char EAP_MAGIC[4] = { -1, 'E', 'A', 'P' };
 	char magic[4];
 	cachedAssetsStream.read(magic, 4);
 	if (std::memcmp(magic, EAP_MAGIC, 4) != 0)
 	{
-		eg::Log(eg::LogLevel::Error, "as", "Cached asset file appears corrupted");
+		std::cout << "[assetcache] Package corrupted " << std::hex << *reinterpret_cast<uint32_t*>(magic) << std::dec << std::endl;
 		return nullptr;
 	}
 	
@@ -133,11 +150,12 @@ void BeginDownloadAssets(AssetDownloadCompletedCallback onComplete)
 {
 	if (std::unique_ptr<CachedAssetBinary> cachedAssetBinary = TryLoadCachedAssets())
 	{
-		eg::Log(eg::LogLevel::Info, "as", "Loading cached assets");
+		std::cout << "[assetcache] Cache valid, loading assets from cache" << std::endl;
 		onComplete(std::move(cachedAssetBinary));
 	}
 	else
 	{
+		std::cout << "[assetcache] Cache invalid, downloading assets" << std::endl;
 		onAssetDownloadComplete = std::move(onComplete);
 		
 		emscripten_fetch_attr_t attr;
