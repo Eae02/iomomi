@@ -1,5 +1,6 @@
 #include "BlurRenderer.hpp"
 #include "GraphicsCommon.hpp"
+#include "RenderTex.hpp"
 
 static eg::Pipeline glassBlurPipeline;
 
@@ -10,6 +11,8 @@ static void OnInit()
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Blur.fs.glsl").DefaultVariant();
 	pipelineCI.label = "BlurPipeline";
 	glassBlurPipeline = eg::Pipeline::Create(pipelineCI);
+	glassBlurPipeline.FramebufferFormatHint(eg::Format::R8G8B8A8_UNorm);
+	glassBlurPipeline.FramebufferFormatHint(eg::Format::R16G16B16A16_Float);
 }
 
 static void OnShutdown()

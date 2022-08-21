@@ -18,15 +18,17 @@ static void OnInit()
 	pipelineCI.topology = eg::Topology::TriangleList;
 	pipelineCI.enableDepthTest = true;
 	
-	
 	pipelineCI.enableDepthWrite = true;
+	pipelineCI.label = "BlurredGlass[DepthOnly]";
 	pipelineDepthOnly = eg::Pipeline::Create(pipelineCI);
-	
+	pipelineDepthOnly.FramebufferFormatHint(eg::Format::Undefined, GB_DEPTH_FORMAT);
 	
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.label = "BlurredGlass[Blurry]";
 	pipelineCI.fragmentShader = fs.GetVariant("VBlur");
 	pipelineBlurry = eg::Pipeline::Create(pipelineCI);
+	pipelineBlurry.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
+	pipelineBlurry.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
 	
 	pipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFunc::Add,
 		/* srcColor */ eg::BlendFactor::Zero,
@@ -37,6 +39,8 @@ static void OnInit()
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.fragmentShader = fs.GetVariant("VNoBlur");
 	pipelineNotBlurry = eg::Pipeline::Create(pipelineCI);
+	pipelineNotBlurry.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
+	pipelineNotBlurry.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
 }
 
 static void OnShutdown()

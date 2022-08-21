@@ -14,6 +14,7 @@ static void OnInit()
 	modelPipelineCI.numColorAttachments = 1;
 	modelPipelineCI.label = "EdSelection";
 	modelPipeline = eg::Pipeline::Create(modelPipelineCI);
+	modelPipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
 	eg::GraphicsPipelineCreateInfo postPipelineCI;
 	postPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
@@ -23,6 +24,7 @@ static void OnInit()
 	postPipelineCI.label = "EdSelectionPost";
 	postPipelineCI.blendStates[0] = eg::AlphaBlend;
 	postPipeline = eg::Pipeline::Create(postPipelineCI);
+	postPipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 }
 
 static void OnShutdown()

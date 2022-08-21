@@ -27,6 +27,7 @@ static void OnInit()
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/EmissiveGeom.fs.glsl").DefaultVariant();
 	pipelineCI.numColorAttachments = 2;
 	emissiveGeometryPipeline = eg::Pipeline::Create(pipelineCI);
+	emissiveGeometryPipeline.FramebufferFormatHint(DeferredRenderer::GEOMETRY_FB_FORMAT);
 	
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Emissive.fs.glsl").DefaultVariant();
@@ -39,6 +40,8 @@ static void OnInit()
 	pipelineCI.label = "Emissive";
 	emissivePipeline = eg::Pipeline::Create(pipelineCI);
 	emissivePipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
+	emissivePipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
+	emissivePipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
 }
 
 static void OnShutdown()

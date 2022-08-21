@@ -23,6 +23,7 @@ PointLightShadowMapper::PointLightShadowMapper()
 	depthCopyPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/ShadowDepthCopy.fs.glsl").DefaultVariant();
 	depthCopyPipelineCI.enableDepthTest = true;
 	depthCopyPipelineCI.enableDepthWrite = true;
+	depthCopyPipelineCI.label = "ShadowDepthCopy";
 	m_depthCopyPipeline = eg::Pipeline::Create(depthCopyPipelineCI);
 	m_depthCopyPipeline.FramebufferFormatHint(eg::Format::Undefined, SHADOW_MAP_FORMAT);
 	

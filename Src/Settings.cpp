@@ -165,14 +165,13 @@ const SettingEntry settingEntries[] =
 
 void LoadSettings()
 {
-#ifdef __EMSCRIPTEN__
-	settings.textureQuality = eg::TextureQuality::Medium;
-	settings.shadowQuality = QualityLevel::Low;
-	settings.reflectionsQuality = QualityLevel::VeryLow;
-	settings.lightingQuality = QualityLevel::Medium;
-	settings.ssaoQuality = SSAOQuality::Off;
-	settings.bloomQuality = BloomQuality::Off;
-#endif
+	const bool maybeSlowGPU = 
+		eg::GetGraphicsDeviceInfo().deviceVendorName.find("Intel") != std::string_view::npos ||
+		eg::GetGraphicsDeviceInfo().deviceName.find("Intel") != std::string_view::npos;
+	if (maybeSlowGPU)
+	{
+		settings.reflectionsQuality = QualityLevel::VeryLow;
+	}
 	
 	settingsPath = appDataDirPath + "settings.yaml";
 	

@@ -15,6 +15,7 @@ ParticleRenderer::ParticleRenderer()
 	pipelineCI.vertexAttributes[1] = { 1, eg::DataType::Float32, 4, offsetof(eg::ParticleInstance, position) };
 	pipelineCI.vertexAttributes[2] = { 1, eg::DataType::UInt16Norm, 4, offsetof(eg::ParticleInstance, texCoord) };
 	pipelineCI.vertexAttributes[3] = { 1, eg::DataType::UInt8Norm, 4, offsetof(eg::ParticleInstance, sinR) };
+	pipelineCI.label = "Particle";
 	m_pipeline = eg::Pipeline::Create(pipelineCI);
 	
 	const float vertices[] = { 0, 0, 1, 0, 0, 1, 1, 1 };

@@ -19,6 +19,8 @@ static void OnInit()
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.label = "GravSwitchGame";
 	gravitySwitchPipelineGame = eg::Pipeline::Create(pipelineCI);
+	gravitySwitchPipelineGame.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
+	gravitySwitchPipelineGame.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
 	
 	pipelineCI.label = "GravSwitchEditor";
 	pipelineCI.cullMode = eg::CullMode::None;

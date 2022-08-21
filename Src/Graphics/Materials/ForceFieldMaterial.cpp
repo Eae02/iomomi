@@ -31,10 +31,14 @@ ForceFieldMaterial::ForceFieldMaterial()
 	pipelineCI.label = "ForceField[BeforeWater]";
 	pipelineCI.fragmentShader.specConstantsData = const_cast<int32_t*>(&WATER_MODE_BEFORE);
 	m_pipelineBeforeWater = eg::Pipeline::Create(pipelineCI);
+	m_pipelineBeforeWater.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
+	m_pipelineBeforeWater.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
 	
 	pipelineCI.label = "ForceField[Final]";
 	pipelineCI.fragmentShader.specConstantsData = const_cast<int32_t*>(&WATER_MODE_AFTER);
 	m_pipelineFinal = eg::Pipeline::Create(pipelineCI);
+	m_pipelineFinal.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
+	m_pipelineFinal.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
 	
 	eg::SamplerDescription particleSamplerDesc;
 	particleSamplerDesc.wrapU = eg::WrapMode::ClampToEdge;

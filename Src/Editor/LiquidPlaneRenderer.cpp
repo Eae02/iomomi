@@ -14,6 +14,7 @@ LiquidPlaneRenderer::LiquidPlaneRenderer()
 	pipelineCI.vertexBindings[0] = { sizeof(LiquidPlaneComp::Vertex), eg::InputRate::Vertex };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(LiquidPlaneComp::Vertex, pos) };
 	pipelineCI.blendStates[0] = eg::AlphaBlend;
+	pipelineCI.label = "EdLiquidPlane";
 	
 	m_pipeline = eg::Pipeline::Create(pipelineCI);
 	m_pipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);

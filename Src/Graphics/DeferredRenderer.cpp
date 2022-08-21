@@ -129,6 +129,7 @@ static inline eg::Pipeline CreateSSAOPipeline(uint32_t samples)
 	pipelineCI.fragmentShader.specConstantsData = &specConstantData;
 	pipelineCI.fragmentShader.specConstantsDataSize = sizeof(SpecConstantData);
 	pipelineCI.fragmentShader.specConstants = specConstantEntries;
+	pipelineCI.label = "SSAO";
 	eg::Pipeline pipeline = eg::Pipeline::Create(pipelineCI);
 	pipeline.FramebufferFormatHint(GetFormatForRenderTexture(RenderTex::SSAO));
 	return pipeline;
@@ -142,11 +143,13 @@ void DeferredRenderer::CreatePipelines()
 	ambientPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
 	
 	ambientPipelineCI.fragmentShader = ambientFragmentShader.GetVariant("VSSAO");
+	ambientPipelineCI.label = "Ambient[SSAO]";
 	m_ambientPipelineWithSSAO = eg::Pipeline::Create(ambientPipelineCI);
 	m_ambientPipelineWithSSAO.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
 	m_ambientPipelineWithSSAO.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
 	
 	ambientPipelineCI.fragmentShader = ambientFragmentShader.GetVariant("VNoSSAO");
+	ambientPipelineCI.label = "Ambient[NoSSAO]";
 	m_ambientPipelineWithoutSSAO = eg::Pipeline::Create(ambientPipelineCI);
 	m_ambientPipelineWithoutSSAO.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
 	m_ambientPipelineWithoutSSAO.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
@@ -181,6 +184,11 @@ void DeferredRenderer::CreatePipelines()
 		{
 			pointLightSpecConstants[0] = shadowMode;
 			pointLightSpecConstants[1] = waterMode;
+			
+			char label[32];
+			snprintf(label, sizeof(label), "PointLight:S%u:W%u", shadowMode, waterMode);
+			plPipelineCI.label = label;
+			
 			m_pointLightPipelines[shadowMode][waterMode] = eg::Pipeline::Create(plPipelineCI);
 			m_pointLightPipelines[shadowMode][waterMode].FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
 			m_pointLightPipelines[shadowMode][waterMode].FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
@@ -190,12 +198,14 @@ void DeferredRenderer::CreatePipelines()
 	eg::GraphicsPipelineCreateInfo ssaoDepthLinPipelineCI;
 	ssaoDepthLinPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
 	ssaoDepthLinPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/SSAODepthLin.fs.glsl").DefaultVariant();
+	ssaoDepthLinPipelineCI.label = "SSAODepthLinearize";
 	m_ssaoDepthLinPipeline = eg::Pipeline::Create(ssaoDepthLinPipelineCI);
 	m_ssaoDepthLinPipeline.FramebufferFormatHint(eg::Format::R32_Float);
 	
 	eg::GraphicsPipelineCreateInfo ssaoBlurPipelineCI;
 	ssaoBlurPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
 	ssaoBlurPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/SSAOBlur.fs.glsl").DefaultVariant();
+	ssaoBlurPipelineCI.label = "SSAOBlur";
 	m_ssaoBlurPipeline = eg::Pipeline::Create(ssaoBlurPipelineCI);
 	m_ssaoBlurPipeline.FramebufferFormatHint(eg::Format::R8_UNorm);
 	

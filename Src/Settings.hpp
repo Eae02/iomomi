@@ -57,9 +57,9 @@ struct Settings
 	eg::TextureQuality textureQuality = eg::TextureQuality::High;
 	QualityLevel shadowQuality        = QualityLevel::Medium;
 	QualityLevel reflectionsQuality   = QualityLevel::Medium;
-	QualityLevel lightingQuality      = QualityLevel::High;
-	QualityLevel waterQuality         = QualityLevel::High;
-	SSAOQuality ssaoQuality           = SSAOQuality::Off;
+	QualityLevel lightingQuality      = QualityLevel::Medium;
+	QualityLevel waterQuality         = QualityLevel::Medium;
+	SSAOQuality ssaoQuality           = SSAOQuality::Medium;
 	BloomQuality bloomQuality         = BloomQuality::High;
 	float fieldOfViewDeg              = 80.0f;
 	

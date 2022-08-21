@@ -63,7 +63,11 @@ WaterRenderer::WaterRenderer()
 	pipelineDepthMinCI.enableDepthWrite = true;
 	pipelineDepthMinCI.enableDepthClamp = true;
 	pipelineDepthMinCI.depthCompare = eg::CompareOp::Less;
+	pipelineDepthMinCI.label = "WaterDepthMin";
 	m_pipelineDepthMin = eg::Pipeline::Create(pipelineDepthMinCI);
+	m_pipelineDepthMin.FramebufferFormatHint(
+		GetFormatForRenderTexture(RenderTex::WaterGlowIntensity),
+		GetFormatForRenderTexture(RenderTex::WaterMinDepth));
 	
 	eg::GraphicsPipelineCreateInfo pipelineDepthMaxCI = pipelineCITemplate;
 	pipelineDepthMaxCI.vertexShader = sphereVS.GetVariant("VDepthMax");
@@ -72,17 +76,25 @@ WaterRenderer::WaterRenderer()
 	pipelineDepthMaxCI.enableDepthWrite = true;
 	pipelineDepthMaxCI.enableDepthClamp = true;
 	pipelineDepthMaxCI.depthCompare = eg::CompareOp::Greater;
+	pipelineDepthMaxCI.label = "WaterDepthMax";
 	m_pipelineDepthMax = eg::Pipeline::Create(pipelineDepthMaxCI);
+	m_pipelineDepthMax.FramebufferFormatHint(eg::Format::Undefined, GetFormatForRenderTexture(RenderTex::WaterMinDepth));
 	
 	auto& postFS = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterPost.fs.glsl");
 	eg::GraphicsPipelineCreateInfo pipelinePostCI;
 	pipelinePostCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
 	
 	pipelinePostCI.fragmentShader = postFS.GetVariant("VStdQual");
+	pipelinePostCI.label = "WaterPost[LQ]";
 	m_pipelinePostStdQual = eg::Pipeline::Create(pipelinePostCI);
+	m_pipelinePostStdQual.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
+	m_pipelinePostStdQual.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
 	
 	pipelinePostCI.fragmentShader = postFS.GetVariant("VHighQual");
+	pipelinePostCI.label = "WaterPost[HQ]";
 	m_pipelinePostHighQual = eg::Pipeline::Create(pipelinePostCI);
+	m_pipelinePostHighQual.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
+	m_pipelinePostHighQual.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
 	
 	m_currentQualityLevel = (QualityLevel)-1;
 	
@@ -100,14 +112,16 @@ void WaterRenderer::CreateDepthBlurPipelines(uint32_t samples)
 	pipelineBlurCI.fragmentShader.specConstants = specConstants;
 	pipelineBlurCI.fragmentShader.specConstantsData = &samples;
 	pipelineBlurCI.fragmentShader.specConstantsDataSize = sizeof(uint32_t);
+	pipelineBlurCI.label = "WaterBlur1";
 	m_pipelineBlurPass1 = eg::Pipeline::Create(pipelineBlurCI);
-	m_pipelineBlurPass1.FramebufferFormatHint(eg::Format::R32G32B32A32_Float);
-	m_pipelineBlurPass1.FramebufferFormatHint(eg::Format::R16G16B16A16_Float);
+	m_pipelineBlurPass1.FramebufferFormatHint(eg::Format::R32G32_Float);
+	m_pipelineBlurPass1.FramebufferFormatHint(eg::Format::R16G16_Float);
 	
 	pipelineBlurCI.fragmentShader.shaderModule = depthBlurTwoPassFS.GetVariant("V2");
+	pipelineBlurCI.label = "WaterBlur2";
 	m_pipelineBlurPass2 = eg::Pipeline::Create(pipelineBlurCI);
-	m_pipelineBlurPass2.FramebufferFormatHint(eg::Format::R32G32B32A32_Float);
-	m_pipelineBlurPass2.FramebufferFormatHint(eg::Format::R16G16B16A16_Float);
+	m_pipelineBlurPass2.FramebufferFormatHint(eg::Format::R32G32_Float);
+	m_pipelineBlurPass2.FramebufferFormatHint(eg::Format::R16G16_Float);
 }
 
 struct __attribute__ ((__packed__, __may_alias__)) WaterBlurPC

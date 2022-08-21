@@ -1,6 +1,7 @@
 #include "PostProcessor.hpp"
-#include "../Settings.hpp"
 #include "GraphicsCommon.hpp"
+#include "RenderTex.hpp"
+#include "../Settings.hpp"
 
 static float* bloomIntensity = eg::TweakVarFloat("bloom_intensity", 0.4f, 0);
 
@@ -25,6 +26,7 @@ void PostProcessor::InitPipeline()
 	postPipelineCI.fragmentShader.specConstantsData = &enableFXAA;
 	postPipelineCI.fragmentShader.specConstantsDataSize = sizeof(enableFXAA);
 	m_pipeline = eg::Pipeline::Create(postPipelineCI);
+	m_pipeline.FramebufferFormatHint(eg::Format::R8G8B8A8_UNorm);
 	m_pipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
 	m_fxaaWasEnabled = settings.enableFXAA;

@@ -37,14 +37,19 @@ void GravityBarrierMaterial::OnInit()
 	pipelineCI.label = "GravityBarrier[BeforeWater]";
 	pipelineCI.fragmentShader.specConstantsData = const_cast<int32_t*>(&WATER_MODE_BEFORE);
 	s_pipelineGameBeforeWater = eg::Pipeline::Create(pipelineCI);
+	s_pipelineGameBeforeWater.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
+	s_pipelineGameBeforeWater.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
 	
 	pipelineCI.label = "GravityBarrier[Final]";
 	pipelineCI.fragmentShader.specConstantsData = const_cast<int32_t*>(&WATER_MODE_AFTER);
 	s_pipelineGameFinal = eg::Pipeline::Create(pipelineCI);
+	s_pipelineGameFinal.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
+	s_pipelineGameFinal.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
 	
 	pipelineCI.label = "GravityBarrier[Editor]";
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityBarrier/GBEditor.fs.glsl").DefaultVariant();
 	s_pipelineEditor = eg::Pipeline::Create(pipelineCI);
+	s_pipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
 	eg::SpecializationConstantEntry ssrDistSpecConstant;
 	ssrDistSpecConstant.constantID = 0;
@@ -62,6 +67,9 @@ void GravityBarrierMaterial::OnInit()
 	ssrPipelineCI.fragmentShader.specConstantsDataSize = sizeof(float);
 	ssrPipelineCI.fragmentShader.specConstantsData = const_cast<float*>(&SSR::MAX_DISTANCE);
 	s_pipelineSSR = eg::Pipeline::Create(ssrPipelineCI);
+	s_pipelineSSR.FramebufferFormatHint(
+		GetFormatForRenderTexture(RenderTex::SSRTemp1),
+		GetFormatForRenderTexture(RenderTex::SSRDepth));
 	
 	s_sharedDataBuffer = eg::Buffer(eg::BufferFlags::Update | eg::BufferFlags::UniformBuffer, sizeof(BarrierBufferData), nullptr);
 }

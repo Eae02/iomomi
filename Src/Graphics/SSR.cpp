@@ -38,8 +38,11 @@ void SSR::CreatePipeline()
 	pipeline1CI.enableDepthWrite = true;
 	pipeline1CI.enableDepthTest = true;
 	pipeline1CI.depthCompare = eg::CompareOp::Always;
+	pipeline1CI.label = "SSR[Initial]";
 	m_pipelineInitial = eg::Pipeline::Create(pipeline1CI);
-	m_pipelineInitial.FramebufferFormatHint(GetFormatForRenderTexture(RenderTex::SSRTemp1), GetFormatForRenderTexture(RenderTex::SSRDepth));
+	m_pipelineInitial.FramebufferFormatHint(
+		GetFormatForRenderTexture(RenderTex::SSRTemp1),
+		GetFormatForRenderTexture(RenderTex::SSRDepth));
 	
 	eg::GraphicsPipelineCreateInfo pipelineBlendPassCI;
 	pipelineBlendPassCI.vertexShader = postVertexShader;
@@ -50,8 +53,11 @@ void SSR::CreatePipeline()
 		eg::BlendFunc::Add, eg::BlendFunc::Add,
 		eg::BlendFactor::DstColor, eg::BlendFactor::DstAlpha,
 		eg::BlendFactor::Zero, eg::BlendFactor::Zero);
+	pipelineBlendPassCI.label = "SSR[Blend]";
 	m_pipelineBlendPass = eg::Pipeline::Create(pipelineBlendPassCI);
-	m_pipelineBlendPass.FramebufferFormatHint(GetFormatForRenderTexture(RenderTex::SSRTemp1), GetFormatForRenderTexture(RenderTex::SSRDepth));
+	m_pipelineBlendPass.FramebufferFormatHint(
+		GetFormatForRenderTexture(RenderTex::SSRTemp1),
+		GetFormatForRenderTexture(RenderTex::SSRDepth));
 	
 	eg::SpecializationConstantEntry specConstEntryBlur;
 	specConstEntryBlur.constantID = 0;
@@ -66,10 +72,12 @@ void SSR::CreatePipeline()
 	pipelineBlurCI.fragmentShader.specConstants = { &specConstEntryBlur, 1 };
 	pipelineBlurCI.fragmentShader.specConstantsData = &blurRadius;
 	pipelineBlurCI.fragmentShader.specConstantsDataSize = sizeof(uint32_t);
+	pipelineBlurCI.label = "SSR[Blur1]";
 	m_blur1Pipeline = eg::Pipeline::Create(pipelineBlurCI);
 	m_blur1Pipeline.FramebufferFormatHint(GetFormatForRenderTexture(RenderTex::SSRTemp2));
 	
 	pipelineBlurCI.fragmentShader = ssrBlurShader.GetVariant("VPass2");
+	pipelineBlurCI.label = "SSR[Blur2]";
 	m_blur2Pipeline = eg::Pipeline::Create(pipelineBlurCI);
 	m_blur2Pipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
 	m_blur2Pipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);

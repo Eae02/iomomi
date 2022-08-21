@@ -52,7 +52,10 @@ void StaticPropMaterial::LazyInitGlobals()
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.numColorAttachments = 2;
 	
-	auto InitializeVariants = [&] (std::string_view variantPrefix, eg::Pipeline out[2][2][2])
+	auto InitializeVariants = [&] (
+		std::string_view variantPrefix,
+		eg::Pipeline out[2][2][2],
+		const eg::FramebufferFormatHint& framebufferFormatHint)
 	{
 		for (int enableCulling = 0; enableCulling < 2; enableCulling++)
 		{
@@ -77,16 +80,21 @@ void StaticPropMaterial::LazyInitGlobals()
 					});
 					pipelineCI.label = label.c_str();
 					
-					out[enableCulling][alphaTest][textureArray] = eg::Pipeline::Create(pipelineCI);
+					(out[enableCulling][alphaTest][textureArray] = eg::Pipeline::Create(pipelineCI))
+						.FramebufferFormatHint(framebufferFormatHint);
 				}
 			}
 		}
 	};
 	
-	InitializeVariants("VGame", staticPropMaterialGlobals.pipelineGame);
+	InitializeVariants("VGame", staticPropMaterialGlobals.pipelineGame, DeferredRenderer::GEOMETRY_FB_FORMAT);
 	
 	pipelineCI.numColorAttachments = 1;
-	InitializeVariants("VEditor", staticPropMaterialGlobals.pipelineEditor);
+	InitializeVariants(
+		"VEditor",
+		staticPropMaterialGlobals.pipelineEditor,
+		eg::FramebufferFormatHint { 1, eg::Format::DefaultDepthStencil, { eg::Format::DefaultColor } }
+	);
 	
 	const eg::ShaderModuleAsset& plsfs = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLightShadow.fs.glsl");
 	
