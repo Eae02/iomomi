@@ -4,3 +4,6 @@
 [submodule "Deps/egame"]
 	path = Deps/egame
 	url = git@github.com:Eae02/egame.git
+[submodule "Deps/magic_enum"]
+	path = Deps/magic_enum
+	url = https://github.com/Neargye/magic_enum

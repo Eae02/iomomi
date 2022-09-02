@@ -64,6 +64,7 @@ endif()
 target_include_directories(iomomi SYSTEM PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/Inc
 	${CMAKE_CURRENT_SOURCE_DIR}/Deps/pcg/include
+	${CMAKE_CURRENT_SOURCE_DIR}/Deps/magic_enum/include
 )
 
 function (fixIncludes TARGET)
