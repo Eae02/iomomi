@@ -34,6 +34,7 @@ void InitLevels();
 
 void ResetProgress();
 void SaveProgress();
+void WriteProgressToStream(std::ostream& stream);
 
 void LoadLevelThumbnail(Level& level);
 

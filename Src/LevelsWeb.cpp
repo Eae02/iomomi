@@ -69,8 +69,34 @@ void BeginDownloadGWD(std::string_view levelName)
 	emscripten_fetch(&attr, url.c_str());
 }
 
+void GetProgressCommand(std::span<const std::string_view> args, eg::console::Writer& writer)
+{
+	std::ostringstream stream;
+	WriteProgressToStream(stream);
+	std::string progress = stream.str();
+	
+	EM_ASM({ 
+		const blob = new Blob([UTF8ToString($0)], { type: 'text/plain' });
+		const link = window.URL.createObjectURL(blob);
+		if (link) {
+			const a = document.createElement("a");
+			a.style.display = "none";
+			a.href = link;
+			a.download = "progress.txt";
+			document.body.appendChild(a);
+			a.click();
+			setTimeout(() => {
+				URL.revokeObjectURL(link);
+				link.parentNode.removeChild(a);
+			}, 0);
+		}
+	}, progress.c_str());
+}
+
 void InitLevelsPlatformDependent()
 {
+	eg::console::AddCommand("getProgress", 0, &GetProgressCommand);
+	
 	for (int64_t i = (int64_t)levelsOrder.size() - 1; i >= 0; i--)
 	{
 		levelData.emplace(levelsOrder[i], LevelData(levelsOrder[i]));

@@ -190,16 +190,20 @@ void SaveProgress()
 		eg::Log(eg::LogLevel::Error, "io", "Failed to save progress!");
 		return;
 	}
-	
+	WriteProgressToStream(progressFileStream);
+	progressFileStream.close();
+	SyncFileSystem();
+}
+
+void WriteProgressToStream(std::ostream& stream)
+{
 	for (const Level& level : levels)
 	{
 		if (level.status == LevelStatus::Completed)
 		{
-			progressFileStream << level.name << "\n";
+			stream << level.name << "\n";
 		}
 	}
-	
-	SyncFileSystem();
 }
 
 int64_t FindLevel(std::string_view name)
