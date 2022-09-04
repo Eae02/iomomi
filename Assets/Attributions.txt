@@ -1,0 +1,2 @@
+Textures under "Assets/Caustics/" are from https://opengameart.org/content/water-caustics-effect-small
+Textures under "Assets/WallTextures/" and various textures under "Assets/Textures/" are from https://freepbr.com

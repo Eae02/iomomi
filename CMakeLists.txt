@@ -61,6 +61,9 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 		CXX_VISIBILITY_PRESET hidden
 		INSTALL_RPATH "$ORIGIN/rt"
 		BUILD_WITH_INSTALL_RPATH TRUE)
+	set_target_properties(EGame EGameAssetGen PROPERTIES
+		LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Bin/${CMAKE_BUILD_TYPE}-${CMAKE_SYSTEM_NAME}/rt
+	)
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
 	target_link_options(iomomi PRIVATE "-Wl,-subsystem,windows")
 endif()

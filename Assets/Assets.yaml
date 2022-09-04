@@ -23,11 +23,13 @@ assets:
   - name: Particles/BlueOrb.ype
   
   - name: UIFont.ttf
+    fontNames: ["DejaVu Sans", "Open Sans"]
     size: 24
   - name: UIFontSmall.ttf
-    source: UIFont.ttf
+    fontNames: ["DejaVu Sans", "Open Sans"]
     size: 12
   - name: GameFont.ttf
+    fontName: Orbitron
     size: 64
     
   #Audio
