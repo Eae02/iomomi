@@ -80,7 +80,7 @@ void BlurRenderer::DoBlurPass(const glm::vec2& blurVector, const glm::vec2& samp
 	
 	eg::DC.BindPipeline(glassBlurPipeline);
 	
-	float pc[] = { blurVector.x, blurVector.y, sampleOffset.x, sampleOffset.y, (float)inputLod };
+	float pc[] = { blurVector.x, blurVector.y, sampleOffset.x, sampleOffset.y, static_cast<float>(inputLod) };
 	eg::TextureSubresource subresource;
 	if (!useGLESPath) //Cannot be done in GLES because image views are not supported
 	{
@@ -113,7 +113,7 @@ void BlurRenderer::Render(eg::TextureRef inputTexture) const
 {
 	glm::vec2 pixelSize = 1.0f / glm::vec2(m_inputWidth, m_inputHeight);
 	
-	for (int i = 0; i < (int)m_levels; i++)
+	for (int i = 0; i < static_cast<int>(m_levels); i++)
 	{
 		DoBlurPass(glm::vec2(2 * pixelSize.x, 0), pixelSize / 2.0f,
 			i != 0 ? eg::TextureRef(m_blurTextureOut) : inputTexture,

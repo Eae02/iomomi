@@ -98,7 +98,7 @@ static void AssetDownloadProgress(emscripten_fetch_t* fetch)
 	}
 	else
 	{
-		messageStream << std::setprecision(1) << std::fixed << ((double)(fetch->dataOffset + fetch->numBytes) / 1048576.0);
+		messageStream << std::setprecision(1) << std::fixed << (static_cast<double>(fetch->dataOffset + fetch->numBytes) / 1048576.0);
 	}
 	messageStream << " MiB)";
 	

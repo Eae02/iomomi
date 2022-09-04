@@ -50,7 +50,7 @@ void LiquidPlaneRenderer::Render() const
 	
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 	
-	for (int64_t i = (int64_t)m_planes.size() - 1; i >= 0; i--)
+	for (int64_t i = eg::ToInt64(m_planes.size()) - 1; i >= 0; i--)
 	{
 		const LiquidPlaneComp& plane = *m_planes[i].second;
 		

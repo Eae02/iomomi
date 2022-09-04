@@ -41,7 +41,7 @@ static inline std::vector<glm::vec4> GenerateSSAOSamples(uint32_t count)
 	std::vector<glm::vec4> ssaoSamples(count);
 	for (uint32_t i = 0; i < count; i++)
 	{
-		float scale = (float)i / (float)count;
+		float scale = static_cast<float>(i) / static_cast<float>(count);
 		glm::vec3 sample(distNeg1To1(globalRNG), distNeg1To1(globalRNG), dist0To1(globalRNG));
 		sample = glm::normalize(sample) * dist0To1(globalRNG) * glm::mix(0.1f, 1.0f, scale * scale);
 		ssaoSamples[i] = glm::vec4(sample, 0);
@@ -264,7 +264,7 @@ void DeferredRenderer::PrepareSSAO(RenderTexManager& rtManager)
 {
 	// ** Initial SSAO Pass **
 	
-	const uint32_t numSSAOSamples = SSAO_SAMPLES[(int)settings.ssaoQuality - 1];
+	const uint32_t numSSAOSamples = SSAO_SAMPLES[static_cast<int>(settings.ssaoQuality) - 1];
 	if (numSSAOSamples != m_ssaoSamplesBufferCurrentSamples)
 	{
 		m_ssaoSamplesBuffer.UsageHint(eg::BufferUsage::CopyDst);
@@ -295,7 +295,7 @@ void DeferredRenderer::PrepareSSAO(RenderTexManager& rtManager)
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
 	eg::DC.BeginRenderPass(rpBeginInfo);
 	
-	eg::DC.BindPipeline(m_ssaoPipelines[(int)settings.ssaoQuality - 1]);
+	eg::DC.BindPipeline(m_ssaoPipelines[static_cast<int>(settings.ssaoQuality) - 1]);
 	
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::SSAOGBDepthLinear), 0, 1, &framebufferLinearSampler);
@@ -323,8 +323,8 @@ void DeferredRenderer::PrepareSSAO(RenderTexManager& rtManager)
 	rpBeginInfo.framebuffer = rtManager.GetFramebuffer(RenderTex::SSAOTempBlur, {}, {}, "SSAOBlur1");
 	eg::DC.BeginRenderPass(rpBeginInfo);
 	
-	float pixelW = 2.0f / (float)rtManager.ResX();
-	float pixelH = 2.0f / (float)rtManager.ResY();
+	float pixelW = 2.0f / static_cast<float>(rtManager.ResX());
+	float pixelH = 2.0f / static_cast<float>(rtManager.ResY());
 	
 	eg::DC.BindPipeline(m_ssaoBlurPipeline);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::SSAOUnblurred), 0, 0, &framebufferLinearSampler);
@@ -384,7 +384,7 @@ void DeferredRenderer::BeginLighting(RenderTexManager& rtManager)
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor2), 0, 2);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 3);
 	
-	float pc[4] = { ambientColor.r, ambientColor.g, ambientColor.b, (float)*ambientOnlyOcc };
+	float pc[4] = { ambientColor.r, ambientColor.g, ambientColor.b, static_cast<float>(*ambientOnlyOcc) };
 	eg::DC.PushConstants(0, sizeof(pc), pc);
 	
 	eg::DC.Draw(0, 3, 0, 1);
@@ -457,7 +457,7 @@ void DeferredRenderer::DrawPointLights(const std::vector<std::shared_ptr<PointLi
 	pc.causticsColorOffset = *causticsColorOffset;
 	pc.causticsPanSpeed = *causticsPanSpeed;
 	pc.causticsTexScale = *causticsTexScale;
-	pc.shadowSampleDist = shadowSoftness / shadowResolution;
+	pc.shadowSampleDist = shadowSoftness / static_cast<float>(shadowResolution);
 	
 	for (const std::shared_ptr<PointLight>& light : pointLights)
 	{

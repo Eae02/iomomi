@@ -9,17 +9,17 @@ void GravityCornerEditorComponent::Update(float dt, const EditorState& editorSta
 	
 	if (pickResult.intersected)
 	{
-		const int nDim = (int)pickResult.normalDir / 2;
+		const int nDim = static_cast<int>(pickResult.normalDir) / 2;
 		const int uDim = (nDim + 1) % 3;
 		const int vDim = (nDim + 2) % 3;
 		float u = pickResult.intersectPosition[uDim];
 		float v = pickResult.intersectPosition[vDim];
 		
-		int ni = (int)std::round(pickResult.intersectPosition[nDim]);
-		int ui = (int)std::round(u);
-		int vi = (int)std::round(v);
-		float dui = std::abs(ui - u);
-		float dvi = std::abs(vi - v);
+		int ni = static_cast<int>(std::round(pickResult.intersectPosition[nDim]));
+		int ui = static_cast<int>(std::round(u));
+		int vi = static_cast<int>(std::round(v));
+		float dui = std::abs(static_cast<float>(ui - u));
+		float dvi = std::abs(static_cast<float>(vi - v));
 		
 		const float MAX_DIST = 0.4f;
 		auto TryV = [&]
@@ -27,9 +27,9 @@ void GravityCornerEditorComponent::Update(float dt, const EditorState& editorSta
 			if (dvi > MAX_DIST)
 				return;
 			m_hoveredCornerPos[nDim] = ni;
-			m_hoveredCornerPos[uDim] = std::floor(u);
+			m_hoveredCornerPos[uDim] = static_cast<int>(std::floor(u));
 			m_hoveredCornerPos[vDim] = vi;
-			if (editorState.world->voxels.IsCorner(m_hoveredCornerPos, (Dir)(uDim * 2)))
+			if (editorState.world->voxels.IsCorner(m_hoveredCornerPos, static_cast<Dir>(uDim * 2)))
 				m_hoveredCornerDim = uDim;
 		};
 		auto TryU = [&]
@@ -38,8 +38,8 @@ void GravityCornerEditorComponent::Update(float dt, const EditorState& editorSta
 				return;
 			m_hoveredCornerPos[nDim] = ni;
 			m_hoveredCornerPos[uDim] = ui;
-			m_hoveredCornerPos[vDim] = std::floor(v);
-			if (editorState.world->voxels.IsCorner(m_hoveredCornerPos, (Dir)(vDim * 2)))
+			m_hoveredCornerPos[vDim] = static_cast<int>(std::floor(v));
+			if (editorState.world->voxels.IsCorner(m_hoveredCornerPos, static_cast<Dir>(vDim * 2)))
 				m_hoveredCornerDim = vDim;
 		};
 		
@@ -64,7 +64,7 @@ bool GravityCornerEditorComponent::UpdateInput(float dt, const EditorState& edit
 	{
 		if (m_modCornerDim != m_hoveredCornerDim || m_modCornerPos != m_hoveredCornerPos)
 		{
-			const Dir cornerDir = (Dir)(m_hoveredCornerDim * 2);
+			const Dir cornerDir = static_cast<Dir>(m_hoveredCornerDim * 2);
 			const bool isGravityCorner = editorState.world->voxels.IsGravityCorner(m_hoveredCornerPos, cornerDir);
 			editorState.world->voxels.SetIsGravityCorner(m_hoveredCornerPos, cornerDir, !isGravityCorner);
 			
@@ -101,8 +101,8 @@ void GravityCornerEditorComponent::EarlyDraw(const EditorState& editorState) con
 				{
 					lineCorners[s * 4 + u * 2 + v] =
 						glm::vec3(m_hoveredCornerPos) +
-						(s ? sDir : vDir) * (float)(v * 2 - 1) +
-						uDir * (float)u;
+						(s ? sDir : vDir) * static_cast<float>(v * 2 - 1) +
+						uDir * static_cast<float>(u);
 				}
 			}
 		}

@@ -31,7 +31,7 @@ bool audioInitializationFailed = false;
 void InitializeStaticPropMaterialAsset();
 void InitializeDecalMaterialAsset();
 
-void Run(int argc, char** argv, std::unique_ptr<DownloadedAssetBinary> downloadedAssetBinary)
+static void Run(int argc, char** argv, std::unique_ptr<DownloadedAssetBinary> downloadedAssetBinary)
 {
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
 	

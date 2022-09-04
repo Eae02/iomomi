@@ -35,7 +35,7 @@ const void* Ent::GetComponent(const std::type_info& type) const
 
 glm::mat3 Ent::GetRotationMatrix(Dir dir)
 {
-	glm::vec3 l = voxel::tangents[(int)dir];
+	glm::vec3 l = voxel::tangents[static_cast<int>(dir)];
 	glm::vec3 u = DirectionVector(dir);
 	return glm::mat3(l, u, glm::cross(l, u));
 }
@@ -43,7 +43,7 @@ glm::mat3 Ent::GetRotationMatrix(Dir dir)
 eg::AABB Ent::GetAABB(float scale, float upDist, Dir facingDirection) const
 {
 	glm::vec3 diag(scale);
-	diag[(int)facingDirection / 2] = 0;
+	diag[static_cast<int>(facingDirection) / 2] = 0;
 	
 	return eg::AABB(
 		GetPosition() - diag,
@@ -53,7 +53,7 @@ eg::AABB Ent::GetAABB(float scale, float upDist, Dir facingDirection) const
 
 EntTypeFlags Ent::TypeFlags() const
 {
-	return entityTypes[(int)m_typeID]->flags;
+	return entityTypes[static_cast<int>(m_typeID)]->flags;
 }
 
 void Ent::Update(const struct WorldUpdateArgs& args) { }
@@ -62,7 +62,7 @@ void Ent::Spawned(bool isEditor) { }
 
 std::shared_ptr<Ent> Ent::Clone() const
 {
-	std::shared_ptr<Ent> clone = entityTypes[(int)m_typeID]->clone(*this);
+	std::shared_ptr<Ent> clone = entityTypes[static_cast<int>(m_typeID)]->clone(*this);
 	if (ActivatableComp* activatable = clone->GetComponentMut<ActivatableComp>())
 		activatable->GiveNewName();
 	return clone;
@@ -80,9 +80,9 @@ int Ent::EdGetIconIndex() const
 
 const EntType* GetEntityType(EntTypeID typeID)
 {
-	if ((int)typeID < 0 || (int)typeID >= (int)EntTypeID::MAX)
+	if (static_cast<int>(typeID) < 0 || static_cast<int>(typeID) >= static_cast<int>(EntTypeID::MAX))
 		return nullptr;
-	if (!entityTypes[(int)typeID].has_value())
+	if (!entityTypes[static_cast<int>(typeID)].has_value())
 		return nullptr;
-	return &*entityTypes[(int)typeID];
+	return &*entityTypes[static_cast<int>(typeID)];
 }

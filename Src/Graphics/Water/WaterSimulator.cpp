@@ -14,11 +14,8 @@
 #include <glm/gtx/hash.hpp>
 #include <pcg_random.hpp>
 
-std::vector<float> GenerateWater(World& world)
+static std::vector<float> GenerateWater(World& world)
 {
-	auto [worldBoundsMin, worldBoundsMax] = world.voxels.CalculateBounds();
-	glm::ivec3 worldSize = worldBoundsMax - worldBoundsMin;
-	
 	std::unordered_set<glm::ivec3> alreadyGenerated;
 	
 	std::uniform_real_distribution<float> offsetDist(0.3f, 0.7f);
@@ -47,7 +44,11 @@ std::vector<float> GenerateWater(World& world)
 				{
 					for (int z = 0; z < generatePerVoxel.z; z++)
 					{
-						glm::vec3 pos = glm::vec3(cell) + glm::vec3(x + offsetDist(rng), y + offsetDist(rng), z + offsetDist(rng)) / glm::vec3(generatePerVoxel);
+						glm::vec3 pos = glm::vec3(cell) +
+							glm::vec3(
+								static_cast<float>(x) + offsetDist(rng),
+								static_cast<float>(y) + offsetDist(rng),
+								static_cast<float>(z) + offsetDist(rng)) / glm::vec3(generatePerVoxel);
 						if (pos.y > waterPlaneEntity.GetPosition().y)
 							continue;
 						positions.push_back(pos.x);
@@ -115,18 +116,19 @@ public:
 				for (int x = 0; x < worldSize.x; x++)
 				{
 					size_t index = x + y * worldSize.x + z * worldSize.x * worldSize.y;
-					isVoxelAir[index / 8] |= (uint8_t)world.voxels.IsAir(glm::ivec3(x, y, z) + worldBoundsMin) << (index % 8);
+					if (world.voxels.IsAir(glm::ivec3(x, y, z) + worldBoundsMin))
+						isVoxelAir[index / 8] |= static_cast<uint8_t>(1 << (index % 8));
 				}
 			}
 		}
 		
-		m_numParticles = (positions.size() / 3) + world.extraWaterParticles;
+		m_numParticles = eg::UnsignedNarrow<uint32_t>(positions.size() / 3) + world.extraWaterParticles;
 		
 		WSINewArgs newArgs;
 		newArgs.minBounds = worldBoundsMin;
 		newArgs.maxBounds = worldBoundsMax;
 		newArgs.isAirBuffer = isVoxelAir;
-		newArgs.numParticles = positions.size() / 3;
+		newArgs.numParticles = eg::UnsignedNarrow<uint32_t>(positions.size() / 3);
 		newArgs.extraParticles = world.extraWaterParticles;
 		newArgs.particlePositions = positions.data();
 		m_impl = WSI_New(newArgs);
@@ -137,7 +139,7 @@ public:
 		m_positionsUploadBuffer = eg::Buffer(
 			eg::BufferFlags::HostAllocate | eg::BufferFlags::CopySrc | eg::BufferFlags::MapWrite,
 			bufferSize * eg::MAX_CONCURRENT_FRAMES, nullptr);
-		m_positionsUploadBufferMemory = (char*)m_positionsUploadBuffer.Map(0, bufferSize * eg::MAX_CONCURRENT_FRAMES);
+		m_positionsUploadBufferMemory = static_cast<char*>(m_positionsUploadBuffer.Map(0, bufferSize * eg::MAX_CONCURRENT_FRAMES));
 		
 		m_lastGravityBufferVersion = UINT32_MAX;
 		m_presimIterationsCompleted = 0;
@@ -206,14 +208,14 @@ public:
 			for (int i = 0; i < 6; i++)
 			{
 				if (component.blockedGravities[i])
-					blocker.blockedGravities |= (uint8_t)(1 << i);
+					blocker.blockedGravities |= static_cast<uint8_t>(1 << i);
 			}
 			
 			for (int dir = -1; dir <= 1; dir += 2)
 			{
 				WaterBlocker& addedBlocker = m_waterBlockersMT.emplace_back(blocker);
-				addedBlocker.center = Vec3ToM128(component.center + normal * ((float)dir * 0.1f));
-				addedBlocker.normal = Vec3ToM128(normal * (float)dir);
+				addedBlocker.center = Vec3ToM128(component.center + normal * (static_cast<float>(dir) * 0.1f));
+				addedBlocker.normal = Vec3ToM128(normal * static_cast<float>(dir));
 			}
 		});
 		
@@ -236,7 +238,7 @@ public:
 			
 			//Copies AABB data for the background thread
 			m_queryAABBsBT.clear();
-			for (int64_t i = (int64_t)m_queryAABBs.size() - 1 ; i >= 0; i--)
+			for (int64_t i = eg::ToInt(m_queryAABBs.size()) - 1 ; i >= 0; i--)
 			{
 				if (std::shared_ptr<QueryAABB> aabb = m_queryAABBs[i].lock())
 				{
@@ -379,7 +381,7 @@ public:
 				}
 			}
 			
-			simulateArgs.dt = 1.0f / stepsPerSecond;
+			simulateArgs.dt = 1.0f / static_cast<float>(stepsPerSecond);
 			simulateArgs.waterBlockers = waterBlockers;
 			simulateArgs.waterPumps = waterPumps;
 			WSI_Simulate(m_impl, simulateArgs);

@@ -115,8 +115,8 @@ void GravityGun::Update(World& world, const PhysicsEngine& physicsEngine, IWater
 	planeVel -= glm::dot(planeVel, upAxis) * upAxis;
 	
 	float speed = glm::length(planeVel);
-	float xoffset = sin(m_bobTime) * speed * GUN_BOB_SCALE / 100;
-	float yoffset = sin(2 * m_bobTime) * speed * GUN_BOB_SCALE / 400;
+	float xoffset = std::sin(m_bobTime) * speed * GUN_BOB_SCALE / 100.0f;
+	float yoffset = std::sin(2.0f * m_bobTime) * speed * GUN_BOB_SCALE / 400.0f;
 	m_bobTime += dt * GUN_BOB_SPEED;
 	
 	glm::mat4 viewMatrix, viewMatrixInv;
@@ -169,11 +169,11 @@ void GravityGun::Update(World& world, const PhysicsEngine& physicsEngine, IWater
 	}
 	
 	//Removes dead beam instances
-	for (int64_t i = (int64_t)m_beamInstances.size() - 1; i >= 0; i--)
+	for (int64_t i = eg::ToInt64(m_beamInstances.size()) - 1; i >= 0; i--)
 	{
 		if (m_beamInstances[i].lightIntensity < 0)
 		{
-			if (i != (int64_t)m_beamInstances.size() - 1)
+			if (i != eg::ToInt64(m_beamInstances.size()) - 1)
 			{
 				m_beamInstances.back() = std::move(m_beamInstances[i]);
 			}

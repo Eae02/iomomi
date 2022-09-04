@@ -30,7 +30,7 @@ struct EditorComponentsSet
 	AAQuadDragEditorComponent aaQuadDrag;
 };
 
-void EditorComponentDeleter(EditorComponentsSet* s)
+static void EditorComponentDeleter(EditorComponentsSet* s)
 {
 	delete s;
 }
@@ -41,14 +41,14 @@ EditorWorld::EditorWorld(std::string levelName, std::unique_ptr<World> world)
 	: m_levelName(std::move(levelName)), m_world(std::move(world)),
 	  m_components(new EditorComponentsSet, &EditorComponentDeleter)
 {
-	m_componentsForTool[(int)EditorTool::Entities].push_back(&m_components->lightStrip);
-	m_componentsForTool[(int)EditorTool::Entities].push_back(&m_components->aaQuadDrag);
-	m_componentsForTool[(int)EditorTool::Entities].push_back(&m_components->spawnEntity);
-	m_componentsForTool[(int)EditorTool::Entities].push_back(&m_components->entity);
+	m_componentsForTool[static_cast<int>(EditorTool::Entities)].push_back(&m_components->lightStrip);
+	m_componentsForTool[static_cast<int>(EditorTool::Entities)].push_back(&m_components->aaQuadDrag);
+	m_componentsForTool[static_cast<int>(EditorTool::Entities)].push_back(&m_components->spawnEntity);
+	m_componentsForTool[static_cast<int>(EditorTool::Entities)].push_back(&m_components->entity);
 	
-	m_componentsForTool[(int)EditorTool::Walls].push_back(&m_components->wallDrag);
+	m_componentsForTool[static_cast<int>(EditorTool::Walls)].push_back(&m_components->wallDrag);
 	
-	m_componentsForTool[(int)EditorTool::Corners].push_back(&m_components->gravityCorner);
+	m_componentsForTool[static_cast<int>(EditorTool::Corners)].push_back(&m_components->gravityCorner);
 	
 	m_world->entManager.isEditor = true;
 	
@@ -71,8 +71,8 @@ void EditorWorld::SetWindowRect(const eg::Rectangle& windowRect)
 	m_editorState.windowRect = windowRect;
 	m_editorState.projection.SetResolution(windowRect.w, windowRect.h);
 	
-	uint32_t resX = windowRect.w;
-	uint32_t resY = windowRect.h;
+	uint32_t resX = static_cast<uint32_t>(std::round(windowRect.w));
+	uint32_t resY = static_cast<uint32_t>(std::round(windowRect.h));
 	if (renderTexture.handle == nullptr || resX != renderTexture.Width() || resY != renderTexture.Height())
 	{
 		eg::SamplerDescription samplerDescription;
@@ -177,7 +177,7 @@ void EditorWorld::RenderLevelSettings()
 	{
 		for (int i = 0; i < NUM_OPTIONAL_CONTROL_HINTS; i++)
 		{
-			std::string label = std::string(magic_enum::enum_name((OptionalControlHintType)i));
+			std::string label = std::string(magic_enum::enum_name(static_cast<OptionalControlHintType>(i)));
 			ImGui::Checkbox(label.c_str(), &m_world->showControlHint[i]);
 		}
 	}
@@ -282,13 +282,13 @@ void EditorWorld::Update(float dt, EditorTool currentTool)
 	m_editorState.viewRay = eg::Ray::UnprojectNDC(m_editorState.inverseViewProjection, windowCursorPosNDC);
 	m_editorState.tool = currentTool;
 	
-	for (EditorComponent* comp : m_componentsForTool[(int)currentTool])
+	for (EditorComponent* comp : m_componentsForTool[static_cast<int>(currentTool)])
 	{
 		comp->Update(dt, m_editorState);
 	}
 	
 	m_icons.clear();
-	for (EditorComponent* comp : m_componentsForTool[(int)currentTool])
+	for (EditorComponent* comp : m_componentsForTool[static_cast<int>(currentTool)])
 	{
 		if (comp->CollectIcons(m_editorState, m_icons))
 			break;
@@ -313,7 +313,7 @@ void EditorWorld::Update(float dt, EditorTool currentTool)
 		{
 			if (m_icons[i].m_rectangle.Contains(m_editorState.windowCursorPos))
 			{
-				m_hoveredIcon = i;
+				m_hoveredIcon = eg::ToInt(i);
 				m_editorState.anyIconHovered = true;
 			}
 		}
@@ -321,7 +321,7 @@ void EditorWorld::Update(float dt, EditorTool currentTool)
 	
 	if (canUpdateInput)
 	{
-		for (EditorComponent* comp : m_componentsForTool[(int)currentTool])
+		for (EditorComponent* comp : m_componentsForTool[static_cast<int>(currentTool)])
 		{
 			if (comp->UpdateInput(dt, m_editorState))
 			{
@@ -364,7 +364,7 @@ void EditorWorld::Update(float dt, EditorTool currentTool)
 void EditorWorld::Draw(EditorTool currentTool, RenderContext& renderCtx, PrepareDrawArgs prepareDrawArgs)
 {
 	m_primRenderer.Begin(RenderSettings::instance->viewProjection, RenderSettings::instance->cameraPosition);
-	m_spriteBatch.Begin();
+	m_spriteBatch.Reset();
 	renderCtx.meshBatch.Begin();
 	renderCtx.transparentMeshBatch.Begin();
 	
@@ -373,7 +373,7 @@ void EditorWorld::Draw(EditorTool currentTool, RenderContext& renderCtx, Prepare
 	
 	m_world->PrepareForDraw(prepareDrawArgs);
 	
-	for (EditorComponent* comp : m_componentsForTool[(int)currentTool])
+	for (EditorComponent* comp : m_componentsForTool[static_cast<int>(currentTool)])
 	{
 		comp->EarlyDraw(m_editorState);
 	}
@@ -382,18 +382,18 @@ void EditorWorld::Draw(EditorTool currentTool, RenderContext& renderCtx, Prepare
 	const eg::Texture& iconsTexture = eg::GetAsset<eg::Texture>("Textures/UI/EntityIcons.png");
 	auto CreateSrcRectangle = [&] (int index)
 	{
-		return eg::Rectangle(index * 50, 0, 50, 50);
+		return eg::Rectangle(static_cast<float>(index * 50), 0, 50, 50);
 	};
 	for (size_t i = 0; i < m_icons.size(); i++)
 	{
-		if (m_icons[i].hideIfNotHovered && (int)i != m_hoveredIcon)
+		if (m_icons[i].hideIfNotHovered && static_cast<int>(i) != m_hoveredIcon)
 			continue;
 		
 		eg::ColorLin color(eg::Color::White);
 		
 		//Draws the background sprite
 		m_spriteBatch.Draw(iconsTexture, m_icons[i].m_rectangle, color,
-		                   CreateSrcRectangle(m_icons[i].selected ? 1 : ((int)i == m_hoveredIcon ? 10 : 0)),
+		                   CreateSrcRectangle(m_icons[i].selected ? 1 : (static_cast<int>(i) == m_hoveredIcon ? 10 : 0)),
 		                   eg::SpriteFlags::None);
 		
 		//Draws the icon
@@ -452,7 +452,7 @@ void EditorWorld::Draw(EditorTool currentTool, RenderContext& renderCtx, Prepare
 	
 	m_selectionRenderer.EndFrame();
 	
-	for (EditorComponent* comp : m_componentsForTool[(int)currentTool])
+	for (EditorComponent* comp : m_componentsForTool[static_cast<int>(currentTool)])
 	{
 		comp->LateDraw(m_editorState);
 	}
@@ -482,7 +482,10 @@ void EditorWorld::Draw(EditorTool currentTool, RenderContext& renderCtx, Prepare
 	eg::RenderPassBeginInfo spriteRPBeginInfo;
 	spriteRPBeginInfo.framebuffer = m_framebuffer.handle;
 	spriteRPBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Load;
-	m_spriteBatch.End(m_editorState.windowRect.w, m_editorState.windowRect.h, spriteRPBeginInfo);
+	m_spriteBatch.UploadAndRender(
+		static_cast<int>(std::round(m_editorState.windowRect.w)), 
+		static_cast<int>(std::round(m_editorState.windowRect.h)),
+		spriteRPBeginInfo);
 	
 	renderTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 }
@@ -508,7 +511,7 @@ void EditorWorld::Save()
 
 void EditorWorld::RenderToolSettings(EditorTool currentTool)
 {
-	for (EditorComponent* comp : m_componentsForTool[(int)currentTool])
+	for (EditorComponent* comp : m_componentsForTool[static_cast<int>(currentTool)])
 	{
 		comp->RenderSettings(m_editorState);
 	}

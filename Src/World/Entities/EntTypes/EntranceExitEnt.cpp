@@ -191,7 +191,7 @@ std::tuple<glm::mat3, glm::vec3> EntranceExitEnt::GetTransformParts() const
 	Dir direction = OppositeDir(m_direction);
 	
 	glm::vec3 dir = DirectionVector(direction);
-	const glm::vec3 up = DirectionVector(UP_VECTORS[(int)direction]);
+	const glm::vec3 up = DirectionVector(UP_VECTORS[static_cast<int>(direction)]);
 	
 	const glm::vec3 translation = m_position - up * (MESH_HEIGHT / 2) + dir * MESH_LENGTH;
 	
@@ -247,7 +247,7 @@ void EntranceExitEnt::Update(const WorldUpdateArgs& args)
 		(args.waterSim == nullptr || args.waterSim->IsPresimComplete());
 	
 	m_isPlayerCloseWithWrongGravity = false;
-	if (open && args.player->CurrentDown() != OppositeDir(UP_VECTORS[(int)direction]))
+	if (open && args.player->CurrentDown() != OppositeDir(UP_VECTORS[static_cast<int>(direction)]))
 	{
 		m_isPlayerCloseWithWrongGravity = true;
 		open = false;
@@ -276,7 +276,7 @@ void EntranceExitEnt::Update(const WorldUpdateArgs& args)
 	}
 	
 	glm::vec3 diag(1.8f);
-	diag[(int)direction / 2] = 0.0f;
+	diag[static_cast<int>(direction) / 2] = 0.0f;
 	glm::vec3 towardsAABBEnd = glm::vec3(DirectionVector(direction)) * MESH_LENGTH * 2.0f;
 	eg::AABB targetAABB(m_position - diag, m_position + towardsAABBEnd + diag);
 	m_isPlayerInside = targetAABB.Intersects(args.player->GetAABB()) || m_doorOpenProgress != 0;
@@ -321,7 +321,7 @@ void EntranceExitEnt::GameDraw(const EntGameDrawArgs& args)
 	float doorMoveDist = glm::smoothstep(0.0f, 1.0f, m_doorOpenProgress) * 1.2f;
 	for (int h = 0; h < 2; h++)
 	{
-		size_t meshIndex = entrance.doorMeshIndices[1 - (int)m_type][h];
+		size_t meshIndex = entrance.doorMeshIndices[1 - static_cast<int>(m_type)][h];
 		glm::vec3 tVec = glm::vec3(0, 1, -1) * doorMoveDist;
 		if (h == 0)
 			tVec = -tVec;
@@ -400,7 +400,7 @@ void EntranceExitEnt::InitPlayer(Player& player)
 	Dir direction = OppositeDir(m_direction);
 	player.SetPosition(m_position + glm::vec3(DirectionVector(direction)) * MESH_LENGTH);
 	player.m_rotationPitch = 0.0f;
-	player.m_rotationYaw = forwardRotations[(int)direction];
+	player.m_rotationYaw = forwardRotations[static_cast<int>(direction)];
 }
 
 void EntranceExitEnt::MovePlayer(const EntranceExitEnt& oldExit, const EntranceExitEnt& newEntrance, Player& player)
@@ -413,7 +413,7 @@ void EntranceExitEnt::MovePlayer(const EntranceExitEnt& oldExit, const EntranceE
 	
 	Dir oldDir = OppositeDir(oldExit.m_direction);
 	Dir newDir = OppositeDir(newEntrance.m_direction);
-	player.m_rotationYaw += -forwardRotations[(int)oldDir] + eg::PI + forwardRotations[(int)newDir];
+	player.m_rotationYaw += -forwardRotations[static_cast<int>(oldDir)] + eg::PI + forwardRotations[static_cast<int>(newDir)];
 }
 
 void EntranceExitEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
@@ -428,7 +428,7 @@ Door EntranceExitEnt::GetDoorDescription() const
 	Dir direction = OppositeDir(m_direction);
 	
 	Door door;
-	door.position = m_position - glm::vec3(DirectionVector(UP_VECTORS[(int)direction])) * 0.5f;
+	door.position = m_position - glm::vec3(DirectionVector(UP_VECTORS[static_cast<int>(direction)])) * 0.5f;
 	door.normal = glm::vec3(DirectionVector(direction));
 	door.radius = 1.5f;
 	return door;
@@ -448,7 +448,7 @@ void EntranceExitEnt::Serialize(std::ostream& stream) const
 	SerializePos(entrancePB, m_position);
 	
 	entrancePB.set_isexit(m_type == Type::Exit);
-	entrancePB.set_dir((iomomi_pb::Dir)OppositeDir(m_direction));
+	entrancePB.set_dir(static_cast<iomomi_pb::Dir>(OppositeDir(m_direction)));
 	entrancePB.set_name(m_activatable.m_name);
 	
 	entrancePB.SerializeToOstream(&stream);
@@ -461,7 +461,7 @@ void EntranceExitEnt::Deserialize(std::istream& stream)
 	
 	m_position = DeserializePos(entrancePB);
 	m_type = entrancePB.isexit() ? Type::Exit : Type::Entrance;
-	m_direction = OppositeDir((Dir)entrancePB.dir());
+	m_direction = OppositeDir(static_cast<Dir>(entrancePB.dir()));
 	
 	if (entrancePB.name() != 0)
 		m_activatable.m_name = entrancePB.name();
@@ -488,7 +488,7 @@ void EntranceExitEnt::CollectPointLights(std::vector<std::shared_ptr<PointLight>
 
 int EntranceExitEnt::EdGetIconIndex() const
 {
-	return 13 + (int)m_type;
+	return 13 + static_cast<int>(m_type);
 }
 
 template <>

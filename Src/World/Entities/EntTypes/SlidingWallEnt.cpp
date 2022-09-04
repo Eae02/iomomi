@@ -23,7 +23,7 @@ SlidingWallEnt::SlidingWallEnt()
 
 glm::vec3 SlidingWallEnt::ConstrainMove(const PhysicsObject& object, const glm::vec3& move)
 {
-	SlidingWallEnt& ent = *(SlidingWallEnt*)std::get<Ent*>(object.owner);
+	SlidingWallEnt& ent = *std::get<Ent*>(object.owner)->Downcast<SlidingWallEnt>();
 	
 	const float posSlideTime =
 		glm::dot(object.position - ent.m_initialPosition, ent.m_slideOffset) / glm::length2(ent.m_slideOffset);
@@ -49,13 +49,14 @@ void SlidingWallEnt::RenderSettings()
 void SlidingWallEnt::CommonDraw(const EntDrawArgs& args)
 {
 	glm::mat4 worldMatrix = glm::translate(glm::mat4(1), m_physicsObject.displayPosition) * m_rotationAndScale;
-	args.meshBatch->AddModel(eg::GetAsset<eg::Model>("Models/SlidingWall.obj"),
-			eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml"),
-		    StaticPropMaterial::InstanceData(worldMatrix));
+	args.meshBatch->AddModel(
+		eg::GetAsset<eg::Model>("Models/SlidingWall.obj"),
+		eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml"),
+		StaticPropMaterial::InstanceData(worldMatrix));
 	
 	if (glm::length2(m_slideOffset) > 1E-5f && args.shadowDrawArgs == nullptr)
 	{
-		const glm::vec3 up = DirectionVector((Dir)(m_upPlane * 2));
+		const glm::vec3 up = DirectionVector(static_cast<Dir>(m_upPlane * 2));
 		float distToTrack = glm::dot(up, m_aabbRadius);
 		
 		glm::vec3 trackStart = m_initialPosition;

@@ -10,8 +10,8 @@ PhysicsDebugRenderer::PhysicsDebugRenderer()
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Primitive.vs.glsl").DefaultVariant();
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Primitive.fs.glsl").DefaultVariant();
 	pipelineCI.vertexBindings[0] = { sizeof(PhysicsDebugVertex), eg::InputRate::Vertex };
-	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, (uint32_t)offsetof(PhysicsDebugVertex, x) };
-	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::UInt8Norm, 4, (uint32_t)offsetof(PhysicsDebugVertex, color) };
+	pipelineCI.vertexAttributes[0] = eg::VertexAttribute(0, eg::DataType::Float32, 3, offsetof(PhysicsDebugVertex, x));
+	pipelineCI.vertexAttributes[1] = eg::VertexAttribute(0, eg::DataType::UInt8Norm, 4, offsetof(PhysicsDebugVertex, color));
 	pipelineCI.cullMode = eg::CullMode::None;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.enableDepthWrite = false;

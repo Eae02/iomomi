@@ -8,7 +8,7 @@
 
 extern std::string levelsDirPath;
 
-void UpgradeLevelsCommand(std::span<const std::string_view> args, eg::console::Writer& writer)
+static void UpgradeLevelsCommand(std::span<const std::string_view> args, eg::console::Writer& writer)
 {
 	int numUpgraded = 0;
 	for (const Level& level : levels)

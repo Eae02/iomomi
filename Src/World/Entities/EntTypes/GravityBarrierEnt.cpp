@@ -61,7 +61,7 @@ GravityBarrierEnt::GravityBarrierEnt()
 
 bool GravityBarrierEnt::ShouldCollide(const PhysicsObject& self, const PhysicsObject& other)
 {
-	GravityBarrierEnt& selfBarrier = *(GravityBarrierEnt*)std::get<Ent*>(self.owner);
+	GravityBarrierEnt& selfBarrier = *std::get<Ent*>(self.owner)->Downcast<GravityBarrierEnt>();
 	if (!selfBarrier.m_enabled)
 		return false;
 	
@@ -72,19 +72,18 @@ bool GravityBarrierEnt::ShouldCollide(const PhysicsObject& self, const PhysicsOb
 	}
 	else if (auto otherEntDP = std::get_if<Ent*>(&other.owner))
 	{
-		const Ent& otherEnt = **otherEntDP;
-		if (otherEnt.TypeID() == EntTypeID::Cube)
+		if (const CubeEnt* otherCube = (**otherEntDP).Downcast<CubeEnt>())
 		{
-			otherDown = ((const CubeEnt&)otherEnt).CurrentDown();
+			otherDown = otherCube->CurrentDown();
 		}
 		else
 		{
 			return false;
 		}
 	}
-	if ((int)otherDown / 2 == selfBarrier.BlockedAxis())
+	if (static_cast<int>(otherDown) / 2 == selfBarrier.BlockedAxis())
 		return true;
-	if (selfBarrier.m_blockFalling && (int)otherDown / 2 == (int)selfBarrier.m_aaQuad.upPlane / 2)
+	if (selfBarrier.m_blockFalling && static_cast<int>(otherDown) / 2 == static_cast<int>(selfBarrier.m_aaQuad.upPlane) / 2)
 		return true;
 	return false;
 }
@@ -158,8 +157,8 @@ void GravityBarrierEnt::CommonDraw(const EntDrawArgs& args)
 		                             EmissiveMaterial::InstanceData { transform, gravityBarrierLightColor * intensity });
 	};
 	
-	int tangentLenI = (int)std::round(tangentLen);
-	int bitangentLenI = (int)std::round(bitangentLen);
+	int tangentLenI = static_cast<int>(std::round(tangentLen));
+	int bitangentLenI = static_cast<int>(std::round(bitangentLen));
 	
 	for (int i = -tangentLenI; i < tangentLenI; i++)
 	{
@@ -249,7 +248,7 @@ void GravityBarrierEnt::Update(const WorldUpdateArgs& args)
 				m_enabled = activated;
 				break;
 			case ActivateAction::Rotate:
-				newFlowDirectionOffset += (int)activated;
+				newFlowDirectionOffset += static_cast<int>(activated);
 				break;
 			}
 		}
@@ -305,7 +304,7 @@ void GravityBarrierEnt::UpdateNearEntities(const Player* player, EntityManager& 
 	
 	auto AddInteractable = [&] (Dir down, const glm::vec3& pos)
 	{
-		bufferData.iaDownAxis[itemsWritten] = (int)down / 2;
+		bufferData.iaDownAxis[itemsWritten] = static_cast<int>(down) / 2;
 		for (int i = 0; i < 3; i++)
 		{
 			bufferData.iaPosition[itemsWritten][i] = pos[i];
@@ -337,7 +336,7 @@ void GravityBarrierEnt::UpdateNearEntities(const Player* player, EntityManager& 
 
 std::tuple<glm::vec3, glm::vec3> GravityBarrierEnt::GetTangents() const
 {
-	return m_aaQuad.GetTangents((float)(flowDirection + m_flowDirectionOffset) * eg::HALF_PI);
+	return m_aaQuad.GetTangents(static_cast<float>(flowDirection + m_flowDirectionOffset) * eg::HALF_PI);
 }
 
 void GravityBarrierEnt::Spawned(bool isEditor)
@@ -360,7 +359,7 @@ void GravityBarrierEnt::Serialize(std::ostream& stream) const
 	gravBarrierPB.set_up_plane(m_aaQuad.upPlane);
 	gravBarrierPB.set_sizex(m_aaQuad.radius.x);
 	gravBarrierPB.set_sizey(m_aaQuad.radius.y);
-	gravBarrierPB.set_activate_action((uint32_t)activateAction);
+	gravBarrierPB.set_activate_action(static_cast<uint32_t>(activateAction));
 	gravBarrierPB.set_block_falling(m_blockFalling);
 	gravBarrierPB.set_never_block_water(m_neverBlockWater);
 	gravBarrierPB.set_red_from_water(m_redFromWater);

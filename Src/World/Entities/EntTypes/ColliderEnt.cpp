@@ -106,12 +106,12 @@ void ColliderEnt::Serialize(std::ostream& stream) const
 	entityPB.set_radz(m_radius.z);
 	
 	uint32_t blockBitMask =
-		((uint32_t)m_blockPlayer << 0U) |
-		((uint32_t)m_blockCubes << 1U) |
-		((uint32_t)m_blockPickUp << 8U);
+		(static_cast<uint32_t>(m_blockPlayer) << 0U) |
+		(static_cast<uint32_t>(m_blockCubes) << 1U) |
+		(static_cast<uint32_t>(m_blockPickUp) << 8U);
 	for (uint32_t i = 0; i < 6; i++)
 	{
-		blockBitMask |= (uint32_t)m_blockedGravityModes[i] << (2 + i);
+		blockBitMask |= static_cast<uint32_t>(m_blockedGravityModes[i]) << (2 + i);
 	}
 	entityPB.set_block_bit_mask(blockBitMask);
 	

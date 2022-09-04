@@ -25,14 +25,32 @@ endif()
 
 add_executable(iomomi ${SOURCE_FILES})
 
-target_precompile_headers(iomomi PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Inc/Common.hpp)
+target_precompile_headers(iomomi PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Src/PCH.hpp)
 
-target_compile_options(iomomi PRIVATE -Wall -Wextra -Wshadow -pedantic -Wno-unused-parameter -Wno-delete-non-virtual-dtor -Wno-missing-field-initializers)
+target_compile_options(iomomi PRIVATE
+	-Wall
+	-Wextra
+	-Wshadow
+	-Wcast-qual
+	-Wfloat-conversion
+	-Woverlength-strings
+	-Wpointer-arith
+	-Wunused-local-typedefs
+	-Wunused-result
+	-Wvarargs
+	-Wvla
+	-Wstrict-aliasing
+	-Wwrite-strings
+	-pedantic
+	-Wno-unused-parameter
+	-Wno-delete-non-virtual-dtor
+	-Wno-missing-field-initializers
+	$<$<COMPILE_LANGUAGE:CXX>:-Wconversion-null>
+)
 
 #Adds compiler specific options
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	set_source_files_properties(Src/Graphics/Water/WaterSimulatorImpl.cpp PROPERTIES COMPILE_FLAGS "-O2 -g0")
-#	set_source_files_properties(Src/Graphics/Water/WaterSimulatorWorker.cpp PROPERTIES COMPILE_FLAGS "-O2 -g0")
 	set_source_files_properties(Src/World/Collision.cpp PROPERTIES COMPILE_FLAGS "-O2 -g0")
 endif()
 
@@ -87,7 +105,7 @@ if (${IOMOMI_WATER})
 	find_package(PkgConfig)
 	pkg_check_modules(TBB REQUIRED tbb)
 	target_link_libraries(iomomi ${TBB_LIBRARIES})
-	target_include_directories(iomomi PRIVATE ${TBB_INCLUDE_DIRS})
+	target_include_directories(iomomi SYSTEM PRIVATE ${TBB_INCLUDE_DIRS})
 	target_compile_options(iomomi PRIVATE ${TBB_CFLAGS_OTHER})
 endif()
 
@@ -102,7 +120,8 @@ else()
 endif()
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
-	set(EMCC_FLAGS "-lidbfs.js -lopenal -s ALLOW_MEMORY_GROWTH=1 -s WASM=1 -s USE_WEBGL2=1 -s FULL_ES3=1 -s USE_ZLIB=1 -s FORCE_FILESYSTEM=1 -s FETCH=1 -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0")
+	set(EMCC_FLAGS "-lidbfs.js -lopenal -s ALLOW_MEMORY_GROWTH=1 -s WASM=1 -s USE_WEBGL2=1 -s FULL_ES3=1 -s USE_ZLIB=1 
+		-s FORCE_FILESYSTEM=1 -s FETCH=1 -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0")
 	
 	if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
 		set(EMCC_FLAGS "${EMCC_FLAGS} -g4 --source-map-base='http://0.0.0.0:7000/'")
@@ -110,7 +129,9 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
 	endif()
 	
 	target_compile_options(iomomi PRIVATE -Wno-sign-conversion -Wno-shorten-64-to-32 -Wno-mismatched-tags)
-	set_target_properties(iomomi PROPERTIES LINK_FLAGS "-s EXPORTED_RUNTIME_METHODS=['cwrap'] -s EXPORTED_FUNCTIONS=['_WebMain'] ${EMCC_FLAGS}")
+	set_target_properties(iomomi PROPERTIES
+		LINK_FLAGS "-s EXPORTED_RUNTIME_METHODS=['cwrap'] -s EXPORTED_FUNCTIONS=['_WebMain'] ${EMCC_FLAGS}"
+	)
 else()
 	target_link_libraries(iomomi stdc++fs)
 	target_compile_options(iomomi PRIVATE -msse4.1)

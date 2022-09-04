@@ -44,7 +44,7 @@ SettingEntry MakeNumberSetting(std::string name, float Settings::*setting)
 		//Change once from_chars is usable
 		//std::from_chars(str.data(), str.data() + str.size(), st.*setting);
 		EG_ASSERT(str[str.size()] == '\0');
-		st.*setting = atof(str.data());
+		st.*setting = static_cast<float>(atof(str.data()));
 	};
 	s.save = [=] (const Settings& st)
 	{

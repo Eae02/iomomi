@@ -98,7 +98,7 @@ int PointLightShadowMapper::AllocateShadowMap()
 		if (!m_shadowMaps[i].inUse)
 		{
 			m_shadowMaps[i].inUse = true;
-			return (int)i;
+			return static_cast<int>(i);
 		}
 	}
 	

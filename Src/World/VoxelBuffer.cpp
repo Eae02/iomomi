@@ -37,7 +37,7 @@ void VoxelBuffer::SetMaterialSafe(const glm::ivec3& pos, Dir side, int material)
 	auto voxelIt = m_voxels.find(pos);
 	if (voxelIt != m_voxels.end())
 	{
-		voxelIt->second.materials[(int)side] = material;
+		voxelIt->second.materials[static_cast<int>(side)] = material;
 		m_modified = true;
 	}
 }
@@ -46,7 +46,7 @@ void VoxelBuffer::SetMaterial(const glm::ivec3& pos, Dir side, int material)
 {
 	auto voxelIt = m_voxels.find(pos);
 	EG_ASSERT(voxelIt != m_voxels.end())
-	voxelIt->second.materials[(int)side] = material;
+	voxelIt->second.materials[static_cast<int>(side)] = material;
 	m_modified = true;
 }
 
@@ -55,7 +55,7 @@ int VoxelBuffer::GetMaterial(const glm::ivec3& pos, Dir side) const
 	auto voxelIt = m_voxels.find(pos);
 	if (voxelIt == m_voxels.end())
 		return 0;
-	return voxelIt->second.materials[(int)side];
+	return voxelIt->second.materials[static_cast<int>(side)];
 }
 
 std::optional<int> VoxelBuffer::GetMaterialIfVisible(const glm::ivec3& pos, Dir side) const
@@ -65,17 +65,17 @@ std::optional<int> VoxelBuffer::GetMaterialIfVisible(const glm::ivec3& pos, Dir 
 	auto voxelIt = m_voxels.find(pos);
 	if (voxelIt == m_voxels.end())
 		return {};
-	return voxelIt->second.materials[(int)side];
+	return voxelIt->second.materials[static_cast<int>(side)];
 }
 
 glm::ivec4 VoxelBuffer::GetGravityCornerVoxelPos(glm::ivec3 cornerPos, Dir cornerDir) const
 {
-	const int cornerDim = (int)cornerDir / 2;
-	if ((int)cornerDir % 2)
+	const int cornerDim = static_cast<int>(cornerDir) / 2;
+	if (static_cast<int>(cornerDir) % 2)
 		cornerPos[cornerDim]--;
 	
-	const Dir uDir = (Dir)((cornerDim + 1) % 3 * 2);
-	const Dir vDir = (Dir)((cornerDim + 2) % 3 * 2);
+	const Dir uDir = static_cast<Dir>((cornerDim + 1) % 3 * 2);
+	const Dir vDir = static_cast<Dir>((cornerDim + 2) % 3 * 2);
 	const glm::ivec3 uV = DirectionVector(uDir);
 	const glm::ivec3 vV = DirectionVector(vDir);
 	
@@ -145,10 +145,10 @@ VoxelRayIntersectResult VoxelBuffer::RayIntersect(const eg::Ray& ray) const
 	
 	for (int dim = 0; dim < 3; dim++)
 	{
-		glm::vec3 dn = DirectionVector((Dir)(dim * 2));
+		glm::vec3 dn = DirectionVector(static_cast<Dir>(dim * 2));
 		for (int s = -100; s <= 100; s++)
 		{
-			if (std::signbit(s - ray.GetStart()[dim]) != std::signbit(ray.GetDirection()[dim]))
+			if (std::signbit(static_cast<float>(s) - ray.GetStart()[dim]) != std::signbit(ray.GetDirection()[dim]))
 				continue;
 			
 			eg::Plane plane(dn, s);
@@ -163,7 +163,7 @@ VoxelRayIntersectResult VoxelBuffer::RayIntersect(const eg::Ray& ray) const
 				{
 					result.intersectPosition = iPos;
 					result.voxelPosition = voxelPosN;
-					result.normalDir = (Dir)(dim * 2 + (voxelPosP[dim] > voxelPosN[dim] ? 0 : 1));
+					result.normalDir = static_cast<Dir>(dim * 2 + (voxelPosP[dim] > voxelPosN[dim] ? 0 : 1));
 					result.intersectDist = intersectDist;
 					result.intersected = true;
 					minDist = intersectDist;

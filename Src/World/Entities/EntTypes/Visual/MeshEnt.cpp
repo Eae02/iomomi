@@ -205,7 +205,7 @@ void MeshEnt::IterateRepeatedInstances(CallbackFn callback) const
 			glm::vec3 translation(0);
 			translation[modelOptions[*m_model].repeatAxis] = modelOptions[*m_model].repeatDistance * i;
 			transform = glm::translate(transform, translation);
-			textureMin = modelOptions[*m_model].repeatUVShift * (m_randomTextureOffset + (float)i);
+			textureMin = modelOptions[*m_model].repeatUVShift * (m_randomTextureOffset + static_cast<float>(i));
 		}
 		
 		callback(transform, textureMin);
@@ -220,7 +220,7 @@ void MeshEnt::CommonDraw(const EntDrawArgs& args)
 		
 		for (size_t m = 0; m < modelOptions[*m_model].model->NumMeshes(); m++)
 		{
-			if (modelOptions[*m_model].meshIndex == -1 || (size_t)modelOptions[*m_model].meshIndex == m)
+			if (modelOptions[*m_model].meshIndex < 0 || static_cast<size_t>(modelOptions[*m_model].meshIndex) == m)
 			{
 				const eg::AABB aabb =
 					modelOptions[*m_model].model->GetMesh(m).boundingAABB

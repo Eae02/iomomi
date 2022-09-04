@@ -146,14 +146,14 @@ void GravitySwitchVolLightMaterial::SetQuality(QualityLevel qualityLevel)
 	LightDataBuffer lightDataBufferStruct;
 	lightDataBufferStruct.tMax = std::tan(glm::radians(MAX_ANGLE));
 	lightDataBufferStruct.inverseMaxY = 1.0f / (YMAX * 0.9f);
-	lightDataBufferStruct.oneOverRaySteps = 1.0f / raySteps;
+	lightDataBufferStruct.oneOverRaySteps = 1.0f / static_cast<float>(raySteps);
 	lightDataBufferStruct.quarterRaySteps = raySteps / 4;
 	
 	//Generates sample points
 	std::uniform_real_distribution<float> offDist(0.0f, 1.0f);
 	for (int i = 0; i < raySteps; i++)
 	{
-		lightDataBufferStruct.samplePoints[i] = ((float)i + offDist(globalRNG)) / (float)raySteps;
+		lightDataBufferStruct.samplePoints[i] = (static_cast<float>(i) + offDist(globalRNG)) / static_cast<float>(raySteps);
 	}
 	
 	eg::DC.UpdateBuffer(lightDataBuffer, 0, sizeof(LightDataBuffer), &lightDataBufferStruct);

@@ -13,7 +13,7 @@ void EntityManager::AddEntity(std::shared_ptr<Ent> entity)
 	entity->Spawned(isEditor);
 	
 	uint32_t name = entity->Name();
-	m_entities[(int)entity->TypeID()].emplace(name, std::move(entity));
+	m_entities[static_cast<int>(entity->TypeID())].emplace(name, std::move(entity));
 }
 
 EntityManager::EntityManager()
@@ -35,7 +35,7 @@ void EntityManager::Update(const struct WorldUpdateArgs& args)
 {
 	for (size_t t = 0; t < NUM_UPDATABLE_ENTITY_TYPES; t++)
 	{
-		for (auto& entity : m_entities[(int)entUpdateOrder[t]])
+		for (auto& entity : m_entities[static_cast<int>(entUpdateOrder[t])])
 		{
 			entity.second->Update(args);
 		}
@@ -43,14 +43,14 @@ void EntityManager::Update(const struct WorldUpdateArgs& args)
 	
 	for (std::pair<EntTypeID, uint32_t> entityToRemove : m_entitiesToRemove)
 	{
-		m_entities[(int)entityToRemove.first].erase(entityToRemove.second);
+		m_entities[static_cast<int>(entityToRemove.first)].erase(entityToRemove.second);
 	}
 	m_entitiesToRemove.clear();
 }
 
 void EntityManager::FlagTracker::MaybeAdd(const std::shared_ptr<Ent>& entity)
 {
-	if ((uint32_t)entity->TypeFlags() & (uint32_t)flags)
+	if (static_cast<uint32_t>(entity->TypeFlags()) & static_cast<uint32_t>(flags))
 	{
 		entities.emplace_back(entity);
 	}
@@ -67,7 +67,7 @@ void EntityManager::ComponentTracker::MaybeAdd(const std::shared_ptr<Ent>& entit
 EntityManager EntityManager::Deserialize(std::istream& stream)
 {
 	std::unordered_map<uint32_t, const EntType*> serializerMap;
-	for (int entityType = 0; entityType < (int)EntTypeID::MAX; entityType++)
+	for (int entityType = 0; entityType < static_cast<int>(EntTypeID::MAX); entityType++)
 	{
 		if (const EntType* type = GetEntityType((EntTypeID)entityType))
 		{
@@ -108,21 +108,21 @@ void EntityManager::Serialize(std::ostream& stream) const
 {
 	std::vector<char> writeBuffer;
 	
-	uint32_t totalEntities = 0;
+	size_t totalEntities = 0;
 	for (const auto& entityList : m_entities)
 		totalEntities += entityList.size();
 	
-	eg::BinWrite(stream, totalEntities);
+	eg::BinWrite(stream, eg::UnsignedNarrow<uint32_t>(totalEntities));
 	const_cast<EntityManager*>(this)->ForEach([&] (const Ent& entity)
 	{
 		const EntType* entType = GetEntityType(entity.TypeID());
-		eg::BinWrite(stream, (uint32_t)eg::HashFNV1a32(entType->name));
+		eg::BinWrite<uint32_t>(stream, eg::HashFNV1a32(entType->name));
 		
 		std::ostringstream serializeStream;
 		entity.Serialize(serializeStream);
 		
 		std::string serializedData = serializeStream.str();
-		eg::BinWrite<uint32_t>(stream, serializedData.size());
+		eg::BinWrite(stream, eg::UnsignedNarrow<uint32_t>(serializedData.size()));
 		stream.write(serializedData.data(), serializedData.size());
 	});
 }

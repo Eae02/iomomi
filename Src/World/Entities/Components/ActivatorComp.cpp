@@ -52,7 +52,7 @@ void ActivatorComp::LoadProtobuf(const iomomi_pb::Activator& activator)
 	waypoints.reserve(activator.way_points_size());
 	for (const iomomi_pb::ActWayPoint& wp : activator.way_points())
 	{
-		waypoints.push_back({ (Dir)wp.wall_normal(), PBToGLM(wp.position()) });
+		waypoints.push_back({ static_cast<Dir>(wp.wall_normal()), PBToGLM(wp.position()) });
 	}
 }
 
@@ -66,7 +66,7 @@ iomomi_pb::Activator* ActivatorComp::SaveProtobuf(google::protobuf::Arena* arena
 	{
 		iomomi_pb::ActWayPoint* wpPb = activatorPB->add_way_points();
 		wpPb->set_allocated_position(GLMToPB(wp.position, arena));
-		wpPb->set_wall_normal((iomomi_pb::Dir)wp.wallNormal);
+		wpPb->set_wall_normal(static_cast<iomomi_pb::Dir>(wp.wallNormal));
 	}
 	
 	return activatorPB;

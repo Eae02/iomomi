@@ -25,7 +25,7 @@ void DecalEnt::SetMaterialByName(std::string_view materialName)
 	{
 		if (decalMaterials[i] == materialName)
 		{
-			m_decalMaterialIndex = (int)i;
+			m_decalMaterialIndex = static_cast<int>(i);
 			UpdateMaterialPointer();
 			return;
 		}
@@ -110,7 +110,7 @@ void DecalEnt::Serialize(std::ostream& stream) const
 	
 	decalPB.set_material_name(GetMaterialName());
 	
-	decalPB.set_dir((iomomi_pb::Dir)m_direction);
+	decalPB.set_dir(static_cast<iomomi_pb::Dir>(m_direction));
 	decalPB.set_rotation(rotation);
 	decalPB.set_scale(scale);
 	decalPB.set_extension_x(m_repetitions.x);
@@ -125,7 +125,7 @@ void DecalEnt::Deserialize(std::istream& stream)
 	decalPB.ParseFromIstream(&stream);
 	
 	m_position = DeserializePos(decalPB);
-	m_direction = (Dir)decalPB.dir();
+	m_direction = static_cast<Dir>(decalPB.dir());
 	m_repetitions.x = decalPB.extension_x();
 	m_repetitions.y = decalPB.extension_y();
 	

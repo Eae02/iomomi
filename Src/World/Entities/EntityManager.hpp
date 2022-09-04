@@ -44,7 +44,7 @@ public:
 	bool isEditor = false;
 	
 private:
-	std::unordered_map<uint32_t, std::shared_ptr<Ent>> m_entities[(size_t)EntTypeID::MAX];
+	std::unordered_map<uint32_t, std::shared_ptr<Ent>> m_entities[static_cast<size_t>(EntTypeID::MAX)];
 	
 	std::vector<std::pair<EntTypeID, uint32_t>> m_entitiesToRemove;
 	

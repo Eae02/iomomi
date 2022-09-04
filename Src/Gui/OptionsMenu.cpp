@@ -34,7 +34,7 @@ ComboBox InitSettingsCB(T Settings::*member, std::string label, bool reverseOpti
 		std::reverse(cb.options.begin(), cb.options.end());
 	cb.getValue = [=]
 	{
-		int v = (int)(settings.*member);
+		int v = static_cast<int>(settings.*member);
 		if (reverseOptions)
 			v = (int)settingsCBOptions<T>.size() - 1 - v;
 		return v;
@@ -49,7 +49,7 @@ ComboBox InitSettingsCB(T Settings::*member, std::string label, bool reverseOpti
 	return cb;
 }
 
-Slider InitSettingsSlider(float Settings::*member, std::string label, float min, float max)
+static Slider InitSettingsSlider(float Settings::*member, std::string label, float min, float max)
 {
 	Slider slider;
 	slider.label = std::move(label);
@@ -64,25 +64,25 @@ Slider InitSettingsSlider(float Settings::*member, std::string label, float min,
 	return slider;
 }
 
-std::string_view VolumeAndBrightnessGetDisplayValueString(float value)
+static std::string_view VolumeAndBrightnessGetDisplayValueString(float value)
 {
 	if (value <= 0)
 		return "Muted";
-	int val = std::max((int)std::round(value * 100), 1);
+	int val = std::max(static_cast<int>(std::round(value * 100)), 1);
 	static char buffer[16];
 	snprintf(buffer, sizeof(buffer), "%d%%", val);
 	return buffer;
 }
 
-Slider InitVolumeSlider(float Settings::*member, std::string label)
+static Slider InitVolumeSlider(float Settings::*member, std::string label)
 {
 	Slider slider = InitSettingsSlider(member, label, 0, 1.5f);
 	slider.getDisplayValueString = VolumeAndBrightnessGetDisplayValueString;
 	return slider;
 }
 
-ToggleButton InitSettingsToggleButton(bool Settings::*member, std::string label,
-                                      std::string trueString, std::string falseString)
+static ToggleButton InitSettingsToggleButton(
+	bool Settings::*member, std::string label, std::string trueString, std::string falseString)
 {
 	ToggleButton button;
 	button.label = std::move(label);
@@ -99,7 +99,7 @@ ToggleButton InitSettingsToggleButton(bool Settings::*member, std::string label,
 
 static int fullscreenDisplayModeIndex;
 
-std::string FilterGPUNameString(std::string_view inputString)
+static std::string FilterGPUNameString(std::string_view inputString)
 {
 	std::string outputString;
 	int parenDepth = 0;
@@ -150,7 +150,7 @@ void InitOptionsMenu()
 	apiComboBox.options.push_back("OpenGL");
 	if (eg::VulkanAppearsSupported())
 		apiComboBox.options.push_back("Vulkan");
-	apiComboBox.getValue = [] { return (int)settings.graphicsAPI; };
+	apiComboBox.getValue = [] { return static_cast<int>(settings.graphicsAPI); };
 	apiComboBox.setValue = [] (int value) { settings.graphicsAPI = (eg::GraphicsAPI)value; };
 	
 	std::span<std::string> gpuNames = eg::gal::GetDeviceNames();
@@ -205,7 +205,7 @@ void InitOptionsMenu()
 	fovSlider.getDisplayValueString = [] (float value) -> std::string_view
 	{
 		static char buffer[16];
-		snprintf(buffer, sizeof(buffer), "%d°", (int)std::round(value));
+		snprintf(buffer, sizeof(buffer), "%d°", static_cast<int>(std::round(value)));
 		return buffer;
 	};
 	leftWidgetList.AddWidget(std::move(fovSlider));
@@ -224,7 +224,7 @@ void InitOptionsMenu()
 		ComboBox joystickAxesCB;
 		joystickAxesCB.label = "Joystick Mapping";
 		joystickAxesCB.options = { "\eLeft: \eMove\e, Right:\e Look", "\eLeft: \eLook, \eRight:\e Move" };
-		joystickAxesCB.getValue = [] { return (int)settings.flipJoysticks; };
+		joystickAxesCB.getValue = [] { return static_cast<int>(settings.flipJoysticks); };
 		joystickAxesCB.setValue = [] (int value) { settings.flipJoysticks = value == 1; SettingsChanged(); };
 		rightWidgetList.AddWidget(std::move(joystickAxesCB));
 		rightWidgetList.AddWidget(InitSettingsSlider(&Settings::lookSensitivityGP, "Joystick Sensitivity", 0.5f, 4.0f));
@@ -236,7 +236,7 @@ void InitOptionsMenu()
 		ComboBox keyBindingsConfigureModeCB;
 		keyBindingsConfigureModeCB.label = "Bindings to Configure";
 		keyBindingsConfigureModeCB.options = { "Keyboard & Mouse", "Controller" };
-		keyBindingsConfigureModeCB.getValue = [] { return (int)KeyBindingWidget::isConfiguringGamePad; };
+		keyBindingsConfigureModeCB.getValue = [] { return static_cast<int>(KeyBindingWidget::isConfiguringGamePad); };
 		keyBindingsConfigureModeCB.setValue = [] (int value) { KeyBindingWidget::isConfiguringGamePad = value == 1; };
 		rightWidgetList.AddWidget(std::move(keyBindingsConfigureModeCB));
 	}
@@ -270,14 +270,17 @@ void UpdateOptionsMenu(float dt, const glm::vec2& positionOffset, bool allowInte
 	
 	optionsScrollPanel.contentHeight = std::max(leftWidgetList.Height(), rightWidgetList.Height());
 	
+	float resx = static_cast<float>(eg::CurrentResolutionX());
+	float resy = static_cast<float>(eg::CurrentResolutionY());
+	
 	optionsScrollPanel.screenRectangle.x =
-		std::max(eg::CurrentResolutionX() / 2 - WIDGET_LIST_SPACING / 2 - WIDGET_LIST_WIDTH, 0.0f) + positionOffset.x;
+		std::max(resx / 2.0f - WIDGET_LIST_SPACING / 2.0f - WIDGET_LIST_WIDTH, 0.0f) + positionOffset.x;
 	optionsScrollPanel.screenRectangle.w =
-		std::min(WIDGET_LIST_SPACING + WIDGET_LIST_WIDTH * 2 + 20, (float)eg::CurrentResolutionX());
+		std::min(WIDGET_LIST_SPACING + WIDGET_LIST_WIDTH * 2 + 20, resx);
 	optionsScrollPanel.screenRectangle.h =
-		std::min(eg::CurrentResolutionY() - Y_MARGIN_TOP - Y_MARGIN_BTM, optionsScrollPanel.contentHeight);
+		std::min(resy - Y_MARGIN_TOP - Y_MARGIN_BTM, optionsScrollPanel.contentHeight);
 	optionsScrollPanel.screenRectangle.y =
-		std::max((eg::CurrentResolutionY() - optionsScrollPanel.screenRectangle.h) / 2, Y_MARGIN_BTM) + positionOffset.y;
+		std::max((resy - optionsScrollPanel.screenRectangle.h) / 2.0f, Y_MARGIN_BTM) + positionOffset.y;
 	
 	optionsScrollPanel.Update(dt, ComboBox::current == nullptr);
 	
@@ -297,8 +300,11 @@ void UpdateOptionsMenu(float dt, const glm::vec2& positionOffset, bool allowInte
 
 void DrawOptionsMenu(eg::SpriteBatch& spriteBatch)
 {
-	spriteBatch.PushScissor(0, optionsScrollPanel.screenRectangle.y,
-	                        eg::CurrentResolutionX(), optionsScrollPanel.screenRectangle.h);
+	spriteBatch.PushScissorF(
+		0.0f,
+		optionsScrollPanel.screenRectangle.y,
+		static_cast<float>(eg::CurrentResolutionX()),
+		optionsScrollPanel.screenRectangle.h);
 	leftWidgetList.Draw(spriteBatch);
 	rightWidgetList.Draw(spriteBatch);
 	spriteBatch.PopScissor();

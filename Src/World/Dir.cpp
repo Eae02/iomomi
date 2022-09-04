@@ -10,7 +10,7 @@ std::optional<Dir> ParseDirection(std::string_view directionName)
 	for (int s = 0; s < 6; s++)
 	{
 		if (directionName == DirectionNames[s])
-			return (Dir)s;
+			return static_cast<Dir>(s);
 	}
 	return { };
 }

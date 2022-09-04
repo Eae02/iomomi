@@ -132,12 +132,7 @@ void ComboBox::DrawOverlay(eg::SpriteBatch& spriteBatch) const
 		return;
 	}
 	
-	spriteBatch.PushScissor(
-		(int)m_scrollPanel.screenRectangle.x,
-		(int)m_scrollPanel.screenRectangle.y,
-		(int)m_scrollPanel.screenRectangle.w,
-		(int)m_scrollPanel.screenRectangle.h
-	);
+	spriteBatch.PushScissorRect(m_scrollPanel.screenRectangle);
 	
 	const eg::ColorLin DIVIDER_COLOR = eg::ColorLin::Mix(style::ButtonColorDefault, eg::ColorLin(eg::Color::White), 0.25f);
 	
@@ -159,7 +154,7 @@ void ComboBox::DrawOverlay(eg::SpriteBatch& spriteBatch) const
 		textPos.y -= OPTION_HEIGHT;
 		
 		float highlightIntensity = m_optionHighlightIntensity[i];
-		if ((int)i == currentIndex)
+		if (static_cast<int>(i) == currentIndex)
 			highlightIntensity = glm::mix(0.3f, 1.0f, highlightIntensity);
 		eg::ColorLin backColor = eg::ColorLin::Mix(style::ButtonColorDefault, style::ButtonColorHover, highlightIntensity);
 		backColor.a = 1;

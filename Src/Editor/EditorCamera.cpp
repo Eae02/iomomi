@@ -38,8 +38,8 @@ void EditorCamera::Update(float dt, bool& canUpdateInput)
 		else
 		{
 			const float MOUSE_SENSITIVITY = -0.005f;
-			m_yaw += eg::CursorDeltaX() * MOUSE_SENSITIVITY * YawSign();
-			m_pitch += eg::CursorDeltaY() * MOUSE_SENSITIVITY;
+			m_yaw += static_cast<float>(eg::CursorDeltaX() * YawSign()) * MOUSE_SENSITIVITY;
+			m_pitch += static_cast<float>(eg::CursorDeltaY()) * MOUSE_SENSITIVITY;
 		}
 	}
 	else
@@ -73,13 +73,13 @@ void EditorCamera::Update(float dt, bool& canUpdateInput)
 	}
 	else
 	{
-		m_yaw += m_kbVel[0] * dt * YawSign();
+		m_yaw += m_kbVel[0] * dt * static_cast<float>(YawSign());
 		m_pitch += m_kbVel[1] * dt;
 	}
 	
 	UpdateRotationMatrix();
 	
-	m_targetDistance += (eg::InputState::Previous().scrollY - eg::InputState::Current().scrollY) * m_targetDistance * 0.1f;
+	m_targetDistance *= 1.0f + static_cast<float>(eg::InputState::Previous().scrollY - eg::InputState::Current().scrollY) * 0.1f;
 	m_targetDistance = std::max(m_targetDistance, 1.0f);
 	m_distance += std::min(dt * 10, 1.0f) * (m_targetDistance - m_distance);
 }

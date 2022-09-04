@@ -63,7 +63,7 @@ PumpScreenMaterial::PumpScreenMaterial()
 	Update(0, PumpDirection::None);
 }
 
-constexpr float SCREEN_AR = 0.7615894039735099;
+constexpr float SCREEN_AR = 0.7615894039735099f;
 
 static float* pumpAnimationSpeed = eg::TweakVarFloat("pump_anim_speed", 3.0f);
 static float* pumpAnimationGradient = eg::TweakVarFloat("pump_anim_grad", 1.3f);
@@ -94,7 +94,7 @@ void PumpScreenMaterial::Update(float dt, PumpDirection direction)
 	materialData.backgroundColor = backgroundColor;
 	
 	const float arrowHeightTS = 0.75f;
-	const float arrowWidthTS = arrowHeightTS * ((float)arrowTexture->Width() / (float)arrowTexture->Height()) * SCREEN_AR;
+	const float arrowWidthTS = arrowHeightTS * arrowTexture->WidthOverHeight() * SCREEN_AR;
 	const float minX = -arrowWidthTS;
 	const float maxX = 1;
 	
@@ -102,7 +102,7 @@ void PumpScreenMaterial::Update(float dt, PumpDirection direction)
 	{
 		for (int arrow = 0; arrow < NUM_ARROWS; arrow++)
 		{
-			float a = (arrow + m_animationProgress) / (float)(NUM_ARROWS);
+			float a = (static_cast<float>(arrow) + m_animationProgress) / static_cast<float>(NUM_ARROWS);
 			if (m_currentDirection == PumpDirection::Left)
 				a = 1 - a;
 			

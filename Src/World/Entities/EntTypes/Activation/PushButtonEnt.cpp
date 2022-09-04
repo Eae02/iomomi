@@ -41,7 +41,7 @@ glm::mat4 PushButtonEnt::GetTransform() const
 {
 	return glm::translate(glm::mat4(1), m_position) *
 	       glm::mat4(GetRotationMatrix(m_direction)) *
-	       glm::rotate(glm::mat4(1), m_rotation * eg::HALF_PI, glm::vec3(0, 1, 0)) *
+	       glm::rotate(glm::mat4(1), static_cast<float>(m_rotation) * eg::HALF_PI, glm::vec3(0, 1, 0)) *
 	       glm::scale(glm::mat4(1), glm::vec3(SCALE));
 }
 
@@ -119,7 +119,7 @@ void PushButtonEnt::Serialize(std::ostream& stream) const
 {
 	iomomi_pb::PushButtonEntity buttonPB;
 	
-	buttonPB.set_dir((iomomi_pb::Dir)m_direction);
+	buttonPB.set_dir(static_cast<iomomi_pb::Dir>(m_direction));
 	buttonPB.set_rotation(m_rotation);
 	SerializePos(buttonPB, m_position);
 	
@@ -135,7 +135,7 @@ void PushButtonEnt::Deserialize(std::istream& stream)
 	iomomi_pb::PushButtonEntity buttonPB;
 	buttonPB.ParseFromIstream(&stream);
 	
-	m_direction = (Dir)buttonPB.dir();
+	m_direction = static_cast<Dir>(buttonPB.dir());
 	m_position = DeserializePos(buttonPB);
 	m_rotation = buttonPB.rotation();
 	m_activator.LoadProtobuf(buttonPB.activator());

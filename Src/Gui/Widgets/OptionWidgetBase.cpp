@@ -44,7 +44,7 @@ void OptionWidgetBase::DrawBase(eg::SpriteBatch& spriteBatch, float highlightInt
 		bool applyScissor = maxValueWidth != 0 && maxValueWidth < style::UIFont->GetTextExtents(valueText).x * FONT_SCALE;
 		if (applyScissor)
 		{
-			spriteBatch.PushScissor(textPos.x, m_rectangle.y, maxValueWidth, height);
+			spriteBatch.PushScissorF(textPos.x, m_rectangle.y, maxValueWidth, height);
 		}
 		
 		const eg::ColorLin valueFadedColor(eg::Color::White.ScaleAlpha(0.5f));

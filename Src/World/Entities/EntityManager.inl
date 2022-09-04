@@ -1,7 +1,7 @@
 template <typename CallbackTp>
 void EntityManager::ForEachInEntityVector(std::vector<std::weak_ptr<Ent>>& entities, CallbackTp callback)
 {
-	for (int64_t i = (int64_t)entities.size() - 1; i >= 0; i--)
+	for (int64_t i = eg::ToInt64(entities.size()) - 1; i >= 0; i--)
 	{
 		if (std::shared_ptr<Ent> ent = entities[i].lock())
 		{
@@ -18,7 +18,7 @@ void EntityManager::ForEachInEntityVector(std::vector<std::weak_ptr<Ent>>& entit
 template <typename T, typename CallbackTp>
 void EntityManager::ForEachOfType(CallbackTp callback)
 {
-	for (const auto& entity : m_entities[(int)T::TypeID])
+	for (const auto& entity : m_entities[static_cast<int>(T::TypeID)])
 	{
 		callback(static_cast<T&>(*entity.second));
 	}
@@ -35,7 +35,7 @@ void EntityManager::ForEachWithFlag(EntTypeFlags flags, CallbackTp callback)
 			return;
 		}
 	}
-	eg::Log(eg::LogLevel::Error, "ent", "No entity tracker set up for the flag set {0}", (int)flags);
+	eg::Log(eg::LogLevel::Error, "ent", "No entity tracker set up for the flag set {0}", static_cast<int>(flags));
 }
 
 template <typename CallbackTp>

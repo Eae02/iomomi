@@ -185,9 +185,9 @@ void RenderTexManager::BeginFrame(uint32_t resX, uint32_t resY)
 
 RenderTex RenderTexManager::ResolveRedirects(RenderTex renderTex) const
 {
-	while (renderTexturesRedirect[(int)renderTex] != renderTex)
+	while (renderTexturesRedirect[static_cast<int>(renderTex)] != renderTex)
 	{
-		renderTex = renderTexturesRedirect[(int)renderTex];
+		renderTex = renderTexturesRedirect[static_cast<int>(renderTex)];
 	}
 	return renderTex;
 }

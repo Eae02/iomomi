@@ -90,7 +90,7 @@ void LadderEnt::CommonDraw(const EntDrawArgs& args)
 void LadderEnt::UpdateTransformAndAABB()
 {
 	const glm::vec3 xDir = DirectionVector(m_forward);
-	const glm::vec3 zDir = voxel::tangents[(int)m_forward];
+	const glm::vec3 zDir = voxel::tangents[static_cast<int>(m_forward)];
 	
 	m_commonTransform =
 		glm::translate(glm::mat4(1), m_position) *
@@ -138,7 +138,7 @@ void LadderEnt::Serialize(std::ostream& stream) const
 {
 	iomomi_pb::LadderEntity entityPB;
 	
-	entityPB.set_dir((iomomi_pb::Dir)m_forward);
+	entityPB.set_dir(static_cast<iomomi_pb::Dir>(m_forward));
 	SerializePos(entityPB, m_position);
 	
 	entityPB.set_length(m_length);
@@ -153,7 +153,7 @@ void LadderEnt::Deserialize(std::istream& stream)
 	entityPB.ParseFromIstream(&stream);
 	
 	m_position = DeserializePos(entityPB);
-	m_forward = (Dir)entityPB.dir();
+	m_forward = static_cast<Dir>(entityPB.dir());
 	m_length = entityPB.length();
 	m_downDirection = entityPB.down();
 	

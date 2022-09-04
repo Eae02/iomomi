@@ -60,8 +60,8 @@ void WaterBarrierRenderer::Init(IWaterSimulator* waterSimulator, World& world)
 		float textureH = std::max(std::ceil(aaQuadComp.radius.y * 2 * TEXTURE_DENSITY), 2.0f);
 		
 		eg::TextureCreateInfo textureCI;
-		textureCI.width = (uint32_t)textureW;
-		textureCI.height = (uint32_t)textureH;
+		textureCI.width = static_cast<uint32_t>(textureW);
+		textureCI.height = static_cast<uint32_t>(textureH);
 		textureCI.format = eg::Format::R32_UInt;
 		textureCI.flags = eg::TextureFlags::StorageImage | eg::TextureFlags::CopyDst | eg::TextureFlags::ManualBarrier;
 		textureCI.mipLevels = 1;

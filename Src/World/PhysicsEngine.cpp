@@ -148,10 +148,10 @@ void PhysicsEngine::ApplyMovement(PhysicsObject& object, float dt, const Collisi
 		}
 		
 		didCollide = false;
-		int numMoveIterations = std::ceil(moveLen / MAX_MOVE_PER_STEP);
+		int numMoveIterations = static_cast<int>(std::ceil(moveLen / MAX_MOVE_PER_STEP));
 		for (int s = 1; s <= numMoveIterations; s++)
 		{
-			glm::vec3 partialMove = object.move * ((float)s / (float)numMoveIterations);
+			glm::vec3 partialMove = object.move * (static_cast<float>(s) / static_cast<float>(numMoveIterations));
 			glm::vec3 newPos = object.position + partialMove;
 			CheckCollisionResult colRes = CheckForCollision(object, newPos, {});
 			if (colRes.collided)
@@ -354,8 +354,8 @@ PhysicsObject* PhysicsEngine::CheckCollision(const eg::AABB& aabb, uint32_t mask
 	return nullptr;
 }
 
-void GetDebugRenderDataForShape(PhysicsDebugRenderData& dataOut, const PhysicsObject& obj,
-	const eg::CollisionMesh* mesh, uint32_t color)
+static void GetDebugRenderDataForShape(
+	PhysicsDebugRenderData& dataOut, const PhysicsObject& obj, const eg::CollisionMesh* mesh, uint32_t color)
 {
 	for (size_t i = 0; i < mesh->NumIndices(); i++)
 	{
@@ -373,13 +373,14 @@ void GetDebugRenderDataForShape(PhysicsDebugRenderData& dataOut, const PhysicsOb
 	}
 }
 
-void GetDebugRenderDataForShape(PhysicsDebugRenderData& dataOut, const PhysicsObject& obj,
-	const eg::AABB& aabb, uint32_t color)
+static void GetDebugRenderDataForShape(
+	PhysicsDebugRenderData& dataOut, const PhysicsObject& obj, const eg::AABB& aabb, uint32_t color)
 {
+	uint32_t baseIndex = eg::UnsignedNarrow<uint32_t>(dataOut.vertices.size());
 	for (const std::pair<uint32_t, uint32_t>& edge : cubeMesh::edges)
 	{
-		dataOut.lineIndices.push_back(dataOut.vertices.size() + edge.first);
-		dataOut.lineIndices.push_back(dataOut.vertices.size() + edge.second);
+		dataOut.lineIndices.push_back(baseIndex + edge.first);
+		dataOut.lineIndices.push_back(baseIndex + edge.second);
 	}
 	
 	const glm::vec3 aabbCenter = aabb.Center();

@@ -9,7 +9,7 @@ static constexpr float BRIGHTNESS_ANIM_SPEED = 0.1f;
 
 void ScrollPanel::SetScroll(float s)
 {
-	scroll = glm::clamp(s, 0.0f, (float)m_maxScroll);
+	scroll = glm::clamp(s, 0.0f, static_cast<float>(m_maxScroll));
 	
 	m_barAreaRectangle = eg::Rectangle(
 		screenRectangle.MaxX() - SCROLL_BAR_W - marginX,
@@ -19,7 +19,7 @@ void ScrollPanel::SetScroll(float s)
 	);
 	
 	const float barHeight = m_barAreaRectangle.h * screenRectangle.h / contentHeight;
-	const float barYOffset = (scroll / (float)m_maxScroll) * (m_barAreaRectangle.h - barHeight);
+	const float barYOffset = (scroll / static_cast<float>(m_maxScroll)) * (m_barAreaRectangle.h - barHeight);
 	m_barActiveRectangle = eg::Rectangle(
 		m_barAreaRectangle.x + 1,
 		m_barAreaRectangle.y + m_barAreaRectangle.h - barYOffset - barHeight,

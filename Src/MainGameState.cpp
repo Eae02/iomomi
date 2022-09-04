@@ -342,13 +342,13 @@ void MainGameState::UpdateAndDrawHud(float dt)
 	}
 	
 	float errorHintTargetAlpha = 0;
-	if (m_world->showControlHint[(int)OptionalControlHintType::CannotChangeGravityWhenCarrying] &&
+	if (m_world->showControlHint[static_cast<int>(OptionalControlHintType::CannotChangeGravityWhenCarrying)] &&
 		m_player.IsCarryingAndTouchingGravityCorner())
 	{
 		m_errorHintMessage = "It is not possible to change gravity while carrying a cube";
 		errorHintTargetAlpha = 1;
 	}
-	else if (m_world->showControlHint[(int)OptionalControlHintType::CannotExitWithWrongGravity] &&
+	else if (m_world->showControlHint[static_cast<int>(OptionalControlHintType::CannotExitWithWrongGravity)] &&
 		m_isPlayerCloseToExitWithWrongGravity)
 	{
 		m_errorHintMessage = "Your gravity must point down in order to exit";
@@ -422,8 +422,8 @@ void MainGameState::UpdateAndDrawHud(float dt)
 	{
 		const float crosshairSize = std::round(eg::CurrentResolutionX() / 40.0f);
 		const eg::Rectangle chRect = eg::Rectangle::CreateCentered(
-			eg::CurrentResolutionX() / 2,
-			eg::CurrentResolutionY() / 2,
+			static_cast<float>(eg::CurrentResolutionX()) / 2.0f,
+			static_cast<float>(eg::CurrentResolutionY()) / 2.0f,
 			crosshairSize, crosshairSize
 		);
 		
@@ -447,7 +447,7 @@ void MainGameState::DrawOverlay(float dt)
 	std::ostringstream textStream;
 	textStream << std::setprecision(2) << std::fixed;
 	
-	textStream << "FPS: " << (int)(1.0f / dt) << "Hz | " << (dt * 1000.0f) << "ms\n";
+	textStream << "FPS: " << static_cast<int>(1.0f / dt) << "Hz | " << (dt * 1000.0f) << "ms\n";
 	
 	textStream << "GfxAPI: ";
 	if (eg::CurrentGraphicsAPI() == eg::GraphicsAPI::OpenGL)
@@ -483,7 +483,7 @@ void MainGameState::DrawOverlay(float dt)
 	if (const IWaterSimulator* waterSim = GameRenderer::instance->m_waterSimulator.get())
 	{
 		textStream << "Water Spheres: " << waterSim->NumParticles() << "\n";
-		textStream << "Water Update Time: " << (waterSim->LastUpdateTime() / 1E6) << "ms\n";
+		textStream << "Water Update Time: " << (static_cast<double>(waterSim->LastUpdateTime()) / 1E6) << "ms\n";
 	}
 	
 	if (m_currentLevelIndex != -1)
@@ -501,7 +501,7 @@ void MainGameState::DrawOverlay(float dt)
 	const eg::ColorLin textColor(1, 1, 1, 0.75f);
 	const eg::ColorLin loTextColor(1, 0.8f, 0.8f, 0.5f);
 	
-	float y = eg::CurrentResolutionY() - padding;
+	float y = static_cast<float>(eg::CurrentResolutionY()) - padding;
 	for (std::string_view line : lines)
 	{
 		if (line == "-")

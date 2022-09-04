@@ -139,7 +139,7 @@ void GravitySwitchEnt::Serialize(std::ostream& stream) const
 {
 	iomomi_pb::GravitySwitchEntity switchPB;
 	
-	switchPB.set_dir((iomomi_pb::Dir)m_up);
+	switchPB.set_dir(static_cast<iomomi_pb::Dir>(m_up));
 	SerializePos(switchPB, m_position);
 	
 	switchPB.set_name(m_activatable.m_name);
@@ -153,7 +153,7 @@ void GravitySwitchEnt::Deserialize(std::istream& stream)
 	switchPB.ParseFromIstream(&stream);
 	
 	m_position = DeserializePos(switchPB);
-	m_up = (Dir)switchPB.dir();
+	m_up = static_cast<Dir>(switchPB.dir());
 	
 	if (switchPB.name() != 0)
 		m_activatable.m_name = switchPB.name();

@@ -9,8 +9,8 @@ void PrimitiveRenderer::OnInit()
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Primitive.vs.glsl").DefaultVariant();
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Primitive.fs.glsl").DefaultVariant();
 	pipelineCI.vertexBindings[0] = { sizeof(Vertex), eg::InputRate::Vertex };
-	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, (uint32_t)offsetof(Vertex, position) };
-	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::UInt8Norm, 4, (uint32_t)offsetof(Vertex, color) };
+	pipelineCI.vertexAttributes[0] = eg::VertexAttribute(0, eg::DataType::Float32, 3, offsetof(Vertex, position));
+	pipelineCI.vertexAttributes[1] = eg::VertexAttribute(0, eg::DataType::UInt8Norm, 4, offsetof(Vertex, color));
 	pipelineCI.cullMode = eg::CullMode::None;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.enableDepthWrite = false;
@@ -41,10 +41,10 @@ void PrimitiveRenderer::AddVertex(const glm::vec3& position, const eg::ColorSRGB
 {
 	Vertex& vertex = m_vertices.emplace_back();
 	vertex.position = position;
-	vertex.color[0] = (uint8_t)(color.r * 255.0f);
-	vertex.color[1] = (uint8_t)(color.g * 255.0f);
-	vertex.color[2] = (uint8_t)(color.b * 255.0f);
-	vertex.color[3] = (uint8_t)(color.a * 255.0f);
+	vertex.color[0] = static_cast<uint8_t>(color.r * 255.0f);
+	vertex.color[1] = static_cast<uint8_t>(color.g * 255.0f);
+	vertex.color[2] = static_cast<uint8_t>(color.b * 255.0f);
+	vertex.color[3] = static_cast<uint8_t>(color.a * 255.0f);
 }
 
 void PrimitiveRenderer::AddTriangle(uint32_t v0, uint32_t v1, uint32_t v2)
@@ -84,7 +84,7 @@ void PrimitiveRenderer::AddLine(const glm::vec3& a, const glm::vec3& b, const eg
 
 void PrimitiveRenderer::AddCollisionMesh(const eg::CollisionMesh& mesh, const eg::ColorSRGB& color)
 {
-	uint32_t baseIndex = m_vertices.size();
+	uint32_t baseIndex = eg::UnsignedNarrow<uint32_t>(m_vertices.size());
 	for (size_t v = 0; v < mesh.NumVertices(); v++)
 	{
 		AddVertex(mesh.Vertex(v), color);
@@ -164,5 +164,5 @@ void PrimitiveRenderer::Draw() const
 	eg::DC.BindIndexBuffer(eg::IndexType::UInt32, m_indexBuffer, 0);
 	eg::DC.BindVertexBuffer(0, m_vertexBuffer, 0);
 	
-	eg::DC.DrawIndexed(0, (uint32_t)m_triangles.size() * 3, 0, 0, 1);
+	eg::DC.DrawIndexed(0, eg::UnsignedNarrow<uint32_t>(m_triangles.size()) * 3, 0, 0, 1);
 }

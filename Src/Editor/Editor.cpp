@@ -35,7 +35,7 @@ static inline std::unique_ptr<World> CreateEmptyWorld()
 				world->voxels.SetIsAir({x, y, z}, true);
 				for (int s = 0; s < 6; s++)
 				{
-					world->voxels.SetMaterialSafe({x, y, z}, (Dir)s, NEW_LEVEL_WALL_TEXTURE);
+					world->voxels.SetMaterialSafe({x, y, z}, static_cast<Dir>(s), NEW_LEVEL_WALL_TEXTURE);
 				}
 			}
 		}
@@ -121,7 +121,7 @@ void Editor::RunFrame(float dt)
 	// ** Level select window **
 	if (m_levelSelectWindowOpen)
 	{
-		ImGui::SetNextWindowSize(ImVec2(400, eg::CurrentResolutionY() * 0.8f), ImGuiCond_Once);
+		ImGui::SetNextWindowSize(ImVec2(400, static_cast<float>(eg::CurrentResolutionY()) * 0.8f), ImGuiCond_Once);
 		if (ImGui::Begin("Select Level", &m_levelSelectWindowOpen, ImGuiWindowFlags_NoCollapse))
 		{
 			ImGui::Text("New Level");
@@ -201,19 +201,19 @@ void Editor::RunFrame(float dt)
 		ImGui::End();
 	}
 	
-	for (int i = 0; i < (int)EDITOR_NUM_TOOLS; i++)
+	for (int i = 0; i < static_cast<int>(EDITOR_NUM_TOOLS); i++)
 	{
-		if (eg::IsButtonDown((eg::Button)((int)eg::Button::F1 + i)))
-			m_tool = (EditorTool)i;
+		if (eg::IsButtonDown(static_cast<eg::Button>(static_cast<int>(eg::Button::F1) + i)))
+			m_tool = static_cast<EditorTool>(i);
 	}
 	
 	ImGui::Begin("Tools");
 	ImGui::Spacing();
 	if (ImGui::CollapsingHeader("Tools", ImGuiTreeNodeFlags_DefaultOpen))
 	{
-		ImGui::RadioButton("Walls (F1)", reinterpret_cast<int*>(&m_tool), (int)EditorTool::Walls);
-		ImGui::RadioButton("Corners (F2)", reinterpret_cast<int*>(&m_tool), (int)EditorTool::Corners);
-		ImGui::RadioButton("Entities (F3)", reinterpret_cast<int*>(&m_tool), (int)EditorTool::Entities);
+		ImGui::RadioButton("Walls (F1)", reinterpret_cast<int*>(&m_tool), static_cast<int>(EditorTool::Walls));
+		ImGui::RadioButton("Corners (F2)", reinterpret_cast<int*>(&m_tool), static_cast<int>(EditorTool::Corners));
+		ImGui::RadioButton("Entities (F3)", reinterpret_cast<int*>(&m_tool), static_cast<int>(EditorTool::Entities));
 	}
 	if (m_currentWorld != nullptr)
 	{
@@ -267,9 +267,9 @@ void Editor::RunFrame(float dt)
 			ImGui::Separator();
 			ImGui::TextDisabled("Icons");
 			
-			for (int entityType = 0; entityType < (int)EntTypeID::MAX; entityType++)
+			for (int entityType = 0; entityType < static_cast<int>(EntTypeID::MAX); entityType++)
 			{
-				const EntType* type = GetEntityType((EntTypeID)entityType);
+				const EntType* type = GetEntityType(static_cast<EntTypeID>(entityType));
 				if (type != nullptr && eg::HasFlag(type->flags, EntTypeFlags::OptionalEditorIcon))
 				{
 					ImGui::MenuItem(type->prettyName.c_str(), nullptr, &settings.edEntityIconEnabled[entityType]);

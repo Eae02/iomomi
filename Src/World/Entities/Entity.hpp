@@ -141,21 +141,32 @@ public:
 	template <typename T>
 	friend std::shared_ptr<Ent> CloneEntity(const Ent& entity);
 	
+	template <typename T>
+	T* Downcast() { return DowncastImpl<T>(this); }
+	template <typename T>
+	const T* Downcast() const { return DowncastImpl<const T>(this); }
+	
 protected:
 	eg::AABB GetAABB(float scale, float upDist, Dir facingDirection) const;
 	
 private:
+	template <typename T, typename U>
+	static T* DowncastImpl(U* self)
+	{
+		return self->m_typeID == T::TypeID ? static_cast<T*>(self) : nullptr;
+	}
+	
 	static uint32_t GenerateRandomName();
 	
 	uint32_t m_name = 0;
-	EntTypeID m_typeID = (EntTypeID)-1;
+	EntTypeID m_typeID = static_cast<EntTypeID>(-1);
 	bool m_shouldSerialize = true;
 };
 
 template <typename T>
 std::shared_ptr<Ent> CloneEntity(const Ent& entity)
 {
-	if constexpr ((int)T::EntFlags & (int)EntTypeFlags::DisableClone)
+	if constexpr (static_cast<int>(T::EntFlags) & static_cast<int>(EntTypeFlags::DisableClone))
 		return nullptr;
 	else
 		return Ent::Create<T>(static_cast<const T&>(entity));

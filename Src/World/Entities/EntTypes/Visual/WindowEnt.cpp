@@ -83,8 +83,8 @@ static void OnInit()
 	eg::StdVertex windowVertices[6];
 	auto InitVertex = [&] (eg::StdVertex& vertex, int x, int y)
 	{
-		vertex.position[0] = x * 2 - 1;
-		vertex.position[1] = y * 2 - 1;
+		vertex.position[0] = static_cast<float>(x * 2 - 1);
+		vertex.position[1] = static_cast<float>(y * 2 - 1);
 		vertex.position[2] = 0.5f;
 		vertex.normal[0] = 0;
 		vertex.normal[1] = 0;
@@ -94,8 +94,8 @@ static void OnInit()
 		vertex.tangent[1] = 0;
 		vertex.tangent[2] = 0;
 		vertex.tangent[3] = 0;
-		vertex.texCoord[0] = x;
-		vertex.texCoord[1] = y;
+		vertex.texCoord[0] = static_cast<float>(x);
+		vertex.texCoord[1] = static_cast<float>(y);
 	};
 	InitVertex(windowVertices[0], 0, 0);
 	InitVertex(windowVertices[1], 1, 0);
@@ -120,7 +120,7 @@ static void InitializeFrameMaterials()
 	frameMaterialsInitialized = true;
 }
 
-void OnShutdown()
+static void OnShutdown()
 {
 	windowVertexBuffer.Destroy();
 }
@@ -165,7 +165,7 @@ void WindowEnt::RenderSettings()
 	{
 		for (int i : windowTypeDisplayOrder)
 		{
-			if (ImGui::Selectable(windowTypes[i].name, (int)m_windowType == i))
+			if (ImGui::Selectable(windowTypes[i].name, static_cast<int>(m_windowType) == i))
 			{
 				m_windowType = i;
 				UpdateWaterBlock();
@@ -278,8 +278,8 @@ void WindowEnt::CommonDraw(const EntDrawArgs& args)
 		glm::vec2 frontTextureScale = MASTER_FRONT_TEXTURE_SCALE / m_frameTextureScale;
 		glm::vec2 sideTextureScale = glm::vec2(m_depth / m_frameScale, 1) / m_frameTextureScale;
 		
-		int frameBlocksW = std::max((int)std::round(glm::length(bitangent) / m_frameScale), 2);
-		int frameBlocksH = std::max((int)std::round(glm::length(tangent) / m_frameScale), 2);
+		int frameBlocksW = std::max(static_cast<int>(std::round(glm::length(bitangent) / m_frameScale)), 2);
+		int frameBlocksH = std::max(static_cast<int>(std::round(glm::length(tangent) / m_frameScale)), 2);
 		auto DrawFrameMesh = [&] (int x, int y)
 		{
 			int miX = (x == frameBlocksW - 1) ? 2 : std::min(x, 1);
@@ -368,12 +368,12 @@ void WindowEnt::Serialize(std::ostream& stream) const
 	windowPB.set_texture_scale_x(m_textureScale.x);
 	windowPB.set_texture_scale_y(m_textureScale.y);
 	windowPB.set_window_type(m_windowType);
-	windowPB.set_water_block_mode((int)m_waterBlockMode);
+	windowPB.set_water_block_mode(static_cast<int>(m_waterBlockMode));
 	windowPB.set_depth(m_depth);
 	windowPB.set_window_distance_scale(m_windowDistanceScale);
 	windowPB.set_has_depth_data(true);
 	windowPB.set_border_mesh(m_hasFrame);
-	windowPB.set_origin_mode((int)m_originMode);
+	windowPB.set_origin_mode(static_cast<int>(m_originMode));
 	windowPB.set_frame_scale(m_frameScale);
 	windowPB.set_frame_texture_scale_x(m_frameTextureScale.x);
 	windowPB.set_frame_texture_scale_y(m_frameTextureScale.y);

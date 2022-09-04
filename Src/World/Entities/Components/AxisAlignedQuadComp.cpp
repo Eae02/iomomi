@@ -42,7 +42,7 @@ AxisAlignedQuadComp::CollisionGeometry AxisAlignedQuadComp::GetCollisionGeometry
 	
 	for (int f = 0; f < 6; f++)
 	{
-		glm::vec3 faceCenter = center + glm::vec3(DirectionVector((Dir)f)) * boxSize;
+		glm::vec3 faceCenter = center + glm::vec3(DirectionVector(static_cast<Dir>(f))) * boxSize;
 		for (int a = 0; a < 2; a++)
 		{
 			for (int b = 0; b < 2; b++)

@@ -53,10 +53,10 @@ void InitializeWallShader()
 	pipelineCI.numColorAttachments = 2;
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.vertexBindings[0] = { sizeof(WallVertex), eg::InputRate::Vertex };
-	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32,   3, (uint32_t)offsetof(WallVertex, position) };
-	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::Float32,   3, (uint32_t)offsetof(WallVertex, texCoord) };
-	pipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 4, (uint32_t)offsetof(WallVertex, normalAndRoughnessLo) };
-	pipelineCI.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 4, (uint32_t)offsetof(WallVertex, tangentAndRoughnessHi) };
+	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32,   3, offsetof(WallVertex, position) };
+	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::Float32,   3, offsetof(WallVertex, texCoord) };
+	pipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 4, offsetof(WallVertex, normalAndRoughnessLo) };
+	pipelineCI.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 4, offsetof(WallVertex, tangentAndRoughnessHi) };
 	wr.pipelineDeferredGeom = eg::Pipeline::Create(pipelineCI);
 	wr.pipelineDeferredGeom.FramebufferFormatHint(DeferredRenderer::GEOMETRY_FB_FORMAT);
 	
@@ -72,10 +72,10 @@ void InitializeWallShader()
 	editorPipelineCI.frontFaceCCW = false;
 	editorPipelineCI.numColorAttachments = 1;
 	editorPipelineCI.vertexBindings[0] = { sizeof(WallVertex), eg::InputRate::Vertex };
-	editorPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32,   3, (uint32_t)offsetof(WallVertex, position) };
-	editorPipelineCI.vertexAttributes[1] = { 0, eg::DataType::Float32,   3, (uint32_t)offsetof(WallVertex, texCoord) };
-	editorPipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallVertex, normalAndRoughnessLo) };
-	editorPipelineCI.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallVertex, tangentAndRoughnessHi) };
+	editorPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32,   3, offsetof(WallVertex, position) };
+	editorPipelineCI.vertexAttributes[1] = { 0, eg::DataType::Float32,   3, offsetof(WallVertex, texCoord) };
+	editorPipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, offsetof(WallVertex, normalAndRoughnessLo) };
+	editorPipelineCI.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 3, offsetof(WallVertex, tangentAndRoughnessHi) };
 	wr.pipelineEditor = eg::Pipeline::Create(editorPipelineCI);
 	wr.pipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
@@ -88,9 +88,9 @@ void InitializeWallShader()
 	borderPipelineCI.cullMode = eg::CullMode::None;
 	borderPipelineCI.topology = eg::Topology::LineList;
 	borderPipelineCI.vertexBindings[0] = { sizeof(WallBorderVertex), eg::InputRate::Vertex };
-	borderPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32,   4, (uint32_t)offsetof(WallBorderVertex, position) };
-	borderPipelineCI.vertexAttributes[1] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallBorderVertex, normal1) };
-	borderPipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, (uint32_t)offsetof(WallBorderVertex, normal2) };
+	borderPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32,   4, offsetof(WallBorderVertex, position) };
+	borderPipelineCI.vertexAttributes[1] = { 0, eg::DataType::SInt8Norm, 3, offsetof(WallBorderVertex, normal1) };
+	borderPipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, offsetof(WallBorderVertex, normal2) };
 	wr.pipelineBorderEditor = eg::Pipeline::Create(borderPipelineCI);
 	wr.pipelineBorderEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 	
@@ -106,7 +106,7 @@ void InitializeWallShader()
 	plsPipelineCI.frontFaceCCW = eg::CurrentGraphicsAPI() == eg::GraphicsAPI::Vulkan;
 	plsPipelineCI.cullMode = eg::CullMode::None;
 	plsPipelineCI.vertexBindings[0] = { sizeof(WallVertex), eg::InputRate::Vertex };
-	plsPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32,   3, (uint32_t)offsetof(WallVertex, position) };
+	plsPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(WallVertex, position) };
 	plsPipelineCI.fragmentShader.specConstants = plsPipelineSpecConstants;
 	plsPipelineCI.fragmentShader.specConstantsData = plsPipelineSpecConstantData;
 	plsPipelineCI.fragmentShader.specConstantsDataSize = sizeof(plsPipelineSpecConstantData);

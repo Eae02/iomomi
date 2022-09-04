@@ -97,7 +97,7 @@ void InitLevelsPlatformDependent()
 {
 	eg::console::AddCommand("getProgress", 0, &GetProgressCommand);
 	
-	for (int64_t i = (int64_t)levelsOrder.size() - 1; i >= 0; i--)
+	for (int64_t i = eg::ToInt64(levelsOrder.size()) - 1; i >= 0; i--)
 	{
 		levelData.emplace(levelsOrder[i], LevelData(levelsOrder[i]));
 		levels.emplace_back(std::string(levelsOrder[i]));

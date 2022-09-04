@@ -171,7 +171,7 @@ void FloorButtonEnt::Serialize(std::ostream& stream) const
 {
 	iomomi_pb::FloorButtonEntity buttonPB;
 	
-	buttonPB.set_dir((iomomi_pb::Dir)m_direction);
+	buttonPB.set_dir(static_cast<iomomi_pb::Dir>(m_direction));
 	SerializePos(buttonPB, m_ringPhysicsObject.position);
 	
 	buttonPB.set_allocated_activator(m_activator.SaveProtobuf(nullptr));
@@ -185,7 +185,7 @@ void FloorButtonEnt::Deserialize(std::istream& stream)
 	iomomi_pb::FloorButtonEntity buttonPB;
 	buttonPB.ParseFromIstream(&stream);
 	
-	m_direction = (Dir)buttonPB.dir();
+	m_direction = static_cast<Dir>(buttonPB.dir());
 	m_ringPhysicsObject.displayPosition = m_ringPhysicsObject.position =
 	m_padPhysicsObject.displayPosition = m_padPhysicsObject.position =
 		DeserializePos(buttonPB);

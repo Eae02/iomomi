@@ -82,7 +82,7 @@ static int* bloomLevels = eg::TweakVarInt("bloom_levels", 3, 0, 10);
 void GameRenderer::Render(World& world, float gameTime, float dt,
                           eg::FramebufferHandle outputFramebuffer, uint32_t outputResX, uint32_t outputResY)
 {
-	m_projection.SetResolution(outputResX, outputResY);
+	m_projection.SetResolution(static_cast<float>(outputResX), static_cast<float>(outputResY));
 	m_rtManager.BeginFrame(outputResX, outputResY);
 	
 	if (settings.bloomQuality != BloomQuality::Off)

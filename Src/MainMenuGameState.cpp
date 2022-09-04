@@ -109,7 +109,7 @@ void MainMenuGameState::RunFrame(float dt)
 		continueButton.text = "Continue";
 	continueButton.enabled = continueLevel != -1;
 	
-	m_spriteBatch.Begin();
+	m_spriteBatch.Reset();
 	
 	RenderWorld(dt);
 	
@@ -128,8 +128,8 @@ void MainMenuGameState::RunFrame(float dt)
 	if (m_transitionProgress == 0 && m_screen != Screen::Main)
 		m_screen = Screen::Main;
 	
-	m_mainWidgetList.position.x = eg::CurrentResolutionX() / 2.0f - transitionSmooth * TRANSITION_SLIDE_DIST;
-	m_mainWidgetList.position.y = eg::CurrentResolutionY() / 2.0f;
+	m_mainWidgetList.position.x = static_cast<float>(eg::CurrentResolutionX()) / 2.0f - transitionSmooth * TRANSITION_SLIDE_DIST;
+	m_mainWidgetList.position.y = static_cast<float>(eg::CurrentResolutionY()) / 2.0f;
 	if (transitionSmooth < 1)
 	{
 		m_mainWidgetList.Update(dt, transitionSmooth == 0);
@@ -143,8 +143,8 @@ void MainMenuGameState::RunFrame(float dt)
 		const float invXOffset = TRANSITION_SLIDE_DIST - transitionSmooth * TRANSITION_SLIDE_DIST;
 		m_spriteBatch.opacityScale = transitionSmooth;
 		
-		m_spriteBatch.DrawRect(
-			eg::Rectangle(0, 0, eg::CurrentResolutionX(), eg::CurrentResolutionY()),
+		m_spriteBatch.DrawRect(eg::Rectangle(0, 0, 
+			static_cast<float>(eg::CurrentResolutionX()), static_cast<float>(eg::CurrentResolutionY())),
 			eg::ColorLin(0, 0, 0, 0.5f));
 		
 		if (m_screen == Screen::Options)
@@ -186,7 +186,7 @@ void MainMenuGameState::RunFrame(float dt)
 		float audioInfoTextW = style::UIFontSmall->GetTextExtents(audioInfoText).x;
 		m_spriteBatch.DrawText(
 			*style::UIFontSmall, audioInfoText,
-			glm::vec2(eg::CurrentResolutionX() - 5 - audioInfoTextW, 5),
+			glm::vec2(static_cast<float>(eg::CurrentResolutionX()) - 5.0f - audioInfoTextW, 5),
 			eg::ColorSRGB::FromHex(0xff007f).ScaleAlpha(0.6f),
 			1, nullptr, eg::TextFlags::DropShadow);
 	}
@@ -199,7 +199,7 @@ void MainMenuGameState::RunFrame(float dt)
 	eg::RenderPassBeginInfo rpBeginInfo;
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
 	rpBeginInfo.colorAttachments[0].clearValue = eg::ColorSRGB::FromHex(0x041626);
-	m_spriteBatch.End(eg::CurrentResolutionX(), eg::CurrentResolutionY(), rpBeginInfo);
+	m_spriteBatch.UploadAndRender(eg::CurrentResolutionX(), eg::CurrentResolutionY(), rpBeginInfo);
 }
 
 void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
@@ -214,14 +214,16 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 	const eg::Texture& completedTexture = eg::GetAsset<eg::Texture>("Textures/UI/LevelCompleted.png");
 	const eg::Texture& titleTexture = eg::GetAsset<eg::Texture>("Textures/UI/LevelSelect.png");
 	
-	const float levelBoxW = glm::clamp(eg::CurrentResolutionX() * 0.1f, 150.0f, (float)LEVEL_THUMBNAIL_RES_X);
+	const float levelBoxW = glm::clamp(eg::CurrentResolutionX() * 0.1f, 150.0f, static_cast<float>(LEVEL_THUMBNAIL_RES_X));
 	const float levelBoxH = 0.8f * levelBoxW;
 	const float levelBoxSpacingX = levelBoxW * 0.1f;
 	const float levelBoxSpacingY = levelBoxSpacingX * 2;
 	const float inflatePixelsY = levelBoxH * style::ButtonInflatePercent;
 	
-	const float marginX = 0.05f * eg::CurrentResolutionX();
-	const int numPerRow = (eg::CurrentResolutionX() - marginX * 2 + levelBoxSpacingX) / (levelBoxW + levelBoxSpacingX);
+	const float marginX = 0.05f * static_cast<float>(eg::CurrentResolutionX());
+	const int numPerRow = static_cast<int>(std::floor(
+		(static_cast<float>(eg::CurrentResolutionX()) - marginX * 2.0f + levelBoxSpacingX) / (levelBoxW + levelBoxSpacingX)
+	));
 	
 	const float boxW = numPerRow * (levelBoxW + levelBoxSpacingX) - levelBoxSpacingX;
 	const float boxLX = (eg::CurrentResolutionX() - boxW) / 2;
@@ -230,12 +232,12 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 	const float titleTextureHeight = titleTextureWidth * titleTexture.Height() / titleTexture.Width();
 	const eg::Rectangle titleRect(
 		boxLX + xOffset,
-		eg::CurrentResolutionY() - 75 - titleTextureHeight,
+		static_cast<float>(eg::CurrentResolutionY()) - 75.0f - titleTextureHeight,
 		titleTextureWidth,
 		titleTextureHeight);
 	m_spriteBatch.Draw(titleTexture, titleRect, eg::ColorLin(1, 1, 1, 1));
 	
-	const float boxStartY = eg::CurrentResolutionY() - 100 - titleTextureHeight;
+	const float boxStartY = static_cast<float>(eg::CurrentResolutionY()) - 100.0f - titleTextureHeight;
 	const float boxEndY = 100;
 	const float visibleHeight = boxStartY - boxEndY;
 	const bool cursorInLevelsArea = eg::Rectangle(boxLX, boxEndY, boxW, visibleHeight).Contains(flippedCursorPos);
@@ -244,14 +246,14 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 	
 	//Draws the level boxes
 	size_t numLevels = settings.showExtraLevels ? m_levelIds.size() : m_numMainLevels;
-	m_spriteBatch.PushScissor(0, boxEndY - inflatePixelsY, eg::CurrentResolutionX(), visibleHeight + inflatePixelsY * 2);
+	m_spriteBatch.PushScissorF(0.0f, boxEndY - inflatePixelsY, static_cast<float>(eg::CurrentResolutionX()), visibleHeight + inflatePixelsY * 2);
 	for (size_t i = 0; i < numLevels; i++)
 	{
 		const Level& level = levels[m_levelIds[i]];
 		
-		size_t iForGridCalculation = i >= m_numMainLevels ? i - m_numMainLevels : i;
-		const float gridX = iForGridCalculation % numPerRow;
-		const float gridY = iForGridCalculation / numPerRow;
+		const size_t iForGridCalculation = i >= m_numMainLevels ? i - m_numMainLevels : i;
+		const float gridX = static_cast<float>(iForGridCalculation % numPerRow);
+		const float gridY = static_cast<float>(iForGridCalculation / numPerRow);
 		const float x = boxLX + gridX * (levelBoxW + levelBoxSpacingX) + xOffset;
 		float yNoScroll = gridY * (levelBoxH + levelBoxSpacingY) + levelBoxH;
 		if (i >= m_numMainLevels)

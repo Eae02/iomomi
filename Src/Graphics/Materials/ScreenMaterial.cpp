@@ -54,7 +54,7 @@ ScreenMaterial::ScreenMaterial(int resX, int resY)
 
 void ScreenMaterial::RenderTexture(const eg::ColorLin& clearColor)
 {
-	m_spriteBatch.Begin();
+	m_spriteBatch.Reset();
 	
 	if (render)
 	{
@@ -65,7 +65,7 @@ void ScreenMaterial::RenderTexture(const eg::ColorLin& clearColor)
 	rpBeginInfo.framebuffer = m_framebuffer.handle;
 	rpBeginInfo.colorAttachments[0].clearValue = clearColor;
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
-	m_spriteBatch.End(m_resX, m_resY, rpBeginInfo);
+	m_spriteBatch.UploadAndRender(m_resX, m_resY, rpBeginInfo);
 	
 	m_texture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 }

@@ -11,22 +11,22 @@ enum class QualityLevel
 
 inline bool operator<(QualityLevel a, QualityLevel b)
 {
-	return (int)a < (int)b;
+	return static_cast<int>(a) < static_cast<int>(b);
 }
 
 inline bool operator<=(QualityLevel a, QualityLevel b)
 {
-	return (int)a <= (int)b;
+	return static_cast<int>(a) <= static_cast<int>(b);
 }
 
 inline bool operator>(QualityLevel a, QualityLevel b)
 {
-	return (int)a > (int)b;
+	return static_cast<int>(a) > static_cast<int>(b);
 }
 
 inline bool operator>=(QualityLevel a, QualityLevel b)
 {
-	return (int)a >= (int)b;
+	return static_cast<int>(a) >= static_cast<int>(b);
 }
 
 template <typename T>
@@ -34,7 +34,7 @@ struct QualityVariable
 {
 	T values[5];
 	
-	T operator()(QualityLevel level) const { return values[(int)level]; }
+	T operator()(QualityLevel level) const { return values[static_cast<int>(level)]; }
 	
 	QualityVariable(T vLow, T low, T medium, T high, T vHigh) noexcept
 		: values{vLow, low, medium, high, vHigh} { }

@@ -10,7 +10,7 @@ size_t WidgetList::AddWidget(Widget widget)
 	}, widget);
 	m_widgets.emplace_back(std::move(widget), y);
 	m_height = m_nextY - m_widgetSpacing;
-	return (int64_t)m_widgets.size() - 1;
+	return eg::ToInt64(m_widgets.size()) - 1;
 }
 
 bool WidgetList::Update(float dt, bool allowInteraction)

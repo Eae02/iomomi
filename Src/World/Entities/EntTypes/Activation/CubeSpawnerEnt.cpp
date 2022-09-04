@@ -195,7 +195,7 @@ void CubeSpawnerEnt::Serialize(std::ostream& stream) const
 	iomomi_pb::CubeSpawnerEntity cubeSpawnerPB;
 	
 	SerializePos(cubeSpawnerPB, m_position);
-	cubeSpawnerPB.set_dir((iomomi_pb::Dir)m_direction);
+	cubeSpawnerPB.set_dir(static_cast<iomomi_pb::Dir>(m_direction));
 	
 	cubeSpawnerPB.set_cube_can_float(m_cubeCanFloat);
 	cubeSpawnerPB.set_spawn_if_none(!m_requireActivation);
@@ -212,7 +212,7 @@ void CubeSpawnerEnt::Deserialize(std::istream& stream)
 	cubeSpawnerPB.ParseFromIstream(&stream);
 	
 	m_position = DeserializePos(cubeSpawnerPB);
-	m_direction = (Dir)cubeSpawnerPB.dir();
+	m_direction = static_cast<Dir>(cubeSpawnerPB.dir());
 	m_cubeCanFloat = cubeSpawnerPB.cube_can_float();
 	m_requireActivation = !cubeSpawnerPB.spawn_if_none();
 	m_activationResets = cubeSpawnerPB.activation_resets();

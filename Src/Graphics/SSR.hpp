@@ -25,7 +25,7 @@ public:
 private:
 	void CreatePipeline();
 	
-	QualityLevel m_currentReflectionQualityLevel = (QualityLevel)-1;
+	QualityLevel m_currentReflectionQualityLevel = static_cast<QualityLevel>(-1);
 	
 	eg::Pipeline m_pipelineInitial;
 	eg::Pipeline m_pipelineBlendPass;

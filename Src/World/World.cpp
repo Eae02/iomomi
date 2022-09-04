@@ -78,7 +78,7 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 	std::vector<char> data(dataSize);
 	stream.read(data.data(), dataSize);
 	iomomi_pb::World worldPB;
-	worldPB.ParseFromArray(data.data(), dataSize);
+	worldPB.ParseFromArray(data.data(), eg::ToInt(dataSize));
 	
 	//Writes protobuf data to the world's fields
 	world->thumbnailCameraPos = glm::vec3(worldPB.thumbnail_camera_x(), worldPB.thumbnail_camera_y(), worldPB.thumbnail_camera_z());
@@ -130,7 +130,7 @@ void World::Save(std::ostream& outStream) const
 	outStream.write(MAGIC, sizeof(MAGIC));
 	eg::BinWrite(outStream, CURRENT_VERSION);
 	
-	eg::BinWrite(outStream, (uint32_t)voxels.m_voxels.size());
+	eg::BinWrite(outStream, eg::UnsignedNarrow<uint32_t>(voxels.m_voxels.size()));
 	std::vector<VoxelData> voxelData;
 	voxelData.reserve(voxels.m_voxels.size());
 	
@@ -141,7 +141,7 @@ void World::Save(std::ostream& outStream) const
 		data.y = voxel.first.y;
 		data.z = voxel.first.z;
 		std::copy_n(voxel.second.materials, 6, data.materials);
-		data.hasGravityCorner = voxel.second.hasGravityCorner.to_ulong();
+		data.hasGravityCorner = static_cast<uint16_t>(voxel.second.hasGravityCorner.to_ulong());
 	}
 	
 	eg::WriteCompressedSection(outStream, voxelData.data(), voxelData.size() * sizeof(VoxelData));
@@ -322,9 +322,9 @@ void World::PrepareMeshes(bool isEditor)
 	std::memcpy(uploadBufferMem + wallVerticesBytes + wallIndicesBytes, borderVertices.data(), borderVerticesBytes);
 	uploadBuffer.Flush();
 	
-	m_voxelVertexBuffer.EnsureSize(wallVertices.size(), sizeof(WallVertex));
-	m_voxelIndexBuffer.EnsureSize(wallIndices.size(), sizeof(uint32_t));
-	m_borderVertexBuffer.EnsureSize(borderVertices.size(), sizeof(WallBorderVertex));
+	m_voxelVertexBuffer.EnsureSize(eg::UnsignedNarrow<uint32_t>(wallVertices.size()), sizeof(WallVertex));
+	m_voxelIndexBuffer.EnsureSize(eg::UnsignedNarrow<uint32_t>(wallIndices.size()), sizeof(uint32_t));
+	m_borderVertexBuffer.EnsureSize(eg::UnsignedNarrow<uint32_t>(borderVertices.size()), sizeof(WallBorderVertex));
 	
 	//Uploads data to the vertex and index buffers
 	eg::DC.CopyBuffer(uploadBuffer.buffer, m_voxelVertexBuffer.buffer, uploadBuffer.offset, 0, wallVerticesBytes);
@@ -339,8 +339,8 @@ void World::PrepareMeshes(bool isEditor)
 	m_voxelVertexBuffer.buffer.UsageHint(eg::BufferUsage::VertexBuffer);
 	m_voxelIndexBuffer.buffer.UsageHint(eg::BufferUsage::IndexBuffer);
 	
-	m_numVoxelIndices = wallIndices.size();
-	m_numBorderVertices = borderVertices.size();
+	m_numVoxelIndices = eg::UnsignedNarrow<uint32_t>(wallIndices.size());
+	m_numBorderVertices = eg::UnsignedNarrow<uint32_t>(borderVertices.size());
 	voxels.m_modified = false;
 	m_canDraw = true;
 }
@@ -356,7 +356,7 @@ eg::CollisionMesh World::BuildMesh(std::vector<WallVertex>& vertices, std::vecto
 	{
 		for (int s = 0; s < 6; s++)
 		{
-			glm::ivec3 normal = DirectionVector((Dir)s);
+			glm::ivec3 normal = DirectionVector(static_cast<Dir>(s));
 			const glm::ivec3 nPos = voxel.first - normal;
 			
 			//Only emit triangles for voxels that face into a solid voxel
@@ -416,7 +416,7 @@ eg::CollisionMesh World::BuildMesh(std::vector<WallVertex>& vertices, std::vecto
 				
 				vertex.texCoord[0] = glm::dot(glm::vec3(biTangent), pos) / wallMaterials[materialIndex].textureScale;
 				vertex.texCoord[1] = -glm::dot(glm::vec3(tangent), pos) / wallMaterials[materialIndex].textureScale;
-				vertex.texCoord[2] = materialIndex - 1;
+				vertex.texCoord[2] = static_cast<float>(materialIndex - 1);
 				vertex.normalAndRoughnessLo[3] = eg::FloatToSNorm(wallMaterials[materialIndex].minRoughness * 2 - 1);
 				vertex.tangentAndRoughnessHi[3] = eg::FloatToSNorm(wallMaterials[materialIndex].maxRoughness * 2 - 1);
 				
@@ -456,14 +456,14 @@ eg::CollisionMesh World::BuildMesh(std::vector<WallVertex>& vertices, std::vecto
 			
 			if (shouldDraw)
 			{
-				PushIndices(indices, (uint32_t)vertices.size());
+				PushIndices(indices, eg::UnsignedNarrow<uint32_t>(vertices.size()));
 				for (const WallVertex& vertex : pendingVertices)
 					vertices.push_back(vertex);
 			}
 			
 			if (hasCollision)
 			{
-				PushIndices(collisionIndices, (uint32_t)collisionVertices.size());
+				PushIndices(collisionIndices, eg::UnsignedNarrow<uint32_t>(collisionVertices.size()));
 				for (const WallVertex& vertex : pendingVertices)
 					collisionVertices.emplace_back(vertex.position[0], vertex.position[1], vertex.position[2]);
 			}
@@ -487,8 +487,8 @@ void World::BuildBorderMesh(std::vector<WallBorderVertex>* borderVertices, std::
 			dlV[dl] = 1;
 			uV[(dl + 1) % 3] = 1;
 			vV[(dl + 2) % 3] = 1;
-			const Dir uDir = (Dir)(((dl + 1) % 3) * 2);
-			const Dir vDir = (Dir)(((dl + 2) % 3) * 2);
+			const Dir uDir = static_cast<Dir>(((dl + 1) % 3) * 2);
+			const Dir vDir = static_cast<Dir>(((dl + 2) % 3) * 2);
 			
 			for (int u = 0; u < 2; u++)
 			{
@@ -613,8 +613,8 @@ bool World::HasCollision(const glm::ivec3& pos, Dir side) const
 		float radSq = door.radius * door.radius;
 		
 		const glm::ivec3 faceCenter2 = pos * 2 + 1 - sideNormal;
-		const glm::ivec3 tangent = voxel::tangents[(int)side];
-		const glm::ivec3 biTangent = voxel::biTangents[(int)side];
+		const glm::ivec3 tangent = voxel::tangents[static_cast<int>(side)];
+		const glm::ivec3 biTangent = voxel::biTangents[static_cast<int>(side)];
 		for (int fx = 0; fx < 2; fx++)
 		{
 			for (int fy = 0; fy < 2; fy++)

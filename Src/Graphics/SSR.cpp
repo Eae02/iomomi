@@ -111,7 +111,7 @@ void SSR::Render(const SSRRenderArgs& renderArgs)
 	pc.blurCoeff[0] = 1;
 	for (uint32_t i = 1; i < blurRadius; i++)
 	{
-		float r = ((float)i * *ssrBlurFalloff) / (float)(blurRadius - 1);
+		float r = (static_cast<float>(i) * *ssrBlurFalloff) / static_cast<float>(blurRadius - 1);
 		pc.blurCoeff[i] = std::exp(-r * r);
 		coeffSum += 2 * pc.blurCoeff[i];
 	}
@@ -171,7 +171,7 @@ void SSR::Render(const SSRRenderArgs& renderArgs)
 	
 	timer.StartStage("Blur 1");
 	
-	const float relativeRadius = (float)qvar::ssrBlurRadius(QualityLevel::VeryHigh) / (float)blurRadius;
+	const float relativeRadius = (float)qvar::ssrBlurRadius(QualityLevel::VeryHigh) / static_cast<float>(blurRadius);
 	const float blurDistance = *ssrBlurIntensity * MAX_DISTANCE / (float)qvar::ssrBlurRadius(settings.reflectionsQuality);
 	const float maxBlur = *ssrBlurMax * relativeRadius;
 	pc.blurDirX = blurDistance;

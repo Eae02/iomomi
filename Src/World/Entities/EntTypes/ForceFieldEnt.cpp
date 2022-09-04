@@ -66,14 +66,14 @@ void ForceFieldEnt::GameDraw(const EntGameDrawArgs& args)
 	{
 		ForceFieldInstance instance;
 		instance.mode = FFMode::Box;
-		instance.offset = m_position + glm::vec3(DirectionVector((Dir)d)) * smallerRad;
+		instance.offset = m_position + glm::vec3(DirectionVector(static_cast<Dir>(d))) * smallerRad;
 		instance.transformX = MakeTransformVectorWithLen(glm::vec3(voxel::tangents[d]) * smallerRad);
 		instance.transformY = MakeTransformVectorWithLen(glm::vec3(voxel::biTangents[d]) * smallerRad);
 		
 		args.transparentMeshBatch->Add(mesh, *forceFieldMaterial, instance, DepthDrawOrder(instance.offset));
 	}
 	
-	const float radDown = radius[(int)m_effectiveNewGravity / 2];
+	const float radDown = radius[static_cast<int>(m_effectiveNewGravity) / 2];
 	const glm::vec3 down = glm::vec3(DirectionVector(m_effectiveNewGravity));
 	const glm::vec3& cameraPos = RenderSettings::instance->cameraPosition;
 	
@@ -137,9 +137,9 @@ void ForceFieldEnt::Update(const WorldUpdateArgs& args)
 	}
 	
 	//Simulated particles
-	const float radDown = radius[(int)m_effectiveNewGravity / 2];
+	const float radDown = radius[static_cast<int>(m_effectiveNewGravity) / 2];
 	const float maxS = radDown * 2 + 1.0f;
-	for (int64_t i = (int64_t)m_particles.size() - 1; i >= 0; i--)
+	for (int64_t i = eg::ToInt64(m_particles.size()) - 1; i >= 0; i--)
 	{
 		m_particles[i].elapsedTime += args.dt;
 		float s = *particleGravity * m_particles[i].elapsedTime * m_particles[i].elapsedTime;
@@ -155,11 +155,11 @@ void ForceFieldEnt::Update(const WorldUpdateArgs& args)
 	{
 		glm::vec3 centerStart = m_position - glm::vec3(DirectionVector(m_effectiveNewGravity)) * radDown;
 		
-		int tangentDir = (((int)m_effectiveNewGravity / 2) + 1) % 3;
+		int tangentDir = ((static_cast<int>(m_effectiveNewGravity) / 2) + 1) % 3;
 		int bitangentDir = (tangentDir + 1) % 3;
 		
-		int sectionsT = std::ceil(radius[tangentDir] * 2);
-		int sectionsB = std::ceil(radius[bitangentDir] * 2);
+		int sectionsT = static_cast<int>(std::ceil(radius[tangentDir] * 2));
+		int sectionsB = static_cast<int>(std::ceil(radius[bitangentDir] * 2));
 		
 		glm::vec3 tangent, bitangent;
 		tangent[tangentDir] = radius[tangentDir];
@@ -215,8 +215,8 @@ void ForceFieldEnt::Serialize(std::ostream& stream) const
 	forceFieldPB.set_radx(radius.x);
 	forceFieldPB.set_rady(radius.y);
 	forceFieldPB.set_radz(radius.z);
-	forceFieldPB.set_new_gravity((iomomi_pb::Dir)newGravity);
-	forceFieldPB.set_activate_action((uint32_t)activateAction);
+	forceFieldPB.set_new_gravity(static_cast<iomomi_pb::Dir>(newGravity));
+	forceFieldPB.set_activate_action(static_cast<uint32_t>(activateAction));
 	forceFieldPB.set_name(m_activatable.m_name);
 	
 	forceFieldPB.SerializeToOstream(&stream);
@@ -230,7 +230,7 @@ void ForceFieldEnt::Deserialize(std::istream& stream)
 	m_position = DeserializePos(forceFieldPB);
 	
 	radius = glm::vec3(forceFieldPB.radx(), forceFieldPB.rady(), forceFieldPB.radz());
-	newGravity = m_effectiveNewGravity = (Dir)forceFieldPB.new_gravity();
+	newGravity = m_effectiveNewGravity = static_cast<Dir>(forceFieldPB.new_gravity());
 	activateAction = (ActivateAction)forceFieldPB.activate_action();
 	m_enabled = true;
 	
@@ -259,7 +259,7 @@ std::vector<glm::vec3> ForceFieldEnt::GetConnectionPoints(const Ent& entity)
 	
 	std::vector<glm::vec3> points;
 	for (int dir = 0; dir < 6; dir++) {
-		points.push_back(ffEnt.m_position + ffEnt.radius * glm::vec3(DirectionVector((Dir)dir)));
+		points.push_back(ffEnt.m_position + ffEnt.radius * glm::vec3(DirectionVector(static_cast<Dir>(dir))));
 	}
 	
 	return points;

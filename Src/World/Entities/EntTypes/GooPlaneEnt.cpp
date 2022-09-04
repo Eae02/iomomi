@@ -42,7 +42,7 @@ void GooPlaneEnt::Serialize(std::ostream& stream) const
 	iomomi_pb::GooPlaneEntity gooPlanePB;
 	
 	SerializePos(gooPlanePB, m_liquidPlane.position);
-	gooPlanePB.set_wall_dir((iomomi_pb::Dir)m_liquidPlane.wallForward);
+	gooPlanePB.set_wall_dir(static_cast<iomomi_pb::Dir>(m_liquidPlane.wallForward));
 	
 	gooPlanePB.SerializeToOstream(&stream);
 }
@@ -52,7 +52,7 @@ void GooPlaneEnt::Deserialize(std::istream& stream)
 	iomomi_pb::GooPlaneEntity gooPlanePB;
 	gooPlanePB.ParseFromIstream(&stream);
 	m_liquidPlane.position = DeserializePos(gooPlanePB);
-	m_liquidPlane.wallForward = (Dir)gooPlanePB.wall_dir();
+	m_liquidPlane.wallForward = static_cast<Dir>(gooPlanePB.wall_dir());
 }
 
 int GooPlaneEnt::EdGetIconIndex() const

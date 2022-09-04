@@ -49,7 +49,7 @@ bool LightStripEditorComponent::CollectIcons(const EditorState& editorState, std
 					[this, activatorEntity, activator, i, selectedEntities = editorState.selectedEntities]
 					{
 						m_editingLightStripEntity = activator->lightStripEntity;
-						m_editingWayPointIndex = i;
+						m_editingWayPointIndex = eg::ToInt(i);
 					});
 				icon.shouldClearSelection = false;
 				icon.iconIndex = 7;
@@ -69,7 +69,7 @@ bool LightStripEditorComponent::CollectIcons(const EditorState& editorState, std
 					return;
 				
 				std::vector<glm::vec3> connectionPoints = activatableComp->GetConnectionPoints(activatableEntity);
-				for (int i = 0; i < (int)connectionPoints.size(); i++)
+				for (int i = 0; i < eg::ToInt(connectionPoints.size()); i++)
 				{
 					EditorIcon icon = editorState.CreateIcon(connectionPoints[i], [activatorEntity, activator, i,
 						world = editorState.world, activatableSP = activatableEntity.shared_from_this()]

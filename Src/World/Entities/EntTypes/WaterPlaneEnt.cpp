@@ -20,7 +20,7 @@ void WaterPlaneEnt::Serialize(std::ostream& stream) const
 	iomomi_pb::WaterPlaneEntity waterPlanePB;
 	SerializePos(waterPlanePB, liquidPlane.position);
 	waterPlanePB.set_density_boost(densityBoost);
-	waterPlanePB.set_wall_dir((iomomi_pb::Dir)liquidPlane.wallForward);
+	waterPlanePB.set_wall_dir(static_cast<iomomi_pb::Dir>(liquidPlane.wallForward));
 	waterPlanePB.SerializeToOstream(&stream);
 }
 
@@ -30,7 +30,7 @@ void WaterPlaneEnt::Deserialize(std::istream& stream)
 	waterPlanePB.ParseFromIstream(&stream);
 	densityBoost = waterPlanePB.density_boost();
 	liquidPlane.position = DeserializePos(waterPlanePB);
-	liquidPlane.wallForward = (Dir)waterPlanePB.wall_dir();
+	liquidPlane.wallForward = static_cast<Dir>(waterPlanePB.wall_dir());
 }
 
 void WaterPlaneEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)

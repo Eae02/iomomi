@@ -107,7 +107,7 @@ std::optional<glm::vec3> CheckCollisionAABBOrientedBox(const eg::AABB& aabb, con
 	{
 		glm::vec3 tangent = orientedBox.rotation * (glm::vec3(voxel::tangents[f]) * orientedBox.radius);
 		glm::vec3 bitangent = orientedBox.rotation * (glm::vec3(voxel::biTangents[f]) * orientedBox.radius);
-		glm::vec3 normal = orientedBox.rotation * (glm::vec3(DirectionVector((Dir)f)) * orientedBox.radius);
+		glm::vec3 normal = orientedBox.rotation * (glm::vec3(DirectionVector(static_cast<Dir>(f))) * orientedBox.radius);
 		glm::vec3 faceCenter = orientedBox.center + normal;
 		
 		glm::vec3 positions[] = 
@@ -130,7 +130,7 @@ std::optional<float> RayIntersectOrientedBox(const eg::Ray& ray, const OrientedB
 	float minAns = INFINITY;
 	for (int f = 0; f < 6; f++)
 	{
-		glm::vec3 normal = box.rotation * (glm::vec3(DirectionVector((Dir)f)) * box.radius);
+		glm::vec3 normal = box.rotation * (glm::vec3(DirectionVector(static_cast<Dir>(f))) * box.radius);
 		if (glm::dot(normal, ray.GetDirection()) >= 0)
 			continue;
 		

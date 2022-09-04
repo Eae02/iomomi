@@ -175,7 +175,7 @@ std::pair<glm::vec3, float> RampEnt::GetAngleAxisRotation() const
 	case 1:
 	case 2:
 	case 3:
-		return { glm::vec3(0, 1, 0), (float)m_rotation * eg::HALF_PI };
+		return { glm::vec3(0, 1, 0), static_cast<float>(m_rotation) * eg::HALF_PI };
 	case 4:
 		return { glm::vec3(0, 0, 1), -eg::HALF_PI };
 	case 5:

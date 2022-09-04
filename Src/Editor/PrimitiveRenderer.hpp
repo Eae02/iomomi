@@ -15,7 +15,7 @@ public:
 	
 	uint32_t NextIndex() const
 	{
-		return (uint32_t)m_vertices.size();
+		return eg::UnsignedNarrow<uint32_t>(m_vertices.size());
 	}
 	
 	void AddVertex(const glm::vec3& position, const eg::ColorSRGB& color) override;

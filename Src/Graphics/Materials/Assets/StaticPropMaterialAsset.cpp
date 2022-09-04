@@ -61,10 +61,10 @@ public:
 		eg::BinWrite(generateContext.outputStream, roughnessMax);
 		eg::BinWrite(generateContext.outputStream, texScaleX);
 		eg::BinWrite(generateContext.outputStream, texScaleY);
-		eg::BinWrite<uint8_t>(generateContext.outputStream, (uint8_t)backfaceCull | ((uint8_t)backfaceCullEd << 1));
-		eg::BinWrite<uint8_t>(generateContext.outputStream, (uint8_t)castShadows);
-		eg::BinWrite<uint8_t>(generateContext.outputStream, (uint8_t)minShadowQuality);
-		eg::BinWrite<uint8_t>(generateContext.outputStream, (uint8_t)alphaTest);
+		eg::BinWrite<uint8_t>(generateContext.outputStream, static_cast<uint8_t>(backfaceCull) | (static_cast<uint8_t>(backfaceCullEd) << 1));
+		eg::BinWrite<uint8_t>(generateContext.outputStream, static_cast<uint8_t>(castShadows));
+		eg::BinWrite<uint8_t>(generateContext.outputStream, static_cast<uint8_t>(minShadowQuality));
+		eg::BinWrite<uint8_t>(generateContext.outputStream, static_cast<uint8_t>(alphaTest));
 		
 		generateContext.AddLoadDependency(std::move(albedoPath));
 		generateContext.AddLoadDependency(std::move(normalMapPath));

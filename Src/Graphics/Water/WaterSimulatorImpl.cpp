@@ -22,17 +22,17 @@ static constexpr uint32_t MAX_PER_PART_CELL = 512;
 //Maximum number of close particles
 static constexpr uint32_t MAX_CLOSE = 512;
 
-static constexpr float ELASTICITY = 0.2;
-static constexpr float IMPACT_COEFFICIENT = 1.0 + ELASTICITY;
-static constexpr float MIN_PARTICLE_RADIUS = 0.1;
-static constexpr float MAX_PARTICLE_RADIUS = 0.4;
-static constexpr float INFLUENCE_RADIUS = 0.6;
-static constexpr float CORE_RADIUS = 0.001;
-static constexpr float RADIAL_VISCOSITY_GAIN = 0.25;
-static constexpr float TARGET_NUMBER_DENSITY = 2.5;
-static constexpr float STIFFNESS = 20.0;
-static constexpr float NEAR_TO_FAR = 2.0;
-static constexpr float AMBIENT_DENSITY = 0.5;
+static constexpr float ELASTICITY = 0.2f;
+static constexpr float IMPACT_COEFFICIENT = 1.0f + ELASTICITY;
+static constexpr float MIN_PARTICLE_RADIUS = 0.1f;
+static constexpr float MAX_PARTICLE_RADIUS = 0.4f;
+static constexpr float INFLUENCE_RADIUS = 0.6f;
+static constexpr float CORE_RADIUS = 0.001f;
+static constexpr float RADIAL_VISCOSITY_GAIN = 0.25f;
+static constexpr float TARGET_NUMBER_DENSITY = 2.5f;
+static constexpr float STIFFNESS = 20.0f;
+static constexpr float NEAR_TO_FAR = 2.0f;
+static constexpr float AMBIENT_DENSITY = 0.5f;
 static constexpr int CELL_GROUP_SIZE = 4;
 
 static std::uniform_real_distribution<float> radiusDist(MIN_PARTICLE_RADIUS, MAX_PARTICLE_RADIUS);
@@ -273,7 +273,7 @@ int WSI_Query(WaterSimulatorImpl* impl, const eg::AABB& aabb, glm::vec3& waterVe
 		{
 			numIntersecting++;
 			waterVelM = _mm_add_ps(waterVelM, impl->particleVel2[p]);
-			buoyancy -= DirectionVector((Dir)impl->particleGravity[p]);
+			buoyancy -= DirectionVector(static_cast<Dir>(impl->particleGravity[p]));
 		}
 	}
 	
@@ -347,7 +347,9 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 	//Moves particles across pumps
 	for (const WaterPumpDescription& pump : args.waterPumps)
 	{
-		int numToMove = glm::clamp((int)std::round(pump.particlesPerSecond * args.dt), 1, MAX_PUMP_PER_ITERATION);
+		int numToMove = glm::clamp(
+			static_cast<int>(std::round(pump.particlesPerSecond * args.dt)),
+			1, MAX_PUMP_PER_ITERATION);
 		
 		uint16_t closestIndices[MAX_PUMP_PER_ITERATION];
 		float closestDist2[MAX_PUMP_PER_ITERATION];
@@ -479,7 +481,7 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 			seen[changeGravityParticle] = true;
 			std::vector<uint16_t> particlesStack;
 			particlesStack.reserve(impl->numParticles);
-			particlesStack.push_back(changeGravityParticle);
+			particlesStack.push_back(eg::UnsignedNarrow<uint16_t>(changeGravityParticle));
 			while (!particlesStack.empty())
 			{
 				uint16_t cur = particlesStack.back();
@@ -487,7 +489,7 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 				
 				if (!args.changeGravityParticleHighlightOnly)
 				{
-					impl->particleGravity[cur] = (uint8_t)args.newGravity;
+					impl->particleGravity[cur] = static_cast<uint8_t>(args.newGravity);
 				}
 				impl->particlePos[cur][3] = args.gameTime;
 				
@@ -535,7 +537,7 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 	//Accelerates particles
 	std::for_each_n(std::execution::par_unseq, impl->particlePos, impl->numParticles, [&] (__m128& aPos)
 	{
-		uint32_t a = &aPos - impl->particlePos;
+		uint32_t a = static_cast<uint32_t>(&aPos - impl->particlePos);
 		
 		//Initializes acceleration to the gravitational acceleration
 		const float relativeDensity = (impl->particleDensity[a].x - AMBIENT_DENSITY) / impl->particleDensity[a].x;
@@ -581,7 +583,7 @@ void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args)
 	//Velocity diffusion & collision
 	std::for_each_n(std::execution::par_unseq, impl->particlePos, impl->numParticles, [&] (__m128& aPos)
 	{
-		uint32_t a = &aPos - impl->particlePos;
+		uint32_t a = static_cast<uint32_t>(&aPos - impl->particlePos);
 		__m128 vel = impl->particleVel[a];
 		
 		uint8_t particleGravityMask = (uint8_t)1 << impl->particleGravity[a];

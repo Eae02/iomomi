@@ -47,16 +47,16 @@ extern std::optional<EntType> entityTypes[(size_t)EntTypeID::MAX];
 template <typename T>
 void DefineEntityType(std::string name, std::string prettyName)
 {
-	if ((int)T::TypeID < 0 || (int)T::TypeID >= (int)EntTypeID::MAX)
+	if (static_cast<int>(T::TypeID) < 0 || static_cast<int>(T::TypeID) >= static_cast<int>(EntTypeID::MAX))
 	{
 		EG_PANIC("Entity " << name << " using out of range id!");
 	}
-	if (entityTypes[(int)T::TypeID].has_value())
+	if (entityTypes[static_cast<int>(T::TypeID)].has_value())
 	{
 		EG_PANIC("Entity " << name << " using occupied type id!");
 	}
 	
-	entityTypes[((int)T::TypeID)] = EntType {
+	entityTypes[static_cast<int>(T::TypeID)] = EntType {
 		T::EntFlags,
 		std::move(name),
 		std::move(prettyName),

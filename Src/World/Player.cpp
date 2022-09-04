@@ -86,7 +86,7 @@ static const glm::vec3 leftDirs[6] =
 inline glm::quat GetDownCorrection(Dir down)
 {
 	glm::vec3 up = -DirectionVector(down);
-	return glm::quat_cast(glm::mat3(leftDirs[(int)down], up, glm::cross(leftDirs[(int)down], up)));
+	return glm::quat_cast(glm::mat3(leftDirs[static_cast<int>(down)], up, glm::cross(leftDirs[static_cast<int>(down)], up)));
 }
 
 inline glm::quat GetRotation(float yaw, float pitch, Dir down)
@@ -328,7 +328,7 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 	
 	m_radius = glm::vec3(WIDTH / 2, WIDTH / 2, WIDTH / 2);
 	if (!underwater && !m_wasUnderwater)
-		m_radius[(int)m_down / 2] = HEIGHT / 2;
+		m_radius[static_cast<int>(m_down) / 2] = HEIGHT / 2;
 	m_physicsObject.shape = eg::AABB(-m_radius, m_radius);
 	PhysicsObject* floorObject = physicsEngine.FindFloorObject(m_physicsObject, -up);
 	
@@ -688,7 +688,7 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 	
 	//Updates the eye position
 	m_eyePosition = Position() + up * EYE_OFFSET * m_eyeOffsetFade;
-	int downDim = (int)m_down / 2;
+	int downDim = static_cast<int>(m_down) / 2;
 	if (m_gravityTransitionMode == TransitionMode::Fall)
 	{
 		m_eyePosition = glm::mix(m_oldEyePosition + Position() - m_oldPosition, m_eyePosition, TransitionInterpol());
@@ -743,9 +743,9 @@ static const float VIEW_BOBBING_RZ_LEVEL_MULTIPLIERS[] = {
 void Player::GetViewMatrix(glm::mat4& matrixOut, glm::mat4& inverseMatrixOut) const
 {
 	const float viewBobbingRZ = std::sin(m_viewBobbingTime) * *viewBobbingMaxRotation *
-		m_viewBobbingIntensity * VIEW_BOBBING_RZ_LEVEL_MULTIPLIERS[(int)settings.viewBobbingLevel];
+		m_viewBobbingIntensity * VIEW_BOBBING_RZ_LEVEL_MULTIPLIERS[static_cast<int>(settings.viewBobbingLevel)];
 	const float viewBobbingTY = std::sin(m_viewBobbingTime * 2) * *viewBobbingMaxTransY *
-		m_viewBobbingIntensity * VIEW_BOBBING_TY_LEVEL_MULTIPLIERS[(int)settings.viewBobbingLevel];
+		m_viewBobbingIntensity * VIEW_BOBBING_TY_LEVEL_MULTIPLIERS[static_cast<int>(settings.viewBobbingLevel)];
 	
 	const glm::mat4 rotationMatrix = glm::mat4_cast(m_rotation);
 	

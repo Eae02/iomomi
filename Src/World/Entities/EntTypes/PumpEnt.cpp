@@ -174,10 +174,10 @@ void PumpEnt::Update(const WorldUpdateArgs& args)
 	m_buttonLPushTimer = std::max(m_buttonLPushTimer - args.dt, 0.0f);
 	m_buttonRPushTimer = std::max(m_buttonRPushTimer - args.dt, 0.0f);
 	
-	m_buttonLActivationGlow = eg::AnimateTo(m_buttonLActivationGlow, (float)(m_currentDirection == PumpDirection::Left),
-	                                        args.dt / BUTTON_GLOW_ANIMATION_TIME);
-	m_buttonRActivationGlow = eg::AnimateTo(m_buttonRActivationGlow, (float)(m_currentDirection == PumpDirection::Right),
-	                                        args.dt / BUTTON_GLOW_ANIMATION_TIME);
+	const float dt = args.dt / BUTTON_GLOW_ANIMATION_TIME;
+	const float targetL = m_currentDirection == PumpDirection::Left ? 1.0f : 0.0f;
+	m_buttonLActivationGlow = eg::AnimateTo(m_buttonLActivationGlow, targetL, dt);
+	m_buttonRActivationGlow = eg::AnimateTo(m_buttonRActivationGlow, 1 - targetL, dt);
 	
 	m_screenMaterial.Update(args.dt, m_currentDirection);
 }

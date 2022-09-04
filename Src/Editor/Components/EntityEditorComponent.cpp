@@ -156,7 +156,7 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 			
 			m_initialGizmoPos += pos;
 		}
-		m_initialGizmoPos /= (float)selectedEntities.size();
+		m_initialGizmoPos /= static_cast<float>(selectedEntities.size());
 		m_gizmoPos = m_initialGizmoPos;
 	};
 	
@@ -498,7 +498,7 @@ bool EntityEditorComponent::CollectIcons(const EditorState& editorState, std::ve
 			return;
 		
 		if (eg::HasFlag(entity.TypeFlags(), EntTypeFlags::OptionalEditorIcon) &&
-			!settings.edEntityIconEnabled.at((int)entity.TypeID()))
+			!settings.edEntityIconEnabled.at(static_cast<int>(entity.TypeID())))
 		{
 			return;
 		}

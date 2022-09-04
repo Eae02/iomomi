@@ -97,7 +97,7 @@ void PlatformEnt::DrawSliderMesh(eg::MeshBatch& meshBatch, const eg::Frustum& fr
 	const glm::vec3 normToEnd = toEnd / slideDist;
 	
 	constexpr float SLIDER_MODEL_LENGTH = 0.2f;
-	const int numSliderInstances = (int)std::round(slideDist / (SLIDER_MODEL_LENGTH * scale));
+	const int numSliderInstances = static_cast<int>(std::round(slideDist / (SLIDER_MODEL_LENGTH * scale)));
 	
 	const glm::mat4 commonTransform =
 		glm::translate(glm::mat4(1), start) *
@@ -105,7 +105,7 @@ void PlatformEnt::DrawSliderMesh(eg::MeshBatch& meshBatch, const eg::Frustum& fr
 	
 	for (int i = 1; i <= numSliderInstances; i++)
 	{
-		const glm::mat4 partTransform = glm::translate(commonTransform, glm::vec3(0, 0, SLIDER_MODEL_LENGTH * (float)i));
+		const glm::mat4 partTransform = glm::translate(commonTransform, glm::vec3(0, 0, SLIDER_MODEL_LENGTH * static_cast<float>(i)));
 		const eg::AABB aabb = platformSliderModel->GetMesh(0).boundingAABB->TransformedBoundingBox(partTransform);
 		if (frustum.Intersects(aabb))
 		{
@@ -238,7 +238,7 @@ void PlatformEnt::Serialize(std::ostream& stream) const
 {
 	iomomi_pb::PlatformEntity platformPB;
 	
-	platformPB.set_dir((iomomi_pb::Dir)m_forwardDir);
+	platformPB.set_dir(static_cast<iomomi_pb::Dir>(m_forwardDir));
 	SerializePos(platformPB, m_basePosition);
 	
 	platformPB.set_slide_offset_x(m_slideOffset.x);
@@ -257,7 +257,7 @@ void PlatformEnt::Deserialize(std::istream& stream)
 	platformPB.ParseFromIstream(&stream);
 	
 	m_basePosition = DeserializePos(platformPB);
-	m_forwardDir = (Dir)platformPB.dir();
+	m_forwardDir = static_cast<Dir>(platformPB.dir());
 	
 	m_slideOffset = glm::vec2(platformPB.slide_offset_x(), platformPB.slide_offset_y());
 	m_slideTime = platformPB.slide_time();

@@ -25,7 +25,7 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 	if (eg::IsButtonDown(eg::Button::MouseLeft) && eg::WasButtonDown(eg::Button::MouseLeft) &&
 	    eg::CursorPos() != eg::PrevCursorPos())
 	{
-		int selDim = (int)m_selectionNormal / 2;
+		int selDim = static_cast<int>(m_selectionNormal) / 2;
 		if (m_selState == SelState::Selecting)
 		{
 			//Updates the current selection if the new hovered voxel is
@@ -39,7 +39,7 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 		{
 			eg::Ray dragLineRay(m_dragStartPos, glm::abs(DirectionVector(m_selectionNormal)));
 			float closestPoint = dragLineRay.GetClosestPoint(editorState.viewRay);
-			int newDragDist = (int)glm::round(closestPoint);
+			int newDragDist = static_cast<int>(std::round(closestPoint));
 			if (!std::isnan(closestPoint) && newDragDist != m_dragDistance)
 			{
 				int newDragDir = newDragDist > m_dragDistance ? 1 : -1;
@@ -60,7 +60,7 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 					selDimOffsetMax--;
 				}
 				
-				if ((int)m_selectionNormal % 2 == 0)
+				if (static_cast<int>(m_selectionNormal) % 2 == 0)
 				{
 					selDimOffsetMin++;
 					selDimOffsetMax++;
@@ -111,7 +111,7 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 						for (int s = 0; s < 4; s++)
 						{
 							const int stepDim = (selDim + 1 + s / 2) % 3;
-							const Dir stepDir = (Dir)(stepDim * 2 + s % 2);
+							const Dir stepDir = static_cast<Dir>(stepDim * 2 + s % 2);
 							
 							if (!allAir)
 							{
@@ -264,8 +264,8 @@ void WallDragEditorComponent::FillSelection(const World& world, const glm::ivec3
 	
 	m_finishedSelection.push_back(pos);
 	
-	int d1 = ((int)normalDir / 2 + 1) % 3;
-	int d2 = ((int)normalDir / 2 + 2) % 3;
+	int d1 = (static_cast<int>(normalDir) / 2 + 1) % 3;
+	int d2 = (static_cast<int>(normalDir) / 2 + 2) % 3;
 	static const glm::ivec2 toNeighbors[] = { { -1, 0 }, { 1, 0 }, { 0, 1 }, { 0, -1 } };
 	for (const glm::ivec2& toNeighbor : toNeighbors)
 	{
@@ -280,7 +280,7 @@ void WallDragEditorComponent::EarlyDraw(const EditorState& editorState) const
 {
 	if (m_selState != SelState::NoSelection)
 	{
-		int nd = (int)m_selectionNormal / 2;
+		int nd = static_cast<int>(m_selectionNormal) / 2;
 		int sd1 = (nd + 1) % 3;
 		int sd2 = (nd + 2) % 3;
 		
@@ -289,12 +289,12 @@ void WallDragEditorComponent::EarlyDraw(const EditorState& editorState) const
 			glm::vec3 quadCorners[4];
 			for (glm::vec3& corner : quadCorners)
 			{
-				corner[nd] = m_selection1[nd] + (((int)m_selectionNormal % 2) ? 0 : 1);
+				corner[nd] = static_cast<float>(m_selection1[nd] + ((static_cast<int>(m_selectionNormal) % 2) ? 0 : 1));
 			}
-			quadCorners[1][sd1] = quadCorners[0][sd1] = std::min<float>(m_selection1[sd1], m_selection2Anim[sd1]);
-			quadCorners[3][sd1] = quadCorners[2][sd1] = std::max<float>(m_selection1[sd1], m_selection2Anim[sd1]) + 1;
-			quadCorners[2][sd2] = quadCorners[0][sd2] = std::min<float>(m_selection1[sd2], m_selection2Anim[sd2]);
-			quadCorners[1][sd2] = quadCorners[3][sd2] = std::max<float>(m_selection1[sd2], m_selection2Anim[sd2]) + 1;
+			quadCorners[1][sd1] = quadCorners[0][sd1] = std::min(static_cast<float>(m_selection1[sd1]), m_selection2Anim[sd1]);
+			quadCorners[3][sd1] = quadCorners[2][sd1] = std::max(static_cast<float>(m_selection1[sd1]), m_selection2Anim[sd1]) + 1;
+			quadCorners[2][sd2] = quadCorners[0][sd2] = std::min(static_cast<float>(m_selection1[sd2]), m_selection2Anim[sd2]);
+			quadCorners[1][sd2] = quadCorners[3][sd2] = std::max(static_cast<float>(m_selection1[sd2]), m_selection2Anim[sd2]) + 1;
 			
 			editorState.primitiveRenderer->AddQuad(quadCorners,
 				eg::ColorSRGB(eg::ColorSRGB::FromHex(0x91CAED).ScaleAlpha(0.5f)));
@@ -321,12 +321,15 @@ void WallDragEditorComponent::EarlyDraw(const EditorState& editorState) const
 				glm::vec3* nextQuadCorner = quadCorners;
 				
 				for (int dx = 0; dx < 2; dx++)
-				for (int dy = 0; dy < 2; dy++)
 				{
-					(*nextQuadCorner)[nd] = pos[nd] + (((int)m_selectionNormal % 2) ? 0 : 1);
-					(*nextQuadCorner)[sd1] = pos[sd1] + dx;
-					(*nextQuadCorner)[sd2] = pos[sd2] + dy;
-					nextQuadCorner++;
+					for (int dy = 0; dy < 2; dy++)
+					{
+						int dn = 1 - (static_cast<int>(m_selectionNormal) % 2);
+						(*nextQuadCorner)[nd] = static_cast<float>(pos[nd] + dn);
+						(*nextQuadCorner)[sd1] = static_cast<float>(pos[sd1] + dx);
+						(*nextQuadCorner)[sd2] = static_cast<float>(pos[sd2] + dy);
+						nextQuadCorner++;
+					}
 				}
 				
 				editorState.primitiveRenderer->AddQuad(quadCorners, color);
@@ -346,7 +349,7 @@ void WallDragEditorComponent::IterateSelection(CallbackTp callback,
 		for (int o = minOffsetSelDir; o <= maxOffsetSelDir; o++)
 		{
 			glm::ivec3 pos2 = pos;
-			pos2[(int)m_selectionNormal / 2] += o;
+			pos2[static_cast<int>(m_selectionNormal) / 2] += o;
 			callback(pos2);
 		}
 	}
@@ -377,7 +380,7 @@ void WallDragEditorComponent::RenderSettings(const EditorState& editorState)
 				{
 					editorState.world->voxels.SetMaterialSafe(
 						pos + DirectionVector(m_selectionNormal),
-						m_selectionNormal, i);
+						m_selectionNormal, eg::ToInt(i));
 				}, 0, 0);
 			}
 			ImGui::PopID();
@@ -390,7 +393,7 @@ void WallDragEditorComponent::RenderSettings(const EditorState& editorState)
 			else
 			{
 				eg::TextureSubresource subresource;
-				subresource.firstArrayLayer = i - 1;
+				subresource.firstArrayLayer = eg::UnsignedNarrow<uint32_t>(i - 1);
 				subresource.numArrayLayers = 1;
 				textureView = albedoTex.GetView(subresource, eg::TextureViewType::Flat2D);
 			}

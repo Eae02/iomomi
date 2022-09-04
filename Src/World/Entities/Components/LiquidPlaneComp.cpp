@@ -49,7 +49,7 @@ void LiquidPlaneComp::MaybeUpdate(const World& world)
 	const_cast<EntityManager&>(world.entManager).ForEachWithComponent<WaterBlockComp>([&] (const Ent& entity)
 	{
 		const auto& waterBlockComp = *entity.GetComponent<WaterBlockComp>();
-		if (waterBlockComp.blockedGravities[(int)Dir::NegY] && !waterBlockComp.onlyBlockDuringSimulation)
+		if (waterBlockComp.blockedGravities[static_cast<int>(Dir::NegY)] && !waterBlockComp.onlyBlockDuringSimulation)
 		{
 			blockedByEntity.insert(blockedByEntity.end(),
 				waterBlockComp.blockedVoxels.begin(), waterBlockComp.blockedVoxels.end());
@@ -100,7 +100,7 @@ void LiquidPlaneComp::GenerateMesh()
 		if (IsUnderwater(waterCoord + glm::ivec3(0, 1, 0)))
 			continue;
 		
-		float y = std::min<float>(position.y, waterCoord.y + 1);
+		float y = std::min(position.y, static_cast<float>(waterCoord.y + 1));
 		
 		uint16_t vIndices[2][2];
 		for (int dx = 0; dx < 2; dx++)
@@ -114,10 +114,10 @@ void LiquidPlaneComp::GenerateMesh()
 					it = indexMap.emplace(pos, (uint16_t)vertices.size()).first;
 					Vertex& vertex = vertices.emplace_back();
 					vertex.pos = glm::vec3(pos.x, y, pos.z);
-					vertex.edgeDists[0] = (int)( dz && !IsUnderwater(waterCoord + glm::ivec3(0, 0, 1))) * 255;
-					vertex.edgeDists[1] = (int)(!dz && !IsUnderwater(waterCoord - glm::ivec3(0, 0, 1))) * 255;
-					vertex.edgeDists[2] = (int)( dx && !IsUnderwater(waterCoord + glm::ivec3(1, 0, 0))) * 255;
-					vertex.edgeDists[3] = (int)(!dx && !IsUnderwater(waterCoord - glm::ivec3(1, 0, 0))) * 255;
+					vertex.edgeDists[0] = static_cast<int>( dz && !IsUnderwater(waterCoord + glm::ivec3(0, 0, 1))) * 255;
+					vertex.edgeDists[1] = static_cast<int>(!dz && !IsUnderwater(waterCoord - glm::ivec3(0, 0, 1))) * 255;
+					vertex.edgeDists[2] = static_cast<int>( dx && !IsUnderwater(waterCoord + glm::ivec3(1, 0, 0))) * 255;
+					vertex.edgeDists[3] = static_cast<int>(!dx && !IsUnderwater(waterCoord - glm::ivec3(1, 0, 0))) * 255;
 				}
 				
 				vIndices[dx][dz] = it->second;
@@ -166,7 +166,7 @@ void LiquidPlaneComp::GenerateMesh()
 	m_vertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
 	m_indexBuffer.UsageHint(eg::BufferUsage::IndexBuffer);
 	
-	m_numIndices = indices.size();
+	m_numIndices = eg::UnsignedNarrow<uint32_t>(indices.size());
 }
 
 eg::MeshBatch::Mesh LiquidPlaneComp::GetMesh() const

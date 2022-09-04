@@ -87,7 +87,7 @@ void WallLightEnt::Serialize(std::ostream& stream) const
 {
 	iomomi_pb::WallLightEntity entityPB;
 	
-	entityPB.set_dir((iomomi_pb::Dir)m_forwardDir);
+	entityPB.set_dir(static_cast<iomomi_pb::Dir>(m_forwardDir));
 	SerializePos(entityPB, m_position);
 	
 	entityPB.set_colorr(m_color.r);
@@ -104,7 +104,7 @@ void WallLightEnt::Deserialize(std::istream& stream)
 	iomomi_pb::WallLightEntity entityPB;
 	entityPB.ParseFromIstream(&stream);
 	
-	m_forwardDir = (Dir)entityPB.dir();
+	m_forwardDir = static_cast<Dir>(entityPB.dir());
 	m_position = DeserializePos(entityPB);
 	
 	m_color = eg::ColorSRGB(entityPB.colorr(), entityPB.colorg(), entityPB.colorb());

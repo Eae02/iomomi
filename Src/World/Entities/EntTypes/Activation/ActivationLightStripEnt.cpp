@@ -152,7 +152,7 @@ void ActivationLightStripEnt::Update(const WorldUpdateArgs& args)
 		m_transitionDirection = (activated ? 1 : -1);
 	}
 	
-	m_transitionProgress += m_transitionDirection * args.dt * TRANSITION_SPEED;
+	m_transitionProgress += static_cast<float>(m_transitionDirection) * args.dt * TRANSITION_SPEED;
 	const float maxTransitionProgress = m_maxTransitionProgress + TRANSITION_MARGIN;
 	
 	if (m_transitionDirection == 1 && m_transitionProgress > maxTransitionProgress)
@@ -189,11 +189,11 @@ struct NodePosHash
 	size_t operator()(const NodePos& n) const noexcept
 	{
 		size_t hash = 0;
-		eg::HashAppend(hash, (int)n.stepDirection);
-		eg::HashAppend(hash, (int)n.wallNormal);
-		eg::HashAppend(hash, (int)n.doublePos.x);
-		eg::HashAppend(hash, (int)n.doublePos.y);
-		eg::HashAppend(hash, (int)n.doublePos.z);
+		eg::HashAppend(hash, static_cast<int>(n.stepDirection));
+		eg::HashAppend(hash, static_cast<int>(n.wallNormal));
+		eg::HashAppend(hash, static_cast<int>(n.doublePos.x));
+		eg::HashAppend(hash, static_cast<int>(n.doublePos.y));
+		eg::HashAppend(hash, static_cast<int>(n.doublePos.z));
 		return hash;
 	}
 };
@@ -236,16 +236,16 @@ ActivationLightStripEnt::GenerateResult ActivationLightStripEnt::Generate(
 	
 	auto IsValidPosition = [&] (const NodePos& pos)
 	{
-		if (pos.doublePos[(int)pos.wallNormal / 2] % 2)
+		if (pos.doublePos[static_cast<int>(pos.wallNormal) / 2] % 2)
 			return false;
 		
 		glm::ivec3 dirN = DirectionVector(pos.wallNormal);
 		glm::ivec3 dirU = glm::abs(DirectionVector(pos.stepDirection));
 		glm::ivec3 dirV;
-		if (((int)pos.stepDirection / 2 + 1) % 3 != (int)pos.wallNormal / 2)
-			dirV = glm::abs(DirectionVector((Dir)(((int)pos.stepDirection + 2) % 6)));
+		if ((static_cast<int>(pos.stepDirection) / 2 + 1) % 3 != static_cast<int>(pos.wallNormal) / 2)
+			dirV = glm::abs(DirectionVector(static_cast<Dir>((static_cast<int>(pos.stepDirection) + 2) % 6)));
 		else
-			dirV = glm::abs(DirectionVector((Dir)(((int)pos.stepDirection + 4) % 6)));
+			dirV = glm::abs(DirectionVector(static_cast<Dir>((static_cast<int>(pos.stepDirection) + 4) % 6)));
 		
 		bool isAir[2][2][2];
 		for (int du = 0; du < 2; du++)
@@ -347,7 +347,7 @@ ActivationLightStripEnt::GenerateResult ActivationLightStripEnt::Generate(
 			};
 			
 			//Processes edges due to changing step direction
-			for (Dir orthoDir : ORTHO_DIRS[(int)curEntry.pos.wallNormal / 2])
+			for (Dir orthoDir : ORTHO_DIRS[static_cast<int>(curEntry.pos.wallNormal) / 2])
 			{
 				if (orthoDir != curEntry.pos.stepDirection)
 				{
@@ -406,11 +406,11 @@ ActivationLightStripEnt::GenerateResult ActivationLightStripEnt::Generate(
 		auto wpi = std::lower_bound(nodesBeforeWayPoint.begin(), nodesBeforeWayPoint.end(), i);
 		result.path[i].position = glm::vec3(path[i].doublePos) / 2.0f;
 		result.path[i].wallNormal = path[i].wallNormal;
-		result.path[i].prevWayPoint = (int)(wpi - nodesBeforeWayPoint.begin()) - 1;
+		result.path[i].prevWayPoint = static_cast<int>(wpi - nodesBeforeWayPoint.begin()) - 1;
 	}
 	
 	//Builds the path mesh
-	int accDistance = 0;
+	float accDistance = 0;
 	for (int i = (int)path.size() - 1; i >= 1; i--)
 	{
 		LightStripMaterial::InstanceData* instanceData = nullptr;
