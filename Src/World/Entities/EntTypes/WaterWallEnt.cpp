@@ -3,6 +3,8 @@
 #include "../../../ImGui.hpp"
 #include "../../../../Protobuf/Build/WaterWallEntity.pb.h"
 
+DEF_ENT_TYPE(WaterWallEnt)
+
 WaterWallEnt::WaterWallEnt()
 {
 	std::fill_n(m_waterBlockComp.blockedGravities, 6, true);

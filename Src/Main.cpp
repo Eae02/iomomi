@@ -40,7 +40,6 @@ static void Run(int argc, char** argv, std::unique_ptr<DownloadedAssetBinary> do
 	runConfig.flags |= eg::RunFlags::DevMode;
 #endif
 	
-	InitEntityTypes();
 	LoadSettings();
 	eg::TextureAssetQuality = settings.textureQuality;
 	

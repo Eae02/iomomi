@@ -3,6 +3,8 @@
 #include "../../../../ImGui.hpp"
 #include "../../../../../Protobuf/Build/PointLightEntity.pb.h"
 
+DEF_ENT_TYPE(PointLightEnt)
+
 const eg::ColorSRGB PointLightEnt::DefaultColor = eg::ColorSRGB::FromHex(0xD1F8FE);
 const float PointLightEnt::DefaultIntensity = 15;
 

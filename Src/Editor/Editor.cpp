@@ -8,6 +8,7 @@
 #include <fstream>
 #include <EGameImGui.hpp>
 #include <misc/cpp/imgui_stdlib.h>
+#include <magic_enum.hpp>
 
 Editor* editor;
 
@@ -267,14 +268,14 @@ void Editor::RunFrame(float dt)
 			ImGui::Separator();
 			ImGui::TextDisabled("Icons");
 			
-			for (int entityType = 0; entityType < static_cast<int>(EntTypeID::MAX); entityType++)
+			magic_enum::enum_for_each<EntTypeID>([&] (EntTypeID typeId)
 			{
-				const EntType* type = GetEntityType(static_cast<EntTypeID>(entityType));
+				const EntType* type = Ent::GetTypeByID(typeId);
 				if (type != nullptr && eg::HasFlag(type->flags, EntTypeFlags::OptionalEditorIcon))
 				{
-					ImGui::MenuItem(type->prettyName.c_str(), nullptr, &settings.edEntityIconEnabled[entityType]);
+					ImGui::MenuItem(type->prettyName.c_str(), nullptr, &settings.edEntityIconEnabled.at((size_t)typeId));
 				}
-			}
+			});
 			
 			ImGui::EndMenu();
 		}

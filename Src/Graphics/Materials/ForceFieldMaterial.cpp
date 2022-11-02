@@ -40,11 +40,11 @@ ForceFieldMaterial::ForceFieldMaterial()
 	m_pipelineFinal.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
 	m_pipelineFinal.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
 	
-	eg::SamplerDescription particleSamplerDesc;
-	particleSamplerDesc.wrapU = eg::WrapMode::ClampToEdge;
-	particleSamplerDesc.wrapV = eg::WrapMode::ClampToEdge;
-	particleSamplerDesc.wrapW = eg::WrapMode::ClampToEdge;
-	m_particleSampler = eg::Sampler(particleSamplerDesc);
+	m_particleSampler = eg::Sampler(eg::SamplerDescription {
+		.wrapU = eg::WrapMode::ClampToEdge,
+		.wrapV = eg::WrapMode::ClampToEdge,
+		.wrapW = eg::WrapMode::ClampToEdge
+	});
 }
 
 size_t ForceFieldMaterial::PipelineHash() const

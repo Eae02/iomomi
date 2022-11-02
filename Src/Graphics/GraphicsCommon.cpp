@@ -55,23 +55,26 @@ eg::Texture blackPixelTexture;
 
 static void OnInit()
 {
-	eg::SamplerDescription samplerDescription;
-	samplerDescription.maxAnistropy = 16;
-	commonTextureSampler = eg::Sampler(samplerDescription);
+	const auto commonSamplerDescription = eg::SamplerDescription { .maxAnistropy = 16 };
+	commonTextureSampler = eg::Sampler(commonSamplerDescription);
 	
-	eg::SamplerDescription framebufferSamplerDesc;
-	framebufferSamplerDesc.wrapU = eg::WrapMode::ClampToEdge;
-	framebufferSamplerDesc.wrapV = eg::WrapMode::ClampToEdge;
-	framebufferSamplerDesc.wrapW = eg::WrapMode::ClampToEdge;
-	framebufferSamplerDesc.minFilter = eg::TextureFilter::Linear;
-	framebufferSamplerDesc.magFilter = eg::TextureFilter::Linear;
-	framebufferSamplerDesc.mipFilter = eg::TextureFilter::Nearest;
-	framebufferLinearSampler = eg::Sampler(framebufferSamplerDesc);
+	framebufferLinearSampler = eg::Sampler(eg::SamplerDescription {
+		.wrapU = eg::WrapMode::ClampToEdge,
+		.wrapV = eg::WrapMode::ClampToEdge,
+		.wrapW = eg::WrapMode::ClampToEdge,
+		.minFilter = eg::TextureFilter::Linear,
+		.magFilter = eg::TextureFilter::Linear,
+		.mipFilter = eg::TextureFilter::Nearest,
+	});
 	
-	framebufferSamplerDesc.minFilter = eg::TextureFilter::Nearest;
-	framebufferSamplerDesc.magFilter = eg::TextureFilter::Nearest;
-	framebufferSamplerDesc.mipFilter = eg::TextureFilter::Nearest;
-	framebufferNearestSampler = eg::Sampler(framebufferSamplerDesc);
+	framebufferNearestSampler = eg::Sampler(eg::SamplerDescription {
+		.wrapU = eg::WrapMode::ClampToEdge,
+		.wrapV = eg::WrapMode::ClampToEdge,
+		.wrapW = eg::WrapMode::ClampToEdge,
+		.minFilter = eg::TextureFilter::Nearest,
+		.magFilter = eg::TextureFilter::Nearest,
+		.mipFilter = eg::TextureFilter::Nearest,
+	});
 	
 	eg::TextureCreateInfo whiteTextureCI;
 	whiteTextureCI.format = eg::Format::R8G8B8A8_UNorm;
@@ -79,7 +82,7 @@ static void OnInit()
 	whiteTextureCI.height = 1;
 	whiteTextureCI.mipLevels = 1;
 	whiteTextureCI.flags = eg::TextureFlags::ShaderSample | eg::TextureFlags::CopyDst;
-	whiteTextureCI.defaultSamplerDescription = &samplerDescription;
+	whiteTextureCI.defaultSamplerDescription = &commonSamplerDescription;
 	
 	whiteTextureCI.label = "WhitePixel";
 	whitePixelTexture = eg::Texture::Create2D(whiteTextureCI);

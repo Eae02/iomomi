@@ -4,6 +4,8 @@
 #include "../../../ImGui.hpp"
 #include "../../../../Protobuf/Build/ColliderEntity.pb.h"
 
+DEF_ENT_TYPE(ColliderEnt)
+
 bool ColliderEnt::drawInEditor = true;
 
 bool ColliderEnt::ShouldCollide(const PhysicsObject& self, const PhysicsObject& other)

@@ -7,7 +7,7 @@
 class PushButtonEnt : public Ent, public EntInteractable
 {
 public:
-	PushButtonEnt();
+	PushButtonEnt() = default;
 	
 	static constexpr EntTypeID TypeID = EntTypeID::PushButton;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |

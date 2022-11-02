@@ -11,6 +11,8 @@
 
 #include <pcg_random.hpp>
 
+DEF_ENT_TYPE(GravityBarrierEnt)
+
 static eg::Buffer vertexBuffer;
 static eg::MeshBatch::Mesh barrierMesh;
 

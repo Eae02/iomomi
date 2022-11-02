@@ -51,16 +51,16 @@ static inline std::vector<glm::vec4> GenerateSSAOSamples(uint32_t count)
 
 DeferredRenderer::DeferredRenderer()
 {
-	eg::SamplerDescription shadowMapSamplerDesc;
-	shadowMapSamplerDesc.wrapU = eg::WrapMode::Repeat;
-	shadowMapSamplerDesc.wrapV = eg::WrapMode::Repeat;
-	shadowMapSamplerDesc.wrapW = eg::WrapMode::Repeat;
-	shadowMapSamplerDesc.minFilter = eg::TextureFilter::Linear;
-	shadowMapSamplerDesc.magFilter = eg::TextureFilter::Linear;
-	shadowMapSamplerDesc.mipFilter = eg::TextureFilter::Nearest;
-	shadowMapSamplerDesc.enableCompare = true;
-	shadowMapSamplerDesc.compareOp = eg::CompareOp::Less;
-	m_shadowMapSampler = eg::Sampler(shadowMapSamplerDesc);
+	m_shadowMapSampler = eg::Sampler(eg::SamplerDescription {
+		.wrapU = eg::WrapMode::Repeat,
+		.wrapV = eg::WrapMode::Repeat,
+		.wrapW = eg::WrapMode::Repeat,
+		.minFilter = eg::TextureFilter::Linear,
+		.magFilter = eg::TextureFilter::Linear,
+		.mipFilter = eg::TextureFilter::Nearest,
+		.enableCompare = true,
+		.compareOp = eg::CompareOp::Less,
+	});
 	
 	CreatePipelines();
 	

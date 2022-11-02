@@ -30,19 +30,20 @@ EG_ON_SHUTDOWN(OnShutdown)
 ScreenMaterial::ScreenMaterial(int resX, int resY)
 	: m_resX(resX), m_resY(resY), m_descriptorSet(screenMatPipeline, 0)
 {
-	eg::SamplerDescription samplerDesc;
-	samplerDesc.wrapU = eg::WrapMode::ClampToEdge;
-	samplerDesc.wrapV = eg::WrapMode::ClampToEdge;
-	samplerDesc.wrapW = eg::WrapMode::ClampToEdge;
+	const auto samplerDesc = eg::SamplerDescription {
+		.wrapU = eg::WrapMode::ClampToEdge,
+		.wrapV = eg::WrapMode::ClampToEdge,
+		.wrapW = eg::WrapMode::ClampToEdge
+	};
 	
-	eg::TextureCreateInfo texCreateInfo;
-	texCreateInfo.mipLevels = 1;
-	texCreateInfo.width = resX;
-	texCreateInfo.height = resY;
-	texCreateInfo.format = eg::Format::R8G8B8A8_sRGB;
-	texCreateInfo.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample;
-	texCreateInfo.defaultSamplerDescription = &samplerDesc;
-	m_texture = eg::Texture::Create2D(texCreateInfo);
+	m_texture = eg::Texture::Create2D(eg::TextureCreateInfo {
+		.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample,
+		.mipLevels = 1,
+		.width = eg::ToUnsigned(resX),
+		.height = eg::ToUnsigned(resY),
+		.format = eg::Format::R8G8B8A8_sRGB,
+		.defaultSamplerDescription = &samplerDesc
+	});
 	
 	eg::FramebufferAttachment colorAttachment;
 	colorAttachment.texture = m_texture.handle;

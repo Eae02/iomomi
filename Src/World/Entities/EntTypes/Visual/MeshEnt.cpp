@@ -4,6 +4,8 @@
 #include "../../../../Game.hpp"
 #include "../../../../ImGui.hpp"
 
+DEF_ENT_TYPE(MeshEnt)
+
 struct ModelOption
 {
 	const char* name;

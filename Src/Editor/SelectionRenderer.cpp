@@ -41,10 +41,11 @@ void SelectionRenderer::BeginFrame(uint32_t resX, uint32_t resY)
 	m_hasRendered = false;
 	if (m_texture.handle == nullptr || resX != m_texture.Width() || resY != m_texture.Height())
 	{
-		eg::SamplerDescription samplerDescription;
-		samplerDescription.wrapU = eg::WrapMode::ClampToEdge;
-		samplerDescription.wrapV = eg::WrapMode::ClampToEdge;
-		samplerDescription.wrapW = eg::WrapMode::ClampToEdge;
+		const eg::SamplerDescription samplerDescription = eg::SamplerDescription {
+			.wrapU = eg::WrapMode::ClampToEdge,
+			.wrapV = eg::WrapMode::ClampToEdge,
+			.wrapW = eg::WrapMode::ClampToEdge,
+		};
 		
 		eg::TextureCreateInfo textureCI;
 		textureCI.width = resX;

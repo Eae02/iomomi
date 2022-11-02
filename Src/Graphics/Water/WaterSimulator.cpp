@@ -11,6 +11,7 @@
 
 #include <cstdlib>
 #include <execution>
+#include <unordered_set>
 #include <glm/gtx/hash.hpp>
 #include <pcg_random.hpp>
 

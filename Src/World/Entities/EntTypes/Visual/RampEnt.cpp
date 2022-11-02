@@ -7,6 +7,8 @@
 
 #include <glm/glm.hpp>
 
+DEF_ENT_TYPE(RampEnt)
+
 static const glm::vec3 untransformedPositions[4] = 
 {
 	{ -1, -1, -1 }, { 1, -1, -1 }, { -1, 1, 1 }, { 1, 1, 1 }

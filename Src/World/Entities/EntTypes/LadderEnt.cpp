@@ -3,6 +3,8 @@
 #include "../../../ImGui.hpp"
 #include "../../../../Protobuf/Build/LadderEntity.pb.h"
 
+DEF_ENT_TYPE(LadderEnt)
+
 enum class LadderComponent
 {
 	Top,

@@ -10,7 +10,7 @@ void WallDragEditorComponent::Update(float dt, const EditorState& editorState)
 	m_selection2Anim += std::min(dt * 20, 1.0f) * (glm::vec3(m_selection2) - m_selection2Anim);
 }
 
-constexpr float DOUBLE_CLICK_TIMEOUT = 0.2f;
+constexpr float DOUBLE_CLICK_TIMEOUT = 0.3f;
 
 bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorState)
 {
@@ -257,7 +257,8 @@ void WallDragEditorComponent::FillSelection(const World& world, const glm::ivec3
 		return;
 	}
 	
-	if (world.voxels.GetMaterial(pos + DirectionVector(normalDir), normalDir) != requiredMaterial.value_or(-1))
+	if (requiredMaterial.has_value() &&
+		world.voxels.GetMaterial(pos + DirectionVector(normalDir), normalDir) != *requiredMaterial)
 	{
 		return;
 	}

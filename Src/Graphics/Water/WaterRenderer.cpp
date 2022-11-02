@@ -8,15 +8,14 @@ static eg::Texture dummyWaterDepthTexture;
 static void CreateDummyDepthTexture()
 {
 	eg::SamplerDescription dummyDepthTextureSamplerDesc; 
-	eg::TextureCreateInfo dummyDepthTextureCI;
-	dummyDepthTextureCI.width = 1;
-	dummyDepthTextureCI.height = 1;
-	dummyDepthTextureCI.format = eg::Format::R32G32B32A32_Float;
-	dummyDepthTextureCI.mipLevels = 1;
-	dummyDepthTextureCI.flags = eg::TextureFlags::CopyDst | eg::TextureFlags::ShaderSample;
-	dummyDepthTextureCI.defaultSamplerDescription = &dummyDepthTextureSamplerDesc;
-	
-	dummyWaterDepthTexture = eg::Texture::Create2D(dummyDepthTextureCI);
+	dummyWaterDepthTexture = eg::Texture::Create2D(eg::TextureCreateInfo {
+		.flags = eg::TextureFlags::CopyDst | eg::TextureFlags::ShaderSample,
+		.mipLevels = 1,
+		.width = 1,
+		.height = 1,
+		.format = eg::Format::R32G32B32A32_Float,
+		.defaultSamplerDescription = &dummyDepthTextureSamplerDesc,
+	});
 	
 	eg::DC.ClearColorTexture(dummyWaterDepthTexture, 0, eg::Color(1000, 1000, 1000, 1));
 	dummyWaterDepthTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);

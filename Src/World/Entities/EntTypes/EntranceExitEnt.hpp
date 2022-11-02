@@ -20,6 +20,9 @@ public:
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
 		EntTypeFlags::ShadowDrawableS | EntTypeFlags::ShadowDrawableD | EntTypeFlags::EditorWallMove | EntTypeFlags::HasPhysics;
 	
+	static constexpr const char* EntPrettyName = "Entrance / Exit";
+	static constexpr const char* EntName = "Entrance";
+	
 	EntranceExitEnt();
 	
 	void Serialize(std::ostream& stream) const override;

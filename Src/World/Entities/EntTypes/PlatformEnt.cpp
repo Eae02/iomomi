@@ -8,6 +8,8 @@
 #include "../../../ImGui.hpp"
 #include "../../../../Protobuf/Build/PlatformEntity.pb.h"
 
+DEF_ENT_TYPE(PlatformEnt)
+
 static eg::Model* platformModel;
 static eg::IMaterial* platformMaterial;
 

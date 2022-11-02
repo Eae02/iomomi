@@ -1,9 +1,69 @@
 #pragma once
 
-#include "EntityTypes.hpp"
 #include "../Dir.hpp"
 #include "../../Graphics/Lighting/PointLight.hpp"
 #include "../../Editor/IPrimitiveRenderer.hpp"
+
+enum class EntTypeID
+{
+	EntranceExit         = 0,
+	WallLight            = 1,
+	Decal                = 2,
+	GooPlane             = 3,
+	WaterPlane           = 4,
+	GravitySwitch        = 5,
+	FloorButton          = 6,
+	ActivationLightStrip = 7,
+	Cube                 = 8,
+	CubeSpawner          = 9,
+	Platform             = 10,
+	ForceField           = 11,
+	GravityBarrier       = 12,
+	Ramp                 = 13,
+	Window               = 14,
+	Mesh                 = 15,
+	WaterWall            = 16,
+	SlidingWall          = 17,
+	Ladder               = 18,
+	PointLight           = 19,
+	Collider             = 20,
+	PushButton           = 21,
+	Pump                 = 22,
+};
+
+enum class EntTypeFlags
+{
+	EditorInvisible    = 0x1,
+	EditorWallMove     = 0x2,
+	Drawable           = 0x4,
+	EditorDrawable     = 0x8,
+	ShadowDrawableD    = 0x10,
+	ShadowDrawableS    = 0x20,
+	Interactable       = 0x40,
+	DisableClone       = 0x80,
+	HasPhysics         = 0x100,
+	EditorRotatable    = 0x200,
+	OptionalEditorIcon = 0x400,
+	EditorBoxResizable = 0x800,
+};
+EG_BIT_FIELD(EntTypeFlags)
+
+class Ent;
+
+struct EntType
+{
+	EntTypeFlags flags;
+	std::string_view name;
+	std::string prettyName;
+	std::shared_ptr<Ent> (*create)();
+	std::shared_ptr<Ent> (*clone)(const Ent& ent);
+};
+
+constexpr size_t NUM_ENTITY_TYPES = 23;
+extern const std::array<EntTypeID, 13> entityUpdateOrder;
+
+template <typename T>
+std::shared_ptr<Ent> CloneEntity(const Ent& entity);
 
 struct EntDrawArgs
 {
@@ -30,22 +90,6 @@ struct EntEditorDrawArgs : EntDrawArgs
 	std::function<EntEditorDrawMode(const class Ent*)> getDrawMode;
 };
 
-enum class EntTypeFlags
-{
-	EditorInvisible    = 0x1,
-	EditorWallMove     = 0x2,
-	Drawable           = 0x4,
-	EditorDrawable     = 0x8,
-	ShadowDrawableD    = 0x10,
-	ShadowDrawableS    = 0x20,
-	Interactable       = 0x40,
-	DisableClone       = 0x80,
-	HasPhysics         = 0x100,
-	EditorRotatable    = 0x200,
-	OptionalEditorIcon = 0x400,
-	EditorBoxResizable = 0x800,
-};
-
 struct EditorSelectionMesh
 {
 	const eg::Model* model = nullptr;
@@ -57,6 +101,9 @@ struct EditorSelectionMesh
 class Ent : public std::enable_shared_from_this<Ent>
 {
 public:
+	static constexpr const char* EntName = nullptr;
+	static constexpr const char* EntPrettyName = nullptr;
+	
 	Ent() = default;
 	
 	Ent(Ent&& other) = delete;
@@ -146,10 +193,30 @@ public:
 	template <typename T>
 	const T* Downcast() const { return DowncastImpl<const T>(this); }
 	
+	template <typename T>
+	static void DefineType(const char* typeName)
+	{
+		DefineTypeImpl(T::TypeID, EntType {
+			T::EntFlags,
+			T::EntName ? T::EntName : RemoveEntSuffix(typeName),
+			T::EntPrettyName ? T::EntPrettyName : TypeNameToPrettyName(typeName),
+			&Ent::CreateCallback<T>,
+			&CloneEntity<T>
+		});
+	}
+	
+	static const EntType* GetTypeByID(EntTypeID typeID);
+	
 protected:
 	eg::AABB GetAABB(float scale, float upDist, Dir facingDirection) const;
 	
 private:
+	static std::array<std::optional<EntType>, NUM_ENTITY_TYPES> s_entityTypes;
+	
+	static std::string_view RemoveEntSuffix(std::string_view typeName);
+	static std::string TypeNameToPrettyName(std::string_view typeName);
+	static void DefineTypeImpl(EntTypeID typeID, EntType type);
+	
 	template <typename T, typename U>
 	static T* DowncastImpl(U* self)
 	{
@@ -171,6 +238,17 @@ std::shared_ptr<Ent> CloneEntity(const Ent& entity)
 	else
 		return Ent::Create<T>(static_cast<const T&>(entity));
 }
+
+template <typename T>
+struct DefEntTypeHelper
+{
+	DefEntTypeHelper(const char* typeName)
+	{
+		Ent::DefineType<T>(typeName);
+	}
+};
+
+#define DEF_ENT_TYPE(type) static DefEntTypeHelper<type> _defEntType ## type(#type);
 
 template <typename ST>
 inline void SerializePos(ST& st, const glm::vec3& position)
@@ -200,16 +278,3 @@ template <typename ST>
 {
 	return glm::quat(st.rotw(), st.rotx(), st.roty(), st.rotz());
 }
-
-EG_BIT_FIELD(EntTypeFlags)
-
-struct EntType
-{
-	EntTypeFlags flags;
-	std::string name;
-	std::string prettyName;
-	std::shared_ptr<Ent> (*create)();
-	std::shared_ptr<Ent> (*clone)(const Ent& ent);
-};
-
-const EntType* GetEntityType(EntTypeID typeID);

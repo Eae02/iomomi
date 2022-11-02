@@ -22,11 +22,11 @@ static void OnInit()
 	
 	arrowTexture = &eg::GetAsset<eg::Texture>("Textures/PumpDisplayArrow.png");
 	
-	eg::SamplerDescription samplerDesc;
-	samplerDesc.wrapU = eg::WrapMode::ClampToEdge;
-	samplerDesc.wrapV = eg::WrapMode::ClampToEdge;
-	samplerDesc.wrapW = eg::WrapMode::ClampToEdge;
-	arrowTextureSampler = eg::Sampler(samplerDesc);
+	arrowTextureSampler = eg::Sampler(eg::SamplerDescription {
+		.wrapU = eg::WrapMode::ClampToEdge,
+		.wrapV = eg::WrapMode::ClampToEdge,
+		.wrapW = eg::WrapMode::ClampToEdge
+	});
 }
 
 static void OnShutdown()

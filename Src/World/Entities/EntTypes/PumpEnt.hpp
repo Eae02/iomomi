@@ -15,6 +15,8 @@ public:
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::DisableClone |
 		EntTypeFlags::Interactable | EntTypeFlags::ShadowDrawableS | EntTypeFlags::EditorRotatable | EntTypeFlags::HasPhysics;
 	
+	static constexpr const char* EntPrettyName = "Water Pump";
+	
 	void Serialize(std::ostream& stream) const override;
 	
 	void Deserialize(std::istream& stream) override;

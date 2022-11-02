@@ -3,6 +3,8 @@
 #include "Components/WaterBlockComp.hpp"
 #include "Components/LiquidPlaneComp.hpp"
 
+#include <magic_enum.hpp>
+
 void EntityManager::AddEntity(std::shared_ptr<Ent> entity)
 {
 	for (FlagTracker& tracker : m_flagTrackers)
@@ -33,9 +35,9 @@ EntityManager::EntityManager()
 
 void EntityManager::Update(const struct WorldUpdateArgs& args)
 {
-	for (size_t t = 0; t < NUM_UPDATABLE_ENTITY_TYPES; t++)
+	for (size_t t = 0; t < entityUpdateOrder.size(); t++)
 	{
-		for (auto& entity : m_entities[static_cast<int>(entUpdateOrder[t])])
+		for (auto& entity : m_entities[static_cast<int>(entityUpdateOrder[t])])
 		{
 			entity.second->Update(args);
 		}
@@ -67,13 +69,13 @@ void EntityManager::ComponentTracker::MaybeAdd(const std::shared_ptr<Ent>& entit
 EntityManager EntityManager::Deserialize(std::istream& stream)
 {
 	std::unordered_map<uint32_t, const EntType*> serializerMap;
-	for (int entityType = 0; entityType < static_cast<int>(EntTypeID::MAX); entityType++)
+	magic_enum::enum_for_each<EntTypeID>([&] (EntTypeID entityTypeID)
 	{
-		if (const EntType* type = GetEntityType((EntTypeID)entityType))
+		if (const EntType* type = Ent::GetTypeByID(entityTypeID))
 		{
 			serializerMap.emplace(eg::HashFNV1a32(type->name), type);
 		}
-	}
+	});
 	
 	EntityManager mgr;
 	
@@ -115,7 +117,7 @@ void EntityManager::Serialize(std::ostream& stream) const
 	eg::BinWrite(stream, eg::UnsignedNarrow<uint32_t>(totalEntities));
 	const_cast<EntityManager*>(this)->ForEach([&] (const Ent& entity)
 	{
-		const EntType* entType = GetEntityType(entity.TypeID());
+		const EntType* entType = Ent::GetTypeByID(entity.TypeID());
 		eg::BinWrite<uint32_t>(stream, eg::HashFNV1a32(entType->name));
 		
 		std::ostringstream serializeStream;

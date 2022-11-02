@@ -8,6 +8,8 @@
 #include <unordered_map>
 #include <tuple>
 
+DEF_ENT_TYPE(ActivationLightStripEnt)
+
 const eg::Model* ActivationLightStripEnt::s_models[MV_Count];
 const eg::IMaterial* ActivationLightStripEnt::s_materials[MV_Count];
 

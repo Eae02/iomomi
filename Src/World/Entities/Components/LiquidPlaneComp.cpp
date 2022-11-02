@@ -4,6 +4,7 @@
 #include "../../World.hpp"
 #include "../../../Vec3Compare.hpp"
 
+#include <unordered_set>
 #include <glm/gtx/hash.hpp>
 
 bool LiquidPlaneComp::IsUnderwater(const glm::ivec3& pos) const

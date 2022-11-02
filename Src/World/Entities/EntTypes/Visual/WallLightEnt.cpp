@@ -8,6 +8,8 @@
 static constexpr float LIGHT_DIST = 0.5f;
 static constexpr float MODEL_SCALE = 0.25f;
 
+DEF_ENT_TYPE(WallLightEnt)
+
 WallLightEnt::WallLightEnt()
 	: m_color(PointLightEnt::DefaultColor), m_intensity(PointLightEnt::DefaultIntensity) { }
 

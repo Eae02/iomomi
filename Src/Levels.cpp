@@ -231,21 +231,22 @@ void LoadLevelThumbnail(Level& level)
 	if (!data)
 		return;
 	
-	eg::SamplerDescription samplerDesc;
-	samplerDesc.wrapU = eg::WrapMode::ClampToEdge;
-	samplerDesc.wrapV = eg::WrapMode::ClampToEdge;
-	samplerDesc.wrapW = eg::WrapMode::ClampToEdge;
+	const eg::SamplerDescription samplerDesc = eg::SamplerDescription {
+		.wrapU = eg::WrapMode::ClampToEdge,
+		.wrapV = eg::WrapMode::ClampToEdge,
+		.wrapW = eg::WrapMode::ClampToEdge,
+	};
 	
-	eg::TextureCreateInfo textureCI;
-	textureCI.width = width;
-	textureCI.height = height;
-	textureCI.depth = 1;
-	textureCI.mipLevels = eg::Texture::MaxMipLevels(std::max(width, height));
-	textureCI.flags = eg::TextureFlags::CopyDst | eg::TextureFlags::ShaderSample | eg::TextureFlags::GenerateMipmaps;
-	textureCI.format = eg::Format::R8G8B8A8_sRGB;
-	textureCI.defaultSamplerDescription = &samplerDesc;
+	level.thumbnail = eg::Texture::Create2D(eg::TextureCreateInfo {
+		.flags = eg::TextureFlags::CopyDst | eg::TextureFlags::ShaderSample | eg::TextureFlags::GenerateMipmaps,
+		.mipLevels = eg::Texture::MaxMipLevels(std::max(width, height)),
+		.width = width,
+		.height = height,
+		.depth = 1,
+		.format = eg::Format::R8G8B8A8_sRGB,
+		.defaultSamplerDescription = &samplerDesc
+	});
 	
-	level.thumbnail = eg::Texture::Create2D(textureCI);
 	size_t uploadBufferSize = width * height * 4;
 	eg::UploadBuffer uploadBuffer = eg::GetTemporaryUploadBufferWith<uint8_t>({ data.get(), uploadBufferSize });
 	

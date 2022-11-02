@@ -8,6 +8,8 @@
 #include "../../../Game.hpp"
 #include "../../../ImGui.hpp"
 
+DEF_ENT_TYPE(ForceFieldEnt)
+
 static ForceFieldMaterial* forceFieldMaterial;
 static eg::Buffer* forceFieldQuadBuffer;
 

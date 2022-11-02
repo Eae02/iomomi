@@ -6,6 +6,8 @@
 #include "../../../../ImGui.hpp"
 #include "../../../../../Protobuf/Build/CubeSpawnerEntity.pb.h"
 
+DEF_ENT_TYPE(CubeSpawnerEnt)
+
 static const eg::Model* cubeSpawnerModel;
 static int lightsMaterialIndex;
 static const eg::IMaterial* cubeSpawnerMaterial;

@@ -455,7 +455,7 @@ void EntityEditorComponent::RenderSettings(const EditorState& editorState)
 		if (entity == nullptr)
 			continue;
 		
-		const EntType* entType = GetEntityType(entity->TypeID());
+		const EntType* entType = Ent::GetTypeByID(entity->TypeID());
 		if (entType == nullptr || eg::HasFlag(entType->flags, EntTypeFlags::EditorInvisible))
 			continue;
 		

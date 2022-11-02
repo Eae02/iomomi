@@ -9,6 +9,8 @@
 #include "../../../../ImGui.hpp"
 #include "../../../../../Protobuf/Build/CubeEntity.pb.h"
 
+DEF_ENT_TYPE(CubeEnt)
+
 static float* cubeBuoyancyScale = eg::TweakVarFloat("cube_bcy_scale", 0.5f, 0.0f);
 static float* cubeBuoyancyLimit = eg::TweakVarFloat("cube_bcy_lim", 25.0f, 0.0f);
 static float* cubeWaterDrag = eg::TweakVarFloat("cube_water_drag", 0.5f, 0.0f);

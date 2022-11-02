@@ -6,6 +6,8 @@
 #include "../../../Settings.hpp"
 #include "../../../AudioPlayers.hpp"
 
+DEF_ENT_TYPE(GravitySwitchEnt)
+
 static eg::Model* s_model;
 static eg::CollisionMesh s_collisionMesh;
 static eg::IMaterial* s_material;

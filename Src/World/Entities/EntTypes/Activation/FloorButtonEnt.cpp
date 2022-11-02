@@ -6,6 +6,8 @@
 #include "../../../../ImGui.hpp"
 #include "../../../../../Protobuf/Build/FloorButtonEntity.pb.h"
 
+DEF_ENT_TYPE(FloorButtonEnt)
+
 static eg::Model* s_model;
 static eg::CollisionMesh s_collisionMesh;
 static eg::IMaterial* s_material;

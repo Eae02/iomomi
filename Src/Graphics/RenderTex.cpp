@@ -164,16 +164,15 @@ void RenderTexManager::BeginFrame(uint32_t resX, uint32_t resY)
 			
 			uint32_t resolutionShift = RenderTextureHalfResolution((RenderTex)i);
 			
-			eg::TextureCreateInfo textureCI;
-			textureCI.format = GetFormatForRenderTexture((RenderTex)i);
-			textureCI.width = resX >> resolutionShift;
-			textureCI.height = resY >> resolutionShift;
-			textureCI.mipLevels = 1;
-			textureCI.flags = GetFlagsForRenderTexture((RenderTex)i);
-			textureCI.defaultSamplerDescription = &samplerDesc;
-			textureCI.label = label.c_str();
-			
-			renderTextures[i] = eg::Texture::Create2D(textureCI);
+			renderTextures[i] = eg::Texture::Create2D(eg::TextureCreateInfo {
+				.flags = GetFlagsForRenderTexture((RenderTex)i),
+				.mipLevels = 1,
+				.width = resX >> resolutionShift,
+				.height = resY >> resolutionShift,
+				.format = GetFormatForRenderTexture((RenderTex)i),
+				.defaultSamplerDescription = &samplerDesc,
+				.label = label.c_str()
+			});
 		}
 		
 		for (FramebufferEntry& entry : framebuffers)

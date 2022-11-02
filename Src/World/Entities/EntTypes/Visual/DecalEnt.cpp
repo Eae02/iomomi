@@ -3,6 +3,8 @@
 #include "../../../../Graphics/Materials/DecalMaterial.hpp"
 #include "../../../../../Protobuf/Build/DecalEntity.pb.h"
 
+DEF_ENT_TYPE(DecalEnt)
+
 static const char* decalMaterials[] = 
 {
 	"Stain0",

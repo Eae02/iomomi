@@ -3,7 +3,6 @@
 #include "Entity.hpp"
 
 #include <unordered_map>
-#include <unordered_set>
 
 class EntityManager
 {
@@ -44,7 +43,7 @@ public:
 	bool isEditor = false;
 	
 private:
-	std::unordered_map<uint32_t, std::shared_ptr<Ent>> m_entities[static_cast<size_t>(EntTypeID::MAX)];
+	std::array<std::unordered_map<uint32_t, std::shared_ptr<Ent>>, NUM_ENTITY_TYPES> m_entities;
 	
 	std::vector<std::pair<EntTypeID, uint32_t>> m_entitiesToRemove;
 	

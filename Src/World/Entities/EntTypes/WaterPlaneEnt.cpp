@@ -2,6 +2,8 @@
 #include "../../../ImGui.hpp"
 #include "../../../../Protobuf/Build/WaterPlaneEntity.pb.h"
 
+DEF_ENT_TYPE(WaterPlaneEnt)
+
 WaterPlaneEnt::WaterPlaneEnt()
 {
 	liquidPlane.shouldGenerateMesh = true;

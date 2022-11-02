@@ -1,6 +1,8 @@
 #include "GooPlaneEnt.hpp"
 #include "../../../../Protobuf/Build/GooPlaneEntity.pb.h"
 
+DEF_ENT_TYPE(GooPlaneEnt)
+
 GooPlaneEnt::GooPlaneEnt()
 {
 	m_liquidPlane.shouldGenerateMesh = true;

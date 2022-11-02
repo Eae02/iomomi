@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Graphics/QualityLevel.hpp"
-#include "World/Entities/EntityTypes.hpp"
+#include "World/Entities/Entity.hpp"
 
 enum class DisplayMode
 {
@@ -91,7 +91,7 @@ struct Settings
 	float sfxVolume      = 1.0f;
 	float ambienceVolume = 0.6f;
 	
-	std::array<bool, (int)EntTypeID::MAX> edEntityIconEnabled;
+	std::array<bool, NUM_ENTITY_TYPES> edEntityIconEnabled;
 	
 	bool HDREnabled() const
 	{

@@ -6,6 +6,8 @@
 #include "../../../ImGui.hpp"
 #include "../../../../Protobuf/Build/SlidingWallEntity.pb.h"
 
+DEF_ENT_TYPE(SlidingWallEnt)
+
 constexpr float HALF_DEPTH = 0.1f;
 
 SlidingWallEnt::SlidingWallEnt()

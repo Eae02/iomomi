@@ -13,6 +13,8 @@
 
 #include <glm/glm.hpp>
 
+DEF_ENT_TYPE(WindowEnt)
+
 struct WindowType
 {
 	const char* name;

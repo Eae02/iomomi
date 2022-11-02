@@ -8,6 +8,8 @@
 #include "../../../ImGui.hpp"
 #include "../../../../Protobuf/Build/EntranceEntity.pb.h"
 
+DEF_ENT_TYPE(EntranceExitEnt)
+
 static constexpr float MESH_LENGTH = 4.7f;
 static constexpr float MESH_HEIGHT = 3.0f;
 

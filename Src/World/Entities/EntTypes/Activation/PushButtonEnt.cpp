@@ -5,6 +5,8 @@
 #include "../../../../Settings.hpp"
 #include "../../../../../Protobuf/Build/PushButtonEntity.pb.h"
 
+DEF_ENT_TYPE(PushButtonEnt)
+
 static const eg::Model* pushButtonModel;
 static std::vector<const eg::IMaterial*> pushButtonMaterials;
 
@@ -17,11 +19,6 @@ static void OnInit()
 }
 
 EG_ON_INIT(OnInit)
-
-PushButtonEnt::PushButtonEnt()
-{
-	
-}
 
 void PushButtonEnt::RenderSettings()
 {

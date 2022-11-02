@@ -7,6 +7,8 @@
 #include "../../../ImGui.hpp"
 #include "../../../../Protobuf/Build/PumpEntity.pb.h"
 
+DEF_ENT_TYPE(PumpEnt)
+
 static const eg::Model* pumpModel;
 static const eg::IMaterial* pumpBodyMaterial;
 

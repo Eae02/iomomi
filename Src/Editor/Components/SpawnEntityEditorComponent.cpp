@@ -85,7 +85,7 @@ void SpawnEntityEditorComponent::Update(float dt, const EditorState& editorState
 			
 			for (EntTypeID entityTypeId : entityGroup.second)
 			{
-				const EntType* entityType = GetEntityType(entityTypeId);
+				const EntType* entityType = Ent::GetTypeByID(entityTypeId);
 				if (entityType == nullptr)
 					continue;
 				const std::string& entityName = entityType->prettyName;

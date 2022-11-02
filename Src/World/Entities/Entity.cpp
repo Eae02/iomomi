@@ -3,8 +3,61 @@
 #include "../../ImGui.hpp"
 
 #include <pcg_random.hpp>
+#include <magic_enum.hpp>
 
-std::optional<EntType> entityTypes[(size_t)EntTypeID::MAX];
+static_assert(magic_enum::enum_count<EntTypeID>() == NUM_ENTITY_TYPES);
+
+const std::array<EntTypeID, 13> entityUpdateOrder = 
+{
+	EntTypeID::ActivationLightStrip,
+	EntTypeID::FloorButton,
+	EntTypeID::PushButton,
+	EntTypeID::ForceField,
+	EntTypeID::GravityBarrier,
+	EntTypeID::CubeSpawner,
+	EntTypeID::Cube,
+	EntTypeID::Platform,
+	EntTypeID::GravitySwitch,
+	EntTypeID::SlidingWall,
+	EntTypeID::EntranceExit,
+	EntTypeID::WaterWall,
+	EntTypeID::Pump,
+};
+
+std::array<std::optional<EntType>, NUM_ENTITY_TYPES> Ent::s_entityTypes;
+
+void Ent::DefineTypeImpl(EntTypeID typeID, EntType type)
+{
+	size_t index = static_cast<size_t>(typeID);
+	if (index >= NUM_ENTITY_TYPES)
+	{
+		EG_PANIC("Entity " << type.name << " using out of range id!");
+	}
+	if (s_entityTypes[index].has_value())
+	{
+		EG_PANIC("Entity " << type.name << " using occupied type id!");
+	}
+	s_entityTypes[index] = std::move(type);
+}
+
+std::string_view Ent::RemoveEntSuffix(std::string_view typeName)
+{
+	if (typeName.ends_with("Ent"))
+		return typeName.substr(0, typeName.size() - 3);
+	return typeName;
+}
+
+std::string Ent::TypeNameToPrettyName(std::string_view typeName)
+{
+	std::string prettyName;
+	for (char c : RemoveEntSuffix(typeName))
+	{
+		if (std::isupper(c))
+			prettyName.push_back(' ');
+		prettyName.push_back(c);
+	}
+	return prettyName;
+}
 
 extern pcg32_fast globalRNG;
 
@@ -53,7 +106,7 @@ eg::AABB Ent::GetAABB(float scale, float upDist, Dir facingDirection) const
 
 EntTypeFlags Ent::TypeFlags() const
 {
-	return entityTypes[static_cast<int>(m_typeID)]->flags;
+	return s_entityTypes.at(static_cast<size_t>(m_typeID))->flags;
 }
 
 void Ent::Update(const struct WorldUpdateArgs& args) { }
@@ -62,7 +115,7 @@ void Ent::Spawned(bool isEditor) { }
 
 std::shared_ptr<Ent> Ent::Clone() const
 {
-	std::shared_ptr<Ent> clone = entityTypes[static_cast<int>(m_typeID)]->clone(*this);
+	std::shared_ptr<Ent> clone = s_entityTypes.at(static_cast<size_t>(m_typeID))->clone(*this);
 	if (ActivatableComp* activatable = clone->GetComponentMut<ActivatableComp>())
 		activatable->GiveNewName();
 	return clone;
@@ -78,11 +131,10 @@ int Ent::EdGetIconIndex() const
 	return 5;
 }
 
-const EntType* GetEntityType(EntTypeID typeID)
+const EntType* Ent::GetTypeByID(EntTypeID typeID)
 {
-	if (static_cast<int>(typeID) < 0 || static_cast<int>(typeID) >= static_cast<int>(EntTypeID::MAX))
+	size_t idx = static_cast<size_t>(typeID);
+	if (!s_entityTypes.at(idx).has_value())
 		return nullptr;
-	if (!entityTypes[static_cast<int>(typeID)].has_value())
-		return nullptr;
-	return &*entityTypes[static_cast<int>(typeID)];
+	return &*s_entityTypes[idx];
 }
