@@ -175,7 +175,7 @@ void LoadSettings()
 	
 	settingsPath = appDataDirPath + "settings.yaml";
 	
-	std::ifstream settingsStream(settingsPath);
+	std::ifstream settingsStream(settingsPath, std::ios::binary);
 	if (!settingsStream)
 		return;
 	
@@ -200,7 +200,7 @@ void LoadSettings()
 
 void SaveSettings()
 {
-	std::ofstream settingsStream(settingsPath);
+	std::ofstream settingsStream(settingsPath, std::ios::binary);
 	if (!settingsStream)
 		return;
 	

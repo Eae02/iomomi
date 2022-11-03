@@ -153,7 +153,7 @@ void InitLevels()
 	
 	//Loads the progress file if it exists
 	progressPath = appDataDirPath + "progress.txt";
-	std::ifstream progressFileStream(progressPath);
+	std::ifstream progressFileStream(progressPath, std::ios::binary);
 	if (progressFileStream)
 	{
 		std::string line;
@@ -184,7 +184,7 @@ void ResetProgress()
 
 void SaveProgress()
 {
-	std::ofstream progressFileStream(progressPath);
+	std::ofstream progressFileStream(progressPath, std::ios::binary);
 	if (!progressFileStream)
 	{
 		eg::Log(eg::LogLevel::Error, "io", "Failed to save progress!");

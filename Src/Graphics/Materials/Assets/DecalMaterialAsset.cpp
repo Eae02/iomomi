@@ -12,7 +12,7 @@ public:
 	{
 		std::string relSourcePath = generateContext.RelSourcePath();
 		std::string sourcePath = generateContext.FileDependency(relSourcePath);
-		std::ifstream stream(sourcePath);
+		std::ifstream stream(sourcePath, std::ios::binary);
 		EG_ASSERT(stream)
 		
 		YAML::Node rootYaml = YAML::Load(stream);

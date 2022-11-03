@@ -53,7 +53,7 @@ static void WriteAssetsToCache(std::span<const char> data)
 	cachedAssetsStream.write(data.data(), data.size());
 	cachedAssetsStream.close();
 	
-	std::ofstream cachedAssetsIdStream(cachedAssetsIdFilePath);
+	std::ofstream cachedAssetsIdStream(cachedAssetsIdFilePath, std::ios::binary);
 	if (!cachedAssetsIdStream)
 	{
 		std::cout << "[assetcache] Failed to open " << cachedAssetsIdFilePath << " for writing" << std::endl;
@@ -110,7 +110,7 @@ static void AssetDownloadProgress(emscripten_fetch_t* fetch)
 
 static std::unique_ptr<CachedAssetBinary> TryLoadCachedAssets()
 {
-	std::ifstream cachedAssetsIdStream(cachedAssetsIdFilePath);
+	std::ifstream cachedAssetsIdStream(cachedAssetsIdFilePath, std::ios::binary);
 	if (!cachedAssetsIdStream)
 	{
 		std::cout << "[assetcache] Failed to open " << cachedAssetsIdFilePath << std::endl;

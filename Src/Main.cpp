@@ -114,7 +114,7 @@ static void Run(int argc, char** argv, std::unique_ptr<DownloadedAssetBinary> do
 }
 
 #ifdef __EMSCRIPTEN__
-extern "C" void WebMain()
+extern "C" void EMSCRIPTEN_KEEPALIVE WebMain()
 {
 	eg::releasePanicCallback = [] (const std::string& message)
 	{
