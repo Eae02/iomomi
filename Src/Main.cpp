@@ -2,7 +2,6 @@
 #include "Levels.hpp"
 #include "Settings.hpp"
 #include "FileUtils.hpp"
-#include "WebAssetDownload.hpp"
 #include "Graphics/GraphicsCommon.hpp"
 
 #include <EGame/Audio/AudioPlayer.hpp>
@@ -31,9 +30,26 @@ bool audioInitializationFailed = false;
 void InitializeStaticPropMaterialAsset();
 void InitializeDecalMaterialAsset();
 
-static void Run(int argc, char** argv, std::unique_ptr<DownloadedAssetBinary> downloadedAssetBinary)
+void AssetDownloadProgress(const eg::DownloadProgress& progress)
+{
+#ifdef __EMSCRIPTEN__
+	std::string message = progress.CreateMessage();
+	EM_ASM({ setInfoLabel(UTF8ToString($0)); }, message.c_str());
+#endif
+}
+
+static void Run(int argc, char** argv)
 {
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
+	
+	eg::DownloadAssetPackageASync(eg::DownloadAssetPackageArgs {
+		.eapName = "Assets.eap",
+		.freeAfterInit = true,
+		.progressCallback = AssetDownloadProgress,
+		#ifdef BUILD_ID
+		.cacheID = BUILD_ID,
+		#endif
+	});
 	
 	eg::RunConfig runConfig;
 #ifndef NDEBUG
@@ -88,17 +104,7 @@ static void Run(int argc, char** argv, std::unique_ptr<DownloadedAssetBinary> do
 		
 		RenderSettings::instance = new RenderSettings;
 		
-		bool assetLoadOK = false;
-		if (downloadedAssetBinary)
-		{
-			assetLoadOK = eg::LoadAssetsFromEAPStream(downloadedAssetBinary->GetStream(), "/");
-			downloadedAssetBinary.reset();
-		}
-		else
-		{
-			assetLoadOK = eg::LoadAssets("Assets", "/");
-		}
-		if (!assetLoadOK)
+		if (!eg::LoadAssets("Assets", "/"))
 		{
 			EG_PANIC("Failed to load assets, make sure assets.eap exists.");
 		}
@@ -123,13 +129,10 @@ extern "C" void EMSCRIPTEN_KEEPALIVE WebMain()
 	
 	appDataDirPath = "/data/";
 	
-	BeginDownloadAssets([] (std::unique_ptr<DownloadedAssetBinary> downloadedAssetBinary)
-	{
-		EM_ASM( setInfoLabel(""); );
-		char argv[] = "iomomi";
-		char* argvPtr = argv;
-		Run(1, &argvPtr, std::move(downloadedAssetBinary));
-	});
+	EM_ASM( setInfoLabel(""); );
+	char argv[] = "iomomi";
+	char* argvPtr = argv;
+	Run(1, &argvPtr);
 }
 #else
 int main(int argc, char** argv)
@@ -140,7 +143,7 @@ int main(int argc, char** argv)
 		eg::CreateDirectory(appDataDirPath.c_str());
 	}
 	
-	Run(argc, argv, nullptr);
+	Run(argc, argv);
 	SaveProgress();
 	SaveSettings();
 }
