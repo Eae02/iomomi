@@ -44,11 +44,11 @@ static void Run(int argc, char** argv)
 	
 	eg::DownloadAssetPackageASync(eg::DownloadAssetPackageArgs {
 		.eapName = "Assets.eap",
-		.freeAfterInit = true,
-		.progressCallback = AssetDownloadProgress,
 		#ifdef BUILD_ID
 		.cacheID = BUILD_ID,
 		#endif
+		.freeAfterInit = true,
+		.progressCallback = AssetDownloadProgress,
 	});
 	
 	eg::RunConfig runConfig;
