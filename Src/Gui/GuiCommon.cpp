@@ -1,4 +1,5 @@
 #include "GuiCommon.hpp"
+
 #include "../AudioPlayers.hpp"
 
 const eg::ColorLin style::ButtonColorDefault(eg::ColorSRGB::FromRGBAHex(0x516a76B0));

@@ -1,10 +1,11 @@
 #include "CubeSpawnerEnt.hpp"
-#include "CubeEnt.hpp"
-#include "../../../../Graphics/Materials/StaticPropMaterial.hpp"
-#include "../../../../Graphics/Materials/EmissiveMaterial.hpp"
-#include "../../../../Graphics/Lighting/PointLightShadowMapper.hpp"
-#include "../../../../ImGui.hpp"
+
 #include "../../../../../Protobuf/Build/CubeSpawnerEntity.pb.h"
+#include "../../../../Graphics/Lighting/PointLightShadowMapper.hpp"
+#include "../../../../Graphics/Materials/EmissiveMaterial.hpp"
+#include "../../../../Graphics/Materials/StaticPropMaterial.hpp"
+#include "../../../../ImGui.hpp"
+#include "CubeEnt.hpp"
 
 DEF_ENT_TYPE(CubeSpawnerEnt)
 
@@ -30,9 +31,9 @@ void CubeSpawnerEnt::RenderSettings()
 {
 #ifdef EG_HAS_IMGUI
 	Ent::RenderSettings();
-	
+
 	ImGui::Checkbox("Float", &m_cubeCanFloat);
-	
+
 	ImGui::Checkbox("Require Activation", &m_requireActivation);
 	ImGui::Checkbox("Reset on Activation", &m_activationResets);
 #endif
@@ -41,18 +42,14 @@ void CubeSpawnerEnt::RenderSettings()
 static const eg::ColorSRGB emissiveColor = eg::ColorSRGB::FromHex(0xD1F8FE);
 static constexpr float EMISSIVE_STRENGTH = 3.0f;
 
-CubeSpawnerEnt::CubeSpawnerEnt()
-	: m_activatable(&CubeSpawnerEnt::GetConnectionPoints)
-{
-	
-}
+CubeSpawnerEnt::CubeSpawnerEnt() : m_activatable(&CubeSpawnerEnt::GetConnectionPoints) {}
 
 std::vector<glm::vec3> CubeSpawnerEnt::GetConnectionPoints(const Ent& entity)
 {
 	const CubeSpawnerEnt& spawnerEnt = static_cast<const CubeSpawnerEnt&>(entity);
-	
+
 	const glm::mat3 rotationScale = CubeEnt::RADIUS * GetRotationMatrix(spawnerEnt.m_direction);
-	
+
 	std::vector<glm::vec3> points;
 	points.push_back(spawnerEnt.m_position + rotationScale * glm::vec3(1, 0, 0));
 	points.push_back(spawnerEnt.m_position + rotationScale * glm::vec3(-1, 0, 0));
@@ -63,24 +60,24 @@ std::vector<glm::vec3> CubeSpawnerEnt::GetConnectionPoints(const Ent& entity)
 
 void CubeSpawnerEnt::CommonDraw(const EntDrawArgs& args)
 {
-	glm::mat4 transform =
-		glm::translate(glm::mat4(1), m_position) *
-		glm::mat4(GetRotationMatrix(m_direction)) *
-		glm::rotate(glm::mat4(1), eg::HALF_PI, glm::vec3(0, 0, 1)) *
-		glm::rotate(glm::mat4(1), eg::PI, glm::vec3(1, 0, 0)) *
-		glm::scale(glm::mat4(1), glm::vec3(CubeEnt::RADIUS));
-	
+	glm::mat4 transform = glm::translate(glm::mat4(1), m_position) * glm::mat4(GetRotationMatrix(m_direction)) *
+	                      glm::rotate(glm::mat4(1), eg::HALF_PI, glm::vec3(0, 0, 1)) *
+	                      glm::rotate(glm::mat4(1), eg::PI, glm::vec3(1, 0, 0)) *
+	                      glm::scale(glm::mat4(1), glm::vec3(CubeEnt::RADIUS));
+
 	const eg::ColorLin emissiveLin(emissiveColor);
-	const glm::vec4 emissiveV4 = glm::vec4(emissiveLin.r, emissiveLin.g, emissiveLin.b, emissiveLin.a) * EMISSIVE_STRENGTH;
-	
+	const glm::vec4 emissiveV4 =
+		glm::vec4(emissiveLin.r, emissiveLin.g, emissiveLin.b, emissiveLin.a) * EMISSIVE_STRENGTH;
+
 	float openProgressSmooth = glm::smoothstep(0.0f, 1.0f, m_doorOpenProgress);
-	
+
 	for (size_t m = 0; m < cubeSpawnerModel->NumMeshes(); m++)
 	{
 		if (cubeSpawnerModel->GetMesh(m).materialIndex == lightsMaterialIndex)
 		{
-			args.meshBatch->AddModelMesh(*cubeSpawnerModel, m, EmissiveMaterial::instance,
-				EmissiveMaterial::InstanceData { transform, emissiveV4 });
+			args.meshBatch->AddModelMesh(
+				*cubeSpawnerModel, m, EmissiveMaterial::instance,
+				EmissiveMaterial::InstanceData{ transform, emissiveV4 });
 		}
 		else
 		{
@@ -93,9 +90,9 @@ void CubeSpawnerEnt::CommonDraw(const EntDrawArgs& args)
 			{
 				transformHere = glm::translate(transform, glm::vec3(0, 0, openProgressSmooth));
 			}
-			
-			args.meshBatch->AddModelMesh(*cubeSpawnerModel, m, *cubeSpawnerMaterial,
-				StaticPropMaterial::InstanceData(transformHere));
+
+			args.meshBatch->AddModelMesh(
+				*cubeSpawnerModel, m, *cubeSpawnerMaterial, StaticPropMaterial::InstanceData(transformHere));
 		}
 	}
 }
@@ -108,11 +105,11 @@ void CubeSpawnerEnt::Update(const WorldUpdateArgs& args)
 {
 	if (args.mode != WorldMode::Game)
 		return;
-	
+
 	bool activated = m_activatable.AllSourcesActive();
-	
+
 	std::shared_ptr<CubeEnt> cube = m_cube.lock();
-	
+
 	if (m_state == State::Initial)
 	{
 		bool spawnNew = false;
@@ -131,9 +128,9 @@ void CubeSpawnerEnt::Update(const WorldUpdateArgs& args)
 		}
 		if (spawnNew)
 		{
-			const glm::vec3 spawnPos = m_position -
-				glm::vec3(DirectionVector(m_direction)) * (CubeEnt::RADIUS + SPAWN_DIST_INSIDE);
-			
+			const glm::vec3 spawnPos =
+				m_position - glm::vec3(DirectionVector(m_direction)) * (CubeEnt::RADIUS + SPAWN_DIST_INSIDE);
+
 			cube = Ent::Create<CubeEnt>(spawnPos, m_cubeCanFloat);
 			cube->isSpawning = true;
 			m_cube = cube;
@@ -181,7 +178,7 @@ void CubeSpawnerEnt::Update(const WorldUpdateArgs& args)
 			m_state = State::Initial;
 		}
 	}
-	
+
 	m_wasActivated = activated;
 }
 
@@ -195,16 +192,16 @@ const void* CubeSpawnerEnt::GetComponent(const std::type_info& type) const
 void CubeSpawnerEnt::Serialize(std::ostream& stream) const
 {
 	iomomi_pb::CubeSpawnerEntity cubeSpawnerPB;
-	
+
 	SerializePos(cubeSpawnerPB, m_position);
 	cubeSpawnerPB.set_dir(static_cast<iomomi_pb::Dir>(m_direction));
-	
+
 	cubeSpawnerPB.set_cube_can_float(m_cubeCanFloat);
 	cubeSpawnerPB.set_spawn_if_none(!m_requireActivation);
 	cubeSpawnerPB.set_activation_resets(m_activationResets);
-	
+
 	cubeSpawnerPB.set_name(m_activatable.m_name);
-	
+
 	cubeSpawnerPB.SerializeToOstream(&stream);
 }
 
@@ -212,13 +209,13 @@ void CubeSpawnerEnt::Deserialize(std::istream& stream)
 {
 	iomomi_pb::CubeSpawnerEntity cubeSpawnerPB;
 	cubeSpawnerPB.ParseFromIstream(&stream);
-	
+
 	m_position = DeserializePos(cubeSpawnerPB);
 	m_direction = static_cast<Dir>(cubeSpawnerPB.dir());
 	m_cubeCanFloat = cubeSpawnerPB.cube_can_float();
 	m_requireActivation = !cubeSpawnerPB.spawn_if_none();
 	m_activationResets = cubeSpawnerPB.activation_resets();
-	
+
 	if (cubeSpawnerPB.name() != 0)
 		m_activatable.m_name = cubeSpawnerPB.name();
 }

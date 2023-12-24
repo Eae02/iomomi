@@ -7,18 +7,20 @@ static void OnInit()
 {
 	eg::GraphicsPipelineCreateInfo modelPipelineCI;
 	modelPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/EdSelection.vs.glsl").DefaultVariant();
-	modelPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/EdSelection.fs.glsl").DefaultVariant();
+	modelPipelineCI.fragmentShader =
+		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/EdSelection.fs.glsl").DefaultVariant();
 	modelPipelineCI.cullMode = eg::CullMode::None;
-	modelPipelineCI.vertexBindings[0] = {sizeof(eg::StdVertex), eg::InputRate::Vertex };
-	modelPipelineCI.vertexAttributes[0] = {0, eg::DataType::Float32, 3, offsetof(eg::StdVertex, position) };
+	modelPipelineCI.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
+	modelPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(eg::StdVertex, position) };
 	modelPipelineCI.numColorAttachments = 1;
 	modelPipelineCI.label = "EdSelection";
 	modelPipeline = eg::Pipeline::Create(modelPipelineCI);
 	modelPipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
-	
+
 	eg::GraphicsPipelineCreateInfo postPipelineCI;
 	postPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
-	postPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/EdSelectionPost.fs.glsl").DefaultVariant();
+	postPipelineCI.fragmentShader =
+		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/EdSelectionPost.fs.glsl").DefaultVariant();
 	postPipelineCI.cullMode = eg::CullMode::None;
 	postPipelineCI.numColorAttachments = 1;
 	postPipelineCI.label = "EdSelectionPost";
@@ -41,22 +43,22 @@ void SelectionRenderer::BeginFrame(uint32_t resX, uint32_t resY)
 	m_hasRendered = false;
 	if (m_texture.handle == nullptr || resX != m_texture.Width() || resY != m_texture.Height())
 	{
-		const eg::SamplerDescription samplerDescription = eg::SamplerDescription {
+		const eg::SamplerDescription samplerDescription = eg::SamplerDescription{
 			.wrapU = eg::WrapMode::ClampToEdge,
 			.wrapV = eg::WrapMode::ClampToEdge,
 			.wrapW = eg::WrapMode::ClampToEdge,
 		};
-		
+
 		eg::TextureCreateInfo textureCI;
 		textureCI.width = resX;
 		textureCI.height = resY;
 		textureCI.mipLevels = 1;
-		
+
 		textureCI.defaultSamplerDescription = &samplerDescription;
 		textureCI.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample;
 		textureCI.format = eg::Format::R8_UNorm;
 		m_texture = eg::Texture::Create2D(textureCI);
-		
+
 		eg::FramebufferAttachment colorAttachment(m_texture.handle);
 		m_framebuffer = eg::Framebuffer({ &colorAttachment, 1 });
 	}
@@ -80,23 +82,24 @@ void SelectionRenderer::Draw(float intensity, const glm::mat4& transform, const 
 		rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
 		rpBeginInfo.framebuffer = m_framebuffer.handle;
 		eg::DC.BeginRenderPass(rpBeginInfo);
-		
+
 		eg::DC.BindPipeline(modelPipeline);
-		
+
 		m_hasRendered = true;
 	}
-	
+
 	model.Bind();
-	
-	struct PC {
+
+	struct PC
+	{
 		glm::mat4 transform;
 		float intensity;
 	} pc;
 	pc.transform = viewProjection * transform;
 	pc.intensity = intensity;
-	
+
 	eg::DC.PushConstants(0, pc);
-	
+
 	if (meshIndex != -1)
 	{
 		const auto& mesh = model.GetMesh(meshIndex);
@@ -116,9 +119,9 @@ void SelectionRenderer::EndFrame()
 {
 	if (!m_hasRendered)
 		return;
-	
+
 	eg::ColorLin color(eg::ColorSRGB::FromHex(0xb9ddf3));
-	
+
 	eg::DC.BindPipeline(postPipeline);
 	eg::DC.BindTexture(m_texture, 0, 0);
 	eg::DC.PushConstants(0, sizeof(float) * 3, &color);

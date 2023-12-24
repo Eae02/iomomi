@@ -1,87 +1,49 @@
 #include "Levels.hpp"
-#include "World/World.hpp"
-#include "FileUtils.hpp"
 
 #include <filesystem>
 #include <fstream>
+
+#include "FileUtils.hpp"
+#include "World/World.hpp"
 
 using namespace std::filesystem;
 
 std::vector<Level> levels;
 
-std::vector<std::string_view> levelsOrder = 
-{
-	"intro_0",
-	"intro_1",
-	"intro_2",
-	"intro_3",
-	"button_0",
-	"button_1",
-	"button_2",
-	"button_3",
-	
-	"gravbarrier_ng0",
-	"gravbarrier_ng1",
-	"gravbarrier_ng2",
-	
-	"water_ng0",
-	"water_ng1",
-	"water_ng2",
-	"water_ng3",
-	
-	"gravbarrier_ng3",
-	"water_pump_ng1",
-	"water_pump_ng2",
-	//"water_ng5",
-	"gravbarrier_ng4",
-	"gravbarrier_ng5",
-	"water_pump_ng3",
-	"gravbarrier_ng6",
-	"gravbarrier_ng7",
-	
-	"gravgun_0",
-	"gravgun_1",
-	"gravgun_3",
-	"gravgun_2",
-	"gravgun_4",
-	
-	"gravbarrier_1",
-	"gravbarrier_2",
-	
-	"water_0",
-	"water_1",
-	
-	"forcefield_1",
-	"forcefield_2",
-	
-	"gravbarrier_3",
-	"gravbarrier_4",
-	
-	"forcefield_3",
-	"forcefield_4",
-	
-	"gravgun_5",
-	"gravgun_6",
-	
-	"water_2",
-	"water_3",
-	"water_4",
-	"water_5",
-	"water_6",
-	
-	"launch_0",
-	"gravbarrier_cube_1",
-	"launch_1",
-	"gravbarrier_cube_2",
-	"cubeflip_0",
-	"launch_2",
-	"gravbarrier_cube_3",
-	"gravbarrier_cube_4",
-	//"forcefield_5",
-	"forcefield_6",
-	
-	"cubeflip_2"
-};
+std::vector<std::string_view> levelsOrder = { "intro_0", "intro_1", "intro_2", "intro_3", "button_0", "button_1",
+	                                          "button_2", "button_3",
+
+	                                          "gravbarrier_ng0", "gravbarrier_ng1", "gravbarrier_ng2",
+
+	                                          "water_ng0", "water_ng1", "water_ng2", "water_ng3",
+
+	                                          "gravbarrier_ng3", "water_pump_ng1", "water_pump_ng2",
+	                                          //"water_ng5",
+	                                          "gravbarrier_ng4", "gravbarrier_ng5", "water_pump_ng3", "gravbarrier_ng6",
+	                                          "gravbarrier_ng7",
+
+	                                          "gravgun_0", "gravgun_1", "gravgun_3", "gravgun_2", "gravgun_4",
+
+	                                          "gravbarrier_1", "gravbarrier_2",
+
+	                                          "water_0", "water_1",
+
+	                                          "forcefield_1", "forcefield_2",
+
+	                                          "gravbarrier_3", "gravbarrier_4",
+
+	                                          "forcefield_3", "forcefield_4",
+
+	                                          "gravgun_5", "gravgun_6",
+
+	                                          "water_2", "water_3", "water_4", "water_5", "water_6",
+
+	                                          "launch_0", "gravbarrier_cube_1", "launch_1", "gravbarrier_cube_2",
+	                                          "cubeflip_0", "launch_2", "gravbarrier_cube_3", "gravbarrier_cube_4",
+	                                          //"forcefield_5",
+	                                          "forcefield_6",
+
+	                                          "cubeflip_2" };
 
 static void OnShutdown()
 {
@@ -113,10 +75,7 @@ std::string levelsDirPath;
 
 void SortLevels()
 {
-	std::sort(levels.begin(), levels.end(), [&] (const Level& a, const Level& b)
-	{
-		return a.name < b.name;
-	});
+	std::sort(levels.begin(), levels.end(), [&](const Level& a, const Level& b) { return a.name < b.name; });
 }
 
 void InitLevels()
@@ -128,11 +87,11 @@ void InitLevels()
 			levelsOrder.erase(levelsOrder.begin() + i);
 	}
 #endif
-	
+
 	levels.clear();
 	InitLevelsPlatformDependent();
-	
-	//Sets the next level index
+
+	// Sets the next level index
 	int64_t levelIndex = FindLevel(levelsOrder[0]);
 	for (size_t i = 0; i < std::size(levelsOrder); i++)
 	{
@@ -148,10 +107,10 @@ void InitLevels()
 		}
 		levelIndex = nextLevelIndex;
 	}
-	
+
 	ResetProgress();
-	
-	//Loads the progress file if it exists
+
+	// Loads the progress file if it exists
 	progressPath = appDataDirPath + "progress.txt";
 	std::ifstream progressFileStream(progressPath, std::ios::binary);
 	if (progressFileStream)
@@ -163,7 +122,8 @@ void InitLevels()
 			if (index != -1)
 			{
 				levels[index].status = LevelStatus::Completed;
-				if (levels[index].nextLevelIndex != -1 && levels[levels[index].nextLevelIndex].status == LevelStatus::Locked)
+				if (levels[index].nextLevelIndex != -1 &&
+				    levels[levels[index].nextLevelIndex].status == LevelStatus::Locked)
 				{
 					levels[levels[index].nextLevelIndex].status = LevelStatus::Unlocked;
 				}
@@ -208,11 +168,9 @@ void WriteProgressToStream(std::ostream& stream)
 
 int64_t FindLevel(std::string_view name)
 {
-	auto it = std::lower_bound(levels.begin(), levels.end(), name, [&] (const Level& a, std::string_view b)
-	{
-		return a.name < b;
-	});
-	
+	auto it = std::lower_bound(
+		levels.begin(), levels.end(), name, [&](const Level& a, std::string_view b) { return a.name < b; });
+
 	if (it == levels.end() || it->name != name)
 		return -1;
 	return it - levels.begin();
@@ -230,34 +188,33 @@ void LoadLevelThumbnail(Level& level)
 	auto [data, width, height] = PlatformGetLevelThumbnailData(level);
 	if (!data)
 		return;
-	
-	const eg::SamplerDescription samplerDesc = eg::SamplerDescription {
+
+	const eg::SamplerDescription samplerDesc = eg::SamplerDescription{
 		.wrapU = eg::WrapMode::ClampToEdge,
 		.wrapV = eg::WrapMode::ClampToEdge,
 		.wrapW = eg::WrapMode::ClampToEdge,
 	};
-	
-	level.thumbnail = eg::Texture::Create2D(eg::TextureCreateInfo {
+
+	level.thumbnail = eg::Texture::Create2D(eg::TextureCreateInfo{
 		.flags = eg::TextureFlags::CopyDst | eg::TextureFlags::ShaderSample | eg::TextureFlags::GenerateMipmaps,
 		.mipLevels = eg::Texture::MaxMipLevels(std::max(width, height)),
 		.width = width,
 		.height = height,
 		.depth = 1,
 		.format = eg::Format::R8G8B8A8_sRGB,
-		.defaultSamplerDescription = &samplerDesc
-	});
-	
+		.defaultSamplerDescription = &samplerDesc });
+
 	size_t uploadBufferSize = width * height * 4;
 	eg::UploadBuffer uploadBuffer = eg::GetTemporaryUploadBufferWith<uint8_t>({ data.get(), uploadBufferSize });
-	
+
 	eg::TextureRange texRange = {};
-	
+
 	texRange.sizeX = width;
 	texRange.sizeY = height;
 	texRange.sizeZ = 1;
 	eg::DC.SetTextureData(level.thumbnail, texRange, uploadBuffer.buffer, uploadBuffer.offset);
-	
+
 	eg::DC.GenerateMipmaps(level.thumbnail);
-	
+
 	level.thumbnail.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 }

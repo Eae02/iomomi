@@ -1,13 +1,14 @@
 #include "CubeEnt.hpp"
-#include "FloorButtonEnt.hpp"
-#include "../GooPlaneEnt.hpp"
-#include "../ForceFieldEnt.hpp"
-#include "../../../Player.hpp"
-#include "../../../../Graphics/Materials/StaticPropMaterial.hpp"
-#include "../../../../Graphics/Materials/GravityIndicatorMaterial.hpp"
-#include "../../../../Settings.hpp"
-#include "../../../../ImGui.hpp"
+
 #include "../../../../../Protobuf/Build/CubeEntity.pb.h"
+#include "../../../../Graphics/Materials/GravityIndicatorMaterial.hpp"
+#include "../../../../Graphics/Materials/StaticPropMaterial.hpp"
+#include "../../../../ImGui.hpp"
+#include "../../../../Settings.hpp"
+#include "../../../Player.hpp"
+#include "../ForceFieldEnt.hpp"
+#include "../GooPlaneEnt.hpp"
+#include "FloorButtonEnt.hpp"
 
 DEF_ENT_TYPE(CubeEnt)
 
@@ -40,8 +41,7 @@ static void OnInit()
 
 EG_ON_INIT(OnInit)
 
-CubeEnt::CubeEnt(const glm::vec3& position, bool _canFloat)
-	: canFloat(_canFloat)
+CubeEnt::CubeEnt(const glm::vec3& position, bool _canFloat) : canFloat(_canFloat)
 {
 	m_physicsObject.position = position;
 	m_physicsObject.displayPosition = position;
@@ -68,7 +68,7 @@ void CubeEnt::RenderSettings()
 {
 #ifdef EG_HAS_IMGUI
 	Ent::RenderSettings();
-	
+
 	ImGui::Checkbox("Float", &canFloat);
 	ImGui::Checkbox("Gravity control hint", &m_showChangeGravityControlHint);
 #endif
@@ -77,8 +77,8 @@ void CubeEnt::RenderSettings()
 void CubeEnt::Draw(eg::MeshBatch& meshBatch, const glm::mat4& transform) const
 {
 	meshBatch.AddModel(
-		*(canFloat ? woodCubeModel : cubeModel),
-		*(canFloat ? woodCubeMaterial : cubeMaterial), StaticPropMaterial::InstanceData(transform));
+		*(canFloat ? woodCubeModel : cubeModel), *(canFloat ? woodCubeMaterial : cubeMaterial),
+		StaticPropMaterial::InstanceData(transform));
 }
 
 float* cubeGAIntenstiyMax = eg::TweakVarFloat("cube_ga_imax", 2.0f, 0);
@@ -91,32 +91,32 @@ void CubeEnt::GameDraw(const EntGameDrawArgs& args)
 {
 	if (!args.frustum->Intersects(GetSphere()))
 		return;
-	
+
 	glm::mat4 worldMatrix = glm::translate(glm::mat4(1), m_physicsObject.displayPosition);
 	worldMatrix *= glm::scale(glm::mat4(1), glm::vec3(RADIUS));
 	Draw(*args.meshBatch, worldMatrix);
-	
+
 	if (!m_gravityHasChanged)
 		return;
-	
+
 	GravityIndicatorMaterial::InstanceData instanceData(worldMatrix);
 	instanceData.down = glm::vec3(DirectionVector(m_currentDown));
-	
+
 	float flashIntensity = settings.gunFlash ? *cubeGAIntenstiyFlash : 1.0f;
 	float t = RenderSettings::instance->gameTime * eg::TWO_PI / *cubeGAPulseTime;
 	float intensity = glm::mix(0.25f, 1.0f, std::sin(t) * 0.5f + 0.5f);
-	instanceData.minIntensity = glm::mix(*cubeGAIntenstiyMin * intensity, flashIntensity, m_gravityIndicatorFlashIntensity);
-	instanceData.maxIntensity = glm::mix(*cubeGAIntenstiyMax * intensity, flashIntensity, m_gravityIndicatorFlashIntensity);
-	
+	instanceData.minIntensity =
+		glm::mix(*cubeGAIntenstiyMin * intensity, flashIntensity, m_gravityIndicatorFlashIntensity);
+	instanceData.maxIntensity =
+		glm::mix(*cubeGAIntenstiyMax * intensity, flashIntensity, m_gravityIndicatorFlashIntensity);
+
 	args.meshBatch->AddModel(*(canFloat ? woodCubeModel : cubeModel), GravityIndicatorMaterial::instance, instanceData);
 }
 
 glm::mat4 CubeEnt::GetEditorWorldMatrix() const
 {
-	return
-		glm::translate(glm::mat4(1), m_physicsObject.position) *
-		glm::mat4_cast(m_physicsObject.rotation) *
-		glm::scale(glm::mat4(1), glm::vec3(RADIUS));
+	return glm::translate(glm::mat4(1), m_physicsObject.position) * glm::mat4_cast(m_physicsObject.rotation) *
+	       glm::scale(glm::mat4(1), glm::vec3(RADIUS));
 }
 
 void CubeEnt::EditorDraw(const EntEditorDrawArgs& args)
@@ -135,11 +135,11 @@ void CubeEnt::Interact(Player& player)
 {
 	m_isPickedUp = !m_isPickedUp;
 	player.m_isCarrying = m_isPickedUp;
-	
+
 	if (!m_isPickedUp)
 	{
-		//Clear the cube's velocity so that it's impossible to fling the cube around.
-		m_physicsObject.velocity = { };
+		// Clear the cube's velocity so that it's impossible to fling the cube around.
+		m_physicsObject.velocity = {};
 	}
 }
 
@@ -147,29 +147,29 @@ int CubeEnt::CheckInteraction(const Player& player, const class PhysicsEngine& p
 {
 	if ((!m_isPickedUp && !player.CanPickUpCube()) || isSpawning)
 		return 0;
-	
-	//Very high so that dropping the cube has higher priority than other interactions.
+
+	// Very high so that dropping the cube has higher priority than other interactions.
 	static constexpr int DROP_INTERACT_PRIORITY = 1000;
 	if (m_isPickedUp)
 		return DROP_INTERACT_PRIORITY;
-	
+
 	if (player.m_isCarrying)
 		return 0;
-	
+
 	static constexpr int PICK_UP_INTERACT_PRIORITY = 2;
 	eg::Ray ray(player.EyePosition(), player.Forward());
-	
+
 	OrientedBox box;
 	box.center = m_physicsObject.position;
 	box.rotation = m_physicsObject.rotation;
 	box.radius = glm::vec3(RADIUS);
 	auto [intersectObj, intersectDist] = physicsEngine.RayIntersect(ray, RAY_MASK_BLOCK_PICK_UP);
-	
+
 	if (intersectObj == &m_physicsObject && intersectDist < *cubeMaxInteractDist)
 	{
 		return PICK_UP_INTERACT_PRIORITY;
 	}
-	
+
 	return 0;
 }
 
@@ -202,21 +202,22 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 {
 	if (args.mode == WorldMode::Editor || args.mode == WorldMode::Thumbnail)
 		return;
-	
+
 	m_gravityIndicatorFlashIntensity = std::max(m_gravityIndicatorFlashIntensity - args.dt / *cubeGAFlashTime, 0.0f);
-	
+
 	m_physicsObject.mass = *cubeMass;
-	
+
 	eg::Sphere sphere(m_physicsObject.position, RADIUS);
 	eg::AABB aabb(sphere.position - RADIUS, sphere.position + RADIUS);
-	
+
 	bool inGoo = false;
-	args.world->entManager.ForEachOfType<GooPlaneEnt>([&] (const GooPlaneEnt& goo)
-	{
-		if (goo.IsUnderwater(sphere))
-			inGoo = true;
-	});
-	
+	args.world->entManager.ForEachOfType<GooPlaneEnt>(
+		[&](const GooPlaneEnt& goo)
+		{
+			if (goo.IsUnderwater(sphere))
+				inGoo = true;
+		});
+
 	if (inGoo)
 	{
 		if (args.plShadowMapper)
@@ -226,7 +227,7 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 		args.world->entManager.RemoveEntity(*this);
 		return;
 	}
-	
+
 	std::optional<Dir> forceFieldGravity = ForceFieldEnt::CheckIntersection(args.world->entManager, aabb);
 	if (forceFieldGravity.has_value() && m_currentDown != *forceFieldGravity)
 	{
@@ -237,10 +238,10 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 		}
 		SetGravity(*forceFieldGravity);
 	}
-	
+
 	if (isSpawning || (args.waterSim && !args.waterSim->IsPresimComplete()))
 	{
-		m_physicsObject.gravity = { };
+		m_physicsObject.gravity = {};
 		m_collisionWithPlayerDisabled = true;
 	}
 	else if (!m_isPickedUp)
@@ -249,14 +250,14 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 		{
 			m_collisionWithPlayerDisabled = false;
 		}
-		
+
 		m_physicsObject.gravity = DirectionVector(m_currentDown);
-		
-		//Water interaction
+
+		// Water interaction
 		if (m_waterQueryAABB != nullptr)
 		{
 			IWaterSimulator::QueryResults waterQueryRes = m_waterQueryAABB->GetResults();
-			
+
 			glm::vec3 relVelocity = waterQueryRes.waterVelocity - m_physicsObject.velocity;
 			glm::vec3 pullForce = relVelocity * *cubeWaterDrag;
 			float pullForceLen = glm::length(pullForce);
@@ -265,7 +266,7 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 				pullForce *= *cubeWaterPullLimit / pullForceLen;
 			}
 			m_physicsObject.force += pullForce;
-			
+
 			if (canFloat)
 			{
 				glm::vec3 buoyancyForce = waterQueryRes.buoyancy * *cubeBuoyancyScale;
@@ -278,7 +279,7 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 			}
 		}
 	}
-	
+
 	m_barrierInteractableComp.currentDown = m_currentDown;
 }
 
@@ -286,31 +287,31 @@ void CubeEnt::UpdateAfterPlayer(const WorldUpdateArgs& args)
 {
 	if (m_isPickedUp)
 	{
-		const float distFromPlayer = RADIUS + *cubeCarryDist; //Distance to the cube when carrying
-		const float maxDistFromPlayer = RADIUS + *cubeDropDist; //Drop the cube if further away than this
-		
+		const float distFromPlayer = RADIUS + *cubeCarryDist;   // Distance to the cube when carrying
+		const float maxDistFromPlayer = RADIUS + *cubeDropDist; // Drop the cube if further away than this
+
 		glm::mat4 viewMatrix, viewMatrixInv;
 		args.player->GetViewMatrix(viewMatrix, viewMatrixInv);
-		
+
 		glm::vec3 desiredPosition = viewMatrixInv * glm::vec4(0, 0, -distFromPlayer, 1);
-		
+
 		eg::AABB desiredAABB(desiredPosition - RADIUS * 1.001f, desiredPosition + RADIUS * 1.001f);
-		
+
 		glm::vec3 deltaPos = desiredPosition - m_physicsObject.position;
-		m_physicsObject.gravity = { };
-		
+		m_physicsObject.gravity = {};
+
 		if (glm::length2(deltaPos) > maxDistFromPlayer * maxDistFromPlayer)
 		{
-			//The cube has moved to far away from the player, so it should be dropped.
+			// The cube has moved to far away from the player, so it should be dropped.
 			m_isPickedUp = false;
 			args.player->m_isCarrying = false;
 		}
 		else
 		{
 			m_physicsObject.move = deltaPos;
-			m_physicsObject.velocity = { };
+			m_physicsObject.velocity = {};
 		}
-		
+
 		m_collisionWithPlayerDisabled = true;
 	}
 }
@@ -319,9 +320,9 @@ void CubeEnt::UpdateAfterSimulation(const WorldUpdateArgs& args)
 {
 	if (args.mode == WorldMode::Editor || args.mode == WorldMode::Thumbnail)
 		return;
-	
+
 	if (settings.shadowQuality >= QualityLevel::Medium &&
-		glm::distance(m_previousPosition, m_physicsObject.displayPosition) > 1E-3f)
+	    glm::distance(m_previousPosition, m_physicsObject.displayPosition) > 1E-3f)
 	{
 		m_previousPosition = m_physicsObject.displayPosition;
 		if (args.plShadowMapper)
@@ -329,10 +330,10 @@ void CubeEnt::UpdateAfterSimulation(const WorldUpdateArgs& args)
 			args.plShadowMapper->Invalidate(GetSphere());
 		}
 	}
-	
+
 	const glm::vec3 down(DirectionVector(m_currentDown));
 	const eg::AABB cubeAABB(m_physicsObject.position - RADIUS, m_physicsObject.position + RADIUS);
-	
+
 	if (m_waterQueryAABB == nullptr && args.waterSim != nullptr)
 	{
 		m_waterQueryAABB = args.waterSim->AddQueryAABB(cubeAABB);
@@ -346,17 +347,17 @@ void CubeEnt::UpdateAfterSimulation(const WorldUpdateArgs& args)
 void CubeEnt::Serialize(std::ostream& stream) const
 {
 	iomomi_pb::CubeEntity cubePB;
-	
+
 	SerializePos(cubePB, m_physicsObject.position);
-	
+
 	cubePB.set_rotationx(m_physicsObject.rotation.x);
 	cubePB.set_rotationy(m_physicsObject.rotation.y);
 	cubePB.set_rotationz(m_physicsObject.rotation.z);
 	cubePB.set_rotationw(m_physicsObject.rotation.w);
-	
+
 	cubePB.set_show_change_gravity_control_hint(m_showChangeGravityControlHint);
 	cubePB.set_can_float(canFloat);
-	
+
 	cubePB.SerializeToOstream(&stream);
 }
 
@@ -364,9 +365,10 @@ void CubeEnt::Deserialize(std::istream& stream)
 {
 	iomomi_pb::CubeEntity cubePB;
 	cubePB.ParseFromIstream(&stream);
-	
+
 	m_physicsObject.position = DeserializePos(cubePB);
-	m_physicsObject.rotation = glm::quat(cubePB.rotationw(), cubePB.rotationx(), cubePB.rotationy(), cubePB.rotationz());
+	m_physicsObject.rotation =
+		glm::quat(cubePB.rotationw(), cubePB.rotationx(), cubePB.rotationy(), cubePB.rotationz());
 	m_physicsObject.displayPosition = m_physicsObject.position;
 	canFloat = cubePB.can_float();
 	m_showChangeGravityControlHint = cubePB.show_change_gravity_control_hint();

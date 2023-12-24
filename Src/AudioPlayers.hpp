@@ -4,6 +4,6 @@
 
 namespace AudioPlayers
 {
-	extern eg::AudioPlayer menuSFXPlayer;
-	extern eg::AudioPlayer gameSFXPlayer;
-}
+extern eg::AudioPlayer menuSFXPlayer;
+extern eg::AudioPlayer gameSFXPlayer;
+} // namespace AudioPlayers

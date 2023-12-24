@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../Lighting/PointLightShadowMapper.hpp"
 #include "../DeferredRenderer.hpp"
+#include "../Lighting/PointLightShadowMapper.hpp"
 
 enum class MeshDrawMode
 {

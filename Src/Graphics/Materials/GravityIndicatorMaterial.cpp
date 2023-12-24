@@ -1,6 +1,7 @@
 #include "GravityIndicatorMaterial.hpp"
-#include "MeshDrawArgs.hpp"
+
 #include "../RenderSettings.hpp"
+#include "MeshDrawArgs.hpp"
 
 static eg::Pipeline pipeline;
 static eg::DescriptorSet descriptorSet;
@@ -11,7 +12,8 @@ static void OnInit()
 {
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityIndicator.vs.glsl").DefaultVariant();
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityIndicator.fs.glsl").DefaultVariant();
+	pipelineCI.fragmentShader =
+		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityIndicator.fs.glsl").DefaultVariant();
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.depthCompare = eg::CompareOp::LessOrEqual;
@@ -19,11 +21,16 @@ static void OnInit()
 	pipelineCI.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
 	pipelineCI.vertexBindings[1] = { sizeof(GravityIndicatorMaterial::InstanceData), eg::InputRate::Instance };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(eg::StdVertex, position) };
-	pipelineCI.vertexAttributes[1] = { 1, eg::DataType::Float32, 4, offsetof(GravityIndicatorMaterial::InstanceData, transform) + 0 };
-	pipelineCI.vertexAttributes[2] = { 1, eg::DataType::Float32, 4, offsetof(GravityIndicatorMaterial::InstanceData, transform) + 16 };
-	pipelineCI.vertexAttributes[3] = { 1, eg::DataType::Float32, 4, offsetof(GravityIndicatorMaterial::InstanceData, transform) + 32 };
-	pipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 3, offsetof(GravityIndicatorMaterial::InstanceData, down) };
-	pipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 2, offsetof(GravityIndicatorMaterial::InstanceData, minIntensity) };
+	pipelineCI.vertexAttributes[1] = { 1, eg::DataType::Float32, 4,
+		                               offsetof(GravityIndicatorMaterial::InstanceData, transform) + 0 };
+	pipelineCI.vertexAttributes[2] = { 1, eg::DataType::Float32, 4,
+		                               offsetof(GravityIndicatorMaterial::InstanceData, transform) + 16 };
+	pipelineCI.vertexAttributes[3] = { 1, eg::DataType::Float32, 4,
+		                               offsetof(GravityIndicatorMaterial::InstanceData, transform) + 32 };
+	pipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 3,
+		                               offsetof(GravityIndicatorMaterial::InstanceData, down) };
+	pipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 2,
+		                               offsetof(GravityIndicatorMaterial::InstanceData, minIntensity) };
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
@@ -32,7 +39,7 @@ static void OnInit()
 	pipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
 	pipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
 	pipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
-	
+
 	descriptorSet = eg::DescriptorSet(pipeline, 0);
 	descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
 	descriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 1);
@@ -57,7 +64,7 @@ bool GravityIndicatorMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* dr
 	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
 	if (mDrawArgs->drawMode != MeshDrawMode::Emissive)
 		return false;
-	
+
 	cmdCtx.BindPipeline(pipeline);
 	cmdCtx.BindDescriptorSet(descriptorSet, 0);
 	return true;

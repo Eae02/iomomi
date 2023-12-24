@@ -1,6 +1,7 @@
 #include "WaterPlaneEnt.hpp"
-#include "../../../ImGui.hpp"
+
 #include "../../../../Protobuf/Build/WaterPlaneEntity.pb.h"
+#include "../../../ImGui.hpp"
 
 DEF_ENT_TYPE(WaterPlaneEnt)
 
@@ -51,7 +52,7 @@ glm::vec3 WaterPlaneEnt::GetPosition() const
 void WaterPlaneEnt::RenderSettings()
 {
 	Ent::RenderSettings();
-	
+
 #ifdef EG_HAS_IMGUI
 	if (ImGui::DragInt("Density Boost", &densityBoost))
 		densityBoost = std::max(densityBoost, 0);

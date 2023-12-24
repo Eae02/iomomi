@@ -18,5 +18,5 @@ struct WorldUpdateArgs
 	class PointLightShadowMapper* plShadowMapper;
 	const class PhysicsEngine* physicsEngine;
 	class Player* player;
-	class IWaterSimulator* waterSim; //null if there is no water in the level
+	class IWaterSimulator* waterSim; // null if there is no water in the level
 };

@@ -1,6 +1,7 @@
 #include "EmissiveMaterial.hpp"
-#include "MeshDrawArgs.hpp"
+
 #include "../RenderSettings.hpp"
+#include "MeshDrawArgs.hpp"
 
 static eg::Pipeline emissiveGeometryPipeline;
 static eg::Pipeline emissivePipeline;
@@ -22,21 +23,19 @@ static void OnInit()
 	pipelineCI.vertexAttributes[3] = { 1, eg::DataType::Float32, 4, 2 * sizeof(float) * 4 };
 	pipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
 	pipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 4, 4 * sizeof(float) * 4 };
-	
+
 	pipelineCI.label = "EmissiveGeometry";
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/EmissiveGeom.fs.glsl").DefaultVariant();
 	pipelineCI.numColorAttachments = 2;
 	emissiveGeometryPipeline = eg::Pipeline::Create(pipelineCI);
 	emissiveGeometryPipeline.FramebufferFormatHint(DeferredRenderer::GEOMETRY_FB_FORMAT);
-	
+
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Emissive.fs.glsl").DefaultVariant();
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.blendStates[0] = eg::BlendState(
-		eg::BlendFunc::Add, eg::BlendFunc::Add,
-		eg::BlendFactor::One, eg::BlendFactor::One,
-		eg::BlendFactor::SrcAlpha, eg::BlendFactor::One
-	);
+		eg::BlendFunc::Add, eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One, eg::BlendFactor::SrcAlpha,
+		eg::BlendFactor::One);
 	pipelineCI.label = "Emissive";
 	emissivePipeline = eg::Pipeline::Create(pipelineCI);
 	emissivePipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
@@ -63,7 +62,7 @@ size_t EmissiveMaterial::PipelineHash() const
 bool EmissiveMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
 	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
-	
+
 	switch (mDrawArgs->drawMode)
 	{
 	case MeshDrawMode::Emissive:
@@ -80,9 +79,9 @@ bool EmissiveMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) 
 	default:
 		return false;
 	}
-	
+
 	RenderSettings::instance->BindVertexShaderDescriptorSet();
-	
+
 	return true;
 }
 

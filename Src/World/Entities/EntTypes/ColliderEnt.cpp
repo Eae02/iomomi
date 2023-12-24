@@ -1,8 +1,9 @@
 #include "ColliderEnt.hpp"
-#include "Activation/CubeEnt.hpp"
-#include "../../Player.hpp"
-#include "../../../ImGui.hpp"
+
 #include "../../../../Protobuf/Build/ColliderEntity.pb.h"
+#include "../../../ImGui.hpp"
+#include "../../Player.hpp"
+#include "Activation/CubeEnt.hpp"
 
 DEF_ENT_TYPE(ColliderEnt)
 
@@ -12,7 +13,7 @@ bool ColliderEnt::ShouldCollide(const PhysicsObject& self, const PhysicsObject& 
 {
 	ColliderEnt* colldier = (ColliderEnt*)std::get<Ent*>(self.owner);
 	std::optional<Dir> otherDown;
-	
+
 	if (std::holds_alternative<Player*>(other.owner))
 	{
 		if (!colldier->m_blockPlayer)
@@ -29,17 +30,17 @@ bool ColliderEnt::ShouldCollide(const PhysicsObject& self, const PhysicsObject& 
 			otherDown = static_cast<const CubeEnt&>(otherEntity).CurrentDown();
 		}
 	}
-	
+
 	if (otherDown.has_value() && !colldier->m_blockedGravityModes[(int)*otherDown])
 		return false;
-	
+
 	return true;
 }
 
 ColliderEnt::ColliderEnt()
 {
 	std::fill_n(m_blockedGravityModes, 6, true);
-	
+
 	m_physicsObject.rayIntersectMask = 0;
 	m_physicsObject.canBePushed = false;
 	m_physicsObject.debugColor = 0xc3236d;
@@ -53,14 +54,14 @@ void ColliderEnt::RenderSettings()
 	Ent::RenderSettings();
 	ImGui::DragFloat3("Radius", &m_radius.x, 0.1f);
 	ImGui::Separator();
-	
+
 	ImGui::TextDisabled("Block by Type");
 	ImGui::Checkbox("Block Player", &m_blockPlayer);
 	ImGui::Checkbox("Block Cubes", &m_blockCubes);
 	ImGui::Checkbox("Block Picking Up", &m_blockPickUp);
-	
+
 	ImGui::Separator();
-	
+
 	ImGui::TextDisabled("Block by Gravity Mode");
 	ImGui::Checkbox("Block +X", &m_blockedGravityModes[0]);
 	ImGui::Checkbox("Block -X", &m_blockedGravityModes[1]);
@@ -73,7 +74,8 @@ void ColliderEnt::RenderSettings()
 
 std::optional<eg::ColorSRGB> ColliderEnt::EdGetBoxColor(bool selected) const
 {
-	if (!drawInEditor) return { };
+	if (!drawInEditor)
+		return {};
 	return eg::ColorSRGB::FromRGBAHex(0xc3236d33);
 }
 
@@ -100,23 +102,21 @@ void ColliderEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 void ColliderEnt::Serialize(std::ostream& stream) const
 {
 	iomomi_pb::ColliderEntity entityPB;
-	
+
 	SerializePos(entityPB, m_physicsObject.position);
-	
+
 	entityPB.set_radx(m_radius.x);
 	entityPB.set_rady(m_radius.y);
 	entityPB.set_radz(m_radius.z);
-	
-	uint32_t blockBitMask =
-		(static_cast<uint32_t>(m_blockPlayer) << 0U) |
-		(static_cast<uint32_t>(m_blockCubes) << 1U) |
-		(static_cast<uint32_t>(m_blockPickUp) << 8U);
+
+	uint32_t blockBitMask = (static_cast<uint32_t>(m_blockPlayer) << 0U) | (static_cast<uint32_t>(m_blockCubes) << 1U) |
+	                        (static_cast<uint32_t>(m_blockPickUp) << 8U);
 	for (uint32_t i = 0; i < 6; i++)
 	{
 		blockBitMask |= static_cast<uint32_t>(m_blockedGravityModes[i]) << (2 + i);
 	}
 	entityPB.set_block_bit_mask(blockBitMask);
-	
+
 	entityPB.SerializeToOstream(&stream);
 }
 
@@ -124,11 +124,11 @@ void ColliderEnt::Deserialize(std::istream& stream)
 {
 	iomomi_pb::ColliderEntity entityPB;
 	entityPB.ParseFromIstream(&stream);
-	
+
 	m_physicsObject.position = DeserializePos(entityPB);
 	m_radius = glm::vec3(entityPB.radx(), entityPB.rady(), entityPB.radz());
 	m_physicsObject.shape = eg::AABB(-m_radius, m_radius);
-	
+
 	m_blockPlayer = (entityPB.block_bit_mask() & 1U) != 0;
 	m_blockCubes = (entityPB.block_bit_mask() & 2U) != 0;
 	for (uint32_t i = 0; i < 6; i++)
@@ -136,6 +136,6 @@ void ColliderEnt::Deserialize(std::istream& stream)
 		m_blockedGravityModes[i] = (entityPB.block_bit_mask() & (1 << (i + 2))) != 0;
 	}
 	m_blockPickUp = (entityPB.block_bit_mask() & 256U) != 0;
-	
+
 	m_physicsObject.rayIntersectMask = m_blockPickUp ? RAY_MASK_BLOCK_PICK_UP : 0;
 }

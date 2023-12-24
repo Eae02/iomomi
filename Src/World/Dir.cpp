@@ -1,9 +1,6 @@
 #include "Dir.hpp"
 
-const char* DirectionNames[6] = 
-{
-	"+X", "-X", "+Y", "-Y", "+Z", "-Z"
-};
+const char* DirectionNames[6] = { "+X", "-X", "+Y", "-Y", "+Z", "-Z" };
 
 std::optional<Dir> ParseDirection(std::string_view directionName)
 {
@@ -12,25 +9,10 @@ std::optional<Dir> ParseDirection(std::string_view directionName)
 		if (directionName == DirectionNames[s])
 			return static_cast<Dir>(s);
 	}
-	return { };
+	return {};
 }
 
-const glm::ivec3 voxel::tangents[6] =
-{
-	{ 0, 1, 0 },
-	{ 0, 1, 0 },
-	{ 1, 0, 0 },
-	{ 1, 0, 0 },
-	{ 0, 1, 0 },
-	{ 0, 1, 0 }
-};
+const glm::ivec3 voxel::tangents[6] = { { 0, 1, 0 }, { 0, 1, 0 }, { 1, 0, 0 }, { 1, 0, 0 }, { 0, 1, 0 }, { 0, 1, 0 } };
 
-const glm::ivec3 voxel::biTangents[6] =
-{
-	{ 0, 0, -1 },
-	{ 0, 0, 1 },
-	{ 0, 0, 1 },
-	{ 0, 0, -1 },
-	{ 1, 0, 0 },
-	{ -1, 0, 0 }
-};
+const glm::ivec3 voxel::biTangents[6] = { { 0, 0, -1 }, { 0, 0, 1 }, { 0, 0, 1 },
+	                                      { 0, 0, -1 }, { 1, 0, 0 }, { -1, 0, 0 } };

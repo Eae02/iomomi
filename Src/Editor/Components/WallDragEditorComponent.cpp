@@ -1,9 +1,10 @@
 #ifndef IOMOMI_NO_EDITOR
 #include "WallDragEditorComponent.hpp"
-#include "../PrimitiveRenderer.hpp"
-#include "../../Graphics/WallShader.hpp"
 
 #include <EGameImGui.hpp>
+
+#include "../../Graphics/WallShader.hpp"
+#include "../PrimitiveRenderer.hpp"
 
 void WallDragEditorComponent::Update(float dt, const EditorState& editorState)
 {
@@ -15,21 +16,19 @@ constexpr float DOUBLE_CLICK_TIMEOUT = 0.3f;
 bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorState)
 {
 	VoxelRayIntersectResult pickResult = editorState.world->voxels.RayIntersect(editorState.viewRay);
-	
-	m_hoveringSelection =
-		m_selState == SelState::SelectDone &&
-		pickResult.intersected &&
-		eg::Contains(m_finishedSelection, pickResult.voxelPosition);
-	
-	//Handles mouse move events
+
+	m_hoveringSelection = m_selState == SelState::SelectDone && pickResult.intersected &&
+	                      eg::Contains(m_finishedSelection, pickResult.voxelPosition);
+
+	// Handles mouse move events
 	if (eg::IsButtonDown(eg::Button::MouseLeft) && eg::WasButtonDown(eg::Button::MouseLeft) &&
 	    eg::CursorPos() != eg::PrevCursorPos())
 	{
 		int selDim = static_cast<int>(m_selectionNormal) / 2;
 		if (m_selState == SelState::Selecting)
 		{
-			//Updates the current selection if the new hovered voxel is
-			// in the same plane as the voxel where the selection started.
+			// Updates the current selection if the new hovered voxel is
+			//  in the same plane as the voxel where the selection started.
 			if (pickResult.intersected && pickResult.voxelPosition[selDim] == m_selection1[selDim])
 			{
 				m_selection2 = pickResult.voxelPosition;
@@ -45,11 +44,11 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 				int newDragDir = newDragDist > m_dragDistance ? 1 : -1;
 				if (newDragDir != m_dragDir)
 					m_dragAirMode = 0;
-				
+
 				int dragDelta = newDragDist - m_dragDistance;
 				int selDimOffsetMin = 0;
 				int selDimOffsetMax = 0;
-				
+
 				if (dragDelta > 0)
 				{
 					selDimOffsetMax += dragDelta - 1;
@@ -59,39 +58,40 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 					selDimOffsetMin += dragDelta;
 					selDimOffsetMax--;
 				}
-				
+
 				if (static_cast<int>(m_selectionNormal) % 2 == 0)
 				{
 					selDimOffsetMin++;
 					selDimOffsetMax++;
 				}
-				
-				//Checks if all the next blocks are air.
-				//In this case they should be filled in, otherwise carved out.
+
+				// Checks if all the next blocks are air.
+				// In this case they should be filled in, otherwise carved out.
 				bool allAir = true;
-				IterateSelection([&] (const glm::ivec3& pos)
-				{
-					if (!editorState.world->voxels.IsAir(pos))
-						allAir = false;
-				}, selDimOffsetMin, selDimOffsetMax);
-				
+				IterateSelection(
+					[&](const glm::ivec3& pos)
+					{
+						if (!editorState.world->voxels.IsAir(pos))
+							allAir = false;
+					},
+					selDimOffsetMin, selDimOffsetMax);
+
 				const int airMode = allAir ? 1 : 2;
 				if (m_dragAirMode == 0)
 					m_dragAirMode = airMode;
-				
+
 				if (m_dragAirMode == airMode)
 				{
-					auto UpdateIsAir = [&] ()
+					auto UpdateIsAir = [&]()
 					{
 						editorState.InvalidateWater();
-						IterateSelection([&] (const glm::ivec3& pos)
-						{
-							editorState.world->voxels.SetIsAir(pos, !allAir);
-						}, selDimOffsetMin, selDimOffsetMax);
+						IterateSelection(
+							[&](const glm::ivec3& pos) { editorState.world->voxels.SetIsAir(pos, !allAir); },
+							selDimOffsetMin, selDimOffsetMax);
 					};
-					
+
 					const Dir texSourceSide = m_selectionNormal;
-					
+
 					const glm::ivec3 absNormal = glm::abs(DirectionVector(m_selectionNormal));
 					glm::ivec3 texSourceOffset, texDestOffset;
 					if (allAir)
@@ -103,62 +103,66 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 						texSourceOffset = absNormal * (-newDragDir);
 						UpdateIsAir();
 					}
-					
-					IterateSelection([&] (const glm::ivec3& pos)
-					{
-						int material = editorState.world->voxels.GetMaterial(pos + texSourceOffset, texSourceSide);
-						editorState.world->voxels.SetMaterialSafe(pos + texDestOffset, texSourceSide, material);
-						for (int s = 0; s < 4; s++)
+
+					IterateSelection(
+						[&](const glm::ivec3& pos)
 						{
-							const int stepDim = (selDim + 1 + s / 2) % 3;
-							const Dir stepDir = static_cast<Dir>(stepDim * 2 + s % 2);
-							
-							if (!allAir)
+							int material = editorState.world->voxels.GetMaterial(pos + texSourceOffset, texSourceSide);
+							editorState.world->voxels.SetMaterialSafe(pos + texDestOffset, texSourceSide, material);
+							for (int s = 0; s < 4; s++)
 							{
-								const int materialHere =
-									editorState.world->voxels.GetMaterialIfVisible(pos + texSourceOffset, stepDir)
-									.value_or(material);
-								editorState.world->voxels.SetMaterialSafe(pos, stepDir, materialHere);
+								const int stepDim = (selDim + 1 + s / 2) % 3;
+								const Dir stepDir = static_cast<Dir>(stepDim * 2 + s % 2);
+
+								if (!allAir)
+								{
+									const int materialHere =
+										editorState.world->voxels.GetMaterialIfVisible(pos + texSourceOffset, stepDir)
+											.value_or(material);
+									editorState.world->voxels.SetMaterialSafe(pos, stepDir, materialHere);
+								}
+								else
+								{
+									const glm::ivec3 npos = pos + DirectionVector(stepDir);
+									const int materialHere =
+										editorState.world->voxels.GetMaterialIfVisible(npos - texDestOffset, stepDir)
+											.value_or(material);
+									editorState.world->voxels.SetMaterialSafe(npos, stepDir, materialHere);
+								}
 							}
-							else
-							{
-								const glm::ivec3 npos = pos + DirectionVector(stepDir);
-								const int materialHere =
-									editorState.world->voxels.GetMaterialIfVisible(npos - texDestOffset, stepDir)
-									.value_or(material);
-								editorState.world->voxels.SetMaterialSafe(npos, stepDir, materialHere);
-							}
-						}
-					}, selDimOffsetMin, selDimOffsetMax);
-					
+						},
+						selDimOffsetMin, selDimOffsetMax);
+
 					if (allAir)
 					{
 						UpdateIsAir();
 					}
-					
+
 					glm::ivec3 selDelta(0, 0, 0);
 					selDelta[selDim] = newDragDist - m_dragDistance;
-					
-					editorState.world->entManager.ForEachWithFlag(EntTypeFlags::EditorWallMove, [&] (Ent& entity)
-					{
-						if (entity.GetFacingDirection() == m_selectionNormal)
+
+					editorState.world->entManager.ForEachWithFlag(
+						EntTypeFlags::EditorWallMove,
+						[&](Ent& entity)
 						{
-							glm::ivec3 wallPos = glm::floor(
-								entity.GetPosition() - glm::vec3(DirectionVector(entity.GetFacingDirection())) * 0.1f
-							);
-							if (eg::Contains(m_finishedSelection, wallPos))
+							if (entity.GetFacingDirection() == m_selectionNormal)
 							{
-								entity.EdMoved(entity.GetPosition() + glm::vec3(selDelta), m_selectionNormal);
-								editorState.EntityMoved(entity);
+								glm::ivec3 wallPos = glm::floor(
+									entity.GetPosition() -
+									glm::vec3(DirectionVector(entity.GetFacingDirection())) * 0.1f);
+								if (eg::Contains(m_finishedSelection, wallPos))
+								{
+									entity.EdMoved(entity.GetPosition() + glm::vec3(selDelta), m_selectionNormal);
+									editorState.EntityMoved(entity);
+								}
 							}
-						}
-					});
-					
+						});
+
 					for (glm::ivec3& selected : m_finishedSelection)
 					{
 						selected += selDelta;
 					}
-					
+
 					m_dragDir = newDragDist > m_dragDistance ? 1 : -1;
 					m_dragDistance = newDragDist;
 				}
@@ -168,7 +172,7 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 		{
 			if (m_hoveringSelection)
 			{
-				//Starts a drag operation
+				// Starts a drag operation
 				m_selState = SelState::Dragging;
 				m_dragStartPos = pickResult.intersectPosition;
 				m_dragDistance = 0;
@@ -177,7 +181,7 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 			}
 			else if (pickResult.intersected)
 			{
-				//Starts a new selection
+				// Starts a new selection
 				m_selState = SelState::Selecting;
 				m_selection1 = pickResult.voxelPosition;
 				m_selection2Anim = m_selection1;
@@ -185,9 +189,9 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 			}
 		}
 	}
-	
-	//Handles mouse up events. These should complete the selection if the user was selecting,
-	// go back to this mode if the user was dragging, or clear the selection otherwise.
+
+	// Handles mouse up events. These should complete the selection if the user was selecting,
+	//  go back to this mode if the user was dragging, or clear the selection otherwise.
 	if (eg::WasButtonDown(eg::Button::MouseLeft) && !eg::IsButtonDown(eg::Button::MouseLeft))
 	{
 		if (m_selState == SelState::Selecting)
@@ -204,7 +208,7 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 					{
 						glm::ivec3 pos(x, y, z);
 						if (editorState.world->voxels.IsAir(pos + DirectionVector(m_selectionNormal)) &&
-							!editorState.world->voxels.IsAir(pos))
+						    !editorState.world->voxels.IsAir(pos))
 						{
 							m_finishedSelection.emplace_back(x, y, z);
 						}
@@ -230,7 +234,7 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 						requiredMaterial = editorState.world->voxels.GetMaterial(
 							pickResult.voxelPosition + DirectionVector(pickResult.normalDir), pickResult.normalDir);
 					}
-					
+
 					FillSelection(*editorState.world, pickResult.voxelPosition, pickResult.normalDir, requiredMaterial);
 					if (!m_finishedSelection.empty())
 					{
@@ -242,29 +246,29 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 			m_timeSinceLastClick = 0;
 		}
 	}
-	
+
 	m_timeSinceLastClick += dt;
-	
+
 	return false;
 }
 
-void WallDragEditorComponent::FillSelection(const World& world, const glm::ivec3& pos, Dir normalDir,
-	std::optional<int> requiredMaterial)
+void WallDragEditorComponent::FillSelection(
+	const World& world, const glm::ivec3& pos, Dir normalDir, std::optional<int> requiredMaterial)
 {
-	if (!world.voxels.IsAir(pos + DirectionVector(normalDir)) ||
-	    world.voxels.IsAir(pos) || eg::Contains(m_finishedSelection, pos))
+	if (!world.voxels.IsAir(pos + DirectionVector(normalDir)) || world.voxels.IsAir(pos) ||
+	    eg::Contains(m_finishedSelection, pos))
 	{
 		return;
 	}
-	
+
 	if (requiredMaterial.has_value() &&
-		world.voxels.GetMaterial(pos + DirectionVector(normalDir), normalDir) != *requiredMaterial)
+	    world.voxels.GetMaterial(pos + DirectionVector(normalDir), normalDir) != *requiredMaterial)
 	{
 		return;
 	}
-	
+
 	m_finishedSelection.push_back(pos);
-	
+
 	int d1 = (static_cast<int>(normalDir) / 2 + 1) % 3;
 	int d2 = (static_cast<int>(normalDir) / 2 + 2) % 3;
 	static const glm::ivec2 toNeighbors[] = { { -1, 0 }, { 1, 0 }, { 0, 1 }, { 0, -1 } };
@@ -284,7 +288,7 @@ void WallDragEditorComponent::EarlyDraw(const EditorState& editorState) const
 		int nd = static_cast<int>(m_selectionNormal) / 2;
 		int sd1 = (nd + 1) % 3;
 		int sd2 = (nd + 2) % 3;
-		
+
 		if (m_selState == SelState::Selecting)
 		{
 			glm::vec3 quadCorners[4];
@@ -292,13 +296,17 @@ void WallDragEditorComponent::EarlyDraw(const EditorState& editorState) const
 			{
 				corner[nd] = static_cast<float>(m_selection1[nd] + ((static_cast<int>(m_selectionNormal) % 2) ? 0 : 1));
 			}
-			quadCorners[1][sd1] = quadCorners[0][sd1] = std::min(static_cast<float>(m_selection1[sd1]), m_selection2Anim[sd1]);
-			quadCorners[3][sd1] = quadCorners[2][sd1] = std::max(static_cast<float>(m_selection1[sd1]), m_selection2Anim[sd1]) + 1;
-			quadCorners[2][sd2] = quadCorners[0][sd2] = std::min(static_cast<float>(m_selection1[sd2]), m_selection2Anim[sd2]);
-			quadCorners[1][sd2] = quadCorners[3][sd2] = std::max(static_cast<float>(m_selection1[sd2]), m_selection2Anim[sd2]) + 1;
-			
-			editorState.primitiveRenderer->AddQuad(quadCorners,
-				eg::ColorSRGB(eg::ColorSRGB::FromHex(0x91CAED).ScaleAlpha(0.5f)));
+			quadCorners[1][sd1] = quadCorners[0][sd1] =
+				std::min(static_cast<float>(m_selection1[sd1]), m_selection2Anim[sd1]);
+			quadCorners[3][sd1] = quadCorners[2][sd1] =
+				std::max(static_cast<float>(m_selection1[sd1]), m_selection2Anim[sd1]) + 1;
+			quadCorners[2][sd2] = quadCorners[0][sd2] =
+				std::min(static_cast<float>(m_selection1[sd2]), m_selection2Anim[sd2]);
+			quadCorners[1][sd2] = quadCorners[3][sd2] =
+				std::max(static_cast<float>(m_selection1[sd2]), m_selection2Anim[sd2]) + 1;
+
+			editorState.primitiveRenderer->AddQuad(
+				quadCorners, eg::ColorSRGB(eg::ColorSRGB::FromHex(0x91CAED).ScaleAlpha(0.5f)));
 		}
 		else
 		{
@@ -315,12 +323,12 @@ void WallDragEditorComponent::EarlyDraw(const EditorState& editorState) const
 			{
 				color = eg::ColorSRGB::FromRGBAHex(0x91CAED66);
 			}
-			
+
 			for (glm::ivec3 pos : m_finishedSelection)
 			{
 				glm::vec3 quadCorners[4];
 				glm::vec3* nextQuadCorner = quadCorners;
-				
+
 				for (int dx = 0; dx < 2; dx++)
 				{
 					for (int dy = 0; dy < 2; dy++)
@@ -332,7 +340,7 @@ void WallDragEditorComponent::EarlyDraw(const EditorState& editorState) const
 						nextQuadCorner++;
 					}
 				}
-				
+
 				editorState.primitiveRenderer->AddQuad(quadCorners, color);
 			}
 		}
@@ -340,8 +348,7 @@ void WallDragEditorComponent::EarlyDraw(const EditorState& editorState) const
 }
 
 template <typename CallbackTp>
-void WallDragEditorComponent::IterateSelection(CallbackTp callback,
-	int minOffsetSelDir, int maxOffsetSelDir)
+void WallDragEditorComponent::IterateSelection(CallbackTp callback, int minOffsetSelDir, int maxOffsetSelDir)
 {
 	if (m_selState == SelState::Selecting || m_selState == SelState::NoSelection)
 		return;
@@ -360,32 +367,33 @@ void WallDragEditorComponent::RenderSettings(const EditorState& editorState)
 {
 	constexpr float ITEM_HEIGHT = 40;
 	constexpr float ICON_PADDING = 3;
-	
+
 	eg::TextureRef albedoTex = eg::GetAsset<eg::Texture>("WallTextures/Albedo");
 	eg::TextureRef noDrawTex = eg::GetAsset<eg::Texture>("Textures/NoDraw.png");
-	
+
 	if (ImGui::CollapsingHeader("Textures", ImGuiTreeNodeFlags_DefaultOpen))
 	{
 		for (size_t i = 0; i < MAX_WALL_MATERIALS; i++)
 		{
 			if (!wallMaterials[i].initialized)
 				continue;
-			
+
 			ImDrawList* drawList = ImGui::GetWindowDrawList();
 			glm::vec2 imguiCursorPos = ImGui::GetCursorScreenPos();
-			
+
 			ImGui::PushID(wallMaterials[i].name);
 			if (ImGui::Selectable("##sel", false, 0, ImVec2(0, ITEM_HEIGHT)) && m_selState == SelState::SelectDone)
 			{
-				IterateSelection([&](glm::ivec3 pos)
-				{
-					editorState.world->voxels.SetMaterialSafe(
-						pos + DirectionVector(m_selectionNormal),
-						m_selectionNormal, eg::ToInt(i));
-				}, 0, 0);
+				IterateSelection(
+					[&](glm::ivec3 pos)
+					{
+						editorState.world->voxels.SetMaterialSafe(
+							pos + DirectionVector(m_selectionNormal), m_selectionNormal, eg::ToInt(i));
+					},
+					0, 0);
 			}
 			ImGui::PopID();
-			
+
 			eg::TextureViewHandle textureView;
 			if (i == 0 || !eg::GetGraphicsDeviceInfo().partialTextureViews)
 			{
@@ -398,14 +406,15 @@ void WallDragEditorComponent::RenderSettings(const EditorState& editorState)
 				subresource.numArrayLayers = 1;
 				textureView = albedoTex.GetView(subresource, eg::TextureViewType::Flat2D);
 			}
-			
-			drawList->AddImage(eg::imgui::MakeImTextureID(textureView),
-			                   ImVec2(imguiCursorPos.x + ICON_PADDING, imguiCursorPos.y + ICON_PADDING),
-			                   ImVec2(imguiCursorPos.x + ITEM_HEIGHT - ICON_PADDING,
-			                          imguiCursorPos.y + ITEM_HEIGHT - ICON_PADDING));
-			
-			drawList->AddText(ImVec2(imguiCursorPos.x + ITEM_HEIGHT + 10, imguiCursorPos.y + ITEM_HEIGHT / 2 - 8),
-			                  0xFFFFFFFFU, wallMaterials[i].name);
+
+			drawList->AddImage(
+				eg::imgui::MakeImTextureID(textureView),
+				ImVec2(imguiCursorPos.x + ICON_PADDING, imguiCursorPos.y + ICON_PADDING),
+				ImVec2(imguiCursorPos.x + ITEM_HEIGHT - ICON_PADDING, imguiCursorPos.y + ITEM_HEIGHT - ICON_PADDING));
+
+			drawList->AddText(
+				ImVec2(imguiCursorPos.x + ITEM_HEIGHT + 10, imguiCursorPos.y + ITEM_HEIGHT / 2 - 8), 0xFFFFFFFFU,
+				wallMaterials[i].name);
 		}
 	}
 }

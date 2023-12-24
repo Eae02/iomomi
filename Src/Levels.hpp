@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string_view>
+
 #include "World/World.hpp"
 
 enum class LevelStatus
@@ -17,9 +18,8 @@ struct Level
 	bool isExtra = true;
 	int64_t nextLevelIndex = -1;
 	eg::Texture thumbnail;
-	
-	explicit Level(std::string _name = "")
-		: name(std::move(_name)) { }
+
+	explicit Level(std::string _name = "") : name(std::move(_name)) {}
 };
 
 extern std::vector<Level> levels;

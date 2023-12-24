@@ -1,10 +1,11 @@
 #include "GravitySwitchEnt.hpp"
-#include "../../Player.hpp"
-#include "../../../Graphics/Materials/StaticPropMaterial.hpp"
+
 #include "../../../../Protobuf/Build/GravitySwitchEntity.pb.h"
+#include "../../../AudioPlayers.hpp"
+#include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../Graphics/RenderSettings.hpp"
 #include "../../../Settings.hpp"
-#include "../../../AudioPlayers.hpp"
+#include "../../Player.hpp"
 
 DEF_ENT_TYPE(GravitySwitchEnt)
 
@@ -27,31 +28,28 @@ static void OnInit()
 
 EG_ON_INIT(OnInit)
 
-GravitySwitchEnt::GravitySwitchEnt()
-	: m_activatable(&GravitySwitchEnt::GetConnectionPoints) { }
+GravitySwitchEnt::GravitySwitchEnt() : m_activatable(&GravitySwitchEnt::GetConnectionPoints) {}
 
 std::vector<glm::vec3> GravitySwitchEnt::GetConnectionPoints(const Ent& entity)
 {
 	const GravitySwitchEnt& switchEnt = (const GravitySwitchEnt&)entity;
-	
+
 	const glm::mat4 transform =
-		glm::translate(glm::mat4(1), switchEnt.m_position) *
-		glm::mat4(GetRotationMatrix(switchEnt.m_up));
-	
-	const glm::vec3 connectionPoints[] = 
-	{
+		glm::translate(glm::mat4(1), switchEnt.m_position) * glm::mat4(GetRotationMatrix(switchEnt.m_up));
+
+	const glm::vec3 connectionPoints[] = {
 		{ 1, 0, 0 },
 		{ -1, 0, 0 },
 		{ 0, 0, 1 },
 		{ 0, 0, -1 },
 	};
-	
+
 	std::vector<glm::vec3> connectionPointsWS(std::size(connectionPoints));
 	for (size_t i = 0; i < std::size(connectionPoints); i++)
 	{
 		connectionPointsWS[i] = glm::vec3(transform * glm::vec4(connectionPoints[i] * 0.7f, 1));
 	}
-	
+
 	return connectionPointsWS;
 }
 
@@ -59,9 +57,9 @@ constexpr float ENABLE_ANIMATION_TIME = 0.2f;
 
 void GravitySwitchEnt::Update(const WorldUpdateArgs& args)
 {
-	m_enableAnimationTime = eg::AnimateTo(m_enableAnimationTime,
-		m_activatable.AllSourcesActive() ? 1.0f : 0.0f, args.dt / ENABLE_ANIMATION_TIME);
-	
+	m_enableAnimationTime = eg::AnimateTo(
+		m_enableAnimationTime, m_activatable.AllSourcesActive() ? 1.0f : 0.0f, args.dt / ENABLE_ANIMATION_TIME);
+
 	m_centerMaterial.timeOffset += glm::mix(0.2f, 1.0f, m_enableAnimationTime) * args.dt;
 }
 
@@ -73,7 +71,7 @@ glm::mat4 GravitySwitchEnt::GetTransform() const
 void GravitySwitchEnt::Draw(eg::MeshBatch& meshBatch) const
 {
 	const glm::mat4 transform = GetTransform();
-	
+
 	for (size_t m = 0; m < s_model->NumMeshes(); m++)
 	{
 		const eg::IMaterial* material = s_material;
@@ -96,21 +94,22 @@ void GravitySwitchEnt::GameDraw(const EntGameDrawArgs& args)
 {
 	m_centerMaterial.intensity = glm::mix(0.25f, 1.0f, m_enableAnimationTime);
 	Draw(*args.meshBatch);
-	
+
 	if (m_enableAnimationTime > 0.01f && args.transparentMeshBatch)
 	{
 		m_volLightMaterial.intensity = m_enableAnimationTime;
 		m_volLightMaterial.rotationMatrix = GetRotationMatrix(m_up);
 		m_volLightMaterial.switchPosition = m_position;
-		args.transparentMeshBatch->AddNoData(GravitySwitchVolLightMaterial::GetMesh(), m_volLightMaterial,
-		                                     DepthDrawOrder(m_volLightMaterial.switchPosition));
+		args.transparentMeshBatch->AddNoData(
+			GravitySwitchVolLightMaterial::GetMesh(), m_volLightMaterial,
+			DepthDrawOrder(m_volLightMaterial.switchPosition));
 	}
 }
 
 void GravitySwitchEnt::Interact(Player& player)
 {
 	player.FlipDown();
-	
+
 	eg::AudioLocationParameters locationParams = {};
 	locationParams.position = m_position;
 	locationParams.direction = DirectionVector(m_up);
@@ -119,11 +118,9 @@ void GravitySwitchEnt::Interact(Player& player)
 
 int GravitySwitchEnt::CheckInteraction(const Player& player, const class PhysicsEngine& physicsEngine) const
 {
-	bool canInteract =
-		m_activatable.AllSourcesActive() &&
-		player.CurrentDown() == OppositeDir(m_up) && player.OnGround() &&
-		GetAABB().Contains(player.FeetPosition()) && !player.m_isCarrying;
-	
+	bool canInteract = m_activatable.AllSourcesActive() && player.CurrentDown() == OppositeDir(m_up) &&
+	                   player.OnGround() && GetAABB().Contains(player.FeetPosition()) && !player.m_isCarrying;
+
 	constexpr int INTERACT_PRIORITY = 1;
 	return canInteract ? INTERACT_PRIORITY : 0;
 }
@@ -140,12 +137,12 @@ std::optional<InteractControlHint> GravitySwitchEnt::GetInteractControlHint() co
 void GravitySwitchEnt::Serialize(std::ostream& stream) const
 {
 	iomomi_pb::GravitySwitchEntity switchPB;
-	
+
 	switchPB.set_dir(static_cast<iomomi_pb::Dir>(m_up));
 	SerializePos(switchPB, m_position);
-	
+
 	switchPB.set_name(m_activatable.m_name);
-	
+
 	switchPB.SerializeToOstream(&stream);
 }
 
@@ -153,10 +150,10 @@ void GravitySwitchEnt::Deserialize(std::istream& stream)
 {
 	iomomi_pb::GravitySwitchEntity switchPB;
 	switchPB.ParseFromIstream(&stream);
-	
+
 	m_position = DeserializePos(switchPB);
 	m_up = static_cast<Dir>(switchPB.dir());
-	
+
 	if (switchPB.name() != 0)
 		m_activatable.m_name = switchPB.name();
 }

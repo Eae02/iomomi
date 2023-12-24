@@ -1,12 +1,12 @@
-#include "Game.hpp"
-#include "Levels.hpp"
-#include "Settings.hpp"
-#include "FileUtils.hpp"
-#include "Graphics/GraphicsCommon.hpp"
+#include <google/protobuf/stubs/common.h>
 
 #include <EGame/Audio/AudioPlayer.hpp>
 
-#include <google/protobuf/stubs/common.h>
+#include "FileUtils.hpp"
+#include "Game.hpp"
+#include "Graphics/GraphicsCommon.hpp"
+#include "Levels.hpp"
+#include "Settings.hpp"
 
 #ifdef _WIN32
 extern "C"
@@ -41,36 +41,36 @@ void AssetDownloadProgress(const eg::DownloadProgress& progress)
 static void Run(int argc, char** argv)
 {
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
-	
-	eg::DownloadAssetPackageASync(eg::DownloadAssetPackageArgs {
+
+	eg::DownloadAssetPackageASync(eg::DownloadAssetPackageArgs{
 		.eapName = "Assets.eap",
-		#ifdef BUILD_ID
+#ifdef BUILD_ID
 		.cacheID = BUILD_ID,
-		#endif
+#endif
 		.freeAfterInit = true,
 		.progressCallback = AssetDownloadProgress,
 	});
-	
+
 	eg::RunConfig runConfig;
 #ifndef NDEBUG
 	runConfig.flags |= eg::RunFlags::DevMode;
 #endif
-	
+
 	LoadSettings();
 	eg::TextureAssetQuality = settings.textureQuality;
-	
+
 	if (settings.vsync)
 		runConfig.flags |= eg::RunFlags::VSync;
 	runConfig.graphicsAPI = settings.graphicsAPI;
 	runConfig.preferredGPUName = settings.preferredGPUName;
-	
+
 	eg::ParseCommandLineArgs(runConfig, argc, argv);
 	if (eg::HasFlag(runConfig.flags, eg::RunFlags::PreferIntegratedGPU))
 		runConfig.preferredGPUName.clear();
 #ifndef __EMSCRIPTEN__
 	useGLESPath = eg::HasFlag(runConfig.flags, eg::RunFlags::PreferGLESPath);
 #endif
-	
+
 	runConfig.gameName = "Iomomi";
 	runConfig.flags |= eg::RunFlags::DefaultFramebufferSRGB;
 	runConfig.defaultDepthStencilFormat = eg::Format::Depth32;
@@ -80,7 +80,7 @@ static void Run(int argc, char** argv)
 	runConfig.initialize = [&]
 	{
 		AssertRenderTextureFormatSupport();
-		
+
 		if (!eg::FullscreenDisplayModes().empty())
 		{
 			if (!eg::Contains(eg::FullscreenDisplayModes(), settings.fullscreenDisplayMode))
@@ -89,47 +89,45 @@ static void Run(int argc, char** argv)
 			}
 			UpdateDisplayMode();
 		}
-		
+
 		if (!eg::InitializeAudio())
 		{
 			eg::Log(eg::LogLevel::Error, "audio", "Failed to initialize audio, sounds will not be played.");
 			audioInitializationFailed = true;
 		}
 		UpdateVolumeSettings();
-		
+
 		eg::SpriteFont::LoadDevFont();
 		eg::console::Init();
 		InitializeStaticPropMaterialAsset();
 		InitializeDecalMaterialAsset();
-		
+
 		RenderSettings::instance = new RenderSettings;
-		
+
 		if (!eg::LoadAssets("Assets", "/"))
 		{
 			EG_PANIC("Failed to load assets, make sure assets.eap exists.");
 		}
-		
+
 		InitLevels();
-		
+
 #ifdef __EMSCRIPTEN__
-		EM_ASM( loadingComplete(); );
+		EM_ASM(loadingComplete(););
 #endif
 	};
-	
+
 	eg::Run<Game>(runConfig);
 }
 
 #ifdef __EMSCRIPTEN__
 extern "C" void EMSCRIPTEN_KEEPALIVE WebMain()
 {
-	eg::releasePanicCallback = [] (const std::string& message)
-	{
-		EM_ASM({ setInfoLabel(UTF8ToString($0)); }, message.c_str());
-	};
-	
+	eg::releasePanicCallback = [](const std::string& message)
+	{ EM_ASM({ setInfoLabel(UTF8ToString($0)); }, message.c_str()); };
+
 	appDataDirPath = "/data/";
-	
-	EM_ASM( setInfoLabel(""); );
+
+	EM_ASM(setInfoLabel(""););
 	char argv[] = "iomomi";
 	char* argvPtr = argv;
 	Run(1, &argvPtr);
@@ -142,7 +140,7 @@ int main(int argc, char** argv)
 	{
 		eg::CreateDirectory(appDataDirPath.c_str());
 	}
-	
+
 	Run(argc, argv);
 	SaveProgress();
 	SaveSettings();

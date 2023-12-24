@@ -1,7 +1,8 @@
 #include "PointLightEnt.hpp"
-#include "../../../World.hpp"
-#include "../../../../ImGui.hpp"
+
 #include "../../../../../Protobuf/Build/PointLightEntity.pb.h"
+#include "../../../../ImGui.hpp"
+#include "../../../World.hpp"
 
 DEF_ENT_TYPE(PointLightEnt)
 
@@ -14,9 +15,9 @@ void PointLightEnt::ColorAndIntensitySettings(eg::ColorSRGB& color, float& inten
 	ImGui::ColorPicker3("Color", &color.r);
 	ImGui::DragFloat("Intensity", &intensity, 0.1f);
 	ImGui::Checkbox("Specular Highlights", &enableSpecularHighlights);
-	
+
 	ImGui::Separator();
-	
+
 	if (ImGui::Button("Set Color Light Blue"))
 		color = eg::ColorSRGB::FromHex(0xD1F8FE);
 	if (ImGui::Button("Set Color Orange"))
@@ -26,15 +27,14 @@ void PointLightEnt::ColorAndIntensitySettings(eg::ColorSRGB& color, float& inten
 #endif
 }
 
-PointLightEnt::PointLightEnt()
-	: m_color(DefaultColor), m_intensity(DefaultIntensity) { }
+PointLightEnt::PointLightEnt() : m_color(DefaultColor), m_intensity(DefaultIntensity) {}
 
 void PointLightEnt::RenderSettings()
 {
 	Ent::RenderSettings();
-	
+
 	ImGui::Separator();
-	
+
 	ColorAndIntensitySettings(m_color, m_intensity, m_enableSpecularHighlights);
 }
 
@@ -59,15 +59,15 @@ int PointLightEnt::EdGetIconIndex() const
 void PointLightEnt::Serialize(std::ostream& stream) const
 {
 	iomomi_pb::PointLightEntity entityPB;
-	
+
 	SerializePos(entityPB, m_position);
-	
+
 	entityPB.set_colorr(m_color.r);
 	entityPB.set_colorg(m_color.g);
 	entityPB.set_colorb(m_color.b);
 	entityPB.set_intensity(m_intensity);
 	entityPB.set_no_specular(!m_enableSpecularHighlights);
-	
+
 	entityPB.SerializeToOstream(&stream);
 }
 
@@ -75,7 +75,7 @@ void PointLightEnt::Deserialize(std::istream& stream)
 {
 	iomomi_pb::PointLightEntity entityPB;
 	entityPB.ParseFromIstream(&stream);
-	
+
 	m_position = DeserializePos(entityPB);
 	m_color = eg::ColorSRGB(entityPB.colorr(), entityPB.colorg(), entityPB.colorb());
 	m_intensity = entityPB.intensity();

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "EditorCamera.hpp"
 #include "../World/World.hpp"
+#include "EditorCamera.hpp"
 
 enum class EditorTool
 {
@@ -18,21 +18,21 @@ public:
 	friend class Editor;
 	friend class EditorWorld;
 	friend class EditorState;
-	
+
 	int iconIndex = 5;
 	bool selected = false;
 	bool shouldClearSelection = true;
 	bool hideIfNotHovered = false;
-	
+
 	const eg::Rectangle& Rectangle() const { return m_rectangle; }
-	
+
 	void ApplyDepthBias(float bias) { m_depth -= bias; }
-	
+
 	void InvokeCallback() const { m_callback(); }
-	
+
 private:
 	EditorIcon() = default;
-	
+
 	eg::Rectangle m_rectangle;
 	float m_depth;
 	bool m_behindScreen;
@@ -49,22 +49,22 @@ struct EditorState
 	std::vector<std::weak_ptr<Ent>>* selectedEntities;
 	EditorTool tool;
 	bool anyIconHovered = false;
-	
+
 	class SelectionRenderer* selectionRenderer;
 	class PrimitiveRenderer* primitiveRenderer;
-	
+
 	glm::mat4 viewProjection;
 	glm::mat4 inverseViewProjection;
-	
+
 	glm::vec2 windowCursorPos;
 	eg::Rectangle windowRect;
-	
+
 	void InvalidateWater() const;
-	
+
 	bool IsEntitySelected(const Ent& entity) const;
-	
+
 	void EntityMoved(Ent& entity) const;
-	
+
 	EditorIcon CreateIcon(const glm::vec3& worldPos, std::function<void()> callback) const;
 };
 
@@ -91,11 +91,11 @@ class EditorComponent
 {
 public:
 	EditorComponent() = default;
-	
-	virtual void Update(float dt, const EditorState& editorState) { };
+
+	virtual void Update(float dt, const EditorState& editorState){};
 	virtual bool UpdateInput(float dt, const EditorState& editorState) { return false; };
-	virtual void EarlyDraw(const EditorState& editorState) const { }
-	virtual void LateDraw(const EditorState& editorState) const { }
-	virtual void RenderSettings(const EditorState& editorState) { }
+	virtual void EarlyDraw(const EditorState& editorState) const {}
+	virtual void LateDraw(const EditorState& editorState) const {}
+	virtual void RenderSettings(const EditorState& editorState) {}
 	virtual bool CollectIcons(const EditorState& editorState, std::vector<EditorIcon>& icons) { return false; }
 };

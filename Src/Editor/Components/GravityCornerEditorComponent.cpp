@@ -1,12 +1,13 @@
 #include "GravityCornerEditorComponent.hpp"
+
 #include "../PrimitiveRenderer.hpp"
 
 void GravityCornerEditorComponent::Update(float dt, const EditorState& editorState)
 {
 	VoxelRayIntersectResult pickResult = editorState.world->voxels.RayIntersect(editorState.viewRay);
-	
+
 	m_hoveredCornerDim = -1;
-	
+
 	if (pickResult.intersected)
 	{
 		const int nDim = static_cast<int>(pickResult.normalDir) / 2;
@@ -14,13 +15,13 @@ void GravityCornerEditorComponent::Update(float dt, const EditorState& editorSta
 		const int vDim = (nDim + 2) % 3;
 		float u = pickResult.intersectPosition[uDim];
 		float v = pickResult.intersectPosition[vDim];
-		
+
 		int ni = static_cast<int>(std::round(pickResult.intersectPosition[nDim]));
 		int ui = static_cast<int>(std::round(u));
 		int vi = static_cast<int>(std::round(v));
 		float dui = std::abs(static_cast<float>(ui - u));
 		float dvi = std::abs(static_cast<float>(vi - v));
-		
+
 		const float MAX_DIST = 0.4f;
 		auto TryV = [&]
 		{
@@ -42,7 +43,7 @@ void GravityCornerEditorComponent::Update(float dt, const EditorState& editorSta
 			if (editorState.world->voxels.IsCorner(m_hoveredCornerPos, static_cast<Dir>(vDim * 2)))
 				m_hoveredCornerDim = vDim;
 		};
-		
+
 		if (dui < dvi)
 		{
 			TryU();
@@ -67,7 +68,7 @@ bool GravityCornerEditorComponent::UpdateInput(float dt, const EditorState& edit
 			const Dir cornerDir = static_cast<Dir>(m_hoveredCornerDim * 2);
 			const bool isGravityCorner = editorState.world->voxels.IsGravityCorner(m_hoveredCornerPos, cornerDir);
 			editorState.world->voxels.SetIsGravityCorner(m_hoveredCornerPos, cornerDir, !isGravityCorner);
-			
+
 			m_modCornerDim = m_hoveredCornerDim;
 			m_modCornerPos = m_hoveredCornerPos;
 		}
@@ -76,7 +77,7 @@ bool GravityCornerEditorComponent::UpdateInput(float dt, const EditorState& edit
 	{
 		m_modCornerDim = -1;
 	}
-	
+
 	return false;
 }
 
@@ -85,28 +86,27 @@ void GravityCornerEditorComponent::EarlyDraw(const EditorState& editorState) con
 	if (m_hoveredCornerDim != -1)
 	{
 		const float LINE_WIDTH = 0.1f;
-		
+
 		glm::vec3 lineCorners[8];
-		
+
 		glm::vec3 uDir, vDir, sDir;
 		uDir[m_hoveredCornerDim] = 1;
 		vDir[(m_hoveredCornerDim + 1) % 3] = LINE_WIDTH;
 		sDir[(m_hoveredCornerDim + 2) % 3] = LINE_WIDTH;
-		
+
 		for (int s = 0; s < 2; s++)
 		{
 			for (int u = 0; u < 2; u++)
 			{
 				for (int v = 0; v < 2; v++)
 				{
-					lineCorners[s * 4 + u * 2 + v] =
-						glm::vec3(m_hoveredCornerPos) +
-						(s ? sDir : vDir) * static_cast<float>(v * 2 - 1) +
-						uDir * static_cast<float>(u);
+					lineCorners[s * 4 + u * 2 + v] = glm::vec3(m_hoveredCornerPos) +
+					                                 (s ? sDir : vDir) * static_cast<float>(v * 2 - 1) +
+					                                 uDir * static_cast<float>(u);
 				}
 			}
 		}
-		
+
 		eg::ColorSRGB color = eg::ColorSRGB(eg::ColorSRGB::FromHex(0xDB9951).ScaleAlpha(0.4f));
 		editorState.primitiveRenderer->AddQuad(lineCorners, color);
 		editorState.primitiveRenderer->AddQuad(lineCorners + 4, color);

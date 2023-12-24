@@ -1,14 +1,14 @@
 #include "Entity.hpp"
-#include "Components/ActivatableComp.hpp"
-#include "../../ImGui.hpp"
 
-#include <pcg_random.hpp>
 #include <magic_enum.hpp>
+#include <pcg_random.hpp>
+
+#include "../../ImGui.hpp"
+#include "Components/ActivatableComp.hpp"
 
 static_assert(magic_enum::enum_count<EntTypeID>() == NUM_ENTITY_TYPES);
 
-const std::array<EntTypeID, 13> entityUpdateOrder = 
-{
+const std::array<EntTypeID, 13> entityUpdateOrder = {
 	EntTypeID::ActivationLightStrip,
 	EntTypeID::FloorButton,
 	EntTypeID::PushButton,
@@ -77,9 +77,15 @@ void Ent::RenderSettings()
 #endif
 }
 
-void Ent::CommonDraw(const EntDrawArgs& args) { }
-void Ent::GameDraw(const EntGameDrawArgs& args) { CommonDraw(args); }
-void Ent::EditorDraw(const EntEditorDrawArgs& args) { CommonDraw(args); }
+void Ent::CommonDraw(const EntDrawArgs& args) {}
+void Ent::GameDraw(const EntGameDrawArgs& args)
+{
+	CommonDraw(args);
+}
+void Ent::EditorDraw(const EntEditorDrawArgs& args)
+{
+	CommonDraw(args);
+}
 
 const void* Ent::GetComponent(const std::type_info& type) const
 {
@@ -97,11 +103,9 @@ eg::AABB Ent::GetAABB(float scale, float upDist, Dir facingDirection) const
 {
 	glm::vec3 diag(scale);
 	diag[static_cast<int>(facingDirection) / 2] = 0;
-	
+
 	return eg::AABB(
-		GetPosition() - diag,
-		GetPosition() + diag + glm::vec3(DirectionVector(facingDirection)) * (upDist * scale)
-	);
+		GetPosition() - diag, GetPosition() + diag + glm::vec3(DirectionVector(facingDirection)) * (upDist * scale));
 }
 
 EntTypeFlags Ent::TypeFlags() const
@@ -109,9 +113,9 @@ EntTypeFlags Ent::TypeFlags() const
 	return s_entityTypes.at(static_cast<size_t>(m_typeID))->flags;
 }
 
-void Ent::Update(const struct WorldUpdateArgs& args) { }
+void Ent::Update(const struct WorldUpdateArgs& args) {}
 
-void Ent::Spawned(bool isEditor) { }
+void Ent::Spawned(bool isEditor) {}
 
 std::shared_ptr<Ent> Ent::Clone() const
 {

@@ -1,8 +1,9 @@
 #include "GravityCornerLightMaterial.hpp"
+
+#include "../GraphicsCommon.hpp"
+#include "../RenderSettings.hpp"
 #include "MeshDrawArgs.hpp"
 #include "StaticPropMaterial.hpp"
-#include "../RenderSettings.hpp"
-#include "../GraphicsCommon.hpp"
 
 GravityCornerLightMaterial GravityCornerLightMaterial::instance;
 
@@ -17,10 +18,11 @@ static void OnInit()
 	depthOffsetSpecConstant.constantID = COMMON_3D_DEPTH_OFFSET_CONST_ID;
 	depthOffsetSpecConstant.size = sizeof(float);
 	depthOffsetSpecConstant.offset = 0;
-	
+
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	StaticPropMaterial::InitializeForCommon3DVS(pipelineCI);
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityCornerLight.fs.glsl").DefaultVariant();
+	pipelineCI.fragmentShader =
+		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityCornerLight.fs.glsl").DefaultVariant();
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.depthCompare = eg::CompareOp::LessOrEqual;
@@ -34,7 +36,7 @@ static void OnInit()
 	gravityCornerPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
 	gravityCornerPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
 	gravityCornerPipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
-	
+
 	gravityCornerDescriptorSet = eg::DescriptorSet(gravityCornerPipeline, 0);
 	gravityCornerDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
 	gravityCornerDescriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/GravityCornerLightDist.png"), 1);
@@ -58,14 +60,14 @@ size_t GravityCornerLightMaterial::PipelineHash() const
 bool GravityCornerLightMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
 	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
-	
+
 	if (mDrawArgs->drawMode == MeshDrawMode::Emissive || mDrawArgs->drawMode == MeshDrawMode::Editor)
 	{
 		cmdCtx.BindPipeline(gravityCornerPipeline);
 		cmdCtx.BindDescriptorSet(gravityCornerDescriptorSet, 0);
 		return true;
 	}
-	
+
 	return false;
 }
 
@@ -80,7 +82,7 @@ bool GravityCornerLightMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* 
 	pc[2] = m_activationPos.z;
 	pc[3] = m_activationIntensity * ACT_ANIMATION_INTENSITY;
 	cmdCtx.PushConstants(0, sizeof(pc), pc);
-	
+
 	return true;
 }
 

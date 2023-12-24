@@ -1,7 +1,8 @@
 #include "GravitySwitchMaterial.hpp"
+
+#include "../RenderSettings.hpp"
 #include "MeshDrawArgs.hpp"
 #include "StaticPropMaterial.hpp"
-#include "../RenderSettings.hpp"
 
 static eg::Pipeline gravitySwitchPipelineEditor;
 static eg::Pipeline gravitySwitchPipelineGame;
@@ -11,7 +12,8 @@ static void OnInit()
 {
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	StaticPropMaterial::InitializeForCommon3DVS(pipelineCI);
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravitySwitchLight.fs.glsl").DefaultVariant();
+	pipelineCI.fragmentShader =
+		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravitySwitchLight.fs.glsl").DefaultVariant();
 	pipelineCI.enableDepthWrite = true;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::Back;
@@ -21,13 +23,13 @@ static void OnInit()
 	gravitySwitchPipelineGame = eg::Pipeline::Create(pipelineCI);
 	gravitySwitchPipelineGame.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
 	gravitySwitchPipelineGame.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
-	
+
 	pipelineCI.label = "GravSwitchEditor";
 	pipelineCI.cullMode = eg::CullMode::None;
 	pipelineCI.numColorAttachments = 1;
 	gravitySwitchPipelineEditor = eg::Pipeline::Create(pipelineCI);
 	gravitySwitchPipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
-	
+
 	gravitySwitchDescriptorSet = eg::DescriptorSet(gravitySwitchPipelineGame, 0);
 	gravitySwitchDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
 	gravitySwitchDescriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/Hex.png"), 1, &commonTextureSampler);
@@ -52,9 +54,12 @@ inline static eg::PipelineRef GetPipeline(const MeshDrawArgs& drawArgs)
 {
 	switch (drawArgs.drawMode)
 	{
-	case MeshDrawMode::Emissive: return gravitySwitchPipelineGame;
-	case MeshDrawMode::Editor: return gravitySwitchPipelineEditor;
-	default: return eg::PipelineRef();
+	case MeshDrawMode::Emissive:
+		return gravitySwitchPipelineGame;
+	case MeshDrawMode::Editor:
+		return gravitySwitchPipelineEditor;
+	default:
+		return eg::PipelineRef();
 	}
 }
 
@@ -64,10 +69,10 @@ bool GravitySwitchMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawA
 	eg::PipelineRef pipeline = GetPipeline(*mDrawArgs);
 	if (pipeline.handle == nullptr)
 		return false;
-	
+
 	cmdCtx.BindPipeline(pipeline);
 	cmdCtx.BindDescriptorSet(gravitySwitchDescriptorSet, 0);
-	
+
 	return true;
 }
 

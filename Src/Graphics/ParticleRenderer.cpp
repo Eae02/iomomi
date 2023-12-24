@@ -1,6 +1,7 @@
 #include "ParticleRenderer.hpp"
-#include "RenderSettings.hpp"
+
 #include "GraphicsCommon.hpp"
+#include "RenderSettings.hpp"
 
 ParticleRenderer::ParticleRenderer()
 {
@@ -18,11 +19,11 @@ ParticleRenderer::ParticleRenderer()
 	pipelineCI.vertexAttributes[3] = { 1, eg::DataType::UInt8Norm, 4, offsetof(eg::ParticleInstance, sinR) };
 	pipelineCI.label = "Particle";
 	m_pipeline = eg::Pipeline::Create(pipelineCI);
-	
+
 	const float vertices[] = { 0, 0, 1, 0, 0, 1, 1, 1 };
 	m_vertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer, sizeof(vertices), vertices);
 	m_vertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
-	
+
 	m_texture = &eg::GetAsset<eg::Texture>("Textures/Particles.png");
 }
 
@@ -30,17 +31,17 @@ void ParticleRenderer::Draw(const eg::ParticleManager& particleManager, eg::Text
 {
 	if (particleManager.ParticlesToDraw() == 0)
 		return;
-	
+
 	auto gpuTimerTransparent = eg::StartGPUTimer("Particles");
 	auto cpuTimerTransparent = eg::StartCPUTimer("Particles");
-	
+
 	eg::DC.BindPipeline(m_pipeline);
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 	eg::DC.BindTexture(*m_texture, 0, 1, &commonTextureSampler);
 	eg::DC.BindTexture(depthTexture, 0, 2);
-	
+
 	eg::DC.BindVertexBuffer(0, m_vertexBuffer, 0);
 	eg::DC.BindVertexBuffer(1, particleManager.ParticlesBuffer(), 0);
-	
+
 	eg::DC.Draw(0, 4, 0, particleManager.ParticlesToDraw());
 }

@@ -1,19 +1,23 @@
 #include "ThumbnailRenderer.hpp"
-#include "Levels.hpp"
+
+#include "GameRenderer.hpp"
 #include "Graphics/RenderContext.hpp"
 #include "Graphics/Water/IWaterSimulator.hpp"
+#include "Levels.hpp"
 #include "World/World.hpp"
-#include "GameRenderer.hpp"
 
 #ifdef __EMSCRIPTEN__
 
-LevelThumbnailUpdate* BeginUpdateLevelThumbnails(struct RenderContext& renderContext, eg::console::Writer& writer) { return nullptr; }
-void EndUpdateLevelThumbnails(LevelThumbnailUpdate* update) { }
+LevelThumbnailUpdate* BeginUpdateLevelThumbnails(struct RenderContext& renderContext, eg::console::Writer& writer)
+{
+	return nullptr;
+}
+void EndUpdateLevelThumbnails(LevelThumbnailUpdate* update) {}
 
 #else
 
-#include <fstream>
 #include <EGame/Graphics/ImageWriter.hpp>
+#include <fstream>
 
 struct LevelThumbnailEntry
 {
@@ -35,7 +39,7 @@ LevelThumbnailUpdate* BeginUpdateLevelThumbnails(RenderContext& renderContext, e
 {
 	std::unique_ptr<GameRenderer> renderer;
 	LevelThumbnailUpdate* update = nullptr;
-	
+
 	eg::TextureCreateInfo textureCI;
 	textureCI.width = LEVEL_THUMBNAIL_RES_X;
 	textureCI.height = LEVEL_THUMBNAIL_RES_Y;
@@ -43,14 +47,14 @@ LevelThumbnailUpdate* BeginUpdateLevelThumbnails(RenderContext& renderContext, e
 	textureCI.mipLevels = 1;
 	textureCI.flags = eg::TextureFlags::CopySrc | eg::TextureFlags::FramebufferAttachment;
 	textureCI.format = eg::Format::R8G8B8A8_sRGB;
-	
+
 	eg::Profiler* profiler = eg::Profiler::current;
 	eg::Profiler::current = nullptr;
-	
+
 	int numUpdated = 0;
-	
+
 	eg::CommandContext cc;
-	
+
 	for (Level& level : levels)
 	{
 		std::string levelPath = GetLevelPath(level.name);
@@ -60,13 +64,13 @@ LevelThumbnailUpdate* BeginUpdateLevelThumbnails(RenderContext& renderContext, e
 		{
 			continue;
 		}
-		
+
 		if (renderer == nullptr)
 		{
 			renderer = std::make_unique<GameRenderer>(renderContext);
-			update = new LevelThumbnailUpdate; 
+			update = new LevelThumbnailUpdate;
 		}
-		
+
 		std::ifstream worldStream(levelPath, std::ios::binary);
 		if (!worldStream)
 		{
@@ -78,58 +82,60 @@ LevelThumbnailUpdate* BeginUpdateLevelThumbnails(RenderContext& renderContext, e
 		if (world == nullptr)
 			continue;
 		worldStream.close();
-		
+
 		if (!world->voxels.IsAir(glm::floor(world->thumbnailCameraPos)))
 		{
 			std::string errorMessage = "Thumbnail camera position is inside a wall for level: " + level.name;
 			writer.WriteLine(eg::console::ErrorColor, errorMessage);
 		}
-		
+
 		renderer->WorldChanged(*world);
-		
+
 		WorldUpdateArgs updateArgs = {};
 		updateArgs.mode = WorldMode::Thumbnail;
 		updateArgs.world = world.get();
 		updateArgs.waterSim = renderer->m_waterSimulator.get();
 		world->Update(updateArgs);
-		
+
 		renderer->SetViewMatrixFromThumbnailCamera(*world);
-		
+
 		LevelThumbnailEntry& entry = update->thumbnails.emplace_back();
 		entry.thumbnailPath = std::move(thumbnailPath);
 		entry.level = &level;
-		
+
 		std::string textureLabel = "ThumbnalDst[" + level.name + "]";
 		textureCI.label = textureLabel.c_str();
 		entry.texture = eg::Texture::Create2D(textureCI);
 		eg::FramebufferAttachment framebufferAttachment;
 		framebufferAttachment.texture = entry.texture.handle;
 		entry.framebuffer = eg::Framebuffer(std::span<const eg::FramebufferAttachment>(&framebufferAttachment, 1));
-		
+
 		if (renderer->m_waterSimulator)
 		{
 			renderer->m_waterSimulator->Update(*world, world->thumbnailCameraPos, false);
 		}
-		
+
 		renderer->Render(*world, 0, 0, entry.framebuffer.handle, LEVEL_THUMBNAIL_RES_X, LEVEL_THUMBNAIL_RES_Y);
-		
-		entry.downloadBuffer = eg::Buffer(eg::BufferFlags::MapRead | eg::BufferFlags::CopyDst |
-			eg::BufferFlags::Download | eg::BufferFlags::HostAllocate, THUMBNAIL_BYTES, nullptr);
-		
+
+		entry.downloadBuffer = eg::Buffer(
+			eg::BufferFlags::MapRead | eg::BufferFlags::CopyDst | eg::BufferFlags::Download |
+				eg::BufferFlags::HostAllocate,
+			THUMBNAIL_BYTES, nullptr);
+
 		eg::TextureRange range = {};
 		range.sizeX = LEVEL_THUMBNAIL_RES_X;
 		range.sizeY = LEVEL_THUMBNAIL_RES_Y;
 		range.sizeZ = 1;
 		eg::DC.GetTextureData(entry.texture, range, entry.downloadBuffer, 0);
-		
+
 		numUpdated++;
 	}
-	
+
 	std::string message = "Updated " + std::to_string(numUpdated) + " thumbnails";
 	writer.WriteLine(eg::console::InfoColor, message);
-	
+
 	eg::Profiler::current = profiler;
-	
+
 	return update;
 }
 
@@ -137,9 +143,9 @@ void EndUpdateLevelThumbnails(LevelThumbnailUpdate* update)
 {
 	if (update == nullptr)
 		return;
-	
+
 	char flippedData[THUMBNAIL_BYTES];
-	
+
 	for (LevelThumbnailEntry& thumbnail : update->thumbnails)
 	{
 		std::ofstream thumbnailStream(thumbnail.thumbnailPath, std::ios::binary);
@@ -149,7 +155,7 @@ void EndUpdateLevelThumbnails(LevelThumbnailUpdate* update)
 			eg::console::Write(eg::console::ErrorColor, errorMessage);
 			continue;
 		}
-		
+
 		thumbnail.downloadBuffer.Invalidate(0, THUMBNAIL_BYTES);
 		char* data = static_cast<char*>(thumbnail.downloadBuffer.Map(0, THUMBNAIL_BYTES));
 		if (eg::CurrentGraphicsAPI() == eg::GraphicsAPI::OpenGL)
@@ -162,17 +168,18 @@ void EndUpdateLevelThumbnails(LevelThumbnailUpdate* update)
 			}
 			data = flippedData;
 		}
-		
-		if (!eg::WriteImageToStream(thumbnailStream, eg::WriteImageFormat::JPG,
-			LEVEL_THUMBNAIL_RES_X, LEVEL_THUMBNAIL_RES_Y, 4, {data, THUMBNAIL_BYTES}))
+
+		if (!eg::WriteImageToStream(
+				thumbnailStream, eg::WriteImageFormat::JPG, LEVEL_THUMBNAIL_RES_X, LEVEL_THUMBNAIL_RES_Y, 4,
+				{ data, THUMBNAIL_BYTES }))
 		{
 			continue;
 		}
 		thumbnailStream.close();
-		
+
 		LoadLevelThumbnail(*thumbnail.level);
 	}
-	
+
 	delete update;
 }
 

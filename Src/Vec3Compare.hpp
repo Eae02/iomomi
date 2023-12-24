@@ -15,4 +15,3 @@ struct IVec3Compare
 		return std::tie(a.x, a.y, a.z) < std::tie(b.x, b.y, b.z);
 	}
 };
-

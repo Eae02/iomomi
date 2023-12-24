@@ -1,60 +1,61 @@
 #pragma once
 
-#include "../../Entity.hpp"
+#include "../../../PhysicsEngine.hpp"
 #include "../../Components/AxisAlignedQuadComp.hpp"
 #include "../../Components/WaterBlockComp.hpp"
-#include "../../../PhysicsEngine.hpp"
+#include "../../Entity.hpp"
 
 class WindowEnt : public Ent
 {
 public:
 	WindowEnt();
-	
+
 	static constexpr EntTypeID TypeID = EntTypeID::Window;
-	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable | EntTypeFlags::ShadowDrawableS | EntTypeFlags::HasPhysics;
-	
+	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
+	                                         EntTypeFlags::ShadowDrawableS | EntTypeFlags::HasPhysics;
+
 	void Serialize(std::ostream& stream) const override;
-	
+
 	void Deserialize(std::istream& stream) override;
-	
+
 	void RenderSettings() override;
-	
+
 	void CommonDraw(const EntDrawArgs& args) override;
-	
+
 	const void* GetComponent(const std::type_info& type) const override;
-	
+
 	void CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt) override;
-	
+
 	void EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection) override;
-	
+
 	std::span<const EditorSelectionMesh> EdGetSelectionMeshes() const override;
 	glm::vec3 EdGetGridAlignment() const override;
 	int EdGetIconIndex() const override;
-	
+
 	glm::vec3 GetPosition() const override;
-	
+
 	bool NeedsBlurredTextures() const;
-	
+
 private:
 	void UpdateWaterBlock();
-	
+
 	glm::vec3 GetTranslationFromOriginMode() const;
 	glm::vec3 GetRenderTranslation() const;
-	
+
 	enum class WaterBlockMode
 	{
 		Auto = 0,
 		Never = 1,
 		Always = 2
 	};
-	
+
 	enum class OriginMode
 	{
 		Top,
 		Middle,
 		Bottom
 	};
-	
+
 	uint32_t m_windowType = 0;
 	glm::vec2 m_textureScale;
 	float m_depth = 0.05f;
@@ -63,11 +64,11 @@ private:
 	WaterBlockMode m_waterBlockMode = WaterBlockMode::Auto;
 	AxisAlignedQuadComp m_aaQuad;
 	WaterBlockComp m_waterBlockComp;
-	
+
 	bool m_hasFrame = false;
 	float m_frameScale = 0.5f;
 	glm::vec2 m_frameTextureScale;
 	uint32_t m_frameMaterial = 0;
-	
+
 	PhysicsObject m_physicsObject;
 };

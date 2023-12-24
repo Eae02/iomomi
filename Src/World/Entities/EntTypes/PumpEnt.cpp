@@ -1,11 +1,12 @@
 #include "PumpEnt.hpp"
-#include "../../WorldUpdateArgs.hpp"
-#include "../../Player.hpp"
-#include "../../../Graphics/Materials/StaticPropMaterial.hpp"
-#include "../../../Graphics/Materials/EmissiveMaterial.hpp"
-#include "../../../Settings.hpp"
-#include "../../../ImGui.hpp"
+
 #include "../../../../Protobuf/Build/PumpEntity.pb.h"
+#include "../../../Graphics/Materials/EmissiveMaterial.hpp"
+#include "../../../Graphics/Materials/StaticPropMaterial.hpp"
+#include "../../../ImGui.hpp"
+#include "../../../Settings.hpp"
+#include "../../Player.hpp"
+#include "../../WorldUpdateArgs.hpp"
 
 DEF_ENT_TYPE(PumpEnt)
 
@@ -27,14 +28,14 @@ static void OnInit()
 {
 	pumpModel = &eg::GetAsset<eg::Model>("Models/Pump.aa.obj");
 	pumpBodyMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Pump.yaml");
-	
+
 	mainMaterialIndex = pumpModel->GetMaterialIndex("Main");
 	screenMaterialIndex = pumpModel->GetMaterialIndex("Screen");
 	emissiveLMaterialIndex = pumpModel->GetMaterialIndex("EmissiveL");
 	emissiveRMaterialIndex = pumpModel->GetMaterialIndex("EmissiveR");
-	
+
 	meshButtonPumpDirection.resize(pumpModel->NumMeshes(), PumpDirection::None);
-	
+
 	std::vector<eg::CollisionMesh> allCollisionMeshes;
 	std::vector<eg::CollisionMesh> buttonLCollisionMeshes;
 	std::vector<eg::CollisionMesh> buttonRCollisionMeshes;
@@ -54,7 +55,7 @@ static void OnInit()
 		}
 		allCollisionMeshes.push_back(std::move(cm));
 	}
-	
+
 	fullCollisionMesh = eg::CollisionMesh::Join(allCollisionMeshes);
 	buttonLCollisionMesh = eg::CollisionMesh::Join(buttonLCollisionMeshes);
 	buttonRCollisionMesh = eg::CollisionMesh::Join(buttonRCollisionMeshes);
@@ -67,16 +68,16 @@ PumpEnt::PumpEnt()
 	m_particlesPerSecond = 100;
 	m_maxInputDistance = 0.5f;
 	m_maxOutputDistance = 0.5f;
-	
+
 	m_editorSelectionMesh.collisionMesh = &fullCollisionMesh;
 	m_editorSelectionMesh.model = pumpModel;
-	
+
 	m_physicsObject.shape = fullCollisionMesh.BoundingBox();
 	m_physicsObject.rayIntersectMask = RAY_MASK_BLOCK_PICK_UP | RAY_MASK_BLOCK_GUN;
 	m_physicsObject.canBePushed = false;
 	m_physicsObject.debugColor = 0x12b81a;
 	m_physicsObject.owner = this;
-	
+
 	UpdateTransform();
 }
 
@@ -84,23 +85,23 @@ void PumpEnt::RenderSettings()
 {
 #ifdef EG_HAS_IMGUI
 	Ent::RenderSettings();
-	
+
 	if (ImGui::Button("Reset Rotation"))
 	{
 		m_rotation = glm::quat();
 	}
-	
+
 	ImGui::Separator();
-	
+
 	ImGui::DragFloat3("Left Pump Point", &m_leftPumpPoint.x, 0.1f);
 	ImGui::DragFloat3("Right Pump Point", &m_rightPumpPoint.x, 0.1f);
 	if (ImGui::Button("Swap Left & Right"))
 	{
 		std::swap(m_leftPumpPoint, m_rightPumpPoint);
 	}
-	
+
 	ImGui::Separator();
-	
+
 	if (ImGui::DragFloat("Pump Rate", &m_particlesPerSecond))
 		m_particlesPerSecond = std::max(m_particlesPerSecond, 0.0f);
 	if (ImGui::DragFloat("Max Input Distance", &m_maxInputDistance, 0.01f))
@@ -135,7 +136,7 @@ void PumpEnt::CommonDraw(const EntDrawArgs& args)
 {
 	float buttonLAnimationIntensity = GetButtonAnimationIntensity(m_buttonLPushTimer);
 	float buttonRAnimationIntensity = GetButtonAnimationIntensity(m_buttonRPushTimer);
-	
+
 	for (size_t m = 0; m < pumpModel->NumMeshes(); m++)
 	{
 		float buttonAnimationIntensity = 0;
@@ -143,9 +144,9 @@ void PumpEnt::CommonDraw(const EntDrawArgs& args)
 			buttonAnimationIntensity = buttonLAnimationIntensity;
 		else if (meshButtonPumpDirection[m] == PumpDirection::Right)
 			buttonAnimationIntensity = buttonRAnimationIntensity;
-		
+
 		glm::mat4 transform = glm::translate(m_transform, BUTTON_PUSH_VECTOR * buttonAnimationIntensity);
-		
+
 		int materialIndex = pumpModel->GetMesh(m).materialIndex;
 		if (materialIndex == mainMaterialIndex)
 		{
@@ -157,15 +158,17 @@ void PumpEnt::CommonDraw(const EntDrawArgs& args)
 		}
 		else if (materialIndex == emissiveLMaterialIndex || materialIndex == emissiveRMaterialIndex)
 		{
-			float activationGlow = materialIndex == emissiveLMaterialIndex ? m_buttonLActivationGlow : m_buttonRActivationGlow;
-			
+			float activationGlow =
+				materialIndex == emissiveLMaterialIndex ? m_buttonLActivationGlow : m_buttonRActivationGlow;
+
 			EmissiveMaterial::InstanceData instanceData;
 			instanceData.transform = transform;
-			instanceData.color = glm::vec4(
-				glm::mix(DISABLED_BUTTON_GLOW_COLOR.r, ENABLED_BUTTON_GLOW_COLOR.r, activationGlow),
-				glm::mix(DISABLED_BUTTON_GLOW_COLOR.g, ENABLED_BUTTON_GLOW_COLOR.g, activationGlow),
-				glm::mix(DISABLED_BUTTON_GLOW_COLOR.b, ENABLED_BUTTON_GLOW_COLOR.b, activationGlow),
-				0.0f) * glm::mix(1.0f, BUTTON_GLOW_FACTOR_PUSHED, buttonAnimationIntensity);
+			instanceData.color =
+				glm::vec4(
+					glm::mix(DISABLED_BUTTON_GLOW_COLOR.r, ENABLED_BUTTON_GLOW_COLOR.r, activationGlow),
+					glm::mix(DISABLED_BUTTON_GLOW_COLOR.g, ENABLED_BUTTON_GLOW_COLOR.g, activationGlow),
+					glm::mix(DISABLED_BUTTON_GLOW_COLOR.b, ENABLED_BUTTON_GLOW_COLOR.b, activationGlow), 0.0f) *
+				glm::mix(1.0f, BUTTON_GLOW_FACTOR_PUSHED, buttonAnimationIntensity);
 			args.meshBatch->AddModelMesh(*pumpModel, m, EmissiveMaterial::instance, instanceData);
 		}
 	}
@@ -175,12 +178,12 @@ void PumpEnt::Update(const WorldUpdateArgs& args)
 {
 	m_buttonLPushTimer = std::max(m_buttonLPushTimer - args.dt, 0.0f);
 	m_buttonRPushTimer = std::max(m_buttonRPushTimer - args.dt, 0.0f);
-	
+
 	const float dt = args.dt / BUTTON_GLOW_ANIMATION_TIME;
 	const float targetL = m_currentDirection == PumpDirection::Left ? 1.0f : 0.0f;
 	m_buttonLActivationGlow = eg::AnimateTo(m_buttonLActivationGlow, targetL, dt);
 	m_buttonRActivationGlow = eg::AnimateTo(m_buttonRActivationGlow, 1 - targetL, dt);
-	
+
 	m_screenMaterial.Update(args.dt, m_currentDirection);
 }
 
@@ -205,29 +208,29 @@ void PumpEnt::Interact(Player& player)
 PumpDirection PumpEnt::GetHoveredButton(const Player& player, const PhysicsEngine* physicsEngine) const
 {
 	static constexpr float MAX_INTERACT_DIST = 1.75f;
-	
+
 	if (!player.OnGround())
 		return PumpDirection::None;
-	
+
 	eg::Ray ray(player.EyePosition(), player.Forward());
-	
+
 	float intersectDistL = INFINITY;
 	buttonLCollisionMesh.Intersect(ray, intersectDistL, &m_transform);
-	
+
 	float intersectDistR = INFINITY;
 	buttonRCollisionMesh.Intersect(ray, intersectDistR, &m_transform);
-	
+
 	if (intersectDistL > MAX_INTERACT_DIST && intersectDistR > MAX_INTERACT_DIST)
 		return PumpDirection::None;
-	
-	//Checks if there is another physics object blocking the ray
+
+	// Checks if there is another physics object blocking the ray
 	if (physicsEngine != nullptr)
 	{
-		auto[intersectObj, intersectDist] = physicsEngine->RayIntersect(ray, RAY_MASK_BLOCK_PICK_UP, &m_physicsObject);
+		auto [intersectObj, intersectDist] = physicsEngine->RayIntersect(ray, RAY_MASK_BLOCK_PICK_UP, &m_physicsObject);
 		if (intersectObj != nullptr && intersectDist < intersectDistL && intersectDist < intersectDistR)
 			return PumpDirection::None;
 	}
-	
+
 	return intersectDistL < intersectDistR ? PumpDirection::Left : PumpDirection::Right;
 }
 
@@ -267,10 +270,10 @@ void PumpEnt::EdRotated(const glm::quat& newRotation)
 void PumpEnt::Serialize(std::ostream& stream) const
 {
 	iomomi_pb::PumpEntity entityPB;
-	
+
 	SerializePos(entityPB, m_position);
 	SerializeRotation(entityPB, m_rotation);
-	
+
 	entityPB.set_pump_lx(m_leftPumpPoint.x);
 	entityPB.set_pump_ly(m_leftPumpPoint.y);
 	entityPB.set_pump_lz(m_leftPumpPoint.z);
@@ -280,7 +283,7 @@ void PumpEnt::Serialize(std::ostream& stream) const
 	entityPB.set_particles_per_second(m_particlesPerSecond);
 	entityPB.set_max_input_dist(m_maxInputDistance);
 	entityPB.set_max_output_dist(m_maxOutputDistance);
-	
+
 	entityPB.SerializeToOstream(&stream);
 }
 
@@ -288,17 +291,17 @@ void PumpEnt::Deserialize(std::istream& stream)
 {
 	iomomi_pb::PumpEntity entityPB;
 	entityPB.ParseFromIstream(&stream);
-	
+
 	m_position = DeserializePos(entityPB);
 	m_rotation = DeserializeRotation(entityPB);
-	
+
 	m_leftPumpPoint = glm::vec3(entityPB.pump_lx(), entityPB.pump_ly(), entityPB.pump_lz());
 	m_rightPumpPoint = glm::vec3(entityPB.pump_rx(), entityPB.pump_ry(), entityPB.pump_rz());
-	
+
 	m_particlesPerSecond = entityPB.particles_per_second();
-	m_maxInputDistance   = entityPB.max_input_dist();
-	m_maxOutputDistance  = entityPB.max_output_dist();
-	
+	m_maxInputDistance = entityPB.max_input_dist();
+	m_maxOutputDistance = entityPB.max_output_dist();
+
 	UpdateTransform();
 }
 
@@ -316,7 +319,7 @@ void PumpEnt::UpdateTransform()
 {
 	m_physicsObject.position = m_position;
 	m_physicsObject.rotation = m_rotation;
-	
+
 	m_transform = glm::translate(glm::mat4(1), m_position) * glm::mat4_cast(m_rotation);
 	m_editorSelectionMesh.transform = m_transform;
 }
@@ -325,12 +328,12 @@ std::optional<WaterPumpDescription> PumpEnt::GetPumpDescription() const
 {
 	if (m_currentDirection == PumpDirection::None)
 		return {};
-	
+
 	WaterPumpDescription desc = {};
 	desc.particlesPerSecond = m_particlesPerSecond;
 	desc.maxInputDistSquared = m_maxInputDistance * m_maxInputDistance;
 	desc.maxOutputDist = m_maxOutputDistance;
-	
+
 	if (m_currentDirection == PumpDirection::Left)
 	{
 		desc.source = m_rightPumpPoint;
@@ -341,6 +344,6 @@ std::optional<WaterPumpDescription> PumpEnt::GetPumpDescription() const
 		desc.source = m_leftPumpPoint;
 		desc.dest = m_rightPumpPoint;
 	}
-	
+
 	return desc;
 }

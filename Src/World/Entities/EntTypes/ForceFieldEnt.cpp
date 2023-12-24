@@ -1,12 +1,13 @@
 #include "ForceFieldEnt.hpp"
-#include "../EntityManager.hpp"
-#include "../../WorldUpdateArgs.hpp"
+
+#include "../../../../Protobuf/Build/ForceFieldEntity.pb.h"
+#include "../../../Game.hpp"
+#include "../../../Graphics/GraphicsCommon.hpp"
 #include "../../../Graphics/Materials/ForceFieldMaterial.hpp"
 #include "../../../Graphics/RenderSettings.hpp"
-#include "../../../../Protobuf/Build/ForceFieldEntity.pb.h"
-#include "../../../Graphics/GraphicsCommon.hpp"
-#include "../../../Game.hpp"
 #include "../../../ImGui.hpp"
+#include "../../WorldUpdateArgs.hpp"
+#include "../EntityManager.hpp"
 
 DEF_ENT_TYPE(ForceFieldEnt)
 
@@ -20,7 +21,7 @@ static float* particleEmitRate = eg::TweakVarFloat("ffld_particle_rate", 40.0f, 
 static void OnInit()
 {
 	forceFieldMaterial = new ForceFieldMaterial;
-	
+
 	const float vertices[] = { -1, -1, -1, 1, 1, -1, 1, 1 };
 	forceFieldQuadBuffer = new eg::Buffer(eg::BufferFlags::VertexBuffer, sizeof(vertices), vertices);
 	forceFieldQuadBuffer->UsageHint(eg::BufferUsage::VertexBuffer);
@@ -39,11 +40,11 @@ void ForceFieldEnt::RenderSettings()
 {
 #ifdef EG_HAS_IMGUI
 	Ent::RenderSettings();
-	
+
 	ImGui::DragFloat3("Radius", &radius.x, 0.1f);
-	
+
 	ImGui::Combo("Set Gravity", reinterpret_cast<int*>(&newGravity), DirectionNames, std::size(DirectionNames));
-	
+
 	ImGui::Combo("Activate Action", reinterpret_cast<int*>(&activateAction), "Enable\0Disable\0Flip\0");
 #endif
 }
@@ -57,13 +58,13 @@ void ForceFieldEnt::GameDraw(const EntGameDrawArgs& args)
 {
 	if (!args.transparentMeshBatch)
 		return;
-	
-	eg::MeshBatch::Mesh mesh = { };
+
+	eg::MeshBatch::Mesh mesh = {};
 	mesh.vertexBuffer = *forceFieldQuadBuffer;
 	mesh.numElements = 4;
-	
+
 	glm::vec3 smallerRad = radius * 0.99f;
-	
+
 	for (int d = 0; d < 6; d++)
 	{
 		ForceFieldInstance instance;
@@ -71,14 +72,14 @@ void ForceFieldEnt::GameDraw(const EntGameDrawArgs& args)
 		instance.offset = m_position + glm::vec3(DirectionVector(static_cast<Dir>(d))) * smallerRad;
 		instance.transformX = MakeTransformVectorWithLen(glm::vec3(voxel::tangents[d]) * smallerRad);
 		instance.transformY = MakeTransformVectorWithLen(glm::vec3(voxel::biTangents[d]) * smallerRad);
-		
+
 		args.transparentMeshBatch->Add(mesh, *forceFieldMaterial, instance, DepthDrawOrder(instance.offset));
 	}
-	
+
 	const float radDown = radius[static_cast<int>(m_effectiveNewGravity) / 2];
 	const glm::vec3 down = glm::vec3(DirectionVector(m_effectiveNewGravity));
 	const glm::vec3& cameraPos = RenderSettings::instance->cameraPosition;
-	
+
 	for (const ForceFieldParticle& particle : m_particles)
 	{
 		float trailTime = std::max(particle.elapsedTime - 0.1f, 0.0f);
@@ -86,16 +87,17 @@ void ForceFieldEnt::GameDraw(const EntGameDrawArgs& args)
 		float s2 = *particleGravity * particle.elapsedTime * particle.elapsedTime;
 		glm::vec3 pos1 = particle.start + down * glm::clamp(s1, 0.0f, radDown * 2);
 		glm::vec3 pos2 = particle.start + down * glm::clamp(s2, 0.0f, radDown * 2);
-		
+
 		glm::vec3 center = (pos1 + pos2) / 2.0f;
 		glm::vec3 toCamera = glm::normalize(cameraPos - center);
-		
+
 		ForceFieldInstance instance;
 		instance.mode = FFMode::Particle;
 		instance.offset = center;
-		instance.transformX = MakeTransformVectorWithLen(glm::normalize(glm::cross(down, toCamera)) * *particleWidth * 0.5f);
+		instance.transformX =
+			MakeTransformVectorWithLen(glm::normalize(glm::cross(down, toCamera)) * *particleWidth * 0.5f);
 		instance.transformY = MakeTransformVectorWithLen(pos2 - center);
-		
+
 		args.transparentMeshBatch->Add(mesh, *forceFieldMaterial, instance, DepthDrawOrder(instance.offset));
 	}
 }
@@ -109,8 +111,8 @@ void ForceFieldEnt::Update(const WorldUpdateArgs& args)
 {
 	if (args.mode == WorldMode::Editor)
 		return;
-	
-	//Updates enabled and gravity direction
+
+	// Updates enabled and gravity direction
 	Dir prevNewGravity = m_effectiveNewGravity;
 	m_enabled = true;
 	m_effectiveNewGravity = newGravity;
@@ -131,14 +133,14 @@ void ForceFieldEnt::Update(const WorldUpdateArgs& args)
 			break;
 		}
 	}
-	
+
 	if (m_effectiveNewGravity != prevNewGravity)
 	{
 		m_timeSinceEmission = 0;
 		m_particles.clear();
 	}
-	
-	//Simulated particles
+
+	// Simulated particles
 	const float radDown = radius[static_cast<int>(m_effectiveNewGravity) / 2];
 	const float maxS = radDown * 2 + 1.0f;
 	for (int64_t i = eg::ToInt64(m_particles.size()) - 1; i >= 0; i--)
@@ -151,24 +153,24 @@ void ForceFieldEnt::Update(const WorldUpdateArgs& args)
 			m_particles.pop_back();
 		}
 	}
-	
-	//Emits new particles
+
+	// Emits new particles
 	if (m_enabled)
 	{
 		glm::vec3 centerStart = m_position - glm::vec3(DirectionVector(m_effectiveNewGravity)) * radDown;
-		
+
 		int tangentDir = ((static_cast<int>(m_effectiveNewGravity) / 2) + 1) % 3;
 		int bitangentDir = (tangentDir + 1) % 3;
-		
+
 		int sectionsT = static_cast<int>(std::ceil(radius[tangentDir] * 2));
 		int sectionsB = static_cast<int>(std::ceil(radius[bitangentDir] * 2));
-		
+
 		glm::vec3 tangent, bitangent;
 		tangent[tangentDir] = radius[tangentDir];
 		bitangent[bitangentDir] = radius[bitangentDir];
-		
+
 		const float emitDelay = 1.0f / *particleEmitRate;
-		
+
 		m_timeSinceEmission += args.dt;
 		while (m_timeSinceEmission > emitDelay)
 		{
@@ -178,13 +180,13 @@ void ForceFieldEnt::Update(const WorldUpdateArgs& args)
 				{
 					float t = (std::uniform_real_distribution<float>(0.0f, 1.0f)(globalRNG) + x) / sectionsT;
 					float u = (std::uniform_real_distribution<float>(0.0f, 1.0f)(globalRNG) + y) / sectionsB;
-					
+
 					ForceFieldParticle& particle = m_particles.emplace_back();
 					particle.elapsedTime = 0;
 					particle.start = centerStart + tangent * (t * 2 - 1) + bitangent * (u * 2 - 1);
 				}
 			}
-			
+
 			m_timeSinceEmission -= emitDelay;
 		}
 	}
@@ -197,30 +199,31 @@ void ForceFieldEnt::Update(const WorldUpdateArgs& args)
 std::optional<Dir> ForceFieldEnt::CheckIntersection(EntityManager& entityManager, const eg::AABB& aabb)
 {
 	std::optional<Dir> result;
-	entityManager.ForEachOfType<ForceFieldEnt>([&] (const ForceFieldEnt& entity)
-	{
-		if (entity.m_enabled &&
-			aabb.Intersects(eg::AABB(entity.m_position - entity.radius, entity.m_position + entity.radius)))
+	entityManager.ForEachOfType<ForceFieldEnt>(
+		[&](const ForceFieldEnt& entity)
 		{
-			result = entity.m_effectiveNewGravity;
-		}
-	});
+			if (entity.m_enabled &&
+		        aabb.Intersects(eg::AABB(entity.m_position - entity.radius, entity.m_position + entity.radius)))
+			{
+				result = entity.m_effectiveNewGravity;
+			}
+		});
 	return result;
 }
 
 void ForceFieldEnt::Serialize(std::ostream& stream) const
 {
 	iomomi_pb::ForceFieldEntity forceFieldPB;
-	
+
 	SerializePos(forceFieldPB, m_position);
-	
+
 	forceFieldPB.set_radx(radius.x);
 	forceFieldPB.set_rady(radius.y);
 	forceFieldPB.set_radz(radius.z);
 	forceFieldPB.set_new_gravity(static_cast<iomomi_pb::Dir>(newGravity));
 	forceFieldPB.set_activate_action(static_cast<uint32_t>(activateAction));
 	forceFieldPB.set_name(m_activatable.m_name);
-	
+
 	forceFieldPB.SerializeToOstream(&stream);
 }
 
@@ -228,14 +231,14 @@ void ForceFieldEnt::Deserialize(std::istream& stream)
 {
 	iomomi_pb::ForceFieldEntity forceFieldPB;
 	forceFieldPB.ParseFromIstream(&stream);
-	
+
 	m_position = DeserializePos(forceFieldPB);
-	
+
 	radius = glm::vec3(forceFieldPB.radx(), forceFieldPB.rady(), forceFieldPB.radz());
 	newGravity = m_effectiveNewGravity = static_cast<Dir>(forceFieldPB.new_gravity());
 	activateAction = (ActivateAction)forceFieldPB.activate_action();
 	m_enabled = true;
-	
+
 	if (forceFieldPB.name() != 0)
 		m_activatable.m_name = forceFieldPB.name();
 }
@@ -258,12 +261,13 @@ void ForceFieldEnt::EdResized(const glm::vec3& newSize)
 std::vector<glm::vec3> ForceFieldEnt::GetConnectionPoints(const Ent& entity)
 {
 	const ForceFieldEnt& ffEnt = static_cast<const ForceFieldEnt&>(entity);
-	
+
 	std::vector<glm::vec3> points;
-	for (int dir = 0; dir < 6; dir++) {
+	for (int dir = 0; dir < 6; dir++)
+	{
 		points.push_back(ffEnt.m_position + ffEnt.radius * glm::vec3(DirectionVector(static_cast<Dir>(dir))));
 	}
-	
+
 	return points;
 }
 

@@ -8,6 +8,6 @@ void ImPopDisabled(bool disabled);
 #else
 namespace ImGui
 {
-	inline void Separator() { }
-}
+inline void Separator() {}
+} // namespace ImGui
 #endif

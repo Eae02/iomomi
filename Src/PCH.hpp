@@ -1,27 +1,25 @@
 #pragma once
 
+#include <EGame/EG.hpp>
 #include <algorithm>
-#include <memory>
-#include <utility>
+#include <array>
+#include <cctype>
+#include <chrono>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
 #include <iosfwd>
 #include <iostream>
-#include <sstream>
-#include <cstring>
-#include <cstddef>
-#include <cstdlib>
-#include <cstdint>
-#include <cctype>
-#include <cmath>
-
+#include <list>
+#include <memory>
+#include <optional>
 #include <queue>
-#include <array>
-#include <chrono>
+#include <sstream>
 #include <string>
 #include <string_view>
-#include <list>
-#include <typeindex>
 #include <type_traits>
+#include <typeindex>
+#include <utility>
 #include <vector>
-#include <optional>
-
-#include <EGame/EG.hpp>

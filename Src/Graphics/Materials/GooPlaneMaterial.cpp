@@ -1,6 +1,7 @@
 #include "GooPlaneMaterial.hpp"
-#include "../RenderTex.hpp"
+
 #include "../../World/Entities/Components/LiquidPlaneComp.hpp"
+#include "../RenderTex.hpp"
 
 constexpr int NM_SAMPLES = 3;
 constexpr float NM_SCALE_GLOBAL = 3.5f;
@@ -34,29 +35,29 @@ void GooPlaneMaterial::OnInit()
 	s_pipeline = eg::Pipeline::Create(pipelineCI);
 	s_pipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
 	s_pipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
-	
+
 	s_descriptorSet = eg::DescriptorSet(s_pipeline, 0);
-	
+
 	struct
 	{
 		glm::vec4 color;
 		glm::vec4 nmTransforms[NM_SAMPLES * 2];
 	} bufferData;
-	
+
 	waterColor = glm::vec3(0.1f, 0.9f, 0.2f);
 	bufferData.color = glm::vec4(waterColor, 0.3f);
-	
+
 	for (int i = 0; i < NM_SAMPLES; i++)
 	{
 		const float sinT = std::sin(NM_ANGLES[i]);
 		const float cosT = std::cos(NM_ANGLES[i]);
 		const float scale = 1.0f / (NM_SCALES[i] * NM_SCALE_GLOBAL);
 		bufferData.nmTransforms[i * 2 + 0] = glm::vec4(cosT, 0, -sinT, NM_SPEED[i] * NM_SPEED_GLOBAL) * scale;
-		bufferData.nmTransforms[i * 2 + 1] = glm::vec4(sinT, 0,  cosT, NM_SPEED[i] * NM_SPEED_GLOBAL) * scale;
+		bufferData.nmTransforms[i * 2 + 1] = glm::vec4(sinT, 0, cosT, NM_SPEED[i] * NM_SPEED_GLOBAL) * scale;
 	}
 	s_textureTransformsBuffer = eg::Buffer(eg::BufferFlags::UniformBuffer, sizeof(bufferData), &bufferData);
 	s_textureTransformsBuffer.UsageHint(eg::BufferUsage::UniformBuffer, eg::ShaderAccessFlags::Fragment);
-	
+
 	s_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
 	s_descriptorSet.BindUniformBuffer(s_textureTransformsBuffer, 1, 0, sizeof(bufferData));
 	s_descriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/SlimeN.png"), 2, &commonTextureSampler);
@@ -64,9 +65,9 @@ void GooPlaneMaterial::OnInit()
 
 void GooPlaneMaterial::OnShutdown()
 {
-	GooPlaneMaterial::s_pipeline = { };
-	GooPlaneMaterial::s_descriptorSet = { };
-	GooPlaneMaterial::s_textureTransformsBuffer = { };
+	GooPlaneMaterial::s_pipeline = {};
+	GooPlaneMaterial::s_descriptorSet = {};
+	GooPlaneMaterial::s_textureTransformsBuffer = {};
 }
 
 EG_ON_INIT(GooPlaneMaterial::OnInit)
@@ -82,11 +83,11 @@ bool GooPlaneMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) 
 	MeshDrawArgs& meshDrawArgs = *static_cast<MeshDrawArgs*>(drawArgs);
 	if (meshDrawArgs.drawMode != MeshDrawMode::Emissive)
 		return false;
-	
+
 	cmdCtx.BindPipeline(s_pipeline);
-	
+
 	cmdCtx.BindDescriptorSet(s_descriptorSet, 0);
-	
+
 	return true;
 }
 

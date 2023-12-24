@@ -1,6 +1,7 @@
 #include "PointLightShadowMapper.hpp"
-#include "PointLight.hpp"
+
 #include "../GraphicsCommon.hpp"
+#include "PointLight.hpp"
 
 void PointLightShadowDrawArgs::SetPushConstants() const
 {
@@ -13,28 +14,30 @@ void PointLightShadowDrawArgs::SetPushConstants() const
 	eg::DC.PushConstants(0, sizeof(pcData), pcData);
 }
 
-static const glm::vec3 shadowMatrixF[] = { { 1, 0, 0 }, { -1, 0, 0 }, { 0, 1, 0 }, { 0,-1, 0 }, { 0, 0, 1 }, { 0, 0,-1 } };
-static const glm::vec3 shadowMatrixU[] = { { 0, -1, 0 }, { 0,-1, 0 }, { 0, 0, 1 }, { 0, 0,-1 }, { 0,-1, 0 }, { 0,-1, 0 } };
+static const glm::vec3 shadowMatrixF[] = { { 1, 0, 0 },  { -1, 0, 0 }, { 0, 1, 0 },
+	                                       { 0, -1, 0 }, { 0, 0, 1 },  { 0, 0, -1 } };
+static const glm::vec3 shadowMatrixU[] = { { 0, -1, 0 }, { 0, -1, 0 }, { 0, 0, 1 },
+	                                       { 0, 0, -1 }, { 0, -1, 0 }, { 0, -1, 0 } };
 
 PointLightShadowMapper::PointLightShadowMapper()
 {
 	eg::GraphicsPipelineCreateInfo depthCopyPipelineCI;
 	depthCopyPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
-	depthCopyPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/ShadowDepthCopy.fs.glsl").DefaultVariant();
+	depthCopyPipelineCI.fragmentShader =
+		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/ShadowDepthCopy.fs.glsl").DefaultVariant();
 	depthCopyPipelineCI.enableDepthTest = true;
 	depthCopyPipelineCI.enableDepthWrite = true;
 	depthCopyPipelineCI.label = "ShadowDepthCopy";
 	m_depthCopyPipeline = eg::Pipeline::Create(depthCopyPipelineCI);
 	m_depthCopyPipeline.FramebufferFormatHint(eg::Format::Undefined, SHADOW_MAP_FORMAT);
-	
-	glm::vec3 localNormals[5] = 
-	{
+
+	glm::vec3 localNormals[5] = {
 		glm::vec3(1, 0, 1),
 		glm::vec3(-1, 0, 1),
 		glm::vec3(0, 1, 1),
 		glm::vec3(0, -1, 1),
 	};
-	
+
 	for (uint32_t face = 0; face < 6; face++)
 	{
 		glm::mat3 invRotation = glm::transpose(glm::lookAt(glm::vec3(0), shadowMatrixF[face], shadowMatrixU[face]));
@@ -53,9 +56,9 @@ void PointLightShadowMapper::Invalidate(const eg::Sphere& sphere, const PointLig
 			continue;
 		if (!entry.light->enabled || !entry.light->castsShadows || !sphere.Intersects(entry.light->GetSphere()))
 			continue;
-		
+
 		glm::vec3 relPos = sphere.position - entry.light->position;
-		
+
 		for (uint32_t face = 0; face < 6; face++)
 		{
 			bool intersects = true;
@@ -81,7 +84,7 @@ void PointLightShadowMapper::SetQuality(QualityLevel quality)
 		return;
 	m_qualityLevel = quality;
 	m_resolution = qvar::shadowResolution(quality);
-	
+
 	for (LightEntry& entry : m_lights)
 	{
 		entry.staticShadowMap = -1;
@@ -101,33 +104,35 @@ int PointLightShadowMapper::AllocateShadowMap()
 			return static_cast<int>(i);
 		}
 	}
-	
+
 	ShadowMap& shadowMap = m_shadowMaps.emplace_back();
 	shadowMap.inUse = true;
-	
+
 	eg::TextureCreateInfo textureCI;
 	textureCI.format = SHADOW_MAP_FORMAT;
 	textureCI.width = m_resolution;
-	textureCI.flags = eg::TextureFlags::ShaderSample | eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ManualBarrier;
+	textureCI.flags =
+		eg::TextureFlags::ShaderSample | eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ManualBarrier;
 	textureCI.mipLevels = 1;
 	shadowMap.texture = eg::Texture::CreateCube(textureCI);
-	
+
 	shadowMap.wholeTextureView = shadowMap.texture.GetView();
-	
+
 	for (uint32_t i = 0; i < 6; i++)
 	{
 		eg::FramebufferAttachment dsAttachment;
 		dsAttachment.texture = shadowMap.texture.handle;
 		dsAttachment.subresource.firstArrayLayer = i;
 		dsAttachment.subresource.numArrayLayers = 1;
-		shadowMap.framebuffers[i] = eg::Framebuffer({ }, dsAttachment);
-		
+		shadowMap.framebuffers[i] = eg::Framebuffer({}, dsAttachment);
+
 		if (eg::GetGraphicsDeviceInfo().partialTextureViews)
 		{
-			shadowMap.layerViews[i] = shadowMap.texture.GetView(dsAttachment.subresource.AsSubresource(), eg::TextureViewType::Flat2D);
+			shadowMap.layerViews[i] =
+				shadowMap.texture.GetView(dsAttachment.subresource.AsSubresource(), eg::TextureViewType::Flat2D);
 		}
 	}
-	
+
 	return (int)m_shadowMaps.size() - 1;
 }
 
@@ -141,67 +146,66 @@ void PointLightShadowMapper::SetLightSources(const std::vector<std::shared_ptr<P
 		m_lights[i].dynamicShadowMap = -1;
 		lights[i]->shadowMap = nullptr;
 	}
-	
+
 	for (ShadowMap& shadowMap : m_shadowMaps)
 	{
 		shadowMap.inUse = false;
 	}
 }
 
-void PointLightShadowMapper::UpdateShadowMaps(const RenderCallback& prepareCallback,
-	const RenderCallback& renderCallback, const eg::Frustum& viewFrustum)
+void PointLightShadowMapper::UpdateShadowMaps(
+	const RenderCallback& prepareCallback, const RenderCallback& renderCallback, const eg::Frustum& viewFrustum)
 {
 	auto gpuTimer = eg::StartGPUTimer("PL Shadows");
 	auto cpuTimer = eg::StartCPUTimer("PL Shadows");
-	
+
 	m_lastFrameUpdateCount = 0;
-	
+
 	if (m_lights.empty())
 		return;
-	
+
 	eg::DC.DebugLabelBegin("PL Shadows");
-	
+
 	PointLightShadowDrawArgs renderArgs;
-	
-	auto UpdateShadowMap = [&] (int shadowMap, int baseShadowMap, const PointLight& light, uint32_t face)
+
+	auto UpdateShadowMap = [&](int shadowMap, int baseShadowMap, const PointLight& light, uint32_t face)
 	{
 		std::string debugLabel = "Update SM " + std::to_string(shadowMap) + ":" + std::to_string(face);
 		eg::DC.DebugLabelBegin(debugLabel.c_str());
-		
+
 		renderArgs.lightSphere = light.GetSphere();
-		renderArgs.lightMatrix =
-			glm::perspective(glm::radians(90.0f), 1.0f, 0.001f, light.Range()) *
-			glm::lookAt(light.position, light.position + shadowMatrixF[face], shadowMatrixU[face]);
-		
+		renderArgs.lightMatrix = glm::perspective(glm::radians(90.0f), 1.0f, 0.001f, light.Range()) *
+		                         glm::lookAt(light.position, light.position + shadowMatrixF[face], shadowMatrixU[face]);
+
 		if (eg::CurrentGraphicsAPI() == eg::GraphicsAPI::Vulkan)
 		{
 			renderArgs.lightMatrix = glm::scale(glm::mat4(1), glm::vec3(1, -1, 1)) * renderArgs.lightMatrix;
 		}
-		
+
 		renderArgs.light = &light;
 		renderArgs.frustum = eg::Frustum(glm::inverse(renderArgs.lightMatrix));
-		
+
 		prepareCallback(renderArgs);
-		
+
 		eg::RenderPassBeginInfo rpBeginInfo;
 		rpBeginInfo.framebuffer = m_shadowMaps[shadowMap].framebuffers[face].handle;
 		rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Clear;
 		rpBeginInfo.depthClearValue = 1.0f;
 		eg::DC.BeginRenderPass(rpBeginInfo);
-		
+
 		if (baseShadowMap != -1)
 		{
 			eg::DC.BindPipeline(m_depthCopyPipeline);
-			
+
 			eg::DC.BindTextureView(m_shadowMaps[baseShadowMap].layerViews[face], 0, 0, &framebufferNearestSampler);
-			
+
 			eg::DC.Draw(0, 3, 0, 1);
 		}
-		
+
 		renderCallback(renderArgs);
-		
+
 		eg::DC.EndRenderPass();
-		
+
 		eg::TextureBarrier barrier;
 		barrier.subresource.firstArrayLayer = face;
 		barrier.subresource.numArrayLayers = 1;
@@ -210,13 +214,13 @@ void PointLightShadowMapper::UpdateShadowMaps(const RenderCallback& prepareCallb
 		barrier.oldAccess = eg::ShaderAccessFlags::None;
 		barrier.newAccess = eg::ShaderAccessFlags::Fragment;
 		eg::DC.Barrier(m_shadowMaps[shadowMap].texture, barrier);
-		
+
 		eg::DC.DebugLabelEnd();
-		
+
 		m_lastFrameUpdateCount++;
 	};
-	
-	//Updates static shadow maps, disabled if partial texture views are not supported
+
+	// Updates static shadow maps, disabled if partial texture views are not supported
 	if (eg::GetGraphicsDeviceInfo().partialTextureViews)
 	{
 		renderArgs.renderDynamic = false;
@@ -224,7 +228,7 @@ void PointLightShadowMapper::UpdateShadowMaps(const RenderCallback& prepareCallb
 		for (LightEntry& entry : m_lights)
 		{
 			if (entry.light->enabled && entry.light->castsShadows && !entry.light->willMoveEveryFrame &&
-				(entry.staticShadowMap == -1 || entry.HasMoved()) && viewFrustum.Intersects(entry.light->GetSphere()))
+			    (entry.staticShadowMap == -1 || entry.HasMoved()) && viewFrustum.Intersects(entry.light->GetSphere()))
 			{
 				if (entry.staticShadowMap == -1)
 				{
@@ -234,7 +238,7 @@ void PointLightShadowMapper::UpdateShadowMaps(const RenderCallback& prepareCallb
 						entry.light->shadowMap = m_shadowMaps[entry.staticShadowMap].wholeTextureView;
 					}
 				}
-				
+
 				for (uint32_t face = 0; face < 6; face++)
 				{
 					UpdateShadowMap(entry.staticShadowMap, -1, *entry.light, face);
@@ -242,7 +246,7 @@ void PointLightShadowMapper::UpdateShadowMaps(const RenderCallback& prepareCallb
 			}
 		}
 	}
-	
+
 	int remUpdateCount = qvar::shadowUpdateLimitPerFrame(m_qualityLevel);
 	std::optional<size_t> nextDynamicLightUpdatePos;
 	for (size_t i = m_dynamicLightUpdatePos; i < m_dynamicLightUpdatePos + m_lights.size(); i++)
@@ -250,14 +254,14 @@ void PointLightShadowMapper::UpdateShadowMaps(const RenderCallback& prepareCallb
 		LightEntry& entry = m_lights[i % m_lights.size()];
 		if (!entry.light->enabled || !entry.light->castsShadows || !viewFrustum.Intersects(entry.light->GetSphere()))
 			continue;
-		
+
 		if (remUpdateCount <= 0 && !entry.light->highPriority)
 		{
 			if (!nextDynamicLightUpdatePos.has_value())
 				nextDynamicLightUpdatePos = i % m_lights.size();
 			continue;
 		}
-		
+
 		bool updateAll = entry.HasMoved();
 		if (entry.dynamicShadowMap == -1)
 		{
@@ -265,7 +269,7 @@ void PointLightShadowMapper::UpdateShadowMaps(const RenderCallback& prepareCallb
 			entry.light->shadowMap = m_shadowMaps[entry.dynamicShadowMap].wholeTextureView;
 			updateAll = true;
 		}
-		
+
 		for (uint32_t face = 0; face < 6; face++)
 		{
 			if (updateAll || entry.faceInvalidated[face])
@@ -277,16 +281,16 @@ void PointLightShadowMapper::UpdateShadowMaps(const RenderCallback& prepareCallb
 				remUpdateCount--;
 			}
 		}
-		
+
 		entry.previousPosition = entry.light->position;
 		entry.previousRange = entry.light->Range();
 	}
-	
+
 	if (nextDynamicLightUpdatePos.has_value())
 		m_dynamicLightUpdatePos = *nextDynamicLightUpdatePos;
-	
+
 	eg::DC.DebugLabelEnd();
-	
+
 	if (m_lastFrameUpdateCount)
 	{
 		m_lastUpdateFrameIndex = eg::FrameIdx();

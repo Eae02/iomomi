@@ -1,9 +1,9 @@
+#include <fstream>
+#include <magic_enum.hpp>
+
 #include "../StaticPropMaterial.hpp"
 
-#include <magic_enum.hpp>
-#include <fstream>
-
-static const eg::AssetFormat StaticPropMaterialAssetFormat { "StaticPropMaterial", 10 };
+static const eg::AssetFormat StaticPropMaterialAssetFormat{ "StaticPropMaterial", 10 };
 
 #ifdef EG_HAS_YAML_CPP
 class StaticPropMaterialAssetGenerator : public eg::AssetGenerator
@@ -16,9 +16,9 @@ public:
 		std::ifstream stream(sourcePath, std::ios::binary);
 		if (!stream)
 			return false;
-		
+
 		YAML::Node rootYaml = YAML::Load(stream);
-		
+
 		const float roughnessMin = rootYaml["roughnessMin"].as<float>(0.0f);
 		const float roughnessMax = rootYaml["roughnessMax"].as<float>(1.0f);
 		const float texScale = rootYaml["textureScale"].as<float>(1.0f);
@@ -28,7 +28,7 @@ public:
 		const bool backfaceCullEd = rootYaml["backfaceCullEd"].as<bool>(false);
 		const bool castShadows = rootYaml["castShadows"].as<bool>(true);
 		const bool alphaTest = rootYaml["alphaTest"].as<bool>(false);
-		
+
 		QualityLevel minShadowQuality = QualityLevel::VeryLow;
 		std::string minShadowQualityStr = rootYaml["minShadowQuality"].as<std::string>("");
 		if (!minShadowQualityStr.empty())
@@ -39,21 +39,25 @@ public:
 			}
 			else
 			{
-				eg::Log(eg::LogLevel::Error, "as", "Unknown shadow quality level {} in {}", minShadowQualityStr, sourcePath);
+				eg::Log(
+					eg::LogLevel::Error, "as", "Unknown shadow quality level {} in {}", minShadowQualityStr,
+					sourcePath);
 			}
 		}
-		
+
 		std::string albedoPath = rootYaml["albedo"].as<std::string>(std::string());
 		std::string normalMapPath = rootYaml["normalMap"].as<std::string>(std::string());
 		std::string miscMapPath = rootYaml["miscMap"].as<std::string>(std::string());
-		
+
 		if (albedoPath.empty() || normalMapPath.empty() || miscMapPath.empty())
 		{
-			eg::Log(eg::LogLevel::Error, "as",
-				"Invalid static prop material '{0}', missing one of 'albedo', 'normalMap', or 'miscMap'", relSourcePath);
+			eg::Log(
+				eg::LogLevel::Error, "as",
+				"Invalid static prop material '{0}', missing one of 'albedo', 'normalMap', or 'miscMap'",
+				relSourcePath);
 			return false;
 		}
-		
+
 		eg::BinWriteString(generateContext.outputStream, albedoPath);
 		eg::BinWriteString(generateContext.outputStream, normalMapPath);
 		eg::BinWriteString(generateContext.outputStream, miscMapPath);
@@ -61,20 +65,22 @@ public:
 		eg::BinWrite(generateContext.outputStream, roughnessMax);
 		eg::BinWrite(generateContext.outputStream, texScaleX);
 		eg::BinWrite(generateContext.outputStream, texScaleY);
-		eg::BinWrite<uint8_t>(generateContext.outputStream, static_cast<uint8_t>(backfaceCull) | (static_cast<uint8_t>(backfaceCullEd) << 1));
+		eg::BinWrite<uint8_t>(
+			generateContext.outputStream,
+			static_cast<uint8_t>(backfaceCull) | (static_cast<uint8_t>(backfaceCullEd) << 1));
 		eg::BinWrite<uint8_t>(generateContext.outputStream, static_cast<uint8_t>(castShadows));
 		eg::BinWrite<uint8_t>(generateContext.outputStream, static_cast<uint8_t>(minShadowQuality));
 		eg::BinWrite<uint8_t>(generateContext.outputStream, static_cast<uint8_t>(alphaTest));
-		
+
 		generateContext.AddLoadDependency(std::move(albedoPath));
 		generateContext.AddLoadDependency(std::move(normalMapPath));
 		generateContext.AddLoadDependency(std::move(miscMapPath));
-		
+
 		generateContext.AddLoadDependency("/Shaders/Common3D.vs.glsl");
 		generateContext.AddLoadDependency("/Shaders/StaticModel.fs.glsl");
 		generateContext.AddLoadDependency("/Shaders/PointLightShadow.fs.glsl");
 		generateContext.AddLoadDependency("/Shaders/Common3D-PLShadow.vs.glsl");
-		
+
 		return true;
 	}
 };
@@ -83,23 +89,23 @@ public:
 bool StaticPropMaterialAssetLoader(const eg::AssetLoadContext& loadContext)
 {
 	StaticPropMaterial::LazyInitGlobals();
-	
+
 	eg::MemoryStreambuf memoryStreambuf(loadContext.Data());
 	std::istream stream(&memoryStreambuf);
-	
+
 	std::string albedoTextureName = eg::BinReadString(stream);
 	std::string normalMapTextureName = eg::BinReadString(stream);
 	std::string miscMapTextureName = eg::BinReadString(stream);
-	
-	std::string albedoTexturePath = eg::Concat({ loadContext.DirPath(), albedoTextureName} );
-	std::string normalMapTexturePath = eg::Concat({ loadContext.DirPath(), normalMapTextureName} );
-	std::string miscMapTexturePath = eg::Concat({ loadContext.DirPath(), miscMapTextureName} );
-	
+
+	std::string albedoTexturePath = eg::Concat({ loadContext.DirPath(), albedoTextureName });
+	std::string normalMapTexturePath = eg::Concat({ loadContext.DirPath(), normalMapTextureName });
+	std::string miscMapTexturePath = eg::Concat({ loadContext.DirPath(), miscMapTextureName });
+
 	StaticPropMaterial& material = loadContext.CreateResult<StaticPropMaterial>();
 	material.m_albedoTexture = &eg::GetAsset<eg::Texture>(albedoTexturePath);
 	material.m_normalMapTexture = &eg::GetAsset<eg::Texture>(normalMapTexturePath);
 	material.m_miscMapTexture = &eg::GetAsset<eg::Texture>(miscMapTexturePath);
-	
+
 	material.m_roughnessMin = eg::BinRead<float>(stream);
 	material.m_roughnessMax = eg::BinRead<float>(stream);
 	material.m_textureScale.x = 1.0f / eg::BinRead<float>(stream);
@@ -110,9 +116,9 @@ bool StaticPropMaterialAssetLoader(const eg::AssetLoadContext& loadContext)
 	material.m_castShadows = eg::BinRead<uint8_t>(stream);
 	material.m_minShadowQuality = (QualityLevel)eg::BinRead<uint8_t>(stream);
 	material.m_alphaTest = eg::BinRead<uint8_t>(stream);
-	
+
 	material.CreateDescriptorSet();
-	
+
 	return true;
 }
 

@@ -1,12 +1,13 @@
 #include "PlatformEnt.hpp"
-#include "../../Entities/EntityManager.hpp"
-#include "../../WorldUpdateArgs.hpp"
-#include "../../World.hpp"
-#include "../../../Settings.hpp"
-#include "../../../Graphics/Materials/StaticPropMaterial.hpp"
-#include "../../../Graphics/Lighting/PointLightShadowMapper.hpp"
-#include "../../../ImGui.hpp"
+
 #include "../../../../Protobuf/Build/PlatformEntity.pb.h"
+#include "../../../Graphics/Lighting/PointLightShadowMapper.hpp"
+#include "../../../Graphics/Materials/StaticPropMaterial.hpp"
+#include "../../../ImGui.hpp"
+#include "../../../Settings.hpp"
+#include "../../Entities/EntityManager.hpp"
+#include "../../World.hpp"
+#include "../../WorldUpdateArgs.hpp"
 
 DEF_ENT_TYPE(PlatformEnt)
 
@@ -22,33 +23,31 @@ static void OnInit()
 {
 	platformModel = &eg::GetAsset<eg::Model>("Models/Platform.obj");
 	platformMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Platform.yaml");
-	
+
 	platformSliderModel = &eg::GetAsset<eg::Model>("Models/PlatformSlider.obj");
 	platformSliderMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/PlatformSlider.yaml");
 }
 
 EG_ON_INIT(OnInit)
 
-PlatformEnt::PlatformEnt()
-	: m_activatable(&PlatformEnt::GetConnectionPoints)
+PlatformEnt::PlatformEnt() : m_activatable(&PlatformEnt::GetConnectionPoints)
 {
 	m_physicsObject.canBePushed = false;
 	m_physicsObject.canCarry = true;
 	m_physicsObject.owner = this;
 	m_physicsObject.debugColor = 0xcf24cf;
 	m_physicsObject.constrainMove = &ConstrainMove;
-	
+
 	m_aaQuadComp.upPlane = 1;
 	m_aaQuadComp.radius = glm::vec2(1, 1);
 }
 
 static const glm::mat4 PLATFORM_ROTATION_MATRIX(0, 0, -1, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 1);
 
-//Gets the transformation matrix for the platform without any sliding
-glm::mat4 PlatformEnt::GetBaseTransform() const 
+// Gets the transformation matrix for the platform without any sliding
+glm::mat4 PlatformEnt::GetBaseTransform() const
 {
-	return glm::translate(glm::mat4(1), m_basePosition) *
-	       glm::mat4(GetRotationMatrix(m_forwardDir)) *
+	return glm::translate(glm::mat4(1), m_basePosition) * glm::mat4(GetRotationMatrix(m_forwardDir)) *
 	       PLATFORM_ROTATION_MATRIX;
 }
 
@@ -56,16 +55,16 @@ std::vector<glm::vec3> PlatformEnt::GetConnectionPoints(const Ent& entity)
 {
 	const PlatformEnt& platform = static_cast<const PlatformEnt&>(entity);
 	const glm::mat4 baseTransform = platform.GetBaseTransform();
-	
+
 	const float connectionPoints[] = { 0.0f, 0.5f, 1.0f };
-	
+
 	std::vector<glm::vec3> connectionPointsWS(std::size(connectionPoints));
 	for (size_t i = 0; i < std::size(connectionPoints); i++)
 	{
 		const glm::vec2 slideOffset = platform.m_slideOffset * connectionPoints[i];
 		connectionPointsWS[i] = baseTransform * glm::vec4(slideOffset.x, slideOffset.y, 0, 1);
 	}
-	
+
 	return connectionPointsWS;
 }
 
@@ -73,17 +72,17 @@ void PlatformEnt::RenderSettings()
 {
 #ifdef EG_HAS_IMGUI
 	Ent::RenderSettings();
-	
+
 	if (ImGui::DragFloat2("Slide Offset", &m_slideOffset.x, 0.1f))
 	{
 		m_editorLaunchTrajectory.clear();
 	}
-	
+
 	if (ImGui::DragFloat("Slide Time", &m_slideTime))
 	{
 		m_slideTime = std::max(m_slideTime, 0.0f);
 	}
-	
+
 	if (ImGui::DragFloat("Launch Speed", &m_launchSpeed, 0.1f, 0.0f, INFINITY))
 	{
 		m_launchSpeed = std::max(m_launchSpeed, 0.0f);
@@ -92,27 +91,29 @@ void PlatformEnt::RenderSettings()
 #endif
 }
 
-void PlatformEnt::DrawSliderMesh(eg::MeshBatch& meshBatch, const eg::Frustum& frustum,
-	const glm::vec3& start, const glm::vec3& toEnd, const glm::vec3& up, float scale)
+void PlatformEnt::DrawSliderMesh(
+	eg::MeshBatch& meshBatch, const eg::Frustum& frustum, const glm::vec3& start, const glm::vec3& toEnd,
+	const glm::vec3& up, float scale)
 {
 	const float slideDist = glm::length(toEnd);
 	const glm::vec3 normToEnd = toEnd / slideDist;
-	
+
 	constexpr float SLIDER_MODEL_LENGTH = 0.2f;
 	const int numSliderInstances = static_cast<int>(std::round(slideDist / (SLIDER_MODEL_LENGTH * scale)));
-	
+
 	const glm::mat4 commonTransform =
 		glm::translate(glm::mat4(1), start) *
 		glm::mat4(glm::mat3(glm::cross(up, normToEnd) * scale, up * scale, normToEnd * scale));
-	
+
 	for (int i = 1; i <= numSliderInstances; i++)
 	{
-		const glm::mat4 partTransform = glm::translate(commonTransform, glm::vec3(0, 0, SLIDER_MODEL_LENGTH * static_cast<float>(i)));
+		const glm::mat4 partTransform =
+			glm::translate(commonTransform, glm::vec3(0, 0, SLIDER_MODEL_LENGTH * static_cast<float>(i)));
 		const eg::AABB aabb = platformSliderModel->GetMesh(0).boundingAABB->TransformedBoundingBox(partTransform);
 		if (frustum.Intersects(aabb))
 		{
-			meshBatch.AddModel(*platformSliderModel, *platformSliderMaterial,
-			                   StaticPropMaterial::InstanceData(partTransform));
+			meshBatch.AddModel(
+				*platformSliderModel, *platformSliderMaterial, StaticPropMaterial::InstanceData(partTransform));
 		}
 	}
 }
@@ -128,12 +129,12 @@ void PlatformEnt::GameDraw(const EntGameDrawArgs& args)
 {
 	if (args.shadowDrawArgs && settings.shadowQuality < minShadowCastQualityLevel)
 		return;
-	
+
 	if (args.shadowDrawArgs == nullptr)
 	{
 		DrawSliderMesh(*args.meshBatch, *args.frustum);
 	}
-	
+
 	const glm::mat4 transform = glm::translate(glm::mat4(1), m_physicsObject.position) * GetBaseTransform();
 	const eg::AABB aabb = platformModel->GetMesh(0).boundingAABB->TransformedBoundingBox(transform);
 	if (args.frustum->Intersects(aabb))
@@ -148,22 +149,19 @@ void PlatformEnt::EditorDraw(const EntEditorDrawArgs& args)
 {
 	DrawSliderMesh(*args.meshBatch, *args.frustum);
 	args.meshBatch->AddModel(*platformModel, *platformMaterial, StaticPropMaterial::InstanceData(GetBaseTransform()));
-	
+
 	if (m_launchSpeed > 0)
 	{
 		if (m_editorLaunchTrajectory.empty())
 		{
 			ComputeLaunchVelocity();
-			
+
 			const glm::vec3 startPos =
-				glm::mix(m_basePosition, FinalPosition(), LAUNCH_TIME) +
-				glm::vec3(DirectionVector(m_forwardDir));
+				glm::mix(m_basePosition, FinalPosition(), LAUNCH_TIME) + glm::vec3(DirectionVector(m_forwardDir));
 			m_editorLaunchTrajectory.push_back(startPos);
-			auto posAt = [&] (float dst)
-			{
-				return glm::vec3(0, -0.5f * GRAVITY_MAG * dst * dst, 0) + m_launchVelocityToSet * dst + startPos;
-			};
-			
+			auto posAt = [&](float dst)
+			{ return glm::vec3(0, -0.5f * GRAVITY_MAG * dst * dst, 0) + m_launchVelocityToSet * dst + startPos; };
+
 			constexpr float STEP_SIZE = 0.05f;
 			for (float dst = STEP_SIZE; dst < 50; dst += STEP_SIZE)
 			{
@@ -187,9 +185,9 @@ void PlatformEnt::EditorDraw(const EntEditorDrawArgs& args)
 				m_editorLaunchTrajectory.push_back(pos);
 			}
 		}
-		
+
 		static const eg::ColorSRGB color = eg::ColorSRGB::FromRGBAHex(0xde6e1faa);
-		
+
 		for (size_t i = 1; i < m_editorLaunchTrajectory.size(); i++)
 		{
 			args.primitiveRenderer->AddLine(m_editorLaunchTrajectory[i - 1], m_editorLaunchTrajectory[i], color, 0.05f);
@@ -201,10 +199,10 @@ glm::vec3 PlatformEnt::ConstrainMove(const PhysicsObject& object, const glm::vec
 {
 	PlatformEnt& ent = *(PlatformEnt*)std::get<Ent*>(object.owner);
 	glm::vec3 moveDir = ent.FinalPosition() - ent.m_basePosition;
-	
+
 	float posSlideTime = glm::dot(object.position, moveDir) / glm::length2(moveDir);
 	float slideDist = glm::dot(move, moveDir) / glm::length2(moveDir);
-	
+
 	return moveDir * glm::clamp(slideDist, -posSlideTime, 1 - posSlideTime);
 }
 
@@ -239,17 +237,17 @@ const void* PlatformEnt::GetComponent(const std::type_info& type) const
 void PlatformEnt::Serialize(std::ostream& stream) const
 {
 	iomomi_pb::PlatformEntity platformPB;
-	
+
 	platformPB.set_dir(static_cast<iomomi_pb::Dir>(m_forwardDir));
 	SerializePos(platformPB, m_basePosition);
-	
+
 	platformPB.set_slide_offset_x(m_slideOffset.x);
 	platformPB.set_slide_offset_y(m_slideOffset.y);
 	platformPB.set_slide_time(m_slideTime);
 	platformPB.set_launch_speed(m_launchSpeed);
-	
+
 	platformPB.set_name(m_activatable.m_name);
-	
+
 	platformPB.SerializeToOstream(&stream);
 }
 
@@ -257,20 +255,19 @@ void PlatformEnt::Deserialize(std::istream& stream)
 {
 	iomomi_pb::PlatformEntity platformPB;
 	platformPB.ParseFromIstream(&stream);
-	
+
 	m_basePosition = DeserializePos(platformPB);
 	m_forwardDir = static_cast<Dir>(platformPB.dir());
-	
+
 	m_slideOffset = glm::vec2(platformPB.slide_offset_x(), platformPB.slide_offset_y());
 	m_slideTime = platformPB.slide_time();
 	m_launchSpeed = platformPB.launch_speed();
-	
+
 	m_physicsObject.shape =
-		eg::AABB(glm::vec3(-0.99, -0.1f, -1.99), glm::vec3(0.99, 0, -0.01))
-		.TransformedBoundingBox(GetBaseTransform());
-	
+		eg::AABB(glm::vec3(-0.99, -0.1f, -1.99), glm::vec3(0.99, 0, -0.01)).TransformedBoundingBox(GetBaseTransform());
+
 	ComputeLaunchVelocity();
-	
+
 	if (platformPB.name() != 0)
 		m_activatable.m_name = platformPB.name();
 }
@@ -280,29 +277,29 @@ void PlatformEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 	glm::vec3 moveDir = FinalPosition() - m_basePosition;
 	float slideProgress = glm::clamp(glm::dot(m_physicsObject.position, moveDir) / glm::length2(moveDir), 0.0f, 1.0f);
 	float oldSlideProgress = slideProgress;
-	
-	//Updates the slide progress
+
+	// Updates the slide progress
 	if (m_activatable.m_enabledConnections)
 	{
 		m_physicsObject.canBePushed = false;
 		m_physicsObject.constrainMove = nullptr;
-		
+
 		const bool activated = m_activatable.AllSourcesActive();
 		const float slideDelta = dt / m_slideTime;
 		if (activated)
 			slideProgress = std::min(slideProgress + slideDelta, 1.0f);
 		else
 			slideProgress = std::max(slideProgress - slideDelta, 0.0f);
-		
+
 		glm::vec3 wantedPosition = moveDir * slideProgress;
-		//m_physicsObject.position = wantedPosition;
+		// m_physicsObject.position = wantedPosition;
 		m_physicsObject.move = wantedPosition - m_physicsObject.position;
-		
+
 		if (oldSlideProgress < LAUNCH_TIME && slideProgress >= LAUNCH_TIME)
 			m_launchVelocity = m_launchVelocityToSet;
 		else
-			m_launchVelocity = { };
-		
+			m_launchVelocity = {};
+
 		if (!m_physicsObject.childObjects.empty() && glm::length2(m_launchVelocity) > 1E-3f)
 		{
 			for (PhysicsObject* object : m_physicsObject.childObjects)
@@ -316,7 +313,7 @@ void PlatformEnt::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 	{
 		m_physicsObject.canBePushed = true;
 	}
-	
+
 	physicsEngine.RegisterObject(&m_physicsObject);
 }
 

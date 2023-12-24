@@ -1,18 +1,16 @@
 #include "RampEnt.hpp"
-#include "../../../Collision.hpp"
-#include "../../../../ImGui.hpp"
-#include "../../../../Graphics/Materials/StaticPropMaterial.hpp"
-#include "../../../../Graphics/WallShader.hpp"
-#include "../../../../../Protobuf/Build/Ramp.pb.h"
 
 #include <glm/glm.hpp>
 
+#include "../../../../../Protobuf/Build/Ramp.pb.h"
+#include "../../../../Graphics/Materials/StaticPropMaterial.hpp"
+#include "../../../../Graphics/WallShader.hpp"
+#include "../../../../ImGui.hpp"
+#include "../../../Collision.hpp"
+
 DEF_ENT_TYPE(RampEnt)
 
-static const glm::vec3 untransformedPositions[4] = 
-{
-	{ -1, -1, -1 }, { 1, -1, -1 }, { -1, 1, 1 }, { 1, 1, 1 }
-};
+static const glm::vec3 untransformedPositions[4] = { { -1, -1, -1 }, { 1, -1, -1 }, { -1, 1, 1 }, { 1, 1, 1 } };
 static const int indicesNormal[6] = { 0, 1, 2, 1, 3, 2 };
 static const int indicesFlipped[6] = { 0, 2, 1, 1, 2, 3 };
 static const glm::vec2 uvs[4] = { { 0, 0 }, { 1, 0 }, { 0, 1 }, { 1, 1 } };
@@ -23,26 +21,19 @@ struct RampMaterial
 	const StaticPropMaterial* material;
 	int textureRepeatsV = 1;
 	bool twoSided = false;
-	
-	RampMaterial(const char* _name, const StaticPropMaterial* _material)
-		: name(_name), material(_material) { }
+
+	RampMaterial(const char* _name, const StaticPropMaterial* _material) : name(_name), material(_material) {}
 };
 
 static std::vector<RampMaterial> rampMaterials;
 
-//Cannot be called by EG_ON_INIT because wallMaterials need to be initialized before
+// Cannot be called by EG_ON_INIT because wallMaterials need to be initialized before
 static void Initialize()
 {
-	rampMaterials.emplace_back(
-		"Ramp", &eg::GetAsset<StaticPropMaterial>("Materials/Ramp.yaml")
-	);
-	rampMaterials.emplace_back(
-		"Grating", &eg::GetAsset<StaticPropMaterial>("Materials/Platform.yaml")
-	);
-	rampMaterials.emplace_back(
-		"Grating 2", &eg::GetAsset<StaticPropMaterial>("Materials/Grating2.yaml")
-	);
-	
+	rampMaterials.emplace_back("Ramp", &eg::GetAsset<StaticPropMaterial>("Materials/Ramp.yaml"));
+	rampMaterials.emplace_back("Grating", &eg::GetAsset<StaticPropMaterial>("Materials/Platform.yaml"));
+	rampMaterials.emplace_back("Grating 2", &eg::GetAsset<StaticPropMaterial>("Materials/Grating2.yaml"));
+
 	for (uint32_t i = 1; i < MAX_WALL_MATERIALS; i++)
 	{
 		if (wallMaterials[i].initialized)
@@ -56,7 +47,7 @@ RampEnt::RampEnt()
 {
 	m_physicsObject.canBePushed = false;
 	m_physicsObject.owner = this;
-	
+
 	if (rampMaterials.empty())
 	{
 		Initialize();
@@ -67,7 +58,7 @@ void RampEnt::RenderSettings()
 {
 #ifdef EG_HAS_IMGUI
 	Ent::RenderSettings();
-	
+
 	if (ImGui::DragFloat3("Size", &m_size.x))
 		m_meshOutOfDate = true;
 	if (ImGui::SliderInt("Rotation", &m_rotation, 0, 5))
@@ -77,9 +68,9 @@ void RampEnt::RenderSettings()
 		m_flipped = !m_flipped;
 		m_meshOutOfDate = true;
 	}
-	
+
 	ImGui::Separator();
-	
+
 	if (ImGui::BeginCombo("Material", rampMaterials[m_material].name))
 	{
 		for (uint32_t material = 0; material < rampMaterials.size(); material++)
@@ -91,7 +82,7 @@ void RampEnt::RenderSettings()
 		}
 		ImGui::EndCombo();
 	}
-	
+
 	ImGui::DragFloat("Texture Scale", &m_textureScale, 0.5f, 0.0f, INFINITY);
 	if (ImGui::SliderInt("Texture Rotation", &m_textureRotation, 0, 4))
 		m_meshOutOfDate = true;
@@ -102,7 +93,7 @@ void RampEnt::RenderSettings()
 void RampEnt::CommonDraw(const EntDrawArgs& args)
 {
 	InitializeVertexBuffer();
-	
+
 	glm::vec2 textureScale(m_textureScale * m_size.x, m_rampLength * m_textureScale);
 	if (m_stretchTextureV)
 	{
@@ -111,14 +102,14 @@ void RampEnt::CommonDraw(const EntDrawArgs& args)
 	}
 	if (m_textureRotation % 2)
 		std::swap(textureScale.x, textureScale.y);
-	
+
 	eg::MeshBatch::Mesh mesh;
 	mesh.firstIndex = 0;
 	mesh.firstVertex = 0;
 	mesh.numElements = 6;
 	mesh.vertexBuffer = m_vertexBuffer;
-	args.meshBatch->Add(mesh, *rampMaterials[m_material].material,
-		StaticPropMaterial::InstanceData(glm::mat4(1), textureScale));
+	args.meshBatch->Add(
+		mesh, *rampMaterials[m_material].material, StaticPropMaterial::InstanceData(glm::mat4(1), textureScale));
 }
 
 void RampEnt::InitializeVertexBuffer()
@@ -126,26 +117,26 @@ void RampEnt::InitializeVertexBuffer()
 	if (!m_meshOutOfDate && m_vertexBuffer.handle)
 		return;
 	m_meshOutOfDate = false;
-	
+
 	if (!m_vertexBuffer.handle)
 	{
-		m_vertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer | eg::BufferFlags::Update,
-			sizeof(eg::StdVertex) * 6, nullptr);
+		m_vertexBuffer =
+			eg::Buffer(eg::BufferFlags::VertexBuffer | eg::BufferFlags::Update, sizeof(eg::StdVertex) * 6, nullptr);
 	}
-	
+
 	const glm::mat4 transformationMatrix = GetTransformationMatrix();
 	const std::array<glm::vec3, 4> transformedPos = GetTransformedVertices(transformationMatrix);
-	
+
 	const glm::vec3 xDir = glm::normalize(transformedPos[1] - transformedPos[0]);
 	glm::vec3 aDir = transformedPos[2] - transformedPos[0];
 	m_rampLength = glm::length(aDir);
 	aDir /= m_rampLength;
-	
+
 	glm::vec3 normal = glm::normalize(glm::cross(aDir, xDir));
 	if (m_flipped)
 		normal = -normal;
-	
-	eg::StdVertex vertices[6] = { };
+
+	eg::StdVertex vertices[6] = {};
 	const int* indices = m_flipped ? indicesFlipped : indicesNormal;
 	for (int i = 0; i < 6; i++)
 	{
@@ -164,7 +155,7 @@ void RampEnt::InitializeVertexBuffer()
 			vertices[i].texCoord[1] = -x;
 		}
 	}
-	
+
 	eg::DC.UpdateBuffer(m_vertexBuffer, 0, sizeof(vertices), vertices);
 	m_vertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
 }
@@ -190,10 +181,9 @@ std::pair<glm::vec3, float> RampEnt::GetAngleAxisRotation() const
 glm::mat4 RampEnt::GetTransformationMatrix() const
 {
 	auto [rotationAxis, rotationAngle] = GetAngleAxisRotation();
-	
-	return glm::translate(glm::mat4(1), m_position) *
-		glm::rotate(glm::mat4(1), rotationAngle, rotationAxis) *
-		glm::scale(glm::mat4(1), 0.5f * m_size);
+
+	return glm::translate(glm::mat4(1), m_position) * glm::rotate(glm::mat4(1), rotationAngle, rotationAxis) *
+	       glm::scale(glm::mat4(1), 0.5f * m_size);
 }
 
 std::array<glm::vec3, 4> RampEnt::GetTransformedVertices(const glm::mat4& matrix) const
@@ -209,9 +199,9 @@ std::array<glm::vec3, 4> RampEnt::GetTransformedVertices(const glm::mat4& matrix
 void RampEnt::Serialize(std::ostream& stream) const
 {
 	iomomi_pb::RampEntity rampPB;
-	
+
 	SerializePos(rampPB, m_position);
-	
+
 	rampPB.set_yaw(m_rotation);
 	rampPB.set_flipped(m_flipped);
 	rampPB.set_scalex(m_size.x);
@@ -221,7 +211,7 @@ void RampEnt::Serialize(std::ostream& stream) const
 	rampPB.set_stretch_texture_v(m_stretchTextureV);
 	rampPB.set_material(eg::HashFNV1a32(rampMaterials[m_material].name));
 	rampPB.set_texture_rotation(m_textureRotation);
-	
+
 	rampPB.SerializeToOstream(&stream);
 }
 
@@ -229,7 +219,7 @@ void RampEnt::Deserialize(std::istream& stream)
 {
 	iomomi_pb::RampEntity rampPB;
 	rampPB.ParseFromIstream(&stream);
-	
+
 	m_rotation = rampPB.yaw();
 	m_flipped = rampPB.flipped();
 	m_size.x = rampPB.scalex();
@@ -239,7 +229,7 @@ void RampEnt::Deserialize(std::istream& stream)
 	m_textureScale = rampPB.texture_scale();
 	m_stretchTextureV = rampPB.stretch_texture_v();
 	m_textureRotation = rampPB.texture_rotation();
-	
+
 	m_material = 0;
 	for (uint32_t i = 0; i < rampMaterials.size(); i++)
 	{
@@ -249,15 +239,15 @@ void RampEnt::Deserialize(std::istream& stream)
 			break;
 		}
 	}
-	
+
 	if (m_textureScale < 1E-3f)
 		m_textureScale = 1;
-	
+
 	m_meshOutOfDate = true;
 	std::array<glm::vec3, 4> vertices = GetTransformedVertices(GetTransformationMatrix());
-	
-	m_collisionMesh = eg::CollisionMesh::CreateV3(vertices,
-		std::span<const int>(m_flipped ? indicesFlipped : indicesNormal, std::size(indicesNormal)));
+
+	m_collisionMesh = eg::CollisionMesh::CreateV3(
+		vertices, std::span<const int>(m_flipped ? indicesFlipped : indicesNormal, std::size(indicesNormal)));
 	m_collisionMesh.FlipWinding();
 	m_physicsObject.shape = &m_collisionMesh;
 }
@@ -275,7 +265,8 @@ void RampEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirec
 
 std::optional<eg::ColorSRGB> RampEnt::EdGetBoxColor(bool selected) const
 {
-	if (!selected) return {};
+	if (!selected)
+		return {};
 	return eg::ColorSRGB::FromHex(0x1a8cc9).ScaleAlpha(0.5f);
 }
 
@@ -300,7 +291,7 @@ std::shared_ptr<Ent> CloneEntity<RampEnt>(const Ent& entity)
 {
 	const RampEnt& src = static_cast<const RampEnt&>(entity);
 	std::shared_ptr<RampEnt> clone = Ent::Create<RampEnt>();
-	
+
 	clone->m_rotation = src.m_rotation;
 	clone->m_flipped = src.m_flipped;
 	clone->m_size = src.m_size;
@@ -309,6 +300,6 @@ std::shared_ptr<Ent> CloneEntity<RampEnt>(const Ent& entity)
 	clone->m_textureScale = src.m_textureScale;
 	clone->m_textureRotation = src.m_textureRotation;
 	clone->m_material = src.m_material;
-	
+
 	return clone;
 }

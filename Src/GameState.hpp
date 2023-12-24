@@ -4,7 +4,7 @@ struct GameState
 {
 	virtual ~GameState() = default;
 	virtual void RunFrame(float dt) = 0;
-	virtual void OnDeactivate() { }
+	virtual void OnDeactivate() {}
 };
 
 GameState* CurrentGS();

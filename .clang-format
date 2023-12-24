@@ -1,0 +1,13 @@
+BasedOnStyle: Microsoft
+IndentWidth: 4
+ColumnLimit: 120
+AllowShortLambdasOnASingleLine: true
+BreakBeforeBraces: Allman
+AlignAfterOpenBracket: AlwaysBreak
+DerivePointerAlignment: false
+PointerAlignment: Left
+UseTab: AlignWithSpaces
+AccessModifierOffset: -4
+AllowShortFunctionsOnASingleLine: Inline
+Cpp11BracedListStyle: false
+AlwaysBreakTemplateDeclarations: true

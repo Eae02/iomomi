@@ -7,7 +7,7 @@ class SSR
 {
 public:
 	SSR() = default;
-	
+
 	struct SSRRenderArgs
 	{
 		eg::TextureRef waterDepth;
@@ -17,16 +17,16 @@ public:
 		float intensity;
 		std::function<void()> renderAdditionalCallback;
 	};
-	
+
 	void Render(const SSRRenderArgs& renderArgs);
-	
+
 	static const float MAX_DISTANCE;
-	
+
 private:
 	void CreatePipeline();
-	
+
 	QualityLevel m_currentReflectionQualityLevel = static_cast<QualityLevel>(-1);
-	
+
 	eg::Pipeline m_pipelineInitial;
 	eg::Pipeline m_pipelineBlendPass;
 	eg::Pipeline m_blur1Pipeline;

@@ -1,4 +1,5 @@
 #include "GooPlaneEnt.hpp"
+
 #include "../../../../Protobuf/Build/GooPlaneEntity.pb.h"
 
 DEF_ENT_TYPE(GooPlaneEnt)
@@ -25,7 +26,7 @@ void GooPlaneEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceD
 void GooPlaneEnt::GameDraw(const EntGameDrawArgs& args)
 {
 	m_liquidPlane.MaybeUpdate(*args.world);
-	
+
 	if (m_liquidPlane.NumIndices() != 0)
 	{
 		args.meshBatch->AddNoData(m_liquidPlane.GetMesh(), m_material);
@@ -42,10 +43,10 @@ const void* GooPlaneEnt::GetComponent(const std::type_info& type) const
 void GooPlaneEnt::Serialize(std::ostream& stream) const
 {
 	iomomi_pb::GooPlaneEntity gooPlanePB;
-	
+
 	SerializePos(gooPlanePB, m_liquidPlane.position);
 	gooPlanePB.set_wall_dir(static_cast<iomomi_pb::Dir>(m_liquidPlane.wallForward));
-	
+
 	gooPlanePB.SerializeToOstream(&stream);
 }
 

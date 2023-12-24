@@ -4,15 +4,14 @@ RenderSettings* RenderSettings::instance;
 
 static const eg::DescriptorSetBinding dsBinding(0, eg::BindingType::UniformBuffer, eg::ShaderAccessFlags::Vertex);
 
-RenderSettings::RenderSettings()
-	: m_vertexShaderDescriptorSet({ &dsBinding, 1 })
+RenderSettings::RenderSettings() : m_vertexShaderDescriptorSet({ &dsBinding, 1 })
 {
 	eg::BufferCreateInfo createInfo;
 	createInfo.flags = eg::BufferFlags::UniformBuffer | eg::BufferFlags::CopyDst;
 	createInfo.size = BUFFER_SIZE;
 	createInfo.label = "RenderSettings";
 	m_buffer = eg::Buffer(createInfo);
-	
+
 	m_vertexShaderDescriptorSet.BindUniformBuffer(m_buffer, 0, 0, BUFFER_SIZE);
 }
 
@@ -29,8 +28,8 @@ void RenderSettings::UpdateBuffer()
 	*reinterpret_cast<glm::vec3*>(uploadMem + 384) = cameraPosition;
 	*reinterpret_cast<float*>(uploadMem + 396) = gameTime;
 	uploadBuffer.Flush();
-	
+
 	eg::DC.CopyBuffer(uploadBuffer.buffer, m_buffer, uploadBuffer.offset, 0, BUFFER_SIZE);
-	
+
 	m_buffer.UsageHint(eg::BufferUsage::UniformBuffer, eg::ShaderAccessFlags::Vertex | eg::ShaderAccessFlags::Fragment);
 }

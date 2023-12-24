@@ -1,7 +1,8 @@
 #include "LightStripMaterial.hpp"
-#include "MeshDrawArgs.hpp"
+
 #include "../DeferredRenderer.hpp"
 #include "../RenderSettings.hpp"
+#include "MeshDrawArgs.hpp"
 
 static eg::Pipeline lightStripPipelineEditor;
 static eg::Pipeline lightStripPipelineGame;
@@ -29,7 +30,7 @@ static void OnInit()
 	lightStripPipelineGame = eg::Pipeline::Create(pipelineCI);
 	lightStripPipelineGame.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
 	lightStripPipelineGame.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
-	
+
 	pipelineCI.label = "LightStripEditor";
 	lightStripPipelineEditor = eg::Pipeline::Create(pipelineCI);
 	lightStripPipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
@@ -58,22 +59,18 @@ bool LightStripMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs
 		cmdCtx.BindPipeline(lightStripPipelineEditor);
 	else
 		return false;
-	
+
 	RenderSettings::instance->BindVertexShaderDescriptorSet();
-	
+
 	return true;
 }
 
 bool LightStripMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
-	float pc[8] = 
-	{
-		color1.r, color1.g, color1.b, 0.0f,
-		color2.r, color2.g, color2.b, transitionProgress
-	};
-	
+	float pc[8] = { color1.r, color1.g, color1.b, 0.0f, color2.r, color2.g, color2.b, transitionProgress };
+
 	cmdCtx.PushConstants(0, sizeof(pc), pc);
-	
+
 	return true;
 }
 

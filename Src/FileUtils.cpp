@@ -6,10 +6,8 @@ std::string appDataDirPath;
 #include <emscripten.h>
 void SyncFileSystem()
 {
-	EM_ASM(
-		FS.syncfs(false, function (err) { });
-	);
+	EM_ASM(FS.syncfs(false, function(err){}););
 }
 #else
-void SyncFileSystem() { }
+void SyncFileSystem() {}
 #endif

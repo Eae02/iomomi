@@ -8,25 +8,25 @@ class WaterRenderer
 {
 public:
 	WaterRenderer();
-	
+
 	void RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParticles, class RenderTexManager& rtManager);
 	void RenderPost(class RenderTexManager& rtManager);
-	
+
 	static eg::TextureRef GetDummyDepthTexture();
-	
+
 private:
 	void CreateDepthBlurPipelines(uint32_t samples);
-	
+
 	QualityLevel m_currentQualityLevel;
-	
+
 	eg::Buffer m_quadVB;
-	
+
 	eg::Pipeline m_pipelineDepthMin;
 	eg::Pipeline m_pipelineDepthMax;
 	eg::Pipeline m_pipelineBlurPass1;
 	eg::Pipeline m_pipelineBlurPass2;
 	eg::Pipeline m_pipelinePostStdQual;
 	eg::Pipeline m_pipelinePostHighQual;
-	
+
 	eg::Texture* m_normalMapTexture;
 };

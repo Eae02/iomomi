@@ -1,8 +1,9 @@
 #include "ActivatableComp.hpp"
-#include "../EntityManager.hpp"
-#include "../../../Game.hpp"
 
 #include <ctime>
+
+#include "../../../Game.hpp"
+#include "../EntityManager.hpp"
 
 void ActivatableComp::SetActivated(int connection, bool activated)
 {
@@ -10,10 +11,10 @@ void ActivatableComp::SetActivated(int connection, bool activated)
 		m_activations |= 1U << connection;
 	else
 		m_activations &= ~(1U << connection);
-	
+
 	if (AllSourcesActive())
 	{
-		//Send message or something...
+		// Send message or something...
 	}
 }
 
@@ -54,12 +55,13 @@ std::vector<glm::vec3> ActivatableComp::GetConnectionPoints(const Ent& entity) c
 Ent* ActivatableComp::FindByName(EntityManager& entityManager, uint32_t name)
 {
 	Ent* result = nullptr;
-	entityManager.ForEachWithComponent<ActivatableComp>([&] (Ent& entity)
-	{
-		const auto* activatable = entity.GetComponent<ActivatableComp>();
-		if (activatable && activatable->m_name == name)
-			result = &entity;
-	});
+	entityManager.ForEachWithComponent<ActivatableComp>(
+		[&](Ent& entity)
+		{
+			const auto* activatable = entity.GetComponent<ActivatableComp>();
+			if (activatable && activatable->m_name == name)
+				result = &entity;
+		});
 	return result;
 }
 

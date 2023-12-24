@@ -2,10 +2,10 @@
 
 #ifdef IOMOMI_ENABLE_WATER
 
+#include <span>
+
 #include "../../World/Dir.hpp"
 #include "WaterPumpDescription.hpp"
-
-#include <span>
 
 struct WSINewArgs
 {
@@ -32,12 +32,12 @@ struct WSISimulateArgs
 {
 	float dt;
 	float gameTime;
-	
+
 	bool shouldChangeParticleGravity;
 	bool changeGravityParticleHighlightOnly;
 	glm::vec3 changeGravityParticlePos;
 	Dir newGravity;
-	
+
 	std::span<const WaterBlocker> waterBlockers;
 	std::span<const WaterPumpDescription> waterPumps;
 };
@@ -61,5 +61,7 @@ void WSI_SwapBuffers(WaterSimulatorImpl* impl);
 void WSI_Simulate(WaterSimulatorImpl* impl, const WSISimulateArgs& args);
 
 #else
-struct WaterBlocker { };
+struct WaterBlocker
+{
+};
 #endif

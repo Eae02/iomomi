@@ -8,16 +8,10 @@ struct WallVertex
 	float texCoord[3];
 	int8_t normalAndRoughnessLo[4];
 	int8_t tangentAndRoughnessHi[4];
-	
-	void SetNormal(const glm::vec3& _normal)
-	{
-		VecEncode(_normal, normalAndRoughnessLo);
-	}
-	
-	void SetTangent(const glm::vec3& _tangent)
-	{
-		VecEncode(_tangent, tangentAndRoughnessHi);
-	}
+
+	void SetNormal(const glm::vec3& _normal) { VecEncode(_normal, normalAndRoughnessLo); }
+
+	void SetTangent(const glm::vec3& _tangent) { VecEncode(_tangent, tangentAndRoughnessHi); }
 };
 
 struct WallBorderVertex

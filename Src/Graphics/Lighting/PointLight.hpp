@@ -10,24 +10,22 @@ struct PointLightShadowDrawArgs
 	bool renderStatic;
 	bool renderDynamic;
 	const class PointLight* light;
-	
+
 	void SetPushConstants() const;
 };
 
 class PointLight : public LightSource
 {
 public:
-	PointLight()
-		: LightSource(eg::ColorSRGB(1.0f, 1.0f, 1.0f), 20.0f) { }
-	
+	PointLight() : LightSource(eg::ColorSRGB(1.0f, 1.0f, 1.0f), 20.0f) {}
+
 	PointLight(const glm::vec3& pos, const eg::ColorSRGB& color, float intensity)
-		: LightSource(color, intensity), position(pos) { }
-	
-	eg::Sphere GetSphere() const
+		: LightSource(color, intensity), position(pos)
 	{
-		return eg::Sphere(position, Range());
 	}
-	
+
+	eg::Sphere GetSphere() const { return eg::Sphere(position, Range()); }
+
 	bool enabled = true;
 	bool castsShadows = true;
 	bool enableSpecularHighlights = true;
@@ -35,6 +33,6 @@ public:
 	bool limitRangeByInitialPosition = false;
 	bool highPriority = false;
 	glm::vec3 position;
-	
+
 	eg::TextureViewHandle shadowMap = nullptr;
 };

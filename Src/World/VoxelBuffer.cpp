@@ -18,10 +18,10 @@ void VoxelBuffer::SetIsAir(const glm::ivec3& pos, bool air)
 {
 	auto voxelIt = m_voxels.find(pos);
 	bool alreadyAir = voxelIt != m_voxels.end();
-	
+
 	if (alreadyAir == air)
 		return;
-	
+
 	if (alreadyAir)
 	{
 		m_voxels.erase(voxelIt);
@@ -73,12 +73,12 @@ glm::ivec4 VoxelBuffer::GetGravityCornerVoxelPos(glm::ivec3 cornerPos, Dir corne
 	const int cornerDim = static_cast<int>(cornerDir) / 2;
 	if (static_cast<int>(cornerDir) % 2)
 		cornerPos[cornerDim]--;
-	
+
 	const Dir uDir = static_cast<Dir>((cornerDim + 1) % 3 * 2);
 	const Dir vDir = static_cast<Dir>((cornerDim + 2) % 3 * 2);
 	const glm::ivec3 uV = DirectionVector(uDir);
 	const glm::ivec3 vV = DirectionVector(vDir);
-	
+
 	int numAir = 0;
 	glm::ivec2 airPos, notAirPos;
 	for (int u = -1; u <= 0; u++)
@@ -97,7 +97,7 @@ glm::ivec4 VoxelBuffer::GetGravityCornerVoxelPos(glm::ivec3 cornerPos, Dir corne
 			}
 		}
 	}
-	
+
 	if (numAir == 3)
 	{
 		airPos.x = -1 - notAirPos.x;
@@ -105,7 +105,7 @@ glm::ivec4 VoxelBuffer::GetGravityCornerVoxelPos(glm::ivec3 cornerPos, Dir corne
 	}
 	else if (numAir != 1)
 		return { 0, 0, 0, -1 };
-	
+
 	const int bit = cornerDim * 4 + (airPos.y + 1) * 2 + airPos.x + 1;
 	return glm::ivec4(cornerPos + uV * airPos.x + vV * airPos.y, bit);
 }
@@ -115,11 +115,11 @@ bool VoxelBuffer::IsGravityCorner(const glm::ivec3& cornerPos, Dir cornerDir) co
 	glm::ivec4 voxelPos = GetGravityCornerVoxelPos(cornerPos, cornerDir);
 	if (voxelPos.w == -1)
 		return false;
-	
+
 	auto voxelIt = m_voxels.find(glm::ivec3(voxelPos));
 	if (voxelIt == m_voxels.end())
 		return false;
-	
+
 	return voxelIt->second.hasGravityCorner[voxelPos.w];
 }
 
@@ -128,11 +128,11 @@ void VoxelBuffer::SetIsGravityCorner(const glm::ivec3& cornerPos, Dir cornerDir,
 	glm::ivec4 voxelPos = GetGravityCornerVoxelPos(cornerPos, cornerDir);
 	if (voxelPos.w == -1)
 		return;
-	
+
 	auto voxelIt = m_voxels.find(glm::ivec3(voxelPos));
 	if (voxelIt == m_voxels.end())
 		return;
-	
+
 	voxelIt->second.hasGravityCorner[voxelPos.w] = value;
 	m_modified = true;
 }
@@ -142,7 +142,7 @@ VoxelRayIntersectResult VoxelBuffer::RayIntersect(const eg::Ray& ray) const
 	float minDist = INFINITY;
 	VoxelRayIntersectResult result;
 	result.intersected = false;
-	
+
 	for (int dim = 0; dim < 3; dim++)
 	{
 		glm::vec3 dn = DirectionVector(static_cast<Dir>(dim * 2));
@@ -150,7 +150,7 @@ VoxelRayIntersectResult VoxelBuffer::RayIntersect(const eg::Ray& ray) const
 		{
 			if (std::signbit(static_cast<float>(s) - ray.GetStart()[dim]) != std::signbit(ray.GetDirection()[dim]))
 				continue;
-			
+
 			eg::Plane plane(dn, s);
 			float intersectDist;
 			if (ray.Intersects(plane, intersectDist) && intersectDist < minDist)
@@ -171,6 +171,6 @@ VoxelRayIntersectResult VoxelBuffer::RayIntersect(const eg::Ray& ray) const
 			}
 		}
 	}
-	
+
 	return result;
 }
