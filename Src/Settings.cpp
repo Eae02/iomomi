@@ -36,7 +36,8 @@ SettingEntry MakeEnumSetting(std::string name, T Settings::*setting)
 	return s;
 }
 
-SettingEntry MakeNumberSetting(std::string name, float Settings::*setting)
+template <typename T>
+SettingEntry MakeNumberSetting(std::string name, T Settings::*setting)
 {
 	SettingEntry s;
 	s.load = [=] (Settings& st, std::string_view str)
@@ -125,6 +126,7 @@ const SettingEntry settingEntries[] =
 	MakeEnumSetting("waterQuality", &Settings::waterQuality),
 	MakeEnumSetting("ssaoQuality", &Settings::ssaoQuality),
 	MakeEnumSetting("bloomQuality", &Settings::bloomQuality),
+	MakeNumberSetting("anisotropicFiltering", &Settings::anisotropicFiltering),
 	
 	MakeBoolSetting("showExtraLevels", &Settings::showExtraLevels),
 	MakeNumberSetting("fieldOfView", &Settings::fieldOfViewDeg),

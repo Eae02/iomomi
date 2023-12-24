@@ -59,7 +59,7 @@ void GooPlaneMaterial::OnInit()
 	
 	s_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
 	s_descriptorSet.BindUniformBuffer(s_textureTransformsBuffer, 1, 0, sizeof(bufferData));
-	s_descriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/SlimeN.png"), 2);
+	s_descriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/SlimeN.png"), 2, &commonTextureSampler);
 }
 
 void GooPlaneMaterial::OnShutdown()

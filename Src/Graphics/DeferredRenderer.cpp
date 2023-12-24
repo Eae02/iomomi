@@ -432,7 +432,7 @@ void DeferredRenderer::DrawPointLights(const std::vector<std::shared_ptr<PointLi
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor2), 0, 2);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 3);
 	eg::DC.BindTexture(waterDepthTexture, 0, 4);
-	eg::DC.BindTexture(eg::GetAsset<eg::Texture>("Caustics"), 0, 5);
+	eg::DC.BindTexture(eg::GetAsset<eg::Texture>("Caustics"), 0, 5, &commonTextureSampler);
 	
 	struct __attribute__((packed)) PointLightPC
 	{

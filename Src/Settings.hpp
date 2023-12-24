@@ -32,6 +32,15 @@ enum class BloomQuality
 	High
 };
 
+enum class SampleCountSetting
+{
+	x1,
+	x2,
+	x4,
+	x8,
+	x16
+};
+
 struct KeyBinding
 {
 	eg::Button kbmButton;
@@ -62,6 +71,8 @@ struct Settings
 	SSAOQuality ssaoQuality           = SSAOQuality::Medium;
 	BloomQuality bloomQuality         = BloomQuality::High;
 	float fieldOfViewDeg              = 80.0f;
+	
+	int anisotropicFiltering = 4;
 	
 	eg::GraphicsAPI graphicsAPI = eg::GraphicsAPI::OpenGL;
 	std::string preferredGPUName;

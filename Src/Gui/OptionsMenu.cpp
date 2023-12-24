@@ -186,7 +186,28 @@ void InitOptionsMenu()
 	leftWidgetList.AddWidget(SubtitleWidget("Graphics"));
 	ComboBox textureQualityCB = InitSettingsCB(&Settings::textureQuality, "Textures", true);
 	textureQualityCB.restartRequiredIfChanged = true;
-	leftWidgetList.AddWidget(textureQualityCB);
+	leftWidgetList.AddWidget(std::move(textureQualityCB));
+	
+	static const int ANISOTROPIC_FILTERING_LEVELS[] = { 16, 8, 4, 2, 1 };
+	ComboBox anisotropicFilteringCB;
+	anisotropicFilteringCB.label = "Anisotropic Filtering";
+	anisotropicFilteringCB.options = { "16x", "8x", "4x", "2x", "Off" };
+	anisotropicFilteringCB.restartRequiredIfChanged = true;
+	anisotropicFilteringCB.getValue = []
+	{
+		for (int i = 0; i < (int)std::size(ANISOTROPIC_FILTERING_LEVELS); i++)
+		{
+			if (settings.anisotropicFiltering == ANISOTROPIC_FILTERING_LEVELS[i])
+				return i;
+		}
+		return (int)std::size(ANISOTROPIC_FILTERING_LEVELS) - 1;
+	};
+	anisotropicFilteringCB.setValue = [] (int value)
+	{
+		settings.anisotropicFiltering = ANISOTROPIC_FILTERING_LEVELS[value];
+	};
+	leftWidgetList.AddWidget(std::move(anisotropicFilteringCB));
+	
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::shadowQuality, "Shadows", true));
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::reflectionsQuality, "Reflections", true));
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::lightingQuality, "Lighting", true));

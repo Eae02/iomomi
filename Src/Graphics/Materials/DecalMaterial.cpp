@@ -84,8 +84,8 @@ DecalMaterial::DecalMaterial(const eg::Texture& albedoTexture, const eg::Texture
 	  m_descriptorSet(decalsGamePipeline, 0)
 {
 	m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
-	m_descriptorSet.BindTexture(m_albedoTexture, 1);
-	m_descriptorSet.BindTexture(m_normalMapTexture, 2);
+	m_descriptorSet.BindTexture(m_albedoTexture, 1, &commonTextureSampler);
+	m_descriptorSet.BindTexture(m_normalMapTexture, 2, &commonTextureSampler);
 }
 
 size_t DecalMaterial::PipelineHash() const

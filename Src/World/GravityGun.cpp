@@ -26,7 +26,7 @@ GravityGun::MidMaterial::MidMaterial()
 	m_descriptorSet = eg::DescriptorSet(m_pipeline, 0);
 	
 	m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
-	m_descriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/Hex.png"), 1);
+	m_descriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/Hex.png"), 1, &commonTextureSampler);
 }
 
 size_t GravityGun::MidMaterial::PipelineHash() const

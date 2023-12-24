@@ -143,9 +143,9 @@ void StaticPropMaterial::CreateDescriptorSet()
 	m_descriptorSet = eg::DescriptorSet(GetPipeline(MeshDrawMode::Game), 0);
 	
 	m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
-	m_descriptorSet.BindTexture(*m_albedoTexture, 1, nullptr);
-	m_descriptorSet.BindTexture(*m_normalMapTexture, 2, nullptr);
-	m_descriptorSet.BindTexture(*m_miscMapTexture, 3, nullptr);
+	m_descriptorSet.BindTexture(*m_albedoTexture, 1, &commonTextureSampler);
+	m_descriptorSet.BindTexture(*m_normalMapTexture, 2, &commonTextureSampler);
+	m_descriptorSet.BindTexture(*m_miscMapTexture, 3, &commonTextureSampler);
 }
 
 size_t StaticPropMaterial::PipelineHash() const

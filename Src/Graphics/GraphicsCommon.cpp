@@ -55,7 +55,7 @@ eg::Texture blackPixelTexture;
 
 static void OnInit()
 {
-	const auto commonSamplerDescription = eg::SamplerDescription { .maxAnistropy = 16 };
+	const auto commonSamplerDescription = eg::SamplerDescription { .maxAnistropy = static_cast<float>(settings.anisotropicFiltering) };
 	commonTextureSampler = eg::Sampler(commonSamplerDescription);
 	
 	framebufferLinearSampler = eg::Sampler(eg::SamplerDescription {

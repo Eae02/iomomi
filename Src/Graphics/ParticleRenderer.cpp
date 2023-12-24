@@ -1,5 +1,6 @@
 #include "ParticleRenderer.hpp"
 #include "RenderSettings.hpp"
+#include "GraphicsCommon.hpp"
 
 ParticleRenderer::ParticleRenderer()
 {
@@ -35,7 +36,7 @@ void ParticleRenderer::Draw(const eg::ParticleManager& particleManager, eg::Text
 	
 	eg::DC.BindPipeline(m_pipeline);
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
-	eg::DC.BindTexture(*m_texture, 0, 1);
+	eg::DC.BindTexture(*m_texture, 0, 1, &commonTextureSampler);
 	eg::DC.BindTexture(depthTexture, 0, 2);
 	
 	eg::DC.BindVertexBuffer(0, m_vertexBuffer, 0);

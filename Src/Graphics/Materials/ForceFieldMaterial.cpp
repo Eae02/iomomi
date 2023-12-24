@@ -2,6 +2,7 @@
 #include "MeshDrawArgs.hpp"
 #include "../RenderSettings.hpp"
 #include "../GraphicsCommon.hpp"
+#include "../../Settings.hpp"
 
 ForceFieldMaterial::ForceFieldMaterial()
 {
@@ -43,7 +44,8 @@ ForceFieldMaterial::ForceFieldMaterial()
 	m_particleSampler = eg::Sampler(eg::SamplerDescription {
 		.wrapU = eg::WrapMode::ClampToEdge,
 		.wrapV = eg::WrapMode::ClampToEdge,
-		.wrapW = eg::WrapMode::ClampToEdge
+		.wrapW = eg::WrapMode::ClampToEdge,
+		.maxAnistropy = settings.anisotropicFiltering
 	});
 }
 
