@@ -2,11 +2,10 @@
 
 #ifdef IOMOMI_ENABLE_WATER
 #include <cstdlib>
-#include <execution>
-#include <glm/gtx/hash.hpp>
 #include <pcg_random.hpp>
 #include <unordered_set>
 
+#include "../../Vec3Compare.hpp"
 #include "../../World/Entities/Components/WaterBlockComp.hpp"
 #include "../../World/Entities/EntTypes/PumpEnt.hpp"
 #include "../../World/Entities/EntTypes/WaterPlaneEnt.hpp"
@@ -15,14 +14,14 @@
 #include "../RenderSettings.hpp"
 #include "WaterSimulatorImpl.hpp"
 
-static std::vector<float> GenerateWater(World& world)
+static std::vector<glm::vec3> GenerateWater(World& world)
 {
-	std::unordered_set<glm::ivec3> alreadyGenerated;
+	std::unordered_set<glm::ivec3, IVec3Hash> alreadyGenerated;
 
 	std::uniform_real_distribution<float> offsetDist(0.3f, 0.7f);
 
 	pcg32_fast rng(0);
-	std::vector<float> positions;
+	std::vector<glm::vec3> positions;
 
 	// Generates water
 	world.entManager.ForEachOfType<WaterPlaneEnt>(
@@ -36,7 +35,7 @@ static std::vector<float> GenerateWater(World& world)
 					continue;
 				alreadyGenerated.insert(cell);
 
-				glm::ivec3 generatePerVoxel(3, 4, 3);
+				glm::ivec3 generatePerVoxel(4, 4, 4);
 				if (waterPlaneEntity.liquidPlane.IsUnderwater(cell + glm::ivec3(0, 1, 0)))
 					generatePerVoxel.y += waterPlaneEntity.densityBoost;
 
@@ -53,9 +52,7 @@ static std::vector<float> GenerateWater(World& world)
 						                                          glm::vec3(generatePerVoxel);
 							if (pos.y > waterPlaneEntity.GetPosition().y)
 								continue;
-							positions.push_back(pos.x);
-							positions.push_back(pos.y);
-							positions.push_back(pos.z);
+							positions.push_back(pos);
 						}
 					}
 				}
@@ -88,20 +85,20 @@ public:
 
 		void SetAABB(const eg::AABB& aabb) override { m_aabbMT = aabb; }
 
-		QueryResults GetResults() override
+		WaterQueryResults GetResults() override
 		{
 			std::lock_guard<std::mutex> lock(m_mutex);
 			return m_results;
 		}
 
 		std::mutex m_mutex;
-		QueryResults m_results;
+		WaterQueryResults m_results;
 
 		eg::AABB m_aabbMT;
 		eg::AABB m_aabbBT;
 	};
 
-	WaterSimulator(World& world, std::span<const float> positions)
+	WaterSimulator(World& world, std::span<const glm::vec3> positions)
 	{
 		auto [worldBoundsMin, worldBoundsMax] = world.voxels.CalculateBounds();
 		glm::ivec3 worldSize = worldBoundsMax - worldBoundsMin;
@@ -121,16 +118,15 @@ public:
 			}
 		}
 
-		m_numParticles = eg::UnsignedNarrow<uint32_t>(positions.size() / 3) + world.extraWaterParticles;
+		m_numParticles = eg::UnsignedNarrow<uint32_t>(positions.size()) + world.extraWaterParticles;
 
-		WSINewArgs newArgs;
+		WaterSimulatorImpl::ConstructorArgs newArgs;
 		newArgs.minBounds = worldBoundsMin;
 		newArgs.maxBounds = worldBoundsMax;
 		newArgs.isAirBuffer = isVoxelAir;
-		newArgs.numParticles = eg::UnsignedNarrow<uint32_t>(positions.size() / 3);
 		newArgs.extraParticles = world.extraWaterParticles;
-		newArgs.particlePositions = positions.data();
-		m_impl = WSI_New(newArgs);
+		newArgs.particlePositions = positions;
+		m_impl = WaterSimulatorImpl::CreateInstance(newArgs);
 
 		uint64_t bufferSize = sizeof(float) * 4 * m_numParticles;
 		m_positionsBuffer = eg::Buffer(eg::BufferFlags::CopyDst | eg::BufferFlags::StorageBuffer, bufferSize, nullptr);
@@ -160,7 +156,6 @@ public:
 			m_unpausedSignal.notify_one();
 		}
 		m_thread.join();
-		WSI_Delete(m_impl);
 	}
 
 	bool IsPresimComplete() override
@@ -201,11 +196,11 @@ public:
 					glm::vec3 normal = glm::normalize(glm::cross(component.tangent, component.biTangent));
 
 					WaterBlocker blocker;
-					blocker.tangent = Vec3ToM128(component.tangent / tangentLen);
-					blocker.biTangent = Vec3ToM128(component.biTangent / biTangentLen);
+					blocker.tangent = (component.tangent / tangentLen);
+					blocker.biTangent = (component.biTangent / biTangentLen);
 					blocker.tangentLen = tangentLen;
 					blocker.biTangentLen = biTangentLen;
-					blocker.center = Vec3ToM128(component.center);
+					blocker.center = (component.center);
 					blocker.blockedGravities = 0;
 					for (int i = 0; i < 6; i++)
 					{
@@ -216,8 +211,8 @@ public:
 					for (int dir = -1; dir <= 1; dir += 2)
 					{
 						WaterBlocker& addedBlocker = m_waterBlockersMT.emplace_back(blocker);
-						addedBlocker.center = Vec3ToM128(component.center + normal * (static_cast<float>(dir) * 0.1f));
-						addedBlocker.normal = Vec3ToM128(normal * static_cast<float>(dir));
+						addedBlocker.center = (component.center + normal * (static_cast<float>(dir) * 0.1f));
+						addedBlocker.normal = (normal * static_cast<float>(dir));
 					}
 				});
 
@@ -283,13 +278,14 @@ public:
 			}
 
 			m_gameTimeSH = RenderSettings::instance->gameTime + GAME_TIME_OFFSET;
+			m_cameraPosSH = cameraPos;
 			m_pausedSH = paused;
-			m_numParticlesToDraw = WSI_CopyToOutputBuffer(m_impl);
+			m_numParticlesToDraw = m_impl->CopyToOutputBuffer();
 
 			if (m_gravitiesBuffer.handle)
 			{
 				uint32_t gravityBufferVersion;
-				void* gravitiesBufferData = WSI_GetGravitiesOutputBuffer(m_impl, gravityBufferVersion);
+				void* gravitiesBufferData = m_impl->GetGravitiesOutputBuffer(gravityBufferVersion);
 				if (m_lastGravityBufferVersion != gravityBufferVersion)
 				{
 					std::memcpy(
@@ -315,14 +311,9 @@ public:
 			eg::Log(eg::LogLevel::Info, "w", "updated water gravities buffer");
 		}
 
-		{
-			alignas(16) float cameraPos4[] = { cameraPos.x, cameraPos.y, cameraPos.z, 0 };
-			auto sortTimer = eg::StartCPUTimer("Water Sort");
-			WSI_SortOutputBuffer(m_impl, m_numParticlesToDraw, cameraPos4);
-			std::memcpy(
-				m_positionsUploadBufferMemory + uploadBufferOffset, WSI_GetOutputBuffer(m_impl),
-				m_numParticlesToDraw * sizeof(float) * 4);
-		}
+		std::memcpy(
+			m_positionsUploadBufferMemory + uploadBufferOffset, m_impl->GetOutputBuffer(),
+			m_numParticlesToDraw * sizeof(float) * 4);
 
 		const uint64_t uploadBufferRange = m_numParticlesToDraw * 4 * sizeof(float);
 
@@ -342,11 +333,13 @@ public:
 		std::vector<WaterBlocker> waterBlockers;
 		std::vector<WaterPumpDescription> waterPumps;
 
+		glm::vec3 cameraPos;
+
 		bool presimDone = false;
 		Clock::time_point lastStepEnd = Clock::now();
 		while (true)
 		{
-			WSISimulateArgs simulateArgs;
+			WaterSimulatorImpl::SimulateArgs simulateArgs;
 			simulateArgs.shouldChangeParticleGravity = false;
 			int stepsPerSecond;
 
@@ -361,7 +354,7 @@ public:
 					break;
 
 				if (m_presimIterationsCompleted != 0)
-					WSI_SwapBuffers(m_impl);
+					m_impl->SwapBuffers();
 				if (m_presimIterationsCompleted >= m_targetPresimIterations)
 					presimDone = true;
 				else
@@ -372,6 +365,7 @@ public:
 				waterBlockers = m_waterBlockersSH;
 				waterPumps = m_waterPumpsSH;
 				simulateArgs.gameTime = m_gameTimeSH;
+				simulateArgs.cameraPos = m_cameraPosSH;
 
 				if (!m_changeGravityParticles.empty())
 				{
@@ -386,18 +380,18 @@ public:
 			simulateArgs.dt = 1.0f / static_cast<float>(stepsPerSecond);
 			simulateArgs.waterBlockers = waterBlockers;
 			simulateArgs.waterPumps = waterPumps;
-			WSI_Simulate(m_impl, simulateArgs);
+			m_impl->Simulate(simulateArgs);
 
 			for (const std::shared_ptr<QueryAABB>& qaabb : m_queryAABBsBT)
 			{
-				glm::vec3 waterVelocity;
-				glm::vec3 buoyancy;
-				int numIntersecting = WSI_Query(m_impl, qaabb->m_aabbBT, waterVelocity, buoyancy);
+				eg::AABB aabb = qaabb->m_aabbBT;
+				aabb.min = glm::min(aabb.min, aabb.max);
+				aabb.max = glm::max(aabb.min, aabb.max);
+
+				WaterQueryResults queryResults = m_impl->Query(aabb);
 
 				std::lock_guard<std::mutex> lock(qaabb->m_mutex);
-				qaabb->m_results.numIntersecting = numIntersecting;
-				qaabb->m_results.waterVelocity = waterVelocity;
-				qaabb->m_results.buoyancy = buoyancy;
+				qaabb->m_results = queryResults;
 			}
 
 			m_lastUpdateTime = std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - lastStepEnd).count();
@@ -495,6 +489,8 @@ public:
 	std::optional<ChangeGravityParticleRef> m_changeGravityParticleMT;
 	std::vector<ChangeGravityParticleRef> m_changeGravityParticles;
 
+	glm::vec3 m_cameraPosSH;
+
 	std::vector<WaterBlocker> m_waterBlockersMT;
 	std::vector<WaterBlocker> m_waterBlockersSH;
 
@@ -506,7 +502,7 @@ public:
 	bool m_pausedSH = false;
 	std::condition_variable m_unpausedSignal;
 
-	struct WaterSimulatorImpl* m_impl;
+	std::unique_ptr<WaterSimulatorImpl> m_impl;
 
 	eg::Buffer m_positionsUploadBuffer;
 	char* m_positionsUploadBufferMemory;
@@ -523,7 +519,7 @@ public:
 
 std::unique_ptr<IWaterSimulator> CreateWaterSimulator(class World& world)
 {
-	std::vector<float> waterPositions = GenerateWater(world);
+	std::vector<glm::vec3> waterPositions = GenerateWater(world);
 	if (waterPositions.empty() && world.extraWaterParticles == 0)
 		return nullptr;
 	return std::make_unique<WaterSimulator>(world, waterPositions);

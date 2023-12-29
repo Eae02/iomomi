@@ -132,8 +132,8 @@ struct __attribute__((__packed__, __may_alias__)) WaterBlurPC
 	float blurDepthFalloff;
 };
 
-static float* blurRadius = eg::TweakVarFloat("wblur_radius", 1.0f, 0.0f);
-static float* blurDistanceFalloff = eg::TweakVarFloat("wblur_distfall", 0.5f, 0.0f);
+static float* blurRadius = eg::TweakVarFloat("wblur_radius", 1.25f, 0.0f);
+static float* blurDistanceFalloff = eg::TweakVarFloat("wblur_distfall", 0.3f, 0.0f);
 static float* blurDepthFalloff = eg::TweakVarFloat("wblur_depthfall", 0.2f, 0.0f);
 
 /*

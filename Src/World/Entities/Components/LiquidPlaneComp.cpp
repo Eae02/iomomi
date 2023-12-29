@@ -1,6 +1,5 @@
 #include "LiquidPlaneComp.hpp"
 
-#include <glm/gtx/hash.hpp>
 #include <unordered_set>
 
 #include "../../../Vec3Compare.hpp"
@@ -32,7 +31,7 @@ void LiquidPlaneComp::MaybeUpdate(const World& world)
 
 	glm::vec3 startF = position + glm::vec3(DirectionVector(wallForward)) * 0.5f;
 
-	std::unordered_set<glm::ivec3> visited;
+	std::unordered_set<glm::ivec3, IVec3Hash> visited;
 	std::queue<glm::ivec3> bfsQueue;
 
 	glm::ivec3 startI = glm::floor(startF);

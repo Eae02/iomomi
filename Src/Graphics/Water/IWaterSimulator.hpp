@@ -1,22 +1,16 @@
 #pragma once
 
 #include "../../World/Dir.hpp"
+#include "WaterQueryResults.hpp"
 
 class IWaterSimulator
 {
 public:
-	struct QueryResults
-	{
-		int numIntersecting;
-		glm::vec3 waterVelocity;
-		glm::vec3 buoyancy;
-	};
-
 	struct IQueryAABB
 	{
 		virtual ~IQueryAABB() {}
 		virtual void SetAABB(const eg::AABB& aabb) = 0;
-		virtual QueryResults GetResults() = 0;
+		virtual WaterQueryResults GetResults() = 0;
 	};
 
 	virtual ~IWaterSimulator() {}

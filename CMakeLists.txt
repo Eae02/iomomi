@@ -51,6 +51,7 @@ target_compile_options(iomomi PRIVATE
 #Adds compiler specific options
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	set_source_files_properties(Src/Graphics/Water/WaterSimulatorImpl.cpp PROPERTIES COMPILE_FLAGS "-O2 -g0")
+	set_source_files_properties(Src/Graphics/Water/WaterSimulatorImplAvx2.cpp PROPERTIES COMPILE_FLAGS "-O2 -g0 -mavx2")
 	set_source_files_properties(Src/World/Collision.cpp PROPERTIES COMPILE_FLAGS "-O2 -g0")
 endif()
 
@@ -101,15 +102,8 @@ if (${IOMOMI_EDITOR})
 	target_compile_definitions(iomomi PRIVATE -DIOMOMI_ENABLE_EDITOR)
 endif()
 
-# flags and tbb for water
 if (${IOMOMI_WATER})
 	target_compile_definitions(iomomi PRIVATE -DIOMOMI_ENABLE_WATER)
-	
-	find_package(PkgConfig)
-	pkg_check_modules(TBB REQUIRED tbb)
-	target_link_libraries(iomomi ${TBB_LIBRARIES})
-	target_include_directories(iomomi SYSTEM PRIVATE ${TBB_INCLUDE_DIRS})
-	target_compile_options(iomomi PRIVATE ${TBB_CFLAGS_OTHER})
 endif()
 
 # finds and adds protobuf
@@ -135,6 +129,5 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
 	target_compile_options(iomomi PRIVATE -Wno-sign-conversion -Wno-shorten-64-to-32 -Wno-mismatched-tags)
 	set_target_properties(iomomi PROPERTIES LINK_FLAGS "-s EXPORTED_RUNTIME_METHODS=['cwrap'] ${EMCC_FLAGS}")
 else()
-	target_link_libraries(iomomi stdc++fs)
-	target_compile_options(iomomi PRIVATE -msse4.1)
+	target_link_libraries(iomomi stdc++fs SDL2)
 endif()

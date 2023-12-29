@@ -1,8 +1,8 @@
 #pragma once
 
-#include <glm/gtx/hash.hpp>
 #include <unordered_map>
 
+#include "../Vec3Compare.hpp"
 #include "Dir.hpp"
 
 struct VoxelRayIntersectResult
@@ -50,6 +50,6 @@ private:
 		AirVoxel() : materials{}, hasGravityCorner(0) {}
 	};
 
-	std::unordered_map<glm::ivec3, AirVoxel> m_voxels;
+	std::unordered_map<glm::ivec3, AirVoxel, IVec3Hash> m_voxels;
 	bool m_modified = false;
 };

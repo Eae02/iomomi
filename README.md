@@ -14,7 +14,7 @@ All versions need S3 Texture Compression, and potentially some other GPU feature
 
 ### Compiling
 
-To compile on linux you need to have the following libraries installed: `sdl2`, `zlib`, `freetype`, `openal`, `yaml-cpp`, `glslang`, `nlohmann-json`, `libogg`, `libvorbis`, `libvorbisfile`, `tbb`, `protobuf`. You also need `gcc`, `make`, `cmake`, `xxd`, `protoc` and `glslangValidator`.
+To compile on linux you need to have the following libraries installed: `sdl2`, `zlib`, `freetype`, `openal`, `yaml-cpp`, `glslang`, `nlohmann-json`, `libogg`, `libvorbis`, `libvorbisfile`, `protobuf`. You also need `gcc`, `make`, `cmake`, `xxd`, `protoc` and `glslangValidator`.
 
 To get the correct fonts, you need to have the fonts *Orbitron* and *DejaVu Sans* installed when running the game for the first time.
 

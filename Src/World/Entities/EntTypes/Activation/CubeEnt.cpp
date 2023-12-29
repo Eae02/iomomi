@@ -12,7 +12,7 @@
 
 DEF_ENT_TYPE(CubeEnt)
 
-static float* cubeBuoyancyScale = eg::TweakVarFloat("cube_bcy_scale", 0.5f, 0.0f);
+static float* cubeBuoyancyScale = eg::TweakVarFloat("cube_bcy_scale", 0.4f, 0.0f);
 static float* cubeBuoyancyLimit = eg::TweakVarFloat("cube_bcy_lim", 25.0f, 0.0f);
 static float* cubeWaterDrag = eg::TweakVarFloat("cube_water_drag", 0.5f, 0.0f);
 static float* cubeWaterPullLimit = eg::TweakVarFloat("cube_pull_lim", 2.0f, 0.0f);
@@ -256,7 +256,7 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 		// Water interaction
 		if (m_waterQueryAABB != nullptr)
 		{
-			IWaterSimulator::QueryResults waterQueryRes = m_waterQueryAABB->GetResults();
+			WaterQueryResults waterQueryRes = m_waterQueryAABB->GetResults();
 
 			glm::vec3 relVelocity = waterQueryRes.waterVelocity - m_physicsObject.velocity;
 			glm::vec3 pullForce = relVelocity * *cubeWaterDrag;
