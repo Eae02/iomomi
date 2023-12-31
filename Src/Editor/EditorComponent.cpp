@@ -1,6 +1,6 @@
 #include "EditorComponent.hpp"
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "../Graphics/RenderSettings.hpp"
 #include "../World/Entities/Components/ActivatableComp.hpp"

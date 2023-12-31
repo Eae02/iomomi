@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef IOMOMI_ENABLE_WATER
+
 #include "../../World/Dir.hpp"
 #include "WaterPumpDescription.hpp"
 #include "WaterQueryResults.hpp"
@@ -71,6 +73,8 @@ public:
 	void SwapBuffers();
 
 	void Simulate(const SimulateArgs& simulateArgs);
+
+	uint32_t NumThreads() const { return m_numThreads; }
 
 protected:
 	void MoveAcrossPumps(std::span<const WaterPumpDescription> pumps, float dt);
@@ -180,3 +184,5 @@ private:
 
 	std::vector<std::thread> m_workerThreads;
 };
+
+#endif

@@ -5,7 +5,7 @@
 #include <misc/cpp/imgui_stdlib.h>
 
 #include <fstream>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "../Graphics/Materials/MeshDrawArgs.hpp"
 #include "../Gui/GuiCommon.hpp"

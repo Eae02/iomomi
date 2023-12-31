@@ -1,7 +1,7 @@
 #include "Player.hpp"
 
 #include <iomanip>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "../AudioPlayers.hpp"
 #include "../Game.hpp"

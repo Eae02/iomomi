@@ -1,6 +1,6 @@
 #include "Entity.hpp"
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 #include <pcg_random.hpp>
 
 #include "../../ImGui.hpp"

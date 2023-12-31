@@ -52,6 +52,7 @@ target_compile_options(iomomi PRIVATE
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	set_source_files_properties(Src/Graphics/Water/WaterSimulatorImpl.cpp PROPERTIES COMPILE_FLAGS "-O2 -g0")
 	set_source_files_properties(Src/Graphics/Water/WaterSimulatorImplAvx2.cpp PROPERTIES COMPILE_FLAGS "-O2 -g0 -mavx2")
+	set_source_files_properties(Src/Graphics/Water/WaterSimulatorImplAvx512.cpp PROPERTIES COMPILE_FLAGS "-O2 -g0 -mavx512f")
 	set_source_files_properties(Src/World/Collision.cpp PROPERTIES COMPILE_FLAGS "-O2 -g0")
 endif()
 
@@ -89,13 +90,6 @@ target_include_directories(iomomi SYSTEM PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/Deps/magic_enum/include
 )
 
-function (fixIncludes TARGET)
-	get_target_property(INC ${TARGET} INTERFACE_INCLUDE_DIRECTORIES)
-	list(REMOVE_ITEM INC "/usr/x86_64-w64-mingw32/include")
-	list(REMOVE_ITEM INC "/usr/include")
-	set_target_properties(${TARGET} PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${INC}")
-endfunction()
-
 # flags for editor
 if (${IOMOMI_EDITOR})
 	target_link_libraries(iomomi EGameImGui)
@@ -107,14 +101,8 @@ if (${IOMOMI_WATER})
 endif()
 
 # finds and adds protobuf
-if (PROTOBUF_SRC_DIR)
-	target_link_libraries(iomomi "${PROTOBUF_SRC_DIR}/.libs/libprotobuf.a")
-	target_include_directories(iomomi SYSTEM PRIVATE ${PROTOBUF_SRC_DIR})
-else()
-	find_package(Protobuf REQUIRED)
-	fixIncludes(protobuf::libprotobuf)
-	target_link_libraries(iomomi protobuf::libprotobuf)
-endif()
+find_package(Protobuf CONFIG REQUIRED)
+target_link_libraries(iomomi protobuf::libprotobuf)
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
 	string(CONCAT EMCC_FLAGS

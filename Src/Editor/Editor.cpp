@@ -5,7 +5,7 @@
 
 #include <EGameImGui.hpp>
 #include <fstream>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum_all.hpp>
 
 #include "../Levels.hpp"
 #include "../MainGameState.hpp"

@@ -1,6 +1,6 @@
 #include "EntityManager.hpp"
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum_all.hpp>
 
 #include "Components/ActivatableComp.hpp"
 #include "Components/LiquidPlaneComp.hpp"

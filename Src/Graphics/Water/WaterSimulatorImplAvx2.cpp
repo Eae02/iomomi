@@ -1,3 +1,5 @@
+#ifdef IOMOMI_ENABLE_WATER
+
 #include "WaterSimulatorImpl.hpp"
 
 #include <immintrin.h>
@@ -180,3 +182,5 @@ void WaterSimulatorImplAvx2::Stage3_Acceleration(SimulateStageArgs args)
 		m_particlesVel1.z[a] += velAdd.z;
 	}
 }
+
+#endif

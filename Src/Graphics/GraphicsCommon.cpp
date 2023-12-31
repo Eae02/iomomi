@@ -1,6 +1,6 @@
 #include "GraphicsCommon.hpp"
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "../Settings.hpp"
 #include "Water/WaterRenderer.hpp"

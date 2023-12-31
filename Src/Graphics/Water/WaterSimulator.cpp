@@ -5,6 +5,8 @@
 #include <pcg_random.hpp>
 #include <unordered_set>
 
+#include <EGame/Platform/Debug.hpp>
+
 #include "../../Vec3Compare.hpp"
 #include "../../World/Entities/Components/WaterBlockComp.hpp"
 #include "../../World/Entities/EntTypes/PumpEnt.hpp"
@@ -35,7 +37,7 @@ static std::vector<glm::vec3> GenerateWater(World& world)
 					continue;
 				alreadyGenerated.insert(cell);
 
-				glm::ivec3 generatePerVoxel(4, 4, 4);
+				glm::ivec3 generatePerVoxel = GENERATE_PARTICLES_PER_VOXEL;
 				if (waterPlaneEntity.liquidPlane.IsUnderwater(cell + glm::ivec3(0, 1, 0)))
 					generatePerVoxel.y += waterPlaneEntity.densityBoost;
 
@@ -127,6 +129,10 @@ public:
 		newArgs.extraParticles = world.extraWaterParticles;
 		newArgs.particlePositions = positions;
 		m_impl = WaterSimulatorImpl::CreateInstance(newArgs);
+
+		eg::Log(
+			eg::LogLevel::Info, "water", "Initialized water simulator {0} using {1} threads",
+			eg::DemangeTypeName(typeid(*m_impl).name()), m_impl->NumThreads());
 
 		uint64_t bufferSize = sizeof(float) * 4 * m_numParticles;
 		m_positionsBuffer = eg::Buffer(eg::BufferFlags::CopyDst | eg::BufferFlags::StorageBuffer, bufferSize, nullptr);

@@ -1,13 +1,23 @@
+#ifdef IOMOMI_ENABLE_WATER
+
 #include "WaterSimulatorImpl.hpp"
 #include "WaterSimulationConstants.hpp"
 
 #include <SDL2/SDL_cpuinfo.h>
 
+static int* waterEnableAvx512 = eg::TweakVarInt("wsim_enable_avx512", 1, 0, 1);
+static int* waterEnableAvx2 = eg::TweakVarInt("wsim_enable_avx2", 1, 0, 1);
+
+std::unique_ptr<WaterSimulatorImpl> CreateWaterSimulatorImplAvx512(const WaterSimulatorImpl::ConstructorArgs& args);
 std::unique_ptr<WaterSimulatorImpl> CreateWaterSimulatorImplAvx2(const WaterSimulatorImpl::ConstructorArgs& args);
 
 std::unique_ptr<WaterSimulatorImpl> WaterSimulatorImpl::CreateInstance(const ConstructorArgs& args)
 {
-	if (SDL_HasAVX2())
+	if (SDL_HasAVX512F() && *waterEnableAvx512)
+	{
+		return CreateWaterSimulatorImplAvx512(args);
+	}
+	if (SDL_HasAVX2() && *waterEnableAvx2)
 	{
 		return CreateWaterSimulatorImplAvx2(args);
 	}
@@ -18,8 +28,9 @@ static std::uniform_real_distribution<float> radiusDist(MIN_PARTICLE_RADIUS, MAX
 
 static int GetThreadCount()
 {
-	constexpr int THREAD_COUNT_ADD = 8;
-	return std::max(static_cast<int>(std::thread::hardware_concurrency()) + THREAD_COUNT_ADD, 1);
+	constexpr double THREAD_COUNT_MUL = 2;
+	double threadCountD = std::round(static_cast<double>(std::thread::hardware_concurrency()) * THREAD_COUNT_MUL);
+	return std::max(static_cast<int>(threadCountD), 1);
 }
 
 WaterSimulatorImpl::WaterSimulatorImpl(const ConstructorArgs& args, size_t memoryAlignment)
@@ -740,3 +751,5 @@ void WaterSimulatorImpl::Simulate(const SimulateArgs& args)
 
 	RunAllParallelizedSimulationStages(0, args.dt, args.waterBlockers);
 }
+
+#endif
