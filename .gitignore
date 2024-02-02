@@ -3,6 +3,7 @@
 .idea
 .vscode
 .vs
+.DS_Store
 /Protobuf/Build
 /Assets/.AssetCache
 /Inc/Common.hpp.gch

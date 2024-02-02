@@ -13,6 +13,7 @@ LiquidPlaneRenderer::LiquidPlaneRenderer()
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::None;
+	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.vertexBindings[0] = { sizeof(LiquidPlaneComp::Vertex), eg::InputRate::Vertex };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(LiquidPlaneComp::Vertex, pos) };
 	pipelineCI.blendStates[0] = eg::AlphaBlend;
@@ -51,7 +52,7 @@ void LiquidPlaneRenderer::Render() const
 
 	eg::DC.BindPipeline(m_pipeline);
 
-	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
+	RenderSettings::instance->BindVertexShaderDescriptorSet();
 
 	for (int64_t i = eg::ToInt64(m_planes.size()) - 1; i >= 0; i--)
 	{

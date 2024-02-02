@@ -66,16 +66,6 @@ static std::vector<glm::vec3> GenerateWater(World& world)
 
 static int* stepsPerSecondVar = eg::TweakVarInt("water_sps", 60, 1);
 
-inline __m128 Vec3ToM128(const glm::vec3& v3)
-{
-	alignas(16) float data[4];
-	data[0] = v3.x;
-	data[1] = v3.y;
-	data[2] = v3.z;
-	data[3] = 0;
-	return _mm_load_ps(data);
-}
-
 class WaterSimulator : public IWaterSimulator
 {
 public:

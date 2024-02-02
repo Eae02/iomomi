@@ -5,9 +5,7 @@
 #include "../Settings.hpp"
 #include "Water/WaterRenderer.hpp"
 
-#ifndef __EMSCRIPTEN__
 bool useGLESPath;
-#endif
 
 const glm::ivec3 cubeMesh::vertices[8] = {
 	{ -1, -1, -1 }, { -1, 1, -1 }, { -1, -1, 1 }, { -1, 1, 1 }, { 1, -1, -1 }, { 1, 1, -1 }, { 1, -1, 1 }, { 1, 1, 1 },
@@ -31,8 +29,7 @@ eg::Texture blackPixelTexture;
 
 static void OnInit()
 {
-	const auto commonSamplerDescription =
-		eg::SamplerDescription{ .maxAnistropy = static_cast<float>(settings.anisotropicFiltering) };
+	const auto commonSamplerDescription = eg::SamplerDescription{ .maxAnistropy = settings.anisotropicFiltering };
 	commonTextureSampler = eg::Sampler(commonSamplerDescription);
 
 	framebufferLinearSampler = eg::Sampler(eg::SamplerDescription{

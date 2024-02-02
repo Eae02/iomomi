@@ -1,4 +1,4 @@
-#ifdef IOMOMI_ENABLE_WATER
+#if defined(IOMOMI_ENABLE_WATER) && defined(__x86_64__)
 #include "WaterSimulatorImpl.hpp"
 
 #include <immintrin.h>

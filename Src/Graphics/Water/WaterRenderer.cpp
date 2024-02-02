@@ -35,12 +35,7 @@ eg::TextureRef WaterRenderer::GetDummyDepthTexture()
 	return dummyWaterDepthTexture;
 }
 
-#ifdef __EMSCRIPTEN__
-WaterRenderer::WaterRenderer() {}
-void WaterRenderer::CreateDepthBlurPipelines(uint32_t samples) {}
-void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParticles, RenderTexManager& rtManager) {}
-void WaterRenderer::RenderPost(RenderTexManager& rtManager) {}
-#else
+#ifdef IOMOMI_ENABLE_WATER
 
 WaterRenderer::WaterRenderer()
 {
@@ -316,5 +311,12 @@ void WaterRenderer::RenderPost(RenderTexManager& rtManager)
 
 	eg::DC.EndRenderPass();
 }
+
+#else
+
+WaterRenderer::WaterRenderer() {}
+void WaterRenderer::CreateDepthBlurPipelines(uint32_t samples) {}
+void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParticles, RenderTexManager& rtManager) {}
+void WaterRenderer::RenderPost(RenderTexManager& rtManager) {}
 
 #endif

@@ -39,7 +39,17 @@ SettingEntry MakeNumberSetting(std::string name, T Settings::*setting)
 {
 	SettingEntry s;
 	s.load = [=](Settings& st, std::string_view str)
-	{ std::from_chars(str.data(), str.data() + str.size(), st.*setting); };
+	{
+		if constexpr (std::is_floating_point_v<T> && __clang__)
+		{
+			std::string copyBecauseClangIsBad(str);
+			st.*setting = std::stod(copyBecauseClangIsBad);
+		}
+		else
+		{
+			std::from_chars(str.data(), str.data() + str.size(), st.*setting);
+		}
+	};
 	s.save = [=](const Settings& st) { return std::to_string(st.*setting); };
 	s.name = std::move(name);
 	return s;

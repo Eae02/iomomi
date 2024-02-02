@@ -308,8 +308,8 @@ void MainGameState::RunFrame(float dt)
 
 constexpr float CONTROL_HINT_ANIMATION_TIME = 0.1f;
 
-float* errorHintFontScale = eg::TweakVarFloat("ehint_font_scale", 0.8f, 0.0f);
-float* controlHintFontScale = eg::TweakVarFloat("chint_font_scale", 1.0f, 0.0f);
+float* errorHintFontScale = eg::TweakVarFloat("ehint_font_scale", 0.001f, 0.0f);
+float* controlHintFontScale = eg::TweakVarFloat("chint_font_scale", 0.0012f, 0.0f);
 
 void MainGameState::UpdateAndDrawHud(float dt)
 {
@@ -373,13 +373,15 @@ void MainGameState::UpdateAndDrawHud(float dt)
 	{
 		const float controlHintY = eg::CurrentResolutionY() * 0.15f;
 
-		constexpr float BUTTON_BORDER_PADDING = 10;
-		constexpr float BUTTON_MESSAGE_SPACING = 30;
+		const float fontScale = eg::CurrentResolutionY() * *controlHintFontScale;
+
+		const float BUTTON_BORDER_PADDING = 3.0f * fontScale;
+		const float BUTTON_MESSAGE_SPACING = 8.0f * fontScale;
 
 		const std::string_view buttonName = eg::ButtonDisplayName(m_controlHintButton);
-		const float buttonNameLen = style::UIFont->GetTextExtents(buttonName).x * *controlHintFontScale;
-		const float messageLen = style::UIFont->GetTextExtents(m_controlHintMessage).x * *controlHintFontScale;
-		const float buttonBoxSize = std::max(buttonNameLen, style::UIFont->LineHeight() * *controlHintFontScale);
+		const float buttonNameLen = style::UIFont->GetTextExtents(buttonName).x * fontScale;
+		const float messageLen = style::UIFont->GetTextExtents(m_controlHintMessage).x * fontScale;
+		const float buttonBoxSize = std::max(buttonNameLen, style::UIFont->LineHeight() * fontScale);
 
 		const float totalLen = buttonBoxSize + BUTTON_MESSAGE_SPACING + messageLen;
 		glm::vec2 leftPos((eg::CurrentResolutionX() - totalLen) / 2.0f, controlHintY);
@@ -389,38 +391,40 @@ void MainGameState::UpdateAndDrawHud(float dt)
 		eg::Rectangle buttonRect(
 			leftPos.x + buttonNameLen / 2.0f - BUTTON_BORDER_PADDING - buttonBoxSize / 2.0f + 1,
 			leftPos.y - BUTTON_BORDER_PADDING - 3, BUTTON_BORDER_PADDING * 2 + buttonBoxSize,
-			BUTTON_BORDER_PADDING * 2 + style::UIFont->LineHeight() * *controlHintFontScale);
+			BUTTON_BORDER_PADDING * 2 + style::UIFont->LineHeight() * fontScale);
 
 		eg::SpriteBatch::overlay.DrawRect(buttonRect, eg::ColorLin(0, 0, 0, m_controlHintAlpha * 0.3f));
 		eg::SpriteBatch::overlay.DrawRectBorder(buttonRect, color, 1);
 		eg::SpriteBatch::overlay.DrawText(
-			*style::UIFont, buttonName, leftPos, color, *controlHintFontScale, nullptr, eg::TextFlags::DropShadow);
+			*style::UIFont, buttonName, leftPos, color, fontScale, nullptr, eg::TextFlags::DropShadow);
 		eg::SpriteBatch::overlay.DrawText(
 			*style::UIFont, m_controlHintMessage,
-			glm::vec2(leftPos.x + buttonBoxSize + BUTTON_MESSAGE_SPACING, leftPos.y), color, *controlHintFontScale,
-			nullptr, eg::TextFlags::DropShadow);
+			glm::vec2(leftPos.x + buttonBoxSize + BUTTON_MESSAGE_SPACING, leftPos.y), color, fontScale, nullptr,
+			eg::TextFlags::DropShadow);
 	}
 
 	// Draws the error hint
 	if (m_errorHintAlpha > 0)
 	{
-		const float errorHintY = eg::CurrentResolutionY() * 0.9f - style::UIFont->LineHeight() * *errorHintFontScale;
+		const float fontScale = eg::CurrentResolutionY() * *errorHintFontScale;
+
+		const float errorHintY = eg::CurrentResolutionY() * 0.9f - style::UIFont->LineHeight() * fontScale;
 
 		const eg::ColorLin color = eg::ColorLin(eg::ColorSRGB::FromHex(0xffb3c1)).ScaleAlpha(m_errorHintAlpha);
 
-		const float messageLen = style::UIFont->GetTextExtents(m_errorHintMessage).x * *errorHintFontScale;
-		const float leftX = (eg::CurrentResolutionX() - messageLen) / 2.0f;
+		const glm::vec2 messageLen = style::UIFont->GetTextExtents(m_errorHintMessage) * fontScale;
+		const float leftX = (eg::CurrentResolutionX() - messageLen.x) / 2.0f;
 
-		constexpr float RECT_PADDING = 10;
+		const float rectanglePadding = 10.0f * fontScale;
 
 		eg::SpriteBatch::overlay.DrawRect(
 			eg::Rectangle(
-				leftX - RECT_PADDING, errorHintY - RECT_PADDING, messageLen + RECT_PADDING * 2,
-				style::UIFont->LineHeight() * *errorHintFontScale + RECT_PADDING * 2),
+				leftX - rectanglePadding, errorHintY - rectanglePadding, messageLen.x + rectanglePadding * 2,
+				messageLen.y + rectanglePadding * 2),
 			eg::ColorLin(0, 0, 0, 0.3f));
 
 		eg::SpriteBatch::overlay.DrawText(
-			*style::UIFont, m_errorHintMessage, glm::vec2(leftX, errorHintY), color, *errorHintFontScale, nullptr,
+			*style::UIFont, m_errorHintMessage, glm::vec2(leftX, errorHintY), color, fontScale, nullptr,
 			eg::TextFlags::DropShadow);
 	}
 

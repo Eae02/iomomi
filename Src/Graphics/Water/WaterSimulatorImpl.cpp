@@ -4,15 +4,19 @@
 #include "WaterSimulationConstants.hpp"
 
 #include <SDL2/SDL_cpuinfo.h>
+#include <new>
 
+#ifdef __x86_64__
 static int* waterEnableAvx512 = eg::TweakVarInt("wsim_enable_avx512", 1, 0, 1);
 static int* waterEnableAvx2 = eg::TweakVarInt("wsim_enable_avx2", 1, 0, 1);
 
 std::unique_ptr<WaterSimulatorImpl> CreateWaterSimulatorImplAvx512(const WaterSimulatorImpl::ConstructorArgs& args);
 std::unique_ptr<WaterSimulatorImpl> CreateWaterSimulatorImplAvx2(const WaterSimulatorImpl::ConstructorArgs& args);
+#endif
 
 std::unique_ptr<WaterSimulatorImpl> WaterSimulatorImpl::CreateInstance(const ConstructorArgs& args)
 {
+#ifdef __x86_64__
 	if (SDL_HasAVX512F() && *waterEnableAvx512)
 	{
 		return CreateWaterSimulatorImplAvx512(args);
@@ -21,6 +25,7 @@ std::unique_ptr<WaterSimulatorImpl> WaterSimulatorImpl::CreateInstance(const Con
 	{
 		return CreateWaterSimulatorImplAvx2(args);
 	}
+#endif
 	return std::make_unique<WaterSimulatorImpl>(args, alignof(float));
 }
 
@@ -42,7 +47,11 @@ WaterSimulatorImpl::WaterSimulatorImpl(const ConstructorArgs& args, size_t memor
 		m_threadRngs.emplace_back(initialRng());
 	}
 
+#if __cpp_lib_hardware_interference_size >= 201603
 	m_itemsPerThreadPreferredDivisibility = std::hardware_destructive_interference_size / 4;
+#else
+	m_itemsPerThreadPreferredDivisibility = 64 / 4;
+#endif
 
 	m_numParticles = args.particlePositions.size();
 	m_allocatedParticles = m_numParticles + args.extraParticles;

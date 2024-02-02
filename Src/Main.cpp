@@ -67,7 +67,10 @@ static void Run(int argc, char** argv)
 	eg::ParseCommandLineArgs(runConfig, argc, argv);
 	if (eg::HasFlag(runConfig.flags, eg::RunFlags::PreferIntegratedGPU))
 		runConfig.preferredGPUName.clear();
-#ifndef __EMSCRIPTEN__
+
+#if defined(__EMSCRIPTEN__) || defined(__APPLE__)
+	useGLESPath = true;
+#else
 	useGLESPath = eg::HasFlag(runConfig.flags, eg::RunFlags::PreferGLESPath);
 #endif
 
@@ -79,7 +82,7 @@ static void Run(int argc, char** argv)
 	runConfig.minWindowH = 700;
 	runConfig.initialize = [&]
 	{
-		AssertRenderTextureFormatSupport();
+		// AssertRenderTextureFormatSupport();
 
 		if (!eg::FullscreenDisplayModes().empty())
 		{
