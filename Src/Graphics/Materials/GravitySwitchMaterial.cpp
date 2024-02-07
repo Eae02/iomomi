@@ -19,16 +19,16 @@ static void OnInit()
 	pipelineCI.cullMode = eg::CullMode::Back;
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
+	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
+	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
 	pipelineCI.label = "GravSwitchGame";
 	gravitySwitchPipelineGame = eg::Pipeline::Create(pipelineCI);
-	gravitySwitchPipelineGame.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
-	gravitySwitchPipelineGame.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
 
 	pipelineCI.label = "GravSwitchEditor";
 	pipelineCI.cullMode = eg::CullMode::None;
-	pipelineCI.numColorAttachments = 1;
+	pipelineCI.colorAttachmentFormats[0] = eg::Format::DefaultColor;
+	pipelineCI.depthAttachmentFormat = eg::Format::DefaultDepthStencil;
 	gravitySwitchPipelineEditor = eg::Pipeline::Create(pipelineCI);
-	gravitySwitchPipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 
 	gravitySwitchDescriptorSet = eg::DescriptorSet(gravitySwitchPipelineGame, 0);
 	gravitySwitchDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);

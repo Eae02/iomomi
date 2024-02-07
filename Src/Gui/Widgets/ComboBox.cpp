@@ -15,20 +15,18 @@ ComboBox::ComboBox()
 	m_scrollPanel.marginY = 3;
 }
 
-void ComboBox::Update(float dt, bool allowInteraction)
+void ComboBox::Update(const GuiFrameArgs& frameArgs, bool allowInteraction)
 {
 	if (!m_initialValue.has_value() && restartRequiredIfChanged)
 		m_initialValue = getValue();
 
 	m_lastFrameUpdated = eg::FrameIdx();
 
-	const glm::vec2 flippedCursorPos(eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY());
+	UpdateBase(frameArgs, allowInteraction);
 
-	UpdateBase(allowInteraction);
+	AnimateProperty(m_highlightIntensity, frameArgs.dt, style::HoverAnimationTime, m_hovered || current == this);
 
-	AnimateProperty(m_highlightIntensity, dt, style::HoverAnimationTime, m_hovered || current == this);
-
-	AnimateProperty(m_expandProgress, dt, 0.1f, current == this);
+	AnimateProperty(m_expandProgress, frameArgs.dt, 0.1f, current == this);
 	const float expandProgressSmooth = glm::smoothstep(0.0f, 1.0f, m_expandProgress);
 
 	m_scrollPanel.contentHeight = options.size() * OPTION_HEIGHT;
@@ -44,7 +42,7 @@ void ComboBox::Update(float dt, bool allowInteraction)
 		m_scrollPanel.screenRectangle.y = SCREEN_RECT_MIN_Y;
 	}
 
-	m_scrollPanel.Update(dt);
+	m_scrollPanel.Update(frameArgs);
 
 	bool clicked =
 		eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft) && allowInteraction;
@@ -55,7 +53,7 @@ void ComboBox::Update(float dt, bool allowInteraction)
 	}
 
 	bool canInteractOptions =
-		(allowInteraction && current == this && m_scrollPanel.screenRectangle.Contains(flippedCursorPos));
+		(allowInteraction && current == this && m_scrollPanel.screenRectangle.Contains(frameArgs.cursorPos));
 	int hoveredOptionIndex = -1;
 	eg::Rectangle optionRect = m_rectangle;
 	optionRect.h = OPTION_HEIGHT - 1;
@@ -63,8 +61,8 @@ void ComboBox::Update(float dt, bool allowInteraction)
 	for (size_t i = 0; i < options.size(); i++)
 	{
 		optionRect.y -= OPTION_HEIGHT;
-		bool optHovered = canInteractOptions && optionRect.Contains(flippedCursorPos);
-		AnimateProperty(m_optionHighlightIntensity[i], dt, style::HoverAnimationTime, optHovered);
+		bool optHovered = canInteractOptions && optionRect.Contains(frameArgs.cursorPos);
+		AnimateProperty(m_optionHighlightIntensity[i], frameArgs.dt, style::HoverAnimationTime, optHovered);
 		if (optHovered && hoveredOptionIndex == -1)
 			hoveredOptionIndex = i;
 	}
@@ -90,7 +88,7 @@ void ComboBox::Update(float dt, bool allowInteraction)
 	}
 }
 
-void ComboBox::Draw(eg::SpriteBatch& spriteBatch) const
+void ComboBox::Draw(const GuiFrameArgs& frameArgs, eg::SpriteBatch& spriteBatch) const
 {
 	if (arrowTexture == nullptr)
 	{
@@ -114,7 +112,7 @@ void ComboBox::Draw(eg::SpriteBatch& spriteBatch) const
 	if (!warningToShow.empty())
 		maxValueWidth -= warningTextExtents.x;
 
-	DrawBase(spriteBatch, m_highlightIntensity, options[value], maxValueWidth);
+	DrawBase(frameArgs, spriteBatch, m_highlightIntensity, options[value], maxValueWidth);
 
 	spriteBatch.Draw(
 		*arrowTexture, glm::vec2(m_rectangle.MaxX() - height / 2.0f, m_rectangle.CenterY()),
@@ -131,7 +129,7 @@ void ComboBox::Draw(eg::SpriteBatch& spriteBatch) const
 	}
 }
 
-void ComboBox::DrawOverlay(eg::SpriteBatch& spriteBatch) const
+void ComboBox::DrawOverlay(const GuiFrameArgs& frameArgs, eg::SpriteBatch& spriteBatch) const
 {
 	if (m_lastFrameUpdated != eg::FrameIdx())
 	{
@@ -139,7 +137,11 @@ void ComboBox::DrawOverlay(eg::SpriteBatch& spriteBatch) const
 		return;
 	}
 
-	spriteBatch.PushScissorRect(m_scrollPanel.screenRectangle);
+	spriteBatch.PushScissorF(
+		m_scrollPanel.screenRectangle.x * frameArgs.scaleToScreenCoordinates,
+		m_scrollPanel.screenRectangle.y * frameArgs.scaleToScreenCoordinates,
+		m_scrollPanel.screenRectangle.w * frameArgs.scaleToScreenCoordinates,
+		m_scrollPanel.screenRectangle.h * frameArgs.scaleToScreenCoordinates);
 
 	const eg::ColorLin DIVIDER_COLOR =
 		eg::ColorLin::Mix(style::ButtonColorDefault, eg::ColorLin(eg::Color::White), 0.25f);

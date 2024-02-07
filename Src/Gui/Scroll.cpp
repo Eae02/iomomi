@@ -23,26 +23,24 @@ void ScrollPanel::SetScroll(float s)
 		SCROLL_BAR_W - 2, barHeight);
 }
 
-void ScrollPanel::Update(float dt, bool canInteract)
+void ScrollPanel::Update(const GuiFrameArgs& frameArgs, bool canInteract)
 {
 	m_maxScroll = std::max(contentHeight - screenRectangle.h, 0.0f);
 
-	velocity *= 1 - std::min(dt * 10.0f, 1.0f);
+	velocity *= 1 - std::min(frameArgs.dt * 10.0f, 1.0f);
 	if (canInteract && !isDragging)
 	{
 		velocity += (eg::InputState::Previous().scrollY - eg::InputState::Current().scrollY) * SCROLL_SPEED * 0.5f;
 	}
 	velocity = glm::clamp(velocity, -SCROLL_SPEED, SCROLL_SPEED);
-	SetScroll(scroll + velocity * dt);
+	SetScroll(scroll + velocity * frameArgs.dt);
 
 	if (m_maxScroll > 0 && canInteract)
 	{
-		glm::vec2 flippedCursorPos(eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY());
-
 		eg::Rectangle dragGrabRectangle(
 			m_barActiveRectangle.x - dragGrabMarginX, m_barActiveRectangle.y,
 			m_barActiveRectangle.w + dragGrabMarginX * 2, m_barActiveRectangle.h);
-		const bool canBeginDrag = !isDragging && dragGrabRectangle.Contains(flippedCursorPos);
+		const bool canBeginDrag = !isDragging && dragGrabRectangle.Contains(frameArgs.cursorPos);
 
 		if (canBeginDrag && eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft))
 		{
@@ -67,7 +65,7 @@ void ScrollPanel::Update(float dt, bool canInteract)
 			barBrightness = 1.4f;
 		else if (canBeginDrag)
 			barBrightness = 1.2f;
-		m_barBrightness = eg::AnimateTo(m_barBrightness, barBrightness, dt / BRIGHTNESS_ANIM_SPEED);
+		m_barBrightness = eg::AnimateTo(m_barBrightness, barBrightness, frameArgs.dt / BRIGHTNESS_ANIM_SPEED);
 	}
 	else
 	{

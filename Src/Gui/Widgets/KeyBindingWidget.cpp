@@ -13,19 +13,18 @@ KeyBindingWidget::KeyBindingWidget(std::string _label, KeyBinding& binding) : m_
 	label = std::move(_label);
 }
 
-void KeyBindingWidget::Update(float dt, bool allowInteraction)
+void KeyBindingWidget::Update(const GuiFrameArgs& frameArgs, bool allowInteraction)
 {
-	UpdateBase(allowInteraction);
+	UpdateBase(frameArgs, allowInteraction);
 	m_cancelRectangle =
 		eg::Rectangle(m_rectangle.MaxX() + 10 * m_cancelButtonAlpha, m_rectangle.y, CANCEL_BUTTON_WIDTH, m_rectangle.h);
 
-	AnimateProperty(m_highlightIntensity, dt, style::HoverAnimationTime, m_hovered || m_isPickingKey);
-	AnimateProperty(m_cancelButtonAlpha, dt, style::HoverAnimationTime, m_isPickingKey);
+	AnimateProperty(m_highlightIntensity, frameArgs.dt, style::HoverAnimationTime, m_hovered || m_isPickingKey);
+	AnimateProperty(m_cancelButtonAlpha, frameArgs.dt, style::HoverAnimationTime, m_isPickingKey);
 
-	glm::vec2 flippedCursorPos(eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY());
 	bool cancelButtonHovered =
-		allowInteraction && m_cancelButtonAlpha > 0 && m_cancelRectangle.Contains(flippedCursorPos);
-	AnimateProperty(m_cancelHighlightIntensity, dt, style::HoverAnimationTime, cancelButtonHovered);
+		allowInteraction && m_cancelButtonAlpha > 0 && m_cancelRectangle.Contains(frameArgs.cursorPos);
+	AnimateProperty(m_cancelHighlightIntensity, frameArgs.dt, style::HoverAnimationTime, cancelButtonHovered);
 
 	if (m_isPickingKey)
 	{
@@ -53,7 +52,7 @@ void KeyBindingWidget::Update(float dt, bool allowInteraction)
 	}
 }
 
-void KeyBindingWidget::Draw(eg::SpriteBatch& spriteBatch) const
+void KeyBindingWidget::Draw(const GuiFrameArgs& frameArgs, eg::SpriteBatch& spriteBatch) const
 {
 	std::string_view valueString;
 	if (m_isPickingKey)
@@ -66,7 +65,7 @@ void KeyBindingWidget::Draw(eg::SpriteBatch& spriteBatch) const
 		valueString = eg::ButtonDisplayName(currentButton);
 	}
 
-	DrawBase(spriteBatch, m_highlightIntensity, valueString);
+	DrawBase(frameArgs, spriteBatch, m_highlightIntensity, valueString);
 
 	if (m_cancelButtonAlpha > 0)
 	{

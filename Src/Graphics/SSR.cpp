@@ -39,10 +39,10 @@ void SSR::CreatePipeline()
 	pipeline1CI.enableDepthWrite = true;
 	pipeline1CI.enableDepthTest = true;
 	pipeline1CI.depthCompare = eg::CompareOp::Always;
+	pipeline1CI.colorAttachmentFormats[0] = ConstexprGetFormatForRenderTexture(RenderTex::SSRTemp1);
+	pipeline1CI.depthAttachmentFormat = ConstexprGetFormatForRenderTexture(RenderTex::SSRDepth);
 	pipeline1CI.label = "SSR[Initial]";
 	m_pipelineInitial = eg::Pipeline::Create(pipeline1CI);
-	m_pipelineInitial.FramebufferFormatHint(
-		GetFormatForRenderTexture(RenderTex::SSRTemp1), GetFormatForRenderTexture(RenderTex::SSRDepth));
 
 	eg::GraphicsPipelineCreateInfo pipelineBlendPassCI;
 	pipelineBlendPassCI.vertexShader = postVertexShader;
@@ -53,10 +53,10 @@ void SSR::CreatePipeline()
 	pipelineBlendPassCI.blendStates[0] = eg::BlendState(
 		eg::BlendFunc::Add, eg::BlendFunc::Add, eg::BlendFactor::DstColor, eg::BlendFactor::DstAlpha,
 		eg::BlendFactor::Zero, eg::BlendFactor::Zero);
+	pipelineBlendPassCI.colorAttachmentFormats[0] = ConstexprGetFormatForRenderTexture(RenderTex::SSRTemp1);
+	pipelineBlendPassCI.depthAttachmentFormat = ConstexprGetFormatForRenderTexture(RenderTex::SSRDepth);
 	pipelineBlendPassCI.label = "SSR[Blend]";
 	m_pipelineBlendPass = eg::Pipeline::Create(pipelineBlendPassCI);
-	m_pipelineBlendPass.FramebufferFormatHint(
-		GetFormatForRenderTexture(RenderTex::SSRTemp1), GetFormatForRenderTexture(RenderTex::SSRDepth));
 
 	eg::SpecializationConstantEntry specConstEntryBlur;
 	specConstEntryBlur.constantID = 0;
@@ -71,15 +71,14 @@ void SSR::CreatePipeline()
 	pipelineBlurCI.fragmentShader.specConstants = { &specConstEntryBlur, 1 };
 	pipelineBlurCI.fragmentShader.specConstantsData = &blurRadius;
 	pipelineBlurCI.fragmentShader.specConstantsDataSize = sizeof(uint32_t);
+	pipelineBlurCI.colorAttachmentFormats[0] = ConstexprGetFormatForRenderTexture(RenderTex::SSRTemp2);
 	pipelineBlurCI.label = "SSR[Blur1]";
 	m_blur1Pipeline = eg::Pipeline::Create(pipelineBlurCI);
-	m_blur1Pipeline.FramebufferFormatHint(GetFormatForRenderTexture(RenderTex::SSRTemp2));
 
 	pipelineBlurCI.fragmentShader = ssrBlurShader.GetVariant("VPass2");
+	pipelineBlurCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
 	pipelineBlurCI.label = "SSR[Blur2]";
 	m_blur2Pipeline = eg::Pipeline::Create(pipelineBlurCI);
-	m_blur2Pipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
-	m_blur2Pipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
 }
 
 static float* ssrBlurIntensity = eg::TweakVarFloat("ssr_blur_scale", 0.05f, 0.0f);
@@ -136,9 +135,9 @@ void SSR::Render(const SSRRenderArgs& renderArgs)
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 	eg::DC.BindTexture(
 		renderArgs.rtManager->GetRenderTexture(RenderTex::LitWithoutSSR), 0, 1, &framebufferLinearSampler);
-	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::GBColor2), 0, 2);
-	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::GBDepth), 0, 3);
-	eg::DC.BindTexture(renderArgs.waterDepth, 0, 4);
+	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::GBColor2), 0, 2, &framebufferNearestSampler);
+	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::GBDepth), 0, 3, &framebufferNearestSampler);
+	eg::DC.BindTexture(renderArgs.waterDepth, 0, 4, &framebufferNearestSampler);
 
 	eg::DC.Draw(0, 3, 0, 1);
 
@@ -155,9 +154,9 @@ void SSR::Render(const SSRRenderArgs& renderArgs)
 	eg::DC.BindPipeline(m_pipelineBlendPass);
 	eg::DC.PushConstants(0, sizeof(float), &renderArgs.intensity);
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
-	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::GBColor1), 0, 1);
-	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::GBColor2), 0, 2);
-	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::GBDepth), 0, 3);
+	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::GBColor1), 0, 1, &framebufferNearestSampler);
+	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::GBColor2), 0, 2, &framebufferNearestSampler);
+	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::GBDepth), 0, 3, &framebufferNearestSampler);
 	eg::DC.Draw(0, 3, 0, 1);
 
 	eg::DC.EndRenderPass();
@@ -196,7 +195,7 @@ void SSR::Render(const SSRRenderArgs& renderArgs)
 	pc.blurDirY = blurDistance * (float)renderArgs.rtManager->ResY() / (float)renderArgs.rtManager->ResX();
 	eg::DC.PushConstants(0, sizeof(pc), &pc);
 	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::SSRTemp2), 0, 0, &framebufferLinearSampler);
-	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::LitWithoutSSR), 0, 1);
+	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::LitWithoutSSR), 0, 1, &framebufferNearestSampler);
 	eg::DC.Draw(0, 3, 0, 1);
 	eg::DC.EndRenderPass();
 	renderArgs.rtManager->RenderTextureUsageHintFS(renderArgs.destinationTexture);

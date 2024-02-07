@@ -58,8 +58,10 @@ void InitializeWallShader()
 	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::Float32, 3, offsetof(WallVertex, texCoord) };
 	pipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 4, offsetof(WallVertex, normalAndRoughnessLo) };
 	pipelineCI.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 4, offsetof(WallVertex, tangentAndRoughnessHi) };
+	pipelineCI.colorAttachmentFormats[0] = GB_COLOR_FORMAT;
+	pipelineCI.colorAttachmentFormats[1] = GB_COLOR_FORMAT;
+	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
 	wr.pipelineDeferredGeom = eg::Pipeline::Create(pipelineCI);
-	wr.pipelineDeferredGeom.FramebufferFormatHint(DeferredRenderer::GEOMETRY_FB_FORMAT);
 
 	// Creates the editor pipeline
 	eg::GraphicsPipelineCreateInfo editorPipelineCI;
@@ -80,8 +82,9 @@ void InitializeWallShader()
 		                                     offsetof(WallVertex, normalAndRoughnessLo) };
 	editorPipelineCI.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 3,
 		                                     offsetof(WallVertex, tangentAndRoughnessHi) };
+	editorPipelineCI.colorAttachmentFormats[0] = eg::Format::DefaultColor;
+	editorPipelineCI.depthAttachmentFormat = eg::Format::DefaultDepthStencil;
 	wr.pipelineEditor = eg::Pipeline::Create(editorPipelineCI);
-	wr.pipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 
 	// Creates the editor border pipeline
 	eg::GraphicsPipelineCreateInfo borderPipelineCI;
@@ -96,8 +99,9 @@ void InitializeWallShader()
 	borderPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 4, offsetof(WallBorderVertex, position) };
 	borderPipelineCI.vertexAttributes[1] = { 0, eg::DataType::SInt8Norm, 3, offsetof(WallBorderVertex, normal1) };
 	borderPipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, offsetof(WallBorderVertex, normal2) };
+	borderPipelineCI.colorAttachmentFormats[0] = eg::Format::DefaultColor;
+	borderPipelineCI.depthAttachmentFormat = eg::Format::DefaultDepthStencil;
 	wr.pipelineBorderEditor = eg::Pipeline::Create(borderPipelineCI);
-	wr.pipelineBorderEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 
 	const eg::SpecializationConstantEntry plsPipelineSpecConstants[2] = { { 10, 0, 4 }, { 11, 4, 4 } };
 	float plsPipelineSpecConstantData[2] = { FRONT_FACE_SHADOW_BIAS, BACK_FACE_SHADOW_BIAS };
@@ -109,19 +113,16 @@ void InitializeWallShader()
 		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLightShadow.fs.glsl").GetVariant("VNoAlphaTest");
 	plsPipelineCI.enableDepthWrite = true;
 	plsPipelineCI.enableDepthTest = true;
-	plsPipelineCI.frontFaceCCW = eg::CurrentGraphicsAPI() == eg::GraphicsAPI::Vulkan;
+	plsPipelineCI.frontFaceCCW = PointLightShadowMapper::FlippedLightMatrix();
 	plsPipelineCI.cullMode = eg::CullMode::None;
 	plsPipelineCI.vertexBindings[0] = { sizeof(WallVertex), eg::InputRate::Vertex };
 	plsPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(WallVertex, position) };
 	plsPipelineCI.fragmentShader.specConstants = plsPipelineSpecConstants;
 	plsPipelineCI.fragmentShader.specConstantsData = plsPipelineSpecConstantData;
 	plsPipelineCI.fragmentShader.specConstantsDataSize = sizeof(plsPipelineSpecConstantData);
+	plsPipelineCI.numColorAttachments = 0;
+	plsPipelineCI.depthAttachmentFormat = PointLightShadowMapper::SHADOW_MAP_FORMAT;
 	wr.pipelinePLShadow = eg::Pipeline::Create(plsPipelineCI);
-
-	eg::FramebufferFormatHint plsFormatHint;
-	plsFormatHint.sampleCount = 1;
-	plsFormatHint.depthStencilFormat = PointLightShadowMapper::SHADOW_MAP_FORMAT;
-	wr.pipelinePLShadow.FramebufferFormatHint(plsFormatHint);
 
 	wr.diffuseTexture = &eg::GetAsset<eg::Texture>("WallTextures/Albedo");
 	wr.normalMapTexture = &eg::GetAsset<eg::Texture>("WallTextures/NormalMap");
@@ -149,8 +150,8 @@ void InitializeWallShader()
 	wr.editorDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
 	wr.editorDescriptorSet.BindTexture(*wr.diffuseTexture, 1, &commonTextureSampler);
 	wr.editorDescriptorSet.BindTexture(*wr.normalMapTexture, 2, &commonTextureSampler);
-	wr.editorDescriptorSet.BindTexture(*wr.gridTexture, 3);
-	wr.editorDescriptorSet.BindTexture(*wr.noDrawTexture, 4);
+	wr.editorDescriptorSet.BindTexture(*wr.gridTexture, 3, &commonTextureSampler);
+	wr.editorDescriptorSet.BindTexture(*wr.noDrawTexture, 4, &commonTextureSampler);
 }
 
 static void OnShutdown()

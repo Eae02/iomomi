@@ -16,7 +16,7 @@ size_t WidgetList::AddWidget(Widget widget)
 	return eg::ToInt64(m_widgets.size()) - 1;
 }
 
-bool WidgetList::Update(float dt, bool allowInteraction)
+bool WidgetList::Update(const GuiFrameArgs& frameArgs, bool allowInteraction)
 {
 	glm::vec2 pos = position + relativeOffset * glm::vec2(m_width, m_height);
 	bool noComboBox = ComboBox::current == nullptr;
@@ -29,17 +29,18 @@ bool WidgetList::Update(float dt, bool allowInteraction)
 				widget.position = pos;
 				widget.position.y -= widgetPair.second;
 
-				widget.Update(dt, allowInteraction && (noComboBox || (void*)ComboBox::current == (void*)&widget));
+				widget.Update(
+					frameArgs, allowInteraction && (noComboBox || (void*)ComboBox::current == (void*)&widget));
 			},
 			widgetPair.first);
 	}
 	return allowInteraction;
 }
 
-void WidgetList::Draw(eg::SpriteBatch& spriteBatch) const
+void WidgetList::Draw(const GuiFrameArgs& frameArgs, eg::SpriteBatch& spriteBatch) const
 {
 	for (const auto& widgetPair : m_widgets)
 	{
-		std::visit([&](const auto& widget) { widget.Draw(spriteBatch); }, widgetPair.first);
+		std::visit([&](const auto& widget) { widget.Draw(frameArgs, spriteBatch); }, widgetPair.first);
 	}
 }

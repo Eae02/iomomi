@@ -15,9 +15,11 @@ static void OnInit()
 	pipelineCI.cullMode = eg::CullMode::Back;
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.numColorAttachments = 2;
+	pipelineCI.colorAttachmentFormats[0] = GB_COLOR_FORMAT;
+	pipelineCI.colorAttachmentFormats[1] = GB_COLOR_FORMAT;
+	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
 	pipelineCI.label = "ScreenGame";
 	screenMatPipeline = eg::Pipeline::Create(pipelineCI);
-	screenMatPipeline.FramebufferFormatHint(DeferredRenderer::GEOMETRY_FB_FORMAT);
 }
 
 static void OnShutdown()
@@ -30,24 +32,20 @@ EG_ON_SHUTDOWN(OnShutdown)
 
 ScreenMaterial::ScreenMaterial(int resX, int resY) : m_resX(resX), m_resY(resY), m_descriptorSet(screenMatPipeline, 0)
 {
-	const auto samplerDesc = eg::SamplerDescription{ .wrapU = eg::WrapMode::ClampToEdge,
-		                                             .wrapV = eg::WrapMode::ClampToEdge,
-		                                             .wrapW = eg::WrapMode::ClampToEdge };
-
-	m_texture = eg::Texture::Create2D(
-		eg::TextureCreateInfo{ .flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample,
-	                           .mipLevels = 1,
-	                           .width = eg::ToUnsigned(resX),
-	                           .height = eg::ToUnsigned(resY),
-	                           .format = eg::Format::R8G8B8A8_sRGB,
-	                           .defaultSamplerDescription = &samplerDesc });
+	m_texture = eg::Texture::Create2D(eg::TextureCreateInfo{
+		.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample,
+		.mipLevels = 1,
+		.width = eg::ToUnsigned(resX),
+		.height = eg::ToUnsigned(resY),
+		.format = eg::Format::R8G8B8A8_sRGB,
+	});
 
 	eg::FramebufferAttachment colorAttachment;
 	colorAttachment.texture = m_texture.handle;
 	m_framebuffer = eg::Framebuffer({ &colorAttachment, 1 });
 
 	m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
-	m_descriptorSet.BindTexture(m_texture, 1);
+	m_descriptorSet.BindTexture(m_texture, 1, &framebufferLinearSampler);
 }
 
 void ScreenMaterial::RenderTexture(const eg::ColorLin& clearColor)

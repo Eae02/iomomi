@@ -24,17 +24,16 @@ void GooPlaneMaterial::OnInit()
 	pipelineCI.enableDepthWrite = true;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::Back;
-	pipelineCI.cullMode = eg::CullMode::Back;
 	pipelineCI.frontFaceCCW = true;
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.vertexBindings[0] = { sizeof(LiquidPlaneComp::Vertex), eg::InputRate::Vertex };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(LiquidPlaneComp::Vertex, pos) };
 	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::UInt8Norm, 4, offsetof(LiquidPlaneComp::Vertex, edgeDists) };
 	pipelineCI.blendStates[0] = eg::AlphaBlend;
+	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
+	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
 	pipelineCI.label = "GooPlane";
 	s_pipeline = eg::Pipeline::Create(pipelineCI);
-	s_pipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
-	s_pipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
 
 	s_descriptorSet = eg::DescriptorSet(s_pipeline, 0);
 

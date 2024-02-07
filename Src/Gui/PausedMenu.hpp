@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Widgets/WidgetList.hpp"
+#include "GuiCommon.hpp"
 
 class PausedMenu
 {
@@ -8,7 +9,7 @@ public:
 	PausedMenu();
 
 	void Update(float dt);
-	void Draw(eg::SpriteBatch& spriteBatch) const;
+	void Draw();
 
 	bool isPaused = false;
 	bool shouldRestartLevel = false;
@@ -16,6 +17,10 @@ public:
 	bool isFromEditor = false;
 
 private:
+	GuiFrameArgs m_currentFrameArgs;
+	
+	eg::SpriteBatch m_spriteBatch;
+
 	int m_buttonKeyboardFocus = -1;
 	WidgetList m_widgetList;
 

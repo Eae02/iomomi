@@ -5,14 +5,14 @@
 static constexpr float TEXT_SWAP_ANIM_TIME = 0.15f;
 static constexpr float TEXT_SWAP_MOVE_DIST = 5;
 
-void ToggleButton::Update(float dt, bool allowInteraction)
+void ToggleButton::Update(const GuiFrameArgs& frameArgs, bool allowInteraction)
 {
-	UpdateBase(allowInteraction);
+	UpdateBase(frameArgs, allowInteraction);
 
 	bool currentValue = getValue();
 	const float targetTextSwapProgress = currentValue ? 1 : -1;
 
-	AnimateProperty(m_highlightIntensity, dt, style::HoverAnimationTime, m_hovered);
+	AnimateProperty(m_highlightIntensity, frameArgs.dt, style::HoverAnimationTime, m_hovered);
 	if (m_hovered && eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft))
 	{
 		currentValue = !currentValue;
@@ -25,14 +25,14 @@ void ToggleButton::Update(float dt, bool allowInteraction)
 	}
 	else
 	{
-		m_textSwapProgress = eg::AnimateTo(m_textSwapProgress, targetTextSwapProgress, 2 * dt / TEXT_SWAP_ANIM_TIME);
+		m_textSwapProgress = eg::AnimateTo(m_textSwapProgress, targetTextSwapProgress, 2 * frameArgs.dt / TEXT_SWAP_ANIM_TIME);
 	}
 	m_prevFrameUpdated = eg::FrameIdx();
 }
 
-void ToggleButton::Draw(eg::SpriteBatch& spriteBatch) const
+void ToggleButton::Draw(const GuiFrameArgs& frameArgs, eg::SpriteBatch& spriteBatch) const
 {
-	DrawBase(spriteBatch, m_highlightIntensity, "");
+	DrawBase(frameArgs, spriteBatch, m_highlightIntensity, "");
 
 	glm::vec2 textPos = GetTextPos();
 	textPos.x += (1 - std::abs(m_textSwapProgress)) * TEXT_SWAP_MOVE_DIST * glm::sign(m_textSwapProgress);

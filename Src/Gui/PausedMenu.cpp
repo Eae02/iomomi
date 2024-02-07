@@ -51,6 +51,8 @@ constexpr float FADE_IN_TIME = 0.2f;
 
 void PausedMenu::Update(float dt)
 {
+	m_currentFrameArgs = GuiFrameArgs::MakeForCurrentFrame(dt);
+
 	shouldRestartLevel = false;
 
 	if (settings.keyMenu.IsDown() && !settings.keyMenu.WasDown() && !KeyBindingWidget::anyKeyBindingPickingKey)
@@ -69,42 +71,50 @@ void PausedMenu::Update(float dt)
 
 		if (m_optionsMenuOverlayFade > 0)
 		{
-			UpdateOptionsMenu(dt, glm::vec2(0), optionsMenuOpen);
+			UpdateOptionsMenu(m_currentFrameArgs, glm::vec2(0), optionsMenuOpen);
 		}
 
 		std::get<Button>(m_widgetList.GetWidget(m_mainMenuWidgetIndex)).text =
 			isFromEditor ? "Return to Editor" : "Main Menu";
-		m_widgetList.position = glm::vec2(eg::CurrentResolutionX(), eg::CurrentResolutionY()) / 2.0f;
-		m_widgetList.Update(dt, !optionsMenuOpen);
+		m_widgetList.position = glm::vec2(m_currentFrameArgs.canvasWidth, m_currentFrameArgs.canvasHeight) / 2.0f;
+		m_widgetList.Update(m_currentFrameArgs, !optionsMenuOpen);
 	}
 
 	fade = eg::AnimateTo(fade, fadeTarget, dt / FADE_IN_TIME);
 	m_optionsMenuOverlayFade = eg::AnimateTo(m_optionsMenuOverlayFade, optionsFadeTarget, dt / FADE_IN_TIME);
 }
 
-void PausedMenu::Draw(eg::SpriteBatch& spriteBatch) const
+void PausedMenu::Draw()
 {
 	if (!isPaused)
 		return;
 
+	m_spriteBatch.Reset();
+
 	if (m_optionsMenuOverlayFade > 0)
 	{
-		spriteBatch.DrawRect(
-			eg::Rectangle(0, 0, eg::CurrentResolutionX(), eg::CurrentResolutionY()),
+		m_spriteBatch.DrawRect(
+			eg::Rectangle(0, 0, m_currentFrameArgs.canvasWidth, m_currentFrameArgs.canvasHeight),
 			eg::ColorLin(0, 0, 0, 0.3f * m_optionsMenuOverlayFade));
 	}
 
 	if (optionsMenuOpen)
 	{
-		DrawOptionsMenu(spriteBatch);
+		DrawOptionsMenu(m_currentFrameArgs, m_spriteBatch);
 	}
 	else
 	{
-		m_widgetList.Draw(spriteBatch);
+		m_widgetList.Draw(m_currentFrameArgs, m_spriteBatch);
 	}
 
 	if (ComboBox::current)
 	{
-		ComboBox::current->DrawOverlay(spriteBatch);
+		ComboBox::current->DrawOverlay(m_currentFrameArgs, m_spriteBatch);
 	}
+
+	glm::mat3 matrix = m_currentFrameArgs.GetMatrixToNDC();
+
+	eg::RenderPassBeginInfo rpBeginInfo;
+	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Load;
+	m_spriteBatch.UploadAndRender(eg::CurrentResolutionX(), eg::CurrentResolutionY(), rpBeginInfo, &matrix);
 }

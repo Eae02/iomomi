@@ -21,15 +21,17 @@ static void OnInit()
 
 	pipelineCI.enableDepthWrite = true;
 	pipelineCI.label = "BlurredGlass[DepthOnly]";
+	pipelineCI.numColorAttachments = 0;
+	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
 	pipelineDepthOnly = eg::Pipeline::Create(pipelineCI);
-	pipelineDepthOnly.FramebufferFormatHint(eg::Format::Undefined, GB_DEPTH_FORMAT);
 
+	pipelineCI.numColorAttachments = 1;
+	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
+	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.label = "BlurredGlass[Blurry]";
 	pipelineCI.fragmentShader = fs.GetVariant("VBlur");
 	pipelineBlurry = eg::Pipeline::Create(pipelineCI);
-	pipelineBlurry.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
-	pipelineBlurry.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
 
 	pipelineCI.blendStates[0] = eg::BlendState(
 		eg::BlendFunc::Add, eg::BlendFunc::Add,
@@ -41,8 +43,6 @@ static void OnInit()
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.fragmentShader = fs.GetVariant("VNoBlur");
 	pipelineNotBlurry = eg::Pipeline::Create(pipelineCI);
-	pipelineNotBlurry.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
-	pipelineNotBlurry.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
 }
 
 static void OnShutdown()
@@ -105,15 +105,16 @@ bool BlurredGlassMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawAr
 
 	if (*blurry)
 	{
-		cmdCtx.BindTexture(mDrawArgs->glassBlurTexture, 0, 2);
+		cmdCtx.BindTexture(mDrawArgs->glassBlurTexture, 0, 2, &framebufferNearestSampler);
 	}
 	else if (mDrawArgs->drawMode == MeshDrawMode::TransparentBeforeBlur)
 	{
-		cmdCtx.BindTexture(mDrawArgs->rtManager->GetRenderTexture(RenderTex::BlurredGlassDepth), 0, 2);
+		cmdCtx.BindTexture(
+			mDrawArgs->rtManager->GetRenderTexture(RenderTex::BlurredGlassDepth), 0, 2, &framebufferNearestSampler);
 	}
 	else
 	{
-		cmdCtx.BindTexture(blackPixelTexture, 0, 2);
+		cmdCtx.BindTexture(blackPixelTexture, 0, 2, &framebufferNearestSampler);
 	}
 
 	return true;

@@ -36,6 +36,8 @@ private:
 
 	Screen m_screen = Screen::Main;
 
+	GuiFrameArgs m_currentFrameArgs;
+
 	eg::SpriteBatch m_spriteBatch;
 
 	WidgetList m_mainWidgetList;

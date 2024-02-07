@@ -3,10 +3,7 @@
 class BlurRenderer
 {
 public:
-	BlurRenderer(uint32_t blurLevels, eg::Format format)
-		: m_levels(blurLevels), m_format(format), m_framebuffersTmp(blurLevels), m_framebuffersOut(blurLevels)
-	{
-	}
+	BlurRenderer(uint32_t blurLevels, eg::Format format);
 
 	void MaybeUpdateResolution(uint32_t newWidth, uint32_t newHeight);
 
@@ -23,6 +20,8 @@ private:
 
 	uint32_t m_levels;
 	eg::Format m_format;
+	
+	eg::PipelineRef m_blurPipeline;
 
 	uint32_t m_inputWidth = 0;
 	uint32_t m_inputHeight = 0;

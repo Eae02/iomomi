@@ -288,11 +288,12 @@ void MainGameState::RunFrame(float dt)
 	}
 
 	GameRenderer::instance->Render(
-		*m_world, m_gameTime, dt, nullptr, eg::CurrentResolutionX(), eg::CurrentResolutionY());
+		*m_world, m_gameTime, dt, nullptr, eg::Format::DefaultColor, eg::CurrentResolutionX(),
+		eg::CurrentResolutionY());
 
 	UpdateAndDrawHud(dt);
 
-	m_pausedMenu.Draw(eg::SpriteBatch::overlay);
+	m_pausedMenu.Draw();
 	if (m_pausedMenu.shouldRestartLevel)
 	{
 		ReloadLevel();
@@ -465,6 +466,8 @@ void MainGameState::DrawOverlay(float dt)
 		textStream << "OpenGL";
 	else if (eg::CurrentGraphicsAPI() == eg::GraphicsAPI::Vulkan)
 		textStream << "Vulkan";
+	else if (eg::CurrentGraphicsAPI() == eg::GraphicsAPI::Metal)
+		textStream << "Metal";
 	else
 		textStream << "?";
 	textStream << "\n";
@@ -478,11 +481,11 @@ void MainGameState::DrawOverlay(float dt)
 				   << eg::ReadableBytesSize(memoryStat.allocatedBytes) << "\n";
 	}
 
-	textStream << "-\n";
+	textStream << "\n \n";
 
 	m_player.GetDebugText(textStream);
 
-	textStream << "-\n";
+	textStream << "\n \n";
 	textStream << "Particles: " << m_particleManager.ParticlesToDraw() << "\n";
 
 	textStream << "PSM Last Update: " << GameRenderer::instance->m_plShadowMapper.LastUpdateFrameIndex() << "/"
@@ -506,27 +509,23 @@ void MainGameState::DrawOverlay(float dt)
 	eg::SplitString(text, '\n', lines);
 
 	const float lineHeight = eg::SpriteFont::DevFont().LineHeight();
-	const float padding = 5;
-	const float separatorSpacing = 3;
-	const eg::ColorLin textColor(1, 1, 1, 0.75f);
-	const eg::ColorLin loTextColor(1, 0.8f, 0.8f, 0.5f);
+	const float padding = 5 * eg::DisplayScaleFactor();
+	const eg::ColorLin textColor(1, 1, 1, 0.9f);
+	const eg::ColorLin loTextColor(1, 0.8f, 0.8f, 0.75f);
 
 	float y = static_cast<float>(eg::CurrentResolutionY()) - padding;
 	for (std::string_view line : lines)
 	{
-		if (line == "-")
+		if (line == " ")
 		{
-			float lineY = y - separatorSpacing / 2;
-			eg::SpriteBatch::overlay.DrawLine(
-				glm::vec2(padding, lineY), glm::vec2(100 - padding, lineY), textColor, 0.5f);
-			y -= separatorSpacing;
+			y -= lineHeight * 0.5f;
 		}
 		else
 		{
-			y -= lineHeight;
 			eg::SpriteBatch::overlay.DrawText(
-				eg::SpriteFont::DevFont(), line, glm::vec2(padding, y), textColor, 1, nullptr,
-				eg::TextFlags::DropShadow, &loTextColor);
+				eg::SpriteFont::DevFont(), line, glm::vec2(padding, y - eg::SpriteFont::DevFont().Size() * 0.8f),
+				textColor, 1, nullptr, eg::TextFlags::DropShadow, &loTextColor);
+			y -= lineHeight;
 		}
 	}
 }

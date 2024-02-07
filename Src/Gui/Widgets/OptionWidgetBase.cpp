@@ -7,7 +7,7 @@ float OptionWidgetBase::textHeight = 0;
 
 static constexpr float LABEL_WIDTH_PERCENT = 0.4f;
 
-void OptionWidgetBase::UpdateBase(bool allowInteraction, bool playHoverSound)
+void OptionWidgetBase::UpdateBase(const GuiFrameArgs& frameArgs, bool allowInteraction, bool playHoverSound)
 {
 	if (textHeight == 0)
 	{
@@ -17,15 +17,15 @@ void OptionWidgetBase::UpdateBase(bool allowInteraction, bool playHoverSound)
 	m_rectangle =
 		eg::Rectangle(position.x + width * LABEL_WIDTH_PERCENT, position.y, width * (1 - LABEL_WIDTH_PERCENT), height);
 
-	glm::vec2 flippedCursorPos(eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY());
-	bool nowHovered = allowInteraction && m_rectangle.Contains(flippedCursorPos);
+	bool nowHovered = allowInteraction && m_rectangle.Contains(frameArgs.cursorPos);
 	if (nowHovered && !m_hovered && playHoverSound)
 		PlayButtonHoverSound();
 	m_hovered = nowHovered;
 }
 
 void OptionWidgetBase::DrawBase(
-	eg::SpriteBatch& spriteBatch, float highlightIntensity, std::string_view valueText, float maxValueWidth) const
+	const GuiFrameArgs& frameArgs, eg::SpriteBatch& spriteBatch, float highlightIntensity, std::string_view valueText,
+	float maxValueWidth) const
 {
 	// Draws the background rectangle
 	eg::ColorLin backColor = eg::ColorLin::Mix(style::ButtonColorDefault, style::ButtonColorHover, highlightIntensity);
@@ -49,7 +49,9 @@ void OptionWidgetBase::DrawBase(
 			maxValueWidth != 0 && maxValueWidth < style::UIFont->GetTextExtents(valueText).x * FONT_SCALE;
 		if (applyScissor)
 		{
-			spriteBatch.PushScissorF(textPos.x, m_rectangle.y, maxValueWidth, height);
+			spriteBatch.PushScissorF(
+				textPos.x * frameArgs.scaleToScreenCoordinates, m_rectangle.y * frameArgs.scaleToScreenCoordinates,
+				maxValueWidth * frameArgs.scaleToScreenCoordinates, height * frameArgs.scaleToScreenCoordinates);
 		}
 
 		const eg::ColorLin valueFadedColor(eg::Color::White.ScaleAlpha(0.5f));

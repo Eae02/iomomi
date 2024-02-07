@@ -156,7 +156,7 @@ void RampEnt::InitializeVertexBuffer()
 		}
 	}
 
-	eg::DC.UpdateBuffer(m_vertexBuffer, 0, sizeof(vertices), vertices);
+	m_vertexBuffer.DCUpdateData<eg::StdVertex>(0, vertices);
 	m_vertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
 }
 

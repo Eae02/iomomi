@@ -17,8 +17,8 @@ GameRenderer* GameRenderer::instance;
 GameRenderer::GameRenderer(RenderContext& renderCtx)
 	: m_renderCtx(&renderCtx), m_glassBlurRenderer(3, eg::Format::R16G16B16A16_Float)
 {
-	m_projection.SetZNear(Z_NEAR);
-	m_projection.SetZFar(Z_FAR);
+	m_projection.SetZNear(ZNear);
+	m_projection.SetZFar(ZFar);
 
 	m_ssrRenderArgs.destinationTexture = RenderTex::Lit;
 }
@@ -80,7 +80,7 @@ static int* physicsDebug = eg::TweakVarInt("phys_dbg_draw", 0, 0, 1);
 static int* bloomLevels = eg::TweakVarInt("bloom_levels", 3, 0, 10);
 
 void GameRenderer::Render(
-	World& world, float gameTime, float dt, eg::FramebufferHandle outputFramebuffer, uint32_t outputResX,
+	World& world, float gameTime, float dt, eg::FramebufferHandle outputFramebuffer, eg::Format outputFormat, uint32_t outputResX,
 	uint32_t outputResY)
 {
 	m_projection.SetResolution(static_cast<float>(outputResX), static_cast<float>(outputResY));
@@ -101,9 +101,9 @@ void GameRenderer::Render(
 			m_bloomRenderTarget =
 				std::make_unique<eg::BloomRenderer::RenderTarget>(outputResX, outputResY, *bloomLevels, bloomFormat);
 
-			if (m_bloomRenderer == nullptr)
+			if (m_bloomRenderer == nullptr || m_bloomRenderer->Format() != bloomFormat)
 			{
-				m_bloomRenderer = std::make_unique<eg::BloomRenderer>();
+				m_bloomRenderer = std::make_unique<eg::BloomRenderer>(bloomFormat);
 			}
 
 			m_oldBloomQuality = settings.bloomQuality;
@@ -247,9 +247,12 @@ void GameRenderer::Render(
 		m_rtManager.RedirectRenderTexture(RenderTex::LitWithoutWater, RenderTex::LitWithoutSSR);
 	}
 
-	const bool ssrEnabled = qvar::ssrLinearSamples(settings.reflectionsQuality) != 0 && settings.HDREnabled();
+	const bool ssrEnabled = qvar::ssrLinearSamples(settings.reflectionsQuality) != 0 &&
+	                        lightColorAttachmentFormat != eg::Format::R8G8B8A8_UNorm;
 	if (!ssrEnabled)
+	{
 		m_rtManager.RedirectRenderTexture(RenderTex::LitWithoutSSR, RenderTex::Lit);
+	}
 
 	{
 		auto gpuTimerGeom = eg::StartGPUTimer("Geometry");
@@ -472,7 +475,7 @@ void GameRenderer::Render(
 		auto gpuTimerPost = eg::StartGPUTimer("Post");
 		auto cpuTimerPost = eg::StartCPUTimer("Post");
 		m_renderCtx->postProcessor.Render(
-			m_rtManager.GetRenderTexture(RenderTex::Lit), m_bloomRenderTarget.get(), outputFramebuffer, outputResX,
+			m_rtManager.GetRenderTexture(RenderTex::Lit), m_bloomRenderTarget.get(), outputFramebuffer, outputFormat, outputResX,
 			outputResY, postColorScale);
 	}
 

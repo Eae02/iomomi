@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../GuiCommon.hpp"
 #include "Button.hpp"
 #include "ComboBox.hpp"
 #include "KeyBindingWidget.hpp"
@@ -28,8 +29,8 @@ public:
 		AddWidget(fn());
 	}
 
-	bool Update(float dt, bool allowInteraction);
-	void Draw(eg::SpriteBatch& spriteBatch) const;
+	bool Update(const GuiFrameArgs& frameArgs, bool allowInteraction);
+	void Draw(const GuiFrameArgs& frameArgs, eg::SpriteBatch& spriteBatch) const;
 
 	Widget& GetWidget(size_t index) { return m_widgets[index].first; }
 	const Widget& GetWidget(size_t index) const { return m_widgets[index].first; }

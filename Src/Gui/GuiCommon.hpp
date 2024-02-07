@@ -12,6 +12,22 @@ extern const eg::SpriteFont* UIFont;
 extern const eg::SpriteFont* UIFontSmall;
 } // namespace style
 
+struct GuiFrameArgs
+{
+	float dt;
+	glm::vec2 cursorPos;
+	
+	float scaleToCanvasCoordinates;
+	float scaleToScreenCoordinates;
+	
+	float canvasWidth;
+	float canvasHeight;
+
+	static GuiFrameArgs MakeForCurrentFrame(float dt);
+
+	glm::mat3 GetMatrixToNDC() const;
+};
+
 inline void AnimateProperty(float& value, float dt, float animTime, bool active)
 {
 	value = glm::clamp(value + (active ? dt : -dt) / animTime, 0.0f, 1.0f);

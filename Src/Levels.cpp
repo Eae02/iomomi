@@ -10,40 +10,78 @@ using namespace std::filesystem;
 
 std::vector<Level> levels;
 
-std::vector<std::string_view> levelsOrder = { "intro_0", "intro_1", "intro_2", "intro_3", "button_0", "button_1",
-	                                          "button_2", "button_3",
+std::vector<std::string_view> levelsOrder = {
+	"intro_0",
+	"intro_1",
+	"intro_2",
+	"intro_3",
+	"button_0",
+	"button_1",
+	"button_2",
+	"button_3",
 
-	                                          "gravbarrier_ng0", "gravbarrier_ng1", "gravbarrier_ng2",
+	"gravbarrier_ng0",
+	"gravbarrier_ng1",
+	"gravbarrier_ng2",
 
-	                                          "water_ng0", "water_ng1", "water_ng2", "water_ng3",
+	"water_ng0",
+	"water_ng1",
+	"water_ng2",
+	"water_ng3",
 
-	                                          "gravbarrier_ng3", "water_pump_ng1", "water_pump_ng2",
-	                                          //"water_ng5",
-	                                          "gravbarrier_ng4", "gravbarrier_ng5", "water_pump_ng3", "gravbarrier_ng6",
-	                                          "gravbarrier_ng7",
+	"gravbarrier_ng3",
+	"water_pump_ng1",
+	"water_pump_ng2",
+	//"water_ng5",
+	"gravbarrier_ng4",
+	"gravbarrier_ng5",
+	"water_pump_ng3",
+	"gravbarrier_ng6",
+	"gravbarrier_ng7",
 
-	                                          "gravgun_0", "gravgun_1", "gravgun_3", "gravgun_2", "gravgun_4",
+	"gravgun_0",
+	"gravgun_1",
+	"gravgun_3",
+	"gravgun_2",
+	"gravgun_4",
 
-	                                          "gravbarrier_1", "gravbarrier_2",
+	"gravbarrier_1",
+	"gravbarrier_2",
 
-	                                          "water_0", "water_1",
+	"water_0",
+	"water_1",
 
-	                                          "forcefield_1", "forcefield_2",
+	"forcefield_1",
+	"forcefield_2",
 
-	                                          "gravbarrier_3", "gravbarrier_4",
+	"gravbarrier_3",
+	"gravbarrier_4",
 
-	                                          "forcefield_3", "forcefield_4",
+	"forcefield_3",
+	"forcefield_4",
 
-	                                          "gravgun_5", "gravgun_6",
+	"gravgun_5",
+	"gravgun_6",
 
-	                                          "water_2", "water_3", "water_4", "water_5", "water_6",
+	"water_2",
+	"water_3",
+	"water_4",
+	"water_5",
+	"water_6",
 
-	                                          "launch_0", "gravbarrier_cube_1", "launch_1", "gravbarrier_cube_2",
-	                                          "cubeflip_0", "launch_2", "gravbarrier_cube_3", "gravbarrier_cube_4",
-	                                          //"forcefield_5",
-	                                          "forcefield_6",
+	"launch_0",
+	"gravbarrier_cube_1",
+	"launch_1",
+	"gravbarrier_cube_2",
+	"cubeflip_0",
+	"launch_2",
+	"gravbarrier_cube_3",
+	"gravbarrier_cube_4",
+	//"forcefield_5",
+	"forcefield_6",
 
-	                                          "cubeflip_2" };
+	"cubeflip_2",
+};
 
 static void OnShutdown()
 {
@@ -189,12 +227,6 @@ void LoadLevelThumbnail(Level& level)
 	if (!data)
 		return;
 
-	const eg::SamplerDescription samplerDesc = eg::SamplerDescription{
-		.wrapU = eg::WrapMode::ClampToEdge,
-		.wrapV = eg::WrapMode::ClampToEdge,
-		.wrapW = eg::WrapMode::ClampToEdge,
-	};
-
 	level.thumbnail = eg::Texture::Create2D(eg::TextureCreateInfo{
 		.flags = eg::TextureFlags::CopyDst | eg::TextureFlags::ShaderSample | eg::TextureFlags::GenerateMipmaps,
 		.mipLevels = eg::Texture::MaxMipLevels(std::max(width, height)),
@@ -202,7 +234,7 @@ void LoadLevelThumbnail(Level& level)
 		.height = height,
 		.depth = 1,
 		.format = eg::Format::R8G8B8A8_sRGB,
-		.defaultSamplerDescription = &samplerDesc });
+	});
 
 	size_t uploadBufferSize = width * height * 4;
 	eg::UploadBuffer uploadBuffer = eg::GetTemporaryUploadBufferWith<uint8_t>({ data.get(), uploadBufferSize });

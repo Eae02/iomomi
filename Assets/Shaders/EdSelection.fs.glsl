@@ -1,6 +1,6 @@
 #version 450 core
 
-layout(location=0) out float color_out;
+layout(location=0) out vec4 color_out;
 
 layout(push_constant) uniform PC
 {
@@ -10,5 +10,5 @@ layout(push_constant) uniform PC
 
 void main()
 {
-	color_out = intensity;
+	color_out = vec4(intensity);
 }

@@ -2,6 +2,7 @@
 
 #include "GraphicsCommon.hpp"
 #include "RenderSettings.hpp"
+#include "RenderTex.hpp"
 
 ParticleRenderer::ParticleRenderer()
 {
@@ -17,6 +18,7 @@ ParticleRenderer::ParticleRenderer()
 	pipelineCI.vertexAttributes[1] = { 1, eg::DataType::Float32, 4, offsetof(eg::ParticleInstance, position) };
 	pipelineCI.vertexAttributes[2] = { 1, eg::DataType::UInt16Norm, 4, offsetof(eg::ParticleInstance, texCoord) };
 	pipelineCI.vertexAttributes[3] = { 1, eg::DataType::UInt8Norm, 4, offsetof(eg::ParticleInstance, sinR) };
+	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
 	pipelineCI.label = "Particle";
 	m_pipeline = eg::Pipeline::Create(pipelineCI);
 
@@ -38,7 +40,7 @@ void ParticleRenderer::Draw(const eg::ParticleManager& particleManager, eg::Text
 	eg::DC.BindPipeline(m_pipeline);
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 	eg::DC.BindTexture(*m_texture, 0, 1, &commonTextureSampler);
-	eg::DC.BindTexture(depthTexture, 0, 2);
+	eg::DC.BindTexture(depthTexture, 0, 2, &framebufferNearestSampler);
 
 	eg::DC.BindVertexBuffer(0, m_vertexBuffer, 0);
 	eg::DC.BindVertexBuffer(1, particleManager.ParticlesBuffer(), 0);

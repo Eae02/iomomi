@@ -8,6 +8,7 @@
 GravityCornerLightMaterial GravityCornerLightMaterial::instance;
 
 static eg::Pipeline gravityCornerPipeline;
+static eg::Pipeline gravityCornerPipelineEditor;
 static eg::DescriptorSet gravityCornerDescriptorSet;
 
 static float DEPTH_OFFSET = 0.001f;
@@ -31,21 +32,27 @@ static void OnInit()
 	pipelineCI.vertexShader.specConstantsDataSize = sizeof(float);
 	pipelineCI.vertexShader.specConstantsData = &DEPTH_OFFSET;
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
+	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
+	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
 	pipelineCI.label = "GravityCornerLight";
 	gravityCornerPipeline = eg::Pipeline::Create(pipelineCI);
-	gravityCornerPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
-	gravityCornerPipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
-	gravityCornerPipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
+
+	pipelineCI.colorAttachmentFormats[0] = eg::Format::DefaultColor;
+	pipelineCI.depthAttachmentFormat = eg::Format::DefaultDepthStencil;
+	pipelineCI.label = "GravityCornerLightEditor";
+	gravityCornerPipelineEditor = eg::Pipeline::Create(pipelineCI);
 
 	gravityCornerDescriptorSet = eg::DescriptorSet(gravityCornerPipeline, 0);
 	gravityCornerDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
-	gravityCornerDescriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/GravityCornerLightDist.png"), 1);
+	gravityCornerDescriptorSet.BindTexture(
+		eg::GetAsset<eg::Texture>("Textures/GravityCornerLightDist.png"), 1, &commonTextureSampler);
 	gravityCornerDescriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/Hex.png"), 2, &commonTextureSampler);
 }
 
 static void OnShutdown()
 {
 	gravityCornerPipeline.Destroy();
+	gravityCornerPipelineEditor.Destroy();
 	gravityCornerDescriptorSet.Destroy();
 }
 
@@ -61,14 +68,15 @@ bool GravityCornerLightMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* 
 {
 	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
 
-	if (mDrawArgs->drawMode == MeshDrawMode::Emissive || mDrawArgs->drawMode == MeshDrawMode::Editor)
-	{
+	if (mDrawArgs->drawMode == MeshDrawMode::Emissive)
 		cmdCtx.BindPipeline(gravityCornerPipeline);
-		cmdCtx.BindDescriptorSet(gravityCornerDescriptorSet, 0);
-		return true;
-	}
+	else if (mDrawArgs->drawMode == MeshDrawMode::Editor)
+		cmdCtx.BindPipeline(gravityCornerPipelineEditor);
+	else
+		return false;
 
-	return false;
+	cmdCtx.BindDescriptorSet(gravityCornerDescriptorSet, 0);
+	return true;
 }
 
 static constexpr float ACT_ANIMATION_DURATION = 0.5f;

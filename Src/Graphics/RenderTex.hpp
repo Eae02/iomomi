@@ -26,10 +26,49 @@ enum class RenderTex
 
 constexpr eg::Format GB_DEPTH_FORMAT = eg::Format::Depth32;
 constexpr eg::Format GB_COLOR_FORMAT = eg::Format::R8G8B8A8_UNorm;
-constexpr eg::Format LIGHT_COLOR_FORMAT_LDR = eg::Format::R8G8B8A8_UNorm;
-constexpr eg::Format LIGHT_COLOR_FORMAT_HDR = eg::Format::R16G16B16A16_Float;
+
+extern eg::Format lightColorAttachmentFormat;
+
+void SetLightColorAttachmentFormat(bool enableHDR);
 
 eg::Format GetFormatForRenderTexture(RenderTex texture);
+
+eg::Format GetDynamicFormatForRenderTexture(RenderTex texture);
+
+constexpr eg::Format ConstexprGetFormatForRenderTexture(RenderTex texture)
+{
+	switch (texture)
+	{
+	case RenderTex::GBDepth:
+		return GB_DEPTH_FORMAT;
+	case RenderTex::GBColor1:
+		return GB_COLOR_FORMAT;
+	case RenderTex::GBColor2:
+		return GB_COLOR_FORMAT;
+	case RenderTex::WaterGlowIntensity:
+		return eg::Format::R8_UNorm;
+	case RenderTex::WaterMinDepth:
+		return eg::Format::Depth16;
+	case RenderTex::WaterMaxDepth:
+		return eg::Format::Depth16;
+	case RenderTex::BlurredGlassDepth:
+		return GB_DEPTH_FORMAT;
+
+	case RenderTex::SSAOGBDepthLinear:
+		return eg::Format::R32_Float;
+
+	case RenderTex::SSRDepth:
+		return eg::Format::Depth16;
+
+	case RenderTex::SSAOUnblurred:
+	case RenderTex::SSAOTempBlur:
+	case RenderTex::SSAO:
+		return eg::Format::R8_UNorm;
+
+	default:
+		return GetDynamicFormatForRenderTexture(texture);
+	}
+}
 
 void AssertRenderTextureFormatSupport();
 
@@ -71,7 +110,6 @@ private:
 
 	uint32_t m_generation = 1;
 
-	bool wasHDREnabled = false;
 	bool wasWaterHighPrecision = false;
 
 	std::vector<eg::Texture> renderTextures;

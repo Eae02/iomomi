@@ -115,6 +115,7 @@ const SettingEntry settingEntries[] = {
 	MakeEnumSetting("reflQuality", &Settings::reflectionsQuality),
 	MakeEnumSetting("shadowQuality", &Settings::shadowQuality),
 	MakeEnumSetting("lightingQuality", &Settings::lightingQuality),
+	MakeBoolSetting("highDynamicRange", &Settings::highDynamicRange),
 	MakeEnumSetting("waterQuality", &Settings::waterQuality),
 	MakeEnumSetting("ssaoQuality", &Settings::ssaoQuality),
 	MakeEnumSetting("bloomQuality", &Settings::bloomQuality),

@@ -5,8 +5,8 @@ class SubtitleWidget
 public:
 	explicit SubtitleWidget(std::string text) : m_text(std::move(text)) {}
 
-	void Update(float dt, bool allowInteraction) {}
-	void Draw(eg::SpriteBatch& spriteBatch) const;
+	void Update(const struct GuiFrameArgs& frameArgs, bool allowInteraction) {}
+	void Draw(const struct GuiFrameArgs& frameArgs, eg::SpriteBatch& spriteBatch) const;
 
 	glm::vec2 position;
 	float width;

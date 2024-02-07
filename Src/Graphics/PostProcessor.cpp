@@ -10,9 +10,9 @@ static float* vignetteMinRad = eg::TweakVarFloat("vign_min_rad", 0.2f, 0);
 static float* vignetteMaxRad = eg::TweakVarFloat("vign_max_rad", 0.75f, 0);
 static float* vignettePower = eg::TweakVarFloat("vign_power", 1.2f, 0);
 
-void PostProcessor::InitPipeline()
+eg::Pipeline PostProcessor::CreatePipeline(const PipelineVariantKey& variantKey)
 {
-	uint32_t enableFXAA = settings.enableFXAA;
+	uint32_t enableFXAA = variantKey.enableFXAA;
 
 	eg::SpecializationConstantEntry specConstEntries[1];
 	specConstEntries[0].constantID = 0;
@@ -26,20 +26,31 @@ void PostProcessor::InitPipeline()
 	postPipelineCI.fragmentShader.specConstants = specConstEntries;
 	postPipelineCI.fragmentShader.specConstantsData = &enableFXAA;
 	postPipelineCI.fragmentShader.specConstantsDataSize = sizeof(enableFXAA);
-	m_pipeline = eg::Pipeline::Create(postPipelineCI);
-	m_pipeline.FramebufferFormatHint(eg::Format::R8G8B8A8_UNorm);
-	m_pipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
-
-	m_fxaaWasEnabled = settings.enableFXAA;
+	postPipelineCI.colorAttachmentFormats[0] = variantKey.outputFormat;
+	return eg::Pipeline::Create(postPipelineCI);
 }
 
 void PostProcessor::Render(
 	eg::TextureRef input, const eg::BloomRenderer::RenderTarget* bloomRenderTarget, eg::FramebufferHandle output,
-	uint32_t outputResX, uint32_t outputResY, float colorScale)
+	eg::Format outputFormat, uint32_t outputResX, uint32_t outputResY, float colorScale)
 {
-	if (m_fxaaWasEnabled != settings.enableFXAA)
+	PipelineVariantKey pipelineVariantKey = {
+		.enableFXAA = settings.enableFXAA,
+		.outputFormat = outputFormat,
+	};
+
+	eg::Pipeline* pipeline;
+	auto pipelineIt = std::find_if(
+		m_pipelines.begin(), m_pipelines.end(), [&](const auto& p) { return p.first == pipelineVariantKey; });
+	if (pipelineIt != m_pipelines.end())
 	{
-		InitPipeline();
+		pipeline = &pipelineIt->second;
+	}
+	else
+	{
+		eg::Pipeline newPipeline = CreatePipeline(pipelineVariantKey);
+		m_pipelines.emplace_back(pipelineVariantKey, std::move(newPipeline));
+		pipeline = &m_pipelines.back().second;
 	}
 
 	eg::RenderPassBeginInfo rpBeginInfo;
@@ -53,7 +64,7 @@ void PostProcessor::Render(
 		*vignettePower
 	};
 
-	eg::DC.BindPipeline(m_pipeline);
+	eg::DC.BindPipeline(*pipeline);
 	eg::DC.PushConstants(0, sizeof(pc), pc);
 
 	eg::DC.BindTexture(input, 0, 0, &framebufferLinearSampler);

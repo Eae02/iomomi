@@ -27,9 +27,10 @@ PointLightShadowMapper::PointLightShadowMapper()
 		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/ShadowDepthCopy.fs.glsl").DefaultVariant();
 	depthCopyPipelineCI.enableDepthTest = true;
 	depthCopyPipelineCI.enableDepthWrite = true;
+	depthCopyPipelineCI.numColorAttachments = 0;
+	depthCopyPipelineCI.depthAttachmentFormat = SHADOW_MAP_FORMAT;
 	depthCopyPipelineCI.label = "ShadowDepthCopy";
 	m_depthCopyPipeline = eg::Pipeline::Create(depthCopyPipelineCI);
-	m_depthCopyPipeline.FramebufferFormatHint(eg::Format::Undefined, SHADOW_MAP_FORMAT);
 
 	glm::vec3 localNormals[5] = {
 		glm::vec3(1, 0, 1),
@@ -177,7 +178,7 @@ void PointLightShadowMapper::UpdateShadowMaps(
 		renderArgs.lightMatrix = glm::perspective(glm::radians(90.0f), 1.0f, 0.001f, light.Range()) *
 		                         glm::lookAt(light.position, light.position + shadowMatrixF[face], shadowMatrixU[face]);
 
-		if (eg::CurrentGraphicsAPI() == eg::GraphicsAPI::Vulkan)
+		if (FlippedLightMatrix())
 		{
 			renderArgs.lightMatrix = glm::scale(glm::mat4(1), glm::vec3(1, -1, 1)) * renderArgs.lightMatrix;
 		}
@@ -303,4 +304,9 @@ bool PointLightShadowMapper::LightEntry::HasMoved() const
 	constexpr float MIN_RANGE_DIFF = 0.01f;
 	return glm::distance2(light->position, previousPosition) > MIN_MOVE_DIST * MIN_MOVE_DIST ||
 	       glm::abs(light->Range() - previousRange) > MIN_RANGE_DIFF;
+}
+
+bool PointLightShadowMapper::FlippedLightMatrix()
+{
+	return eg::CurrentGraphicsAPI() != eg::GraphicsAPI::OpenGL;
 }

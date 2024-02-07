@@ -37,24 +37,23 @@ void GravityBarrierMaterial::OnInit()
 		eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::OneMinusSrcAlpha);
 	pipelineCI.fragmentShader.specConstants = { &waterModeSpecConstant, 1 };
 	pipelineCI.fragmentShader.specConstantsDataSize = sizeof(int32_t);
+	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
+	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
 
 	pipelineCI.label = "GravityBarrier[BeforeWater]";
 	pipelineCI.fragmentShader.specConstantsData = const_cast<int32_t*>(&WATER_MODE_BEFORE);
 	s_pipelineGameBeforeWater = eg::Pipeline::Create(pipelineCI);
-	s_pipelineGameBeforeWater.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
-	s_pipelineGameBeforeWater.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
 
 	pipelineCI.label = "GravityBarrier[Final]";
 	pipelineCI.fragmentShader.specConstantsData = const_cast<int32_t*>(&WATER_MODE_AFTER);
 	s_pipelineGameFinal = eg::Pipeline::Create(pipelineCI);
-	s_pipelineGameFinal.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
-	s_pipelineGameFinal.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
 
 	pipelineCI.label = "GravityBarrier[Editor]";
 	pipelineCI.fragmentShader =
 		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityBarrier/GBEditor.fs.glsl").DefaultVariant();
+	pipelineCI.colorAttachmentFormats[0] = eg::Format::DefaultColor;
+	pipelineCI.depthAttachmentFormat = eg::Format::DefaultDepthStencil;
 	s_pipelineEditor = eg::Pipeline::Create(pipelineCI);
-	s_pipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 
 	eg::SpecializationConstantEntry ssrDistSpecConstant;
 	ssrDistSpecConstant.constantID = 0;
@@ -72,9 +71,9 @@ void GravityBarrierMaterial::OnInit()
 	ssrPipelineCI.fragmentShader.specConstants = { &ssrDistSpecConstant, 1 };
 	ssrPipelineCI.fragmentShader.specConstantsDataSize = sizeof(float);
 	ssrPipelineCI.fragmentShader.specConstantsData = const_cast<float*>(&SSR::MAX_DISTANCE);
+	ssrPipelineCI.colorAttachmentFormats[0] = ConstexprGetFormatForRenderTexture(RenderTex::SSRTemp1);
+	ssrPipelineCI.depthAttachmentFormat = ConstexprGetFormatForRenderTexture(RenderTex::SSRDepth);
 	s_pipelineSSR = eg::Pipeline::Create(ssrPipelineCI);
-	s_pipelineSSR.FramebufferFormatHint(
-		GetFormatForRenderTexture(RenderTex::SSRTemp1), GetFormatForRenderTexture(RenderTex::SSRDepth));
 
 	s_sharedDataBuffer =
 		eg::Buffer(eg::BufferFlags::Update | eg::BufferFlags::UniformBuffer, sizeof(BarrierBufferData), nullptr);
@@ -94,7 +93,7 @@ EG_ON_SHUTDOWN(GravityBarrierMaterial::OnShutdown)
 
 void GravityBarrierMaterial::UpdateSharedDataBuffer(const BarrierBufferData& data)
 {
-	eg::DC.UpdateBuffer(s_sharedDataBuffer, 0, sizeof(GravityBarrierMaterial::BarrierBufferData), &data);
+	s_sharedDataBuffer.DCUpdateData(0, sizeof(GravityBarrierMaterial::BarrierBufferData), &data);
 	s_sharedDataBuffer.UsageHint(eg::BufferUsage::UniformBuffer, eg::ShaderAccessFlags::Fragment);
 }
 
@@ -111,47 +110,49 @@ bool GravityBarrierMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* draw
 	{
 		cmdCtx.BindPipeline(s_pipelineGameBeforeWater);
 		cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
-		cmdCtx.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 0, 1);
+		cmdCtx.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 0, 1, &linearRepeatSampler);
 		cmdCtx.BindUniformBuffer(s_sharedDataBuffer, 0, 2, 0, sizeof(BarrierBufferData));
-		cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 0, 3);
-		cmdCtx.BindTexture(blackPixelTexture, 0, 4);
+		cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 0, 3, &framebufferNearestSampler);
+		cmdCtx.BindTexture(blackPixelTexture, 0, 4, &framebufferNearestSampler);
 		return true;
 	}
 	if (mDrawArgs->drawMode == MeshDrawMode::TransparentBeforeBlur)
 	{
 		cmdCtx.BindPipeline(s_pipelineGameFinal);
 		cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
-		cmdCtx.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 0, 1);
+		cmdCtx.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 0, 1, &linearRepeatSampler);
 		cmdCtx.BindUniformBuffer(s_sharedDataBuffer, 0, 2, 0, sizeof(BarrierBufferData));
-		cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 0, 3);
-		cmdCtx.BindTexture(mDrawArgs->rtManager->GetRenderTexture(RenderTex::BlurredGlassDepth), 0, 4);
+		cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 0, 3, &framebufferNearestSampler);
+		cmdCtx.BindTexture(mDrawArgs->rtManager->GetRenderTexture(RenderTex::BlurredGlassDepth), 0, 4, &framebufferNearestSampler);
 		return true;
 	}
 	else if (mDrawArgs->drawMode == MeshDrawMode::TransparentFinal)
 	{
 		cmdCtx.BindPipeline(s_pipelineGameFinal);
 		cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
-		cmdCtx.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 0, 1);
+		cmdCtx.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 0, 1, &linearRepeatSampler);
 		cmdCtx.BindUniformBuffer(s_sharedDataBuffer, 0, 2, 0, sizeof(BarrierBufferData));
-		cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 0, 3);
-		cmdCtx.BindTexture(blackPixelTexture, 0, 4);
+		cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 0, 3, &framebufferNearestSampler);
+		cmdCtx.BindTexture(blackPixelTexture, 0, 4, &framebufferNearestSampler);
 		return true;
 	}
 	else if (mDrawArgs->drawMode == MeshDrawMode::Editor)
 	{
 		cmdCtx.BindPipeline(s_pipelineEditor);
 		cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
-		cmdCtx.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 0, 1);
+		cmdCtx.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 0, 1, &linearRepeatSampler);
 		return true;
 	}
 	else if (mDrawArgs->drawMode == MeshDrawMode::AdditionalSSR)
 	{
 		cmdCtx.BindPipeline(s_pipelineSSR);
 		cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
-		cmdCtx.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 0, 1);
+		cmdCtx.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 0, 1, &linearRepeatSampler);
 		cmdCtx.BindUniformBuffer(s_sharedDataBuffer, 0, 2, 0, sizeof(BarrierBufferData));
-		cmdCtx.BindTexture(mDrawArgs->rtManager->GetRenderTexture(RenderTex::GBColor2), 0, 3);
-		cmdCtx.BindTexture(mDrawArgs->rtManager->GetRenderTexture(RenderTex::GBDepth), 0, 4);
+		cmdCtx.BindTexture(
+			mDrawArgs->rtManager->GetRenderTexture(RenderTex::GBColor2), 0, 3, &framebufferNearestSampler);
+		cmdCtx.BindTexture(
+			mDrawArgs->rtManager->GetRenderTexture(RenderTex::GBDepth), 0, 4, &framebufferNearestSampler);
 		return true;
 	}
 

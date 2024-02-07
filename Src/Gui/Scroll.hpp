@@ -13,7 +13,7 @@ public:
 
 	bool isDragging = false;
 
-	void Update(float dt, bool canInteract = true);
+	void Update(const struct GuiFrameArgs& frameArgs, bool canInteract = true);
 	void Draw(eg::SpriteBatch& spriteBatch) const;
 
 	void SetScroll(float s);

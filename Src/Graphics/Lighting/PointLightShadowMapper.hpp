@@ -19,6 +19,8 @@ public:
 	void UpdateShadowMaps(
 		const RenderCallback& prepareCallback, const RenderCallback& renderCallback, const eg::Frustum& viewFrustum);
 
+	static bool FlippedLightMatrix();
+
 	uint32_t Resolution() const { return m_resolution; }
 
 	uint64_t LastUpdateFrameIndex() const { return m_lastUpdateFrameIndex; }

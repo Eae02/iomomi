@@ -2,7 +2,7 @@
 
 #include "../GuiCommon.hpp"
 
-void SubtitleWidget::Draw(eg::SpriteBatch& spriteBatch) const
+void SubtitleWidget::Draw(const GuiFrameArgs& frameArgs, eg::SpriteBatch& spriteBatch) const
 {
 	constexpr float TEXT_SCALE = 0.8f;
 

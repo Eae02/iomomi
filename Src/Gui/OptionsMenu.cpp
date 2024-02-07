@@ -151,6 +151,7 @@ void InitOptionsMenu()
 	leftWidgetList.AddWidget(std::move(resolutionCB));
 	leftWidgetList.AddWidget(InitSettingsToggleButton(&Settings::vsync, "VSync", "On", "Off"));
 
+#ifndef __APPLE__
 	ComboBox apiComboBox;
 	apiComboBox.label = "Graphics API";
 	apiComboBox.restartRequiredIfChanged = true;
@@ -159,6 +160,8 @@ void InitOptionsMenu()
 		apiComboBox.options.push_back("Vulkan");
 	apiComboBox.getValue = [] { return static_cast<int>(settings.graphicsAPI); };
 	apiComboBox.setValue = [](int value) { settings.graphicsAPI = (eg::GraphicsAPI)value; };
+	leftWidgetList.AddWidget(std::move(apiComboBox));
+#endif
 
 	std::span<std::string> gpuNames = eg::gal::GetDeviceNames();
 
@@ -183,7 +186,6 @@ void InitOptionsMenu()
 	};
 	gpuComboBox.setValue = [gpuNames](int value) { settings.preferredGPUName = gpuNames[value]; };
 
-	leftWidgetList.AddWidget(std::move(apiComboBox));
 	leftWidgetList.AddWidget(std::move(gpuComboBox));
 #endif
 
@@ -213,6 +215,7 @@ void InitOptionsMenu()
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::shadowQuality, "Shadows", true));
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::reflectionsQuality, "Reflections", true));
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::lightingQuality, "Lighting", true));
+	leftWidgetList.AddWidget(InitSettingsToggleButton(&Settings::highDynamicRange, "High Dynamic Range", "On", "Off"));
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::ssaoQuality, "SSAO", true));
 #ifdef IOMOMI_ENABLE_WATER
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::waterQuality, "Water", true));
@@ -288,54 +291,54 @@ void InitOptionsMenu()
 
 EG_ON_INIT(InitOptionsMenu)
 
-void UpdateOptionsMenu(float dt, const glm::vec2& positionOffset, bool allowInteraction)
+void UpdateOptionsMenu(const GuiFrameArgs& frameArgs, const glm::vec2& positionOffset, bool allowInteraction)
 {
 	KeyBindingWidget::anyKeyBindingPickingKey = false;
 
 	constexpr float Y_MARGIN_TOP = 50;
 	constexpr float Y_MARGIN_BTM = 100;
 
-	const glm::vec2 flippedCursorPos(eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY());
-
 	optionsScrollPanel.contentHeight = std::max(leftWidgetList.Height(), rightWidgetList.Height());
 
-	float resx = static_cast<float>(eg::CurrentResolutionX());
-	float resy = static_cast<float>(eg::CurrentResolutionY());
-
 	optionsScrollPanel.screenRectangle.x =
-		std::max(resx / 2.0f - WIDGET_LIST_SPACING / 2.0f - WIDGET_LIST_WIDTH, 0.0f) + positionOffset.x;
-	optionsScrollPanel.screenRectangle.w = std::min(WIDGET_LIST_SPACING + WIDGET_LIST_WIDTH * 2 + 20, resx);
+		std::max(frameArgs.canvasWidth / 2.0f - WIDGET_LIST_SPACING / 2.0f - WIDGET_LIST_WIDTH, 0.0f) +
+		positionOffset.x;
+	optionsScrollPanel.screenRectangle.w =
+		std::min(WIDGET_LIST_SPACING + WIDGET_LIST_WIDTH * 2 + 20, frameArgs.canvasWidth);
 	optionsScrollPanel.screenRectangle.h =
-		std::min(resy - Y_MARGIN_TOP - Y_MARGIN_BTM, optionsScrollPanel.contentHeight);
+		std::min(frameArgs.canvasHeight - Y_MARGIN_TOP - Y_MARGIN_BTM, optionsScrollPanel.contentHeight);
 	optionsScrollPanel.screenRectangle.y =
-		std::max((resy - optionsScrollPanel.screenRectangle.h) / 2.0f, Y_MARGIN_BTM) + positionOffset.y;
+		std::max((frameArgs.canvasHeight - optionsScrollPanel.screenRectangle.h) / 2.0f, Y_MARGIN_BTM) +
+		positionOffset.y;
 
-	optionsScrollPanel.Update(dt, ComboBox::current == nullptr);
+	optionsScrollPanel.Update(frameArgs, ComboBox::current == nullptr);
 
 	leftWidgetList.position.x = optionsScrollPanel.screenRectangle.x;
 	leftWidgetList.position.y = optionsScrollPanel.screenRectangle.MaxY() + optionsScrollPanel.scroll;
-	rightWidgetList.position.x = (eg::CurrentResolutionX() + WIDGET_LIST_SPACING) / 2 + positionOffset.x;
+	rightWidgetList.position.x = (frameArgs.canvasWidth + WIDGET_LIST_SPACING) / 2 + positionOffset.x;
 	rightWidgetList.position.y = leftWidgetList.position.y;
 
-	bool canInteractWidgetList = allowInteraction && optionsScrollPanel.screenRectangle.Contains(flippedCursorPos);
-	leftWidgetList.Update(dt, canInteractWidgetList);
-	rightWidgetList.Update(dt, canInteractWidgetList);
+	bool canInteractWidgetList = allowInteraction && optionsScrollPanel.screenRectangle.Contains(frameArgs.cursorPos);
+	leftWidgetList.Update(frameArgs, canInteractWidgetList);
+	rightWidgetList.Update(frameArgs, canInteractWidgetList);
 
-	backButton.position.x = (eg::CurrentResolutionX() - backButton.width) / 2 + positionOffset.x;
+	backButton.position.x = (frameArgs.canvasWidth - backButton.width) / 2 + positionOffset.x;
 	backButton.position.y = optionsScrollPanel.screenRectangle.y - Button::height - 20 + positionOffset.y;
-	backButton.Update(dt, allowInteraction);
+	backButton.Update(frameArgs, allowInteraction);
 }
 
-void DrawOptionsMenu(eg::SpriteBatch& spriteBatch)
+void DrawOptionsMenu(const GuiFrameArgs& frameArgs, eg::SpriteBatch& spriteBatch)
 {
 	spriteBatch.PushScissorF(
-		0.0f, optionsScrollPanel.screenRectangle.y, static_cast<float>(eg::CurrentResolutionX()),
-		optionsScrollPanel.screenRectangle.h);
-	leftWidgetList.Draw(spriteBatch);
-	rightWidgetList.Draw(spriteBatch);
+		0.0f, optionsScrollPanel.screenRectangle.y * frameArgs.scaleToScreenCoordinates,
+		frameArgs.canvasWidth * frameArgs.scaleToScreenCoordinates,
+		optionsScrollPanel.screenRectangle.h * frameArgs.scaleToScreenCoordinates);
+
+	leftWidgetList.Draw(frameArgs, spriteBatch);
+	rightWidgetList.Draw(frameArgs, spriteBatch);
 	spriteBatch.PopScissor();
 
-	backButton.Draw(spriteBatch);
+	backButton.Draw(frameArgs, spriteBatch);
 
 	optionsScrollPanel.Draw(spriteBatch);
 }

@@ -5,6 +5,8 @@
 #include "../Settings.hpp"
 #include "Water/WaterRenderer.hpp"
 
+#include "Assets/Shaders/Inc/RenderConstants.h"
+
 bool useGLESPath;
 
 const glm::ivec3 cubeMesh::vertices[8] = {
@@ -23,11 +25,13 @@ const std::pair<uint32_t, uint32_t> cubeMesh::edges[12] = {
 eg::Sampler commonTextureSampler;
 eg::Sampler framebufferNearestSampler;
 eg::Sampler framebufferLinearSampler;
+eg::Sampler linearClampToEdgeSampler;
+eg::Sampler linearRepeatSampler;
 
 eg::Texture whitePixelTexture;
 eg::Texture blackPixelTexture;
 
-static void OnInit()
+void GraphicsCommonInit()
 {
 	const auto commonSamplerDescription = eg::SamplerDescription{ .maxAnistropy = settings.anisotropicFiltering };
 	commonTextureSampler = eg::Sampler(commonSamplerDescription);
@@ -49,6 +53,24 @@ static void OnInit()
 		.magFilter = eg::TextureFilter::Nearest,
 		.mipFilter = eg::TextureFilter::Nearest,
 	});
+	
+	linearClampToEdgeSampler = eg::Sampler(eg::SamplerDescription{
+		.wrapU = eg::WrapMode::ClampToEdge,
+		.wrapV = eg::WrapMode::ClampToEdge,
+		.wrapW = eg::WrapMode::ClampToEdge,
+		.minFilter = eg::TextureFilter::Linear,
+		.magFilter = eg::TextureFilter::Linear,
+		.mipFilter = eg::TextureFilter::Linear,
+	});
+	
+	linearRepeatSampler = eg::Sampler(eg::SamplerDescription{
+		.wrapU = eg::WrapMode::Repeat,
+		.wrapV = eg::WrapMode::Repeat,
+		.wrapW = eg::WrapMode::Repeat,
+		.minFilter = eg::TextureFilter::Linear,
+		.magFilter = eg::TextureFilter::Linear,
+		.mipFilter = eg::TextureFilter::Linear,
+	});
 
 	eg::TextureCreateInfo whiteTextureCI;
 	whiteTextureCI.format = eg::Format::R8G8B8A8_UNorm;
@@ -56,7 +78,6 @@ static void OnInit()
 	whiteTextureCI.height = 1;
 	whiteTextureCI.mipLevels = 1;
 	whiteTextureCI.flags = eg::TextureFlags::ShaderSample | eg::TextureFlags::CopyDst;
-	whiteTextureCI.defaultSamplerDescription = &commonSamplerDescription;
 
 	whiteTextureCI.label = "WhitePixel";
 	whitePixelTexture = eg::Texture::Create2D(whiteTextureCI);
@@ -64,10 +85,14 @@ static void OnInit()
 	whiteTextureCI.label = "BlackPixel";
 	blackPixelTexture = eg::Texture::Create2D(whiteTextureCI);
 
-	eg::DC.ClearColorTexture(whitePixelTexture, 0, eg::Color(1, 1, 1, 1));
+	const uint8_t whitePixelTextureColor[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
+	whitePixelTexture.DCUpdateData(
+		eg::TextureRange{ .sizeX = 1, .sizeY = 1, .sizeZ = 1 }, sizeof(whitePixelTextureColor), whitePixelTextureColor);
 	whitePixelTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 
-	eg::DC.ClearColorTexture(blackPixelTexture, 0, eg::Color(0, 0, 0, 0));
+	const uint8_t blackPixelTextureColor[4] = { 0, 0, 0, 0 };
+	blackPixelTexture.DCUpdateData(
+		eg::TextureRange{ .sizeX = 1, .sizeY = 1, .sizeZ = 1 }, sizeof(blackPixelTextureColor), blackPixelTextureColor);
 	blackPixelTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 }
 
@@ -80,7 +105,6 @@ static void OnShutdown()
 	blackPixelTexture.Destroy();
 }
 
-EG_ON_INIT(OnInit)
 EG_ON_SHUTDOWN(OnShutdown)
 
 ResizableBuffer::ResizableBuffer()

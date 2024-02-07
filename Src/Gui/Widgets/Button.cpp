@@ -2,7 +2,7 @@
 
 #include "../GuiCommon.hpp"
 
-void Button::Update(float dt, bool allowInteraction)
+void Button::Update(const GuiFrameArgs& frameArgs, bool allowInteraction)
 {
 	if (m_lastUpdateFrameIdx + 1 != eg::FrameIdx())
 	{
@@ -16,15 +16,14 @@ void Button::Update(float dt, bool allowInteraction)
 
 	eg::Rectangle rect(position, width, height);
 
-	glm::vec2 flippedCursorPos(eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY());
-	bool hovered = enabled && allowInteraction && (rect.Contains(flippedCursorPos) || hasKeyboardFocus);
+	bool hovered = enabled && allowInteraction && (rect.Contains(frameArgs.cursorPos) || hasKeyboardFocus);
 	bool clicked = hovered && ((eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft)) ||
 	                           (hasKeyboardFocus && eg::IsButtonDown(eg::Button::Enter)));
 
 	if (hovered)
-		m_highlightIntensity = std::min(m_highlightIntensity + dt / style::HoverAnimationTime, 1.0f);
+		m_highlightIntensity = std::min(m_highlightIntensity + frameArgs.dt / style::HoverAnimationTime, 1.0f);
 	else
-		m_highlightIntensity = std::max(m_highlightIntensity - dt / style::HoverAnimationTime, 0.0f);
+		m_highlightIntensity = std::max(m_highlightIntensity - frameArgs.dt / style::HoverAnimationTime, 0.0f);
 
 	if (hovered && !m_wasHovered)
 		PlayButtonHoverSound();
@@ -34,7 +33,7 @@ void Button::Update(float dt, bool allowInteraction)
 		onClick();
 }
 
-void Button::Draw(eg::SpriteBatch& spriteBatch) const
+void Button::Draw(const GuiFrameArgs& frameArgs, eg::SpriteBatch& spriteBatch) const
 {
 	float inflate = m_highlightIntensity * style::ButtonInflatePercent;
 	float fontScale = 0.75f * (1 + inflate);

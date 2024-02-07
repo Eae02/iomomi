@@ -19,10 +19,9 @@ GravityGun::MidMaterial::MidMaterial()
 	pipelineCI.cullMode = eg::CullMode::None;
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.label = "GravityGunMid";
+	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
+	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
 	m_pipeline = eg::Pipeline::Create(pipelineCI);
-	m_pipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
-	m_pipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
-	m_pipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 
 	m_descriptorSet = eg::DescriptorSet(m_pipeline, 0);
 

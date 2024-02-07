@@ -3,26 +3,40 @@
 #include "GraphicsCommon.hpp"
 #include "RenderTex.hpp"
 
-static eg::Pipeline glassBlurPipeline;
+static std::vector<std::pair<eg::Format, eg::Pipeline>> blurPipelines;
 
-static void OnInit()
+static eg::PipelineRef GetBlurPipeline(eg::Format format)
 {
+	for (auto& [pipelineFormat, pipeline] : blurPipelines)
+	{
+		if (pipelineFormat == format)
+			return pipeline;
+	}
+
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Blur.fs.glsl").DefaultVariant();
 	pipelineCI.label = "BlurPipeline";
-	glassBlurPipeline = eg::Pipeline::Create(pipelineCI);
-	glassBlurPipeline.FramebufferFormatHint(eg::Format::R8G8B8A8_UNorm);
-	glassBlurPipeline.FramebufferFormatHint(eg::Format::R16G16B16A16_Float);
+	pipelineCI.colorAttachmentFormats[0] = format;
+	eg::Pipeline pipeline = eg::Pipeline::Create(pipelineCI);
+	eg::PipelineRef pipelineRef = pipeline;
+	blurPipelines.emplace_back(format, std::move(pipeline));
+
+	return pipelineRef;
 }
 
 static void OnShutdown()
 {
-	glassBlurPipeline.Destroy();
+	blurPipelines.clear();
 }
 
-EG_ON_INIT(OnInit)
 EG_ON_SHUTDOWN(OnShutdown)
+
+BlurRenderer::BlurRenderer(uint32_t blurLevels, eg::Format format)
+	: m_levels(blurLevels), m_format(format), m_blurPipeline(GetBlurPipeline(format)), m_framebuffersTmp(blurLevels),
+	  m_framebuffersOut(blurLevels)
+{
+}
 
 void BlurRenderer::MaybeUpdateResolution(uint32_t newWidth, uint32_t newHeight)
 {
@@ -39,13 +53,6 @@ void BlurRenderer::MaybeUpdateResolution(uint32_t newWidth, uint32_t newHeight)
 		m_framebuffersTmp[i].Destroy();
 	}
 
-	eg::SamplerDescription samplerDesc;
-	samplerDesc.wrapU = eg::WrapMode::ClampToEdge;
-	samplerDesc.wrapV = eg::WrapMode::ClampToEdge;
-	samplerDesc.wrapW = eg::WrapMode::ClampToEdge;
-	samplerDesc.minFilter = eg::TextureFilter::Linear;
-	samplerDesc.magFilter = eg::TextureFilter::Linear;
-
 	eg::TextureCreateInfo textureCI;
 	textureCI.width = newWidth / 2;
 	textureCI.height = newHeight / 2;
@@ -54,7 +61,6 @@ void BlurRenderer::MaybeUpdateResolution(uint32_t newWidth, uint32_t newHeight)
 		eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample | eg::TextureFlags::ManualBarrier;
 	textureCI.format = m_format;
 	textureCI.label = "GlassBlurDst";
-	textureCI.defaultSamplerDescription = &samplerDesc;
 
 	m_blurTextureTmp = eg::Texture::Create2D(textureCI);
 	m_blurTextureOut = eg::Texture::Create2D(textureCI);
@@ -81,7 +87,7 @@ void BlurRenderer::DoBlurPass(
 	rp1BeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
 	eg::DC.BeginRenderPass(rp1BeginInfo);
 
-	eg::DC.BindPipeline(glassBlurPipeline);
+	eg::DC.BindPipeline(m_blurPipeline);
 
 	float pc[] = { blurVector.x, blurVector.y, sampleOffset.x, sampleOffset.y, static_cast<float>(inputLod) };
 	eg::TextureSubresource subresource;

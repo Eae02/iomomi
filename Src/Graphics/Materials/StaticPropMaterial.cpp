@@ -10,12 +10,12 @@
 
 struct
 {
-	// Indices are: [cull enablement][alpha test][array textures]
-	eg::Pipeline pipelineEditor[2][2][2];
-	eg::Pipeline pipelineGame[2][2][2];
+	// Indices are: [alpha test][array textures]
+	eg::Pipeline pipelineEditor[2][2];
+	eg::Pipeline pipelineGame[2][2];
 
-	// Indices are: [cull enablement][alpha test]
-	eg::Pipeline pipelinePLShadow[2][2];
+	// Indices are: [alpha test]
+	eg::Pipeline pipelinePLShadow[2];
 
 	std::unique_ptr<StaticPropMaterial> wallMaterials[MAX_WALL_MATERIALS];
 
@@ -55,43 +55,40 @@ void StaticPropMaterial::LazyInitGlobals()
 	pipelineCI.enableDepthWrite = true;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
-	pipelineCI.numColorAttachments = 2;
+	pipelineCI.cullMode = std::nullopt;
 
-	auto InitializeVariants = [&](std::string_view variantPrefix, eg::Pipeline out[2][2][2],
-	                              const eg::FramebufferFormatHint& framebufferFormatHint)
+	auto InitializeVariants = [&](std::string_view variantPrefix, eg::Pipeline out[2][2])
 	{
-		for (int enableCulling = 0; enableCulling < 2; enableCulling++)
+		for (uint32_t alphaTest = 0; alphaTest < 2; alphaTest++)
 		{
-			pipelineCI.cullMode = enableCulling ? eg::CullMode::Back : eg::CullMode::None;
-			for (uint32_t alphaTest = 0; alphaTest < 2; alphaTest++)
+			for (int textureArray = 0; textureArray < 2; textureArray++)
 			{
-				for (int textureArray = 0; textureArray < 2; textureArray++)
-				{
-					std::string variantName = eg::Concat({ variantPrefix, textureArray ? "TexArray" : "Tex2D" });
-					pipelineCI.fragmentShader = fs.GetVariant(variantName);
+				std::string variantName = eg::Concat({ variantPrefix, textureArray ? "TexArray" : "Tex2D" });
+				pipelineCI.fragmentShader = fs.GetVariant(variantName);
 
-					eg::SpecializationConstantEntry specConstEntry = { 5, 0, sizeof(uint32_t) };
-					pipelineCI.fragmentShader.specConstants = { &specConstEntry, 1 };
-					pipelineCI.fragmentShader.specConstantsDataSize = sizeof(uint32_t);
-					pipelineCI.fragmentShader.specConstantsData = &alphaTest;
+				eg::SpecializationConstantEntry specConstEntry = { 5, 0, sizeof(uint32_t) };
+				pipelineCI.fragmentShader.specConstants = { &specConstEntry, 1 };
+				pipelineCI.fragmentShader.specConstantsDataSize = sizeof(uint32_t);
+				pipelineCI.fragmentShader.specConstantsData = &alphaTest;
 
-					std::string label = eg::Concat(
-						{ "StaticProp:", variantName, alphaTest ? ":AT0" : ":AT1", enableCulling ? ":C1" : ":C0" });
-					pipelineCI.label = label.c_str();
+				std::string label = eg::Concat({ "StaticProp:", variantName, alphaTest ? ":AT0" : ":AT1" });
+				pipelineCI.label = label.c_str();
 
-					(out[enableCulling][alphaTest][textureArray] = eg::Pipeline::Create(pipelineCI))
-						.FramebufferFormatHint(framebufferFormatHint);
-				}
+				out[alphaTest][textureArray] = eg::Pipeline::Create(pipelineCI);
 			}
 		}
 	};
 
-	InitializeVariants("VGame", staticPropMaterialGlobals.pipelineGame, DeferredRenderer::GEOMETRY_FB_FORMAT);
+	pipelineCI.numColorAttachments = 2;
+	pipelineCI.colorAttachmentFormats[0] = GB_COLOR_FORMAT;
+	pipelineCI.colorAttachmentFormats[1] = GB_COLOR_FORMAT;
+	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
+	InitializeVariants("VGame", staticPropMaterialGlobals.pipelineGame);
 
 	pipelineCI.numColorAttachments = 1;
-	InitializeVariants(
-		"VEditor", staticPropMaterialGlobals.pipelineEditor,
-		eg::FramebufferFormatHint{ 1, eg::Format::DefaultDepthStencil, { eg::Format::DefaultColor } });
+	pipelineCI.colorAttachmentFormats[0] = eg::Format::DefaultColor;
+	pipelineCI.depthAttachmentFormat = eg::Format::DefaultDepthStencil;
+	InitializeVariants("VEditor", staticPropMaterialGlobals.pipelineEditor);
 
 	const eg::ShaderModuleAsset& plsfs = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLightShadow.fs.glsl");
 
@@ -99,13 +96,12 @@ void StaticPropMaterial::LazyInitGlobals()
 	plsPipelineCI.vertexShader =
 		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Common3D-PLShadow.vs.glsl").DefaultVariant();
 
-	eg::FramebufferFormatHint plsFormatHint;
-	plsFormatHint.sampleCount = 1;
-	plsFormatHint.depthStencilFormat = PointLightShadowMapper::SHADOW_MAP_FORMAT;
-
 	plsPipelineCI.enableDepthWrite = true;
 	plsPipelineCI.enableDepthTest = true;
-	plsPipelineCI.frontFaceCCW = eg::CurrentGraphicsAPI() == eg::GraphicsAPI::Vulkan;
+	plsPipelineCI.frontFaceCCW = PointLightShadowMapper::FlippedLightMatrix();
+	plsPipelineCI.numColorAttachments = 0;
+	plsPipelineCI.depthAttachmentFormat = PointLightShadowMapper::SHADOW_MAP_FORMAT;
+
 	plsPipelineCI.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
 	plsPipelineCI.vertexBindings[1] = { sizeof(StaticPropMaterial::InstanceData), eg::InputRate::Instance };
 	plsPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(eg::StdVertex, position) };
@@ -118,18 +114,14 @@ void StaticPropMaterial::LazyInitGlobals()
 		                                  offsetof(StaticPropMaterial::InstanceData, transform) + 32 };
 	plsPipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 4,
 		                                  offsetof(StaticPropMaterial::InstanceData, textureRange) };
-	for (int enableCulling = 0; enableCulling < 2; enableCulling++)
+	plsPipelineCI.cullMode = std::nullopt;
+	for (int alphaTest = 0; alphaTest < 2; alphaTest++)
 	{
-		pipelineCI.cullMode = enableCulling ? eg::CullMode::Back : eg::CullMode::None;
-		for (int alphaTest = 0; alphaTest < 2; alphaTest++)
-		{
-			std::string_view variantName = alphaTest ? "VAlphaTest" : "VNoAlphaTest";
-			std::string label = eg::Concat({ "StaticPropPLS:", variantName, enableCulling ? ":Cull" : ":NoCull" });
-			plsPipelineCI.fragmentShader = plsfs.GetVariant(variantName);
-			plsPipelineCI.label = label.c_str();
-			staticPropMaterialGlobals.pipelinePLShadow[enableCulling][alphaTest] = eg::Pipeline::Create(plsPipelineCI);
-			staticPropMaterialGlobals.pipelinePLShadow[enableCulling][alphaTest].FramebufferFormatHint(plsFormatHint);
-		}
+		std::string_view variantName = alphaTest ? "VAlphaTest" : "VNoAlphaTest";
+		std::string label = eg::Concat({ "StaticPropPLS:", variantName });
+		plsPipelineCI.fragmentShader = plsfs.GetVariant(variantName);
+		plsPipelineCI.label = label.c_str();
+		staticPropMaterialGlobals.pipelinePLShadow[alphaTest] = eg::Pipeline::Create(plsPipelineCI);
 	}
 }
 
@@ -165,11 +157,11 @@ eg::PipelineRef StaticPropMaterial::GetPipeline(MeshDrawMode drawMode) const
 	switch (drawMode)
 	{
 	case MeshDrawMode::Game:
-		return staticPropMaterialGlobals.pipelineGame[m_backfaceCull][m_alphaTest][m_textureLayer.has_value()];
+		return staticPropMaterialGlobals.pipelineGame[m_alphaTest][m_textureLayer.has_value()];
 	case MeshDrawMode::Editor:
-		return staticPropMaterialGlobals.pipelineEditor[m_backfaceCullEditor][m_alphaTest][m_textureLayer.has_value()];
+		return staticPropMaterialGlobals.pipelineEditor[m_alphaTest][m_textureLayer.has_value()];
 	case MeshDrawMode::PointLightShadow:
-		return staticPropMaterialGlobals.pipelinePLShadow[m_backfaceCullEditor][m_alphaTest];
+		return staticPropMaterialGlobals.pipelinePLShadow[m_alphaTest];
 	default:
 		return eg::PipelineRef();
 	}
@@ -183,6 +175,9 @@ bool StaticPropMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs
 	if (!pipeline.handle)
 		return false;
 	cmdCtx.BindPipeline(pipeline);
+
+	bool backfaceCull = mDrawArgs->drawMode == MeshDrawMode::Editor ? m_backfaceCullEditor : m_backfaceCull;
+	cmdCtx.SetCullMode(backfaceCull ? eg::CullMode::Back : eg::CullMode::None);
 
 	if (mDrawArgs->drawMode == MeshDrawMode::PointLightShadow)
 	{
@@ -201,7 +196,7 @@ bool StaticPropMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs
 		if (!m_castShadows || settings.shadowQuality < m_minShadowQuality)
 			return false;
 		if (m_alphaTest)
-			cmdCtx.BindTexture(*m_albedoTexture, 0, 1, nullptr);
+			cmdCtx.BindTexture(*m_albedoTexture, 0, 1, &linearRepeatSampler);
 		return true;
 	}
 

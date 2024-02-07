@@ -2,7 +2,11 @@
 
 RenderSettings* RenderSettings::instance;
 
-static const eg::DescriptorSetBinding dsBinding(0, eg::BindingType::UniformBuffer, eg::ShaderAccessFlags::Vertex);
+static const eg::DescriptorSetBinding dsBinding = eg::DescriptorSetBinding {
+	.binding = 0,
+	.type = eg::BindingType::UniformBuffer,
+	.shaderAccess = eg::ShaderAccessFlags::Vertex,
+};
 
 RenderSettings::RenderSettings() : m_vertexShaderDescriptorSet({ &dsBinding, 1 })
 {

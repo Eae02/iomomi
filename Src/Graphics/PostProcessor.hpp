@@ -11,12 +11,18 @@ public:
 
 	void Render(
 		eg::TextureRef input, const eg::BloomRenderer::RenderTarget* bloomRenderTarget, eg::FramebufferHandle output,
-		uint32_t outputResX, uint32_t outputResY, float colorScale);
+		eg::Format outputFormat, uint32_t outputResX, uint32_t outputResY, float colorScale);
 
 private:
-	void InitPipeline();
+	struct PipelineVariantKey
+	{
+		bool enableFXAA;
+		eg::Format outputFormat;
+		
+		bool operator==(const PipelineVariantKey& other) const = default;
+	};
 
-	std::optional<bool> m_fxaaWasEnabled;
+	static eg::Pipeline CreatePipeline(const PipelineVariantKey& variantKey);
 
-	eg::Pipeline m_pipeline;
+	std::vector<std::pair<PipelineVariantKey, eg::Pipeline>> m_pipelines;
 };

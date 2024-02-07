@@ -31,33 +31,25 @@ static inline bool RenderTextureHalfResolution(RenderTex texture)
 	}
 }
 
+constexpr eg::Format LIGHT_COLOR_FORMAT_LDR = eg::Format::R8G8B8A8_UNorm;
+constexpr eg::Format LIGHT_COLOR_FORMAT_HDR = eg::Format::R16G16B16A16_Float;
+
+eg::Format lightColorAttachmentFormat;
+
+void SetLightColorAttachmentFormat(bool enableHDR)
+{
+	lightColorAttachmentFormat = enableHDR ? LIGHT_COLOR_FORMAT_HDR : LIGHT_COLOR_FORMAT_LDR;
+}
+
 eg::Format GetFormatForRenderTexture(RenderTex texture)
+{
+	return ConstexprGetFormatForRenderTexture(texture);
+}
+
+eg::Format GetDynamicFormatForRenderTexture(RenderTex texture)
 {
 	switch (texture)
 	{
-	case RenderTex::GBDepth:
-		return GB_DEPTH_FORMAT;
-	case RenderTex::GBColor1:
-		return GB_COLOR_FORMAT;
-	case RenderTex::GBColor2:
-		return GB_COLOR_FORMAT;
-	case RenderTex::WaterGlowIntensity:
-		return eg::Format::R8_UNorm;
-	case RenderTex::WaterMinDepth:
-		return eg::Format::Depth16;
-	case RenderTex::WaterMaxDepth:
-		return eg::Format::Depth16;
-	case RenderTex::BlurredGlassDepth:
-		return GB_DEPTH_FORMAT;
-
-	case RenderTex::SSAOGBDepthLinear:
-		return eg::Format::R32_Float;
-
-	case RenderTex::SSAOUnblurred:
-	case RenderTex::SSAOTempBlur:
-	case RenderTex::SSAO:
-		return eg::Format::R8_UNorm;
-
 	case RenderTex::WaterDepthBlurred1:
 	case RenderTex::WaterDepthBlurred2:
 		if (qvar::waterUse32BitDepth(settings.waterQuality))
@@ -69,17 +61,16 @@ eg::Format GetFormatForRenderTexture(RenderTex texture)
 		if (qvar::ssrUse16BitColor(settings.reflectionsQuality))
 			return eg::Format::R16G16B16A16_Float;
 		return eg::Format::R8G8B8A8_UNorm;
-	case RenderTex::SSRDepth:
-		return eg::Format::Depth16;
 
 	case RenderTex::LitWithoutWater:
 	case RenderTex::LitWithoutBlurredGlass:
 	case RenderTex::LitWithoutSSR:
 	case RenderTex::Lit:
-		return settings.HDREnabled() ? LIGHT_COLOR_FORMAT_HDR : LIGHT_COLOR_FORMAT_LDR;
+		return lightColorAttachmentFormat;
 
 	default:
-		EG_UNREACHABLE;
+		EG_PANIC("Unreachable default case, maybe mismatch between GetDynamicFormatForRenderTexture and "
+		         "ConstexprGetFormatForRenderTexture");
 	}
 }
 
@@ -151,12 +142,10 @@ void RenderTexManager::BeginFrame(uint32_t resX, uint32_t resY)
 
 	const bool waterHighPrecision = qvar::waterUse32BitDepth(settings.waterQuality);
 
-	if (resX != m_resX || resY != m_resY || settings.HDREnabled() != wasHDREnabled ||
-	    waterHighPrecision != wasWaterHighPrecision)
+	if (resX != m_resX || resY != m_resY || waterHighPrecision != wasWaterHighPrecision)
 	{
 		m_resX = resX;
 		m_resY = resY;
-		wasHDREnabled = settings.HDREnabled();
 		wasWaterHighPrecision = waterHighPrecision;
 		m_generation++;
 
@@ -165,28 +154,20 @@ void RenderTexManager::BeginFrame(uint32_t resX, uint32_t resY)
 		for (FramebufferEntry& entry : framebuffers)
 			entry.framebuffer.Destroy();
 
-		eg::SamplerDescription samplerDesc;
-		samplerDesc.wrapU = eg::WrapMode::ClampToEdge;
-		samplerDesc.wrapV = eg::WrapMode::ClampToEdge;
-		samplerDesc.wrapW = eg::WrapMode::ClampToEdge;
-		samplerDesc.minFilter = eg::TextureFilter::Nearest;
-		samplerDesc.magFilter = eg::TextureFilter::Nearest;
-		samplerDesc.mipFilter = eg::TextureFilter::Nearest;
-
 		for (size_t i = 0; i < magic_enum::enum_count<RenderTex>(); i++)
 		{
 			std::string label = eg::Concat({ "RenderTex::", magic_enum::enum_name((RenderTex)i) });
 
 			uint32_t resolutionShift = RenderTextureHalfResolution((RenderTex)i);
 
-			renderTextures[i] =
-				eg::Texture::Create2D(eg::TextureCreateInfo{ .flags = GetFlagsForRenderTexture((RenderTex)i),
-			                                                 .mipLevels = 1,
-			                                                 .width = resX >> resolutionShift,
-			                                                 .height = resY >> resolutionShift,
-			                                                 .format = GetFormatForRenderTexture((RenderTex)i),
-			                                                 .defaultSamplerDescription = &samplerDesc,
-			                                                 .label = label.c_str() });
+			renderTextures[i] = eg::Texture::Create2D(eg::TextureCreateInfo{
+				.flags = GetFlagsForRenderTexture((RenderTex)i),
+				.mipLevels = 1,
+				.width = resX >> resolutionShift,
+				.height = resY >> resolutionShift,
+				.format = GetFormatForRenderTexture((RenderTex)i),
+				.label = label.c_str(),
+			});
 		}
 
 		for (FramebufferEntry& entry : framebuffers)

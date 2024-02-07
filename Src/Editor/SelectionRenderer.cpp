@@ -1,4 +1,5 @@
 #include "SelectionRenderer.hpp"
+#include "../Graphics/GraphicsCommon.hpp"
 
 static eg::Pipeline modelPipeline;
 static eg::Pipeline postPipeline;
@@ -13,9 +14,10 @@ static void OnInit()
 	modelPipelineCI.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
 	modelPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(eg::StdVertex, position) };
 	modelPipelineCI.numColorAttachments = 1;
+	modelPipelineCI.colorAttachmentFormats[0] = eg::Format::DefaultColor;
+	modelPipelineCI.depthAttachmentFormat = eg::Format::DefaultDepthStencil;
 	modelPipelineCI.label = "EdSelection";
 	modelPipeline = eg::Pipeline::Create(modelPipelineCI);
-	modelPipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 
 	eg::GraphicsPipelineCreateInfo postPipelineCI;
 	postPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
@@ -25,8 +27,9 @@ static void OnInit()
 	postPipelineCI.numColorAttachments = 1;
 	postPipelineCI.label = "EdSelectionPost";
 	postPipelineCI.blendStates[0] = eg::AlphaBlend;
+	postPipelineCI.colorAttachmentFormats[0] = eg::Format::DefaultColor;
+	postPipelineCI.depthAttachmentFormat = eg::Format::DefaultDepthStencil;
 	postPipeline = eg::Pipeline::Create(postPipelineCI);
-	postPipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 }
 
 static void OnShutdown()
@@ -43,18 +46,11 @@ void SelectionRenderer::BeginFrame(uint32_t resX, uint32_t resY)
 	m_hasRendered = false;
 	if (m_texture.handle == nullptr || resX != m_texture.Width() || resY != m_texture.Height())
 	{
-		const eg::SamplerDescription samplerDescription = eg::SamplerDescription{
-			.wrapU = eg::WrapMode::ClampToEdge,
-			.wrapV = eg::WrapMode::ClampToEdge,
-			.wrapW = eg::WrapMode::ClampToEdge,
-		};
-
 		eg::TextureCreateInfo textureCI;
 		textureCI.width = resX;
 		textureCI.height = resY;
 		textureCI.mipLevels = 1;
 
-		textureCI.defaultSamplerDescription = &samplerDescription;
 		textureCI.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample;
 		textureCI.format = eg::Format::R8_UNorm;
 		m_texture = eg::Texture::Create2D(textureCI);
@@ -123,7 +119,7 @@ void SelectionRenderer::EndFrame()
 	eg::ColorLin color(eg::ColorSRGB::FromHex(0xb9ddf3));
 
 	eg::DC.BindPipeline(postPipeline);
-	eg::DC.BindTexture(m_texture, 0, 0);
+	eg::DC.BindTexture(m_texture, 0, 0, &linearClampToEdgeSampler);
 	eg::DC.PushConstants(0, sizeof(float) * 3, &color);
 	eg::DC.Draw(0, 3, 0, 1);
 }

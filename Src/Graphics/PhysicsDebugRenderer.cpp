@@ -1,6 +1,7 @@
 #include "PhysicsDebugRenderer.hpp"
 
 #include "../World/PhysicsEngine.hpp"
+#include "RenderTex.hpp"
 
 PhysicsDebugRenderer::PhysicsDebugRenderer()
 {
@@ -20,13 +21,17 @@ PhysicsDebugRenderer::PhysicsDebugRenderer()
 	pipelineCI.depthCompare = eg::CompareOp::LessOrEqual;
 	pipelineCI.lineWidth = 2;
 	pipelineCI.blendStates[0] = eg::AlphaBlend;
+	pipelineCI.numColorAttachments = 1;
+	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
+	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
+	pipelineCI.label = "PhysicsDebugRenderer";
 
 	pipelineCI.topology = eg::Topology::TriangleList;
-	pipelineCI.wireframe = true;
+	pipelineCI.enableWireframeRasterization = true;
 	m_trianglePipeline = eg::Pipeline::Create(pipelineCI);
 
 	pipelineCI.topology = eg::Topology::LineList;
-	pipelineCI.wireframe = false;
+	pipelineCI.enableWireframeRasterization = false;
 	m_linesPipeline = eg::Pipeline::Create(pipelineCI);
 }
 
@@ -105,6 +110,7 @@ void PhysicsDebugRenderer::Render(
 	if (numTriangleIndices != 0)
 	{
 		eg::DC.BindPipeline(m_trianglePipeline);
+		eg::DC.SetWireframe(true);
 		eg::DC.PushConstants(0, updatedViewProj);
 		eg::DC.BindVertexBuffer(0, m_vertexBuffer.buffer, 0);
 		eg::DC.BindIndexBuffer(eg::IndexType::UInt32, m_indexBuffer.buffer, 0);

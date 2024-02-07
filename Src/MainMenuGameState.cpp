@@ -106,6 +106,8 @@ void MainMenuGameState::RunFrame(float dt)
 	}
 	m_lastFrameIndex = eg::FrameIdx();
 
+	m_currentFrameArgs = GuiFrameArgs::MakeForCurrentFrame(dt);
+
 	int64_t continueLevel = FindContinueLevel();
 	Button& continueButton = std::get<Button>(m_mainWidgetList.GetWidget(0));
 	if (continueLevel != -1 && levels[continueLevel].name == levelsOrder[0])
@@ -133,14 +135,13 @@ void MainMenuGameState::RunFrame(float dt)
 	if (m_transitionProgress == 0 && m_screen != Screen::Main)
 		m_screen = Screen::Main;
 
-	m_mainWidgetList.position.x =
-		static_cast<float>(eg::CurrentResolutionX()) / 2.0f - transitionSmooth * TRANSITION_SLIDE_DIST;
-	m_mainWidgetList.position.y = static_cast<float>(eg::CurrentResolutionY()) / 2.0f;
+	m_mainWidgetList.position.x = m_currentFrameArgs.canvasWidth / 2.0f - transitionSmooth * TRANSITION_SLIDE_DIST;
+	m_mainWidgetList.position.y = m_currentFrameArgs.canvasHeight / 2.0f;
 	if (transitionSmooth < 1)
 	{
-		m_mainWidgetList.Update(dt, transitionSmooth == 0);
+		m_mainWidgetList.Update(m_currentFrameArgs, transitionSmooth == 0);
 		m_spriteBatch.opacityScale = 1 - transitionSmooth;
-		m_mainWidgetList.Draw(m_spriteBatch);
+		m_mainWidgetList.Draw(m_currentFrameArgs, m_spriteBatch);
 		m_spriteBatch.opacityScale = 1;
 	}
 
@@ -150,14 +151,13 @@ void MainMenuGameState::RunFrame(float dt)
 		m_spriteBatch.opacityScale = transitionSmooth;
 
 		m_spriteBatch.DrawRect(
-			eg::Rectangle(
-				0, 0, static_cast<float>(eg::CurrentResolutionX()), static_cast<float>(eg::CurrentResolutionY())),
+			eg::Rectangle(0, 0, m_currentFrameArgs.canvasWidth, m_currentFrameArgs.canvasHeight),
 			eg::ColorLin(0, 0, 0, 0.5f));
 
 		if (m_screen == Screen::Options)
 		{
-			UpdateOptionsMenu(dt, glm::vec2(invXOffset, 0), m_transitionProgress == 1);
-			DrawOptionsMenu(m_spriteBatch);
+			UpdateOptionsMenu(m_currentFrameArgs, glm::vec2(invXOffset, 0), m_transitionProgress == 1);
+			DrawOptionsMenu(m_currentFrameArgs, m_spriteBatch);
 
 			if (!optionsMenuOpen)
 			{
@@ -193,28 +193,27 @@ void MainMenuGameState::RunFrame(float dt)
 		std::string_view audioInfoText = "Audio system failed to initialize, no sounds will be played.";
 		float audioInfoTextW = style::UIFontSmall->GetTextExtents(audioInfoText).x;
 		m_spriteBatch.DrawText(
-			*style::UIFontSmall, audioInfoText,
-			glm::vec2(static_cast<float>(eg::CurrentResolutionX()) - 5.0f - audioInfoTextW, 5),
+			*style::UIFontSmall, audioInfoText, glm::vec2(m_currentFrameArgs.canvasWidth - 5.0f - audioInfoTextW, 5),
 			eg::ColorSRGB::FromHex(0xff007f).ScaleAlpha(0.6f), 1, nullptr, eg::TextFlags::DropShadow);
 	}
 
 	if (ComboBox::current)
 	{
-		ComboBox::current->DrawOverlay(m_spriteBatch);
+		ComboBox::current->DrawOverlay(m_currentFrameArgs, m_spriteBatch);
 	}
+
+	glm::mat3 matrix = m_currentFrameArgs.GetMatrixToNDC();
 
 	eg::RenderPassBeginInfo rpBeginInfo;
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
 	rpBeginInfo.colorAttachments[0].clearValue = eg::ColorSRGB::FromHex(0x041626);
-	m_spriteBatch.UploadAndRender(eg::CurrentResolutionX(), eg::CurrentResolutionY(), rpBeginInfo);
+	m_spriteBatch.UploadAndRender(eg::CurrentResolutionX(), eg::CurrentResolutionY(), rpBeginInfo, &matrix);
 }
 
 void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 {
 	const bool clicked =
 		eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft) && xOffset == 0;
-
-	glm::vec2 flippedCursorPos(eg::CursorX(), eg::CurrentResolutionY() - eg::CursorY());
 
 	const eg::Texture& thumbnailNaTexture = eg::GetAsset<eg::Texture>("Textures/UI/ThumbnailNA.png");
 	const eg::Texture& loadingLevelTexture = eg::GetAsset<eg::Texture>("Textures/UI/LoadingLevel.png");
@@ -223,39 +222,40 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 	const eg::Texture& titleTexture = eg::GetAsset<eg::Texture>("Textures/UI/LevelSelect.png");
 
 	const float levelBoxW =
-		glm::clamp(eg::CurrentResolutionX() * 0.1f, 150.0f, static_cast<float>(LEVEL_THUMBNAIL_RES_X));
+		glm::clamp(m_currentFrameArgs.canvasWidth * 0.1f, 150.0f, static_cast<float>(LEVEL_THUMBNAIL_RES_X));
 	const float levelBoxH = 0.8f * levelBoxW;
 	const float levelBoxSpacingX = levelBoxW * 0.1f;
 	const float levelBoxSpacingY = levelBoxSpacingX * 2;
 	const float inflatePixelsY = levelBoxH * style::ButtonInflatePercent;
 
-	const float marginX = 0.05f * static_cast<float>(eg::CurrentResolutionX());
+	const float marginX = 0.05f * m_currentFrameArgs.canvasWidth;
 	const int numPerRow = static_cast<int>(std::floor(
-		(static_cast<float>(eg::CurrentResolutionX()) - marginX * 2.0f + levelBoxSpacingX) /
-		(levelBoxW + levelBoxSpacingX)));
+		(m_currentFrameArgs.canvasWidth - marginX * 2.0f + levelBoxSpacingX) / (levelBoxW + levelBoxSpacingX)));
 
 	const float boxW = numPerRow * (levelBoxW + levelBoxSpacingX) - levelBoxSpacingX;
-	const float boxLX = (eg::CurrentResolutionX() - boxW) / 2;
+	const float boxLX = (m_currentFrameArgs.canvasWidth - boxW) / 2;
 
-	const float titleTextureWidth = std::min(eg::CurrentResolutionX() * 0.25f, (float)titleTexture.Width());
+	const float titleTextureWidth = std::min(m_currentFrameArgs.canvasWidth * 0.25f, (float)titleTexture.Width());
 	const float titleTextureHeight = titleTextureWidth * titleTexture.Height() / titleTexture.Width();
 	const eg::Rectangle titleRect(
-		boxLX + xOffset, static_cast<float>(eg::CurrentResolutionY()) - 75.0f - titleTextureHeight, titleTextureWidth,
+		boxLX + xOffset, m_currentFrameArgs.canvasHeight - 75.0f - titleTextureHeight, titleTextureWidth,
 		titleTextureHeight);
 	m_spriteBatch.Draw(titleTexture, titleRect, eg::ColorLin(1, 1, 1, 1));
 
-	const float boxStartY = static_cast<float>(eg::CurrentResolutionY()) - 100.0f - titleTextureHeight;
+	const float boxStartY = m_currentFrameArgs.canvasHeight - 100.0f - titleTextureHeight;
 	const float boxEndY = 100;
 	const float visibleHeight = boxStartY - boxEndY;
-	const bool cursorInLevelsArea = eg::Rectangle(boxLX, boxEndY, boxW, visibleHeight).Contains(flippedCursorPos);
+	const bool cursorInLevelsArea =
+		eg::Rectangle(boxLX, boxEndY, boxW, visibleHeight).Contains(m_currentFrameArgs.cursorPos);
 
 	float totalHeight = 0;
 
 	// Draws the level boxes
 	size_t numLevels = settings.showExtraLevels ? m_levelIds.size() : m_numMainLevels;
 	m_spriteBatch.PushScissorF(
-		0.0f, boxEndY - inflatePixelsY, static_cast<float>(eg::CurrentResolutionX()),
-		visibleHeight + inflatePixelsY * 2);
+		0.0f, (boxEndY - inflatePixelsY) * m_currentFrameArgs.scaleToScreenCoordinates,
+		static_cast<float>(eg::CurrentResolutionX()),
+		(visibleHeight + inflatePixelsY * 2) * m_currentFrameArgs.scaleToScreenCoordinates);
 	for (size_t i = 0; i < numLevels; i++)
 	{
 		const Level& level = levels[m_levelIds[i]];
@@ -287,7 +287,7 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 		const bool canInteract = level.status != LevelStatus::Locked && xOffset == 0 && loadingComplete;
 
 		eg::Rectangle rect(x, y, levelBoxW, levelBoxH);
-		const bool hovered = cursorInLevelsArea && rect.Contains(flippedCursorPos) && canInteract;
+		const bool hovered = cursorInLevelsArea && rect.Contains(m_currentFrameArgs.cursorPos) && canInteract;
 		if (hovered && clicked)
 		{
 			if (std::unique_ptr<World> world = LoadLevelWorld(level, false))
@@ -355,12 +355,12 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 	m_levelSelectScroll.screenRectangle.y = boxEndY;
 	m_levelSelectScroll.screenRectangle.w = boxW + 20;
 	m_levelSelectScroll.screenRectangle.h = visibleHeight;
-	m_levelSelectScroll.Update(dt, ComboBox::current == nullptr);
+	m_levelSelectScroll.Update(m_currentFrameArgs, ComboBox::current == nullptr);
 	m_levelSelectScroll.Draw(m_spriteBatch);
 
 	m_levelSelectBackButton.position = glm::vec2(boxLX, boxEndY - 60);
-	m_levelSelectBackButton.Update(dt, true);
-	m_levelSelectBackButton.Draw(m_spriteBatch);
+	m_levelSelectBackButton.Update(m_currentFrameArgs, true);
+	m_levelSelectBackButton.Draw(m_currentFrameArgs, m_spriteBatch);
 }
 
 float* menuWorldColorScale = eg::TweakVarFloat("menu_world_color_scale", 0.6f, 0.0f, 1.0f);
@@ -438,20 +438,21 @@ void MainMenuGameState::RenderWorld(float dt)
 	m_worldFadeInProgress = std::min(m_worldFadeInProgress + dt * 2, 1.0f);
 
 	GameRenderer::instance->Render(
-		*m_world, m_worldGameTime, dt, m_worldRenderFramebuffer.handle, eg::CurrentResolutionX(),
+		*m_world, m_worldGameTime, dt, m_worldRenderFramebuffer.handle, inputFormat, eg::CurrentResolutionX(),
 		eg::CurrentResolutionY());
 
 	m_worldRenderTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 	m_worldBlurRenderer.Render(m_worldRenderTexture);
 
 	eg::Rectangle dstRect;
-	if (eg::CurrentGraphicsAPI() == eg::GraphicsAPI::Vulkan)
+	if (eg::CurrentGraphicsAPI() == eg::GraphicsAPI::OpenGL)
 	{
-		dstRect = eg::Rectangle(0, 0, eg::CurrentResolutionX(), eg::CurrentResolutionY());
+		dstRect = eg::Rectangle(
+			0, m_currentFrameArgs.canvasHeight, m_currentFrameArgs.canvasWidth, -m_currentFrameArgs.canvasHeight);
 	}
 	else
 	{
-		dstRect = eg::Rectangle(0, eg::CurrentResolutionY(), eg::CurrentResolutionX(), -eg::CurrentResolutionY());
+		dstRect = eg::Rectangle(0, 0, m_currentFrameArgs.canvasWidth, m_currentFrameArgs.canvasHeight);
 	}
 
 	const eg::Texture* blurredTexture = &m_worldBlurRenderer.OutputTexture();

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../GuiCommon.hpp"
+
 class OptionWidgetBase
 {
 public:
@@ -14,11 +16,11 @@ public:
 	static constexpr float FONT_SCALE = 0.6f;
 
 protected:
-	void UpdateBase(bool allowInteraction, bool playHoverSound = true);
+	void UpdateBase(const GuiFrameArgs& frameArgs, bool allowInteraction, bool playHoverSound = true);
 
 	void DrawBase(
-		eg::SpriteBatch& spriteBatch, float highlightIntensity, std::string_view valueText,
-		float maxValueWidth = 0) const;
+		const GuiFrameArgs& frameArgs, eg::SpriteBatch& spriteBatch, float highlightIntensity,
+		std::string_view valueText, float maxValueWidth = 0) const;
 
 	static glm::vec2 GetTextPos(const eg::Rectangle& rectangle);
 	glm::vec2 GetTextPos() const { return GetTextPos(m_rectangle); }

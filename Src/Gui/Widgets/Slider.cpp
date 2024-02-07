@@ -9,9 +9,9 @@ Slider::Slider()
 	height = 25;
 }
 
-void Slider::Update(float dt, bool allowInteraction)
+void Slider::Update(const GuiFrameArgs& frameArgs, bool allowInteraction)
 {
-	UpdateBase(allowInteraction, false);
+	UpdateBase(frameArgs, allowInteraction, false);
 
 	constexpr float RECTANGLE_H_PERCENT = 0.8f;
 	m_rectangle.y = m_rectangle.CenterY() - m_rectangle.h * RECTANGLE_H_PERCENT * 0.5f;
@@ -25,7 +25,7 @@ void Slider::Update(float dt, bool allowInteraction)
 		}
 		if (currentSlider == this)
 		{
-			float value01 = glm::clamp((eg::CursorX() - m_rectangle.x) / m_rectangle.w, 0.0f, 1.0f);
+			float value01 = glm::clamp((frameArgs.cursorPos.x - m_rectangle.x) / m_rectangle.w, 0.0f, 1.0f);
 			float value = glm::mix(min, max, value01);
 			if (increment != 0)
 			{
@@ -40,9 +40,9 @@ void Slider::Update(float dt, bool allowInteraction)
 	}
 }
 
-void Slider::Draw(eg::SpriteBatch& spriteBatch) const
+void Slider::Draw(const GuiFrameArgs& frameArgs, eg::SpriteBatch& spriteBatch) const
 {
-	DrawBase(spriteBatch, 0, std::string_view());
+	DrawBase(frameArgs, spriteBatch, 0, std::string_view());
 
 	float value = getValue();
 

@@ -30,18 +30,16 @@ ForceFieldMaterial::ForceFieldMaterial()
 		eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::OneMinusSrcAlpha);
 	pipelineCI.fragmentShader.specConstants = { &waterModeSpecConstant, 1 };
 	pipelineCI.fragmentShader.specConstantsDataSize = sizeof(int32_t);
+	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
+	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
 
 	pipelineCI.label = "ForceField[BeforeWater]";
 	pipelineCI.fragmentShader.specConstantsData = const_cast<int32_t*>(&WATER_MODE_BEFORE);
 	m_pipelineBeforeWater = eg::Pipeline::Create(pipelineCI);
-	m_pipelineBeforeWater.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
-	m_pipelineBeforeWater.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
 
 	pipelineCI.label = "ForceField[Final]";
 	pipelineCI.fragmentShader.specConstantsData = const_cast<int32_t*>(&WATER_MODE_AFTER);
 	m_pipelineFinal = eg::Pipeline::Create(pipelineCI);
-	m_pipelineFinal.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
-	m_pipelineFinal.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
 
 	m_particleSampler = eg::Sampler(eg::SamplerDescription{ .wrapU = eg::WrapMode::ClampToEdge,
 	                                                        .wrapV = eg::WrapMode::ClampToEdge,
@@ -62,28 +60,29 @@ bool ForceFieldMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs
 	{
 		cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 		cmdCtx.BindTexture(eg::GetAsset<eg::Texture>("Textures/ForceFieldParticle.png"), 0, 1, &m_particleSampler);
-		cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 0, 2);
+		cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 0, 2, &framebufferNearestSampler);
 	};
 
 	if (mDrawArgs->drawMode == MeshDrawMode::TransparentBeforeWater)
 	{
 		cmdCtx.BindPipeline(m_pipelineBeforeWater);
 		CommonBind();
-		cmdCtx.BindTexture(blackPixelTexture, 0, 3);
+		cmdCtx.BindTexture(blackPixelTexture, 0, 3, &framebufferNearestSampler);
 		return true;
 	}
 	if (mDrawArgs->drawMode == MeshDrawMode::TransparentBeforeBlur)
 	{
 		cmdCtx.BindPipeline(m_pipelineFinal);
 		CommonBind();
-		cmdCtx.BindTexture(mDrawArgs->rtManager->GetRenderTexture(RenderTex::BlurredGlassDepth), 0, 3);
+		cmdCtx.BindTexture(
+			mDrawArgs->rtManager->GetRenderTexture(RenderTex::BlurredGlassDepth), 0, 3, &framebufferNearestSampler);
 		return true;
 	}
 	if (mDrawArgs->drawMode == MeshDrawMode::TransparentFinal)
 	{
 		cmdCtx.BindPipeline(m_pipelineFinal);
 		CommonBind();
-		cmdCtx.BindTexture(blackPixelTexture, 0, 3);
+		cmdCtx.BindTexture(blackPixelTexture, 0, 3, &framebufferNearestSampler);
 		return true;
 	}
 

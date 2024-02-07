@@ -16,10 +16,11 @@ void PrimitiveRenderer::OnInit()
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.blendStates[0] = eg::AlphaBlend;
+	pipelineCI.colorAttachmentFormats[0] = eg::Format::DefaultColor;
+	pipelineCI.depthAttachmentFormat = eg::Format::DefaultDepthStencil;
 	pipelineCI.label = "EdPrimitive";
 
 	primPipeline = eg::Pipeline::Create(pipelineCI);
-	primPipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 }
 
 void PrimitiveRenderer::OnShutdown()

@@ -19,7 +19,7 @@ public:
 
 	uint64_t InstanceID() const { return m_instanceID; }
 
-	float maxRange = Z_FAR;
+	float maxRange = ZFar;
 
 	static uint64_t NextInstanceID();
 

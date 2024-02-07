@@ -73,6 +73,7 @@ struct Settings
 	SSAOQuality ssaoQuality = SSAOQuality::Medium;
 	BloomQuality bloomQuality = BloomQuality::High;
 	float fieldOfViewDeg = 80.0f;
+	bool highDynamicRange = true;
 
 	int anisotropicFiltering = 4;
 
@@ -105,8 +106,6 @@ struct Settings
 	float ambienceVolume = 0.6f;
 
 	std::array<bool, NUM_ENTITY_TYPES> edEntityIconEnabled;
-
-	bool HDREnabled() const { return lightingQuality >= QualityLevel::Low; }
 };
 
 extern Settings settings;

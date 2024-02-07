@@ -77,23 +77,15 @@ void EditorWorld::SetWindowRect(const eg::Rectangle& windowRect)
 	uint32_t resY = static_cast<uint32_t>(std::round(windowRect.h));
 	if (renderTexture.handle == nullptr || resX != renderTexture.Width() || resY != renderTexture.Height())
 	{
-		const eg::SamplerDescription samplerDescription = eg::SamplerDescription{
-			.wrapU = eg::WrapMode::ClampToEdge,
-			.wrapV = eg::WrapMode::ClampToEdge,
-			.wrapW = eg::WrapMode::ClampToEdge,
-		};
-
 		eg::TextureCreateInfo textureCI;
 		textureCI.width = resX;
 		textureCI.height = resY;
 		textureCI.mipLevels = 1;
 
-		textureCI.defaultSamplerDescription = &samplerDescription;
 		textureCI.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample;
 		textureCI.format = eg::Format::R8G8B8A8_sRGB;
 		renderTexture = eg::Texture::Create2D(textureCI);
 
-		textureCI.defaultSamplerDescription = nullptr;
 		textureCI.flags = eg::TextureFlags::FramebufferAttachment;
 		textureCI.format = eg::Format::Depth32;
 		m_renderTextureDepth = eg::Texture::Create2D(textureCI);

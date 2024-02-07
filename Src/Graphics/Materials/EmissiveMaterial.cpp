@@ -4,7 +4,8 @@
 #include "MeshDrawArgs.hpp"
 
 static eg::Pipeline emissiveGeometryPipeline;
-static eg::Pipeline emissivePipeline;
+static eg::Pipeline emissivePipelineGame;
+static eg::Pipeline emissivePipelineEditor;
 
 static void OnInit()
 {
@@ -27,26 +28,33 @@ static void OnInit()
 	pipelineCI.label = "EmissiveGeometry";
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/EmissiveGeom.fs.glsl").DefaultVariant();
 	pipelineCI.numColorAttachments = 2;
+	pipelineCI.colorAttachmentFormats[0] = GB_COLOR_FORMAT;
+	pipelineCI.colorAttachmentFormats[1] = GB_COLOR_FORMAT;
+	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
 	emissiveGeometryPipeline = eg::Pipeline::Create(pipelineCI);
-	emissiveGeometryPipeline.FramebufferFormatHint(DeferredRenderer::GEOMETRY_FB_FORMAT);
 
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Emissive.fs.glsl").DefaultVariant();
 	pipelineCI.numColorAttachments = 1;
+	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
+	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
 	pipelineCI.blendStates[0] = eg::BlendState(
 		eg::BlendFunc::Add, eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One, eg::BlendFactor::SrcAlpha,
 		eg::BlendFactor::One);
-	pipelineCI.label = "Emissive";
-	emissivePipeline = eg::Pipeline::Create(pipelineCI);
-	emissivePipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
-	emissivePipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
-	emissivePipeline.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
+	pipelineCI.label = "EmissiveGameLight";
+	emissivePipelineGame = eg::Pipeline::Create(pipelineCI);
+
+	pipelineCI.colorAttachmentFormats[0] = eg::Format::DefaultColor;
+	pipelineCI.depthAttachmentFormat = eg::Format::DefaultDepthStencil;
+	pipelineCI.label = "EmissiveEditor";
+	emissivePipelineEditor = eg::Pipeline::Create(pipelineCI);
 }
 
 static void OnShutdown()
 {
 	emissiveGeometryPipeline.Destroy();
-	emissivePipeline.Destroy();
+	emissivePipelineGame.Destroy();
+	emissivePipelineEditor.Destroy();
 }
 
 EG_ON_INIT(OnInit)
@@ -66,11 +74,11 @@ bool EmissiveMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) 
 	switch (mDrawArgs->drawMode)
 	{
 	case MeshDrawMode::Emissive:
-		cmdCtx.BindPipeline(emissivePipeline);
+		cmdCtx.BindPipeline(emissivePipelineGame);
 		cmdCtx.PushConstants(0, 1.0f);
 		break;
 	case MeshDrawMode::Editor:
-		cmdCtx.BindPipeline(emissivePipeline);
+		cmdCtx.BindPipeline(emissivePipelineEditor);
 		cmdCtx.PushConstants(0, 0.0f);
 		break;
 	case MeshDrawMode::Game:

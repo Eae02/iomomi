@@ -66,20 +66,18 @@ static void OnInit()
 	pipelineCI.vertexBindings[0] = { sizeof(float) * 3, eg::InputRate::Vertex };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
 	pipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
+	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
+	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
 	pipelineCI.fragmentShader.specConstants = { &waterModeSpecConstant, 1 };
 	pipelineCI.fragmentShader.specConstantsDataSize = sizeof(int32_t);
 
 	pipelineCI.label = "GravSwitchVolLight[BeforeWater]";
 	pipelineCI.fragmentShader.specConstantsData = const_cast<int32_t*>(&WATER_MODE_BEFORE);
 	gsVolLightPipelineBeforeWater = eg::Pipeline::Create(pipelineCI);
-	gsVolLightPipelineBeforeWater.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
-	gsVolLightPipelineBeforeWater.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
 
 	pipelineCI.label = "GravSwitchVolLight[Final]";
 	pipelineCI.fragmentShader.specConstantsData = const_cast<int32_t*>(&WATER_MODE_AFTER);
 	gsVolLightPipelineFinal = eg::Pipeline::Create(pipelineCI);
-	gsVolLightPipelineFinal.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
-	gsVolLightPipelineFinal.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
 
 	// Creates the light data uniform buffer
 	eg::BufferCreateInfo lightDataBufferCreateInfo;
@@ -101,7 +99,8 @@ static void OnInit()
 
 	lightVolDescriptorSet = eg::DescriptorSet(gsVolLightPipelineBeforeWater, 0);
 	lightVolDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
-	lightVolDescriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/GravitySwitchVolEmi.png"), 1);
+	lightVolDescriptorSet.BindTexture(
+		eg::GetAsset<eg::Texture>("Textures/GravitySwitchVolEmi.png"), 1, &linearRepeatSampler);
 	lightVolDescriptorSet.BindUniformBuffer(lightDataBuffer, 2, 0, sizeof(LightDataBuffer));
 }
 
@@ -147,7 +146,7 @@ void GravitySwitchVolLightMaterial::SetQuality(QualityLevel qualityLevel)
 			(static_cast<float>(i) + offDist(globalRNG)) / static_cast<float>(raySteps);
 	}
 
-	eg::DC.UpdateBuffer(lightDataBuffer, 0, sizeof(LightDataBuffer), &lightDataBufferStruct);
+	lightDataBuffer.DCUpdateData(0, sizeof(LightDataBuffer), &lightDataBufferStruct);
 	lightDataBuffer.UsageHint(eg::BufferUsage::UniformBuffer, eg::ShaderAccessFlags::Fragment);
 }
 
@@ -166,7 +165,7 @@ bool GravitySwitchVolLightMaterial::BindPipeline(eg::CommandContext& cmdCtx, voi
 		return false;
 
 	cmdCtx.BindDescriptorSet(lightVolDescriptorSet, 0);
-	cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 1, 0);
+	cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 1, 0, &framebufferNearestSampler);
 
 	return true;
 }

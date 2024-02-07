@@ -23,8 +23,6 @@ public:
 
 	void End() const;
 
-	static const eg::FramebufferFormatHint GEOMETRY_FB_FORMAT;
-
 private:
 	void CreatePipelines();
 
@@ -49,4 +47,5 @@ private:
 	eg::Buffer m_ssaoSamplesBuffer;
 	uint32_t m_ssaoSamplesBufferCurrentSamples = 0;
 	eg::Texture m_ssaoRotationsTexture;
+	eg::Sampler m_ssaoRotationsTextureSampler;
 };

@@ -10,10 +10,10 @@ class ComboBox : public OptionWidgetBase
 public:
 	ComboBox();
 
-	void Update(float dt, bool allowInteraction);
-	void Draw(eg::SpriteBatch& spriteBatch) const;
+	void Update(const GuiFrameArgs& frameArgs, bool allowInteraction);
+	void Draw(const GuiFrameArgs& frameArgs, eg::SpriteBatch& spriteBatch) const;
 
-	void DrawOverlay(eg::SpriteBatch& spriteBatch) const;
+	void DrawOverlay(const GuiFrameArgs& frameArgs, eg::SpriteBatch& spriteBatch) const;
 
 	std::vector<std::string> options;
 

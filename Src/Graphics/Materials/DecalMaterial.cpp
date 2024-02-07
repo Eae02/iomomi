@@ -52,20 +52,22 @@ void DecalMaterial::LazyInitGlobals()
 		/* dstColor */ eg::BlendFactor::OneMinusSrcAlpha,
 		/* dstAlpha */ eg::BlendFactor::OneMinusSrcAlpha);
 	pipelineCI.blendConstants[3] = 1.0f;
+	pipelineCI.colorAttachmentFormats[0] = GB_COLOR_FORMAT;
+	pipelineCI.colorAttachmentFormats[1] = GB_COLOR_FORMAT;
+	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
 	pipelineCI.label = "DecalsGame";
 	decalsGamePipeline = eg::Pipeline::Create(pipelineCI);
-	decalsGamePipeline.FramebufferFormatHint(DeferredRenderer::GEOMETRY_FB_FORMAT);
 
 	pipelineCI.blendStates[1].colorWriteMask = eg::ColorWriteMask::A | eg::ColorWriteMask::B;
 	decalsGamePipelineInheritNormals = eg::Pipeline::Create(pipelineCI);
-	decalsGamePipelineInheritNormals.FramebufferFormatHint(DeferredRenderer::GEOMETRY_FB_FORMAT);
 
 	pipelineCI.fragmentShader = fs.GetVariant("VEditor");
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.blendStates[1] = {};
+	pipelineCI.colorAttachmentFormats[0] = eg::Format::DefaultColor;
+	pipelineCI.depthAttachmentFormat = eg::Format::DefaultDepthStencil;
 	pipelineCI.label = "DecalsEditor";
 	decalsEditorPipeline = eg::Pipeline::Create(pipelineCI);
-	decalsEditorPipeline.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 
 	decalVertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer, sizeof(decalVertexData), decalVertexData);
 	decalVertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);

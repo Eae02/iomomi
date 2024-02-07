@@ -58,11 +58,15 @@ static void Run(int argc, char** argv)
 
 	LoadSettings();
 	eg::TextureAssetQuality = settings.textureQuality;
+	SetLightColorAttachmentFormat(settings.highDynamicRange);
 
 	if (settings.vsync)
 		runConfig.flags |= eg::RunFlags::VSync;
-	runConfig.graphicsAPI = settings.graphicsAPI;
 	runConfig.preferredGPUName = settings.preferredGPUName;
+
+#ifndef __APPLE__
+	runConfig.graphicsAPI = settings.graphicsAPI;
+#endif
 
 	eg::ParseCommandLineArgs(runConfig, argc, argv);
 	if (eg::HasFlag(runConfig.flags, eg::RunFlags::PreferIntegratedGPU))
@@ -100,6 +104,7 @@ static void Run(int argc, char** argv)
 		}
 		UpdateVolumeSettings();
 
+		GraphicsCommonInit();
 		eg::SpriteFont::LoadDevFont();
 		eg::console::Init();
 		InitializeStaticPropMaterialAsset();

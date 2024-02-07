@@ -5,10 +5,6 @@
 #include "Lighting/LightMeshes.hpp"
 #include "RenderSettings.hpp"
 
-const eg::FramebufferFormatHint DeferredRenderer::GEOMETRY_FB_FORMAT = { 1,
-	                                                                     GB_DEPTH_FORMAT,
-	                                                                     { GB_COLOR_FORMAT, GB_COLOR_FORMAT } };
-
 static eg::SamplerDescription s_attachmentSamplerDesc;
 
 static int* unlit = eg::TweakVarInt("unlit", 0, 0, 1);
@@ -78,13 +74,14 @@ DeferredRenderer::DeferredRenderer()
 	}
 	rotationDataUploadBuffer.Flush();
 
-	eg::SamplerDescription ssaoRotationsSampler;
-	ssaoRotationsSampler.wrapU = eg::WrapMode::Repeat;
-	ssaoRotationsSampler.wrapV = eg::WrapMode::Repeat;
-	ssaoRotationsSampler.wrapW = eg::WrapMode::Repeat;
-	ssaoRotationsSampler.minFilter = eg::TextureFilter::Nearest;
-	ssaoRotationsSampler.magFilter = eg::TextureFilter::Nearest;
-
+	m_ssaoRotationsTextureSampler = eg::Sampler(eg::SamplerDescription{
+		.wrapU = eg::WrapMode::Repeat,
+		.wrapV = eg::WrapMode::Repeat,
+		.wrapW = eg::WrapMode::Repeat,
+		.minFilter = eg::TextureFilter::Nearest,
+		.magFilter = eg::TextureFilter::Nearest,
+	});
+	
 	// Creates the SSAO rotation texture
 	eg::TextureCreateInfo textureCI;
 	textureCI.flags = eg::TextureFlags::ShaderSample | eg::TextureFlags::CopyDst;
@@ -92,7 +89,6 @@ DeferredRenderer::DeferredRenderer()
 	textureCI.height = SSAO_ROTATIONS_RES;
 	textureCI.format = eg::Format::R32G32_Float;
 	textureCI.mipLevels = 1;
-	textureCI.defaultSamplerDescription = &ssaoRotationsSampler;
 	m_ssaoRotationsTexture = eg::Texture::Create2D(textureCI);
 
 	// Uploads SSAO rotation data
@@ -127,9 +123,9 @@ static inline eg::Pipeline CreateSSAOPipeline(uint32_t samples)
 	pipelineCI.fragmentShader.specConstantsData = &specConstantData;
 	pipelineCI.fragmentShader.specConstantsDataSize = sizeof(SpecConstantData);
 	pipelineCI.fragmentShader.specConstants = specConstantEntries;
+	pipelineCI.colorAttachmentFormats[0] = ConstexprGetFormatForRenderTexture(RenderTex::SSAO);
 	pipelineCI.label = "SSAO";
 	eg::Pipeline pipeline = eg::Pipeline::Create(pipelineCI);
-	pipeline.FramebufferFormatHint(GetFormatForRenderTexture(RenderTex::SSAO));
 	return pipeline;
 }
 
@@ -142,16 +138,13 @@ void DeferredRenderer::CreatePipelines()
 	ambientPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
 
 	ambientPipelineCI.fragmentShader = ambientFragmentShader.GetVariant("VSSAO");
+	ambientPipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
 	ambientPipelineCI.label = "Ambient[SSAO]";
 	m_ambientPipelineWithSSAO = eg::Pipeline::Create(ambientPipelineCI);
-	m_ambientPipelineWithSSAO.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
-	m_ambientPipelineWithSSAO.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
 
 	ambientPipelineCI.fragmentShader = ambientFragmentShader.GetVariant("VNoSSAO");
 	ambientPipelineCI.label = "Ambient[NoSSAO]";
 	m_ambientPipelineWithoutSSAO = eg::Pipeline::Create(ambientPipelineCI);
-	m_ambientPipelineWithoutSSAO.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
-	m_ambientPipelineWithoutSSAO.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
 
 	eg::SpecializationConstantEntry pointLightSpecConstEntries[2];
 	pointLightSpecConstEntries[0].constantID = 0;
@@ -171,6 +164,7 @@ void DeferredRenderer::CreatePipelines()
 	plPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
 	plPipelineCI.vertexBindings[0] = { sizeof(float) * 3, eg::InputRate::Vertex };
 	plPipelineCI.cullMode = eg::CullMode::Back;
+	plPipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
 	plPipelineCI.fragmentShader.specConstants = pointLightSpecConstEntries;
 	plPipelineCI.fragmentShader.specConstantsData = pointLightSpecConstants;
 	plPipelineCI.fragmentShader.specConstantsDataSize = sizeof(pointLightSpecConstants);
@@ -191,8 +185,6 @@ void DeferredRenderer::CreatePipelines()
 			plPipelineCI.label = label;
 
 			m_pointLightPipelines[shadowMode][waterMode] = eg::Pipeline::Create(plPipelineCI);
-			m_pointLightPipelines[shadowMode][waterMode].FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR);
-			m_pointLightPipelines[shadowMode][waterMode].FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR);
 		}
 	}
 
@@ -200,17 +192,17 @@ void DeferredRenderer::CreatePipelines()
 	ssaoDepthLinPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
 	ssaoDepthLinPipelineCI.fragmentShader =
 		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/SSAODepthLin.fs.glsl").DefaultVariant();
+	ssaoDepthLinPipelineCI.colorAttachmentFormats[0] = eg::Format::R32_Float;
 	ssaoDepthLinPipelineCI.label = "SSAODepthLinearize";
 	m_ssaoDepthLinPipeline = eg::Pipeline::Create(ssaoDepthLinPipelineCI);
-	m_ssaoDepthLinPipeline.FramebufferFormatHint(eg::Format::R32_Float);
 
 	eg::GraphicsPipelineCreateInfo ssaoBlurPipelineCI;
 	ssaoBlurPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
 	ssaoBlurPipelineCI.fragmentShader =
 		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/SSAOBlur.fs.glsl").DefaultVariant();
+	ssaoBlurPipelineCI.colorAttachmentFormats[0] = eg::Format::R8_UNorm;
 	ssaoBlurPipelineCI.label = "SSAOBlur";
 	m_ssaoBlurPipeline = eg::Pipeline::Create(ssaoBlurPipelineCI);
-	m_ssaoBlurPipeline.FramebufferFormatHint(eg::Format::R8_UNorm);
 
 	for (size_t i = 0; i < std::size(SSAO_SAMPLES); i++)
 	{
@@ -274,7 +266,7 @@ void DeferredRenderer::PrepareSSAO(RenderTexManager& rtManager)
 		m_ssaoSamplesBuffer.UsageHint(eg::BufferUsage::CopyDst);
 
 		std::vector<glm::vec4> samples = GenerateSSAOSamples(numSSAOSamples);
-		eg::DC.UpdateBuffer(m_ssaoSamplesBuffer, 0, samples.size() * sizeof(float) * 4, samples.data());
+		m_ssaoSamplesBuffer.DCUpdateData<glm::vec4>(0, samples);
 
 		m_ssaoSamplesBuffer.UsageHint(eg::BufferUsage::UniformBuffer, eg::ShaderAccessFlags::Fragment);
 		m_ssaoSamplesBufferCurrentSamples = numSSAOSamples;
@@ -304,7 +296,7 @@ void DeferredRenderer::PrepareSSAO(RenderTexManager& rtManager)
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::SSAOGBDepthLinear), 0, 1, &framebufferLinearSampler);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor2), 0, 2, &framebufferNearestSampler);
-	eg::DC.BindTexture(m_ssaoRotationsTexture, 0, 3);
+	eg::DC.BindTexture(m_ssaoRotationsTexture, 0, 3, &m_ssaoRotationsTextureSampler);
 	eg::DC.BindUniformBuffer(m_ssaoSamplesBuffer, 0, 4, 0, sizeof(float) * 4 * SSAO_SAMPLES[2]);
 
 	float pcData[] = {
@@ -384,9 +376,9 @@ void DeferredRenderer::BeginLighting(RenderTexManager& rtManager)
 	}
 
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor1), 0, 1);
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor2), 0, 2);
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 3);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor1), 0, 1, &framebufferNearestSampler);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor2), 0, 2, &framebufferNearestSampler);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 3, &framebufferNearestSampler);
 
 	float pc[4] = { ambientColor.r, ambientColor.g, ambientColor.b, static_cast<float>(*ambientOnlyOcc) };
 	eg::DC.PushConstants(0, sizeof(pc), pc);
@@ -433,10 +425,10 @@ void DeferredRenderer::DrawPointLights(
 
 	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
 
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor1), 0, 1);
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor2), 0, 2);
-	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 3);
-	eg::DC.BindTexture(waterDepthTexture, 0, 4);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor1), 0, 1, &framebufferNearestSampler);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor2), 0, 2, &framebufferNearestSampler);
+	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 3, &framebufferNearestSampler);
+	eg::DC.BindTexture(waterDepthTexture, 0, 4, &framebufferNearestSampler);
 	eg::DC.BindTexture(eg::GetAsset<eg::Texture>("Caustics"), 0, 5, &commonTextureSampler);
 
 	struct __attribute__((packed)) PointLightPC

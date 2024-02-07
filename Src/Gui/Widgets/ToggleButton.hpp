@@ -9,8 +9,8 @@ class ToggleButton : public OptionWidgetBase
 public:
 	ToggleButton() = default;
 
-	void Update(float dt, bool allowInteraction);
-	void Draw(eg::SpriteBatch& spriteBatch) const;
+	void Update(const GuiFrameArgs& frameArgs, bool allowInteraction);
+	void Draw(const GuiFrameArgs& frameArgs, eg::SpriteBatch& spriteBatch) const;
 
 	std::function<bool()> getValue;
 	std::function<void(bool)> setValue;

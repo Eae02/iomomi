@@ -26,14 +26,15 @@ static void OnInit()
 	pipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
 	pipelineCI.vertexAttributes[6] = { 1, eg::DataType::Float32, 1, 4 * sizeof(float) * 4 };
 	pipelineCI.numColorAttachments = 1;
+	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
+	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
 	pipelineCI.label = "LightStripGame";
 	lightStripPipelineGame = eg::Pipeline::Create(pipelineCI);
-	lightStripPipelineGame.FramebufferFormatHint(LIGHT_COLOR_FORMAT_LDR, GB_DEPTH_FORMAT);
-	lightStripPipelineGame.FramebufferFormatHint(LIGHT_COLOR_FORMAT_HDR, GB_DEPTH_FORMAT);
 
 	pipelineCI.label = "LightStripEditor";
+	pipelineCI.colorAttachmentFormats[0] = eg::Format::DefaultColor;
+	pipelineCI.depthAttachmentFormat = eg::Format::DefaultDepthStencil;
 	lightStripPipelineEditor = eg::Pipeline::Create(pipelineCI);
-	lightStripPipelineEditor.FramebufferFormatHint(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil);
 }
 
 static void OnShutdown()

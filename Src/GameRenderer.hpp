@@ -30,7 +30,7 @@ public:
 	const glm::mat4& GetInverseViewProjMatrix() const { return m_inverseViewProjMatrix; }
 
 	void Render(
-		World& world, float gameTime, float dt, eg::FramebufferHandle outputFramebuffer, uint32_t outputResX,
+		World& world, float gameTime, float dt, eg::FramebufferHandle outputFramebuffer, eg::Format outputFormat, uint32_t outputResX,
 		uint32_t outputResY);
 
 	static GameRenderer* instance;

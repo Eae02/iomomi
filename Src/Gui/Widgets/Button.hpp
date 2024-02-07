@@ -2,14 +2,16 @@
 
 #include <functional>
 
+#include "../GuiCommon.hpp"
+
 class Button
 {
 public:
 	Button() = default;
 	Button(std::string _text, std::function<void()> _onClick) : text(std::move(_text)), onClick(std::move(_onClick)) {}
 
-	void Update(float dt, bool allowInteraction);
-	void Draw(eg::SpriteBatch& spriteBatch) const;
+	void Update(const GuiFrameArgs& frameArgs, bool allowInteraction);
+	void Draw(const GuiFrameArgs& frameArgs, eg::SpriteBatch& spriteBatch) const;
 
 	static void DrawBackground(
 		eg::SpriteBatch& spriteBatch, const eg::Rectangle& rectangle, float highlightIntensity, bool enabled = true);

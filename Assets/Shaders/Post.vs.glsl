@@ -15,6 +15,5 @@ void main()
 {
 	gl_Position = vec4(positions[gl_VertexIndex], 0, 1);
 	texCoord_out = gl_Position.xy * vec2(0.5, -0.5) + vec2(0.5);
-	
 	texCoord_out.y = EG_FLIPGL(texCoord_out.y);
 }

@@ -18,6 +18,8 @@ static void OnInit()
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::Back;
 	pipelineCI.numColorAttachments = 1;
+	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
+	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.label = "PumpScreenGame";
 	pipelineGame = eg::Pipeline::Create(pipelineCI);
@@ -124,7 +126,7 @@ void PumpScreenMaterial::Update(float dt, PumpDirection direction)
 		}
 	}
 
-	eg::DC.UpdateBuffer(m_dataBuffer, 0, sizeof(PumpMaterialData), &materialData);
+	m_dataBuffer.DCUpdateData(0, sizeof(PumpMaterialData), &materialData);
 	m_dataBuffer.UsageHint(eg::BufferUsage::UniformBuffer, eg::ShaderAccessFlags::Fragment);
 }
 
@@ -137,7 +139,7 @@ bool PumpScreenMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs
 {
 	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
 
-	if (mDrawArgs->drawMode != MeshDrawMode::Emissive && mDrawArgs->drawMode != MeshDrawMode::Editor)
+	if (mDrawArgs->drawMode != MeshDrawMode::Emissive) //TODO: Editor
 		return false;
 
 	cmdCtx.BindPipeline(pipelineGame);

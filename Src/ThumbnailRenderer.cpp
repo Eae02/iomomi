@@ -40,13 +40,15 @@ LevelThumbnailUpdate* BeginUpdateLevelThumbnails(RenderContext& renderContext, e
 	std::unique_ptr<GameRenderer> renderer;
 	LevelThumbnailUpdate* update = nullptr;
 
+	constexpr eg::Format OUTPUT_FORMAT = eg::Format::R8G8B8A8_sRGB;
+
 	eg::TextureCreateInfo textureCI;
 	textureCI.width = LEVEL_THUMBNAIL_RES_X;
 	textureCI.height = LEVEL_THUMBNAIL_RES_Y;
 	textureCI.depth = 1;
 	textureCI.mipLevels = 1;
 	textureCI.flags = eg::TextureFlags::CopySrc | eg::TextureFlags::FramebufferAttachment;
-	textureCI.format = eg::Format::R8G8B8A8_sRGB;
+	textureCI.format = OUTPUT_FORMAT;
 
 	eg::Profiler* profiler = eg::Profiler::current;
 	eg::Profiler::current = nullptr;
@@ -115,7 +117,8 @@ LevelThumbnailUpdate* BeginUpdateLevelThumbnails(RenderContext& renderContext, e
 			renderer->m_waterSimulator->Update(*world, world->thumbnailCameraPos, false);
 		}
 
-		renderer->Render(*world, 0, 0, entry.framebuffer.handle, LEVEL_THUMBNAIL_RES_X, LEVEL_THUMBNAIL_RES_Y);
+		renderer->Render(
+			*world, 0, 0, entry.framebuffer.handle, OUTPUT_FORMAT, LEVEL_THUMBNAIL_RES_X, LEVEL_THUMBNAIL_RES_Y);
 
 		entry.downloadBuffer = eg::Buffer(
 			eg::BufferFlags::MapRead | eg::BufferFlags::CopyDst | eg::BufferFlags::Download |

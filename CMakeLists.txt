@@ -45,6 +45,7 @@ target_compile_options(iomomi PRIVATE
 	-Wno-unused-parameter
 	-Wno-delete-non-virtual-dtor
 	-Wno-missing-field-initializers
+	-Wno-mismatched-tags
 	$<$<COMPILE_LANGUAGE:CXX>:-Wconversion-null>
 )
 
@@ -85,6 +86,7 @@ if(NOT ${BUILD_ID} STREQUAL "")
 endif()
 
 target_include_directories(iomomi SYSTEM PRIVATE
+	${CMAKE_CURRENT_SOURCE_DIR}
 	${CMAKE_CURRENT_SOURCE_DIR}/Inc
 	${CMAKE_CURRENT_SOURCE_DIR}/Deps/pcg/include
 	${CMAKE_CURRENT_SOURCE_DIR}/Deps/magic_enum/include
@@ -116,6 +118,4 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
 	
 	target_compile_options(iomomi PRIVATE -Wno-sign-conversion -Wno-shorten-64-to-32 -Wno-mismatched-tags)
 	set_target_properties(iomomi PROPERTIES LINK_FLAGS "-s EXPORTED_RUNTIME_METHODS=['cwrap'] ${EMCC_FLAGS}")
-else()
-	target_link_libraries(iomomi stdc++fs SDL2)
 endif()
