@@ -18,10 +18,13 @@ To compile on linux you need to have the following libraries installed: `sdl2`, 
 
 To get the correct fonts, you need to have the fonts *Orbitron* and *DejaVu Sans* installed when running the game for the first time.
 
+Textures are stored in dropbox and can be downloaded using the `DownloadTextures.sh` script.
+
 Make sure you clone the repository with git submodules 
 (`--recurse-submodules`), then, from the repository root:
 
 ```bash
+./DownloadTextures.sh
 ./PrepareBuild.sh
 mkdir .build
 cd .build

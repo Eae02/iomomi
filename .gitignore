@@ -4,6 +4,7 @@
 .vscode
 .vs
 .DS_Store
+.clangd
 /Protobuf/Build
 /Assets/.AssetCache
 /Inc/Common.hpp.gch
@@ -11,4 +12,7 @@
 /Bin
 /Levels/test*.gwd
 /Levels/img/
+/Assets/Caustics
+/Assets/Textures
+/Assets/WallTextures
 /Deps/egame_override
