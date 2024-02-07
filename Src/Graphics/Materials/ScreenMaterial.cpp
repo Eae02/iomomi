@@ -30,6 +30,8 @@ static void OnShutdown()
 EG_ON_INIT(OnInit)
 EG_ON_SHUTDOWN(OnShutdown)
 
+constexpr eg::Format SCREEN_TEXTURE_FORMAT = eg::Format::R8G8B8A8_sRGB;
+
 ScreenMaterial::ScreenMaterial(int resX, int resY) : m_resX(resX), m_resY(resY), m_descriptorSet(screenMatPipeline, 0)
 {
 	m_texture = eg::Texture::Create2D(eg::TextureCreateInfo{
@@ -37,7 +39,7 @@ ScreenMaterial::ScreenMaterial(int resX, int resY) : m_resX(resX), m_resY(resY),
 		.mipLevels = 1,
 		.width = eg::ToUnsigned(resX),
 		.height = eg::ToUnsigned(resY),
-		.format = eg::Format::R8G8B8A8_sRGB,
+		.format = SCREEN_TEXTURE_FORMAT,
 	});
 
 	eg::FramebufferAttachment colorAttachment;
@@ -61,7 +63,13 @@ void ScreenMaterial::RenderTexture(const eg::ColorLin& clearColor)
 	rpBeginInfo.framebuffer = m_framebuffer.handle;
 	rpBeginInfo.colorAttachments[0].clearValue = clearColor;
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
-	m_spriteBatch.UploadAndRender(m_resX, m_resY, rpBeginInfo);
+	m_spriteBatch.UploadAndRender(
+		eg::SpriteBatch::RenderArgs{
+			.screenWidth = m_resX,
+			.screenHeight = m_resY,
+			.framebufferFormat = eg::ColorAndDepthFormat(SCREEN_TEXTURE_FORMAT),
+		},
+		rpBeginInfo);
 
 	m_texture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 }

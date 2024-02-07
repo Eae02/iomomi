@@ -123,7 +123,7 @@ static inline eg::Pipeline CreateSSAOPipeline(uint32_t samples)
 	pipelineCI.fragmentShader.specConstantsData = &specConstantData;
 	pipelineCI.fragmentShader.specConstantsDataSize = sizeof(SpecConstantData);
 	pipelineCI.fragmentShader.specConstants = specConstantEntries;
-	pipelineCI.colorAttachmentFormats[0] = ConstexprGetFormatForRenderTexture(RenderTex::SSAO);
+	pipelineCI.colorAttachmentFormats[0] = GetFormatForRenderTexture(RenderTex::SSAO, true);
 	pipelineCI.label = "SSAO";
 	eg::Pipeline pipeline = eg::Pipeline::Create(pipelineCI);
 	return pipeline;

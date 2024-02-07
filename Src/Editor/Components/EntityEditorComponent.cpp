@@ -6,6 +6,7 @@
 #include "../../World/Entities/EntTypes/Activation/ActivationLightStripEnt.hpp"
 #include "../PrimitiveRenderer.hpp"
 #include "../SelectionRenderer.hpp"
+#include "../EditorGraphics.hpp"
 
 EntityEditorComponent::EntityEditorComponent()
 {
@@ -605,10 +606,10 @@ void EntityEditorComponent::LateDraw(const EditorState& editorState) const
 {
 	if (m_drawTranslationGizmo)
 	{
-		m_translationGizmo.Draw(editorState.viewProjection);
+		m_translationGizmo.Draw(editorState.viewProjection, EDITOR_FB_FORMAT);
 	}
 	if (m_drawRotationGizmo)
 	{
-		m_rotationGizmo.Draw(editorState.viewProjection);
+		m_rotationGizmo.Draw(editorState.viewProjection, EDITOR_FB_FORMAT);
 	}
 }

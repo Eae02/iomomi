@@ -1,5 +1,6 @@
 #include "SelectionRenderer.hpp"
 #include "../Graphics/GraphicsCommon.hpp"
+#include "EditorGraphics.hpp"
 
 static eg::Pipeline modelPipeline;
 static eg::Pipeline postPipeline;
@@ -14,8 +15,7 @@ static void OnInit()
 	modelPipelineCI.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
 	modelPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(eg::StdVertex, position) };
 	modelPipelineCI.numColorAttachments = 1;
-	modelPipelineCI.colorAttachmentFormats[0] = eg::Format::DefaultColor;
-	modelPipelineCI.depthAttachmentFormat = eg::Format::DefaultDepthStencil;
+	modelPipelineCI.colorAttachmentFormats[0] = eg::Format::R8_UNorm;
 	modelPipelineCI.label = "EdSelection";
 	modelPipeline = eg::Pipeline::Create(modelPipelineCI);
 
@@ -27,8 +27,8 @@ static void OnInit()
 	postPipelineCI.numColorAttachments = 1;
 	postPipelineCI.label = "EdSelectionPost";
 	postPipelineCI.blendStates[0] = eg::AlphaBlend;
-	postPipelineCI.colorAttachmentFormats[0] = eg::Format::DefaultColor;
-	postPipelineCI.depthAttachmentFormat = eg::Format::DefaultDepthStencil;
+	postPipelineCI.colorAttachmentFormats[0] = EDITOR_COLOR_FORMAT;
+	postPipelineCI.depthAttachmentFormat = EDITOR_DEPTH_FORMAT;
 	postPipeline = eg::Pipeline::Create(postPipelineCI);
 }
 

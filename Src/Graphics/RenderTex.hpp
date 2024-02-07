@@ -31,44 +31,7 @@ extern eg::Format lightColorAttachmentFormat;
 
 void SetLightColorAttachmentFormat(bool enableHDR);
 
-eg::Format GetFormatForRenderTexture(RenderTex texture);
-
-eg::Format GetDynamicFormatForRenderTexture(RenderTex texture);
-
-constexpr eg::Format ConstexprGetFormatForRenderTexture(RenderTex texture)
-{
-	switch (texture)
-	{
-	case RenderTex::GBDepth:
-		return GB_DEPTH_FORMAT;
-	case RenderTex::GBColor1:
-		return GB_COLOR_FORMAT;
-	case RenderTex::GBColor2:
-		return GB_COLOR_FORMAT;
-	case RenderTex::WaterGlowIntensity:
-		return eg::Format::R8_UNorm;
-	case RenderTex::WaterMinDepth:
-		return eg::Format::Depth16;
-	case RenderTex::WaterMaxDepth:
-		return eg::Format::Depth16;
-	case RenderTex::BlurredGlassDepth:
-		return GB_DEPTH_FORMAT;
-
-	case RenderTex::SSAOGBDepthLinear:
-		return eg::Format::R32_Float;
-
-	case RenderTex::SSRDepth:
-		return eg::Format::Depth16;
-
-	case RenderTex::SSAOUnblurred:
-	case RenderTex::SSAOTempBlur:
-	case RenderTex::SSAO:
-		return eg::Format::R8_UNorm;
-
-	default:
-		return GetDynamicFormatForRenderTexture(texture);
-	}
-}
+eg::Format GetFormatForRenderTexture(RenderTex texture, bool requireFixed = false);
 
 void AssertRenderTextureFormatSupport();
 

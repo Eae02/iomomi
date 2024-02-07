@@ -202,12 +202,15 @@ void MainMenuGameState::RunFrame(float dt)
 		ComboBox::current->DrawOverlay(m_currentFrameArgs, m_spriteBatch);
 	}
 
-	glm::mat3 matrix = m_currentFrameArgs.GetMatrixToNDC();
-
 	eg::RenderPassBeginInfo rpBeginInfo;
 	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
 	rpBeginInfo.colorAttachments[0].clearValue = eg::ColorSRGB::FromHex(0x041626);
-	m_spriteBatch.UploadAndRender(eg::CurrentResolutionX(), eg::CurrentResolutionY(), rpBeginInfo, &matrix);
+	m_spriteBatch.UploadAndRender(
+		eg::SpriteBatch::RenderArgs{
+			.framebufferFormat = eg::ColorAndDepthFormat(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil),
+			.matrix = m_currentFrameArgs.GetMatrixToNDC(),
+		},
+		rpBeginInfo);
 }
 
 void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)

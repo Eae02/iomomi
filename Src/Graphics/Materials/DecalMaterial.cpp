@@ -2,6 +2,7 @@
 
 #include "../RenderSettings.hpp"
 #include "MeshDrawArgs.hpp"
+#include "../../Editor/EditorGraphics.hpp"
 
 static eg::Pipeline decalsGamePipeline;
 static eg::Pipeline decalsGamePipelineInheritNormals;
@@ -64,8 +65,8 @@ void DecalMaterial::LazyInitGlobals()
 	pipelineCI.fragmentShader = fs.GetVariant("VEditor");
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.blendStates[1] = {};
-	pipelineCI.colorAttachmentFormats[0] = eg::Format::DefaultColor;
-	pipelineCI.depthAttachmentFormat = eg::Format::DefaultDepthStencil;
+	pipelineCI.colorAttachmentFormats[0] = EDITOR_COLOR_FORMAT;
+	pipelineCI.depthAttachmentFormat = EDITOR_DEPTH_FORMAT;
 	pipelineCI.label = "DecalsEditor";
 	decalsEditorPipeline = eg::Pipeline::Create(pipelineCI);
 

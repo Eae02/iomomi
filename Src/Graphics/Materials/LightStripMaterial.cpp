@@ -1,3 +1,4 @@
+#include "../../Editor/EditorGraphics.hpp"
 #include "LightStripMaterial.hpp"
 
 #include "../DeferredRenderer.hpp"
@@ -32,8 +33,8 @@ static void OnInit()
 	lightStripPipelineGame = eg::Pipeline::Create(pipelineCI);
 
 	pipelineCI.label = "LightStripEditor";
-	pipelineCI.colorAttachmentFormats[0] = eg::Format::DefaultColor;
-	pipelineCI.depthAttachmentFormat = eg::Format::DefaultDepthStencil;
+	pipelineCI.colorAttachmentFormats[0] = EDITOR_COLOR_FORMAT;
+	pipelineCI.depthAttachmentFormat = EDITOR_DEPTH_FORMAT;
 	lightStripPipelineEditor = eg::Pipeline::Create(pipelineCI);
 }
 

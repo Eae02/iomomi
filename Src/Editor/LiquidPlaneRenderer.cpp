@@ -3,6 +3,7 @@
 #include "../Graphics/RenderSettings.hpp"
 #include "../World/Entities/Components/LiquidPlaneComp.hpp"
 #include "../World/World.hpp"
+#include "EditorGraphics.hpp"
 
 LiquidPlaneRenderer::LiquidPlaneRenderer()
 {
@@ -17,8 +18,8 @@ LiquidPlaneRenderer::LiquidPlaneRenderer()
 	pipelineCI.vertexBindings[0] = { sizeof(LiquidPlaneComp::Vertex), eg::InputRate::Vertex };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(LiquidPlaneComp::Vertex, pos) };
 	pipelineCI.blendStates[0] = eg::AlphaBlend;
-	pipelineCI.colorAttachmentFormats[0] = eg::Format::DefaultColor;
-	pipelineCI.depthAttachmentFormat = eg::Format::DefaultDepthStencil;
+	pipelineCI.colorAttachmentFormats[0] = EDITOR_COLOR_FORMAT;
+	pipelineCI.depthAttachmentFormat = EDITOR_DEPTH_FORMAT;
 	pipelineCI.label = "EdLiquidPlane";
 
 	m_pipeline = eg::Pipeline::Create(pipelineCI);

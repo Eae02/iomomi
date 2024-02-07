@@ -39,8 +39,8 @@ void SSR::CreatePipeline()
 	pipeline1CI.enableDepthWrite = true;
 	pipeline1CI.enableDepthTest = true;
 	pipeline1CI.depthCompare = eg::CompareOp::Always;
-	pipeline1CI.colorAttachmentFormats[0] = ConstexprGetFormatForRenderTexture(RenderTex::SSRTemp1);
-	pipeline1CI.depthAttachmentFormat = ConstexprGetFormatForRenderTexture(RenderTex::SSRDepth);
+	pipeline1CI.colorAttachmentFormats[0] = GetFormatForRenderTexture(RenderTex::SSRTemp1, true);
+	pipeline1CI.depthAttachmentFormat = GetFormatForRenderTexture(RenderTex::SSRDepth, true);
 	pipeline1CI.label = "SSR[Initial]";
 	m_pipelineInitial = eg::Pipeline::Create(pipeline1CI);
 
@@ -53,8 +53,8 @@ void SSR::CreatePipeline()
 	pipelineBlendPassCI.blendStates[0] = eg::BlendState(
 		eg::BlendFunc::Add, eg::BlendFunc::Add, eg::BlendFactor::DstColor, eg::BlendFactor::DstAlpha,
 		eg::BlendFactor::Zero, eg::BlendFactor::Zero);
-	pipelineBlendPassCI.colorAttachmentFormats[0] = ConstexprGetFormatForRenderTexture(RenderTex::SSRTemp1);
-	pipelineBlendPassCI.depthAttachmentFormat = ConstexprGetFormatForRenderTexture(RenderTex::SSRDepth);
+	pipelineBlendPassCI.colorAttachmentFormats[0] = GetFormatForRenderTexture(RenderTex::SSRTemp1, true);
+	pipelineBlendPassCI.depthAttachmentFormat = GetFormatForRenderTexture(RenderTex::SSRDepth, true);
 	pipelineBlendPassCI.label = "SSR[Blend]";
 	m_pipelineBlendPass = eg::Pipeline::Create(pipelineBlendPassCI);
 
@@ -71,7 +71,7 @@ void SSR::CreatePipeline()
 	pipelineBlurCI.fragmentShader.specConstants = { &specConstEntryBlur, 1 };
 	pipelineBlurCI.fragmentShader.specConstantsData = &blurRadius;
 	pipelineBlurCI.fragmentShader.specConstantsDataSize = sizeof(uint32_t);
-	pipelineBlurCI.colorAttachmentFormats[0] = ConstexprGetFormatForRenderTexture(RenderTex::SSRTemp2);
+	pipelineBlurCI.colorAttachmentFormats[0] = GetFormatForRenderTexture(RenderTex::SSRTemp2, true);
 	pipelineBlurCI.label = "SSR[Blur1]";
 	m_blur1Pipeline = eg::Pipeline::Create(pipelineBlurCI);
 

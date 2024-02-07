@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.25)
 project(iomomi)
 
 set(BUILD_DIR_NAME ${CMAKE_BUILD_TYPE})

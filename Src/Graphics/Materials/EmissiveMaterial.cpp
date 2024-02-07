@@ -2,6 +2,7 @@
 
 #include "../RenderSettings.hpp"
 #include "MeshDrawArgs.hpp"
+#include "../../Editor/EditorGraphics.hpp"
 
 static eg::Pipeline emissiveGeometryPipeline;
 static eg::Pipeline emissivePipelineGame;
@@ -44,8 +45,8 @@ static void OnInit()
 	pipelineCI.label = "EmissiveGameLight";
 	emissivePipelineGame = eg::Pipeline::Create(pipelineCI);
 
-	pipelineCI.colorAttachmentFormats[0] = eg::Format::DefaultColor;
-	pipelineCI.depthAttachmentFormat = eg::Format::DefaultDepthStencil;
+	pipelineCI.colorAttachmentFormats[0] = EDITOR_COLOR_FORMAT;
+	pipelineCI.depthAttachmentFormat = EDITOR_DEPTH_FORMAT;
 	pipelineCI.label = "EmissiveEditor";
 	emissivePipelineEditor = eg::Pipeline::Create(pipelineCI);
 }

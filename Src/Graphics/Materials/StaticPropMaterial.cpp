@@ -1,3 +1,4 @@
+#include "../../Editor/EditorGraphics.hpp"
 #include "StaticPropMaterial.hpp"
 
 #include <fstream>
@@ -86,8 +87,8 @@ void StaticPropMaterial::LazyInitGlobals()
 	InitializeVariants("VGame", staticPropMaterialGlobals.pipelineGame);
 
 	pipelineCI.numColorAttachments = 1;
-	pipelineCI.colorAttachmentFormats[0] = eg::Format::DefaultColor;
-	pipelineCI.depthAttachmentFormat = eg::Format::DefaultDepthStencil;
+	pipelineCI.colorAttachmentFormats[0] = EDITOR_COLOR_FORMAT;
+	pipelineCI.depthAttachmentFormat = EDITOR_DEPTH_FORMAT;
 	InitializeVariants("VEditor", staticPropMaterialGlobals.pipelineEditor);
 
 	const eg::ShaderModuleAsset& plsfs = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLightShadow.fs.glsl");

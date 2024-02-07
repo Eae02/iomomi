@@ -12,16 +12,38 @@ static int* waterEnableAvx2 = eg::TweakVarInt("wsim_enable_avx2", 1, 0, 1);
 
 std::unique_ptr<WaterSimulatorImpl> CreateWaterSimulatorImplAvx512(const WaterSimulatorImpl::ConstructorArgs& args);
 std::unique_ptr<WaterSimulatorImpl> CreateWaterSimulatorImplAvx2(const WaterSimulatorImpl::ConstructorArgs& args);
+
+static bool hasDetectedAvxSupport = false;
+static bool cpuHasAvx512 = false;
+static bool cpuHasAvx2 = false;
 #endif
 
 std::unique_ptr<WaterSimulatorImpl> WaterSimulatorImpl::CreateInstance(const ConstructorArgs& args)
 {
 #ifdef __x86_64__
-	if (SDL_HasAVX512F() && *waterEnableAvx512)
+	if (!hasDetectedAvxSupport)
+	{
+		hasDetectedAvxSupport = true;
+
+		eg::DynamicLibrary sdlLibrary;
+		std::string name = eg::DynamicLibrary::PlatformFormat("SDL2");
+		if (sdlLibrary.Open(name.c_str()))
+		{
+			auto hasAVX512F = reinterpret_cast<uint32_t(*)()>(sdlLibrary.GetSymbol("SDL_HasAVX512F"));
+			auto hasAVX2 = reinterpret_cast<uint32_t(*)()>(sdlLibrary.GetSymbol("SDL_HasAVX2"));
+			
+			if (hasAVX512F != nullptr && hasAVX512F() != 0)
+				cpuHasAvx512 = true;
+			if (hasAVX2 != nullptr && hasAVX2() != 0)
+				cpuHasAvx2 = true;
+		}
+	}
+
+	if (cpuHasAvx512 && *waterEnableAvx512)
 	{
 		return CreateWaterSimulatorImplAvx512(args);
 	}
-	if (SDL_HasAVX2() && *waterEnableAvx2)
+	if (cpuHasAvx2 && *waterEnableAvx2)
 	{
 		return CreateWaterSimulatorImplAvx2(args);
 	}

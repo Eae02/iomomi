@@ -40,12 +40,14 @@ SettingEntry MakeNumberSetting(std::string name, T Settings::*setting)
 	SettingEntry s;
 	s.load = [=](Settings& st, std::string_view str)
 	{
-		if constexpr (std::is_floating_point_v<T> && __clang__)
+#ifdef __clang__
+		if constexpr (std::is_floating_point_v<T>)
 		{
 			std::string copyBecauseClangIsBad(str);
 			st.*setting = std::stod(copyBecauseClangIsBad);
 		}
 		else
+#endif
 		{
 			std::from_chars(str.data(), str.data() + str.size(), st.*setting);
 		}

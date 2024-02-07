@@ -1,6 +1,7 @@
 #include "PrimitiveRenderer.hpp"
 
 #include "../Graphics/DeferredRenderer.hpp"
+#include "EditorGraphics.hpp"
 
 eg::Pipeline primPipeline;
 
@@ -16,8 +17,8 @@ void PrimitiveRenderer::OnInit()
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.blendStates[0] = eg::AlphaBlend;
-	pipelineCI.colorAttachmentFormats[0] = eg::Format::DefaultColor;
-	pipelineCI.depthAttachmentFormat = eg::Format::DefaultDepthStencil;
+	pipelineCI.colorAttachmentFormats[0] = EDITOR_COLOR_FORMAT;
+	pipelineCI.depthAttachmentFormat = EDITOR_DEPTH_FORMAT;
 	pipelineCI.label = "EdPrimitive";
 
 	primPipeline = eg::Pipeline::Create(pipelineCI);

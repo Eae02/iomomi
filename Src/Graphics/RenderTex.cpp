@@ -32,7 +32,7 @@ static inline bool RenderTextureHalfResolution(RenderTex texture)
 }
 
 constexpr eg::Format LIGHT_COLOR_FORMAT_LDR = eg::Format::R8G8B8A8_UNorm;
-constexpr eg::Format LIGHT_COLOR_FORMAT_HDR = eg::Format::R16G16B16A16_Float;
+constexpr eg::Format LIGHT_COLOR_FORMAT_HDR = eg::Format::R16G16B16A16_Float; //eg::Format::R16G16B16A16_Float;
 
 eg::Format lightColorAttachmentFormat;
 
@@ -41,37 +41,55 @@ void SetLightColorAttachmentFormat(bool enableHDR)
 	lightColorAttachmentFormat = enableHDR ? LIGHT_COLOR_FORMAT_HDR : LIGHT_COLOR_FORMAT_LDR;
 }
 
-eg::Format GetFormatForRenderTexture(RenderTex texture)
-{
-	return ConstexprGetFormatForRenderTexture(texture);
-}
-
-eg::Format GetDynamicFormatForRenderTexture(RenderTex texture)
+eg::Format GetFormatForRenderTexture(RenderTex texture, bool requireFixed)
 {
 	switch (texture)
 	{
+	case RenderTex::GBDepth:
+		return GB_DEPTH_FORMAT;
+	case RenderTex::GBColor1:
+		return GB_COLOR_FORMAT;
+	case RenderTex::GBColor2:
+		return GB_COLOR_FORMAT;
+	case RenderTex::WaterGlowIntensity:
+		return eg::Format::R8_UNorm;
+	case RenderTex::WaterMinDepth:
+		return eg::Format::Depth16;
+	case RenderTex::WaterMaxDepth:
+		return eg::Format::Depth16;
+	case RenderTex::BlurredGlassDepth:
+		return GB_DEPTH_FORMAT;
+
+	case RenderTex::SSAOGBDepthLinear:
+		return eg::Format::R32_Float;
+
+	case RenderTex::SSRDepth:
+		return eg::Format::Depth16;
+
+	case RenderTex::SSAOUnblurred:
+	case RenderTex::SSAOTempBlur:
+	case RenderTex::SSAO:
+		return eg::Format::R8_UNorm;
+
 	case RenderTex::WaterDepthBlurred1:
 	case RenderTex::WaterDepthBlurred2:
+		EG_ASSERT(!requireFixed);
 		if (qvar::waterUse32BitDepth(settings.waterQuality))
 			return eg::Format::R32G32_Float;
 		return eg::Format::R16G16_Float;
 
 	case RenderTex::SSRTemp1:
 	case RenderTex::SSRTemp2:
-		if (qvar::ssrUse16BitColor(settings.reflectionsQuality))
-			return eg::Format::R16G16B16A16_Float;
-		return eg::Format::R8G8B8A8_UNorm;
+		return eg::Format::R16G16B16A16_Float;
 
 	case RenderTex::LitWithoutWater:
 	case RenderTex::LitWithoutBlurredGlass:
 	case RenderTex::LitWithoutSSR:
 	case RenderTex::Lit:
 		return lightColorAttachmentFormat;
-
-	default:
-		EG_PANIC("Unreachable default case, maybe mismatch between GetDynamicFormatForRenderTexture and "
-		         "ConstexprGetFormatForRenderTexture");
 	}
+	
+	EG_PANIC("Invalid render texture");
 }
 
 void AssertRenderTextureFormatSupport()

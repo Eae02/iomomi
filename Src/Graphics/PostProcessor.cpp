@@ -27,6 +27,8 @@ eg::Pipeline PostProcessor::CreatePipeline(const PipelineVariantKey& variantKey)
 	postPipelineCI.fragmentShader.specConstantsData = &enableFXAA;
 	postPipelineCI.fragmentShader.specConstantsDataSize = sizeof(enableFXAA);
 	postPipelineCI.colorAttachmentFormats[0] = variantKey.outputFormat;
+	if (variantKey.outputFormat == eg::Format::DefaultColor)
+		postPipelineCI.depthAttachmentFormat = eg::Format::DefaultDepthStencil;
 	return eg::Pipeline::Create(postPipelineCI);
 }
 

@@ -4,6 +4,7 @@
 #include "../RenderSettings.hpp"
 #include "MeshDrawArgs.hpp"
 #include "StaticPropMaterial.hpp"
+#include "../../Editor/EditorGraphics.hpp"
 
 GravityCornerLightMaterial GravityCornerLightMaterial::instance;
 
@@ -37,8 +38,8 @@ static void OnInit()
 	pipelineCI.label = "GravityCornerLight";
 	gravityCornerPipeline = eg::Pipeline::Create(pipelineCI);
 
-	pipelineCI.colorAttachmentFormats[0] = eg::Format::DefaultColor;
-	pipelineCI.depthAttachmentFormat = eg::Format::DefaultDepthStencil;
+	pipelineCI.colorAttachmentFormats[0] = EDITOR_COLOR_FORMAT;
+	pipelineCI.depthAttachmentFormat = EDITOR_DEPTH_FORMAT;
 	pipelineCI.label = "GravityCornerLightEditor";
 	gravityCornerPipelineEditor = eg::Pipeline::Create(pipelineCI);
 

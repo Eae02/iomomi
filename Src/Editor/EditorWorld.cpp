@@ -21,6 +21,7 @@
 #include "Components/SpawnEntityEditorComponent.hpp"
 #include "Components/WallDragEditorComponent.hpp"
 #include "Editor.hpp"
+#include "EditorGraphics.hpp"
 
 struct EditorComponentsSet
 {
@@ -83,11 +84,11 @@ void EditorWorld::SetWindowRect(const eg::Rectangle& windowRect)
 		textureCI.mipLevels = 1;
 
 		textureCI.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample;
-		textureCI.format = eg::Format::R8G8B8A8_sRGB;
+		textureCI.format = EDITOR_COLOR_FORMAT;
 		renderTexture = eg::Texture::Create2D(textureCI);
 
 		textureCI.flags = eg::TextureFlags::FramebufferAttachment;
-		textureCI.format = eg::Format::Depth32;
+		textureCI.format = EDITOR_DEPTH_FORMAT;
 		m_renderTextureDepth = eg::Texture::Create2D(textureCI);
 
 		eg::FramebufferAttachment colorAttachment(renderTexture.handle);
@@ -474,8 +475,12 @@ void EditorWorld::Draw(EditorTool currentTool, RenderContext& renderCtx, Prepare
 	spriteRPBeginInfo.framebuffer = m_framebuffer.handle;
 	spriteRPBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Load;
 	m_spriteBatch.UploadAndRender(
-		static_cast<int>(std::round(m_editorState.windowRect.w)),
-		static_cast<int>(std::round(m_editorState.windowRect.h)), spriteRPBeginInfo);
+		eg::SpriteBatch::RenderArgs{
+			.screenWidth = static_cast<int>(std::round(m_editorState.windowRect.w)),
+			.screenHeight = static_cast<int>(std::round(m_editorState.windowRect.h)),
+			.framebufferFormat = EDITOR_FB_FORMAT,
+		},
+		spriteRPBeginInfo);
 
 	renderTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 }

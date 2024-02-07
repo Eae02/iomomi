@@ -3,6 +3,7 @@
 #include "../RenderSettings.hpp"
 #include "MeshDrawArgs.hpp"
 #include "StaticPropMaterial.hpp"
+#include "../../Editor/EditorGraphics.hpp"
 
 static eg::Pipeline gravitySwitchPipelineEditor;
 static eg::Pipeline gravitySwitchPipelineGame;
@@ -26,8 +27,8 @@ static void OnInit()
 
 	pipelineCI.label = "GravSwitchEditor";
 	pipelineCI.cullMode = eg::CullMode::None;
-	pipelineCI.colorAttachmentFormats[0] = eg::Format::DefaultColor;
-	pipelineCI.depthAttachmentFormat = eg::Format::DefaultDepthStencil;
+	pipelineCI.colorAttachmentFormats[0] = EDITOR_COLOR_FORMAT;
+	pipelineCI.depthAttachmentFormat = EDITOR_DEPTH_FORMAT;
 	gravitySwitchPipelineEditor = eg::Pipeline::Create(pipelineCI);
 
 	gravitySwitchDescriptorSet = eg::DescriptorSet(gravitySwitchPipelineGame, 0);

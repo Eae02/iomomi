@@ -4,6 +4,7 @@
 #include "../RenderSettings.hpp"
 #include "../SSR.hpp"
 #include "MeshDrawArgs.hpp"
+#include "../../Editor/EditorGraphics.hpp"
 
 eg::Buffer GravityBarrierMaterial::s_sharedDataBuffer;
 
@@ -51,8 +52,8 @@ void GravityBarrierMaterial::OnInit()
 	pipelineCI.label = "GravityBarrier[Editor]";
 	pipelineCI.fragmentShader =
 		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityBarrier/GBEditor.fs.glsl").DefaultVariant();
-	pipelineCI.colorAttachmentFormats[0] = eg::Format::DefaultColor;
-	pipelineCI.depthAttachmentFormat = eg::Format::DefaultDepthStencil;
+	pipelineCI.colorAttachmentFormats[0] = EDITOR_COLOR_FORMAT;
+	pipelineCI.depthAttachmentFormat = EDITOR_DEPTH_FORMAT;
 	s_pipelineEditor = eg::Pipeline::Create(pipelineCI);
 
 	eg::SpecializationConstantEntry ssrDistSpecConstant;
@@ -71,8 +72,8 @@ void GravityBarrierMaterial::OnInit()
 	ssrPipelineCI.fragmentShader.specConstants = { &ssrDistSpecConstant, 1 };
 	ssrPipelineCI.fragmentShader.specConstantsDataSize = sizeof(float);
 	ssrPipelineCI.fragmentShader.specConstantsData = const_cast<float*>(&SSR::MAX_DISTANCE);
-	ssrPipelineCI.colorAttachmentFormats[0] = ConstexprGetFormatForRenderTexture(RenderTex::SSRTemp1);
-	ssrPipelineCI.depthAttachmentFormat = ConstexprGetFormatForRenderTexture(RenderTex::SSRDepth);
+	ssrPipelineCI.colorAttachmentFormats[0] = GetFormatForRenderTexture(RenderTex::SSRTemp1, true);
+	ssrPipelineCI.depthAttachmentFormat = GetFormatForRenderTexture(RenderTex::SSRDepth, true);
 	s_pipelineSSR = eg::Pipeline::Create(ssrPipelineCI);
 
 	s_sharedDataBuffer =
