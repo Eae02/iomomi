@@ -53,7 +53,7 @@ float sampleEmiMap(vec2 pos)
 	{
 		vec2 oPan = vec2(-EMI_PAN_DIRECTIONS[i].y, EMI_PAN_DIRECTIONS[i].x);
 		vec2 samplePos = vec2(dot(pos, EMI_PAN_DIRECTIONS[i]) + ANIMATION_SPEED * renderSettings.gameTime, dot(pos, oPan));
-		brightness += texture(emissionMap, samplePos * EMI_MAP_SCALE).r;
+		brightness += textureLod(emissionMap, samplePos * EMI_MAP_SCALE, 0).r;
 	}
 	return brightness * intensity / EMI_PAN_DIRECTIONS.length();
 }

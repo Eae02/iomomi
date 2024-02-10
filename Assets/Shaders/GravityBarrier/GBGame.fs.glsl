@@ -8,9 +8,9 @@ layout(location=1) in vec3 worldPos_in;
 
 layout(location=0) out vec4 color_out;
 
-layout(binding=3) uniform sampler2D waterDepth;
-layout(binding=4) uniform sampler2D blurredGlassDepth;
-layout(binding=5) uniform sampler2D waterDistanceTex;
+layout(set=1, binding=0) uniform sampler2D waterDepth;
+layout(set=1, binding=1) uniform sampler2D blurredGlassDepth;
+layout(set=1, binding=2) uniform sampler2D waterDistanceTex;
 
 #define WATER_DEPTH_OFFSET 0.15
 #include "../Water/WaterTransparent.glh"
@@ -24,7 +24,7 @@ void main()
 	}
 	
 	vec2 screenCoord = ivec2(gl_FragCoord.xy) / vec2(textureSize(blurredGlassDepth, 0).xy);
-	if (gl_FragCoord.z < texture(blurredGlassDepth, screenCoord).r)
+	if (gl_FragCoord.z < textureLod(blurredGlassDepth, screenCoord, 0).r)
 		discard;
 	
 	vec2 scaledTC = texCoord_in * vec2(pc.tangent.w, pc.bitangent.w);

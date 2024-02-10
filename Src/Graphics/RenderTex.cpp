@@ -32,7 +32,7 @@ static inline bool RenderTextureHalfResolution(RenderTex texture)
 }
 
 constexpr eg::Format LIGHT_COLOR_FORMAT_LDR = eg::Format::R8G8B8A8_UNorm;
-constexpr eg::Format LIGHT_COLOR_FORMAT_HDR = eg::Format::R16G16B16A16_Float; //eg::Format::R16G16B16A16_Float;
+constexpr eg::Format LIGHT_COLOR_FORMAT_HDR = eg::Format::R16G16B16A16_Float;
 
 eg::Format lightColorAttachmentFormat;
 

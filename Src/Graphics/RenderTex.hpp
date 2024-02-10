@@ -24,7 +24,7 @@ enum class RenderTex
 	Lit
 };
 
-constexpr eg::Format GB_DEPTH_FORMAT = eg::Format::Depth32;
+constexpr eg::Format GB_DEPTH_FORMAT = eg::Format::Depth16;
 constexpr eg::Format GB_COLOR_FORMAT = eg::Format::R8G8B8A8_UNorm;
 
 extern eg::Format lightColorAttachmentFormat;

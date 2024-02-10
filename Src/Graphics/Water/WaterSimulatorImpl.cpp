@@ -549,7 +549,7 @@ void WaterSimulatorImpl::Stage3_Acceleration(SimulateStageArgs args)
 		{
 			uint16_t b = GetCloseParticlesIdxPtr(a)[bI];
 			float dist = GetCloseParticlesDistPtr(a)[bI];
-
+	
 			float sepX = m_particlesPos1.x[a] - m_particlesPos1.x[b];
 			float sepY = m_particlesPos1.y[a] - m_particlesPos1.y[b];
 			float sepZ = m_particlesPos1.z[a] - m_particlesPos1.z[b];

@@ -1,10 +1,10 @@
 #include "GravityBarrierMaterial.hpp"
 
+#include "../../Editor/EditorGraphics.hpp"
 #include "../GraphicsCommon.hpp"
 #include "../RenderSettings.hpp"
 #include "../SSR.hpp"
 #include "MeshDrawArgs.hpp"
-#include "../../Editor/EditorGraphics.hpp"
 
 eg::Buffer GravityBarrierMaterial::s_sharedDataBuffer;
 
@@ -14,6 +14,26 @@ eg::Pipeline GravityBarrierMaterial::s_pipelineGameFinal;
 eg::Pipeline GravityBarrierMaterial::s_pipelineEditor;
 
 eg::Pipeline GravityBarrierMaterial::s_pipelineSSR;
+
+static eg::DescriptorSetBinding descriptorSet0Bindings[] = {
+	eg::DescriptorSetBinding{
+		.binding = 0,
+		.type = eg::BindingType::UniformBuffer,
+		.shaderAccess = eg::ShaderAccessFlags::Vertex,
+	},
+	eg::DescriptorSetBinding{
+		.binding = 1,
+		.type = eg::BindingType::Texture,
+		.shaderAccess = eg::ShaderAccessFlags::Fragment,
+	},
+	eg::DescriptorSetBinding{
+		.binding = 2,
+		.type = eg::BindingType::UniformBuffer,
+		.shaderAccess = eg::ShaderAccessFlags::Fragment,
+	},
+};
+
+static eg::DescriptorSet gravityBarrierSet0;
 
 void GravityBarrierMaterial::OnInit()
 {
@@ -31,6 +51,7 @@ void GravityBarrierMaterial::OnInit()
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::UInt8Norm, 2, 0 };
 	pipelineCI.topology = eg::Topology::TriangleStrip;
 	pipelineCI.cullMode = eg::CullMode::None;
+	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.depthCompare = eg::CompareOp::Less;
@@ -67,6 +88,7 @@ void GravityBarrierMaterial::OnInit()
 		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityBarrier/GBSSR.fs.glsl").DefaultVariant();
 	ssrPipelineCI.enableDepthTest = true;
 	ssrPipelineCI.enableDepthWrite = true;
+	ssrPipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	ssrPipelineCI.depthCompare = eg::CompareOp::Less;
 	ssrPipelineCI.label = "GravityBarrier[SSR]";
 	ssrPipelineCI.fragmentShader.specConstants = { &ssrDistSpecConstant, 1 };
@@ -78,6 +100,11 @@ void GravityBarrierMaterial::OnInit()
 
 	s_sharedDataBuffer =
 		eg::Buffer(eg::BufferFlags::Update | eg::BufferFlags::UniformBuffer, sizeof(BarrierBufferData), nullptr);
+
+	gravityBarrierSet0 = eg::DescriptorSet(descriptorSet0Bindings);
+	gravityBarrierSet0.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+	gravityBarrierSet0.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 1, &linearRepeatSampler);
+	gravityBarrierSet0.BindUniformBuffer(s_sharedDataBuffer, 2, 0, sizeof(BarrierBufferData));
 }
 
 void GravityBarrierMaterial::OnShutdown()
@@ -87,6 +114,7 @@ void GravityBarrierMaterial::OnShutdown()
 	s_pipelineEditor.Destroy();
 	s_pipelineSSR.Destroy();
 	s_sharedDataBuffer.Destroy();
+	gravityBarrierSet0.Destroy();
 }
 
 EG_ON_INIT(GravityBarrierMaterial::OnInit)
@@ -110,50 +138,42 @@ bool GravityBarrierMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* draw
 	if (mDrawArgs->drawMode == MeshDrawMode::TransparentBeforeWater)
 	{
 		cmdCtx.BindPipeline(s_pipelineGameBeforeWater);
-		cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
-		cmdCtx.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 0, 1, &linearRepeatSampler);
-		cmdCtx.BindUniformBuffer(s_sharedDataBuffer, 0, 2, 0, sizeof(BarrierBufferData));
-		cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 0, 3, &framebufferNearestSampler);
-		cmdCtx.BindTexture(blackPixelTexture, 0, 4, &framebufferNearestSampler);
+		cmdCtx.BindDescriptorSet(gravityBarrierSet0, 0);
+		cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 1, 0, &framebufferNearestSampler);
+		cmdCtx.BindTexture(blackPixelTexture, 1, 1, &framebufferNearestSampler);
 		return true;
 	}
 	if (mDrawArgs->drawMode == MeshDrawMode::TransparentBeforeBlur)
 	{
 		cmdCtx.BindPipeline(s_pipelineGameFinal);
-		cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
-		cmdCtx.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 0, 1, &linearRepeatSampler);
-		cmdCtx.BindUniformBuffer(s_sharedDataBuffer, 0, 2, 0, sizeof(BarrierBufferData));
-		cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 0, 3, &framebufferNearestSampler);
-		cmdCtx.BindTexture(mDrawArgs->rtManager->GetRenderTexture(RenderTex::BlurredGlassDepth), 0, 4, &framebufferNearestSampler);
+		cmdCtx.BindDescriptorSet(gravityBarrierSet0, 0);
+		cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 1, 0, &framebufferNearestSampler);
+		cmdCtx.BindTexture(
+			mDrawArgs->rtManager->GetRenderTexture(RenderTex::BlurredGlassDepth), 1, 1, &framebufferNearestSampler);
 		return true;
 	}
 	else if (mDrawArgs->drawMode == MeshDrawMode::TransparentFinal)
 	{
 		cmdCtx.BindPipeline(s_pipelineGameFinal);
-		cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
-		cmdCtx.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 0, 1, &linearRepeatSampler);
-		cmdCtx.BindUniformBuffer(s_sharedDataBuffer, 0, 2, 0, sizeof(BarrierBufferData));
-		cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 0, 3, &framebufferNearestSampler);
-		cmdCtx.BindTexture(blackPixelTexture, 0, 4, &framebufferNearestSampler);
+		cmdCtx.BindDescriptorSet(gravityBarrierSet0, 0);
+		cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 1, 0, &framebufferNearestSampler);
+		cmdCtx.BindTexture(blackPixelTexture, 1, 1, &framebufferNearestSampler);
 		return true;
 	}
 	else if (mDrawArgs->drawMode == MeshDrawMode::Editor)
 	{
 		cmdCtx.BindPipeline(s_pipelineEditor);
-		cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
-		cmdCtx.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 0, 1, &linearRepeatSampler);
+		cmdCtx.BindDescriptorSet(gravityBarrierSet0, 0);
 		return true;
 	}
 	else if (mDrawArgs->drawMode == MeshDrawMode::AdditionalSSR)
 	{
 		cmdCtx.BindPipeline(s_pipelineSSR);
-		cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
-		cmdCtx.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 0, 1, &linearRepeatSampler);
-		cmdCtx.BindUniformBuffer(s_sharedDataBuffer, 0, 2, 0, sizeof(BarrierBufferData));
+		cmdCtx.BindDescriptorSet(gravityBarrierSet0, 0);
 		cmdCtx.BindTexture(
-			mDrawArgs->rtManager->GetRenderTexture(RenderTex::GBColor2), 0, 3, &framebufferNearestSampler);
+			mDrawArgs->rtManager->GetRenderTexture(RenderTex::GBColor2), 1, 0, &framebufferNearestSampler);
 		cmdCtx.BindTexture(
-			mDrawArgs->rtManager->GetRenderTexture(RenderTex::GBDepth), 0, 4, &framebufferNearestSampler);
+			mDrawArgs->rtManager->GetRenderTexture(RenderTex::GBDepth), 1, 1, &framebufferNearestSampler);
 		return true;
 	}
 
@@ -198,7 +218,7 @@ bool GravityBarrierMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* draw
 	if (drawMode != MeshDrawMode::Editor)
 	{
 		eg::TextureRef tex = waterDistanceTexture.handle ? waterDistanceTexture : eg::TextureRef(whitePixelTexture);
-		eg::DC.BindTexture(tex, 0, 5, &framebufferLinearSampler);
+		eg::DC.BindTexture(tex, 1, 2, &framebufferLinearSampler);
 	}
 
 	return true;
