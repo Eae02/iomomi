@@ -42,7 +42,7 @@ void RegisterVertexFormats();
 
 void InitPipelineVertexStateSoaPXNT(eg::GraphicsPipelineCreateInfo& pipelineCI);
 
-void SetVertexStreamOffsetsSoaPXNT(std::span<std::optional<uint64_t>> streamOffsets, size_t numVertices);
+void SetVertexStreamOffsetsSoaPXNT(std::span<std::optional<uint32_t>> streamOffsets, uint32_t numVertices);
 
 extern const eg::IMaterial::VertexInputConfiguration VertexInputConfig_SoaPXNTI;
 extern const eg::IMaterial::VertexInputConfiguration VertexInputConfig_SoaPXNT;

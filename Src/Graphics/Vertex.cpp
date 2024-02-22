@@ -78,7 +78,7 @@ void InitPipelineVertexStateSoaPXNT(eg::GraphicsPipelineCreateInfo& pipelineCI)
 	pipelineCI.vertexAttributes[3] = { VERTEX_BINDING_NORMAL_TANGENT, eg::DataType::SInt8Norm, 3, 4 };
 }
 
-void SetVertexStreamOffsetsSoaPXNT(std::span<std::optional<uint64_t>> streamOffsets, size_t numVertices)
+void SetVertexStreamOffsetsSoaPXNT(std::span<std::optional<uint32_t>> streamOffsets, uint32_t numVertices)
 {
 	streamOffsets[VERTEX_BINDING_POSITION] = 0;
 	streamOffsets[VERTEX_BINDING_TEXCOORD] = VERTEX_STRIDE_POSITION * numVertices;

@@ -19,7 +19,7 @@ static eg::DescriptorSetBinding descriptorSet0Bindings[] = {
 	eg::DescriptorSetBinding{
 		.binding = 0,
 		.type = eg::BindingType::UniformBuffer,
-		.shaderAccess = eg::ShaderAccessFlags::Vertex,
+		.shaderAccess = eg::ShaderAccessFlags::Vertex | eg::ShaderAccessFlags::Fragment,
 	},
 	eg::DescriptorSetBinding{
 		.binding = 1,
@@ -52,6 +52,7 @@ void GravityBarrierMaterial::OnInit()
 	pipelineCI.topology = eg::Topology::TriangleStrip;
 	pipelineCI.cullMode = eg::CullMode::None;
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
+	pipelineCI.descriptorSetBindings[0] = descriptorSet0Bindings;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.depthCompare = eg::CompareOp::Less;
@@ -89,6 +90,7 @@ void GravityBarrierMaterial::OnInit()
 	ssrPipelineCI.enableDepthTest = true;
 	ssrPipelineCI.enableDepthWrite = true;
 	ssrPipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
+	ssrPipelineCI.descriptorSetBindings[0] = descriptorSet0Bindings;
 	ssrPipelineCI.depthCompare = eg::CompareOp::Less;
 	ssrPipelineCI.label = "GravityBarrier[SSR]";
 	ssrPipelineCI.fragmentShader.specConstants = { &ssrDistSpecConstant, 1 };

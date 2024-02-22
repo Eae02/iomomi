@@ -65,20 +65,24 @@ endif()
 
 target_link_libraries(iomomi EGame)
 
+set(BIN_DIR_PATH ${CMAKE_CURRENT_SOURCE_DIR}/Bin/${CMAKE_BUILD_TYPE}-${CMAKE_SYSTEM_NAME})
+
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 	set_target_properties(iomomi PROPERTIES
 		CXX_VISIBILITY_PRESET hidden
 		INSTALL_RPATH "$ORIGIN/rt"
 		BUILD_WITH_INSTALL_RPATH TRUE)
-	set_target_properties(EGame EGameAssetGen PROPERTIES
-		LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Bin/${CMAKE_BUILD_TYPE}-${CMAKE_SYSTEM_NAME}/rt
-	)
+	
+	set_target_properties(EGame PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${BIN_DIR_PATH}/rt)
+	if (EG_BUILD_ASSETGEN)
+		set_target_properties(EGameAssetGen PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${BIN_DIR_PATH}/rt)
+	endif()
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
 	target_link_options(iomomi PRIVATE "-Wl,-subsystem,windows")
 endif()
 
 set_target_properties(iomomi PROPERTIES
-	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Bin/${CMAKE_BUILD_TYPE}-${CMAKE_SYSTEM_NAME}
+	RUNTIME_OUTPUT_DIRECTORY ${BIN_DIR_PATH}
 	OUTPUT_NAME "iomomi"
 	LINKER_LANGUAGE CXX
 	CXX_STANDARD 20

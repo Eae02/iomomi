@@ -82,7 +82,7 @@ static void Run(int argc, char** argv)
 	runConfig.gameName = "Iomomi";
 	runConfig.flags |= eg::RunFlags::DefaultFramebufferSRGB;
 	runConfig.defaultDepthStencilFormat = eg::Format::Depth32;
-	runConfig.framerateCap = 200;
+	runConfig.framerateCap = 500;
 	runConfig.minWindowW = 1000;
 	runConfig.minWindowH = 700;
 	runConfig.initialize = [&]
