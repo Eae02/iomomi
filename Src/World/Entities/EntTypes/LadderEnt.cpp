@@ -34,7 +34,7 @@ static void OnInit()
 			meshComponents[i] = LadderComponent::Bottom;
 		else
 			EG_PANIC("Unknown mesh prefix")
-		ladderCollisionMeshes.emplace_back(ladderModel->MakeCollisionMesh(i));
+		ladderCollisionMeshes.emplace_back(ladderModel->MakeCollisionMesh(i).value());
 	}
 
 	laddderMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Ladder.yaml");

@@ -56,6 +56,7 @@ static void Run(int argc, char** argv)
 	runConfig.flags |= eg::RunFlags::DevMode;
 #endif
 
+	RegisterVertexFormats();
 	LoadSettings();
 	eg::TextureAssetQuality = settings.textureQuality;
 	SetLightColorAttachmentFormat(settings.highDynamicRange);

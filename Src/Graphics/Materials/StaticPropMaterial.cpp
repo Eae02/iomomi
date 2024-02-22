@@ -1,5 +1,5 @@
-#include "../../Editor/EditorGraphics.hpp"
 #include "StaticPropMaterial.hpp"
+#include "../../Editor/EditorGraphics.hpp"
 
 #include <fstream>
 #include <magic_enum/magic_enum.hpp>
@@ -27,20 +27,44 @@ void StaticPropMaterial::InitializeForCommon3DVS(eg::GraphicsPipelineCreateInfo&
 {
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Common3D.vs.glsl").DefaultVariant();
 
-	pipelineCI.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
-	pipelineCI.vertexBindings[1] = { sizeof(StaticPropMaterial::InstanceData), eg::InputRate::Instance };
-	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(eg::StdVertex, position) };
-	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::Float32, 2, offsetof(eg::StdVertex, texCoord) };
-	pipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, offsetof(eg::StdVertex, normal) };
-	pipelineCI.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 3, offsetof(eg::StdVertex, tangent) };
-	pipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 4,
-		                               offsetof(StaticPropMaterial::InstanceData, transform) + 0 };
-	pipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 4,
-		                               offsetof(StaticPropMaterial::InstanceData, transform) + 16 };
-	pipelineCI.vertexAttributes[6] = { 1, eg::DataType::Float32, 4,
-		                               offsetof(StaticPropMaterial::InstanceData, transform) + 32 };
-	pipelineCI.vertexAttributes[7] = { 1, eg::DataType::Float32, 4,
-		                               offsetof(StaticPropMaterial::InstanceData, textureRange) };
+	InitPipelineVertexStateSoaPXNT(pipelineCI);
+
+	constexpr uint32_t FIRST_INSTANCE_DATA_ATTRIBUTE = 4;
+	InitializeInstanceDataVertexInput(pipelineCI, FIRST_INSTANCE_DATA_ATTRIBUTE);
+}
+
+void StaticPropMaterial::InitializeInstanceDataVertexInput(
+	eg::GraphicsPipelineCreateInfo& pipelineCI, uint32_t firstAttribute)
+{
+	pipelineCI.vertexBindings[VERTEX_BINDING_INSTANCE_DATA] = {
+		sizeof(StaticPropMaterial::InstanceData),
+		eg::InputRate::Instance,
+	};
+
+	pipelineCI.vertexAttributes[firstAttribute] = {
+		VERTEX_BINDING_INSTANCE_DATA,
+		eg::DataType::Float32,
+		4,
+		offsetof(StaticPropMaterial::InstanceData, transform) + 0,
+	};
+	pipelineCI.vertexAttributes[firstAttribute + 1] = {
+		VERTEX_BINDING_INSTANCE_DATA,
+		eg::DataType::Float32,
+		4,
+		offsetof(StaticPropMaterial::InstanceData, transform) + 16,
+	};
+	pipelineCI.vertexAttributes[firstAttribute + 2] = {
+		VERTEX_BINDING_INSTANCE_DATA,
+		eg::DataType::Float32,
+		4,
+		offsetof(StaticPropMaterial::InstanceData, transform) + 32,
+	};
+	pipelineCI.vertexAttributes[firstAttribute + 3] = {
+		VERTEX_BINDING_INSTANCE_DATA,
+		eg::DataType::Float32,
+		4,
+		offsetof(StaticPropMaterial::InstanceData, textureRange),
+	};
 }
 
 void StaticPropMaterial::LazyInitGlobals()
@@ -91,35 +115,32 @@ void StaticPropMaterial::LazyInitGlobals()
 	pipelineCI.depthAttachmentFormat = EDITOR_DEPTH_FORMAT;
 	InitializeVariants("VEditor", staticPropMaterialGlobals.pipelineEditor);
 
+	const eg::ShaderModuleAsset& plsvs = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Common3D-PLShadow.vs.glsl");
 	const eg::ShaderModuleAsset& plsfs = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLightShadow.fs.glsl");
 
 	eg::GraphicsPipelineCreateInfo plsPipelineCI;
-	plsPipelineCI.vertexShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Common3D-PLShadow.vs.glsl").DefaultVariant();
 
 	plsPipelineCI.enableDepthWrite = true;
 	plsPipelineCI.enableDepthTest = true;
 	plsPipelineCI.frontFaceCCW = PointLightShadowMapper::FlippedLightMatrix();
 	plsPipelineCI.numColorAttachments = 0;
 	plsPipelineCI.depthAttachmentFormat = PointLightShadowMapper::SHADOW_MAP_FORMAT;
-
-	plsPipelineCI.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
-	plsPipelineCI.vertexBindings[1] = { sizeof(StaticPropMaterial::InstanceData), eg::InputRate::Instance };
-	plsPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(eg::StdVertex, position) };
-	plsPipelineCI.vertexAttributes[1] = { 0, eg::DataType::Float32, 2, offsetof(eg::StdVertex, texCoord) };
-	plsPipelineCI.vertexAttributes[2] = { 1, eg::DataType::Float32, 4,
-		                                  offsetof(StaticPropMaterial::InstanceData, transform) + 0 };
-	plsPipelineCI.vertexAttributes[3] = { 1, eg::DataType::Float32, 4,
-		                                  offsetof(StaticPropMaterial::InstanceData, transform) + 16 };
-	plsPipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 4,
-		                                  offsetof(StaticPropMaterial::InstanceData, transform) + 32 };
-	plsPipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 4,
-		                                  offsetof(StaticPropMaterial::InstanceData, textureRange) };
 	plsPipelineCI.cullMode = std::nullopt;
+	plsPipelineCI.vertexBindings[VERTEX_BINDING_POSITION] = { VERTEX_STRIDE_POSITION, eg::InputRate::Vertex };
+	plsPipelineCI.vertexAttributes[0] = { VERTEX_BINDING_POSITION, eg::DataType::Float32, 3, 0 };
+	constexpr uint32_t PLS_FIRST_INSTANCE_DATA_ATTRIBUTE = 2;
+	InitializeInstanceDataVertexInput(plsPipelineCI, PLS_FIRST_INSTANCE_DATA_ATTRIBUTE);
 	for (int alphaTest = 0; alphaTest < 2; alphaTest++)
 	{
+		if (alphaTest)
+		{
+			plsPipelineCI.vertexBindings[VERTEX_BINDING_TEXCOORD] = { VERTEX_STRIDE_TEXCOORD, eg::InputRate::Vertex };
+			plsPipelineCI.vertexAttributes[1] = { VERTEX_BINDING_TEXCOORD, eg::DataType::Float32, 2, 0 };
+		}
+
 		std::string_view variantName = alphaTest ? "VAlphaTest" : "VNoAlphaTest";
 		std::string label = eg::Concat({ "StaticPropPLS:", variantName });
+		plsPipelineCI.vertexShader = plsvs.GetVariant(variantName);
 		plsPipelineCI.fragmentShader = plsfs.GetVariant(variantName);
 		plsPipelineCI.label = label.c_str();
 		staticPropMaterialGlobals.pipelinePLShadow[alphaTest] = eg::Pipeline::Create(plsPipelineCI);
@@ -211,6 +232,27 @@ bool StaticPropMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs
 	}
 
 	return true;
+}
+
+eg::IMaterial::VertexInputConfiguration StaticPropMaterial::GetVertexInputConfiguration(const void* drawArgs) const
+{
+	return GetVertexInputConfiguration(m_alphaTest, reinterpret_cast<const MeshDrawArgs*>(drawArgs)->drawMode);
+}
+
+eg::IMaterial::VertexInputConfiguration StaticPropMaterial::GetVertexInputConfiguration(
+	bool alphaTest, MeshDrawMode drawMode)
+{
+	if (drawMode == MeshDrawMode::PointLightShadow)
+	{
+		return VertexInputConfiguration{
+			.vertexBindingsMask = alphaTest ? 0b11u : 0b1u, // enable texture coordinate only if using alpha testing
+			.instanceDataBindingIndex = VERTEX_BINDING_INSTANCE_DATA,
+		};
+	}
+	else
+	{
+		return VertexInputConfig_SoaPXNTI;
+	}
 }
 
 bool StaticPropMaterial::CheckInstanceDataType(const std::type_info* instanceDataType) const

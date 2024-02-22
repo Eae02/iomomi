@@ -165,17 +165,22 @@ void LiquidPlaneComp::GenerateMesh()
 	m_vertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
 	m_indexBuffer.UsageHint(eg::BufferUsage::IndexBuffer);
 
+	if (m_meshBuffersDescriptor == nullptr)
+	{
+		m_meshBuffersDescriptor = std::make_unique<eg::MeshBuffersDescriptor>();
+		m_meshBuffersDescriptor->vertexStreamOffsets[0] = 0;
+		m_meshBuffersDescriptor->indexType = eg::IndexType::UInt16;
+	}
+	m_meshBuffersDescriptor->vertexBuffer = m_vertexBuffer;
+	m_meshBuffersDescriptor->indexBuffer = m_indexBuffer;
+
 	m_numIndices = eg::UnsignedNarrow<uint32_t>(indices.size());
 }
 
 eg::MeshBatch::Mesh LiquidPlaneComp::GetMesh() const
 {
-	eg::MeshBatch::Mesh mesh;
-	mesh.vertexBuffer = m_vertexBuffer;
-	mesh.indexBuffer = m_indexBuffer;
-	mesh.firstIndex = 0;
-	mesh.firstVertex = 0;
-	mesh.indexType = eg::IndexType::UInt16;
-	mesh.numElements = m_numIndices;
-	return mesh;
+	return {
+		.buffersDescriptor = m_meshBuffersDescriptor.get(),
+		.numElements = m_numIndices,
+	};
 }

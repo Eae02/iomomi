@@ -14,6 +14,8 @@ struct GravitySwitchVolLightMaterial : public eg::IMaterial
 
 	static void SetQuality(QualityLevel qualityLevel);
 
+	VertexInputConfiguration GetVertexInputConfiguration(const void* drawArgs) const override;
+
 	static eg::MeshBatch::Mesh GetMesh();
 
 	glm::vec3 switchPosition;

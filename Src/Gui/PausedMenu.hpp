@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Widgets/WidgetList.hpp"
 #include "GuiCommon.hpp"
+#include "Widgets/WidgetList.hpp"
 
 class PausedMenu
 {
@@ -18,7 +18,7 @@ public:
 
 private:
 	GuiFrameArgs m_currentFrameArgs;
-	
+
 	eg::SpriteBatch m_spriteBatch;
 
 	int m_buttonKeyboardFocus = -1;

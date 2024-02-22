@@ -124,8 +124,7 @@ static void OnInit()
 	{
 		int index = colModel.GetMeshIndex(meshName);
 		EG_ASSERT(index != -1);
-		auto meshData = colModel.GetMeshData<eg::StdVertex, uint32_t>(index);
-		return eg::CollisionMesh::Create(meshData.vertices, meshData.indices);
+		return colModel.MakeCollisionMesh(index).value();
 	};
 	entrance.door1CollisionMesh = MakeCollisionMesh("Door1C");
 	entrance.door2CollisionMesh = MakeCollisionMesh("Door2C");
@@ -343,27 +342,29 @@ void EntranceExitEnt::GameDraw(const EntGameDrawArgs& args)
 		if (!args.frustum->Intersects(aabb))
 			continue;
 
-		int materialIndex = entrance.model->GetMesh(i).materialIndex;
-		if (materialIndex == entrance.floorLightMaterialIdx)
+		if (auto materialIndex = entrance.model->GetMesh(i).materialIndex)
 		{
-			args.meshBatch->AddModelMesh(
-				*entrance.model, i, EmissiveMaterial::instance,
-				EmissiveMaterial::InstanceData{ transforms[i], FloorLightColorV });
-		}
-		else if (materialIndex == entrance.ceilLightMaterialIdx)
-		{
-			args.meshBatch->AddModelMesh(
-				*entrance.model, i, EmissiveMaterial::instance,
-				EmissiveMaterial::InstanceData{ transforms[i], CeilLightColorV });
-		}
-		else
-		{
-			const eg::IMaterial* mat = entrance.materials[materialIndex];
-			if (materialIndex == entrance.screenMaterialIdx)
-				mat = &m_screenMaterial;
+			if (materialIndex == entrance.floorLightMaterialIdx)
+			{
+				args.meshBatch->AddModelMesh(
+					*entrance.model, i, EmissiveMaterial::instance,
+					EmissiveMaterial::InstanceData{ transforms[i], FloorLightColorV });
+			}
+			else if (materialIndex == entrance.ceilLightMaterialIdx)
+			{
+				args.meshBatch->AddModelMesh(
+					*entrance.model, i, EmissiveMaterial::instance,
+					EmissiveMaterial::InstanceData{ transforms[i], CeilLightColorV });
+			}
+			else
+			{
+				const eg::IMaterial* mat = entrance.materials[*materialIndex];
+				if (materialIndex == entrance.screenMaterialIdx)
+					mat = &m_screenMaterial;
 
-			StaticPropMaterial::InstanceData instanceData(transforms[i]);
-			args.meshBatch->AddModelMesh(*entrance.model, i, *mat, instanceData);
+				StaticPropMaterial::InstanceData instanceData(transforms[i]);
+				args.meshBatch->AddModelMesh(*entrance.model, i, *mat, instanceData);
+			}
 		}
 	}
 

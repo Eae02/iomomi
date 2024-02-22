@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../Vertex.hpp"
 #include "StaticPropMaterial.hpp"
 
 enum class PumpDirection
@@ -23,6 +24,8 @@ public:
 	bool BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const override;
 
 	void Update(float dt, PumpDirection direction);
+
+	VertexInputConfiguration GetVertexInputConfiguration(const void* drawArgs) const override;
 
 	static const eg::ColorLin backgroundColor;
 	static const eg::ColorLin color;

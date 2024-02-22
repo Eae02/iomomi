@@ -139,7 +139,7 @@ bool PumpScreenMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs
 {
 	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
 
-	if (mDrawArgs->drawMode != MeshDrawMode::Emissive) //TODO: Editor
+	if (mDrawArgs->drawMode != MeshDrawMode::Emissive) // TODO: Editor
 		return false;
 
 	cmdCtx.BindPipeline(pipelineGame);
@@ -152,4 +152,9 @@ bool PumpScreenMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs
 	cmdCtx.BindDescriptorSet(m_descriptorSet, 0);
 
 	return true;
+}
+
+eg::IMaterial::VertexInputConfiguration PumpScreenMaterial::GetVertexInputConfiguration(const void* drawArgs) const
+{
+	return VertexInputConfig_SoaPXNTI;
 }

@@ -1,8 +1,9 @@
 #include "EmissiveMaterial.hpp"
 
-#include "../RenderSettings.hpp"
-#include "MeshDrawArgs.hpp"
 #include "../../Editor/EditorGraphics.hpp"
+#include "../RenderSettings.hpp"
+#include "../Vertex.hpp"
+#include "MeshDrawArgs.hpp"
 
 static eg::Pipeline emissiveGeometryPipeline;
 static eg::Pipeline emissivePipelineGame;
@@ -10,6 +11,7 @@ static eg::Pipeline emissivePipelineEditor;
 
 static void OnInit()
 {
+	// clang-format off
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Emissive.vs.glsl").DefaultVariant();
 	pipelineCI.enableDepthWrite = true;
@@ -17,14 +19,15 @@ static void OnInit()
 	pipelineCI.depthCompare = eg::CompareOp::LessOrEqual;
 	pipelineCI.cullMode = eg::CullMode::None;
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
-	pipelineCI.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
-	pipelineCI.vertexBindings[1] = { sizeof(EmissiveMaterial::InstanceData), eg::InputRate::Instance };
-	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(eg::StdVertex, position) };
-	pipelineCI.vertexAttributes[1] = { 1, eg::DataType::Float32, 4, 0 * sizeof(float) * 4 };
-	pipelineCI.vertexAttributes[2] = { 1, eg::DataType::Float32, 4, 1 * sizeof(float) * 4 };
-	pipelineCI.vertexAttributes[3] = { 1, eg::DataType::Float32, 4, 2 * sizeof(float) * 4 };
-	pipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
-	pipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 4, 4 * sizeof(float) * 4 };
+	pipelineCI.vertexBindings[VERTEX_BINDING_POSITION] = { VERTEX_STRIDE_POSITION, eg::InputRate::Vertex };
+	pipelineCI.vertexBindings[EmissiveMaterial::INSTANCE_DATA_BINDING] = { sizeof(EmissiveMaterial::InstanceData), eg::InputRate::Instance };
+	pipelineCI.vertexAttributes[0] = { VERTEX_BINDING_POSITION, eg::DataType::Float32, 3, 0 };
+	pipelineCI.vertexAttributes[1] = { EmissiveMaterial::INSTANCE_DATA_BINDING, eg::DataType::Float32, 4, 0 * sizeof(float) * 4 };
+	pipelineCI.vertexAttributes[2] = { EmissiveMaterial::INSTANCE_DATA_BINDING, eg::DataType::Float32, 4, 1 * sizeof(float) * 4 };
+	pipelineCI.vertexAttributes[3] = { EmissiveMaterial::INSTANCE_DATA_BINDING, eg::DataType::Float32, 4, 2 * sizeof(float) * 4 };
+	pipelineCI.vertexAttributes[4] = { EmissiveMaterial::INSTANCE_DATA_BINDING, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
+	pipelineCI.vertexAttributes[5] = { EmissiveMaterial::INSTANCE_DATA_BINDING, eg::DataType::Float32, 4, 4 * sizeof(float) * 4 };
+	// clang-format on
 
 	pipelineCI.label = "EmissiveGeometry";
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/EmissiveGeom.fs.glsl").DefaultVariant();
@@ -97,4 +100,12 @@ bool EmissiveMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) 
 bool EmissiveMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
 	return true;
+}
+
+eg::IMaterial::VertexInputConfiguration EmissiveMaterial::GetVertexInputConfiguration(const void* drawArgs) const
+{
+	return VertexInputConfiguration{
+		.vertexBindingsMask = 0b1,
+		.instanceDataBindingIndex = INSTANCE_DATA_BINDING,
+	};
 }

@@ -195,7 +195,8 @@ void SSR::Render(const SSRRenderArgs& renderArgs)
 	pc.blurDirY = blurDistance * (float)renderArgs.rtManager->ResY() / (float)renderArgs.rtManager->ResX();
 	eg::DC.PushConstants(0, sizeof(pc), &pc);
 	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::SSRTemp2), 0, 0, &framebufferLinearSampler);
-	eg::DC.BindTexture(renderArgs.rtManager->GetRenderTexture(RenderTex::LitWithoutSSR), 0, 1, &framebufferNearestSampler);
+	eg::DC.BindTexture(
+		renderArgs.rtManager->GetRenderTexture(RenderTex::LitWithoutSSR), 0, 1, &framebufferNearestSampler);
 	eg::DC.Draw(0, 3, 0, 1);
 	eg::DC.EndRenderPass();
 	renderArgs.rtManager->RenderTextureUsageHintFS(renderArgs.destinationTexture);

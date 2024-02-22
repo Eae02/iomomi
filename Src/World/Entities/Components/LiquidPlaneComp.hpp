@@ -50,4 +50,5 @@ private:
 	uint32_t m_numIndices = 0;
 	eg::Buffer m_vertexBuffer;
 	eg::Buffer m_indexBuffer;
+	std::unique_ptr<eg::MeshBuffersDescriptor> m_meshBuffersDescriptor;
 };

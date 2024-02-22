@@ -1,6 +1,7 @@
 #include "GravityIndicatorMaterial.hpp"
 
 #include "../RenderSettings.hpp"
+#include "../Vertex.hpp"
 #include "MeshDrawArgs.hpp"
 
 static eg::Pipeline pipeline;
@@ -18,18 +19,21 @@ static void OnInit()
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.depthCompare = eg::CompareOp::LessOrEqual;
 	pipelineCI.cullMode = eg::CullMode::Back;
-	pipelineCI.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
-	pipelineCI.vertexBindings[1] = { sizeof(GravityIndicatorMaterial::InstanceData), eg::InputRate::Instance };
-	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(eg::StdVertex, position) };
-	pipelineCI.vertexAttributes[1] = { 1, eg::DataType::Float32, 4,
+	pipelineCI.vertexBindings[VERTEX_BINDING_POSITION] = { VERTEX_STRIDE_POSITION, eg::InputRate::Vertex };
+	pipelineCI.vertexBindings[GravityIndicatorMaterial::INSTANCE_DATA_BINDING] = {
+		sizeof(GravityIndicatorMaterial::InstanceData),
+		eg::InputRate::Instance,
+	};
+	pipelineCI.vertexAttributes[0] = { VERTEX_BINDING_POSITION, eg::DataType::Float32, 3, 0 };
+	pipelineCI.vertexAttributes[1] = { GravityIndicatorMaterial::INSTANCE_DATA_BINDING, eg::DataType::Float32, 4,
 		                               offsetof(GravityIndicatorMaterial::InstanceData, transform) + 0 };
-	pipelineCI.vertexAttributes[2] = { 1, eg::DataType::Float32, 4,
+	pipelineCI.vertexAttributes[2] = { GravityIndicatorMaterial::INSTANCE_DATA_BINDING, eg::DataType::Float32, 4,
 		                               offsetof(GravityIndicatorMaterial::InstanceData, transform) + 16 };
-	pipelineCI.vertexAttributes[3] = { 1, eg::DataType::Float32, 4,
+	pipelineCI.vertexAttributes[3] = { GravityIndicatorMaterial::INSTANCE_DATA_BINDING, eg::DataType::Float32, 4,
 		                               offsetof(GravityIndicatorMaterial::InstanceData, transform) + 32 };
-	pipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 3,
+	pipelineCI.vertexAttributes[4] = { GravityIndicatorMaterial::INSTANCE_DATA_BINDING, eg::DataType::Float32, 3,
 		                               offsetof(GravityIndicatorMaterial::InstanceData, down) };
-	pipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 2,
+	pipelineCI.vertexAttributes[5] = { GravityIndicatorMaterial::INSTANCE_DATA_BINDING, eg::DataType::Float32, 2,
 		                               offsetof(GravityIndicatorMaterial::InstanceData, minIntensity) };
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.numColorAttachments = 1;
@@ -82,4 +86,12 @@ eg::IMaterial::OrderRequirement GravityIndicatorMaterial::GetOrderRequirement() 
 bool GravityIndicatorMaterial::CheckInstanceDataType(const std::type_info* instanceDataType) const
 {
 	return instanceDataType == &typeid(InstanceData);
+}
+
+eg::IMaterial::VertexInputConfiguration GravityIndicatorMaterial::GetVertexInputConfiguration(const void*) const
+{
+	return VertexInputConfiguration{
+		.vertexBindingsMask = 0b1,
+		.instanceDataBindingIndex = INSTANCE_DATA_BINDING,
+	};
 }

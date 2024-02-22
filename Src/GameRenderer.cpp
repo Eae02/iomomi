@@ -80,8 +80,8 @@ static int* physicsDebug = eg::TweakVarInt("phys_dbg_draw", 0, 0, 1);
 static int* bloomLevels = eg::TweakVarInt("bloom_levels", 3, 0, 10);
 
 void GameRenderer::Render(
-	World& world, float gameTime, float dt, eg::FramebufferHandle outputFramebuffer, eg::Format outputFormat, uint32_t outputResX,
-	uint32_t outputResY)
+	World& world, float gameTime, float dt, eg::FramebufferHandle outputFramebuffer, eg::Format outputFormat,
+	uint32_t outputResX, uint32_t outputResY)
 {
 	m_projection.SetResolution(static_cast<float>(outputResX), static_cast<float>(outputResY));
 	m_rtManager.BeginFrame(outputResX, outputResY);
@@ -164,10 +164,6 @@ void GameRenderer::Render(
 	prepareDrawArgs.player = m_player;
 	prepareDrawArgs.frustum = &m_frustum;
 	world.PrepareForDraw(prepareDrawArgs);
-	if (world.playerHasGravityGun && m_gravityGun != nullptr)
-	{
-		m_gravityGun->Draw(m_renderCtx->meshBatch, m_renderCtx->transparentMeshBatch);
-	}
 
 	m_renderCtx->transparentMeshBatch.End(eg::DC);
 	m_renderCtx->meshBatch.End(eg::DC);
@@ -451,13 +447,16 @@ void GameRenderer::Render(
 		eg::DC.EndRenderPass();
 	}
 
-	// TODO: Move gun rendering here
-
 	if (*physicsDebug && m_physicsDebugRenderer && m_physicsEngine)
 	{
 		m_physicsDebugRenderer->Render(
 			*m_physicsEngine, m_viewProjMatrix, m_rtManager.GetRenderTexture(RenderTex::Lit),
 			m_rtManager.GetRenderTexture(RenderTex::GBDepth));
+	}
+
+	if (world.playerHasGravityGun && m_gravityGun != nullptr)
+	{
+		m_gravityGun->Draw(m_rtManager);
 	}
 
 	m_rtManager.RenderTextureUsageHintFS(RenderTex::Lit);
@@ -475,8 +474,8 @@ void GameRenderer::Render(
 		auto gpuTimerPost = eg::StartGPUTimer("Post");
 		auto cpuTimerPost = eg::StartCPUTimer("Post");
 		m_renderCtx->postProcessor.Render(
-			m_rtManager.GetRenderTexture(RenderTex::Lit), m_bloomRenderTarget.get(), outputFramebuffer, outputFormat, outputResX,
-			outputResY, postColorScale);
+			m_rtManager.GetRenderTexture(RenderTex::Lit), m_bloomRenderTarget.get(), outputFramebuffer, outputFormat,
+			outputResX, outputResY, postColorScale);
 	}
 
 	eg::DC.DebugLabelEnd();

@@ -29,9 +29,9 @@ std::unique_ptr<WaterSimulatorImpl> WaterSimulatorImpl::CreateInstance(const Con
 		std::string name = eg::DynamicLibrary::PlatformFormat("SDL2");
 		if (sdlLibrary.Open(name.c_str()))
 		{
-			auto hasAVX512F = reinterpret_cast<uint32_t(*)()>(sdlLibrary.GetSymbol("SDL_HasAVX512F"));
-			auto hasAVX2 = reinterpret_cast<uint32_t(*)()>(sdlLibrary.GetSymbol("SDL_HasAVX2"));
-			
+			auto hasAVX512F = reinterpret_cast<uint32_t (*)()>(sdlLibrary.GetSymbol("SDL_HasAVX512F"));
+			auto hasAVX2 = reinterpret_cast<uint32_t (*)()>(sdlLibrary.GetSymbol("SDL_HasAVX2"));
+
 			if (hasAVX512F != nullptr && hasAVX512F() != 0)
 				cpuHasAvx512 = true;
 			if (hasAVX2 != nullptr && hasAVX2() != 0)
@@ -549,7 +549,7 @@ void WaterSimulatorImpl::Stage3_Acceleration(SimulateStageArgs args)
 		{
 			uint16_t b = GetCloseParticlesIdxPtr(a)[bI];
 			float dist = GetCloseParticlesDistPtr(a)[bI];
-	
+
 			float sepX = m_particlesPos1.x[a] - m_particlesPos1.x[b];
 			float sepY = m_particlesPos1.y[a] - m_particlesPos1.y[b];
 			float sepZ = m_particlesPos1.z[a] - m_particlesPos1.z[b];

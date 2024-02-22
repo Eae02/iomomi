@@ -2,7 +2,7 @@
 
 RenderSettings* RenderSettings::instance;
 
-static const eg::DescriptorSetBinding dsBinding = eg::DescriptorSetBinding {
+static const eg::DescriptorSetBinding dsBinding = eg::DescriptorSetBinding{
 	.binding = 0,
 	.type = eg::BindingType::UniformBuffer,
 	.shaderAccess = eg::ShaderAccessFlags::Vertex,

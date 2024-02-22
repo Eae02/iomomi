@@ -1,9 +1,11 @@
-#include "../../Editor/EditorGraphics.hpp"
 #include "LightStripMaterial.hpp"
+#include "../../Editor/EditorGraphics.hpp"
 
 #include "../DeferredRenderer.hpp"
 #include "../RenderSettings.hpp"
+#include "../Vertex.hpp"
 #include "MeshDrawArgs.hpp"
+#include "StaticPropMaterial.hpp"
 
 static eg::Pipeline lightStripPipelineEditor;
 static eg::Pipeline lightStripPipelineGame;
@@ -17,15 +19,19 @@ static void OnInit()
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::Back;
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
-	pipelineCI.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
-	pipelineCI.vertexBindings[1] = { sizeof(LightStripMaterial::InstanceData), eg::InputRate::Instance };
-	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(eg::StdVertex, position) };
-	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::Float32, 2, offsetof(eg::StdVertex, texCoord) };
-	pipelineCI.vertexAttributes[2] = { 1, eg::DataType::Float32, 4, 0 * sizeof(float) * 4 };
-	pipelineCI.vertexAttributes[3] = { 1, eg::DataType::Float32, 4, 1 * sizeof(float) * 4 };
-	pipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 4, 2 * sizeof(float) * 4 };
-	pipelineCI.vertexAttributes[5] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
-	pipelineCI.vertexAttributes[6] = { 1, eg::DataType::Float32, 1, 4 * sizeof(float) * 4 };
+	pipelineCI.vertexBindings[VERTEX_BINDING_POSITION] = { VERTEX_STRIDE_POSITION, eg::InputRate::Vertex };
+	pipelineCI.vertexBindings[VERTEX_BINDING_TEXCOORD] = { VERTEX_STRIDE_TEXCOORD, eg::InputRate::Vertex };
+	pipelineCI.vertexBindings[LightStripMaterial::INSTANCE_DATA_BINDING] = {
+		sizeof(LightStripMaterial::InstanceData),
+		eg::InputRate::Instance,
+	};
+	pipelineCI.vertexAttributes[0] = { VERTEX_BINDING_POSITION, eg::DataType::Float32, 3, 0 };
+	pipelineCI.vertexAttributes[1] = { VERTEX_BINDING_TEXCOORD, eg::DataType::Float32, 2, 0 };
+	pipelineCI.vertexAttributes[2] = { LightStripMaterial::INSTANCE_DATA_BINDING, eg::DataType::Float32, 4, 0 };
+	pipelineCI.vertexAttributes[3] = { LightStripMaterial::INSTANCE_DATA_BINDING, eg::DataType::Float32, 4, 16 };
+	pipelineCI.vertexAttributes[4] = { LightStripMaterial::INSTANCE_DATA_BINDING, eg::DataType::Float32, 4, 32 };
+	pipelineCI.vertexAttributes[5] = { LightStripMaterial::INSTANCE_DATA_BINDING, eg::DataType::Float32, 4, 48 };
+	pipelineCI.vertexAttributes[6] = { LightStripMaterial::INSTANCE_DATA_BINDING, eg::DataType::Float32, 1, 64 };
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
 	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
@@ -79,4 +85,12 @@ bool LightStripMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs
 bool LightStripMaterial::CheckInstanceDataType(const std::type_info* instanceDataType) const
 {
 	return instanceDataType == &typeid(InstanceData);
+}
+
+eg::IMaterial::VertexInputConfiguration LightStripMaterial::GetVertexInputConfiguration(const void* drawArgs) const
+{
+	return VertexInputConfiguration{
+		.vertexBindingsMask = 0b11,
+		.instanceDataBindingIndex = INSTANCE_DATA_BINDING,
+	};
 }

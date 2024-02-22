@@ -474,7 +474,7 @@ eg::CollisionMesh World::BuildMesh(
 		}
 	}
 
-	eg::CollisionMesh collisionMesh = eg::CollisionMesh::CreateV3<uint32_t>(collisionVertices, collisionIndices);
+	eg::CollisionMesh collisionMesh(collisionVertices, collisionIndices);
 	collisionMesh.FlipWinding();
 	return collisionMesh;
 }

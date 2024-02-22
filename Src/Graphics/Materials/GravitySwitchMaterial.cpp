@@ -1,9 +1,10 @@
 #include "GravitySwitchMaterial.hpp"
 
+#include "../../Editor/EditorGraphics.hpp"
 #include "../RenderSettings.hpp"
+#include "../Vertex.hpp"
 #include "MeshDrawArgs.hpp"
 #include "StaticPropMaterial.hpp"
-#include "../../Editor/EditorGraphics.hpp"
 
 static eg::Pipeline gravitySwitchPipelineEditor;
 static eg::Pipeline gravitySwitchPipelineGame;
@@ -82,4 +83,9 @@ bool GravitySwitchMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawA
 	float pc[2] = { intensity, timeOffset * 10 };
 	cmdCtx.PushConstants(0, sizeof(pc), pc);
 	return true;
+}
+
+eg::IMaterial::VertexInputConfiguration GravitySwitchMaterial::GetVertexInputConfiguration(const void*) const
+{
+	return VertexInputConfig_SoaPXNTI;
 }

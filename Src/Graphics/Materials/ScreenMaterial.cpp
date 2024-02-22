@@ -100,3 +100,8 @@ bool ScreenMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) co
 
 	return true;
 }
+
+eg::IMaterial::VertexInputConfiguration ScreenMaterial::GetVertexInputConfiguration(const void* drawArgs) const
+{
+	return VertexInputConfig_SoaPXNTI;
+}

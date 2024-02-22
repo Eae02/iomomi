@@ -11,8 +11,8 @@
 DEF_ENT_TYPE(RampEnt)
 
 static const glm::vec3 untransformedPositions[4] = { { -1, -1, -1 }, { 1, -1, -1 }, { -1, 1, 1 }, { 1, 1, 1 } };
-static const int indicesNormal[6] = { 0, 1, 2, 1, 3, 2 };
-static const int indicesFlipped[6] = { 0, 2, 1, 1, 2, 3 };
+static const uint32_t indicesNormal[6] = { 0, 1, 2, 1, 3, 2 };
+static const uint32_t indicesFlipped[6] = { 0, 2, 1, 1, 2, 3 };
 static const glm::vec2 uvs[4] = { { 0, 0 }, { 1, 0 }, { 0, 1 }, { 1, 1 } };
 
 struct RampMaterial
@@ -103,11 +103,10 @@ void RampEnt::CommonDraw(const EntDrawArgs& args)
 	if (m_textureRotation % 2)
 		std::swap(textureScale.x, textureScale.y);
 
-	eg::MeshBatch::Mesh mesh;
-	mesh.firstIndex = 0;
-	mesh.firstVertex = 0;
-	mesh.numElements = 6;
-	mesh.vertexBuffer = m_vertexBuffer;
+	const eg::MeshBatch::Mesh mesh = {
+		.buffersDescriptor = m_meshBuffersDescriptor.get(),
+		.numElements = 6,
+	};
 	args.meshBatch->Add(
 		mesh, *rampMaterials[m_material].material, StaticPropMaterial::InstanceData(glm::mat4(1), textureScale));
 }
@@ -121,7 +120,11 @@ void RampEnt::InitializeVertexBuffer()
 	if (!m_vertexBuffer.handle)
 	{
 		m_vertexBuffer =
-			eg::Buffer(eg::BufferFlags::VertexBuffer | eg::BufferFlags::Update, sizeof(eg::StdVertex) * 6, nullptr);
+			eg::Buffer(eg::BufferFlags::VertexBuffer | eg::BufferFlags::Update, sizeof(VertexSoaPXNT<6>), nullptr);
+
+		m_meshBuffersDescriptor = std::make_unique<eg::MeshBuffersDescriptor>();
+		m_meshBuffersDescriptor->vertexBuffer = m_vertexBuffer;
+		SetVertexStreamOffsetsSoaPXNT(m_meshBuffersDescriptor->vertexStreamOffsets, 6);
 	}
 
 	const glm::mat4 transformationMatrix = GetTransformationMatrix();
@@ -136,27 +139,21 @@ void RampEnt::InitializeVertexBuffer()
 	if (m_flipped)
 		normal = -normal;
 
-	eg::StdVertex vertices[6] = {};
-	const int* indices = m_flipped ? indicesFlipped : indicesNormal;
+	VertexSoaPXNT<6> vertices;
+	const uint32_t* indices = m_flipped ? indicesFlipped : indicesNormal;
 	for (int i = 0; i < 6; i++)
 	{
-		*reinterpret_cast<glm::vec3*>(vertices[i].position) = transformedPos[indices[i]];
-		for (int j = 0; j < 3; j++)
-		{
-			vertices[i].normal[j] = eg::FloatToSNorm(normal[j]);
-			vertices[i].tangent[j] = eg::FloatToSNorm(aDir[j]);
-		}
-		vertices[i].texCoord[0] = uvs[indices[i]].x;
-		vertices[i].texCoord[1] = uvs[indices[i]].y;
+		vertices.positions[i] = transformedPos[indices[i]];
+		vertices.normalsAndTangents[i][0] = glm::packSnorm4x8(glm::vec4(normal, 0));
+		vertices.normalsAndTangents[i][1] = glm::packSnorm4x8(glm::vec4(aDir, 0));
+
+		glm::vec2 texCoord = uvs[indices[i]];
 		for (int r = 0; r < m_textureRotation; r++)
-		{
-			float x = vertices[i].texCoord[0];
-			vertices[i].texCoord[0] = vertices[i].texCoord[1];
-			vertices[i].texCoord[1] = -x;
-		}
+			texCoord = glm::vec2(texCoord.y, -texCoord.x);
+		vertices.textureCoordinates[i] = texCoord;
 	}
 
-	m_vertexBuffer.DCUpdateData<eg::StdVertex>(0, vertices);
+	m_vertexBuffer.DCUpdateData(0, sizeof(vertices), &vertices);
 	m_vertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
 }
 
@@ -246,8 +243,8 @@ void RampEnt::Deserialize(std::istream& stream)
 	m_meshOutOfDate = true;
 	std::array<glm::vec3, 4> vertices = GetTransformedVertices(GetTransformationMatrix());
 
-	m_collisionMesh = eg::CollisionMesh::CreateV3(
-		vertices, std::span<const int>(m_flipped ? indicesFlipped : indicesNormal, std::size(indicesNormal)));
+	m_collisionMesh = eg::CollisionMesh(
+		vertices, std::span<const uint32_t>(m_flipped ? indicesFlipped : indicesNormal, std::size(indicesNormal)));
 	m_collisionMesh.FlipWinding();
 	m_physicsObject.shape = &m_collisionMesh;
 }

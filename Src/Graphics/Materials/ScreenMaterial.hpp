@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../Vertex.hpp"
 #include "StaticPropMaterial.hpp"
 
 class ScreenMaterial : public eg::IMaterial
@@ -14,6 +15,8 @@ public:
 	bool BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const override;
 
 	bool BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const override;
+
+	VertexInputConfiguration GetVertexInputConfiguration(const void* drawArgs) const override;
 
 	void RenderTexture(const eg::ColorLin& clearColor);
 

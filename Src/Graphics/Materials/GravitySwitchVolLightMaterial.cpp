@@ -17,10 +17,11 @@ static constexpr float YMIN = 0.1f;
 static constexpr float YMAX = 2.0f;
 static constexpr float SIZE = 1.0f;
 
-static const float cubeVertices[] = { -SIZE, YMAX, SIZE,  SIZE,  YMAX,  SIZE,  -SIZE, YMIN, SIZE,  SIZE,  YMIN,
-	                                  SIZE,  SIZE, YMIN,  -SIZE, SIZE,  YMAX,  SIZE,  SIZE, YMAX,  -SIZE, -SIZE,
-	                                  YMAX,  SIZE, -SIZE, YMAX,  -SIZE, -SIZE, YMIN,  SIZE, -SIZE, YMIN,  -SIZE,
-	                                  SIZE,  YMIN, -SIZE, -SIZE, YMAX,  -SIZE, SIZE,  YMAX, -SIZE };
+static const float cubeVertices[] = {
+	-SIZE, YMAX, SIZE,  SIZE, YMAX,  SIZE, -SIZE, YMIN,  SIZE,  SIZE, YMIN,  SIZE, SIZE,  YMIN,
+	-SIZE, SIZE, YMAX,  SIZE, SIZE,  YMAX, -SIZE, -SIZE, YMAX,  SIZE, -SIZE, YMAX, -SIZE, -SIZE,
+	YMIN,  SIZE, -SIZE, YMIN, -SIZE, SIZE, YMIN,  -SIZE, -SIZE, YMAX, -SIZE, SIZE, YMAX,  -SIZE,
+};
 
 static constexpr float MAX_ANGLE = 30.0f;
 
@@ -42,6 +43,8 @@ static QualityLevel currentQualityLevel = QualityLevel::VeryLow;
 
 static eg::Buffer cubeVertexBuffer;
 static eg::Buffer lightDataBuffer;
+
+static eg::MeshBuffersDescriptor meshBuffersDescriptor;
 
 static eg::DescriptorSet lightVolDescriptorSet;
 
@@ -96,6 +99,11 @@ static void OnInit()
 	cubeVertexBuffer = eg::Buffer(vbCreateInfo);
 
 	cubeVertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
+
+	meshBuffersDescriptor = {
+		.vertexBuffer = cubeVertexBuffer,
+		.vertexStreamOffsets = { 0 },
+	};
 
 	lightVolDescriptorSet = eg::DescriptorSet(gsVolLightPipelineBeforeWater, 0);
 	lightVolDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
@@ -188,10 +196,14 @@ bool GravitySwitchVolLightMaterial::BindMaterial(eg::CommandContext& cmdCtx, voi
 
 eg::MeshBatch::Mesh GravitySwitchVolLightMaterial::GetMesh()
 {
-	eg::MeshBatch::Mesh mesh;
-	mesh.vertexBuffer = cubeVertexBuffer;
-	mesh.numElements = 14;
-	mesh.firstIndex = 0;
-	mesh.firstVertex = 0;
-	return mesh;
+	return {
+		.buffersDescriptor = &meshBuffersDescriptor,
+		.numElements = 14,
+	};
+}
+
+eg::IMaterial::VertexInputConfiguration GravitySwitchVolLightMaterial::GetVertexInputConfiguration(
+	const void* drawArgs) const
+{
+	return VertexInputConfiguration{ .vertexBindingsMask = 1 };
 }

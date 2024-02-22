@@ -16,10 +16,10 @@ struct GuiFrameArgs
 {
 	float dt;
 	glm::vec2 cursorPos;
-	
+
 	float scaleToCanvasCoordinates;
 	float scaleToScreenCoordinates;
-	
+
 	float canvasWidth;
 	float canvasHeight;
 

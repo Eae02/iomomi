@@ -21,11 +21,11 @@ static eg::CollisionMesh s_padCollisionMesh;
 static void OnInit()
 {
 	eg::Model& collisionModel = eg::GetAsset<eg::Model>("Models/Button.col.obj");
-	s_ringCollisionMesh = collisionModel.MakeCollisionMesh(collisionModel.GetMeshIndex("CollisionRing"));
-	s_padCollisionMesh = collisionModel.MakeCollisionMesh(collisionModel.GetMeshIndex("CollisionPad"));
+	s_ringCollisionMesh = collisionModel.MakeCollisionMesh(collisionModel.GetMeshIndex("CollisionRing")).value();
+	s_padCollisionMesh = collisionModel.MakeCollisionMesh(collisionModel.GetMeshIndex("CollisionPad")).value();
 
 	s_model = &eg::GetAsset<eg::Model>("Models/Button.aa.obj");
-	s_collisionMesh = s_model->MakeCollisionMesh();
+	s_collisionMesh = s_model->MakeCollisionMesh().value();
 	s_material = &eg::GetAsset<StaticPropMaterial>("Materials/Button.yaml");
 
 	for (size_t i = 0; i < s_model->NumMeshes(); i++)

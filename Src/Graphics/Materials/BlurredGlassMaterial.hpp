@@ -11,6 +11,8 @@ public:
 
 	virtual OrderRequirement GetOrderRequirement() const override { return OrderRequirement::OnlyOrdered; }
 
+	VertexInputConfiguration GetVertexInputConfiguration(const void* drawArgs) const override;
+
 	bool isBlurry = false;
 
 	eg::ColorLin color;

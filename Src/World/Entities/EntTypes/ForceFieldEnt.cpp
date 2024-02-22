@@ -12,7 +12,8 @@
 DEF_ENT_TYPE(ForceFieldEnt)
 
 static ForceFieldMaterial* forceFieldMaterial;
-static eg::Buffer* forceFieldQuadBuffer;
+static eg::Buffer forceFieldQuadBuffer;
+static eg::MeshBuffersDescriptor forceFieldQuadBufferDescriptor;
 
 static float* particleGravity = eg::TweakVarFloat("ffld_particle_grav", 4.0f, 0.0f);
 static float* particleWidth = eg::TweakVarFloat("ffld_particle_width", 0.02f, 0.0f);
@@ -23,14 +24,19 @@ static void OnInit()
 	forceFieldMaterial = new ForceFieldMaterial;
 
 	const float vertices[] = { -1, -1, -1, 1, 1, -1, 1, 1 };
-	forceFieldQuadBuffer = new eg::Buffer(eg::BufferFlags::VertexBuffer, sizeof(vertices), vertices);
-	forceFieldQuadBuffer->UsageHint(eg::BufferUsage::VertexBuffer);
+	forceFieldQuadBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer, sizeof(vertices), vertices);
+	forceFieldQuadBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
+
+	forceFieldQuadBufferDescriptor = {
+		.vertexBuffer = forceFieldQuadBuffer,
+		.vertexStreamOffsets = { 0 },
+	};
 }
 
 static void OnShutdown()
 {
 	delete forceFieldMaterial;
-	delete forceFieldQuadBuffer;
+	forceFieldQuadBuffer.Destroy();
 }
 
 EG_ON_INIT(OnInit)
@@ -59,9 +65,10 @@ void ForceFieldEnt::GameDraw(const EntGameDrawArgs& args)
 	if (!args.transparentMeshBatch)
 		return;
 
-	eg::MeshBatch::Mesh mesh = {};
-	mesh.vertexBuffer = *forceFieldQuadBuffer;
-	mesh.numElements = 4;
+	const eg::MeshBatch::Mesh mesh = {
+		.buffersDescriptor = &forceFieldQuadBufferDescriptor,
+		.numElements = 4,
+	};
 
 	glm::vec3 smallerRad = radius * 0.99f;
 

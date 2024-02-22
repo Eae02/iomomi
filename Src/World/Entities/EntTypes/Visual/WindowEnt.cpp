@@ -34,6 +34,7 @@ BlurredGlassMaterial blurryGlassMaterial;
 BlurredGlassMaterial clearGlassMaterial;
 
 static eg::Buffer windowVertexBuffer;
+static eg::MeshBuffersDescriptor windowVertexBufferDescriptor;
 
 static const eg::Model* frameModel;
 static int frameFrontMeshIndices[3][3];
@@ -81,32 +82,28 @@ static void OnInit()
 	InitMeshIndices(0, 1, "L");
 	InitMeshIndices(2, 1, "R");
 
-	// Initializes the window plane vertex buffer
-	eg::StdVertex windowVertices[6];
-	auto InitVertex = [&](eg::StdVertex& vertex, int x, int y)
+	const glm::vec3 NORMAL = glm::vec3(0, 0, 1);
+	const glm::vec3 TANGENT = glm::vec3(1, 0, 0);
+
+	VertexSoaPXNT<6> windowVertices;
+	windowVertices.textureCoordinates[0] = glm::vec2(0, 0);
+	windowVertices.textureCoordinates[1] = glm::vec2(1, 0);
+	windowVertices.textureCoordinates[2] = glm::vec2(0, 1);
+	windowVertices.textureCoordinates[3] = glm::vec2(1, 0);
+	windowVertices.textureCoordinates[4] = glm::vec2(1, 1);
+	windowVertices.textureCoordinates[5] = glm::vec2(0, 1);
+	for (size_t i = 0; i < 6; i++)
 	{
-		vertex.position[0] = static_cast<float>(x * 2 - 1);
-		vertex.position[1] = static_cast<float>(y * 2 - 1);
-		vertex.position[2] = 0.5f;
-		vertex.normal[0] = 0;
-		vertex.normal[1] = 0;
-		vertex.normal[2] = 127;
-		vertex.normal[3] = 0;
-		vertex.tangent[0] = 127;
-		vertex.tangent[1] = 0;
-		vertex.tangent[2] = 0;
-		vertex.tangent[3] = 0;
-		vertex.texCoord[0] = static_cast<float>(x);
-		vertex.texCoord[1] = static_cast<float>(y);
-	};
-	InitVertex(windowVertices[0], 0, 0);
-	InitVertex(windowVertices[1], 1, 0);
-	InitVertex(windowVertices[2], 0, 1);
-	InitVertex(windowVertices[3], 1, 0);
-	InitVertex(windowVertices[4], 1, 1);
-	InitVertex(windowVertices[5], 0, 1);
-	windowVertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer, sizeof(windowVertices), windowVertices);
+		windowVertices.positions[i] = glm::vec3(windowVertices.textureCoordinates[i] * 2.0f - 1.0f, 0.5f);
+		windowVertices.normalsAndTangents[i][0] = glm::packSnorm4x8(glm::vec4(NORMAL, 0));
+		windowVertices.normalsAndTangents[i][1] = glm::packSnorm4x8(glm::vec4(TANGENT, 0));
+	}
+
+	windowVertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer, sizeof(windowVertices), &windowVertices);
 	windowVertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
+
+	windowVertexBufferDescriptor.vertexBuffer = windowVertexBuffer;
+	SetVertexStreamOffsetsSoaPXNT(windowVertexBufferDescriptor.vertexStreamOffsets, 6);
 }
 
 static void InitializeFrameMaterials()
@@ -312,9 +309,10 @@ void WindowEnt::CommonDraw(const EntDrawArgs& args)
 	const glm::vec2 planeTextureScale = m_aaQuad.radius / m_textureScale;
 	auto DrawWindowPlaneWithTransform = [&](const glm::mat4& transform)
 	{
-		eg::MeshBatch::Mesh mesh = {};
-		mesh.vertexBuffer = windowVertexBuffer;
-		mesh.numElements = 6;
+		const eg::MeshBatch::Mesh mesh = {
+			.buffersDescriptor = &windowVertexBufferDescriptor,
+			.numElements = 6,
+		};
 		StaticPropMaterial::InstanceData instanceData(transform, planeTextureScale);
 		if (useTransparentMeshBatch)
 		{

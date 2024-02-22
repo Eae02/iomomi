@@ -1,6 +1,7 @@
 #include <fstream>
 
 #include "../DecalMaterial.hpp"
+#include <yaml-cpp/yaml.h>
 
 static const eg::AssetFormat DecalMaterialAssetFormat{ "DecalMaterial", 3 };
 

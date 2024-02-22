@@ -18,7 +18,7 @@ private:
 	{
 		bool enableFXAA;
 		eg::Format outputFormat;
-		
+
 		bool operator==(const PipelineVariantKey& other) const = default;
 	};
 

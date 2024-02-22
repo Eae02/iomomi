@@ -21,7 +21,8 @@ enum class RenderTex
 	SSRDepth,
 	BlurredGlassDepth,
 	LitWithoutBlurredGlass,
-	Lit
+	Lit,
+	GravityGunDepth,
 };
 
 constexpr eg::Format GB_DEPTH_FORMAT = eg::Format::Depth16;

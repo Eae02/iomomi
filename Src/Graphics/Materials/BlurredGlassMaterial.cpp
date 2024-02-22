@@ -3,6 +3,7 @@
 #include "../../Editor/EditorGraphics.hpp"
 #include "../GraphicsCommon.hpp"
 #include "../RenderSettings.hpp"
+#include "../Vertex.hpp"
 #include "MeshDrawArgs.hpp"
 #include "StaticPropMaterial.hpp"
 
@@ -145,4 +146,9 @@ bool BlurredGlassMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawAr
 bool BlurredGlassMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
 	return true;
+}
+
+eg::IMaterial::VertexInputConfiguration BlurredGlassMaterial::GetVertexInputConfiguration(const void* drawArgs) const
+{
+	return VertexInputConfig_SoaPXNTI;
 }

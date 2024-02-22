@@ -8,6 +8,12 @@ set(BUILD_ID "" CACHE STRING "Build id to be included in the main menu.")
 option(IOMOMI_EDITOR "Whether or not to enable the editor." ON)
 option(IOMOMI_WATER "Whether or not to enable water." ON)
 
+option(ENABLE_ASAN "Enable address sanitizer" OFF)
+if (${ENABLE_ASAN})
+	add_compile_options(-fsanitize=address)
+	add_link_options(-fsanitize=address)
+endif()
+
 set(EG_BUILD_ASSETMAN OFF CACHE BOOL "" FORCE)
 set(EG_BUILD_IMGUI ${IOMOMI_EDITOR} CACHE BOOL "" FORCE)
 

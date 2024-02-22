@@ -21,11 +21,11 @@ const eg::ColorLin ActivationLightStripEnt::DEACTIVATED_COLOR =
 
 void ActivationLightStripEnt::OnInit()
 {
-	s_models[MV_Straight] = &eg::GetAsset<eg::Model>("Models/ActivationStripStraight.obj");
+	s_models[MV_Straight] = &eg::GetAsset<eg::Model>("Models/ActivationStrip/ActivationStripStraight.obj");
 	s_materials[MV_Straight] = &eg::GetAsset<StaticPropMaterial>("Materials/ActivationStrip.yaml");
-	s_models[MV_Bend] = &eg::GetAsset<eg::Model>("Models/ActivationStripBend.obj");
+	s_models[MV_Bend] = &eg::GetAsset<eg::Model>("Models/ActivationStrip/ActivationStripBend.obj");
 	s_materials[MV_Bend] = &eg::GetAsset<StaticPropMaterial>("Materials/ActivationStrip.yaml");
-	s_models[MV_Corner] = &eg::GetAsset<eg::Model>("Models/ActivationStripCorner.obj");
+	s_models[MV_Corner] = &eg::GetAsset<eg::Model>("Models/ActivationStrip/ActivationStripCorner.obj");
 	s_materials[MV_Corner] = &eg::GetAsset<StaticPropMaterial>("Materials/ActivationStrip.yaml");
 }
 

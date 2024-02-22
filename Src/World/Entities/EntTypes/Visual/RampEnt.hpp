@@ -55,6 +55,7 @@ private:
 
 	bool m_meshOutOfDate = false;
 	eg::Buffer m_vertexBuffer;
+	std::unique_ptr<eg::MeshBuffersDescriptor> m_meshBuffersDescriptor;
 
 	float m_rampLength = 0;
 

@@ -25,7 +25,12 @@ public:
 
 	bool BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const override;
 
+	VertexInputConfiguration GetVertexInputConfiguration(const void* drawArgs) const override;
+
 	virtual OrderRequirement GetOrderRequirement() const override { return OrderRequirement::OnlyOrdered; }
+
+	static constexpr uint32_t POSITION_BINDING = 0;
+	static constexpr uint32_t INSTANCE_DATA_BINDING = 1;
 
 private:
 	eg::Pipeline m_pipelineBeforeWater;

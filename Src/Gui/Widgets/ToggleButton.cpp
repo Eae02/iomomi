@@ -25,7 +25,8 @@ void ToggleButton::Update(const GuiFrameArgs& frameArgs, bool allowInteraction)
 	}
 	else
 	{
-		m_textSwapProgress = eg::AnimateTo(m_textSwapProgress, targetTextSwapProgress, 2 * frameArgs.dt / TEXT_SWAP_ANIM_TIME);
+		m_textSwapProgress =
+			eg::AnimateTo(m_textSwapProgress, targetTextSwapProgress, 2 * frameArgs.dt / TEXT_SWAP_ANIM_TIME);
 	}
 	m_prevFrameUpdated = eg::FrameIdx();
 }

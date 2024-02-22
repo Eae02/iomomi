@@ -15,6 +15,8 @@ public:
 
 	virtual OrderRequirement GetOrderRequirement() const override { return OrderRequirement::OnlyUnordered; }
 
+	VertexInputConfiguration GetVertexInputConfiguration(const void* drawArgs) const override;
+
 	static void OnInit();
 	static void OnShutdown();
 

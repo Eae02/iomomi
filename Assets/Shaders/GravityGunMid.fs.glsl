@@ -17,7 +17,7 @@ layout(binding=1) uniform sampler2D hexSampler;
 
 layout(push_constant) uniform PC
 {
-	float intensityBoost;
+	layout(offset=112) float intensityBoost;
 };
 
 void main()

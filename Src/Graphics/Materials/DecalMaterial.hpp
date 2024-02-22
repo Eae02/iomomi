@@ -24,6 +24,8 @@ public:
 
 	bool CheckInstanceDataType(const std::type_info* instanceDataType) const override;
 
+	VertexInputConfiguration GetVertexInputConfiguration(const void* drawArgs) const override;
+
 	float AspectRatio() const { return m_aspectRatio; }
 	eg::TextureRef AlbedoTexture() const { return m_albedoTexture; }
 	eg::TextureRef NormalMapTexture() const { return m_normalMapTexture; }
@@ -35,6 +37,9 @@ public:
 	float opacity = 1;
 	float roughness = 1;
 	bool inheritNormals = false;
+
+	static constexpr uint32_t POSITION_BINDING = 0;
+	static constexpr uint32_t INSTANCE_DATA_BINDING = 1;
 
 private:
 	eg::TextureRef m_albedoTexture;

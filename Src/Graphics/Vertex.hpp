@@ -20,3 +20,29 @@ struct WallBorderVertex
 	int8_t normal1[4];
 	int8_t normal2[4];
 };
+
+template <size_t N>
+struct VertexSoaPXNT
+{
+	glm::vec3 positions[N];
+	glm::vec2 textureCoordinates[N];
+	uint32_t normalsAndTangents[N][2];
+};
+
+static constexpr uint32_t VERTEX_BINDING_POSITION = 0;
+static constexpr uint32_t VERTEX_BINDING_TEXCOORD = 1;
+static constexpr uint32_t VERTEX_BINDING_NORMAL_TANGENT = 2;
+static constexpr uint32_t VERTEX_BINDING_INSTANCE_DATA = 3;
+
+static constexpr uint32_t VERTEX_STRIDE_POSITION = 12;
+static constexpr uint32_t VERTEX_STRIDE_TEXCOORD = 8;
+static constexpr uint32_t VERTEX_STRIDE_NORMAL_TANGENT = 8;
+
+void RegisterVertexFormats();
+
+void InitPipelineVertexStateSoaPXNT(eg::GraphicsPipelineCreateInfo& pipelineCI);
+
+void SetVertexStreamOffsetsSoaPXNT(std::span<std::optional<uint64_t>> streamOffsets, size_t numVertices);
+
+extern const eg::IMaterial::VertexInputConfiguration VertexInputConfig_SoaPXNTI;
+extern const eg::IMaterial::VertexInputConfiguration VertexInputConfig_SoaPXNT;

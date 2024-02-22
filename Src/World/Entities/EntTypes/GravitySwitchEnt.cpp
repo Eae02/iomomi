@@ -20,7 +20,7 @@ float* gravitySwitchVolume = eg::TweakVarFloat("vol_gravity_switch", 0.8f, 0);
 static void OnInit()
 {
 	s_model = &eg::GetAsset<eg::Model>("Models/GravitySwitch.aa.obj");
-	s_collisionMesh = s_model->MakeCollisionMesh();
+	s_collisionMesh = s_model->MakeCollisionMesh().value();
 	s_material = &eg::GetAsset<StaticPropMaterial>("Materials/GravitySwitch.yaml");
 	s_centerMaterialIndex = s_model->GetMaterialIndex("Center");
 	gravitySwitchSound = &eg::GetAsset<eg::AudioClip>("Audio/GravityFlip.ogg");

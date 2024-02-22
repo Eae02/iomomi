@@ -53,7 +53,7 @@ void GraphicsCommonInit()
 		.magFilter = eg::TextureFilter::Nearest,
 		.mipFilter = eg::TextureFilter::Nearest,
 	});
-	
+
 	linearClampToEdgeSampler = eg::Sampler(eg::SamplerDescription{
 		.wrapU = eg::WrapMode::ClampToEdge,
 		.wrapV = eg::WrapMode::ClampToEdge,
@@ -62,7 +62,7 @@ void GraphicsCommonInit()
 		.magFilter = eg::TextureFilter::Linear,
 		.mipFilter = eg::TextureFilter::Linear,
 	});
-	
+
 	linearRepeatSampler = eg::Sampler(eg::SamplerDescription{
 		.wrapU = eg::WrapMode::Repeat,
 		.wrapV = eg::WrapMode::Repeat,

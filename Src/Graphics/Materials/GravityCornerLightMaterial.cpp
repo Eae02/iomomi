@@ -1,10 +1,11 @@
 #include "GravityCornerLightMaterial.hpp"
 
+#include "../../Editor/EditorGraphics.hpp"
 #include "../GraphicsCommon.hpp"
 #include "../RenderSettings.hpp"
+#include "../Vertex.hpp"
 #include "MeshDrawArgs.hpp"
 #include "StaticPropMaterial.hpp"
-#include "../../Editor/EditorGraphics.hpp"
 
 GravityCornerLightMaterial GravityCornerLightMaterial::instance;
 
@@ -104,4 +105,9 @@ void GravityCornerLightMaterial::Activate(const glm::vec3& position)
 void GravityCornerLightMaterial::Update(float dt)
 {
 	m_activationIntensity = std::max(m_activationIntensity - dt / ACT_ANIMATION_DURATION, 0.0f);
+}
+
+eg::IMaterial::VertexInputConfiguration GravityCornerLightMaterial::GetVertexInputConfiguration(const void*) const
+{
+	return VertexInputConfig_SoaPXNTI;
 }

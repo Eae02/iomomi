@@ -1,69 +1,13 @@
 #include "GravityGun.hpp"
 
-#include "../Graphics/DeferredRenderer.hpp"
-#include "../Graphics/Materials/MeshDrawArgs.hpp"
-#include "../Graphics/Materials/StaticPropMaterial.hpp"
-#include "../Graphics/RenderSettings.hpp"
 #include "../Graphics/Water/IWaterSimulator.hpp"
 #include "../Settings.hpp"
 #include "Player.hpp"
 #include "World.hpp"
 
-GravityGun::MidMaterial::MidMaterial()
+GravityGun::GravityGun() : m_model(&eg::GetAsset<eg::Model>("Models/GravityGun.obj")), m_gunRenderer(*m_model)
 {
-	eg::GraphicsPipelineCreateInfo pipelineCI;
-	StaticPropMaterial::InitializeForCommon3DVS(pipelineCI);
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityGunMid.fs.glsl").DefaultVariant();
-	pipelineCI.enableDepthWrite = false;
-	pipelineCI.enableDepthTest = true;
-	pipelineCI.cullMode = eg::CullMode::None;
-	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
-	pipelineCI.label = "GravityGunMid";
-	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
-	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
-	m_pipeline = eg::Pipeline::Create(pipelineCI);
-
-	m_descriptorSet = eg::DescriptorSet(m_pipeline, 0);
-
-	m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
-	m_descriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/Hex.png"), 1, &commonTextureSampler);
-}
-
-size_t GravityGun::MidMaterial::PipelineHash() const
-{
-	return typeid(GravityGun::MidMaterial).hash_code();
-}
-
-bool GravityGun::MidMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const
-{
-	MeshDrawArgs* mDrawArgs = reinterpret_cast<MeshDrawArgs*>(drawArgs);
-	if (mDrawArgs->drawMode != MeshDrawMode::TransparentFinal)
-		return false;
-
-	cmdCtx.BindPipeline(m_pipeline);
-	cmdCtx.BindDescriptorSet(m_descriptorSet, 0);
-	cmdCtx.PushConstants(0, sizeof(m_intensityBoost), &m_intensityBoost);
-	return true;
-}
-
-bool GravityGun::MidMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
-{
-	return true;
-}
-
-GravityGun::GravityGun()
-{
-	m_model = &eg::GetAsset<eg::Model>("Models/GravityGun.obj");
-	if (m_model->NumMaterials() > m_materials.size())
-	{
-		EG_PANIC("Too many materials in gravity gun model");
-	}
-
-	std::fill(m_materials.begin(), m_materials.end(), &eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml"));
-
-	m_materials.at(m_model->GetMaterialIndex("EnergyCyl")) = &m_midMaterial;
-	m_materials.at(m_model->GetMaterialIndex("Main")) =
-		&eg::GetAsset<StaticPropMaterial>("Materials/GravityGunMain.yaml");
+	EG_ASSERT(m_model->NumMeshes() < MAX_MESHES_IN_MODEL);
 
 	for (size_t i = 0; i < m_model->NumMeshes(); i++)
 	{
@@ -108,6 +52,7 @@ void GravityGun::Update(
 	const Player& player, const glm::mat4& inverseViewProj, float dt)
 {
 	glm::mat3 rotationMatrix = (glm::mat3_cast(player.Rotation()));
+	glm::mat3 invRotationMatrix = glm::transpose(rotationMatrix);
 
 	float fovOffsetZ = 0.07f * (settings.fieldOfViewDeg - 80.0f);
 	glm::vec3 targetOffset = rotationMatrix * ((GUN_POSITION + glm::vec3(0, 0, fovOffsetZ)) * GUN_SCALE);
@@ -126,15 +71,15 @@ void GravityGun::Update(
 	player.GetViewMatrix(viewMatrix, viewMatrixInv);
 	glm::vec3 playerEyePos(viewMatrixInv[3]);
 
-	glm::vec3 translation = (rotationMatrix * glm::vec3(xoffset, yoffset, 0)) + playerEyePos + m_gunOffset;
+	glm::vec3 translation = glm::vec3(xoffset, yoffset, 0) + invRotationMatrix * m_gunOffset;
 
-	m_gunTransform = glm::translate(glm::mat4(), translation) * glm::mat4(rotationMatrix);
-	m_gunTransform = glm::rotate(m_gunTransform, eg::PI * GUN_ROTATION_X, glm::vec3(1, 0, 0));
-	m_gunTransform = glm::rotate(m_gunTransform, eg::PI * GUN_ROTATION_Y, glm::vec3(0, 1, 0));
-	m_gunTransform = glm::scale(m_gunTransform, glm::vec3(GUN_SCALE));
+	glm::mat4 rotationScaleLocal = glm::rotate(glm::mat4(1.0f), eg::PI * GUN_ROTATION_X, glm::vec3(1, 0, 0)) *
+	                               glm::rotate(glm::mat4(1.0f), eg::PI * GUN_ROTATION_Y, glm::vec3(0, 1, 0)) *
+	                               glm::scale(glm::mat4(1.0f), glm::vec3(GUN_SCALE));
+
+	m_gunTransform = glm::translate(glm::mat4(), translation) * rotationScaleLocal;
 
 	m_fireAnimationTime = std::max(m_fireAnimationTime - dt, 0.0f);
-	m_midMaterial.m_intensityBoost = glm::smoothstep(0.0f, 1.0f, m_fireAnimationTime) * 1;
 
 	// Updates beam instances
 	BeamInstance* lightBeamInstance = nullptr;
@@ -209,7 +154,7 @@ void GravityGun::Update(
 			beamInstance.particleEmitter =
 				particleManager.AddEmitter(eg::GetAsset<eg::ParticleEmitterType>("Particles/BlueOrb.ype"));
 
-			glm::vec3 start = m_gunTransform * glm::vec4(0, 0, 0, 1);
+			glm::vec3 start = playerEyePos + rotationMatrix * translation;
 			glm::vec3 target = viewRay.GetPoint(intersectDist * 0.99f);
 
 			beamInstance.newDown = player.CurrentDown();
@@ -248,13 +193,14 @@ void GravityGun::Update(
 	}
 }
 
-void GravityGun::Draw(eg::MeshBatch& meshBatch, eg::MeshBatchOrdered& transparentMeshBatch)
+void GravityGun::Draw(class RenderTexManager& renderTexManager)
 {
 	constexpr float KICK_BACK_TIME = 0.08f;
 	constexpr float KICK_RESTORE_TIME = 0.7f;
 	constexpr float KICK_BACK_DIST_MAX = 0.3f;
 	constexpr float KICK_BACK_DIST_MAX_FRONT = 0.5f;
 	constexpr float ANIMATION_END = 1 - KICK_BACK_TIME - KICK_RESTORE_TIME;
+
 	float kickBackDist = 0;
 	if (m_fireAnimationTime > 1 - KICK_BACK_TIME)
 	{
@@ -265,22 +211,14 @@ void GravityGun::Draw(eg::MeshBatch& meshBatch, eg::MeshBatchOrdered& transparen
 		kickBackDist = glm::smoothstep(0.0f, 1.0f, (m_fireAnimationTime - ANIMATION_END) / (KICK_RESTORE_TIME));
 	}
 
+	glm::mat4 meshTransforms[MAX_MESHES_IN_MODEL];
 	for (size_t m = 0; m < m_model->NumMeshes(); m++)
 	{
-		glm::mat4 transform = m_gunTransform;
 		float dstForThisMesh = m_meshIsPartOfFront[m] ? KICK_BACK_DIST_MAX_FRONT : KICK_BACK_DIST_MAX;
-		transform = glm::translate(transform, glm::vec3(0, 0, -kickBackDist * dstForThisMesh));
-
-		StaticPropMaterial::InstanceData instanceData(transform);
-
-		const eg::IMaterial* material = m_materials[m_model->GetMesh(m).materialIndex];
-		if (material->GetOrderRequirement() == eg::IMaterial::OrderRequirement::OnlyOrdered)
-		{
-			transparentMeshBatch.AddModelMesh(*m_model, m, *material, instanceData, INFINITY);
-		}
-		else
-		{
-			meshBatch.AddModelMesh(*m_model, m, *material, instanceData, -1);
-		}
+		meshTransforms[m] = glm::translate(m_gunTransform, glm::vec3(0, 0, -kickBackDist * dstForThisMesh));
 	}
+
+	float glowIntensityBoost = glm::smoothstep(0.0f, 1.0f, m_fireAnimationTime);
+
+	m_gunRenderer.Draw({ meshTransforms, m_model->NumMeshes() }, glowIntensityBoost, renderTexManager);
 }

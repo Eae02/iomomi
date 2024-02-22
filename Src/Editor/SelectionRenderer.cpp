@@ -1,5 +1,6 @@
 #include "SelectionRenderer.hpp"
 #include "../Graphics/GraphicsCommon.hpp"
+#include "../Graphics/Vertex.hpp"
 #include "EditorGraphics.hpp"
 
 static eg::Pipeline modelPipeline;
@@ -12,8 +13,8 @@ static void OnInit()
 	modelPipelineCI.fragmentShader =
 		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/EdSelection.fs.glsl").DefaultVariant();
 	modelPipelineCI.cullMode = eg::CullMode::None;
-	modelPipelineCI.vertexBindings[0] = { sizeof(eg::StdVertex), eg::InputRate::Vertex };
-	modelPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(eg::StdVertex, position) };
+	modelPipelineCI.vertexBindings[VERTEX_BINDING_POSITION] = { VERTEX_STRIDE_POSITION, eg::InputRate::Vertex };
+	modelPipelineCI.vertexAttributes[0] = { VERTEX_BINDING_POSITION, eg::DataType::Float32, 3, 0 };
 	modelPipelineCI.numColorAttachments = 1;
 	modelPipelineCI.colorAttachmentFormats[0] = eg::Format::R8_UNorm;
 	modelPipelineCI.label = "EdSelection";
@@ -84,7 +85,7 @@ void SelectionRenderer::Draw(float intensity, const glm::mat4& transform, const 
 		m_hasRendered = true;
 	}
 
-	model.Bind();
+	model.BuffersDescriptor().Bind(eg::DC, 0b1);
 
 	struct PC
 	{

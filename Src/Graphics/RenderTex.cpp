@@ -87,8 +87,11 @@ eg::Format GetFormatForRenderTexture(RenderTex texture, bool requireFixed)
 	case RenderTex::LitWithoutSSR:
 	case RenderTex::Lit:
 		return lightColorAttachmentFormat;
+
+	case RenderTex::GravityGunDepth:
+		return eg::Format::Depth16;
 	}
-	
+
 	EG_PANIC("Invalid render texture");
 }
 

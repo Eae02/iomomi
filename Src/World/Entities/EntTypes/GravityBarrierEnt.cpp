@@ -15,7 +15,7 @@
 DEF_ENT_TYPE(GravityBarrierEnt)
 
 static eg::Buffer vertexBuffer;
-static eg::MeshBatch::Mesh barrierMesh;
+static eg::MeshBuffersDescriptor gravityBarrierMeshBuffersDescriptor;
 
 static eg::Model* barrierBorderModel;
 static size_t meshIndexBody;
@@ -29,10 +29,10 @@ static void OnInit()
 	vertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer, sizeof(vertices), vertices);
 	vertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
 
-	barrierMesh.firstIndex = 0;
-	barrierMesh.firstVertex = 0;
-	barrierMesh.numElements = 4;
-	barrierMesh.vertexBuffer = vertexBuffer;
+	gravityBarrierMeshBuffersDescriptor = {
+		.vertexBuffer = vertexBuffer,
+		.vertexStreamOffsets = { 0 },
+	};
 
 	barrierBorderModel = &eg::GetAsset<eg::Model>("Models/GravityBarrierBorder.obj");
 	meshIndexBody = barrierBorderModel->GetMeshIndex("Body");
@@ -133,7 +133,9 @@ void GravityBarrierEnt::CommonDraw(const EntDrawArgs& args)
 		m_material.bitangent = bitangent;
 		m_material.waterDistanceTexture = waterDistanceTexture;
 
-		args.transparentMeshBatch->AddNoData(barrierMesh, m_material, DepthDrawOrder(m_position));
+		args.transparentMeshBatch->AddNoData(
+			{ .buffersDescriptor = &gravityBarrierMeshBuffersDescriptor, .numElements = 4 }, m_material,
+			DepthDrawOrder(m_position));
 	}
 
 	glm::vec3 tangentNorm = tangent / tangentLen;

@@ -223,3 +223,8 @@ bool GravityBarrierMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* draw
 
 	return true;
 }
+
+eg::IMaterial::VertexInputConfiguration GravityBarrierMaterial::GetVertexInputConfiguration(const void* drawArgs) const
+{
+	return VertexInputConfiguration{ .vertexBindingsMask = 1 };
+}

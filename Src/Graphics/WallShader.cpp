@@ -1,11 +1,11 @@
 #include "WallShader.hpp"
 
+#include "../Editor/EditorGraphics.hpp"
 #include "../Settings.hpp"
 #include "DeferredRenderer.hpp"
 #include "GraphicsCommon.hpp"
 #include "Lighting/PointLightShadowMapper.hpp"
 #include "RenderSettings.hpp"
-#include "../Editor/EditorGraphics.hpp"
 
 struct
 {
@@ -83,8 +83,10 @@ void InitializeWallShader()
 		                                     offsetof(WallVertex, normalAndRoughnessLo) };
 	editorPipelineCI.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 3,
 		                                     offsetof(WallVertex, tangentAndRoughnessHi) };
-	editorPipelineCI.colorAttachmentFormats[0] = EDITOR_COLOR_FORMAT;;
-	editorPipelineCI.depthAttachmentFormat = EDITOR_DEPTH_FORMAT;;
+	editorPipelineCI.colorAttachmentFormats[0] = EDITOR_COLOR_FORMAT;
+	;
+	editorPipelineCI.depthAttachmentFormat = EDITOR_DEPTH_FORMAT;
+	;
 	wr.pipelineEditor = eg::Pipeline::Create(editorPipelineCI);
 
 	// Creates the editor border pipeline
@@ -100,8 +102,10 @@ void InitializeWallShader()
 	borderPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 4, offsetof(WallBorderVertex, position) };
 	borderPipelineCI.vertexAttributes[1] = { 0, eg::DataType::SInt8Norm, 3, offsetof(WallBorderVertex, normal1) };
 	borderPipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, offsetof(WallBorderVertex, normal2) };
-	borderPipelineCI.colorAttachmentFormats[0] = EDITOR_COLOR_FORMAT;;
-	borderPipelineCI.depthAttachmentFormat = EDITOR_DEPTH_FORMAT;;
+	borderPipelineCI.colorAttachmentFormats[0] = EDITOR_COLOR_FORMAT;
+	;
+	borderPipelineCI.depthAttachmentFormat = EDITOR_DEPTH_FORMAT;
+	;
 	wr.pipelineBorderEditor = eg::Pipeline::Create(borderPipelineCI);
 
 	const eg::SpecializationConstantEntry plsPipelineSpecConstants[2] = { { 10, 0, 4 }, { 11, 4, 4 } };

@@ -39,6 +39,8 @@ public:
 
 	OrderRequirement GetOrderRequirement() const override { return OrderRequirement::OnlyUnordered; }
 
+	VertexInputConfiguration GetVertexInputConfiguration(const void* drawArgs) const override;
+
 	bool CheckInstanceDataType(const std::type_info* instanceDataType) const override;
 
 	const eg::Texture& AlbedoTexture() const { return *m_albedoTexture; }
@@ -47,8 +49,11 @@ public:
 	static const StaticPropMaterial& GetFromWallMaterial(uint32_t index);
 
 	static void InitializeForCommon3DVS(eg::GraphicsPipelineCreateInfo& pipelineCI);
+	static void InitializeInstanceDataVertexInput(eg::GraphicsPipelineCreateInfo& pipelineCI, uint32_t firstAttribute);
 
 	static void LazyInitGlobals();
+
+	static VertexInputConfiguration GetVertexInputConfiguration(bool alphaTest, MeshDrawMode drawMode);
 
 private:
 	friend bool StaticPropMaterialAssetLoader(const eg::AssetLoadContext& loadContext);

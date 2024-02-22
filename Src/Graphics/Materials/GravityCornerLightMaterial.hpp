@@ -13,6 +13,8 @@ public:
 
 	virtual OrderRequirement GetOrderRequirement() const override { return OrderRequirement::OnlyUnordered; }
 
+	VertexInputConfiguration GetVertexInputConfiguration(const void* drawArgs) const override;
+
 	void Activate(const glm::vec3& position);
 
 	void Update(float dt);

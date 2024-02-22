@@ -48,7 +48,7 @@ bool LightStripEditorComponent::CollectIcons(const EditorState& editorState, std
 			{
 				EditorIcon icon = editorState.CreateIcon(
 					activator->waypoints[i].position,
-					[this, activatorEntity, activator, i, selectedEntities = editorState.selectedEntities]
+					[this, activatorEntity, activator, i]
 					{
 						m_editingLightStripEntity = activator->lightStripEntity;
 						m_editingWayPointIndex = eg::ToInt(i);

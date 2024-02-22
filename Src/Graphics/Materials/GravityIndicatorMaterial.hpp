@@ -25,5 +25,9 @@ public:
 
 	bool CheckInstanceDataType(const std::type_info* instanceDataType) const override;
 
+	VertexInputConfiguration GetVertexInputConfiguration(const void* drawArgs) const override;
+
 	static GravityIndicatorMaterial instance;
+
+	static constexpr uint32_t INSTANCE_DATA_BINDING = 1;
 };

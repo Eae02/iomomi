@@ -47,4 +47,3 @@ void ParticleRenderer::Draw(const eg::ParticleManager& particleManager, eg::Text
 
 	eg::DC.Draw(0, 4, 0, particleManager.ParticlesToDraw());
 }
-

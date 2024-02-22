@@ -79,7 +79,7 @@ EditorSelectionMesh AxisAlignedQuadComp::GetEditorSelectionMesh(const glm::vec3&
 	if (basicCubeModel == nullptr)
 	{
 		basicCubeModel = &eg::GetAsset<eg::Model>("Models/BasicCube.aa.obj");
-		basicCubeCollisionMesh = basicCubeModel->MakeCollisionMesh();
+		basicCubeCollisionMesh = basicCubeModel->MakeCollisionMesh().value();
 	}
 
 	auto [tangent, bitangent] = GetTangents(0);

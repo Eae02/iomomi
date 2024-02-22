@@ -41,7 +41,7 @@ static void OnInit()
 	std::vector<eg::CollisionMesh> buttonRCollisionMeshes;
 	for (size_t i = 0; i < pumpModel->NumMeshes(); i++)
 	{
-		eg::CollisionMesh cm = pumpModel->MakeCollisionMesh(i);
+		eg::CollisionMesh cm = pumpModel->MakeCollisionMesh(i).value();
 		std::string_view meshName = pumpModel->GetMesh(i).name;
 		if (meshName.starts_with("ButtonL"))
 		{
@@ -147,7 +147,7 @@ void PumpEnt::CommonDraw(const EntDrawArgs& args)
 
 		glm::mat4 transform = glm::translate(m_transform, BUTTON_PUSH_VECTOR * buttonAnimationIntensity);
 
-		int materialIndex = pumpModel->GetMesh(m).materialIndex;
+		auto materialIndex = pumpModel->GetMesh(m).materialIndex;
 		if (materialIndex == mainMaterialIndex)
 		{
 			args.meshBatch->AddModelMesh(*pumpModel, m, *pumpBodyMaterial, StaticPropMaterial::InstanceData(transform));

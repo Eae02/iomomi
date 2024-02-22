@@ -20,7 +20,7 @@ private:
 
 	uint32_t m_levels;
 	eg::Format m_format;
-	
+
 	eg::PipelineRef m_blurPipeline;
 
 	uint32_t m_inputWidth = 0;

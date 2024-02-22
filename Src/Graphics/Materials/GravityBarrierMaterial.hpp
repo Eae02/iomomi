@@ -23,6 +23,8 @@ public:
 
 	virtual OrderRequirement GetOrderRequirement() const override { return OrderRequirement::OnlyOrdered; }
 
+	VertexInputConfiguration GetVertexInputConfiguration(const void* drawArgs) const override;
+
 	glm::vec3 position;
 	glm::vec3 tangent;
 	glm::vec3 bitangent;

@@ -9,6 +9,8 @@ public:
 
 	bool BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const override;
 
+	VertexInputConfiguration GetVertexInputConfiguration(const void* drawArgs) const override;
+
 	float intensity = 1;
 	float timeOffset = 0;
 };

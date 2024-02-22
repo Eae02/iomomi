@@ -38,18 +38,18 @@ struct ModelOption
 		if (!meshName.empty())
 		{
 			meshIndex = model->RequireMeshIndex(meshName);
-			selectionMesh = model->MakeCollisionMesh(meshIndex);
+			selectionMesh = model->MakeCollisionMesh(meshIndex).value();
 		}
 		else
 		{
 			meshIndex = -1;
-			selectionMesh = model->MakeCollisionMesh();
+			selectionMesh = model->MakeCollisionMesh().value();
 		}
 	}
 
 	void SetCollisionMesh(std::string_view collisionMeshName)
 	{
-		collisionMesh = eg::GetAsset<eg::Model>(collisionMeshName).MakeCollisionMesh(0);
+		collisionMesh = eg::GetAsset<eg::Model>(collisionMeshName).MakeCollisionMesh(0).value();
 	}
 };
 
@@ -74,7 +74,7 @@ static void OnInit()
 	pipeStraight.name = "Pipe (straight)";
 	pipeStraight.serializedName = "PipeS";
 	pipeStraight.collisionMesh =
-		pipeStraight.model->MakeCollisionMesh(pipeStraight.model->RequireMeshIndex("straight.col"));
+		pipeStraight.model->MakeCollisionMesh(pipeStraight.model->RequireMeshIndex("straight.col")).value();
 	pipeStraight.collisionMesh->FlipWinding();
 	pipeStraight.repeatAxis = 1;
 	pipeStraight.repeatDistance = 1;
@@ -85,7 +85,7 @@ static void OnInit()
 	ModelOption pipeBend("Models/Pipe.aa.obj", "bend", { "Materials/PipeCenter.yaml" });
 	pipeBend.name = "Pipe (bend)";
 	pipeBend.serializedName = "PipeB";
-	pipeBend.collisionMesh = pipeBend.model->MakeCollisionMesh(pipeBend.model->RequireMeshIndex("bend.col"));
+	pipeBend.collisionMesh = pipeBend.model->MakeCollisionMesh(pipeBend.model->RequireMeshIndex("bend.col")).value();
 	pipeBend.collisionMesh->FlipWinding();
 	modelOptions.push_back(std::move(pipeBend));
 

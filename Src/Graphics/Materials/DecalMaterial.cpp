@@ -1,14 +1,17 @@
 #include "DecalMaterial.hpp"
 
-#include "../RenderSettings.hpp"
-#include "MeshDrawArgs.hpp"
 #include "../../Editor/EditorGraphics.hpp"
+#include "../RenderSettings.hpp"
+#include "../Vertex.hpp"
+#include "MeshDrawArgs.hpp"
 
 static eg::Pipeline decalsGamePipeline;
 static eg::Pipeline decalsGamePipelineInheritNormals;
 static eg::Pipeline decalsEditorPipeline;
 
 static eg::Buffer decalVertexBuffer;
+
+static eg::MeshBuffersDescriptor decalBuffersDescriptor;
 
 static float decalVertexData[] = { -1, -1, 1, -1, -1, 1, 1, 1 };
 
@@ -33,13 +36,13 @@ void DecalMaterial::LazyInitGlobals()
 	pipelineCI.cullMode = eg::CullMode::Back;
 	pipelineCI.topology = eg::Topology::TriangleStrip;
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
-	pipelineCI.vertexBindings[0] = { sizeof(float) * 2, eg::InputRate::Vertex };
-	pipelineCI.vertexBindings[1] = { sizeof(DecalMaterial::InstanceData), eg::InputRate::Instance };
-	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 2, 0 };
-	pipelineCI.vertexAttributes[1] = { 1, eg::DataType::Float32, 4, 0 * sizeof(float) * 4 };
-	pipelineCI.vertexAttributes[2] = { 1, eg::DataType::Float32, 4, 1 * sizeof(float) * 4 };
-	pipelineCI.vertexAttributes[3] = { 1, eg::DataType::Float32, 4, 2 * sizeof(float) * 4 };
-	pipelineCI.vertexAttributes[4] = { 1, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
+	pipelineCI.vertexBindings[POSITION_BINDING] = { sizeof(float) * 2, eg::InputRate::Vertex };
+	pipelineCI.vertexBindings[INSTANCE_DATA_BINDING] = { sizeof(DecalMaterial::InstanceData), eg::InputRate::Instance };
+	pipelineCI.vertexAttributes[0] = { POSITION_BINDING, eg::DataType::Float32, 2, 0 };
+	pipelineCI.vertexAttributes[1] = { INSTANCE_DATA_BINDING, eg::DataType::Float32, 4, 0 * sizeof(float) * 4 };
+	pipelineCI.vertexAttributes[2] = { INSTANCE_DATA_BINDING, eg::DataType::Float32, 4, 1 * sizeof(float) * 4 };
+	pipelineCI.vertexAttributes[3] = { INSTANCE_DATA_BINDING, eg::DataType::Float32, 4, 2 * sizeof(float) * 4 };
+	pipelineCI.vertexAttributes[4] = { INSTANCE_DATA_BINDING, eg::DataType::Float32, 4, 3 * sizeof(float) * 4 };
 	pipelineCI.blendStates[0] = eg::BlendState(
 		eg::BlendFunc::Add, eg::BlendFunc::Add,
 		/* srcColor */ eg::BlendFactor::SrcAlpha,
@@ -72,6 +75,11 @@ void DecalMaterial::LazyInitGlobals()
 
 	decalVertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer, sizeof(decalVertexData), decalVertexData);
 	decalVertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
+
+	decalBuffersDescriptor = {
+		.vertexBuffer = decalVertexBuffer,
+		.vertexStreamOffsets = { 0 },
+	};
 }
 
 static void OnShutdown()
@@ -130,13 +138,21 @@ bool DecalMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) con
 
 eg::MeshBatch::Mesh DecalMaterial::GetMesh()
 {
-	eg::MeshBatch::Mesh mesh = {};
-	mesh.numElements = 4;
-	mesh.vertexBuffer = decalVertexBuffer;
-	return mesh;
+	return {
+		.buffersDescriptor = &decalBuffersDescriptor,
+		.numElements = 4,
+	};
 }
 
 bool DecalMaterial::CheckInstanceDataType(const std::type_info* instanceDataType) const
 {
 	return instanceDataType == &typeid(InstanceData);
+}
+
+eg::IMaterial::VertexInputConfiguration DecalMaterial::GetVertexInputConfiguration(const void* drawArgs) const
+{
+	return VertexInputConfiguration{
+		.vertexBindingsMask = 0b1,
+		.instanceDataBindingIndex = INSTANCE_DATA_BINDING,
+	};
 }

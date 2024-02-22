@@ -4,9 +4,9 @@
 #include "../../Settings.hpp"
 #include "../../World/Entities/Components/ActivatorComp.hpp"
 #include "../../World/Entities/EntTypes/Activation/ActivationLightStripEnt.hpp"
+#include "../EditorGraphics.hpp"
 #include "../PrimitiveRenderer.hpp"
 #include "../SelectionRenderer.hpp"
-#include "../EditorGraphics.hpp"
 
 EntityEditorComponent::EntityEditorComponent()
 {
@@ -520,7 +520,7 @@ bool EntityEditorComponent::CollectIcons(const EditorState& editorState, std::ve
 				{
 					if (!es->IsEntitySelected(*entityWP))
 					{
-						es->selectedEntities->push_back(move(entityWP));
+						es->selectedEntities->push_back(std::move(entityWP));
 					}
 				});
 			icon.iconIndex = iconIndex;

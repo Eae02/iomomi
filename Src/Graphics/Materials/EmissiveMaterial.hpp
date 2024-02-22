@@ -17,5 +17,9 @@ public:
 
 	virtual OrderRequirement GetOrderRequirement() const override { return OrderRequirement::OnlyUnordered; }
 
+	VertexInputConfiguration GetVertexInputConfiguration(const void* drawArgs) const override;
+
 	static EmissiveMaterial instance;
+
+	static constexpr uint32_t INSTANCE_DATA_BINDING = 1;
 };

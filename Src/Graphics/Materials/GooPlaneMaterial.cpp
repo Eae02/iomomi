@@ -94,3 +94,8 @@ bool GooPlaneMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) 
 {
 	return true;
 }
+
+eg::IMaterial::VertexInputConfiguration GooPlaneMaterial::GetVertexInputConfiguration(const void* drawArgs) const
+{
+	return VertexInputConfiguration{ .vertexBindingsMask = 1 };
+}

@@ -49,4 +49,3 @@ glm::mat3 GuiFrameArgs::GetMatrixToNDC() const
 	return glm::translate(glm::mat3(1), glm::vec2(-1)) *
 	       glm::scale(glm::mat3(1), glm::vec2(2.0f / canvasWidth, 2.0f / canvasHeight));
 }
-

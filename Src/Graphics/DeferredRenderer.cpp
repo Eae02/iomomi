@@ -81,7 +81,7 @@ DeferredRenderer::DeferredRenderer()
 		.minFilter = eg::TextureFilter::Nearest,
 		.magFilter = eg::TextureFilter::Nearest,
 	});
-	
+
 	// Creates the SSAO rotation texture
 	eg::TextureCreateInfo textureCI;
 	textureCI.flags = eg::TextureFlags::ShaderSample | eg::TextureFlags::CopyDst;

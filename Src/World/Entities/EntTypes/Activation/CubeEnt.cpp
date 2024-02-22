@@ -32,10 +32,10 @@ static eg::IMaterial* woodCubeMaterial;
 static void OnInit()
 {
 	cubeModel = &eg::GetAsset<eg::Model>("Models/Cube.aa.obj");
-	cubeSelColMesh = cubeModel->MakeCollisionMesh(0);
+	cubeSelColMesh = cubeModel->MakeCollisionMesh(0).value();
 	cubeMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/Cube.yaml");
 	woodCubeModel = &eg::GetAsset<eg::Model>("Models/WoodCube.aa.obj");
-	woodCubeSelColMesh = cubeModel->MakeCollisionMesh(0);
+	woodCubeSelColMesh = cubeModel->MakeCollisionMesh(0).value();
 	woodCubeMaterial = &eg::GetAsset<StaticPropMaterial>("Materials/WoodCube.yaml");
 }
 
