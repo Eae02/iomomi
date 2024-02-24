@@ -34,7 +34,7 @@ assets:
     size: 12
   - name: GameFont.ttf
     fontName: Orbitron
-    size: 64
+    size: 96
     
   #Audio
   - name: Audio/MenuMouseOver.ogg

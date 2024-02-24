@@ -168,8 +168,6 @@ size_t StaticPropMaterial::PipelineHash() const
 {
 	size_t h = typeid(StaticPropMaterial).hash_code();
 	eg::HashAppend(h, m_textureLayer.value_or(UINT32_MAX));
-	eg::HashAppend(h, m_backfaceCull);
-	eg::HashAppend(h, m_backfaceCullEditor);
 	eg::HashAppend(h, m_alphaTest);
 	return h;
 }
@@ -198,9 +196,6 @@ bool StaticPropMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs
 		return false;
 	cmdCtx.BindPipeline(pipeline);
 
-	bool backfaceCull = mDrawArgs->drawMode == MeshDrawMode::Editor ? m_backfaceCullEditor : m_backfaceCull;
-	cmdCtx.SetCullMode(backfaceCull ? eg::CullMode::Back : eg::CullMode::None);
-
 	if (mDrawArgs->drawMode == MeshDrawMode::PointLightShadow)
 	{
 		mDrawArgs->plShadowRenderArgs->SetPushConstants();
@@ -212,6 +207,9 @@ bool StaticPropMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs
 bool StaticPropMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
 	MeshDrawArgs* mDrawArgs = static_cast<MeshDrawArgs*>(drawArgs);
+
+	bool backfaceCull = mDrawArgs->drawMode == MeshDrawMode::Editor ? m_backfaceCullEditor : m_backfaceCull;
+	cmdCtx.SetCullMode(backfaceCull ? eg::CullMode::Back : eg::CullMode::None);
 
 	if (mDrawArgs->drawMode == MeshDrawMode::PointLightShadow)
 	{

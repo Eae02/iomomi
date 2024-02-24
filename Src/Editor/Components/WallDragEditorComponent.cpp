@@ -395,7 +395,7 @@ void WallDragEditorComponent::RenderSettings(const EditorState& editorState)
 			ImGui::PopID();
 
 			eg::TextureViewHandle textureView;
-			if (i == 0 || !eg::GetGraphicsDeviceInfo().partialTextureViews)
+			if (i == 0 || !eg::HasFlag(eg::GetGraphicsDeviceInfo().features, eg::DeviceFeatureFlags::PartialTextureViews))
 			{
 				textureView = noDrawTex.GetView();
 			}

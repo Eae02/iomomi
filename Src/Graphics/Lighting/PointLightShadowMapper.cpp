@@ -127,7 +127,7 @@ int PointLightShadowMapper::AllocateShadowMap()
 		dsAttachment.subresource.numArrayLayers = 1;
 		shadowMap.framebuffers[i] = eg::Framebuffer({}, dsAttachment);
 
-		if (eg::GetGraphicsDeviceInfo().partialTextureViews)
+		if (eg::HasFlag(eg::GetGraphicsDeviceInfo().features, eg::DeviceFeatureFlags::PartialTextureViews))
 		{
 			shadowMap.layerViews[i] =
 				shadowMap.texture.GetView(dsAttachment.subresource.AsSubresource(), eg::TextureViewType::Flat2D);
@@ -222,7 +222,7 @@ void PointLightShadowMapper::UpdateShadowMaps(
 	};
 
 	// Updates static shadow maps, disabled if partial texture views are not supported
-	if (eg::GetGraphicsDeviceInfo().partialTextureViews)
+	if (eg::HasFlag(eg::GetGraphicsDeviceInfo().features, eg::DeviceFeatureFlags::PartialTextureViews))
 	{
 		renderArgs.renderDynamic = false;
 		renderArgs.renderStatic = true;

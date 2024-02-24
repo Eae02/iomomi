@@ -35,6 +35,7 @@ void DecalMaterial::LazyInitGlobals()
 	pipelineCI.numColorAttachments = 2;
 	pipelineCI.cullMode = eg::CullMode::Back;
 	pipelineCI.topology = eg::Topology::TriangleStrip;
+	pipelineCI.depthCompare = eg::CompareOp::LessOrEqual;
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.vertexBindings[POSITION_BINDING] = { sizeof(float) * 2, eg::InputRate::Vertex };
 	pipelineCI.vertexBindings[INSTANCE_DATA_BINDING] = { sizeof(DecalMaterial::InstanceData), eg::InputRate::Instance };

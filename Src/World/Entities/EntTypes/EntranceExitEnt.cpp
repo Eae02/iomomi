@@ -208,7 +208,8 @@ glm::mat4 EntranceExitEnt::GetEditorTransform() const
 	{
 		transform *= glm::scale(glm::mat4(), glm::vec3(-1, 1, 1));
 	}
-	transform *= glm::translate(glm::mat4(), glm::vec3(-MESH_LENGTH - 0.01f, 0, 0));
+	constexpr float Z_FIGHTING_OFFSET = 0.1f;
+	transform *= glm::translate(glm::mat4(), glm::vec3(-MESH_LENGTH - Z_FIGHTING_OFFSET, 0, 0));
 	return transform;
 }
 
