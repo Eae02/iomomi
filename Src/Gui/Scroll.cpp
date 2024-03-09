@@ -14,13 +14,15 @@ void ScrollPanel::SetScroll(float s)
 
 	m_barAreaRectangle = eg::Rectangle(
 		screenRectangle.MaxX() - SCROLL_BAR_W - marginX, screenRectangle.y + marginY, SCROLL_BAR_W,
-		screenRectangle.h - marginY * 2);
+		screenRectangle.h - marginY * 2
+	);
 
 	const float barHeight = m_barAreaRectangle.h * screenRectangle.h / contentHeight;
 	const float barYOffset = (scroll / static_cast<float>(m_maxScroll)) * (m_barAreaRectangle.h - barHeight);
 	m_barActiveRectangle = eg::Rectangle(
 		m_barAreaRectangle.x + 1, m_barAreaRectangle.y + m_barAreaRectangle.h - barYOffset - barHeight,
-		SCROLL_BAR_W - 2, barHeight);
+		SCROLL_BAR_W - 2, barHeight
+	);
 }
 
 void ScrollPanel::Update(const GuiFrameArgs& frameArgs, bool canInteract)
@@ -39,7 +41,8 @@ void ScrollPanel::Update(const GuiFrameArgs& frameArgs, bool canInteract)
 	{
 		eg::Rectangle dragGrabRectangle(
 			m_barActiveRectangle.x - dragGrabMarginX, m_barActiveRectangle.y,
-			m_barActiveRectangle.w + dragGrabMarginX * 2, m_barActiveRectangle.h);
+			m_barActiveRectangle.w + dragGrabMarginX * 2, m_barActiveRectangle.h
+		);
 		const bool canBeginDrag = !isDragging && dragGrabRectangle.Contains(frameArgs.cursorPos);
 
 		if (canBeginDrag && eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft))
@@ -56,7 +59,8 @@ void ScrollPanel::Update(const GuiFrameArgs& frameArgs, bool canInteract)
 			{
 				velocity = 0;
 				SetScroll(
-					scroll + (float)eg::CursorDeltaY() * m_maxScroll / (m_barAreaRectangle.h - m_barActiveRectangle.h));
+					scroll + (float)eg::CursorDeltaY() * m_maxScroll / (m_barAreaRectangle.h - m_barActiveRectangle.h)
+				);
 			}
 		}
 

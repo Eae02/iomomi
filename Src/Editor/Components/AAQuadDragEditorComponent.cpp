@@ -62,7 +62,8 @@ bool AAQuadDragEditorComponent::CollectIcons(const EditorState& editorState, std
 					m_activeEntity = entityWP;
 					draggingBitangent = d / 2;
 					draggingNegative = d % 2;
-				});
+				}
+			);
 			icon.shouldClearSelection = false;
 			icon.iconIndex = 9;
 			icons.push_back(std::move(icon));

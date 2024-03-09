@@ -48,14 +48,15 @@ void LiquidPlaneComp::MaybeUpdate(const World& world)
 			[&](const Ent& entity)
 			{
 				const auto& waterBlockComp = *entity.GetComponent<WaterBlockComp>();
-				if (waterBlockComp.blockedGravities[static_cast<int>(Dir::NegY)] &&
+				if (eg::HasFlag(waterBlockComp.blockedGravities, DirFlags::NegY) &&
 		            !waterBlockComp.onlyBlockDuringSimulation)
 				{
 					blockedByEntity.insert(
-						blockedByEntity.end(), waterBlockComp.blockedVoxels.begin(),
-						waterBlockComp.blockedVoxels.end());
+						blockedByEntity.end(), waterBlockComp.blockedVoxels.begin(), waterBlockComp.blockedVoxels.end()
+					);
 				}
-			});
+			}
+		);
 	std::sort(blockedByEntity.begin(), blockedByEntity.end(), Vec3Compare());
 	blockedByEntity.erase(std::unique(blockedByEntity.begin(), blockedByEntity.end()), blockedByEntity.end());
 
@@ -149,14 +150,16 @@ void LiquidPlaneComp::GenerateMesh()
 	{
 		m_verticesCapacity = eg::RoundToNextMultiple(vertices.size(), 1024);
 		m_vertexBuffer = eg::Buffer(
-			eg::BufferFlags::CopyDst | eg::BufferFlags::VertexBuffer, m_verticesCapacity * sizeof(Vertex), nullptr);
+			eg::BufferFlags::CopyDst | eg::BufferFlags::VertexBuffer, m_verticesCapacity * sizeof(Vertex), nullptr
+		);
 	}
 
 	if (m_indicesCapacity < indices.size())
 	{
 		m_indicesCapacity = eg::RoundToNextMultiple(indices.size(), 1024);
 		m_indexBuffer = eg::Buffer(
-			eg::BufferFlags::CopyDst | eg::BufferFlags::IndexBuffer, m_indicesCapacity * sizeof(uint16_t), nullptr);
+			eg::BufferFlags::CopyDst | eg::BufferFlags::IndexBuffer, m_indicesCapacity * sizeof(uint16_t), nullptr
+		);
 	}
 
 	eg::DC.CopyBuffer(uploadBuffer.buffer, m_vertexBuffer, uploadBuffer.offset, 0, verticesSize);

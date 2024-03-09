@@ -105,8 +105,8 @@ SettingEntry MakeKeySetting(std::string name, KeyBinding Settings::*setting)
 	};
 	s.save = [=](const Settings& st)
 	{
-		return eg::Concat(
-			{ eg::ButtonToString((st.*setting).kbmButton), " ", eg::ButtonToString((st.*setting).controllerButton) });
+		return eg::Concat({ eg::ButtonToString((st.*setting).kbmButton), " ",
+		                    eg::ButtonToString((st.*setting).controllerButton) });
 	};
 	s.name = std::move(name);
 	return s;
@@ -124,6 +124,8 @@ const SettingEntry settingEntries[] = {
 	MakeNumberSetting("anisotropicFiltering", &Settings::anisotropicFiltering),
 
 	MakeBoolSetting("showExtraLevels", &Settings::showExtraLevels),
+	MakeNumberSetting("editorMouseSensitivity", &Settings::editorMouseSensitivity),
+
 	MakeNumberSetting("fieldOfView", &Settings::fieldOfViewDeg),
 	MakeNumberSetting("exposure", &Settings::exposure),
 	MakeNumberSetting("lookSensitivityMS", &Settings::lookSensitivityMS),

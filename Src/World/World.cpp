@@ -86,7 +86,8 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 	world->thumbnailCameraPos =
 		glm::vec3(worldPB.thumbnail_camera_x(), worldPB.thumbnail_camera_y(), worldPB.thumbnail_camera_z());
 	world->thumbnailCameraDir = glm::normalize(
-		glm::vec3(worldPB.thumbnail_camera_dx(), worldPB.thumbnail_camera_dy(), worldPB.thumbnail_camera_dz()));
+		glm::vec3(worldPB.thumbnail_camera_dx(), worldPB.thumbnail_camera_dy(), worldPB.thumbnail_camera_dz())
+	);
 	world->extraWaterParticles = worldPB.extra_water_particles();
 	world->playerHasGravityGun = worldPB.player_has_gravity_gun();
 	world->title = worldPB.title();
@@ -119,7 +120,8 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 
 		world->entManager.ForEachOfType<CubeSpawnerEnt>(
 			[&](CubeSpawnerEnt& ent)
-			{ world->cubeSpawnerPositions2.emplace_back(glm::round(ent.GetPosition() * 2.0f)); });
+			{ world->cubeSpawnerPositions2.emplace_back(glm::round(ent.GetPosition() * 2.0f)); }
+		);
 	}
 	ActivationLightStripEnt::GenerateAll(*world);
 
@@ -186,7 +188,8 @@ void World::CollectPhysicsObjects(PhysicsEngine& physicsEngine, float dt)
 	physicsEngine.RegisterObject(&m_physicsObject);
 
 	entManager.ForEachWithFlag(
-		EntTypeFlags::HasPhysics, [&](Ent& entity) { entity.CollectPhysicsObjects(physicsEngine, dt); });
+		EntTypeFlags::HasPhysics, [&](Ent& entity) { entity.CollectPhysicsObjects(physicsEngine, dt); }
+	);
 }
 
 void World::Update(const WorldUpdateArgs& args)
@@ -240,10 +243,12 @@ void World::PrepareForDraw(PrepareDrawArgs& args)
 					transform * glm::translate(glm::mat4(1.0f), glm::vec3(0.01f, 0.01f, 0));
 				args.meshBatch->AddModelMesh(
 					gravityCornerModel, meshIndex, GravityCornerLightMaterial::instance,
-					StaticPropMaterial::InstanceData(transformLight));
+					StaticPropMaterial::InstanceData(transformLight)
+				);
 
 				args.meshBatch->AddModelMesh(
-					gravityCornerModel, meshIndex, gravityCornerMat, StaticPropMaterial::InstanceData(transform));
+					gravityCornerModel, meshIndex, gravityCornerMat, StaticPropMaterial::InstanceData(transform)
+				);
 			}
 		}
 	}
@@ -330,12 +335,14 @@ void World::PrepareMeshes(bool isEditor)
 	// Uploads data to the vertex and index buffers
 	eg::DC.CopyBuffer(uploadBuffer.buffer, m_voxelVertexBuffer.buffer, uploadBuffer.offset, 0, wallVerticesBytes);
 	eg::DC.CopyBuffer(
-		uploadBuffer.buffer, m_voxelIndexBuffer.buffer, uploadBuffer.offset + wallVerticesBytes, 0, wallIndicesBytes);
+		uploadBuffer.buffer, m_voxelIndexBuffer.buffer, uploadBuffer.offset + wallVerticesBytes, 0, wallIndicesBytes
+	);
 	if (!borderVertices.empty())
 	{
 		eg::DC.CopyBuffer(
 			uploadBuffer.buffer, m_borderVertexBuffer.buffer,
-			uploadBuffer.offset + wallVerticesBytes + wallIndicesBytes, 0, borderVerticesBytes);
+			uploadBuffer.offset + wallVerticesBytes + wallIndicesBytes, 0, borderVerticesBytes
+		);
 		m_borderVertexBuffer.buffer.UsageHint(eg::BufferUsage::VertexBuffer);
 	}
 
@@ -349,7 +356,8 @@ void World::PrepareMeshes(bool isEditor)
 }
 
 eg::CollisionMesh World::BuildMesh(
-	std::vector<WallVertex>& vertices, std::vector<uint32_t>& indices, bool includeNoDraw) const
+	std::vector<WallVertex>& vertices, std::vector<uint32_t>& indices, bool includeNoDraw
+) const
 {
 	std::vector<glm::vec3> collisionVertices;
 	std::vector<uint32_t> collisionIndices;
@@ -479,8 +487,8 @@ eg::CollisionMesh World::BuildMesh(
 	return collisionMesh;
 }
 
-void World::BuildBorderMesh(
-	std::vector<WallBorderVertex>* borderVertices, std::vector<GravityCorner>& gravityCorners) const
+void World::BuildBorderMesh(std::vector<WallBorderVertex>* borderVertices, std::vector<GravityCorner>& gravityCorners)
+	const
 {
 	for (const auto& voxel : voxels.m_voxels)
 	{

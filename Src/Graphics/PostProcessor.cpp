@@ -12,20 +12,15 @@ static float* vignettePower = eg::TweakVarFloat("vign_power", 1.2f, 0);
 
 eg::Pipeline PostProcessor::CreatePipeline(const PipelineVariantKey& variantKey)
 {
-	uint32_t enableFXAA = variantKey.enableFXAA;
-
-	eg::SpecializationConstantEntry specConstEntries[1];
-	specConstEntries[0].constantID = 0;
-	specConstEntries[0].size = sizeof(uint32_t);
-	specConstEntries[0].offset = 0;
+	const eg::SpecializationConstantEntry specConstants[] = { { 0, static_cast<uint32_t>(variantKey.enableFXAA) } };
 
 	eg::GraphicsPipelineCreateInfo postPipelineCI;
-	postPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
-	postPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.fs.glsl").DefaultVariant();
+	postPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").ToStageInfo();
+	postPipelineCI.fragmentShader = {
+		.shaderModule = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.fs.glsl").DefaultVariant(),
+		.specConstants = specConstants,
+	};
 	postPipelineCI.label = "PostProcess";
-	postPipelineCI.fragmentShader.specConstants = specConstEntries;
-	postPipelineCI.fragmentShader.specConstantsData = &enableFXAA;
-	postPipelineCI.fragmentShader.specConstantsDataSize = sizeof(enableFXAA);
 	postPipelineCI.colorAttachmentFormats[0] = variantKey.outputFormat;
 	if (variantKey.outputFormat == eg::Format::DefaultColor)
 		postPipelineCI.depthAttachmentFormat = eg::Format::DefaultDepthStencil;
@@ -34,7 +29,8 @@ eg::Pipeline PostProcessor::CreatePipeline(const PipelineVariantKey& variantKey)
 
 void PostProcessor::Render(
 	eg::TextureRef input, const eg::BloomRenderer::RenderTarget* bloomRenderTarget, eg::FramebufferHandle output,
-	eg::Format outputFormat, uint32_t outputResX, uint32_t outputResY, float colorScale)
+	eg::Format outputFormat, uint32_t outputResX, uint32_t outputResY, float colorScale
+)
 {
 	PipelineVariantKey pipelineVariantKey = {
 		.enableFXAA = settings.enableFXAA,
@@ -43,7 +39,8 @@ void PostProcessor::Render(
 
 	eg::Pipeline* pipeline;
 	auto pipelineIt = std::find_if(
-		m_pipelines.begin(), m_pipelines.end(), [&](const auto& p) { return p.first == pipelineVariantKey; });
+		m_pipelines.begin(), m_pipelines.end(), [&](const auto& p) { return p.first == pipelineVariantKey; }
+	);
 	if (pipelineIt != m_pipelines.end())
 	{
 		pipeline = &pipelineIt->second;

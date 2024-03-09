@@ -93,7 +93,8 @@ void PlatformEnt::RenderSettings()
 
 void PlatformEnt::DrawSliderMesh(
 	eg::MeshBatch& meshBatch, const eg::Frustum& frustum, const glm::vec3& start, const glm::vec3& toEnd,
-	const glm::vec3& up, float scale)
+	const glm::vec3& up, float scale
+)
 {
 	const float slideDist = glm::length(toEnd);
 	const glm::vec3 normToEnd = toEnd / slideDist;
@@ -113,7 +114,8 @@ void PlatformEnt::DrawSliderMesh(
 		if (frustum.Intersects(aabb))
 		{
 			meshBatch.AddModel(
-				*platformSliderModel, *platformSliderMaterial, StaticPropMaterial::InstanceData(partTransform));
+				*platformSliderModel, *platformSliderMaterial, StaticPropMaterial::InstanceData(partTransform)
+			);
 		}
 	}
 }

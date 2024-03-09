@@ -77,7 +77,8 @@ EntityManager EntityManager::Deserialize(std::istream& stream)
 			{
 				serializerMap.emplace(eg::HashFNV1a32(type->name), type);
 			}
-		});
+		}
+	);
 
 	EntityManager mgr;
 
@@ -129,5 +130,6 @@ void EntityManager::Serialize(std::ostream& stream) const
 			std::string serializedData = serializeStream.str();
 			eg::BinWrite(stream, eg::UnsignedNarrow<uint32_t>(serializedData.size()));
 			stream.write(serializedData.data(), serializedData.size());
-		});
+		}
+	);
 }

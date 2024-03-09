@@ -17,7 +17,8 @@ static void OnInit()
 {
 	pushButtonModel = &eg::GetAsset<eg::Model>("Models/PushButton.obj");
 	pushButtonMaterials.resize(
-		pushButtonModel->NumMeshes(), &eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml"));
+		pushButtonModel->NumMeshes(), &eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml")
+	);
 }
 
 EG_ON_INIT(OnInit)

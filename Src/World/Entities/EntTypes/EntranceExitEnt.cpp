@@ -4,9 +4,9 @@
 #include "../../../AudioPlayers.hpp"
 #include "../../../Graphics/Lighting/PointLightShadowMapper.hpp"
 #include "../../../Graphics/Materials/EmissiveMaterial.hpp"
-#include "../../../Graphics/Water/IWaterSimulator.hpp"
 #include "../../../ImGui.hpp"
 #include "../../../Settings.hpp"
+#include "../../../Water/WaterSimulator.hpp"
 #include "../../Player.hpp"
 
 DEF_ENT_TYPE(EntranceExitEnt)
@@ -59,7 +59,8 @@ static void OnInit()
 	entrance.editorExitModel = &eg::GetAsset<eg::Model>("Models/EditorExit.aa.obj");
 
 	entrance.materials.resize(
-		entrance.model->NumMaterials(), &eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml"));
+		entrance.model->NumMaterials(), &eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml")
+	);
 	AssignMaterial("Floor", "Materials/Entrance/Floor.yaml");
 	AssignMaterial("WallPadding", "Materials/Entrance/Padding.yaml");
 	AssignMaterial("CeilPipe", "Materials/Pipe2.yaml");
@@ -239,8 +240,7 @@ void EntranceExitEnt::Update(const WorldUpdateArgs& args)
 
 	bool open = m_activatable.AllSourcesActive() &&
 	            glm::length2(toPlayer) < DOOR_OPEN_DIST * DOOR_OPEN_DIST && // Player is close to the door
-	            glm::dot(toPlayer, openDirToPlayer) > minDist &&            // Player is on the right side of the door
-	            (args.waterSim == nullptr || args.waterSim->IsPresimComplete());
+	            glm::dot(toPlayer, openDirToPlayer) > minDist;              // Player is on the right side of the door
 
 	m_isPlayerCloseWithWrongGravity = false;
 	if (open && args.player->CurrentDown() != OppositeDir(UP_VECTORS[static_cast<int>(direction)]))
@@ -281,7 +281,8 @@ void EntranceExitEnt::Update(const WorldUpdateArgs& args)
 	m_pointLight->enabled = m_isPlayerInside;
 
 	const glm::vec3 fanLightPos(
-		fanRotationCenter.x, fanRotationCenter.y + *fanLightYOffset, fanRotationCenter.z + *fanLightZOffset);
+		fanRotationCenter.x, fanRotationCenter.y + *fanLightYOffset, fanRotationCenter.z + *fanLightZOffset
+	);
 	m_fanPointLight->position = GetTransform() * glm::vec4(fanLightPos, 1.0f);
 	m_fanPointLight->enabled = m_isPlayerInside && settings.shadowQuality >= QualityLevel::Medium;
 	if (args.plShadowMapper && m_fanPointLight->enabled)
@@ -349,13 +350,15 @@ void EntranceExitEnt::GameDraw(const EntGameDrawArgs& args)
 			{
 				args.meshBatch->AddModelMesh(
 					*entrance.model, i, EmissiveMaterial::instance,
-					EmissiveMaterial::InstanceData{ transforms[i], FloorLightColorV });
+					EmissiveMaterial::InstanceData{ transforms[i], FloorLightColorV }
+				);
 			}
 			else if (materialIndex == entrance.ceilLightMaterialIdx)
 			{
 				args.meshBatch->AddModelMesh(
 					*entrance.model, i, EmissiveMaterial::instance,
-					EmissiveMaterial::InstanceData{ transforms[i], CeilLightColorV });
+					EmissiveMaterial::InstanceData{ transforms[i], CeilLightColorV }
+				);
 			}
 			else
 			{

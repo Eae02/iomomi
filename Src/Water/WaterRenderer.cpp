@@ -1,8 +1,8 @@
 #include "WaterRenderer.hpp"
 
-#include "../../Settings.hpp"
-#include "../RenderSettings.hpp"
-#include "../RenderTex.hpp"
+#include "../Graphics/RenderSettings.hpp"
+#include "../Graphics/RenderTex.hpp"
+#include "../Settings.hpp"
 
 static eg::Texture dummyWaterDepthTexture;
 
@@ -18,7 +18,8 @@ static void CreateDummyDepthTexture()
 
 	const float dummyDepthTextureColor[4] = { 1000, 1000, 1000, 1 };
 	dummyWaterDepthTexture.DCUpdateData(
-		eg::TextureRange{ .sizeX = 1, .sizeY = 1, .sizeZ = 1 }, sizeof(dummyDepthTextureColor), dummyDepthTextureColor);
+		eg::TextureRange{ .sizeX = 1, .sizeY = 1, .sizeZ = 1 }, sizeof(dummyDepthTextureColor), dummyDepthTextureColor
+	);
 	dummyWaterDepthTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 }
 
@@ -35,8 +36,6 @@ eg::TextureRef WaterRenderer::GetDummyDepthTexture()
 	return dummyWaterDepthTexture;
 }
 
-#ifdef IOMOMI_ENABLE_WATER
-
 WaterRenderer::WaterRenderer()
 {
 	float quadVBData[] = { -1, -1, -1, 1, 1, -1, 1, 1 };
@@ -52,8 +51,8 @@ WaterRenderer::WaterRenderer()
 	pipelineCITemplate.vertexBindings[0] = { sizeof(float) * 2, eg::InputRate::Vertex };
 
 	eg::GraphicsPipelineCreateInfo pipelineDepthMinCI = pipelineCITemplate;
-	pipelineDepthMinCI.vertexShader = sphereVS.GetVariant("VDepthMin");
-	pipelineDepthMinCI.fragmentShader = sphereDepthFS.GetVariant("VDepthMin");
+	pipelineDepthMinCI.vertexShader = sphereVS.ToStageInfo("VDepthMin");
+	pipelineDepthMinCI.fragmentShader = sphereDepthFS.ToStageInfo("VDepthMin");
 	pipelineDepthMinCI.enableDepthTest = true;
 	pipelineDepthMinCI.enableDepthWrite = true;
 	pipelineDepthMinCI.enableDepthClamp = true;
@@ -64,8 +63,8 @@ WaterRenderer::WaterRenderer()
 	m_pipelineDepthMin = eg::Pipeline::Create(pipelineDepthMinCI);
 
 	eg::GraphicsPipelineCreateInfo pipelineDepthMaxCI = pipelineCITemplate;
-	pipelineDepthMaxCI.vertexShader = sphereVS.GetVariant("VDepthMax");
-	pipelineDepthMaxCI.fragmentShader = sphereDepthFS.GetVariant("VDepthMax");
+	pipelineDepthMaxCI.vertexShader = sphereVS.ToStageInfo("VDepthMax");
+	pipelineDepthMaxCI.fragmentShader = sphereDepthFS.ToStageInfo("VDepthMax");
 	pipelineDepthMaxCI.enableDepthTest = true;
 	pipelineDepthMaxCI.enableDepthWrite = true;
 	pipelineDepthMaxCI.enableDepthClamp = true;
@@ -77,14 +76,14 @@ WaterRenderer::WaterRenderer()
 
 	auto& postFS = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterPost.fs.glsl");
 	eg::GraphicsPipelineCreateInfo pipelinePostCI;
-	pipelinePostCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
+	pipelinePostCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").ToStageInfo();
 
-	pipelinePostCI.fragmentShader = postFS.GetVariant("VStdQual");
+	pipelinePostCI.fragmentShader = postFS.ToStageInfo("VStdQual");
 	pipelinePostCI.label = "WaterPost[LQ]";
 	pipelinePostCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
 	m_pipelinePostStdQual = eg::Pipeline::Create(pipelinePostCI);
 
-	pipelinePostCI.fragmentShader = postFS.GetVariant("VHighQual");
+	pipelinePostCI.fragmentShader = postFS.ToStageInfo("VHighQual");
 	pipelinePostCI.label = "WaterPost[HQ]";
 	pipelinePostCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
 	m_pipelinePostHighQual = eg::Pipeline::Create(pipelinePostCI);
@@ -96,15 +95,15 @@ WaterRenderer::WaterRenderer()
 
 void WaterRenderer::CreateDepthBlurPipelines(uint32_t samples)
 {
-	eg::SpecializationConstantEntry specConstants[] = { { 0, 0, sizeof(uint32_t) } };
+	eg::SpecializationConstantEntry specConstants[] = { { 0, samples } };
 
 	const auto& depthBlurTwoPassFS = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/DepthBlur.fs.glsl");
 	eg::GraphicsPipelineCreateInfo pipelineBlurCI;
-	pipelineBlurCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
-	pipelineBlurCI.fragmentShader = depthBlurTwoPassFS.GetVariant("V1");
-	pipelineBlurCI.fragmentShader.specConstants = specConstants;
-	pipelineBlurCI.fragmentShader.specConstantsData = &samples;
-	pipelineBlurCI.fragmentShader.specConstantsDataSize = sizeof(uint32_t);
+	pipelineBlurCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").ToStageInfo();
+	pipelineBlurCI.fragmentShader = {
+		.shaderModule = depthBlurTwoPassFS.GetVariant("V1"),
+		.specConstants = specConstants,
+	};
 	pipelineBlurCI.colorAttachmentFormats[0] = GetFormatForRenderTexture(RenderTex::WaterDepthBlurred1);
 	pipelineBlurCI.label = "WaterBlur1";
 	m_pipelineBlurPass1 = eg::Pipeline::Create(pipelineBlurCI);
@@ -123,17 +122,17 @@ struct __attribute__((__packed__, __may_alias__)) WaterBlurPC
 	float blurDepthFalloff;
 };
 
-static float* blurRadius = eg::TweakVarFloat("wblur_radius", 1.25f, 0.0f);
+static float* blurRadius = eg::TweakVarFloat("wblur_radius", 1.0f, 0.0f);
 static float* blurDistanceFalloff = eg::TweakVarFloat("wblur_distfall", 0.3f, 0.0f);
 static float* blurDepthFalloff = eg::TweakVarFloat("wblur_depthfall", 0.2f, 0.0f);
 
 /*
 Water quality settings:
-vlow:  6 samples,  16-bit, SQ-Shader
-low:   10 samples, 16-bit, SQ-Shader
-med:   10 samples, 32-bit, SQ-Shader
-high:  16 samples, 32-bit, HQ-Shader
-vhigh: 26 samples, 32-bit, HQ-Shader
+vlow:  4 samples,  16-bit, SQ-Shader
+low:   8 samples, 16-bit, SQ-Shader
+med:   8 samples, 32-bit, SQ-Shader
+high:  8 samples, 32-bit, HQ-Shader
+vhigh: 12 samples, 32-bit, HQ-Shader
 */
 
 void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParticles, RenderTexManager& rtManager)
@@ -167,7 +166,7 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 
 	eg::DC.BindPipeline(m_pipelineDepthMin);
 
-	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
+	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0);
 
 	eg::DC.BindVertexBuffer(0, m_quadVB, 0);
 	eg::DC.BindStorageBuffer(positionsBuffer, 0, 1, 0, numParticles * sizeof(float) * 4);
@@ -194,7 +193,7 @@ void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParti
 	uint32_t depthMaxPC = numParticles - 1;
 	eg::DC.PushConstants(0, sizeof(uint32_t), &depthMaxPC);
 
-	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
+	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0);
 	eg::DC.BindStorageBuffer(positionsBuffer, 0, 1, 0, numParticles * sizeof(float) * 4);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 2, &framebufferNearestSampler);
 
@@ -284,18 +283,20 @@ void WaterRenderer::RenderPost(RenderTexManager& rtManager)
 
 	float waterGlowIntensity = settings.gunFlash ? 4 : 0.5f;
 
-	float pc[] = { 2.0f / rtManager.ResX(),
-		           2.0f / rtManager.ResY(),
-		           *waterVisibility,
-		           *waterNormalMapIntensity,
-		           waterGlowColor.r * waterGlowIntensity,
-		           waterGlowColor.g * waterGlowIntensity,
-		           waterGlowColor.b * waterGlowIntensity,
-		           *waterSSRIntensity,
-		           *waterIndexOfRefraction };
+	float pc[] = {
+		2.0f / rtManager.ResX(),
+		2.0f / rtManager.ResY(),
+		*waterVisibility,
+		*waterNormalMapIntensity,
+		waterGlowColor.r * waterGlowIntensity,
+		waterGlowColor.g * waterGlowIntensity,
+		waterGlowColor.b * waterGlowIntensity,
+		*waterSSRIntensity,
+		*waterIndexOfRefraction,
+	};
 	eg::DC.PushConstants(0, sizeof(pc), pc);
 
-	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
+	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::WaterDepthBlurred2), 0, 1, &framebufferNearestSampler);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::WaterMaxDepth), 0, 2, &framebufferNearestSampler);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::WaterGlowIntensity), 0, 3, &framebufferNearestSampler);
@@ -307,12 +308,3 @@ void WaterRenderer::RenderPost(RenderTexManager& rtManager)
 
 	eg::DC.EndRenderPass();
 }
-
-#else
-
-WaterRenderer::WaterRenderer() {}
-void WaterRenderer::CreateDepthBlurPipelines(uint32_t samples) {}
-void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParticles, RenderTexManager& rtManager) {}
-void WaterRenderer::RenderPost(RenderTexManager& rtManager) {}
-
-#endif

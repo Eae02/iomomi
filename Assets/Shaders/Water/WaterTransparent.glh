@@ -14,7 +14,7 @@ bool CheckWaterDiscard()
 	vec2 screenCoord = ivec2(gl_FragCoord.xy) / vec2(textureSize(waterDepth, 0).xy);
 	vec3 waterDepth3 = texture(waterDepth, screenCoord).rgb;
 	
-	bool underwater = waterDepth3.r < UNDERWATER_DEPTH;
+	bool underwater = waterDepth3.r < W_UNDERWATER_DEPTH;
 	float waterDepthL = underwater ? waterDepth3.b : waterDepth3.r;
 #ifdef WATER_DEPTH_OFFSET
 	waterDepthL += WATER_DEPTH_OFFSET;

@@ -214,7 +214,8 @@ std::optional<Dir> ForceFieldEnt::CheckIntersection(EntityManager& entityManager
 			{
 				result = entity.m_effectiveNewGravity;
 			}
-		});
+		}
+	);
 	return result;
 }
 

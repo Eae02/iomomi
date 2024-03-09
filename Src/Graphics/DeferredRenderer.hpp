@@ -1,8 +1,8 @@
 #pragma once
 
+#include "../Water/WaterRenderer.hpp"
 #include "Lighting/PointLight.hpp"
 #include "RenderTex.hpp"
-#include "Water/WaterRenderer.hpp"
 
 class DeferredRenderer
 {
@@ -19,7 +19,8 @@ public:
 
 	void DrawPointLights(
 		const std::vector<std::shared_ptr<PointLight>>& pointLights, bool hasWater, eg::TextureRef waterDepthTexture,
-		RenderTexManager& rtManager, uint32_t shadowResolution) const;
+		RenderTexManager& rtManager, uint32_t shadowResolution
+	) const;
 
 	void End() const;
 

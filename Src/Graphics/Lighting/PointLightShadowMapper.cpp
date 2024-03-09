@@ -22,9 +22,9 @@ static const glm::vec3 shadowMatrixU[] = { { 0, -1, 0 }, { 0, -1, 0 }, { 0, 0, 1
 PointLightShadowMapper::PointLightShadowMapper()
 {
 	eg::GraphicsPipelineCreateInfo depthCopyPipelineCI;
-	depthCopyPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
+	depthCopyPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").ToStageInfo();
 	depthCopyPipelineCI.fragmentShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/ShadowDepthCopy.fs.glsl").DefaultVariant();
+		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/ShadowDepthCopy.fs.glsl").ToStageInfo();
 	depthCopyPipelineCI.enableDepthTest = true;
 	depthCopyPipelineCI.enableDepthWrite = true;
 	depthCopyPipelineCI.numColorAttachments = 0;
@@ -155,7 +155,8 @@ void PointLightShadowMapper::SetLightSources(const std::vector<std::shared_ptr<P
 }
 
 void PointLightShadowMapper::UpdateShadowMaps(
-	const RenderCallback& prepareCallback, const RenderCallback& renderCallback, const eg::Frustum& viewFrustum)
+	const RenderCallback& prepareCallback, const RenderCallback& renderCallback, const eg::Frustum& viewFrustum
+)
 {
 	auto gpuTimer = eg::StartGPUTimer("PL Shadows");
 	auto cpuTimer = eg::StartCPUTimer("PL Shadows");

@@ -14,6 +14,8 @@
 
 pcg32_fast globalRNG;
 
+int64_t Game::levelIndexFromCmdArg = -1;
+
 Game::Game()
 {
 	globalRNG = pcg32_fast(std::time(nullptr));
@@ -47,9 +49,11 @@ Game::Game()
 			else
 			{
 				writer.WriteLine(
-					eg::console::ErrorColor, "This version of iomomi was not compiled with the editor enabled");
+					eg::console::ErrorColor, "This version of iomomi was not compiled with the editor enabled"
+				);
 			}
-		});
+		}
+	);
 
 #ifndef __EMSCRIPTEN__
 	eg::console::AddCommand(
@@ -58,7 +62,8 @@ Game::Game()
 		{
 			m_levelThumbnailUpdateFrameIdx = eg::FrameIdx();
 			m_levelThumbnailUpdate = BeginUpdateLevelThumbnails(m_renderCtx, writer);
-		});
+		}
+	);
 #endif
 
 	eg::console::AddCommand(
@@ -68,7 +73,8 @@ Game::Game()
 			mainMenuGameState->GoToMainScreen();
 			SetCurrentGS(mainMenuGameState);
 			eg::console::Hide();
-		});
+		}
+	);
 
 	eg::console::AddCommand(
 		"compl", 1,
@@ -103,7 +109,8 @@ Game::Game()
 					writer.WriteLine(eg::console::ErrorColor, "Level not found");
 				}
 			}
-		});
+		}
+	);
 
 	eg::console::SetCompletionProvider(
 		"compl", 0,
@@ -113,7 +120,8 @@ Game::Game()
 				list.Add(level.name);
 			list.Add("all");
 			list.Add("reset");
-		});
+		}
+	);
 
 	eg::console::AddCommand(
 		"play", 1,
@@ -134,7 +142,8 @@ Game::Game()
 			}
 
 			eg::console::Hide();
-		});
+		}
+	);
 
 	eg::console::SetCompletionProvider(
 		"play", 0,
@@ -142,7 +151,8 @@ Game::Game()
 		{
 			for (const Level& level : levels)
 				list.Add(level.name);
-		});
+		}
+	);
 
 	InitializeWallShader();
 }
@@ -160,6 +170,15 @@ static float* minSimulationFramerate = eg::TweakVarFloat("min_sim_fps", 20, 0);
 
 void Game::RunFrame(float dt)
 {
+	if (levelIndexFromCmdArg != -1 && eg::FrameIdx() >= 10)
+	{
+		std::unique_ptr<World> world = LoadLevelWorld(levels[levelIndexFromCmdArg], false);
+		EG_ASSERT(world);
+		SetCurrentGS(mainGameState);
+		mainGameState->SetWorld(std::move(world), levelIndexFromCmdArg);
+		levelIndexFromCmdArg = -1;
+	}
+
 	if (*minSimulationFramerate > 1E-5f)
 	{
 		dt = std::min(dt, 1.0f / *minSimulationFramerate);

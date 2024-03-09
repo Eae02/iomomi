@@ -10,7 +10,8 @@ size_t WidgetList::AddWidget(Widget widget)
 			y += widgetVis.height;
 			m_nextY += widgetVis.height + m_widgetSpacing;
 		},
-		widget);
+		widget
+	);
 	m_widgets.emplace_back(std::move(widget), y);
 	m_height = m_nextY - m_widgetSpacing;
 	return eg::ToInt64(m_widgets.size()) - 1;
@@ -30,9 +31,11 @@ bool WidgetList::Update(const GuiFrameArgs& frameArgs, bool allowInteraction)
 				widget.position.y -= widgetPair.second;
 
 				widget.Update(
-					frameArgs, allowInteraction && (noComboBox || (void*)ComboBox::current == (void*)&widget));
+					frameArgs, allowInteraction && (noComboBox || (void*)ComboBox::current == (void*)&widget)
+				);
 			},
-			widgetPair.first);
+			widgetPair.first
+		);
 	}
 	return allowInteraction;
 }

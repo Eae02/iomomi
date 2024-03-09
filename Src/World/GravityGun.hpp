@@ -11,8 +11,9 @@ public:
 	GravityGun();
 
 	void Update(
-		class World& world, const class PhysicsEngine& physicsEngine, class IWaterSimulator* waterSim,
-		eg::ParticleManager& particleManager, const class Player& player, const glm::mat4& inverseViewProj, float dt);
+		class World& world, const class PhysicsEngine& physicsEngine, class WaterSimulator2* waterSim,
+		eg::ParticleManager& particleManager, const class Player& player, const glm::mat4& inverseViewProj, float dt
+	);
 
 	void Draw(class RenderTexManager& renderTexManager);
 

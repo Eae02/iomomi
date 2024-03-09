@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../../../Graphics/Water/IWaterSimulator.hpp"
+#include "../../../../Water/WaterQuery.hpp"
 #include "../../../Dir.hpp"
 #include "../../../PhysicsEngine.hpp"
 #include "../../EntGravityChargeable.hpp"
@@ -82,5 +82,5 @@ private:
 
 	float m_gravityIndicatorFlashIntensity = 0;
 
-	std::shared_ptr<IWaterSimulator::IQueryAABB> m_waterQueryAABB;
+	std::shared_ptr<WaterQueryAABB> m_waterQueryAABB;
 };

@@ -89,7 +89,8 @@ static Slider InitVolumeSlider(float Settings::*member, std::string label)
 }
 
 static ToggleButton InitSettingsToggleButton(
-	bool Settings::*member, std::string label, std::string trueString, std::string falseString)
+	bool Settings::*member, std::string label, std::string trueString, std::string falseString
+)
 {
 	ToggleButton button;
 	button.label = std::move(label);
@@ -217,9 +218,7 @@ void InitOptionsMenu()
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::lightingQuality, "Lighting", true));
 	leftWidgetList.AddWidget(InitSettingsToggleButton(&Settings::highDynamicRange, "High Dynamic Range", "On", "Off"));
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::ssaoQuality, "SSAO", true));
-#ifdef IOMOMI_ENABLE_WATER
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::waterQuality, "Water", true));
-#endif
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::bloomQuality, "Bloom", true));
 	leftWidgetList.AddWidget(InitSettingsToggleButton(&Settings::enableFXAA, "FXAA", "On", "Off"));
 	leftWidgetList.AddWidget(InitSettingsToggleButton(&Settings::gunFlash, "Gun Flash", "Enabled", "Disabled"));
@@ -285,7 +284,8 @@ void InitOptionsMenu()
 			SaveSettings();
 			UpdateDisplayMode();
 			optionsMenuOpen = false;
-		});
+		}
+	);
 	backButton.width = 200;
 }
 
@@ -332,7 +332,8 @@ void DrawOptionsMenu(const GuiFrameArgs& frameArgs, eg::SpriteBatch& spriteBatch
 	spriteBatch.PushScissorF(
 		0.0f, optionsScrollPanel.screenRectangle.y * frameArgs.scaleToScreenCoordinates,
 		frameArgs.canvasWidth * frameArgs.scaleToScreenCoordinates,
-		optionsScrollPanel.screenRectangle.h * frameArgs.scaleToScreenCoordinates);
+		optionsScrollPanel.screenRectangle.h * frameArgs.scaleToScreenCoordinates
+	);
 
 	leftWidgetList.Draw(frameArgs, spriteBatch);
 	rightWidgetList.Draw(frameArgs, spriteBatch);

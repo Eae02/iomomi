@@ -1,0 +1,101 @@
+#include "../WaterCommon.glh"
+
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+void initialize(uint particleIndex, vec3 pos);
+NEAR_PAIR_RES_T processNearPair(uint i1, uint i2, vec3 pos1, vec3 pos2);
+void processResult(NEAR_PAIR_RES_T result, uint particleIndex);
+
+layout(set = 0, binding = 0) restrict readonly buffer OctGroupsRangesBuffer
+{
+	uint octGroupRanges[];
+};
+
+layout(set = 0, binding = 1) restrict buffer ParticleDataBuffer
+{
+	uvec4 particleData[];
+};
+
+layout(set = 0, binding = 2, r16ui) restrict readonly uniform uimage3D cellOffsetsImage;
+
+uint readCellOffset(ivec3 cellPos)
+{
+	if (all(greaterThanEqual(cellPos, ivec3(0))) && all(lessThan(cellPos, imageSize(cellOffsetsImage))))
+		return imageLoad(cellOffsetsImage, cellPos).r;
+	else
+		return CELL_OFFSETS_CELL_EMPTY;
+}
+
+void main()
+{
+	uint localIndex = gl_SubgroupInvocationID + gl_SubgroupID * gl_SubgroupSize;
+
+	uint centerOctGroupParticleIdx = localIndex / 8;
+	uint neighborOctGroupParticleIdx = localIndex % 8;
+
+	uint octGroupOffset;
+	uint cellID0;
+	ivec3 gridCell;
+	if (subgroupElect())
+	{
+		octGroupOffset = octGroupRanges[gl_WorkGroupID.x];
+		uvec4 position0 = particleData[positionsBufferOffset + octGroupOffset];
+		cellID0 = position0.w;
+		gridCell = ivec3(getGridCell(uintBitsToFloat(position0.xyz), gridOrigin));
+	}
+	octGroupOffset = subgroupBroadcastFirst(octGroupOffset);
+	cellID0 = subgroupBroadcastFirst(cellID0);
+	gridCell = subgroupBroadcastFirst(gridCell);
+
+	uint centerParticleIdx = octGroupOffset + centerOctGroupParticleIdx;
+
+	uvec4 positionData = particleData[positionsBufferOffset + centerParticleIdx];
+	uint cellID = positionData.w;
+	vec3 position = uintBitsToFloat(positionData.xyz);
+
+	if (subgroupAll(cellID != cellID0))
+		return;
+
+	initialize(centerParticleIdx, position.xyz);
+
+	NEAR_PAIR_RES_T accumulatedValue = NEAR_PAIR_RES_T(0.0);
+
+	for (int dz = -1; dz <= 1; dz++)
+	{
+		for (int dy = -1; dy <= 1; dy++)
+		{
+			for (int dx = -1; dx <= 1; dx++)
+			{
+				// subgroupBroadcastFirst is not needed here for correctness, it is just used as a hint to the compiler
+				// that the value is uniform accross the subgroup.
+				uint neiBeginOffset = subgroupBroadcastFirst(readCellOffset(gridCell + ivec3(dx, dy, dz)));
+				if (neiBeginOffset == CELL_OFFSETS_CELL_EMPTY)
+					continue;
+				uint neiExpectedCellID = subgroupBroadcastFirst(particleData[positionsBufferOffset + neiBeginOffset].w);
+
+				for (uint i = 0; i < W_MAX_OCT_GROUPS_PER_CELL; i++)
+				{
+					uint neiParticleIdx = neiBeginOffset + i * 8 + neighborOctGroupParticleIdx;
+					uvec4 neiPositionData = particleData[positionsBufferOffset + neiParticleIdx];
+					vec3 neiPosition = uintBitsToFloat(neiPositionData.xyz);
+
+					uint neiCellID = neiPositionData.w;
+					bool isValidNeighbor = neiParticleIdx < numParticles && neiExpectedCellID == neiCellID;
+
+					NEAR_PAIR_RES_T res = processNearPair(centerParticleIdx, neiParticleIdx, position, neiPosition);
+					if (isValidNeighbor && neiParticleIdx != centerParticleIdx)
+						accumulatedValue += res;
+
+					if (subgroupAny(!isValidNeighbor))
+						break;
+				}
+			}
+		}
+	}
+
+	accumulatedValue = subgroupClusteredAdd(accumulatedValue, 8);
+	if (neighborOctGroupParticleIdx == 0 && cellID == cellID0)
+	{
+		processResult(accumulatedValue, centerParticleIdx);
+	}
+}

@@ -19,7 +19,8 @@ PausedMenu::PausedMenu() : m_widgetList(BUTTON_W)
 		{
 			isPaused = false;
 			optionsMenuOpen = false;
-		}));
+		}
+	));
 	m_widgetList.AddWidget(Button(
 		"Restart Level",
 		[&]
@@ -27,7 +28,8 @@ PausedMenu::PausedMenu() : m_widgetList(BUTTON_W)
 			shouldRestartLevel = true;
 			isPaused = false;
 			optionsMenuOpen = false;
-		}));
+		}
+	));
 	m_widgetList.AddWidget(Button("Options", [&] { optionsMenuOpen = true; }));
 	m_mainMenuWidgetIndex = m_widgetList.AddWidget(Button(
 		"",
@@ -42,7 +44,8 @@ PausedMenu::PausedMenu() : m_widgetList(BUTTON_W)
 #endif
 			mainMenuGameState->GoToMainScreen();
 			SetCurrentGS(mainMenuGameState);
-		}));
+		}
+	));
 
 	m_widgetList.relativeOffset = glm::vec2(-0.5f, 0.5f);
 }
@@ -95,7 +98,8 @@ void PausedMenu::Draw()
 	{
 		m_spriteBatch.DrawRect(
 			eg::Rectangle(0, 0, m_currentFrameArgs.canvasWidth, m_currentFrameArgs.canvasHeight),
-			eg::ColorLin(0, 0, 0, 0.3f * m_optionsMenuOverlayFade));
+			eg::ColorLin(0, 0, 0, 0.3f * m_optionsMenuOverlayFade)
+		);
 	}
 
 	if (optionsMenuOpen)
@@ -119,5 +123,6 @@ void PausedMenu::Draw()
 			.framebufferFormat = eg::ColorAndDepthFormat(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil),
 			.matrix = m_currentFrameArgs.GetMatrixToNDC(),
 		},
-		rpBeginInfo);
+		rpBeginInfo
+	);
 }

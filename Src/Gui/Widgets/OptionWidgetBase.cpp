@@ -25,7 +25,8 @@ void OptionWidgetBase::UpdateBase(const GuiFrameArgs& frameArgs, bool allowInter
 
 void OptionWidgetBase::DrawBase(
 	const GuiFrameArgs& frameArgs, eg::SpriteBatch& spriteBatch, float highlightIntensity, std::string_view valueText,
-	float maxValueWidth) const
+	float maxValueWidth
+) const
 {
 	// Draws the background rectangle
 	eg::ColorLin backColor = eg::ColorLin::Mix(style::ButtonColorDefault, style::ButtonColorHover, highlightIntensity);
@@ -39,7 +40,8 @@ void OptionWidgetBase::DrawBase(
 	glm::vec2 labelTextPos(m_rectangle.x - labelTextWidth - 15, m_rectangle.CenterY() - textHeight / 2.0f);
 	spriteBatch.DrawText(
 		*style::UIFont, label, labelTextPos, labelMainColor, FONT_SCALE, nullptr, eg::TextFlags::DropShadow,
-		&labelFadedColor);
+		&labelFadedColor
+	);
 
 	// Draws the current value text
 	if (!valueText.empty() && maxValueWidth >= 0)
@@ -51,13 +53,15 @@ void OptionWidgetBase::DrawBase(
 		{
 			spriteBatch.PushScissorF(
 				textPos.x * frameArgs.scaleToScreenCoordinates, m_rectangle.y * frameArgs.scaleToScreenCoordinates,
-				maxValueWidth * frameArgs.scaleToScreenCoordinates, height * frameArgs.scaleToScreenCoordinates);
+				maxValueWidth * frameArgs.scaleToScreenCoordinates, height * frameArgs.scaleToScreenCoordinates
+			);
 		}
 
 		const eg::ColorLin valueFadedColor(eg::Color::White.ScaleAlpha(0.5f));
 		spriteBatch.DrawText(
 			*style::UIFont, valueText, GetTextPos(), eg::ColorLin(eg::Color::White), FONT_SCALE, nullptr,
-			eg::TextFlags::DropShadow, &valueFadedColor);
+			eg::TextFlags::DropShadow, &valueFadedColor
+		);
 
 		if (applyScissor)
 		{

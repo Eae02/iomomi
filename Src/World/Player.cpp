@@ -80,7 +80,8 @@ inline glm::quat GetDownCorrection(Dir down)
 {
 	glm::vec3 up = -DirectionVector(down);
 	return glm::quat_cast(
-		glm::mat3(leftDirs[static_cast<int>(down)], up, glm::cross(leftDirs[static_cast<int>(down)], up)));
+		glm::mat3(leftDirs[static_cast<int>(down)], up, glm::cross(leftDirs[static_cast<int>(down)], up))
+	);
 }
 
 inline glm::quat GetRotation(float yaw, float pitch, Dir down)
@@ -223,7 +224,8 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 	// Finds the velocity vector in local space
 	float localVelVertical = glm::dot(up, m_physicsObject.velocity);
 	glm::vec2 localVelPlane(
-		glm::dot(forwardPlane, m_physicsObject.velocity), glm::dot(rightPlane, m_physicsObject.velocity));
+		glm::dot(forwardPlane, m_physicsObject.velocity), glm::dot(rightPlane, m_physicsObject.velocity)
+	);
 	glm::vec2 localAccPlane(-movementAnalogValue.y, movementAnalogValue.x);
 
 	if (m_planeMovementDisabledTimer > 0)
@@ -349,7 +351,8 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 					ladder = &ladderCandidate;
 					velocityXZ = glm::vec3(0);
 				}
-			});
+			}
+		);
 	}
 
 	// Vertical movement
@@ -484,7 +487,8 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 					interactableEntity = &interactable;
 					bestInteractPriority = thisPriority;
 				}
-			});
+			}
+		);
 
 		if (interactableEntity != nullptr)
 		{
@@ -562,7 +566,8 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 			{
 				if (glm::dot(correction, up) > 0)
 					m_onGround = true;
-			});
+			}
+		);
 		m_physicsObject.slideDim = glm::vec3(1);
 
 		if (glm::length2(launchVelocity) > 0.001f)
@@ -597,7 +602,8 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 			{
 				if (gooPlane.IsUnderwater(gooPlaneTestSphere))
 					isInGoo = true;
-			});
+			}
+		);
 
 		if (isInGoo && m_onGroundRingBufferSize != 0)
 		{
@@ -676,7 +682,8 @@ void Player::Update(World& world, PhysicsEngine& physicsEngine, float dt, bool u
 				locationParameters.position = FeetPosition();
 				locationParameters.direction = up;
 				AudioPlayers::gameSFXPlayer.Play(
-					*clipToPlay, volumeDist(globalRNG), pitchDist(globalRNG), &locationParameters);
+					*clipToPlay, volumeDist(globalRNG), pitchDist(globalRNG), &locationParameters
+				);
 
 				m_stepSoundRemDistance += distancePerStepSound;
 				if (m_stepSoundRemDistance < 0)

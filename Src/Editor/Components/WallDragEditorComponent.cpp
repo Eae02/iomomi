@@ -74,7 +74,8 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 						if (!editorState.world->voxels.IsAir(pos))
 							allAir = false;
 					},
-					selDimOffsetMin, selDimOffsetMax);
+					selDimOffsetMin, selDimOffsetMax
+				);
 
 				const int airMode = allAir ? 1 : 2;
 				if (m_dragAirMode == 0)
@@ -87,7 +88,8 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 						editorState.InvalidateWater();
 						IterateSelection(
 							[&](const glm::ivec3& pos) { editorState.world->voxels.SetIsAir(pos, !allAir); },
-							selDimOffsetMin, selDimOffsetMax);
+							selDimOffsetMin, selDimOffsetMax
+						);
 					};
 
 					const Dir texSourceSide = m_selectionNormal;
@@ -131,7 +133,8 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 								}
 							}
 						},
-						selDimOffsetMin, selDimOffsetMax);
+						selDimOffsetMin, selDimOffsetMax
+					);
 
 					if (allAir)
 					{
@@ -149,14 +152,16 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 							{
 								glm::ivec3 wallPos = glm::floor(
 									entity.GetPosition() -
-									glm::vec3(DirectionVector(entity.GetFacingDirection())) * 0.1f);
+									glm::vec3(DirectionVector(entity.GetFacingDirection())) * 0.1f
+								);
 								if (eg::Contains(m_finishedSelection, wallPos))
 								{
 									entity.EdMoved(entity.GetPosition() + glm::vec3(selDelta), m_selectionNormal);
 									editorState.EntityMoved(entity);
 								}
 							}
-						});
+						}
+					);
 
 					for (glm::ivec3& selected : m_finishedSelection)
 					{
@@ -232,7 +237,8 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 					if (eg::InputState::Current().IsAltDown())
 					{
 						requiredMaterial = editorState.world->voxels.GetMaterial(
-							pickResult.voxelPosition + DirectionVector(pickResult.normalDir), pickResult.normalDir);
+							pickResult.voxelPosition + DirectionVector(pickResult.normalDir), pickResult.normalDir
+						);
 					}
 
 					FillSelection(*editorState.world, pickResult.voxelPosition, pickResult.normalDir, requiredMaterial);
@@ -253,7 +259,8 @@ bool WallDragEditorComponent::UpdateInput(float dt, const EditorState& editorSta
 }
 
 void WallDragEditorComponent::FillSelection(
-	const World& world, const glm::ivec3& pos, Dir normalDir, std::optional<int> requiredMaterial)
+	const World& world, const glm::ivec3& pos, Dir normalDir, std::optional<int> requiredMaterial
+)
 {
 	if (!world.voxels.IsAir(pos + DirectionVector(normalDir)) || world.voxels.IsAir(pos) ||
 	    eg::Contains(m_finishedSelection, pos))
@@ -306,7 +313,8 @@ void WallDragEditorComponent::EarlyDraw(const EditorState& editorState) const
 				std::max(static_cast<float>(m_selection1[sd2]), m_selection2Anim[sd2]) + 1;
 
 			editorState.primitiveRenderer->AddQuad(
-				quadCorners, eg::ColorSRGB(eg::ColorSRGB::FromHex(0x91CAED).ScaleAlpha(0.5f)));
+				quadCorners, eg::ColorSRGB(eg::ColorSRGB::FromHex(0x91CAED).ScaleAlpha(0.5f))
+			);
 		}
 		else
 		{
@@ -368,7 +376,7 @@ void WallDragEditorComponent::RenderSettings(const EditorState& editorState)
 	constexpr float ITEM_HEIGHT = 40;
 	constexpr float ICON_PADDING = 3;
 
-	eg::TextureRef albedoTex = eg::GetAsset<eg::Texture>("WallTextures/Albedo");
+	eg::TextureRef albedoTex = eg::GetAsset<eg::Texture>("Textures/Wall/Albedo");
 	eg::TextureRef noDrawTex = eg::GetAsset<eg::Texture>("Textures/NoDraw.png");
 
 	if (ImGui::CollapsingHeader("Textures", ImGuiTreeNodeFlags_DefaultOpen))
@@ -388,14 +396,17 @@ void WallDragEditorComponent::RenderSettings(const EditorState& editorState)
 					[&](glm::ivec3 pos)
 					{
 						editorState.world->voxels.SetMaterialSafe(
-							pos + DirectionVector(m_selectionNormal), m_selectionNormal, eg::ToInt(i));
+							pos + DirectionVector(m_selectionNormal), m_selectionNormal, eg::ToInt(i)
+						);
 					},
-					0, 0);
+					0, 0
+				);
 			}
 			ImGui::PopID();
 
 			eg::TextureViewHandle textureView;
-			if (i == 0 || !eg::HasFlag(eg::GetGraphicsDeviceInfo().features, eg::DeviceFeatureFlags::PartialTextureViews))
+			if (i == 0 ||
+			    !eg::HasFlag(eg::GetGraphicsDeviceInfo().features, eg::DeviceFeatureFlags::PartialTextureViews))
 			{
 				textureView = noDrawTex.GetView();
 			}
@@ -410,11 +421,13 @@ void WallDragEditorComponent::RenderSettings(const EditorState& editorState)
 			drawList->AddImage(
 				eg::imgui::MakeImTextureID(textureView),
 				ImVec2(imguiCursorPos.x + ICON_PADDING, imguiCursorPos.y + ICON_PADDING),
-				ImVec2(imguiCursorPos.x + ITEM_HEIGHT - ICON_PADDING, imguiCursorPos.y + ITEM_HEIGHT - ICON_PADDING));
+				ImVec2(imguiCursorPos.x + ITEM_HEIGHT - ICON_PADDING, imguiCursorPos.y + ITEM_HEIGHT - ICON_PADDING)
+			);
 
 			drawList->AddText(
 				ImVec2(imguiCursorPos.x + ITEM_HEIGHT + 10, imguiCursorPos.y + ITEM_HEIGHT / 2 - 8), 0xFFFFFFFFU,
-				wallMaterials[i].name);
+				wallMaterials[i].name
+			);
 		}
 	}
 }

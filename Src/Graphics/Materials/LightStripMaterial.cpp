@@ -13,8 +13,8 @@ static eg::Pipeline lightStripPipelineGame;
 static void OnInit()
 {
 	eg::GraphicsPipelineCreateInfo pipelineCI;
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/LightStrip.vs.glsl").DefaultVariant();
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/LightStrip.fs.glsl").DefaultVariant();
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/LightStrip.vs.glsl").ToStageInfo();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/LightStrip.fs.glsl").ToStageInfo();
 	pipelineCI.enableDepthWrite = true;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::Back;

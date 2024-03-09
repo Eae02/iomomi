@@ -3,6 +3,11 @@ mipShift: &MipShift
   medium: 1
   high: 0
 
+formatCompressedR: &FormatCompressedR bc4
+formatCompressedRG: &FormatCompressedRG bc5
+formatCompressedRGB: &FormatCompressedRGB bc1
+formatCompressedRGBA: &FormatCompressedRGBA bc3
+
 assets:
   - name: Models/EditorEntrance.aa.obj
     access: all
@@ -18,6 +23,10 @@ assets:
   - regex: "Models/.*\\.aa\\.obj"
     access: all
     removeNameSuffix: true
+    vertexFormat: "IomomiSoaPXNT"
+
+  - regex: "Models/.*\\.aa\\.glb"
+    access: all
     vertexFormat: "IomomiSoaPXNT"
 
   - regex: "Models/.*\\.obj"
@@ -61,7 +70,7 @@ assets:
   - name: Textures/NoDraw.png
     mipShift: *MipShift
     srgb: true
-    format: bc1
+    format: *FormatCompressedRGB
   - name: Textures/PumpDisplayArrow.png
     mipShift: *MipShift
     srgb: false
@@ -69,24 +78,24 @@ assets:
   - name: Textures/Entrance/EditorEntrance.png
     mipShift: *MipShift
     srgb: true
-    format: bc1
+    format: *FormatCompressedRGB
   - name: Textures/Entrance/EditorExit.png
     mipShift: *MipShift
     srgb: true
-    format: bc1
+    format: *FormatCompressedRGB
   - regex: "Textures/Decals/WarningDecal.png"
     srgb: true
-    format: bc3
+    format: *FormatCompressedRGBA
     
   - name: Textures/Particles.png
     srgb: true
-    format: bc3
+    format: *FormatCompressedRGBA
   - name: Textures/ForceFieldParticle.png
-    format: bc4
+    format: *FormatCompressedR
     
   - name: Textures/DefaultA.png
     srgb: true
-    format: bc1
+    format: *FormatCompressedRGB
     filtering: nearest
   - name: Textures/DefaultN.png
     srgb: false
@@ -101,18 +110,18 @@ assets:
       medium: 0
       high: 0
     srgb: true
-    format: bc1
+    format: *FormatCompressedRGB
   - name: Textures/GravityCornerM.png
     mipShift:
       low: 1
       medium: 0
       high: 0
     srgb: false
-    format: bc1
+    format: *FormatCompressedRGB
     
   - name: Textures/GravityCornerLightDist.png
     srgb: false
-    format: bc4
+    format: *FormatCompressedR
     
   - name: Textures/SlimeN.png
     mipShift: *MipShift
@@ -121,7 +130,7 @@ assets:
     
   - name: Textures/Hex.png
     srgb: false
-    format: bc5
+    format: *FormatCompressedRG
   - name: Textures/GlassHex.png
     srgb: false
     format: r8
@@ -132,7 +141,7 @@ assets:
     
   - name: Textures/GravitySwitchVolEmi.png
     srgb: false
-    format: bc4
+    format: *FormatCompressedR
     
   - name: Textures/Grid.png
     format: r8
@@ -141,71 +150,71 @@ assets:
   - regex: "Textures/Decals/.*\\.png"
     mipShift: *MipShift
     srgb: true
-    format: bc3
+    format: *FormatCompressedRGBA
   - regex: "Textures/.*A\\.png"
     mipShift: *MipShift
     srgb: true
-    format: bc1
+    format: *FormatCompressedRGB
   - regex: "Textures/.*AT\\.png"
     mipShift: *MipShift
     srgb: true
-    format: bc3
+    format: *FormatCompressedRGBA
   - regex: "Textures/.*N\\.png"
     mipShift: *MipShift
     srgb: false
-    format: bc5
+    format: *FormatCompressedRG
   - regex: "Textures/.*M\\.png"
     mipShift: *MipShift
     srgb: false
-    format: bc1
+    format: *FormatCompressedRGB
     
     
-  - name: WallTextures/Albedo
+  - name: Textures/Wall/Albedo
     generator: Texture2DArray
     loader: Texture2D
     mipShift: *MipShift
     srgb: true
-    format: bc1
+    format: *FormatCompressedRGB
     layers:
-      - WallTextures/TactileGrayA.png
-      - WallTextures/HexPanelsA.png
-      - WallTextures/MetalGridA.png
-      - WallTextures/CementA.png
-      - WallTextures/Panels1A.png
-      - WallTextures/Panels2A.png
-      - WallTextures/Panels1StripedA.png
-      - WallTextures/TilesA.png
-  - name: WallTextures/NormalMap
+      - Textures/Wall/TactileGrayA.png
+      - Textures/Wall/HexPanelsA.png
+      - Textures/Wall/MetalGridA.png
+      - Textures/Wall/CementA.png
+      - Textures/Wall/Panels1A.png
+      - Textures/Wall/Panels2A.png
+      - Textures/Wall/Panels1StripedA.png
+      - Textures/Wall/TilesA.png
+  - name: Textures/Wall/NormalMap
     generator: Texture2DArray
     loader: Texture2D
     mipShift: *MipShift
     srgb: false
-    format: bc1
+    format: *FormatCompressedRGB
     layers:
-      - WallTextures/TactileGrayN.png
-      - WallTextures/HexPanelsN.png
-      - WallTextures/MetalGridN.png
-      - WallTextures/CementN.png
-      - WallTextures/Panels1N.png
-      - WallTextures/Panels2N.png
-      - WallTextures/Panels1N.png
-      - WallTextures/TilesN.png
-  - name: WallTextures/MiscMap
+      - Textures/Wall/TactileGrayN.png
+      - Textures/Wall/HexPanelsN.png
+      - Textures/Wall/MetalGridN.png
+      - Textures/Wall/CementN.png
+      - Textures/Wall/Panels1N.png
+      - Textures/Wall/Panels2N.png
+      - Textures/Wall/Panels1N.png
+      - Textures/Wall/TilesN.png
+  - name: Textures/Wall/MiscMap
     generator: Texture2DArray
     loader: Texture2D
     mipShift: *MipShift
     srgb: false
-    format: bc1
+    format: *FormatCompressedRGB
     layers:
-      - WallTextures/TactileGrayM.png
-      - WallTextures/HexPanelsM.png
-      - WallTextures/MetalGridM.png
-      - WallTextures/CementM.png
-      - WallTextures/Panels1M.png
-      - WallTextures/Panels2M.png
-      - WallTextures/Panels1M.png
-      - WallTextures/TilesM.png
-  - name: Caustics
+      - Textures/Wall/TactileGrayM.png
+      - Textures/Wall/HexPanelsM.png
+      - Textures/Wall/MetalGridM.png
+      - Textures/Wall/CementM.png
+      - Textures/Wall/Panels1M.png
+      - Textures/Wall/Panels2M.png
+      - Textures/Wall/Panels1M.png
+      - Textures/Wall/TilesM.png
+  - name: Textures/Caustics
     generator: Texture2DArray
     loader: Texture2D
     mipLevels: 1
@@ -213,19 +222,19 @@ assets:
     format: r8
     3d: true
     layers:
-      - Caustics/01.png
-      - Caustics/02.png
-      - Caustics/03.png
-      - Caustics/04.png
-      - Caustics/05.png
-      - Caustics/06.png
-      - Caustics/07.png
-      - Caustics/08.png
-      - Caustics/09.png
-      - Caustics/10.png
-      - Caustics/11.png
-      - Caustics/12.png
-      - Caustics/13.png
-      - Caustics/14.png
-      - Caustics/15.png
-      - Caustics/16.png
+      - Textures/Caustics/01.png
+      - Textures/Caustics/02.png
+      - Textures/Caustics/03.png
+      - Textures/Caustics/04.png
+      - Textures/Caustics/05.png
+      - Textures/Caustics/06.png
+      - Textures/Caustics/07.png
+      - Textures/Caustics/08.png
+      - Textures/Caustics/09.png
+      - Textures/Caustics/10.png
+      - Textures/Caustics/11.png
+      - Textures/Caustics/12.png
+      - Textures/Caustics/13.png
+      - Textures/Caustics/14.png
+      - Textures/Caustics/15.png
+      - Textures/Caustics/16.png

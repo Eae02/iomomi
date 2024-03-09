@@ -11,7 +11,8 @@ public:
 
 	void Render(
 		eg::TextureRef input, const eg::BloomRenderer::RenderTarget* bloomRenderTarget, eg::FramebufferHandle output,
-		eg::Format outputFormat, uint32_t outputResX, uint32_t outputResY, float colorScale);
+		eg::Format outputFormat, uint32_t outputResX, uint32_t outputResY, float colorScale
+	);
 
 private:
 	struct PipelineVariantKey

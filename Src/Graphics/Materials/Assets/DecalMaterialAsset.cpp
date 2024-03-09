@@ -62,7 +62,8 @@ bool DecalMaterialAssetLoader(const eg::AssetLoadContext& loadContext)
 	DecalMaterial::LazyInitGlobals();
 
 	DecalMaterial& material = loadContext.CreateResult<DecalMaterial>(
-		eg::GetAsset<eg::Texture>(albedoTexturePath), eg::GetAsset<eg::Texture>(normalMapTexturePath));
+		eg::GetAsset<eg::Texture>(albedoTexturePath), eg::GetAsset<eg::Texture>(normalMapTexturePath)
+	);
 
 	material.roughness = eg::BinRead<float>(stream);
 	material.opacity = eg::BinRead<float>(stream);

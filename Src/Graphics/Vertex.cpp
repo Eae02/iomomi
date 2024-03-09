@@ -60,10 +60,12 @@ void RegisterVertexFormats()
 {
 	eg::ModelVertexFormat::RegisterFormat(
 		"IomomiSoaPXNT", eg::ModelVertexFormat{ .attributes = VertexSoa_PXNT_Attributes,
-	                                            .streamsBytesPerVertex = VertexSoa_PXNT_StreamStrides });
+	                                            .streamsBytesPerVertex = VertexSoa_PXNT_StreamStrides }
+	);
 	eg::ModelVertexFormat::RegisterFormat(
 		"IomomiSoaPX", eg::ModelVertexFormat{ .attributes = VertexSoa_PX_Attributes,
-	                                          .streamsBytesPerVertex = VertexSoa_PX_StreamStrides });
+	                                          .streamsBytesPerVertex = VertexSoa_PX_StreamStrides }
+	);
 }
 
 void InitPipelineVertexStateSoaPXNT(eg::GraphicsPipelineCreateInfo& pipelineCI)

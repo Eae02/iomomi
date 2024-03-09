@@ -5,6 +5,7 @@
 
 #include "FileUtils.hpp"
 #include "World/World.hpp"
+#include "Water/WaterSimulationShaders.hpp"
 
 using namespace std::filesystem;
 
@@ -118,13 +119,14 @@ void SortLevels()
 
 void InitLevels()
 {
-#ifndef IOMOMI_ENABLE_WATER
-	for (int64_t i = levelsOrder.size() - 1; i >= 0; i--)
+	if (!waterSimShaders.isWaterSupported)
 	{
-		if (levelsOrder[i].find("water") != std::string_view::npos)
-			levelsOrder.erase(levelsOrder.begin() + i);
+		for (int64_t i = levelsOrder.size() - 1; i >= 0; i--)
+		{
+			if (levelsOrder[i].find("water") != std::string_view::npos)
+				levelsOrder.erase(levelsOrder.begin() + i);
+		}
 	}
-#endif
 
 	levels.clear();
 	InitLevelsPlatformDependent();
@@ -207,7 +209,8 @@ void WriteProgressToStream(std::ostream& stream)
 int64_t FindLevel(std::string_view name)
 {
 	auto it = std::lower_bound(
-		levels.begin(), levels.end(), name, [&](const Level& a, std::string_view b) { return a.name < b; });
+		levels.begin(), levels.end(), name, [&](const Level& a, std::string_view b) { return a.name < b; }
+	);
 
 	if (it == levels.end() || it->name != name)
 		return -1;

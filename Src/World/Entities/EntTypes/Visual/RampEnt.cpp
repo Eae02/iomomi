@@ -108,7 +108,8 @@ void RampEnt::CommonDraw(const EntDrawArgs& args)
 		.numElements = 6,
 	};
 	args.meshBatch->Add(
-		mesh, *rampMaterials[m_material].material, StaticPropMaterial::InstanceData(glm::mat4(1), textureScale));
+		mesh, *rampMaterials[m_material].material, StaticPropMaterial::InstanceData(glm::mat4(1), textureScale)
+	);
 }
 
 void RampEnt::InitializeVertexBuffer()
@@ -244,7 +245,8 @@ void RampEnt::Deserialize(std::istream& stream)
 	std::array<glm::vec3, 4> vertices = GetTransformedVertices(GetTransformationMatrix());
 
 	m_collisionMesh = eg::CollisionMesh(
-		vertices, std::span<const uint32_t>(m_flipped ? indicesFlipped : indicesNormal, std::size(indicesNormal)));
+		vertices, std::span<const uint32_t>(m_flipped ? indicesFlipped : indicesNormal, std::size(indicesNormal))
+	);
 	m_collisionMesh.FlipWinding();
 	m_physicsObject.shape = &m_collisionMesh;
 }

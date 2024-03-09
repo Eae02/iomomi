@@ -4,8 +4,10 @@
 #include "Graphics/Materials/GravityCornerLightMaterial.hpp"
 #include "Graphics/Materials/GravitySwitchVolLightMaterial.hpp"
 #include "Graphics/Materials/MeshDrawArgs.hpp"
-#include "Graphics/Water/IWaterSimulator.hpp"
 #include "Settings.hpp"
+#include "Water/WaterGenerate.hpp"
+#include "Water/WaterSimulationShaders.hpp"
+#include "Water/WaterSimulator.hpp"
 #include "World/Entities/EntTypes/Visual/WindowEnt.hpp"
 #include "World/GravityGun.hpp"
 #include "World/Player.hpp"
@@ -23,10 +25,36 @@ GameRenderer::GameRenderer(RenderContext& renderCtx)
 	m_ssrRenderArgs.destinationTexture = RenderTex::Lit;
 }
 
+void GameRenderer::InitWaterSimulator(World& world)
+{
+	if (!waterSimShaders.isWaterSupported)
+		return;
+
+	std::vector<glm::vec3> waterPositions = GenerateWaterPositions(world);
+	if (waterPositions.empty())
+	{
+		m_waterSimulator = nullptr;
+	}
+	else
+	{
+		auto waterCollisionQuads = GenerateWaterCollisionQuads(world);
+
+		m_waterSimulator = std::make_unique<WaterSimulator2>(
+			WaterSimulatorInitArgs{
+				.positions = waterPositions,
+				.voxelBuffer = &world.voxels,
+				.collisionQuads = std::move(waterCollisionQuads),
+			},
+			eg::DC
+		);
+	}
+
+	m_waterBarrierRenderer.Init(m_waterSimulator.get(), world);
+}
+
 void GameRenderer::WorldChanged(World& world)
 {
-	m_waterSimulator = CreateWaterSimulator(world);
-	m_waterBarrierRenderer.Init(m_waterSimulator.get(), world);
+	InitWaterSimulator(world);
 
 	m_pointLights.clear();
 	world.entManager.ForEach([&](Ent& entity) { entity.CollectPointLights(m_pointLights); });
@@ -43,7 +71,8 @@ void GameRenderer::WorldChanged(World& world)
 		{
 			if (windowEnt.NeedsBlurredTextures())
 				m_blurredTexturesNeeded = true;
-		});
+		}
+	);
 
 	UpdateSSRParameters(world);
 }
@@ -81,7 +110,8 @@ static int* bloomLevels = eg::TweakVarInt("bloom_levels", 3, 0, 10);
 
 void GameRenderer::Render(
 	World& world, float gameTime, float dt, eg::FramebufferHandle outputFramebuffer, eg::Format outputFormat,
-	uint32_t outputResX, uint32_t outputResY)
+	uint32_t outputResX, uint32_t outputResY
+)
 {
 	m_projection.SetResolution(static_cast<float>(outputResX), static_cast<float>(outputResY));
 	m_rtManager.BeginFrame(outputResX, outputResY);
@@ -192,7 +222,8 @@ void GameRenderer::Render(
 			if (args.renderStatic)
 			{
 				world.entManager.ForEachWithFlag(
-					EntTypeFlags::ShadowDrawableS, [&](Ent& entity) { entity.GameDraw(entDrawArgs); });
+					EntTypeFlags::ShadowDrawableS, [&](Ent& entity) { entity.GameDraw(entDrawArgs); }
+				);
 			}
 			if (args.renderDynamic)
 			{
@@ -204,7 +235,8 @@ void GameRenderer::Render(
 						{
 							entity.GameDraw(entDrawArgs);
 						}
-					});
+					}
+				);
 			}
 
 			meshBatch.End(eg::DC);
@@ -224,11 +256,12 @@ void GameRenderer::Render(
 
 			numPointLightMeshBatchesUsed++;
 		},
-		m_frustum);
+		m_frustum
+	);
 
 	const bool renderBlurredGlass = m_blurredTexturesNeeded && qvar::renderBlurredGlass(settings.lightingQuality);
 
-	const uint32_t numWaterParticles = m_waterSimulator ? m_waterSimulator->NumParticlesToDraw() : 0;
+	const uint32_t numWaterParticles = m_waterSimulator ? m_waterSimulator->NumParticles() : 0;
 
 	MeshDrawArgs mDrawArgs;
 	mDrawArgs.rtManager = &m_rtManager;
@@ -271,7 +304,8 @@ void GameRenderer::Render(
 		auto cpuTimerWater = eg::StartCPUTimer("Water (early)");
 		eg::DC.DebugLabelBegin("Water (early)");
 		m_renderCtx->waterRenderer.RenderEarly(
-			m_waterSimulator->GetPositionsGPUBuffer(), numWaterParticles, m_rtManager);
+			m_waterSimulator->GetPositionsGPUBuffer(), numWaterParticles, m_rtManager
+		);
 		eg::DC.DebugLabelEnd();
 	}
 
@@ -284,7 +318,8 @@ void GameRenderer::Render(
 
 		m_renderCtx->renderer.DrawPointLights(
 			m_pointLights, numWaterParticles > 0, mDrawArgs.waterDepthTexture, m_rtManager,
-			m_plShadowMapper.Resolution());
+			m_plShadowMapper.Resolution()
+		);
 
 		m_renderCtx->renderer.End();
 		eg::DC.DebugLabelEnd();
@@ -397,7 +432,8 @@ void GameRenderer::Render(
 			m_rtManager.RenderTextureUsageHint(RenderTex::Lit, eg::TextureUsage::CopySrc, eg::ShaderAccessFlags::None);
 			eg::DC.CopyTexture(
 				m_rtManager.GetRenderTexture(RenderTex::Lit),
-				m_rtManager.GetRenderTexture(RenderTex::LitWithoutBlurredGlass), srcRange, eg::TextureOffset());
+				m_rtManager.GetRenderTexture(RenderTex::LitWithoutBlurredGlass), srcRange, eg::TextureOffset()
+			);
 
 			m_renderCtx->renderer.BeginTransparent(RenderTex::LitWithoutBlurredGlass, m_rtManager);
 
@@ -451,7 +487,8 @@ void GameRenderer::Render(
 	{
 		m_physicsDebugRenderer->Render(
 			*m_physicsEngine, m_viewProjMatrix, m_rtManager.GetRenderTexture(RenderTex::Lit),
-			m_rtManager.GetRenderTexture(RenderTex::GBDepth));
+			m_rtManager.GetRenderTexture(RenderTex::GBDepth)
+		);
 	}
 
 	if (world.playerHasGravityGun && m_gravityGun != nullptr)
@@ -475,7 +512,8 @@ void GameRenderer::Render(
 		auto cpuTimerPost = eg::StartCPUTimer("Post");
 		m_renderCtx->postProcessor.Render(
 			m_rtManager.GetRenderTexture(RenderTex::Lit), m_bloomRenderTarget.get(), outputFramebuffer, outputFormat,
-			outputResX, outputResY, postColorScale);
+			outputResX, outputResY, postColorScale
+		);
 	}
 
 	eg::DC.DebugLabelEnd();

@@ -14,7 +14,8 @@ public:
 	void Draw(const GuiFrameArgs& frameArgs, eg::SpriteBatch& spriteBatch) const;
 
 	static void DrawBackground(
-		eg::SpriteBatch& spriteBatch, const eg::Rectangle& rectangle, float highlightIntensity, bool enabled = true);
+		eg::SpriteBatch& spriteBatch, const eg::Rectangle& rectangle, float highlightIntensity, bool enabled = true
+	);
 
 	std::string text;
 

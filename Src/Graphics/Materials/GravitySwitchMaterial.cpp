@@ -14,8 +14,7 @@ static void OnInit()
 {
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	StaticPropMaterial::InitializeForCommon3DVS(pipelineCI);
-	pipelineCI.fragmentShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravitySwitchLight.fs.glsl").DefaultVariant();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravitySwitchLight.fs.glsl").ToStageInfo();
 	pipelineCI.enableDepthWrite = true;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::Back;
@@ -33,7 +32,7 @@ static void OnInit()
 	gravitySwitchPipelineEditor = eg::Pipeline::Create(pipelineCI);
 
 	gravitySwitchDescriptorSet = eg::DescriptorSet(gravitySwitchPipelineGame, 0);
-	gravitySwitchDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+	gravitySwitchDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
 	gravitySwitchDescriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/Hex.png"), 1, &commonTextureSampler);
 }
 

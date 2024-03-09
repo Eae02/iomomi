@@ -167,7 +167,8 @@ void PumpEnt::CommonDraw(const EntDrawArgs& args)
 				glm::vec4(
 					glm::mix(DISABLED_BUTTON_GLOW_COLOR.r, ENABLED_BUTTON_GLOW_COLOR.r, activationGlow),
 					glm::mix(DISABLED_BUTTON_GLOW_COLOR.g, ENABLED_BUTTON_GLOW_COLOR.g, activationGlow),
-					glm::mix(DISABLED_BUTTON_GLOW_COLOR.b, ENABLED_BUTTON_GLOW_COLOR.b, activationGlow), 0.0f) *
+					glm::mix(DISABLED_BUTTON_GLOW_COLOR.b, ENABLED_BUTTON_GLOW_COLOR.b, activationGlow), 0.0f
+				) *
 				glm::mix(1.0f, BUTTON_GLOW_FACTOR_PUSHED, buttonAnimationIntensity);
 			args.meshBatch->AddModelMesh(*pumpModel, m, EmissiveMaterial::instance, instanceData);
 		}

@@ -42,7 +42,8 @@ void ActivatorComp::Initialize(EntityManager& entityManager)
 			{
 				activatableEntity->GetComponentMut<ActivatableComp>()->SetConnected(activator->targetConnectionIndex);
 			}
-		});
+		}
+	);
 }
 
 void ActivatorComp::LoadProtobuf(const iomomi_pb::Activator& activator)

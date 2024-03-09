@@ -61,7 +61,8 @@ Ent* ActivatableComp::FindByName(EntityManager& entityManager, uint32_t name)
 			const auto* activatable = entity.GetComponent<ActivatableComp>();
 			if (activatable && activatable->m_name == name)
 				result = &entity;
-		});
+		}
+	);
 	return result;
 }
 

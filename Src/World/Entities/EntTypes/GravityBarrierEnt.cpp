@@ -104,7 +104,8 @@ glm::mat4 GravityBarrierEnt::GetTransform() const
 	auto [tangent, bitangent] = GetTangents();
 	return glm::mat4(
 		glm::vec4(tangent, 0), glm::vec4(bitangent, 0), glm::vec4(glm::normalize(glm::cross(tangent, bitangent)), 0),
-		glm::vec4(m_position, 1));
+		glm::vec4(m_position, 1)
+	);
 }
 
 static const glm::vec4 gravityBarrierLightColor = glm::vec4(0.1, 0.7, 0.9, 0.0f);
@@ -135,7 +136,8 @@ void GravityBarrierEnt::CommonDraw(const EntDrawArgs& args)
 
 		args.transparentMeshBatch->AddNoData(
 			{ .buffersDescriptor = &gravityBarrierMeshBuffersDescriptor, .numElements = 4 }, m_material,
-			DepthDrawOrder(m_position));
+			DepthDrawOrder(m_position)
+		);
 	}
 
 	glm::vec3 tangentNorm = tangent / tangentLen;
@@ -149,12 +151,14 @@ void GravityBarrierEnt::CommonDraw(const EntDrawArgs& args)
 			return;
 
 		args.meshBatch->AddModelMesh(
-			*barrierBorderModel, meshIndexBody, *borderMaterial, StaticPropMaterial::InstanceData(transform));
+			*barrierBorderModel, meshIndexBody, *borderMaterial, StaticPropMaterial::InstanceData(transform)
+		);
 
 		const float intensity = glm::mix(LIGHT_INTENSITY_MIN, LIGHT_INTENSITY_MAX, lightIntensity);
 		args.meshBatch->AddModelMesh(
 			*barrierBorderModel, meshIndexEmissive, EmissiveMaterial::instance,
-			EmissiveMaterial::InstanceData{ transform, gravityBarrierLightColor * intensity });
+			EmissiveMaterial::InstanceData{ transform, gravityBarrierLightColor * intensity }
+		);
 	};
 
 	int tangentLenI = static_cast<int>(std::round(tangentLen));
@@ -326,7 +330,8 @@ void GravityBarrierEnt::UpdateNearEntities(const Player* player, EntityManager& 
 			{
 				AddInteractable(comp->currentDown, entity.GetPosition());
 			}
-		});
+		}
+	);
 
 	while (itemsWritten < GravityBarrierMaterial::NUM_INTERACTABLES)
 	{
@@ -395,10 +400,13 @@ void GravityBarrierEnt::Deserialize(std::istream& stream)
 
 void GravityBarrierEnt::UpdateWaterBlockedGravities()
 {
-	const int blockedAxis = BlockedAxis();
-	for (int i = 0; i < 6; i++)
+	if (m_neverBlockWater)
 	{
-		m_waterBlockComp.blockedGravities[i] = !m_neverBlockWater && blockedAxis == i / 2;
+		m_waterBlockComp.blockedGravities = DirFlags::None;
+	}
+	else
+	{
+		m_waterBlockComp.blockedGravities = static_cast<DirFlags>(0b11 << (BlockedAxis() * 2));
 	}
 }
 

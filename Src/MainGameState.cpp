@@ -34,7 +34,8 @@ MainGameState::MainGameState()
 			{
 				eg::console::Hide();
 			}
-		});
+		}
+	);
 
 	eg::console::AddCommand(
 		"curlevel", 0,
@@ -48,21 +49,44 @@ MainGameState::MainGameState()
 			{
 				writer.WriteLine(eg::console::InfoColor, levels[m_currentLevelIndex].name);
 			}
-		});
+		}
+	);
+
+	eg::console::AddCommand(
+		"wreset", 0,
+		[&](std::span<const std::string_view> args, eg::console::Writer& writer)
+		{
+			if (m_world == nullptr)
+			{
+				writer.WriteLine(eg::console::ErrorColor, "No world loaded");
+			}
+			else
+			{
+				GameRenderer::instance->InitWaterSimulator(*m_world);
+				if (GameRenderer::instance->m_waterSimulator)
+					m_playerWaterAABB = GameRenderer::instance->m_waterSimulator->AddQueryAABB({});
+				else
+					m_playerWaterAABB = nullptr;
+			}
+		}
+	);
 
 	eg::console::AddCommand(
 		"ssrfbEdit", 0,
 		[this](std::span<const std::string_view> args, eg::console::Writer& writer)
-		{ m_ssrReflectionColorEditorShown = !m_ssrReflectionColorEditorShown; });
+		{ m_ssrReflectionColorEditorShown = !m_ssrReflectionColorEditorShown; }
+	);
 
 	eg::console::AddCommand(
 		"showExtraLevels", 0,
-		[](std::span<const std::string_view>, eg::console::Writer&) { settings.showExtraLevels = true; });
+		[](std::span<const std::string_view>, eg::console::Writer&) { settings.showExtraLevels = true; }
+	);
 
 	eg::console::AddCommand(
 		"crosshair", 0,
 		[](std::span<const std::string_view>, eg::console::Writer&)
-		{ settings.drawCrosshair = !settings.drawCrosshair; });
+		{ settings.drawCrosshair = !settings.drawCrosshair; }
+	);
 
 	const eg::Texture& particlesTexture = eg::GetAsset<eg::Texture>("Textures/Particles.png");
 	m_particleManager.SetTextureSize(particlesTexture.Width(), particlesTexture.Height());
@@ -71,7 +95,8 @@ MainGameState::MainGameState()
 }
 
 void MainGameState::SetWorld(
-	std::unique_ptr<World> newWorld, int64_t levelIndex, const EntranceExitEnt* exitEntity, bool fromEditor)
+	std::unique_ptr<World> newWorld, int64_t levelIndex, const EntranceExitEnt* exitEntity, bool fromEditor
+)
 {
 	m_player.Reset();
 	m_gameTime = 0;
@@ -99,7 +124,8 @@ void MainGameState::SetWorld(
 					entity.InitPlayer(m_player);
 				}
 			}
-		});
+		}
+	);
 
 	m_world = std::move(newWorld);
 
@@ -177,7 +203,8 @@ void MainGameState::RunFrame(float dt)
 					m_isPlayerCloseToExitWithWrongGravity = true;
 				if (entity.ShouldSwitchEntrance())
 					currentExit = &entity;
-			});
+			}
+		);
 
 		// Moves to the next level
 		if (currentExit != nullptr && m_currentLevelIndex != -1 && levels[m_currentLevelIndex].nextLevelIndex != -1)
@@ -243,7 +270,8 @@ void MainGameState::RunFrame(float dt)
 			auto gunUpdateCPUTimer = eg::StartCPUTimer("Gun Update");
 			m_gravityGun.Update(
 				*m_world, m_physicsEngine, GameRenderer::instance->m_waterSimulator.get(), m_particleManager, m_player,
-				GameRenderer::instance->GetInverseViewProjMatrix(), dt);
+				GameRenderer::instance->GetInverseViewProjMatrix(), dt
+			);
 		}
 	}
 	else
@@ -284,12 +312,12 @@ void MainGameState::RunFrame(float dt)
 	if (GameRenderer::instance->m_waterSimulator)
 	{
 		auto waterUpdateTimer = eg::StartCPUTimer("Water Update MT");
-		GameRenderer::instance->m_waterSimulator->Update(*m_world, m_player.EyePosition(), m_pausedMenu.isPaused);
+		GameRenderer::instance->m_waterSimulator->Update(eg::DC, dt, *m_world, m_pausedMenu.isPaused);
 	}
 
 	GameRenderer::instance->Render(
-		*m_world, m_gameTime, dt, nullptr, eg::Format::DefaultColor, eg::CurrentResolutionX(),
-		eg::CurrentResolutionY());
+		*m_world, m_gameTime, dt, nullptr, eg::Format::DefaultColor, eg::CurrentResolutionX(), eg::CurrentResolutionY()
+	);
 
 	UpdateAndDrawHud(dt);
 
@@ -358,9 +386,7 @@ void MainGameState::UpdateAndDrawHud(float dt)
 		m_errorHintMessage = "It is not possible to change gravity while carrying a cube";
 		errorHintTargetAlpha = 1;
 	}
-	else if (
-		m_world->showControlHint[static_cast<int>(OptionalControlHintType::CannotExitWithWrongGravity)] &&
-		m_isPlayerCloseToExitWithWrongGravity)
+	else if (m_world->showControlHint[static_cast<int>(OptionalControlHintType::CannotExitWithWrongGravity)] && m_isPlayerCloseToExitWithWrongGravity)
 	{
 		m_errorHintMessage = "Your gravity must point down in order to exit";
 		errorHintTargetAlpha = 1;
@@ -392,16 +418,19 @@ void MainGameState::UpdateAndDrawHud(float dt)
 		eg::Rectangle buttonRect(
 			leftPos.x + buttonNameLen / 2.0f - BUTTON_BORDER_PADDING - buttonBoxSize / 2.0f + 1,
 			leftPos.y - BUTTON_BORDER_PADDING - 3, BUTTON_BORDER_PADDING * 2 + buttonBoxSize,
-			BUTTON_BORDER_PADDING * 2 + style::UIFont->LineHeight() * fontScale);
+			BUTTON_BORDER_PADDING * 2 + style::UIFont->LineHeight() * fontScale
+		);
 
 		eg::SpriteBatch::overlay.DrawRect(buttonRect, eg::ColorLin(0, 0, 0, m_controlHintAlpha * 0.3f));
 		eg::SpriteBatch::overlay.DrawRectBorder(buttonRect, color, 1);
 		eg::SpriteBatch::overlay.DrawText(
-			*style::UIFont, buttonName, leftPos, color, fontScale, nullptr, eg::TextFlags::DropShadow);
+			*style::UIFont, buttonName, leftPos, color, fontScale, nullptr, eg::TextFlags::DropShadow
+		);
 		eg::SpriteBatch::overlay.DrawText(
 			*style::UIFont, m_controlHintMessage,
 			glm::vec2(leftPos.x + buttonBoxSize + BUTTON_MESSAGE_SPACING, leftPos.y), color, fontScale, nullptr,
-			eg::TextFlags::DropShadow);
+			eg::TextFlags::DropShadow
+		);
 	}
 
 	// Draws the error hint
@@ -421,12 +450,15 @@ void MainGameState::UpdateAndDrawHud(float dt)
 		eg::SpriteBatch::overlay.DrawRect(
 			eg::Rectangle(
 				leftX - rectanglePadding, errorHintY - rectanglePadding, messageLen.x + rectanglePadding * 2,
-				messageLen.y + rectanglePadding * 2),
-			eg::ColorLin(0, 0, 0, 0.3f));
+				messageLen.y + rectanglePadding * 2
+			),
+			eg::ColorLin(0, 0, 0, 0.3f)
+		);
 
 		eg::SpriteBatch::overlay.DrawText(
 			*style::UIFont, m_errorHintMessage, glm::vec2(leftX, errorHintY), color, fontScale, nullptr,
-			eg::TextFlags::DropShadow);
+			eg::TextFlags::DropShadow
+		);
 	}
 
 	// Draws the crosshair
@@ -435,7 +467,8 @@ void MainGameState::UpdateAndDrawHud(float dt)
 		const float crosshairSize = std::round(eg::CurrentResolutionX() / 40.0f);
 		const eg::Rectangle chRect = eg::Rectangle::CreateCentered(
 			static_cast<float>(eg::CurrentResolutionX()) / 2.0f, static_cast<float>(eg::CurrentResolutionY()) / 2.0f,
-			crosshairSize, crosshairSize);
+			crosshairSize, crosshairSize
+		);
 
 		constexpr float CROSSHAIR_OPACITY = 0.75f;
 		const float opacity = CROSSHAIR_OPACITY * (1 - m_pausedMenu.fade);
@@ -493,11 +526,11 @@ void MainGameState::DrawOverlay(float dt)
 
 	textStream << "PSM Updates: " << GameRenderer::instance->m_plShadowMapper.LastFrameUpdateCount() << "\n";
 
-	if (const IWaterSimulator* waterSim = GameRenderer::instance->m_waterSimulator.get())
-	{
-		textStream << "Water Spheres: " << waterSim->NumParticles() << "\n";
-		textStream << "Water Update Time: " << (static_cast<double>(waterSim->LastUpdateTime()) / 1E6) << "ms\n";
-	}
+	// if (const WaterSimulator2* waterSim = GameRenderer::instance->m_waterSimulator.get())
+	// {
+	// 	textStream << "Water Spheres: " << waterSim->NumParticles() << "\n";
+	// 	textStream << "Water Update Time: " << (static_cast<double>(waterSim->LastUpdateTime()) / 1E6) << "ms\n";
+	// }
 
 	if (m_currentLevelIndex != -1)
 	{
@@ -524,7 +557,8 @@ void MainGameState::DrawOverlay(float dt)
 		{
 			eg::SpriteBatch::overlay.DrawText(
 				eg::SpriteFont::DevFont(), line, glm::vec2(padding, y - eg::SpriteFont::DevFont().Size() * 0.8f),
-				textColor, 1, nullptr, eg::TextFlags::DropShadow, &loTextColor);
+				textColor, 1, nullptr, eg::TextFlags::DropShadow, &loTextColor
+			);
 			y -= lineHeight;
 		}
 	}

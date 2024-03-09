@@ -33,7 +33,7 @@ static void OnInit()
 	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.label = "BlurredGlass[Blurry]";
-	pipelineCI.fragmentShader = fs.GetVariant("VBlur");
+	pipelineCI.fragmentShader = fs.ToStageInfo("VBlur");
 	pipelineBlurry = eg::Pipeline::Create(pipelineCI);
 
 	pipelineCI.blendStates[0] = eg::BlendState(
@@ -41,10 +41,11 @@ static void OnInit()
 		/* srcColor */ eg::BlendFactor::Zero,
 		/* srcAlpha */ eg::BlendFactor::Zero,
 		/* dstColor */ eg::BlendFactor::SrcColor,
-		/* dstAlpha */ eg::BlendFactor::One);
+		/* dstAlpha */ eg::BlendFactor::One
+	);
 	pipelineCI.label = "BlurredGlass[NotBlurry]";
 	pipelineCI.enableDepthWrite = false;
-	pipelineCI.fragmentShader = fs.GetVariant("VNoBlur");
+	pipelineCI.fragmentShader = fs.ToStageInfo("VNoBlur");
 	pipelineNotBlurry = eg::Pipeline::Create(pipelineCI);
 
 	pipelineCI.label = "BlurredGlass[Editor]";
@@ -89,7 +90,7 @@ bool BlurredGlassMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawAr
 	if (mDrawArgs->drawMode == MeshDrawMode::BlurredGlassDepthOnly && isBlurry)
 	{
 		cmdCtx.BindPipeline(pipelineDepthOnly);
-		cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
+		cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0);
 		return true;
 	}
 
@@ -111,7 +112,7 @@ bool BlurredGlassMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawAr
 		cmdCtx.BindPipeline(blurry ? pipelineBlurry : pipelineNotBlurry);
 	}
 
-	cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
+	cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0);
 
 	cmdCtx.BindTexture(eg::GetAsset<eg::Texture>("Textures/GlassHex.png"), 0, 1, &commonTextureSampler);
 
@@ -133,7 +134,8 @@ bool BlurredGlassMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawAr
 	else if (mDrawArgs->drawMode == MeshDrawMode::TransparentBeforeBlur)
 	{
 		cmdCtx.BindTexture(
-			mDrawArgs->rtManager->GetRenderTexture(RenderTex::BlurredGlassDepth), 0, 2, &framebufferNearestSampler);
+			mDrawArgs->rtManager->GetRenderTexture(RenderTex::BlurredGlassDepth), 0, 2, &framebufferNearestSampler
+		);
 	}
 	else
 	{

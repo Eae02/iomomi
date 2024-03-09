@@ -3,7 +3,8 @@
 #include "Dir.hpp"
 
 std::optional<glm::vec3> CheckCollisionAABBPolygon(
-	const eg::AABB& aabb, std::span<const glm::vec3> polyVertices, const glm::vec3& moveDir, float shiftAmount)
+	const eg::AABB& aabb, std::span<const glm::vec3> polyVertices, const glm::vec3& moveDir, float shiftAmount
+)
 {
 	glm::vec3 planeNormal = glm::cross(polyVertices[1] - polyVertices[0], polyVertices[2] - polyVertices[0]);
 	if (glm::dot(planeNormal, moveDir) > 0)
@@ -67,7 +68,8 @@ std::optional<glm::vec3> CheckCollisionAABBPolygon(
 
 std::optional<glm::vec3> CheckCollisionAABBTriangleMesh(
 	const eg::AABB& aabb, const glm::vec3& moveDir, const eg::CollisionMesh& mesh, const glm::mat4& meshTransform,
-	bool flipWinding)
+	bool flipWinding
+)
 {
 	if (!aabb.Intersects(mesh.BoundingBox().TransformedBoundingBox(meshTransform)))
 		return {};
@@ -101,7 +103,8 @@ std::optional<glm::vec3> CheckCollisionAABBTriangleMesh(
 }
 
 std::optional<glm::vec3> CheckCollisionAABBOrientedBox(
-	const eg::AABB& aabb, const OrientedBox& orientedBox, const glm::vec3& moveDir, float shiftAmount)
+	const eg::AABB& aabb, const OrientedBox& orientedBox, const glm::vec3& moveDir, float shiftAmount
+)
 {
 	CollisionResponseCombiner combiner;
 
@@ -144,8 +147,8 @@ std::optional<float> RayIntersectOrientedBox(const eg::Ray& ray, const OrientedB
 		if (ray.Intersects(plane, planeIntersect) && planeIntersect >= 0 && planeIntersect < minAns)
 		{
 			glm::vec3 intersectPointRel = ray.GetPoint(planeIntersect) - faceCenter;
-			float distT = abs(glm::dot(intersectPointRel, tangent) / glm::length2(tangent));
-			float distB = abs(glm::dot(intersectPointRel, bitangent) / glm::length2(bitangent));
+			float distT = std::abs(glm::dot(intersectPointRel, tangent) / glm::length2(tangent));
+			float distB = std::abs(glm::dot(intersectPointRel, bitangent) / glm::length2(bitangent));
 			if (distT <= 1 && distB <= 1)
 			{
 				minAns = planeIntersect;

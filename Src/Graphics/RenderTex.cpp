@@ -3,7 +3,6 @@
 #include <magic_enum/magic_enum.hpp>
 
 #include "../Settings.hpp"
-#include "Water/WaterRenderer.hpp"
 
 static inline eg::TextureFlags GetFlagsForRenderTexture(RenderTex texture)
 {
@@ -112,15 +111,18 @@ void AssertRenderTextureFormatSupport()
 
 	eg::AssertFormatSupport(
 		GB_COLOR_FORMAT, eg::FormatCapabilities::SampledImage | eg::FormatCapabilities::SampledImageFilterLinear |
-							 eg::FormatCapabilities::ColorAttachment | eg::FormatCapabilities::ColorAttachmentBlend);
+							 eg::FormatCapabilities::ColorAttachment | eg::FormatCapabilities::ColorAttachmentBlend
+	);
 	eg::AssertFormatSupport(
 		LIGHT_COLOR_FORMAT_LDR,
 		eg::FormatCapabilities::SampledImage | eg::FormatCapabilities::SampledImageFilterLinear |
-			eg::FormatCapabilities::ColorAttachment | eg::FormatCapabilities::ColorAttachmentBlend);
+			eg::FormatCapabilities::ColorAttachment | eg::FormatCapabilities::ColorAttachmentBlend
+	);
 	eg::AssertFormatSupport(
 		LIGHT_COLOR_FORMAT_HDR,
 		eg::FormatCapabilities::SampledImage | eg::FormatCapabilities::SampledImageFilterLinear |
-			eg::FormatCapabilities::ColorAttachment | eg::FormatCapabilities::ColorAttachmentBlend);
+			eg::FormatCapabilities::ColorAttachment | eg::FormatCapabilities::ColorAttachmentBlend
+	);
 }
 
 RenderTexManager::RenderTexManager()
@@ -213,7 +215,8 @@ void RenderTexManager::RedirectRenderTexture(RenderTex texture, RenderTex actual
 }
 
 void RenderTexManager::RenderTextureUsageHint(
-	RenderTex texture, eg::TextureUsage usage, eg::ShaderAccessFlags accessFlags)
+	RenderTex texture, eg::TextureUsage usage, eg::ShaderAccessFlags accessFlags
+)
 {
 	renderTextures[(int)ResolveRedirects(texture)].UsageHint(usage, accessFlags);
 }
@@ -225,7 +228,8 @@ eg::TextureRef RenderTexManager::GetRenderTexture(RenderTex texture) const
 
 eg::FramebufferHandle RenderTexManager::GetFramebuffer(
 	std::optional<RenderTex> colorTexture1, std::optional<RenderTex> colorTexture2,
-	std::optional<RenderTex> depthTexture, const char* label)
+	std::optional<RenderTex> depthTexture, const char* label
+)
 {
 	if (colorTexture1.has_value())
 		colorTexture1 = ResolveRedirects(*colorTexture1);
@@ -249,7 +253,8 @@ eg::FramebufferHandle RenderTexManager::GetFramebuffer(
 		{ return texture.has_value() ? magic_enum::enum_name(*texture) : "-"; };
 		eg::Log(
 			eg::LogLevel::Info, "fb", "Added framebuffer ({0} {1} {2})", GetNameForOptRenderTexture(colorTexture1),
-			GetNameForOptRenderTexture(colorTexture2), GetNameForOptRenderTexture(depthTexture));
+			GetNameForOptRenderTexture(colorTexture2), GetNameForOptRenderTexture(depthTexture)
+		);
 	}
 
 	EG_ASSERT(framebuffers.size() < 100);
@@ -266,7 +271,8 @@ eg::FramebufferHandle RenderTexManager::GetFramebuffer(
 
 void DescriptorSetRenderTexBinding::Update(
 	eg::DescriptorSet& descriptorSet, uint32_t binding, const RenderTexManager& renderTexManager, RenderTex texture,
-	const eg::Sampler* sampler)
+	const eg::Sampler* sampler
+)
 {
 	RenderTex redirected = renderTexManager.ResolveRedirects(texture);
 	if (m_generation != renderTexManager.Generation() || redirected != m_redirectedRenderTex)

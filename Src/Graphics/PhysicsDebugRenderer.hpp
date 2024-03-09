@@ -24,10 +24,12 @@ public:
 
 	void Render(
 		const class PhysicsEngine& physicsEngine, const glm::mat4& viewProjTransform, eg::TextureRef colorFBTex,
-		eg::TextureRef depthFBTex);
+		eg::TextureRef depthFBTex
+	);
 	void Render(
 		const PhysicsDebugRenderData& renderData, const glm::mat4& viewProjTransform, eg::TextureRef colorFBTex,
-		eg::TextureRef depthFBTex);
+		eg::TextureRef depthFBTex
+	);
 
 private:
 	PhysicsDebugRenderData m_renderData;

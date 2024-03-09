@@ -81,12 +81,14 @@ public:
 
 	// Finds the closest object intersecting the ray. If no intersection, returns (nullptr, infinity)
 	std::pair<PhysicsObject*, float> RayIntersect(
-		const eg::Ray& ray, uint32_t mask = 0xFF, const PhysicsObject* ignoreObject = nullptr) const;
+		const eg::Ray& ray, uint32_t mask = 0xFF, const PhysicsObject* ignoreObject = nullptr
+	) const;
 
 	void GetDebugRenderData(struct PhysicsDebugRenderData& dataOut) const;
 
 	PhysicsObject* CheckCollision(
-		const eg::AABB& aabb, uint32_t mask = 0xFF, const PhysicsObject* ignoreObject = nullptr) const;
+		const eg::AABB& aabb, uint32_t mask = 0xFF, const PhysicsObject* ignoreObject = nullptr
+	) const;
 
 private:
 	void CopyParentMove(PhysicsObject& object, float dt);
@@ -101,15 +103,18 @@ private:
 	static bool CheckCollisionCallbacks(const PhysicsObject& a, const PhysicsObject& b);
 
 	CheckCollisionResult CheckForCollision(
-		const PhysicsObject& currentObject, const glm::vec3& position, const glm::quat& rotation) const;
+		const PhysicsObject& currentObject, const glm::vec3& position, const glm::quat& rotation
+	) const;
 
 	PhysicsObject* CheckForCollision(
 		struct CollisionResponseCombiner& combiner, const PhysicsObject& currentObject, const eg::AABB& shape,
-		const glm::vec3& position, const glm::quat& rotation) const;
+		const glm::vec3& position, const glm::quat& rotation
+	) const;
 
 	PhysicsObject* CheckForCollision(
 		struct CollisionResponseCombiner& combiner, const PhysicsObject& currentObject, const eg::CollisionMesh* shape,
-		const glm::vec3& position, const glm::quat& rotation) const;
+		const glm::vec3& position, const glm::quat& rotation
+	) const;
 
 	std::vector<PhysicsObject*> m_objects;
 };

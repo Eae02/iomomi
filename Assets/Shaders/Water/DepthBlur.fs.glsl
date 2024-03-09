@@ -41,7 +41,7 @@ void main()
 	
 	//float centerTravelDepth = centerDepthMax - centerDepth;
 	//float blurRamp = clamp((centerTravelDepth - BLUR_RAMP_BEGIN) / BLUR_RAMP_SIZE, 0, 1);
-	float blurDist = (1) / (centerDepth < UNDERWATER_DEPTH ? centerDepthMax : centerDepth);
+	float blurDist = (1) / (centerDepth < W_UNDERWATER_DEPTH ? centerDepthMax : centerDepth);
 	
 	vec2 sum = vec2(0);
 	vec2 wsum = vec2(0);

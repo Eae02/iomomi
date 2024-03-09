@@ -17,7 +17,8 @@ public:
 	void SetLightSources(const std::vector<std::shared_ptr<PointLight>>& lights);
 
 	void UpdateShadowMaps(
-		const RenderCallback& prepareCallback, const RenderCallback& renderCallback, const eg::Frustum& viewFrustum);
+		const RenderCallback& prepareCallback, const RenderCallback& renderCallback, const eg::Frustum& viewFrustum
+	);
 
 	static bool FlippedLightMatrix();
 

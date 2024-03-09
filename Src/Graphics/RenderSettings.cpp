@@ -16,7 +16,7 @@ RenderSettings::RenderSettings() : m_vertexShaderDescriptorSet({ &dsBinding, 1 }
 	createInfo.label = "RenderSettings";
 	m_buffer = eg::Buffer(createInfo);
 
-	m_vertexShaderDescriptorSet.BindUniformBuffer(m_buffer, 0, 0, BUFFER_SIZE);
+	m_vertexShaderDescriptorSet.BindUniformBuffer(m_buffer, 0);
 }
 
 void RenderSettings::UpdateBuffer()

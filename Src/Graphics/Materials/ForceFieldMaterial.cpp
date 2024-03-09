@@ -7,14 +7,15 @@
 
 ForceFieldMaterial::ForceFieldMaterial()
 {
-	eg::SpecializationConstantEntry waterModeSpecConstant;
-	waterModeSpecConstant.constantID = WATER_MODE_CONST_ID;
-	waterModeSpecConstant.size = sizeof(int32_t);
-	waterModeSpecConstant.offset = 0;
+	eg::SpecializationConstantEntry specConstants[1];
+	specConstants[0].constantID = WATER_MODE_CONST_ID;
 
 	eg::GraphicsPipelineCreateInfo pipelineCI;
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/ForceField.vs.glsl").DefaultVariant();
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/ForceField.fs.glsl").DefaultVariant();
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/ForceField.vs.glsl").ToStageInfo();
+	pipelineCI.fragmentShader = {
+		.shaderModule = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/ForceField.fs.glsl").DefaultVariant(),
+		.specConstants = specConstants,
+	};
 	pipelineCI.vertexBindings[POSITION_BINDING] = { sizeof(float) * 2, eg::InputRate::Vertex };
 	pipelineCI.vertexBindings[INSTANCE_DATA_BINDING] = { sizeof(ForceFieldInstance), eg::InputRate::Instance };
 	pipelineCI.vertexAttributes[0] = { POSITION_BINDING, eg::DataType::Float32, 2, 0 };
@@ -32,17 +33,15 @@ ForceFieldMaterial::ForceFieldMaterial()
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.blendStates[0] =
 		eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::OneMinusSrcAlpha);
-	pipelineCI.fragmentShader.specConstants = { &waterModeSpecConstant, 1 };
-	pipelineCI.fragmentShader.specConstantsDataSize = sizeof(int32_t);
 	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
 	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
 
 	pipelineCI.label = "ForceField[BeforeWater]";
-	pipelineCI.fragmentShader.specConstantsData = const_cast<int32_t*>(&WATER_MODE_BEFORE);
+	specConstants[0].value = WATER_MODE_BEFORE;
 	m_pipelineBeforeWater = eg::Pipeline::Create(pipelineCI);
 
 	pipelineCI.label = "ForceField[Final]";
-	pipelineCI.fragmentShader.specConstantsData = const_cast<int32_t*>(&WATER_MODE_AFTER);
+	specConstants[0].value = WATER_MODE_AFTER;
 	m_pipelineFinal = eg::Pipeline::Create(pipelineCI);
 
 	m_particleSampler = eg::Sampler(eg::SamplerDescription{
@@ -64,7 +63,7 @@ bool ForceFieldMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs
 
 	auto CommonBind = [&]()
 	{
-		cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
+		cmdCtx.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0);
 		cmdCtx.BindTexture(eg::GetAsset<eg::Texture>("Textures/ForceFieldParticle.png"), 0, 1, &m_particleSampler);
 		cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 0, 2, &framebufferNearestSampler);
 	};
@@ -81,7 +80,8 @@ bool ForceFieldMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs
 		cmdCtx.BindPipeline(m_pipelineFinal);
 		CommonBind();
 		cmdCtx.BindTexture(
-			mDrawArgs->rtManager->GetRenderTexture(RenderTex::BlurredGlassDepth), 0, 3, &framebufferNearestSampler);
+			mDrawArgs->rtManager->GetRenderTexture(RenderTex::BlurredGlassDepth), 0, 3, &framebufferNearestSampler
+		);
 		return true;
 	}
 	if (mDrawArgs->drawMode == MeshDrawMode::TransparentFinal)

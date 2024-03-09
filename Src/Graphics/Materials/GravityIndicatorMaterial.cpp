@@ -12,9 +12,8 @@ GravityIndicatorMaterial GravityIndicatorMaterial::instance;
 static void OnInit()
 {
 	eg::GraphicsPipelineCreateInfo pipelineCI;
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityIndicator.vs.glsl").DefaultVariant();
-	pipelineCI.fragmentShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityIndicator.fs.glsl").DefaultVariant();
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityIndicator.vs.glsl").ToStageInfo();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityIndicator.fs.glsl").ToStageInfo();
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.depthCompare = eg::CompareOp::LessOrEqual;
@@ -44,7 +43,7 @@ static void OnInit()
 	pipeline = eg::Pipeline::Create(pipelineCI);
 
 	descriptorSet = eg::DescriptorSet(pipeline, 0);
-	descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+	descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
 	descriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 1, &linearRepeatSampler);
 }
 

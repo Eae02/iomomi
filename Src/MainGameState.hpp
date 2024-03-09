@@ -3,8 +3,8 @@
 #include "GameRenderer.hpp"
 #include "GameState.hpp"
 #include "Graphics/PhysicsDebugRenderer.hpp"
-#include "Graphics/Water/IWaterSimulator.hpp"
 #include "Gui/PausedMenu.hpp"
+#include "Water/WaterQuery.hpp"
 #include "World/GravityGun.hpp"
 #include "World/Player.hpp"
 #include "World/PrepareDrawArgs.hpp"
@@ -19,7 +19,8 @@ public:
 
 	void SetWorld(
 		std::unique_ptr<World> newWorld, int64_t levelIndex = -1, const class EntranceExitEnt* exitEntity = nullptr,
-		bool fromEditor = false);
+		bool fromEditor = false
+	);
 
 	void OnDeactivate() override;
 
@@ -51,7 +52,7 @@ private:
 	Player m_player;
 	GravityGun m_gravityGun;
 
-	std::shared_ptr<IWaterSimulator::IQueryAABB> m_playerWaterAABB;
+	std::shared_ptr<WaterQueryAABB> m_playerWaterAABB;
 
 	PausedMenu m_pausedMenu;
 

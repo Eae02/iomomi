@@ -35,6 +35,15 @@ public:
 		return GetGravityCornerVoxelPos(cornerPos, cornerDir).w != -1;
 	}
 
+	void ForEachAirVoxel(auto callback) const
+	{
+		for (const auto& entry : m_voxels)
+		{
+			const glm::ivec3 pos = entry.first;
+			callback(pos);
+		}
+	}
+
 	VoxelRayIntersectResult RayIntersect(const eg::Ray& ray) const;
 
 	std::pair<glm::ivec3, glm::ivec3> CalculateBounds() const;

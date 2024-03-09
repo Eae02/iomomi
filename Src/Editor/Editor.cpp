@@ -97,13 +97,15 @@ void Editor::RunFrame(float dt)
 
 			const eg::Rectangle windowRect(
 				imguiCursorPos.x, imguiCursorPos.y,
-				ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x, ImGui::GetWindowHeight());
+				ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x, ImGui::GetWindowHeight()
+			);
 			m_worlds[i]->SetWindowRect(windowRect);
 
 			const bool flipY = eg::CurrentGraphicsAPI() == eg::GraphicsAPI::OpenGL;
 			drawList->AddImage(
 				eg::imgui::MakeImTextureID(m_worlds[i]->renderTexture.GetView()), imguiCursorPos, windowRect.Max(),
-				ImVec2(0, flipY ? 1 : 0), ImVec2(1, flipY ? 0 : 1));
+				ImVec2(0, flipY ? 1 : 0), ImVec2(1, flipY ? 0 : 1)
+			);
 		}
 
 		ImGui::End();
@@ -156,7 +158,8 @@ void Editor::RunFrame(float dt)
 					ImGui::BeginTooltip();
 					ImGui::Image(
 						eg::imgui::MakeImTextureID(level.thumbnail.GetView()),
-						ImVec2(LEVEL_THUMBNAIL_RES_X / 2.0f, LEVEL_THUMBNAIL_RES_Y / 2.0f));
+						ImVec2(LEVEL_THUMBNAIL_RES_X / 2.0f, LEVEL_THUMBNAIL_RES_Y / 2.0f)
+					);
 					ImGui::EndTooltip();
 				}
 
@@ -267,6 +270,9 @@ void Editor::RunFrame(float dt)
 				m_levelSelectWindowOpen = true;
 
 			ImGui::Separator();
+			ImGui::SliderFloat("Mouse Sensitivity", &settings.editorMouseSensitivity, 0.01f, 5.0f);
+
+			ImGui::Separator();
 			ImGui::TextDisabled("Icons");
 
 			magic_enum::enum_for_each<EntTypeID>(
@@ -276,9 +282,11 @@ void Editor::RunFrame(float dt)
 					if (type != nullptr && eg::HasFlag(type->flags, EntTypeFlags::OptionalEditorIcon))
 					{
 						ImGui::MenuItem(
-							type->prettyName.c_str(), nullptr, &settings.edEntityIconEnabled.at((size_t)typeId));
+							type->prettyName.c_str(), nullptr, &settings.edEntityIconEnabled.at((size_t)typeId)
+						);
 					}
-				});
+				}
+			);
 
 			ImGui::EndMenu();
 		}

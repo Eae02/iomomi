@@ -17,22 +17,16 @@ static float DEPTH_OFFSET = 0.001f;
 
 static void OnInit()
 {
-	eg::SpecializationConstantEntry depthOffsetSpecConstant;
-	depthOffsetSpecConstant.constantID = COMMON_3D_DEPTH_OFFSET_CONST_ID;
-	depthOffsetSpecConstant.size = sizeof(float);
-	depthOffsetSpecConstant.offset = 0;
+	const eg::SpecializationConstantEntry depthOffsetSpecConstant = { COMMON_3D_DEPTH_OFFSET_CONST_ID, DEPTH_OFFSET };
 
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	StaticPropMaterial::InitializeForCommon3DVS(pipelineCI);
-	pipelineCI.fragmentShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityCornerLight.fs.glsl").DefaultVariant();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityCornerLight.fs.glsl").ToStageInfo();
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.depthCompare = eg::CompareOp::LessOrEqual;
 	pipelineCI.cullMode = eg::CullMode::None;
 	pipelineCI.vertexShader.specConstants = { &depthOffsetSpecConstant, 1 };
-	pipelineCI.vertexShader.specConstantsDataSize = sizeof(float);
-	pipelineCI.vertexShader.specConstantsData = &DEPTH_OFFSET;
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
 	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
@@ -45,9 +39,10 @@ static void OnInit()
 	gravityCornerPipelineEditor = eg::Pipeline::Create(pipelineCI);
 
 	gravityCornerDescriptorSet = eg::DescriptorSet(gravityCornerPipeline, 0);
-	gravityCornerDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+	gravityCornerDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
 	gravityCornerDescriptorSet.BindTexture(
-		eg::GetAsset<eg::Texture>("Textures/GravityCornerLightDist.png"), 1, &commonTextureSampler);
+		eg::GetAsset<eg::Texture>("Textures/GravityCornerLightDist.png"), 1, &commonTextureSampler
+	);
 	gravityCornerDescriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/Hex.png"), 2, &commonTextureSampler);
 }
 

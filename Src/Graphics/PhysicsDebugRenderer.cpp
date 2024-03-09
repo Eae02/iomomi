@@ -9,8 +9,8 @@ PhysicsDebugRenderer::PhysicsDebugRenderer()
 	m_indexBuffer.flags = eg::BufferFlags::IndexBuffer | eg::BufferFlags::CopyDst;
 
 	eg::GraphicsPipelineCreateInfo pipelineCI;
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Primitive.vs.glsl").DefaultVariant();
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Primitive.fs.glsl").DefaultVariant();
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Primitive.vs.glsl").ToStageInfo();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Primitive.fs.glsl").ToStageInfo();
 	pipelineCI.vertexBindings[0] = { sizeof(PhysicsDebugVertex), eg::InputRate::Vertex };
 	pipelineCI.vertexAttributes[0] = eg::VertexAttribute(0, eg::DataType::Float32, 3, offsetof(PhysicsDebugVertex, x));
 	pipelineCI.vertexAttributes[1] =
@@ -37,7 +37,8 @@ PhysicsDebugRenderer::PhysicsDebugRenderer()
 
 void PhysicsDebugRenderer::Render(
 	const class PhysicsEngine& physicsEngine, const glm::mat4& viewProjTransform, eg::TextureRef colorFBTex,
-	eg::TextureRef depthFBTex)
+	eg::TextureRef depthFBTex
+)
 {
 	m_renderData.vertices.clear();
 	m_renderData.triangleIndices.clear();
@@ -48,7 +49,8 @@ void PhysicsDebugRenderer::Render(
 
 void PhysicsDebugRenderer::Render(
 	const PhysicsDebugRenderData& renderData, const glm::mat4& viewProjTransform, eg::TextureRef colorFBTex,
-	eg::TextureRef depthFBTex)
+	eg::TextureRef depthFBTex
+)
 {
 	if ((renderData.lineIndices.empty() && renderData.triangleIndices.empty()) || renderData.vertices.empty())
 		return;
@@ -77,7 +79,8 @@ void PhysicsDebugRenderer::Render(
 	eg::DC.CopyBuffer(uploadBuffer.buffer, m_vertexBuffer.buffer, uploadBuffer.offset, 0, verticesBytes);
 	eg::DC.CopyBuffer(
 		uploadBuffer.buffer, m_indexBuffer.buffer, uploadBuffer.offset + verticesBytes, 0,
-		lineIndicesBytes + triangleIndicesBytes);
+		lineIndicesBytes + triangleIndicesBytes
+	);
 
 	m_vertexBuffer.buffer.UsageHint(eg::BufferUsage::VertexBuffer);
 	m_indexBuffer.buffer.UsageHint(eg::BufferUsage::IndexBuffer);

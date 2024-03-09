@@ -52,15 +52,13 @@ static void OnInit()
 {
 	eg::SpecializationConstantEntry waterModeSpecConstant;
 	waterModeSpecConstant.constantID = WATER_MODE_CONST_ID;
-	waterModeSpecConstant.size = sizeof(int32_t);
-	waterModeSpecConstant.offset = 0;
 
 	// Creates the volumetric light pipeline
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	pipelineCI.vertexShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravitySwitchVolLight.vs.glsl").DefaultVariant();
+		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravitySwitchVolLight.vs.glsl").ToStageInfo();
 	pipelineCI.fragmentShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravitySwitchVolLight.fs.glsl").DefaultVariant();
+		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravitySwitchVolLight.fs.glsl").ToStageInfo();
 	pipelineCI.topology = eg::Topology::TriangleStrip;
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.enableDepthTest = true;
@@ -72,14 +70,13 @@ static void OnInit()
 	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
 	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
 	pipelineCI.fragmentShader.specConstants = { &waterModeSpecConstant, 1 };
-	pipelineCI.fragmentShader.specConstantsDataSize = sizeof(int32_t);
 
 	pipelineCI.label = "GravSwitchVolLight[BeforeWater]";
-	pipelineCI.fragmentShader.specConstantsData = const_cast<int32_t*>(&WATER_MODE_BEFORE);
+	waterModeSpecConstant.value = WATER_MODE_BEFORE;
 	gsVolLightPipelineBeforeWater = eg::Pipeline::Create(pipelineCI);
 
 	pipelineCI.label = "GravSwitchVolLight[Final]";
-	pipelineCI.fragmentShader.specConstantsData = const_cast<int32_t*>(&WATER_MODE_AFTER);
+	waterModeSpecConstant.value = WATER_MODE_AFTER;
 	gsVolLightPipelineFinal = eg::Pipeline::Create(pipelineCI);
 
 	// Creates the light data uniform buffer
@@ -106,9 +103,10 @@ static void OnInit()
 	};
 
 	lightVolDescriptorSet = eg::DescriptorSet(gsVolLightPipelineBeforeWater, 0);
-	lightVolDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+	lightVolDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
 	lightVolDescriptorSet.BindTexture(
-		eg::GetAsset<eg::Texture>("Textures/GravitySwitchVolEmi.png"), 1, &linearRepeatSampler);
+		eg::GetAsset<eg::Texture>("Textures/GravitySwitchVolEmi.png"), 1, &linearRepeatSampler
+	);
 	lightVolDescriptorSet.BindUniformBuffer(lightDataBuffer, 2, 0, sizeof(LightDataBuffer));
 }
 
@@ -202,8 +200,8 @@ eg::MeshBatch::Mesh GravitySwitchVolLightMaterial::GetMesh()
 	};
 }
 
-eg::IMaterial::VertexInputConfiguration GravitySwitchVolLightMaterial::GetVertexInputConfiguration(
-	const void* drawArgs) const
+eg::IMaterial::VertexInputConfiguration GravitySwitchVolLightMaterial::GetVertexInputConfiguration(const void* drawArgs
+) const
 {
 	return VertexInputConfiguration{ .vertexBindingsMask = 1 };
 }

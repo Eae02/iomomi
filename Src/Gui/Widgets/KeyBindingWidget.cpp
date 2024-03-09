@@ -29,8 +29,8 @@ void KeyBindingWidget::Update(const GuiFrameArgs& frameArgs, bool allowInteracti
 	if (m_isPickingKey)
 	{
 		anyKeyBindingPickingKey = true;
-		if ((cancelButtonHovered && eg::IsButtonDown(eg::Button::MouseLeft) &&
-		     !eg::WasButtonDown(eg::Button::MouseLeft)) ||
+		if ((cancelButtonHovered && eg::IsButtonDown(eg::Button::MouseLeft) && !eg::WasButtonDown(eg::Button::MouseLeft)
+		    ) ||
 		    settings.keyMenu.IsDown())
 		{
 			m_isPickingKey = false;
@@ -77,6 +77,7 @@ void KeyBindingWidget::Draw(const GuiFrameArgs& frameArgs, eg::SpriteBatch& spri
 
 		spriteBatch.DrawText(
 			*style::UIFont, cancelText, GetTextPos(m_cancelRectangle), eg::ColorLin(1, 1, 1, m_cancelButtonAlpha),
-			FONT_SCALE, nullptr, eg::TextFlags::DropShadow);
+			FONT_SCALE, nullptr, eg::TextFlags::DropShadow
+		);
 	}
 }

@@ -155,7 +155,8 @@ void WindowEnt::RenderSettings()
 	ImGui::DragFloat("Depth", &m_depth, 0.05f, 0.0f, INFINITY, nullptr, ImGuiSliderFlags_AlwaysClamp);
 
 	ImGui::DragFloat(
-		"Plane Distance", &m_windowDistanceScale, 0.01f, 0.0f, 1.0f, nullptr, ImGuiSliderFlags_AlwaysClamp);
+		"Plane Distance", &m_windowDistanceScale, 0.01f, 0.0f, 1.0f, nullptr, ImGuiSliderFlags_AlwaysClamp
+	);
 
 	ImGui::Separator();
 
@@ -175,7 +176,8 @@ void WindowEnt::RenderSettings()
 				static const char* noYes[] = { "no", "yes" };
 				ImGui::SetTooltip(
 					"Blocks Water: %s\nBlocks Gun: %s", noYes[windowTypes[i].blocksWater],
-					noYes[windowTypes[i].blocksGravityGun]);
+					noYes[windowTypes[i].blocksGravityGun]
+				);
 			}
 		}
 		ImGui::EndCombo();
@@ -217,7 +219,8 @@ void WindowEnt::RenderSettings()
 	static const char* blockWaterStrAutoNo = "Auto (no)\0Never\0Always\0";
 	if (ImGui::Combo(
 			"Block Water", reinterpret_cast<int*>(&m_waterBlockMode),
-			windowTypes[m_windowType].blocksWater ? blockWaterStrAutoYes : blockWaterStrAutoNo))
+			windowTypes[m_windowType].blocksWater ? blockWaterStrAutoYes : blockWaterStrAutoNo
+		))
 	{
 		UpdateWaterBlock();
 	}
@@ -227,12 +230,14 @@ void WindowEnt::RenderSettings()
 void WindowEnt::UpdateWaterBlock()
 {
 	m_waterBlockComp.editorVersion++;
+
 	bool shouldBlock = windowTypes[m_windowType].blocksWater;
 	if (m_waterBlockMode == WaterBlockMode::Never)
 		shouldBlock = false;
 	if (m_waterBlockMode == WaterBlockMode::Always)
 		shouldBlock = true;
-	std::fill_n(m_waterBlockComp.blockedGravities, 6, shouldBlock);
+
+	m_waterBlockComp.blockedGravities = shouldBlock ? DirFlags::All : DirFlags::None;
 }
 
 bool WindowEnt::NeedsBlurredTextures() const
@@ -271,7 +276,8 @@ void WindowEnt::CommonDraw(const EntDrawArgs& args)
 		                                       glm::mat4(
 												   glm::vec4(glm::normalize(bitangent) * m_frameScale, 0),
 												   glm::vec4(glm::normalize(tangent) * m_frameScale, 0),
-												   glm::vec4(-normal * m_depth, 0), glm::vec4(0, 0, 0, 1));
+												   glm::vec4(-normal * m_depth, 0), glm::vec4(0, 0, 0, 1)
+											   );
 
 		const glm::vec2 MASTER_FRONT_TEXTURE_SCALE(3.0f, -3.0f);
 		glm::vec2 frontTextureScale = MASTER_FRONT_TEXTURE_SCALE / m_frameTextureScale;
@@ -288,10 +294,12 @@ void WindowEnt::CommonDraw(const EntDrawArgs& args)
 			const glm::mat4 transform = glm::translate(frameCommonTransform, glm::vec3(x - miX, -(y - miY), -0.5f));
 			args.meshBatch->AddModelMesh(
 				*frameModel, frameFrontMeshIndices[miX][miY], frameMaterial,
-				StaticPropMaterial::InstanceData(transform, frontTextureScale));
+				StaticPropMaterial::InstanceData(transform, frontTextureScale)
+			);
 			args.meshBatch->AddModelMesh(
 				*frameModel, frameSideMeshIndices[miX][miY], frameMaterial,
-				StaticPropMaterial::InstanceData(transform, sideTextureScale));
+				StaticPropMaterial::InstanceData(transform, sideTextureScale)
+			);
 		};
 
 		for (int x = 0; x < frameBlocksW; x++)
@@ -331,7 +339,8 @@ void WindowEnt::CommonDraw(const EntDrawArgs& args)
 	const glm::mat4 transformSide1 =
 		translationMatrix * glm::mat4(
 								glm::vec4(-tangent * 0.5f, 0), glm::vec4(bitangent * 0.5f, 0),
-								glm::vec4(normal * planeNormalScale, 0), glm::vec4(0, 0, 0, 1));
+								glm::vec4(normal * planeNormalScale, 0), glm::vec4(0, 0, 0, 1)
+							);
 	DrawWindowPlaneWithTransform(transformSide1);
 
 	// If the plane normal scale is too small, only one side should be drawn (is is assumed that the material is two
@@ -341,7 +350,8 @@ void WindowEnt::CommonDraw(const EntDrawArgs& args)
 		const glm::mat4 transformSide2 =
 			translationMatrix * glm::mat4(
 									glm::vec4(tangent * 0.5f, 0), glm::vec4(bitangent * 0.5f, 0),
-									glm::vec4(-normal * planeNormalScale, 0), glm::vec4(0, 0, 0, 1));
+									glm::vec4(-normal * planeNormalScale, 0), glm::vec4(0, 0, 0, 1)
+								);
 		DrawWindowPlaneWithTransform(transformSide2);
 	}
 }

@@ -7,8 +7,26 @@ enum class Dir
 	PosY = 2,
 	NegY = 3,
 	PosZ = 4,
-	NegZ = 5
+	NegZ = 5,
 };
+
+enum class DirFlags : uint8_t
+{
+	PosX = 1 << 0,
+	NegX = 1 << 1,
+	PosY = 1 << 2,
+	NegY = 1 << 3,
+	PosZ = 1 << 4,
+	NegZ = 1 << 5,
+
+	None = 0,
+	All = 0b111111,
+	BothX = PosX | NegX,
+	BothY = PosY | NegY,
+	BothZ = PosZ | NegZ,
+};
+
+EG_BIT_FIELD(DirFlags)
 
 extern const char* DirectionNames[6];
 

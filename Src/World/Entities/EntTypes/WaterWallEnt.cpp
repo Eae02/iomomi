@@ -8,7 +8,6 @@ DEF_ENT_TYPE(WaterWallEnt)
 
 WaterWallEnt::WaterWallEnt()
 {
-	std::fill_n(m_waterBlockComp.blockedGravities, 6, true);
 	m_waterBlockComp.onlyBlockDuringSimulation = true;
 }
 
@@ -36,8 +35,13 @@ void WaterWallEnt::EditorDraw(const EntEditorDrawArgs& args)
 	auto [tangent, biTangent] = m_aaQuad.GetTangents(0);
 	tangent *= 0.5f;
 	biTangent *= 0.5f;
-	glm::vec3 vertices[] = { m_position - tangent - biTangent, m_position - tangent + biTangent,
-		                     m_position + tangent - biTangent, m_position + tangent + biTangent };
+
+	const glm::vec3 vertices[] = {
+		m_position - tangent - biTangent,
+		m_position - tangent + biTangent,
+		m_position + tangent - biTangent,
+		m_position + tangent + biTangent,
+	};
 
 	eg::ColorSRGB color = eg::ColorSRGB::FromRGBAHex(0x7034DA99);
 	color = color.ScaleAlpha(args.getDrawMode(this) == EntEditorDrawMode::Selected ? 0.5f : 0.1f);
@@ -56,7 +60,7 @@ void WaterWallEnt::Update(const WorldUpdateArgs& args)
 		m_timeUntilDisable -= args.dt;
 		if (m_timeUntilDisable <= 0)
 		{
-			std::fill_n(m_waterBlockComp.blockedGravities, 6, false);
+			m_waterBlockComp.blockedGravities = DirFlags::None;
 		}
 	}
 }

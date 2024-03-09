@@ -1,5 +1,73 @@
-const float PARTICLE_RADIUS = 0.2;
-const float TRAVEL_DIST_SCALE = 0.5;
-const float UNDERWATER_DEPTH = 0.5;
+#ifndef WATER_COMMON_H
+#define WATER_COMMON_H
 
-#include "../Inc/Depth.glh"
+#include "WaterConstants.h"
+
+const uint CELL_OFFSETS_CELL_EMPTY = 0xFFFFu;
+
+uvec3 getGridCell(vec3 pos, vec3 gridOrigin)
+{
+	ivec3 gridCell = ivec3(floor((pos - gridOrigin) / W_INFLUENCE_RADIUS));
+	return uvec3(clamp(gridCell, ivec3(0), ivec3(0x3FF)));
+}
+
+// Expands bits 3 steps. For a 10 bit binary number 0bABCD... returns 0bA00B00C00D00...
+uint expand10Bits(uint x)
+{
+	x = (x | (x << 16)) & 0x030000FF;
+	x = (x | (x << 8)) & 0x0300F00F;
+	x = (x | (x << 4)) & 0x030C30C3;
+	x = (x | (x << 2)) & 0x09249249;
+	return x;
+}
+
+uint expand4Bits(uint x)
+{
+	x = (x | (x << 4)) & 0x030C30C3;
+	x = (x | (x << 2)) & 0x09249249;
+	return x;
+}
+
+uint zCurveIndex10(uvec3 pos)
+{
+	return expand10Bits(pos.x) | (expand10Bits(pos.y) << 1) | (expand10Bits(pos.z) << 2);
+}
+
+uint zCurveIndex4(uvec3 pos)
+{
+	return expand4Bits(pos.x) | (expand4Bits(pos.y) << 1) | (expand4Bits(pos.z) << 2);
+}
+
+uint dataBitsGetGravity(uint dataBits)
+{
+	return dataBits & 0x7;
+}
+
+uint dataBitsGetGlowTime(uint dataBits)
+{
+	return (dataBits >> 3) & W_MAX_GLOW_TIME;
+}
+
+uint dataBitsGetPersistentID(uint dataBits)
+{
+	return dataBits >> 16;
+}
+
+void dataBitsSetGlowTime(inout uint dataBits, uint glowTime)
+{
+	const uint MASK = 0xFFF8;
+	dataBits = (dataBits & ~MASK) | (glowTime << 3);
+}
+
+void dataBitsSetGravity(inout uint dataBits, uint gravity)
+{
+	const uint MASK = 0x7;
+	dataBits = (dataBits & ~MASK) | gravity;
+}
+
+uint encodeDataBits(uint gravity, uint glowTime, uint persistentID)
+{
+	return gravity | (glowTime << 3) | (persistentID << 16);
+}
+
+#endif

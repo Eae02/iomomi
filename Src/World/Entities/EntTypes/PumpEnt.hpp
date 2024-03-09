@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../../Graphics/Materials/PumpScreenMaterial.hpp"
-#include "../../../Graphics/Water/WaterPumpDescription.hpp"
+#include "../../../Water/WaterPumpDescription.hpp"
 #include "../../PhysicsEngine.hpp"
 #include "../EntInteractable.hpp"
 #include "../Entity.hpp"

@@ -28,8 +28,8 @@ void DecalMaterial::LazyInitGlobals()
 	const eg::ShaderModuleAsset& fs = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Decal.fs.glsl");
 
 	eg::GraphicsPipelineCreateInfo pipelineCI;
-	pipelineCI.vertexShader = vs.GetVariant("VDefault");
-	pipelineCI.fragmentShader = fs.GetVariant("VDefault");
+	pipelineCI.vertexShader = vs.ToStageInfo("VDefault");
+	pipelineCI.fragmentShader = fs.ToStageInfo("VDefault");
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.numColorAttachments = 2;
@@ -49,13 +49,15 @@ void DecalMaterial::LazyInitGlobals()
 		/* srcColor */ eg::BlendFactor::SrcAlpha,
 		/* srcAlpha */ eg::BlendFactor::ConstantAlpha,
 		/* dstColor */ eg::BlendFactor::OneMinusSrcAlpha,
-		/* dstAlpha */ eg::BlendFactor::OneMinusSrcAlpha);
+		/* dstAlpha */ eg::BlendFactor::OneMinusSrcAlpha
+	);
 	pipelineCI.blendStates[1] = eg::BlendState(
 		eg::BlendFunc::Add, eg::BlendFunc::Add,
 		/* srcColor */ eg::BlendFactor::SrcAlpha,
 		/* srcAlpha */ eg::BlendFactor::Zero,
 		/* dstColor */ eg::BlendFactor::OneMinusSrcAlpha,
-		/* dstAlpha */ eg::BlendFactor::OneMinusSrcAlpha);
+		/* dstAlpha */ eg::BlendFactor::OneMinusSrcAlpha
+	);
 	pipelineCI.blendConstants[3] = 1.0f;
 	pipelineCI.colorAttachmentFormats[0] = GB_COLOR_FORMAT;
 	pipelineCI.colorAttachmentFormats[1] = GB_COLOR_FORMAT;
@@ -66,7 +68,7 @@ void DecalMaterial::LazyInitGlobals()
 	pipelineCI.blendStates[1].colorWriteMask = eg::ColorWriteMask::A | eg::ColorWriteMask::B;
 	decalsGamePipelineInheritNormals = eg::Pipeline::Create(pipelineCI);
 
-	pipelineCI.fragmentShader = fs.GetVariant("VEditor");
+	pipelineCI.fragmentShader = fs.ToStageInfo("VEditor");
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.blendStates[1] = {};
 	pipelineCI.colorAttachmentFormats[0] = EDITOR_COLOR_FORMAT;
@@ -97,7 +99,7 @@ DecalMaterial::DecalMaterial(const eg::Texture& albedoTexture, const eg::Texture
 	: m_albedoTexture(albedoTexture), m_normalMapTexture(normalMapTexture),
 	  m_aspectRatio(albedoTexture.Width() / (float)albedoTexture.Height()), m_descriptorSet(decalsGamePipeline, 0)
 {
-	m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+	m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
 	m_descriptorSet.BindTexture(m_albedoTexture, 1, &commonTextureSampler);
 	m_descriptorSet.BindTexture(m_normalMapTexture, 2, &commonTextureSampler);
 }

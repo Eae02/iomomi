@@ -73,7 +73,8 @@ void DecalEnt::CommonDraw(const EntDrawArgs& args)
 	{
 		args.meshBatch->Add(
 			DecalMaterial::GetMesh(), *m_material,
-			DecalMaterial::InstanceData(transform, glm::vec2(0, 0), glm::vec2(m_repetitions + 1)), 1);
+			DecalMaterial::InstanceData(transform, glm::vec2(0, 0), glm::vec2(m_repetitions + 1)), 1
+		);
 	}
 }
 

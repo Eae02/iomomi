@@ -77,7 +77,8 @@ void CubeSpawnerEnt::CommonDraw(const EntDrawArgs& args)
 		{
 			args.meshBatch->AddModelMesh(
 				*cubeSpawnerModel, m, EmissiveMaterial::instance,
-				EmissiveMaterial::InstanceData{ transform, emissiveV4 });
+				EmissiveMaterial::InstanceData{ transform, emissiveV4 }
+			);
 		}
 		else
 		{
@@ -92,7 +93,8 @@ void CubeSpawnerEnt::CommonDraw(const EntDrawArgs& args)
 			}
 
 			args.meshBatch->AddModelMesh(
-				*cubeSpawnerModel, m, *cubeSpawnerMaterial, StaticPropMaterial::InstanceData(transformHere));
+				*cubeSpawnerModel, m, *cubeSpawnerMaterial, StaticPropMaterial::InstanceData(transformHere)
+			);
 		}
 	}
 }

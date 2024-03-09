@@ -9,7 +9,7 @@ static void OnInit()
 {
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	StaticPropMaterial::InitializeForCommon3DVS(pipelineCI);
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Screen.fs.glsl").DefaultVariant();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Screen.fs.glsl").ToStageInfo();
 	pipelineCI.enableDepthWrite = true;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::Back;
@@ -46,7 +46,7 @@ ScreenMaterial::ScreenMaterial(int resX, int resY) : m_resX(resX), m_resY(resY),
 	colorAttachment.texture = m_texture.handle;
 	m_framebuffer = eg::Framebuffer({ &colorAttachment, 1 });
 
-	m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+	m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
 	m_descriptorSet.BindTexture(m_texture, 1, &framebufferLinearSampler);
 }
 
@@ -69,7 +69,8 @@ void ScreenMaterial::RenderTexture(const eg::ColorLin& clearColor)
 			.screenHeight = m_resY,
 			.framebufferFormat = eg::ColorAndDepthFormat(SCREEN_TEXTURE_FORMAT),
 		},
-		rpBeginInfo);
+		rpBeginInfo
+	);
 
 	m_texture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 }

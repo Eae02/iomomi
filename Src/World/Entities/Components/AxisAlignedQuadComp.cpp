@@ -32,8 +32,8 @@ glm::vec3 AxisAlignedQuadComp::GetNormal() const
 	return upAxis;
 }
 
-AxisAlignedQuadComp::CollisionGeometry AxisAlignedQuadComp::GetCollisionGeometry(
-	const glm::vec3& center, float depth) const
+AxisAlignedQuadComp::CollisionGeometry AxisAlignedQuadComp::GetCollisionGeometry(const glm::vec3& center, float depth)
+	const
 {
 	auto [tangent, bitangent] = GetTangents(0);
 	glm::vec3 normal = GetNormal() * depth;
@@ -59,7 +59,8 @@ AxisAlignedQuadComp::CollisionGeometry AxisAlignedQuadComp::GetCollisionGeometry
 }
 
 std::optional<glm::vec3> AxisAlignedQuadComp::CollisionGeometry::CheckCollision(
-	const eg::AABB& aabb, const glm::vec3& moveDir) const
+	const eg::AABB& aabb, const glm::vec3& moveDir
+) const
 {
 	CollisionResponseCombiner combiner;
 
@@ -90,12 +91,13 @@ EditorSelectionMesh AxisAlignedQuadComp::GetEditorSelectionMesh(const glm::vec3&
 	mesh.transform =
 		glm::translate(glm::mat4(1), center) * glm::mat4(
 												   glm::vec4(-tangent * 0.5f, 0), glm::vec4(bitangent * 0.5f, 0),
-												   glm::vec4(GetNormal() * depth * 0.5f, 0), glm::vec4(0, 0, 0, 1));
+												   glm::vec4(GetNormal() * depth * 0.5f, 0), glm::vec4(0, 0, 0, 1)
+											   );
 	return mesh;
 }
 
-std::span<const EditorSelectionMesh> AxisAlignedQuadComp::GetEditorSelectionMeshes(
-	const glm::vec3& center, float depth) const
+std::span<const EditorSelectionMesh> AxisAlignedQuadComp::GetEditorSelectionMeshes(const glm::vec3& center, float depth)
+	const
 {
 	static EditorSelectionMesh selMesh;
 	selMesh = GetEditorSelectionMesh(center, depth);

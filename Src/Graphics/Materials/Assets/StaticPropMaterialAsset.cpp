@@ -41,8 +41,8 @@ public:
 			else
 			{
 				eg::Log(
-					eg::LogLevel::Error, "as", "Unknown shadow quality level {} in {}", minShadowQualityStr,
-					sourcePath);
+					eg::LogLevel::Error, "as", "Unknown shadow quality level {} in {}", minShadowQualityStr, sourcePath
+				);
 			}
 		}
 
@@ -54,8 +54,8 @@ public:
 		{
 			eg::Log(
 				eg::LogLevel::Error, "as",
-				"Invalid static prop material '{0}', missing one of 'albedo', 'normalMap', or 'miscMap'",
-				relSourcePath);
+				"Invalid static prop material '{0}', missing one of 'albedo', 'normalMap', or 'miscMap'", relSourcePath
+			);
 			return false;
 		}
 
@@ -68,7 +68,8 @@ public:
 		eg::BinWrite(generateContext.outputStream, texScaleY);
 		eg::BinWrite<uint8_t>(
 			generateContext.outputStream,
-			static_cast<uint8_t>(backfaceCull) | (static_cast<uint8_t>(backfaceCullEd) << 1));
+			static_cast<uint8_t>(backfaceCull) | (static_cast<uint8_t>(backfaceCullEd) << 1)
+		);
 		eg::BinWrite<uint8_t>(generateContext.outputStream, static_cast<uint8_t>(castShadows));
 		eg::BinWrite<uint8_t>(generateContext.outputStream, static_cast<uint8_t>(minShadowQuality));
 		eg::BinWrite<uint8_t>(generateContext.outputStream, static_cast<uint8_t>(alphaTest));

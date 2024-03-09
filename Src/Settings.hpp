@@ -75,6 +75,8 @@ struct Settings
 	float fieldOfViewDeg = 80.0f;
 	bool highDynamicRange = true;
 
+	float editorMouseSensitivity = 1.0f;
+
 	int anisotropicFiltering = 4;
 
 	eg::GraphicsAPI graphicsAPI = eg::GraphicsAPI::OpenGL;

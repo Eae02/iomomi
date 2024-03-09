@@ -68,7 +68,8 @@ void SpawnEntityEditorComponent::Update(float dt, const EditorState& editorState
 				{
 					auto it = std::search(
 						entityName.begin(), entityName.end(), m_searchBuffer.begin(), searchStringEnd,
-						[](char a, char b) { return std::toupper(a) == std::toupper(b); });
+						[](char a, char b) { return std::toupper(a) == std::toupper(b); }
+					);
 
 					// If the search query wasn't found in the entry's label, skip this entry
 					if (it == entityName.end())

@@ -47,8 +47,8 @@ void Slider::Draw(const GuiFrameArgs& frameArgs, eg::SpriteBatch& spriteBatch) c
 	float value = getValue();
 
 	eg::Rectangle activeRect(
-		m_rectangle.x, m_rectangle.y, m_rectangle.w * glm::clamp((value - min) / (max - min), 0.0f, 1.0f),
-		m_rectangle.h);
+		m_rectangle.x, m_rectangle.y, m_rectangle.w * glm::clamp((value - min) / (max - min), 0.0f, 1.0f), m_rectangle.h
+	);
 	spriteBatch.DrawRect(activeRect, eg::ColorLin(1, 1, 1, 0.8f));
 
 	if (getDisplayValueString)

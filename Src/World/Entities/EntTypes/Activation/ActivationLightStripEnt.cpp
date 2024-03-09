@@ -71,7 +71,8 @@ void ActivationLightStripEnt::CommonDraw(const EntDrawArgs& args)
 				else
 				{
 					args.meshBatch->AddModelMesh(
-						*s_models[v], i, *s_materials[v], StaticPropMaterial::InstanceData(instanceData.transform));
+						*s_models[v], i, *s_materials[v], StaticPropMaterial::InstanceData(instanceData.transform)
+					);
 				}
 			}
 		}
@@ -139,7 +140,8 @@ void ActivationLightStripEnt::Update(const WorldUpdateArgs& args)
 		m_generationFuture = std::async(
 			std::launch::async, [points = GetWayPointsWithStartAndEnd(), voxels = args.world->voxels,
 		                         self = std::dynamic_pointer_cast<ActivationLightStripEnt>(shared_from_this())]()
-			{ return self->Generate(voxels, points); });
+			{ return self->Generate(voxels, points); }
+		);
 		regenerate = false;
 	}
 #endif
@@ -216,7 +218,8 @@ static const Dir ORTHO_DIRS[3][4] = {
 };
 
 ActivationLightStripEnt::GenerateResult ActivationLightStripEnt::Generate(
-	const VoxelBuffer& voxels, std::span<const WayPoint> points)
+	const VoxelBuffer& voxels, std::span<const WayPoint> points
+)
 {
 	struct NodeData
 	{

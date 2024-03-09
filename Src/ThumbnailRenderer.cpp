@@ -2,8 +2,8 @@
 
 #include "GameRenderer.hpp"
 #include "Graphics/RenderContext.hpp"
-#include "Graphics/Water/IWaterSimulator.hpp"
 #include "Levels.hpp"
+#include "Water/WaterSimulator.hpp"
 #include "World/World.hpp"
 
 #ifdef __EMSCRIPTEN__
@@ -114,16 +114,18 @@ LevelThumbnailUpdate* BeginUpdateLevelThumbnails(RenderContext& renderContext, e
 
 		if (renderer->m_waterSimulator)
 		{
-			renderer->m_waterSimulator->Update(*world, world->thumbnailCameraPos, false);
+			renderer->m_waterSimulator->Update(eg::DC, 1.0f / 30.0f, *world, false);
 		}
 
 		renderer->Render(
-			*world, 0, 0, entry.framebuffer.handle, OUTPUT_FORMAT, LEVEL_THUMBNAIL_RES_X, LEVEL_THUMBNAIL_RES_Y);
+			*world, 0, 0, entry.framebuffer.handle, OUTPUT_FORMAT, LEVEL_THUMBNAIL_RES_X, LEVEL_THUMBNAIL_RES_Y
+		);
 
 		entry.downloadBuffer = eg::Buffer(
 			eg::BufferFlags::MapRead | eg::BufferFlags::CopyDst | eg::BufferFlags::Download |
 				eg::BufferFlags::HostAllocate,
-			THUMBNAIL_BYTES, nullptr);
+			THUMBNAIL_BYTES, nullptr
+		);
 
 		eg::TextureRange range = {};
 		range.sizeX = LEVEL_THUMBNAIL_RES_X;
@@ -174,7 +176,8 @@ void EndUpdateLevelThumbnails(LevelThumbnailUpdate* update)
 
 		if (!eg::WriteImageToStream(
 				thumbnailStream, eg::WriteImageFormat::JPG, LEVEL_THUMBNAIL_RES_X, LEVEL_THUMBNAIL_RES_Y, 4,
-				{ data, THUMBNAIL_BYTES }))
+				{ data, THUMBNAIL_BYTES }
+			))
 		{
 			continue;
 		}

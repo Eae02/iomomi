@@ -1,0 +1,6 @@
+albedo: ../Textures/PipeRingA.png
+normalMap: ../Textures/PipeRingN.png
+miscMap: ../Textures/PipeRingM.png
+roughnessMin: 0.2
+roughnessMax: 0.7
+textureScale: 0.5

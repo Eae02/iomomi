@@ -52,7 +52,8 @@ bool LightStripEditorComponent::CollectIcons(const EditorState& editorState, std
 					{
 						m_editingLightStripEntity = activator->lightStripEntity;
 						m_editingWayPointIndex = eg::ToInt(i);
-					});
+					}
+				);
 				icon.shouldClearSelection = false;
 				icon.iconIndex = 7;
 				if (icon.Rectangle().Contains(editorState.windowCursorPos))
@@ -88,7 +89,8 @@ bool LightStripEditorComponent::CollectIcons(const EditorState& editorState, std
 								activator->activatableName = activatableComp2->m_name;
 								activator->targetConnectionIndex = i;
 								ActivationLightStripEnt::GenerateForActivator(*world, *activatorEntity);
-							});
+							}
+						);
 
 						icon.ApplyDepthBias(0.01f);
 
@@ -100,7 +102,8 @@ bool LightStripEditorComponent::CollectIcons(const EditorState& editorState, std
 
 						icons.push_back(std::move(icon));
 					}
-				});
+				}
+			);
 		}
 	}
 
@@ -146,7 +149,8 @@ bool LightStripEditorComponent::CollectIcons(const EditorState& editorState, std
 						}
 					}
 				}
-			});
+			}
+		);
 
 		// Add an icon for a new waypoint
 		if (closestDist < 0.5f)
@@ -172,7 +176,8 @@ bool LightStripEditorComponent::CollectIcons(const EditorState& editorState, std
 					m_editingWayPointIndex = nextWayPoint;
 
 					selectedEntities->push_back(activatorEntity);
-				});
+				}
+			);
 			icon.hideIfNotHovered = true;
 			icon.iconIndex = 7;
 

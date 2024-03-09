@@ -25,7 +25,7 @@ struct
 
 void StaticPropMaterial::InitializeForCommon3DVS(eg::GraphicsPipelineCreateInfo& pipelineCI)
 {
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Common3D.vs.glsl").DefaultVariant();
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Common3D.vs.glsl").ToStageInfo();
 
 	InitPipelineVertexStateSoaPXNT(pipelineCI);
 
@@ -34,7 +34,8 @@ void StaticPropMaterial::InitializeForCommon3DVS(eg::GraphicsPipelineCreateInfo&
 }
 
 void StaticPropMaterial::InitializeInstanceDataVertexInput(
-	eg::GraphicsPipelineCreateInfo& pipelineCI, uint32_t firstAttribute)
+	eg::GraphicsPipelineCreateInfo& pipelineCI, uint32_t firstAttribute
+)
 {
 	pipelineCI.vertexBindings[VERTEX_BINDING_INSTANCE_DATA] = {
 		sizeof(StaticPropMaterial::InstanceData),
@@ -89,12 +90,10 @@ void StaticPropMaterial::LazyInitGlobals()
 			for (int textureArray = 0; textureArray < 2; textureArray++)
 			{
 				std::string variantName = eg::Concat({ variantPrefix, textureArray ? "TexArray" : "Tex2D" });
-				pipelineCI.fragmentShader = fs.GetVariant(variantName);
+				pipelineCI.fragmentShader = fs.ToStageInfo(variantName);
 
-				eg::SpecializationConstantEntry specConstEntry = { 5, 0, sizeof(uint32_t) };
+				eg::SpecializationConstantEntry specConstEntry = { 5, alphaTest };
 				pipelineCI.fragmentShader.specConstants = { &specConstEntry, 1 };
-				pipelineCI.fragmentShader.specConstantsDataSize = sizeof(uint32_t);
-				pipelineCI.fragmentShader.specConstantsData = &alphaTest;
 
 				std::string label = eg::Concat({ "StaticProp:", variantName, alphaTest ? ":AT0" : ":AT1" });
 				pipelineCI.label = label.c_str();
@@ -140,8 +139,8 @@ void StaticPropMaterial::LazyInitGlobals()
 
 		std::string_view variantName = alphaTest ? "VAlphaTest" : "VNoAlphaTest";
 		std::string label = eg::Concat({ "StaticPropPLS:", variantName });
-		plsPipelineCI.vertexShader = plsvs.GetVariant(variantName);
-		plsPipelineCI.fragmentShader = plsfs.GetVariant(variantName);
+		plsPipelineCI.vertexShader = plsvs.ToStageInfo(variantName);
+		plsPipelineCI.fragmentShader = plsfs.ToStageInfo(variantName);
 		plsPipelineCI.label = label.c_str();
 		staticPropMaterialGlobals.pipelinePLShadow[alphaTest] = eg::Pipeline::Create(plsPipelineCI);
 	}
@@ -158,7 +157,7 @@ void StaticPropMaterial::CreateDescriptorSet()
 {
 	m_descriptorSet = eg::DescriptorSet(GetPipeline(MeshDrawMode::Game), 0);
 
-	m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+	m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
 	m_descriptorSet.BindTexture(*m_albedoTexture, 1, &commonTextureSampler);
 	m_descriptorSet.BindTexture(*m_normalMapTexture, 2, &commonTextureSampler);
 	m_descriptorSet.BindTexture(*m_miscMapTexture, 3, &commonTextureSampler);
@@ -238,7 +237,8 @@ eg::IMaterial::VertexInputConfiguration StaticPropMaterial::GetVertexInputConfig
 }
 
 eg::IMaterial::VertexInputConfiguration StaticPropMaterial::GetVertexInputConfiguration(
-	bool alphaTest, MeshDrawMode drawMode)
+	bool alphaTest, MeshDrawMode drawMode
+)
 {
 	if (drawMode == MeshDrawMode::PointLightShadow)
 	{
@@ -265,9 +265,9 @@ const StaticPropMaterial& StaticPropMaterial::GetFromWallMaterial(uint32_t index
 	if (staticPropMaterialGlobals.wallMaterials[index] == nullptr)
 	{
 		auto material = std::make_unique<StaticPropMaterial>();
-		material->m_albedoTexture = &eg::GetAsset<eg::Texture>("WallTextures/Albedo");
-		material->m_normalMapTexture = &eg::GetAsset<eg::Texture>("WallTextures/NormalMap");
-		material->m_miscMapTexture = &eg::GetAsset<eg::Texture>("WallTextures/MiscMap");
+		material->m_albedoTexture = &eg::GetAsset<eg::Texture>("Textures/Wall/Albedo");
+		material->m_normalMapTexture = &eg::GetAsset<eg::Texture>("Textures/Wall/NormalMap");
+		material->m_miscMapTexture = &eg::GetAsset<eg::Texture>("Textures/Wall/MiscMap");
 		material->m_textureLayer = index - 1;
 		material->m_roughnessMin = wallMaterials[index].minRoughness;
 		material->m_roughnessMax = wallMaterials[index].maxRoughness;

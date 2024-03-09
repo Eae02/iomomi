@@ -1,18 +1,17 @@
 #pragma once
 
-#include "../../World/Entities/EntTypes/GravityBarrierEnt.hpp"
+#include "../World/Entities/EntTypes/GravityBarrierEnt.hpp"
 
 class WaterBarrierRenderer
 {
 public:
 	WaterBarrierRenderer();
 
-	void Init(class IWaterSimulator* waterSimulator, class World& world);
+	void Init(const class WaterSimulator2* simulator, class World& world);
 
 	void Update(float dt);
 
 private:
-#ifdef IOMOMI_ENABLE_WATER
 	eg::Pipeline m_calcPipeline;
 	eg::Pipeline m_fadePipeline;
 
@@ -32,5 +31,4 @@ private:
 
 	uint32_t m_numParticles;
 	uint32_t m_dispatchCount;
-#endif
 };

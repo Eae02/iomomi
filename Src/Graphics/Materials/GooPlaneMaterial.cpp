@@ -19,8 +19,8 @@ static glm::vec3 waterColor;
 void GooPlaneMaterial::OnInit()
 {
 	eg::GraphicsPipelineCreateInfo pipelineCI;
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GooPlane.vs.glsl").DefaultVariant();
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GooPlane.fs.glsl").DefaultVariant();
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GooPlane.vs.glsl").ToStageInfo();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GooPlane.fs.glsl").ToStageInfo();
 	pipelineCI.enableDepthWrite = true;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::Back;
@@ -57,8 +57,8 @@ void GooPlaneMaterial::OnInit()
 	s_textureTransformsBuffer = eg::Buffer(eg::BufferFlags::UniformBuffer, sizeof(bufferData), &bufferData);
 	s_textureTransformsBuffer.UsageHint(eg::BufferUsage::UniformBuffer, eg::ShaderAccessFlags::Fragment);
 
-	s_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
-	s_descriptorSet.BindUniformBuffer(s_textureTransformsBuffer, 1, 0, sizeof(bufferData));
+	s_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
+	s_descriptorSet.BindUniformBuffer(s_textureTransformsBuffer, 1);
 	s_descriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/SlimeN.png"), 2, &commonTextureSampler);
 }
 

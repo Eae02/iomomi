@@ -5,6 +5,8 @@
 #define RENDER_SETTINGS_BINDING 0
 #include "../Inc/RenderSettings.glh"
 
+#include "../Inc/Depth.glh"
+
 layout(location=0) in vec2 spritePos_in;
 layout(location=1) in vec3 eyePos_in;
 
@@ -13,7 +15,7 @@ layout(location=1) in vec3 eyePos_in;
 vec3 sphereToNDC(float r2, float side)
 {
 	vec3 normalES = vec3(spritePos_in, sqrt(1.0 - r2) * side);
-	vec4 ppsPos = renderSettings.projectionMatrix * vec4(eyePos_in + normalES * PARTICLE_RADIUS, 1.0);
+	vec4 ppsPos = renderSettings.projectionMatrix * vec4(eyePos_in + normalES * W_PARTICLE_RENDER_RADIUS, 1.0);
 	return ppsPos.xyz / ppsPos.w;
 }
 
@@ -42,7 +44,7 @@ void main()
 	float d = depthTo01(ndcBack.z);
 	vec2 scrPos = ndcFront.xy * vec2(0.5, EG_OPENGL ? 0.5 : -0.5) + 0.5;
 	float inputDepth = texture(geometryDepthSampler, scrPos).r;
-	gl_FragDepth = hyperDepth(min(linearizeDepth(d), linearizeDepth(inputDepth) + PARTICLE_RADIUS * 2));
+	gl_FragDepth = hyperDepth(min(linearizeDepth(d), linearizeDepth(inputDepth) + W_PARTICLE_RENDER_RADIUS * 2));
 #else
 	gl_FragDepth = depthTo01(ndcFront.z);
 	glowIntensity_out = glowIntensity_in;

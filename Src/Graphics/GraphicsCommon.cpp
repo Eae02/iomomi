@@ -3,7 +3,7 @@
 #include <magic_enum/magic_enum.hpp>
 
 #include "../Settings.hpp"
-#include "Water/WaterRenderer.hpp"
+#include "../Water/WaterRenderer.hpp"
 
 #include "Assets/Shaders/Inc/RenderConstants.h"
 
@@ -87,12 +87,14 @@ void GraphicsCommonInit()
 
 	const uint8_t whitePixelTextureColor[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
 	whitePixelTexture.DCUpdateData(
-		eg::TextureRange{ .sizeX = 1, .sizeY = 1, .sizeZ = 1 }, sizeof(whitePixelTextureColor), whitePixelTextureColor);
+		eg::TextureRange{ .sizeX = 1, .sizeY = 1, .sizeZ = 1 }, sizeof(whitePixelTextureColor), whitePixelTextureColor
+	);
 	whitePixelTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 
 	const uint8_t blackPixelTextureColor[4] = { 0, 0, 0, 0 };
 	blackPixelTexture.DCUpdateData(
-		eg::TextureRange{ .sizeX = 1, .sizeY = 1, .sizeZ = 1 }, sizeof(blackPixelTextureColor), blackPixelTextureColor);
+		eg::TextureRange{ .sizeX = 1, .sizeY = 1, .sizeZ = 1 }, sizeof(blackPixelTextureColor), blackPixelTextureColor
+	);
 	blackPixelTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 }
 

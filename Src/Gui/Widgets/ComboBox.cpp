@@ -116,16 +116,19 @@ void ComboBox::Draw(const GuiFrameArgs& frameArgs, eg::SpriteBatch& spriteBatch)
 
 	spriteBatch.Draw(
 		*arrowTexture, glm::vec2(m_rectangle.MaxX() - height / 2.0f, m_rectangle.CenterY()),
-		eg::ColorLin(1, 1, 1, 0.8f), 1, eg::SpriteFlags::None, m_expandProgress * eg::PI, glm::vec2(height / 2.0f));
+		eg::ColorLin(1, 1, 1, 0.8f), 1, eg::SpriteFlags::None, m_expandProgress * eg::PI, glm::vec2(height / 2.0f)
+	);
 
 	if (!warningToShow.empty())
 	{
 		glm::vec2 textPos(
-			m_rectangle.MaxX() - warningTextExtents.x - height, m_rectangle.CenterY() - textHeight / 2.0f);
+			m_rectangle.MaxX() - warningTextExtents.x - height, m_rectangle.CenterY() - textHeight / 2.0f
+		);
 
 		eg::ColorLin textColor(eg::ColorSRGB::FromHex(0xe8b29a));
 		spriteBatch.DrawText(
-			*style::UIFont, warningToShow, textPos, textColor, FONT_SCALE, nullptr, eg::TextFlags::DropShadow);
+			*style::UIFont, warningToShow, textPos, textColor, FONT_SCALE, nullptr, eg::TextFlags::DropShadow
+		);
 	}
 }
 
@@ -141,7 +144,8 @@ void ComboBox::DrawOverlay(const GuiFrameArgs& frameArgs, eg::SpriteBatch& sprit
 		m_scrollPanel.screenRectangle.x * frameArgs.scaleToScreenCoordinates,
 		m_scrollPanel.screenRectangle.y * frameArgs.scaleToScreenCoordinates,
 		m_scrollPanel.screenRectangle.w * frameArgs.scaleToScreenCoordinates,
-		m_scrollPanel.screenRectangle.h * frameArgs.scaleToScreenCoordinates);
+		m_scrollPanel.screenRectangle.h * frameArgs.scaleToScreenCoordinates
+	);
 
 	const eg::ColorLin DIVIDER_COLOR =
 		eg::ColorLin::Mix(style::ButtonColorDefault, eg::ColorLin(eg::Color::White), 0.25f);
@@ -179,7 +183,8 @@ void ComboBox::DrawOverlay(const GuiFrameArgs& frameArgs, eg::SpriteBatch& sprit
 		realTextPos.x += glm::smoothstep(0.0f, 1.0f, m_optionHighlightIntensity[i]) * 3.0f;
 		spriteBatch.DrawText(
 			*style::UIFont, options[i], realTextPos, mainColor, FONT_SCALE, nullptr, eg::TextFlags::DropShadow,
-			&secondColor);
+			&secondColor
+		);
 	}
 
 	if (m_expandProgress == 1)

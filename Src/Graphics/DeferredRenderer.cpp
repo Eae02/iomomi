@@ -2,6 +2,7 @@
 
 #include "../Game.hpp"
 #include "../Settings.hpp"
+#include "../Water/WaterSimulationShaders.hpp"
 #include "Lighting/LightMeshes.hpp"
 #include "RenderSettings.hpp"
 
@@ -60,7 +61,8 @@ DeferredRenderer::DeferredRenderer()
 	CreatePipelines();
 
 	m_ssaoSamplesBuffer = eg::Buffer(
-		eg::BufferFlags::UniformBuffer | eg::BufferFlags::Update, sizeof(float) * 4 * SSAO_SAMPLES[2], nullptr);
+		eg::BufferFlags::UniformBuffer | eg::BufferFlags::Update, sizeof(float) * 4 * SSAO_SAMPLES[2], nullptr
+	);
 
 	// Initializes SSAO rotation data
 	const size_t rotationDataSize = SSAO_ROTATIONS_RES * SSAO_ROTATIONS_RES * sizeof(float);
@@ -97,31 +99,21 @@ DeferredRenderer::DeferredRenderer()
 	textureDataRange.sizeY = SSAO_ROTATIONS_RES;
 	textureDataRange.sizeZ = 1;
 	eg::DC.SetTextureData(
-		m_ssaoRotationsTexture, textureDataRange, rotationDataUploadBuffer.buffer, rotationDataUploadBuffer.offset);
+		m_ssaoRotationsTexture, textureDataRange, rotationDataUploadBuffer.buffer, rotationDataUploadBuffer.offset
+	);
 	m_ssaoRotationsTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 }
 
 static inline eg::Pipeline CreateSSAOPipeline(uint32_t samples)
 {
-	struct SpecConstantData
-	{
-		uint32_t _samples;
-		float rotationsTexScale;
-	};
-	SpecConstantData specConstantData;
-	specConstantData._samples = samples;
-	specConstantData.rotationsTexScale = 1.0f / SSAO_ROTATIONS_RES;
-
-	eg::SpecializationConstantEntry specConstantEntries[2] = {
-		{ 0, offsetof(SpecConstantData, _samples), sizeof(uint32_t) },
-		{ 1, offsetof(SpecConstantData, rotationsTexScale), sizeof(float) }
+	const eg::SpecializationConstantEntry specConstantEntries[] = {
+		{ 0, samples },                  // num samples
+		{ 1, 1.0f / SSAO_ROTATIONS_RES } // texture scale
 	};
 
 	eg::GraphicsPipelineCreateInfo pipelineCI;
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/SSAO.fs.glsl").DefaultVariant();
-	pipelineCI.fragmentShader.specConstantsData = &specConstantData;
-	pipelineCI.fragmentShader.specConstantsDataSize = sizeof(SpecConstantData);
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").ToStageInfo();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/SSAO.fs.glsl").ToStageInfo();
 	pipelineCI.fragmentShader.specConstants = specConstantEntries;
 	pipelineCI.colorAttachmentFormats[0] = GetFormatForRenderTexture(RenderTex::SSAO, true);
 	pipelineCI.label = "SSAO";
@@ -134,51 +126,40 @@ void DeferredRenderer::CreatePipelines()
 	const eg::ShaderModuleAsset& ambientFragmentShader =
 		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/Ambient.fs.glsl");
 	eg::GraphicsPipelineCreateInfo ambientPipelineCI;
-	ambientPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
+	ambientPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").ToStageInfo();
 	ambientPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
 
-	ambientPipelineCI.fragmentShader = ambientFragmentShader.GetVariant("VSSAO");
+	ambientPipelineCI.fragmentShader = ambientFragmentShader.ToStageInfo("VSSAO");
 	ambientPipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
 	ambientPipelineCI.label = "Ambient[SSAO]";
 	m_ambientPipelineWithSSAO = eg::Pipeline::Create(ambientPipelineCI);
 
-	ambientPipelineCI.fragmentShader = ambientFragmentShader.GetVariant("VNoSSAO");
+	ambientPipelineCI.fragmentShader = ambientFragmentShader.ToStageInfo("VNoSSAO");
 	ambientPipelineCI.label = "Ambient[NoSSAO]";
 	m_ambientPipelineWithoutSSAO = eg::Pipeline::Create(ambientPipelineCI);
 
-	eg::SpecializationConstantEntry pointLightSpecConstEntries[2];
-	pointLightSpecConstEntries[0].constantID = 0;
-	pointLightSpecConstEntries[0].size = sizeof(uint32_t);
-	pointLightSpecConstEntries[0].offset = 0;
-	pointLightSpecConstEntries[1].constantID = 1;
-	pointLightSpecConstEntries[1].size = sizeof(uint32_t);
-	pointLightSpecConstEntries[1].offset = sizeof(uint32_t);
-	uint32_t pointLightSpecConstants[2];
+	eg::SpecializationConstantEntry pointLightSpecConstants[2];
+	pointLightSpecConstants[0].constantID = 0;
+	pointLightSpecConstants[1].constantID = 1;
 
 	eg::GraphicsPipelineCreateInfo plPipelineCI;
 	plPipelineCI.vertexShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/PointLight.vs.glsl").DefaultVariant();
+		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/PointLight.vs.glsl").ToStageInfo();
 	plPipelineCI.fragmentShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/PointLight.fs.glsl").DefaultVariant();
+		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/PointLight.fs.glsl").ToStageInfo();
 	plPipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
 	plPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
 	plPipelineCI.vertexBindings[0] = { sizeof(float) * 3, eg::InputRate::Vertex };
 	plPipelineCI.cullMode = eg::CullMode::Back;
 	plPipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
-	plPipelineCI.fragmentShader.specConstants = pointLightSpecConstEntries;
-	plPipelineCI.fragmentShader.specConstantsData = pointLightSpecConstants;
-	plPipelineCI.fragmentShader.specConstantsDataSize = sizeof(pointLightSpecConstants);
+	plPipelineCI.fragmentShader.specConstants = pointLightSpecConstants;
 
 	for (uint32_t shadowMode = 0; shadowMode <= 2; shadowMode++)
 	{
-#ifdef IOMOMI_ENABLE_WATER
-		for (uint32_t waterMode = 0; waterMode <= 1; waterMode++)
-#else
-		const uint32_t waterMode = 0;
-#endif
+		for (uint32_t waterMode = 0; waterMode <= static_cast<uint32_t>(waterSimShaders.isWaterSupported); waterMode++)
 		{
-			pointLightSpecConstants[0] = shadowMode;
-			pointLightSpecConstants[1] = waterMode;
+			pointLightSpecConstants[0].value = shadowMode;
+			pointLightSpecConstants[1].value = waterMode;
 
 			char label[32];
 			snprintf(label, sizeof(label), "PointLight:S%u:W%u", shadowMode, waterMode);
@@ -189,17 +170,17 @@ void DeferredRenderer::CreatePipelines()
 	}
 
 	eg::GraphicsPipelineCreateInfo ssaoDepthLinPipelineCI;
-	ssaoDepthLinPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
+	ssaoDepthLinPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").ToStageInfo();
 	ssaoDepthLinPipelineCI.fragmentShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/SSAODepthLin.fs.glsl").DefaultVariant();
+		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/SSAODepthLin.fs.glsl").ToStageInfo();
 	ssaoDepthLinPipelineCI.colorAttachmentFormats[0] = eg::Format::R32_Float;
 	ssaoDepthLinPipelineCI.label = "SSAODepthLinearize";
 	m_ssaoDepthLinPipeline = eg::Pipeline::Create(ssaoDepthLinPipelineCI);
 
 	eg::GraphicsPipelineCreateInfo ssaoBlurPipelineCI;
-	ssaoBlurPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
+	ssaoBlurPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").ToStageInfo();
 	ssaoBlurPipelineCI.fragmentShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/SSAOBlur.fs.glsl").DefaultVariant();
+		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/SSAOBlur.fs.glsl").ToStageInfo();
 	ssaoBlurPipelineCI.colorAttachmentFormats[0] = eg::Format::R8_UNorm;
 	ssaoBlurPipelineCI.label = "SSAOBlur";
 	m_ssaoBlurPipeline = eg::Pipeline::Create(ssaoBlurPipelineCI);
@@ -293,11 +274,11 @@ void DeferredRenderer::PrepareSSAO(RenderTexManager& rtManager)
 
 	eg::DC.BindPipeline(m_ssaoPipelines[static_cast<int>(settings.ssaoQuality) - 1]);
 
-	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
+	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::SSAOGBDepthLinear), 0, 1, &framebufferLinearSampler);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor2), 0, 2, &framebufferNearestSampler);
 	eg::DC.BindTexture(m_ssaoRotationsTexture, 0, 3, &m_ssaoRotationsTextureSampler);
-	eg::DC.BindUniformBuffer(m_ssaoSamplesBuffer, 0, 4, 0, sizeof(float) * 4 * SSAO_SAMPLES[2]);
+	eg::DC.BindUniformBuffer(m_ssaoSamplesBuffer, 0, 4);
 
 	float pcData[] = {
 		*ssaoRadius,
@@ -375,7 +356,7 @@ void DeferredRenderer::BeginLighting(RenderTexManager& rtManager)
 		eg::DC.BindPipeline(m_ambientPipelineWithoutSSAO);
 	}
 
-	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
+	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor1), 0, 1, &framebufferNearestSampler);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor2), 0, 2, &framebufferNearestSampler);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 3, &framebufferNearestSampler);
@@ -399,7 +380,8 @@ static int* drawShadows = eg::TweakVarInt("draw_shadows", 1, 0, 1);
 
 void DeferredRenderer::DrawPointLights(
 	const std::vector<std::shared_ptr<PointLight>>& pointLights, bool hasWater, eg::TextureRef waterDepthTexture,
-	RenderTexManager& rtManager, uint32_t shadowResolution) const
+	RenderTexManager& rtManager, uint32_t shadowResolution
+) const
 {
 	if (pointLights.empty() || *unlit == 1)
 		return;
@@ -423,13 +405,13 @@ void DeferredRenderer::DrawPointLights(
 
 	BindPointLightMesh();
 
-	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
+	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0);
 
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor1), 0, 1, &framebufferNearestSampler);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBColor2), 0, 2, &framebufferNearestSampler);
 	eg::DC.BindTexture(rtManager.GetRenderTexture(RenderTex::GBDepth), 0, 3, &framebufferNearestSampler);
 	eg::DC.BindTexture(waterDepthTexture, 0, 4, &framebufferNearestSampler);
-	eg::DC.BindTexture(eg::GetAsset<eg::Texture>("Caustics"), 0, 5, &commonTextureSampler);
+	eg::DC.BindTexture(eg::GetAsset<eg::Texture>("Textures/Caustics"), 0, 5, &commonTextureSampler);
 
 	struct __attribute__((packed)) PointLightPC
 	{

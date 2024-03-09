@@ -16,6 +16,8 @@ public:
 
 	void RunFrame(float dt) override;
 
+	static int64_t levelIndexFromCmdArg;
+
 private:
 	float m_gameTime = 0;
 

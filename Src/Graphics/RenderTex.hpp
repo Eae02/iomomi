@@ -60,7 +60,8 @@ public:
 	// Gets a framebuffer made up of a set of render textures
 	eg::FramebufferHandle GetFramebuffer(
 		std::optional<RenderTex> colorTexture1, std::optional<RenderTex> colorTexture2,
-		std::optional<RenderTex> depthTexture, const char* label);
+		std::optional<RenderTex> depthTexture, const char* label
+	);
 
 	bool printToConsole = false;
 
@@ -99,7 +100,8 @@ public:
 
 	void Update(
 		eg::DescriptorSet& descriptorSet, uint32_t binding, const RenderTexManager& renderTexManager, RenderTex texture,
-		const eg::Sampler* sampler = nullptr);
+		const eg::Sampler* sampler = nullptr
+	);
 
 private:
 	uint32_t m_generation = 0;

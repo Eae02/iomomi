@@ -9,8 +9,9 @@
 #include "Graphics/PostProcessor.hpp"
 #include "Graphics/RenderContext.hpp"
 #include "Graphics/SSR.hpp"
-#include "Graphics/Water/WaterBarrierRenderer.hpp"
 #include "Settings.hpp"
+#include "Water/WaterBarrierRenderer.hpp"
+#include "Water/WaterSimulator.hpp"
 
 class GameRenderer
 {
@@ -31,7 +32,8 @@ public:
 
 	void Render(
 		World& world, float gameTime, float dt, eg::FramebufferHandle outputFramebuffer, eg::Format outputFormat,
-		uint32_t outputResX, uint32_t outputResY);
+		uint32_t outputResX, uint32_t outputResY
+	);
 
 	static GameRenderer* instance;
 
@@ -41,9 +43,11 @@ public:
 	class PhysicsEngine* m_physicsEngine = nullptr;
 	class PhysicsDebugRenderer* m_physicsDebugRenderer = nullptr;
 
-	std::unique_ptr<IWaterSimulator> m_waterSimulator;
+	std::unique_ptr<WaterSimulator2> m_waterSimulator;
 	PointLightShadowMapper m_plShadowMapper;
 	float postColorScale = 1;
+
+	void InitWaterSimulator(World& world);
 
 private:
 	RenderTexManager m_rtManager;

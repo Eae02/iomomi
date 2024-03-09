@@ -218,7 +218,8 @@ bool PhysicsEngine::CheckCollisionCallbacks(const PhysicsObject& a, const Physic
 
 PhysicsObject* PhysicsEngine::CheckForCollision(
 	CollisionResponseCombiner& combiner, const PhysicsObject& currentObject, const eg::AABB& shape,
-	const glm::vec3& position, const glm::quat& rotation) const
+	const glm::vec3& position, const glm::quat& rotation
+) const
 {
 	eg::AABB shiftedAABB(shape.min + position, shape.max + position);
 
@@ -236,7 +237,8 @@ PhysicsObject* PhysicsEngine::CheckForCollision(
 			glm::mat4 meshTransform =
 				glm::translate(glm::mat4(1.0f), object->position) * glm::mat4_cast(object->rotation);
 			correction = CheckCollisionAABBTriangleMesh(
-				shiftedAABB, currentObject.move, **mesh, meshTransform, object->needsFlippedWinding);
+				shiftedAABB, currentObject.move, **mesh, meshTransform, object->needsFlippedWinding
+			);
 		}
 		else if (const eg::AABB* otherAABB = std::get_if<eg::AABB>(&object->shape))
 		{
@@ -258,7 +260,8 @@ PhysicsObject* PhysicsEngine::CheckForCollision(
 
 PhysicsObject* PhysicsEngine::CheckForCollision(
 	CollisionResponseCombiner& combiner, const PhysicsObject& currentObject, const eg::CollisionMesh* shape,
-	const glm::vec3& position, const glm::quat& rotation) const
+	const glm::vec3& position, const glm::quat& rotation
+) const
 {
 	// Collision mesh object cannot currently collide with other things,
 	//  but this is ok for now since there are no such objects that move.
@@ -266,14 +269,16 @@ PhysicsObject* PhysicsEngine::CheckForCollision(
 }
 
 PhysicsEngine::CheckCollisionResult PhysicsEngine::CheckForCollision(
-	const PhysicsObject& currentObject, const glm::vec3& position, const glm::quat& rotation) const
+	const PhysicsObject& currentObject, const glm::vec3& position, const glm::quat& rotation
+) const
 {
 	CollisionResponseCombiner combiner;
 
 	PhysicsObject* otherObject = nullptr;
 	std::visit(
 		[&](const auto& shape) { otherObject = CheckForCollision(combiner, currentObject, shape, position, rotation); },
-		currentObject.shape);
+		currentObject.shape
+	);
 
 	CheckCollisionResult result;
 	if (combiner.GetCorrection())
@@ -286,7 +291,8 @@ PhysicsEngine::CheckCollisionResult PhysicsEngine::CheckForCollision(
 }
 
 static inline std::optional<float> RayIntersect(
-	const eg::Ray& ray, const glm::vec3& objPosition, const glm::quat& objRotation, const eg::AABB& shape)
+	const eg::Ray& ray, const glm::vec3& objPosition, const glm::quat& objRotation, const eg::AABB& shape
+)
 {
 	OrientedBox obb;
 	obb.center = objPosition + shape.Center();
@@ -296,7 +302,8 @@ static inline std::optional<float> RayIntersect(
 }
 
 static inline std::optional<float> RayIntersect(
-	const eg::Ray& ray, const glm::vec3& objPosition, const glm::quat& objRotation, const eg::CollisionMesh* shape)
+	const eg::Ray& ray, const glm::vec3& objPosition, const glm::quat& objRotation, const eg::CollisionMesh* shape
+)
 {
 	glm::quat invRotation = glm::inverse(objRotation);
 	glm::vec3 localStart = invRotation * (ray.GetStart() - objPosition);
@@ -311,7 +318,8 @@ static inline std::optional<float> RayIntersect(
 }
 
 std::pair<PhysicsObject*, float> PhysicsEngine::RayIntersect(
-	const eg::Ray& ray, uint32_t mask, const PhysicsObject* ignoreObject) const
+	const eg::Ray& ray, uint32_t mask, const PhysicsObject* ignoreObject
+) const
 {
 	float minIntersect = INFINITY;
 	PhysicsObject* intersectedObject = nullptr;
@@ -331,13 +339,14 @@ std::pair<PhysicsObject*, float> PhysicsEngine::RayIntersect(
 					}
 				}
 			},
-			object->shape);
+			object->shape
+		);
 	}
 	return { intersectedObject, minIntersect };
 }
 
-PhysicsObject* PhysicsEngine::CheckCollision(
-	const eg::AABB& aabb, uint32_t mask, const PhysicsObject* ignoreObject) const
+PhysicsObject* PhysicsEngine::CheckCollision(const eg::AABB& aabb, uint32_t mask, const PhysicsObject* ignoreObject)
+	const
 {
 	for (PhysicsObject* object : m_objects)
 	{
@@ -366,7 +375,8 @@ PhysicsObject* PhysicsEngine::CheckCollision(
 }
 
 static void GetDebugRenderDataForShape(
-	PhysicsDebugRenderData& dataOut, const PhysicsObject& obj, const eg::CollisionMesh* mesh, uint32_t color)
+	PhysicsDebugRenderData& dataOut, const PhysicsObject& obj, const eg::CollisionMesh* mesh, uint32_t color
+)
 {
 	for (size_t i = 0; i < mesh->NumIndices(); i++)
 	{
@@ -385,7 +395,8 @@ static void GetDebugRenderDataForShape(
 }
 
 static void GetDebugRenderDataForShape(
-	PhysicsDebugRenderData& dataOut, const PhysicsObject& obj, const eg::AABB& aabb, uint32_t color)
+	PhysicsDebugRenderData& dataOut, const PhysicsObject& obj, const eg::AABB& aabb, uint32_t color
+)
 {
 	uint32_t baseIndex = eg::UnsignedNarrow<uint32_t>(dataOut.vertices.size());
 	for (const std::pair<uint32_t, uint32_t>& edge : cubeMesh::edges)
@@ -415,6 +426,7 @@ void PhysicsEngine::GetDebugRenderData(PhysicsDebugRenderData& dataOut) const
 		uint32_t color = __builtin_bswap32((object->debugColor << 8) | 0xFF);
 
 		std::visit(
-			[&](const auto& shape) { GetDebugRenderDataForShape(dataOut, *object, shape, color); }, object->shape);
+			[&](const auto& shape) { GetDebugRenderDataForShape(dataOut, *object, shape, color); }, object->shape
+		);
 	}
 }

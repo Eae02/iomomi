@@ -38,7 +38,8 @@ void BeginDownloadThumbnail(std::string_view levelName)
 	attr.onerror = [](emscripten_fetch_t* fetch)
 	{
 		eg::Log(
-			eg::LogLevel::Error, "lvl", "Failed to download level thumbnail from {0}: {1}", fetch->url, fetch->status);
+			eg::LogLevel::Error, "lvl", "Failed to download level thumbnail from {0}: {1}", fetch->url, fetch->status
+		);
 		reinterpret_cast<LevelData*>(fetch->userData)->thumbnailLoadingComplete = true;
 		emscripten_fetch_close(fetch);
 	};
@@ -83,7 +84,8 @@ void GetProgressCommand(std::span<const std::string_view> args, eg::console::Wri
 				{
 					type:
 						'text/plain'
-				});
+				}
+			);
 			const link = window.URL.createObjectURL(blob);
 			if (link)
 			{
@@ -99,10 +101,12 @@ void GetProgressCommand(std::span<const std::string_view> args, eg::console::Wri
 							 URL.revokeObjectURL(link);
 							 link.parentNode.removeChild(a);
 						 },
-					0);
+					0
+				);
 			}
 		},
-		progress.c_str());
+		progress.c_str()
+	);
 }
 
 void InitLevelsPlatformDependent()

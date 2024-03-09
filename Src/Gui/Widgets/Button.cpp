@@ -50,17 +50,20 @@ void Button::Draw(const GuiFrameArgs& frameArgs, eg::SpriteBatch& spriteBatch) c
 	glm::vec2 textPos = rect.Center() - extents / 2.0f + glm::vec2(0, 3);
 	spriteBatch.DrawText(
 		*style::UIFont, text, textPos, textColor, fontScale, nullptr,
-		eg::TextFlags::NoPixelAlign | eg::TextFlags::DropShadow);
+		eg::TextFlags::NoPixelAlign | eg::TextFlags::DropShadow
+	);
 }
 
 void Button::DrawBackground(
-	eg::SpriteBatch& spriteBatch, const eg::Rectangle& rect, float highlightIntensity, bool enabled)
+	eg::SpriteBatch& spriteBatch, const eg::Rectangle& rect, float highlightIntensity, bool enabled
+)
 {
 	float inflate = highlightIntensity * style::ButtonInflatePercent;
 
 	glm::vec2 inflateSize = inflate * rect.Size();
 	eg::Rectangle inflatedRect(
-		rect.x - inflateSize.x, rect.y - inflateSize.y, rect.w + inflateSize.x * 2, rect.h + inflateSize.y * 2);
+		rect.x - inflateSize.x, rect.y - inflateSize.y, rect.w + inflateSize.x * 2, rect.h + inflateSize.y * 2
+	);
 
 	eg::ColorLin backColor = eg::ColorLin::Mix(style::ButtonColorDefault, style::ButtonColorHover, highlightIntensity);
 	if (!enabled)

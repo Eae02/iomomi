@@ -7,6 +7,8 @@
 #include "Graphics/GraphicsCommon.hpp"
 #include "Levels.hpp"
 #include "Settings.hpp"
+#include "Water/WaterSimulationShaders.hpp"
+#include "Water/WaterSimulatorTests.hpp"
 
 #ifdef _WIN32
 extern "C"
@@ -79,6 +81,16 @@ static void Run(int argc, char** argv)
 	useGLESPath = eg::HasFlag(runConfig.flags, eg::RunFlags::PreferGLESPath);
 #endif
 
+	std::string_view testName;
+	std::string_view forcedLevelName;
+	for (int i = 1; i < argc - 1; i++)
+	{
+		if (std::strcmp(argv[i], "-t") == 0)
+			testName = argv[i + 1];
+		if (std::strcmp(argv[i], "-l") == 0)
+			forcedLevelName = argv[i + 1];
+	}
+
 	runConfig.gameName = "Iomomi";
 	runConfig.flags |= eg::RunFlags::DefaultFramebufferSRGB;
 	runConfig.defaultDepthStencilFormat = eg::Format::Depth32;
@@ -118,12 +130,31 @@ static void Run(int argc, char** argv)
 			EG_PANIC("Failed to load assets, make sure assets.eap exists.");
 		}
 
+		waterSimShaders.Initialize();
+
 		InitLevels();
+
+		if (!forcedLevelName.empty())
+			Game::levelIndexFromCmdArg = FindLevel(forcedLevelName);
 
 #ifdef __EMSCRIPTEN__
 		EM_ASM(loadingComplete(););
 #endif
 	};
+
+	if (!testName.empty())
+	{
+		eg::InitializeHeadless(runConfig);
+
+		if (testName == "wsort")
+			WaterSimulatorTests::RunSortTests();
+
+		std::cout << "done running tests" << std::endl;
+
+		eg::gal::DeviceWaitIdle();
+
+		std::quick_exit(0);
+	}
 
 	eg::Run<Game>(runConfig);
 }

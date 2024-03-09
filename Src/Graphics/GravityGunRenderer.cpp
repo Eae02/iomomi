@@ -6,12 +6,12 @@
 
 GravityGunRenderer::GravityGunRenderer(const eg::Model& model) : m_model(&model)
 {
-	eg::ShaderModuleHandle vertexShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Common3D-PCTransform.vs.glsl").DefaultVariant();
+	const eg::ShaderModuleAsset& vertexShader =
+		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Common3D-PCTransform.vs.glsl");
 
 	eg::GraphicsPipelineCreateInfo mainPipelineCI;
-	mainPipelineCI.vertexShader = vertexShader;
-	mainPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityGun.fs.glsl").DefaultVariant();
+	mainPipelineCI.vertexShader = vertexShader.ToStageInfo();
+	mainPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityGun.fs.glsl").ToStageInfo();
 	InitPipelineVertexStateSoaPXNT(mainPipelineCI);
 	mainPipelineCI.enableDepthWrite = true;
 	mainPipelineCI.enableDepthTest = true;
@@ -23,9 +23,8 @@ GravityGunRenderer::GravityGunRenderer(const eg::Model& model) : m_model(&model)
 	m_mainMaterialPipeline = eg::Pipeline::Create(mainPipelineCI);
 
 	eg::GraphicsPipelineCreateInfo glowPipelineCI;
-	glowPipelineCI.vertexShader = vertexShader;
-	glowPipelineCI.fragmentShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityGunMid.fs.glsl").DefaultVariant();
+	glowPipelineCI.vertexShader = vertexShader.ToStageInfo();
+	glowPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityGunMid.fs.glsl").ToStageInfo();
 	InitPipelineVertexStateSoaPXNT(glowPipelineCI);
 	glowPipelineCI.enableDepthWrite = false;
 	glowPipelineCI.enableDepthTest = true;
@@ -39,16 +38,19 @@ GravityGunRenderer::GravityGunRenderer(const eg::Model& model) : m_model(&model)
 	eg::BufferRef renderSettingsBuffer = RenderSettings::instance->Buffer();
 
 	m_mainMaterialDescriptorSet = eg::DescriptorSet(m_mainMaterialPipeline, 0);
-	m_mainMaterialDescriptorSet.BindUniformBuffer(renderSettingsBuffer, 0, 0, RenderSettings::BUFFER_SIZE);
+	m_mainMaterialDescriptorSet.BindUniformBuffer(renderSettingsBuffer, 0);
 	m_mainMaterialDescriptorSet.BindTexture(
-		eg::GetAsset<eg::Texture>("Textures/GravityGunMainA.png"), 1, &commonTextureSampler);
+		eg::GetAsset<eg::Texture>("Textures/GravityGunMainA.png"), 1, &commonTextureSampler
+	);
 	m_mainMaterialDescriptorSet.BindTexture(
-		eg::GetAsset<eg::Texture>("Textures/GravityGunMainN.png"), 2, &commonTextureSampler);
+		eg::GetAsset<eg::Texture>("Textures/GravityGunMainN.png"), 2, &commonTextureSampler
+	);
 	m_mainMaterialDescriptorSet.BindTexture(
-		eg::GetAsset<eg::Texture>("Textures/GravityGunMainM.png"), 3, &commonTextureSampler);
+		eg::GetAsset<eg::Texture>("Textures/GravityGunMainM.png"), 3, &commonTextureSampler
+	);
 
 	m_glowMaterialDescriptorSet = eg::DescriptorSet(m_glowMaterialPipeline, 0);
-	m_glowMaterialDescriptorSet.BindUniformBuffer(renderSettingsBuffer, 0, 0, RenderSettings::BUFFER_SIZE);
+	m_glowMaterialDescriptorSet.BindUniformBuffer(renderSettingsBuffer, 0);
 	m_glowMaterialDescriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/Hex.png"), 1, &commonTextureSampler);
 
 	m_glowMaterialIndex = model.GetMaterialIndex("EnergyCyl");
@@ -56,7 +58,8 @@ GravityGunRenderer::GravityGunRenderer(const eg::Model& model) : m_model(&model)
 }
 
 void GravityGunRenderer::Draw(
-	std::span<const glm::mat4> meshTransforms, float glowIntensityBoost, RenderTexManager& renderTexManager)
+	std::span<const glm::mat4> meshTransforms, float glowIntensityBoost, RenderTexManager& renderTexManager
+)
 {
 	glm::mat4 projectionMatrix;
 	float fov = glm::radians(settings.fieldOfViewDeg);

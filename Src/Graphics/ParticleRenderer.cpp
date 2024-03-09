@@ -7,8 +7,8 @@
 ParticleRenderer::ParticleRenderer()
 {
 	eg::GraphicsPipelineCreateInfo pipelineCI;
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Particle.vs.glsl").DefaultVariant();
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Particle.fs.glsl").DefaultVariant();
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Particle.vs.glsl").ToStageInfo();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Particle.fs.glsl").ToStageInfo();
 	pipelineCI.topology = eg::Topology::TriangleStrip;
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.blendStates[0] = { eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::OneMinusSrcAlpha };
@@ -38,7 +38,7 @@ void ParticleRenderer::Draw(const eg::ParticleManager& particleManager, eg::Text
 	auto cpuTimerTransparent = eg::StartCPUTimer("Particles");
 
 	eg::DC.BindPipeline(m_pipeline);
-	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
+	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0);
 	eg::DC.BindTexture(*m_texture, 0, 1, &commonTextureSampler);
 	eg::DC.BindTexture(depthTexture, 0, 2, &framebufferNearestSampler);
 

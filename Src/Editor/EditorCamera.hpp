@@ -11,8 +11,12 @@ public:
 
 	void GetViewMatrix(glm::mat4& matrixOut, glm::mat4& inverseMatrixOut) const;
 
+	bool IsRotating() const { return m_isRotating; }
+
 private:
 	void UpdateRotationMatrix();
+
+	bool m_isRotating = false;
 
 	float m_yaw;
 	float m_pitch;

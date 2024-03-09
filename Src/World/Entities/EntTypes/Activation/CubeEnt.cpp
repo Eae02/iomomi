@@ -5,6 +5,7 @@
 #include "../../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../../ImGui.hpp"
 #include "../../../../Settings.hpp"
+#include "../../../../Water/WaterSimulator.hpp"
 #include "../../../Player.hpp"
 #include "../ForceFieldEnt.hpp"
 #include "../GooPlaneEnt.hpp"
@@ -78,7 +79,8 @@ void CubeEnt::Draw(eg::MeshBatch& meshBatch, const glm::mat4& transform) const
 {
 	meshBatch.AddModel(
 		*(canFloat ? woodCubeModel : cubeModel), *(canFloat ? woodCubeMaterial : cubeMaterial),
-		StaticPropMaterial::InstanceData(transform));
+		StaticPropMaterial::InstanceData(transform)
+	);
 }
 
 float* cubeGAIntenstiyMax = eg::TweakVarFloat("cube_ga_imax", 2.0f, 0);
@@ -216,7 +218,8 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 		{
 			if (goo.IsUnderwater(sphere))
 				inGoo = true;
-		});
+		}
+	);
 
 	if (inGoo)
 	{
@@ -239,7 +242,7 @@ void CubeEnt::Update(const WorldUpdateArgs& args)
 		SetGravity(*forceFieldGravity);
 	}
 
-	if (isSpawning || (args.waterSim && !args.waterSim->IsPresimComplete()))
+	if (isSpawning /* || (args.waterSim && !args.waterSim->IsPresimComplete())*/)
 	{
 		m_physicsObject.gravity = {};
 		m_collisionWithPlayerDisabled = true;

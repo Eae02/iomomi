@@ -37,16 +37,15 @@ static eg::DescriptorSet gravityBarrierSet0;
 
 void GravityBarrierMaterial::OnInit()
 {
-	eg::SpecializationConstantEntry waterModeSpecConstant;
-	waterModeSpecConstant.constantID = WATER_MODE_CONST_ID;
-	waterModeSpecConstant.size = sizeof(int32_t);
-	waterModeSpecConstant.offset = 0;
+	eg::SpecializationConstantEntry specConstants[1];
+	specConstants[0].constantID = WATER_MODE_CONST_ID;
 
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	pipelineCI.vertexShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityBarrier/GravityBarrier.vs.glsl").DefaultVariant();
+		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityBarrier/GravityBarrier.vs.glsl").ToStageInfo();
 	pipelineCI.fragmentShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityBarrier/GBGame.fs.glsl").DefaultVariant();
+		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityBarrier/GBGame.fs.glsl").ToStageInfo();
+	pipelineCI.fragmentShader.specConstants = specConstants;
 	pipelineCI.vertexBindings[0] = { 2, eg::InputRate::Vertex };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::UInt8Norm, 2, 0 };
 	pipelineCI.topology = eg::Topology::TriangleStrip;
@@ -58,35 +57,30 @@ void GravityBarrierMaterial::OnInit()
 	pipelineCI.depthCompare = eg::CompareOp::Less;
 	pipelineCI.blendStates[0] =
 		eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::OneMinusSrcAlpha);
-	pipelineCI.fragmentShader.specConstants = { &waterModeSpecConstant, 1 };
-	pipelineCI.fragmentShader.specConstantsDataSize = sizeof(int32_t);
 	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
 	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
 
 	pipelineCI.label = "GravityBarrier[BeforeWater]";
-	pipelineCI.fragmentShader.specConstantsData = const_cast<int32_t*>(&WATER_MODE_BEFORE);
+	specConstants[0].value = WATER_MODE_BEFORE;
 	s_pipelineGameBeforeWater = eg::Pipeline::Create(pipelineCI);
 
 	pipelineCI.label = "GravityBarrier[Final]";
-	pipelineCI.fragmentShader.specConstantsData = const_cast<int32_t*>(&WATER_MODE_AFTER);
+	specConstants[0].value = WATER_MODE_AFTER;
 	s_pipelineGameFinal = eg::Pipeline::Create(pipelineCI);
 
 	pipelineCI.label = "GravityBarrier[Editor]";
 	pipelineCI.fragmentShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityBarrier/GBEditor.fs.glsl").DefaultVariant();
+		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityBarrier/GBEditor.fs.glsl").ToStageInfo();
 	pipelineCI.colorAttachmentFormats[0] = EDITOR_COLOR_FORMAT;
 	pipelineCI.depthAttachmentFormat = EDITOR_DEPTH_FORMAT;
 	s_pipelineEditor = eg::Pipeline::Create(pipelineCI);
 
-	eg::SpecializationConstantEntry ssrDistSpecConstant;
-	ssrDistSpecConstant.constantID = 0;
-	ssrDistSpecConstant.size = sizeof(float);
-	ssrDistSpecConstant.offset = 0;
+	const eg::SpecializationConstantEntry ssrDistSpecConstant = { 0, SSR::MAX_DISTANCE };
 
 	eg::GraphicsPipelineCreateInfo ssrPipelineCI;
-	ssrPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
+	ssrPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").ToStageInfo();
 	ssrPipelineCI.fragmentShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityBarrier/GBSSR.fs.glsl").DefaultVariant();
+		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityBarrier/GBSSR.fs.glsl").ToStageInfo();
 	ssrPipelineCI.enableDepthTest = true;
 	ssrPipelineCI.enableDepthWrite = true;
 	ssrPipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
@@ -94,8 +88,6 @@ void GravityBarrierMaterial::OnInit()
 	ssrPipelineCI.depthCompare = eg::CompareOp::Less;
 	ssrPipelineCI.label = "GravityBarrier[SSR]";
 	ssrPipelineCI.fragmentShader.specConstants = { &ssrDistSpecConstant, 1 };
-	ssrPipelineCI.fragmentShader.specConstantsDataSize = sizeof(float);
-	ssrPipelineCI.fragmentShader.specConstantsData = const_cast<float*>(&SSR::MAX_DISTANCE);
 	ssrPipelineCI.colorAttachmentFormats[0] = GetFormatForRenderTexture(RenderTex::SSRTemp1, true);
 	ssrPipelineCI.depthAttachmentFormat = GetFormatForRenderTexture(RenderTex::SSRDepth, true);
 	s_pipelineSSR = eg::Pipeline::Create(ssrPipelineCI);
@@ -104,9 +96,9 @@ void GravityBarrierMaterial::OnInit()
 		eg::Buffer(eg::BufferFlags::Update | eg::BufferFlags::UniformBuffer, sizeof(BarrierBufferData), nullptr);
 
 	gravityBarrierSet0 = eg::DescriptorSet(descriptorSet0Bindings);
-	gravityBarrierSet0.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+	gravityBarrierSet0.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
 	gravityBarrierSet0.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 1, &linearRepeatSampler);
-	gravityBarrierSet0.BindUniformBuffer(s_sharedDataBuffer, 2, 0, sizeof(BarrierBufferData));
+	gravityBarrierSet0.BindUniformBuffer(s_sharedDataBuffer, 2);
 }
 
 void GravityBarrierMaterial::OnShutdown()
@@ -151,7 +143,8 @@ bool GravityBarrierMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* draw
 		cmdCtx.BindDescriptorSet(gravityBarrierSet0, 0);
 		cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 1, 0, &framebufferNearestSampler);
 		cmdCtx.BindTexture(
-			mDrawArgs->rtManager->GetRenderTexture(RenderTex::BlurredGlassDepth), 1, 1, &framebufferNearestSampler);
+			mDrawArgs->rtManager->GetRenderTexture(RenderTex::BlurredGlassDepth), 1, 1, &framebufferNearestSampler
+		);
 		return true;
 	}
 	else if (mDrawArgs->drawMode == MeshDrawMode::TransparentFinal)
@@ -173,9 +166,11 @@ bool GravityBarrierMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* draw
 		cmdCtx.BindPipeline(s_pipelineSSR);
 		cmdCtx.BindDescriptorSet(gravityBarrierSet0, 0);
 		cmdCtx.BindTexture(
-			mDrawArgs->rtManager->GetRenderTexture(RenderTex::GBColor2), 1, 0, &framebufferNearestSampler);
+			mDrawArgs->rtManager->GetRenderTexture(RenderTex::GBColor2), 1, 0, &framebufferNearestSampler
+		);
 		cmdCtx.BindTexture(
-			mDrawArgs->rtManager->GetRenderTexture(RenderTex::GBDepth), 1, 1, &framebufferNearestSampler);
+			mDrawArgs->rtManager->GetRenderTexture(RenderTex::GBDepth), 1, 1, &framebufferNearestSampler
+		);
 		return true;
 	}
 
@@ -214,8 +209,7 @@ bool GravityBarrierMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* draw
 	pc.lineWidth = *lineWidth;
 	pc.lineGlowDecay = -*intensityDecay;
 	pc.lineGlowIntensity = *glowIntensity;
-	eg::DC.PushConstants(
-		0, drawMode == MeshDrawMode::Editor ? offsetof(PushConstants, blockedAxis) : sizeof(PushConstants), &pc);
+	eg::DC.PushConstants(0, sizeof(PushConstants), &pc);
 
 	if (drawMode != MeshDrawMode::Editor)
 	{

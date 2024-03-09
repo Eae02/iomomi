@@ -54,7 +54,8 @@ void SlidingWallEnt::CommonDraw(const EntDrawArgs& args)
 	glm::mat4 worldMatrix = glm::translate(glm::mat4(1), m_physicsObject.displayPosition) * m_rotationAndScale;
 	args.meshBatch->AddModel(
 		eg::GetAsset<eg::Model>("Models/SlidingWall.obj"), eg::GetAsset<StaticPropMaterial>("Materials/Default.yaml"),
-		StaticPropMaterial::InstanceData(worldMatrix));
+		StaticPropMaterial::InstanceData(worldMatrix)
+	);
 
 	if (glm::length2(m_slideOffset) > 1E-5f && args.shadowDrawArgs == nullptr)
 	{
@@ -73,7 +74,8 @@ void SlidingWallEnt::CommonDraw(const EntDrawArgs& args)
 
 		PlatformEnt::DrawSliderMesh(*args.meshBatch, *args.frustum, trackStart - up * distToTrack, trackDir, up, 0.75f);
 		PlatformEnt::DrawSliderMesh(
-			*args.meshBatch, *args.frustum, trackStart + up * distToTrack, trackDir, -up, 0.75f);
+			*args.meshBatch, *args.frustum, trackStart + up * distToTrack, trackDir, -up, 0.75f
+		);
 	}
 }
 
@@ -138,7 +140,7 @@ void SlidingWallEnt::UpdateShape()
 
 void SlidingWallEnt::UpdateWaterBlockComponent()
 {
-	std::fill_n(m_waterBlockComp.blockedGravities, 6, !m_neverBlockWater);
+	m_waterBlockComp.blockedGravities = m_neverBlockWater ? DirFlags::None : DirFlags::All;
 	m_waterBlockComp.InitFromAAQuadComponent(m_aaQuadComp, m_physicsObject.position);
 }
 

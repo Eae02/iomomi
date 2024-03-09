@@ -26,14 +26,16 @@ struct ModelOption
 	eg::CollisionMesh selectionMesh;
 
 	ModelOption(
-		std::string_view modelName, std::string_view meshName, std::initializer_list<const char*> materialOptionNames)
+		std::string_view modelName, std::string_view meshName, std::initializer_list<const char*> materialOptionNames
+	)
 		: model(&eg::GetAsset<eg::Model>(modelName)), materialOptions(materialOptionNames.size())
 	{
 		std::transform(
 			materialOptionNames.begin(), materialOptionNames.end(), materialOptions.begin(),
 			[&](const char* materialName) -> std::pair<const char*, const eg::IMaterial*> {
 				return { materialName, &eg::GetAsset<StaticPropMaterial>(materialName) };
-			});
+			}
+		);
 
 		if (!meshName.empty())
 		{
@@ -69,6 +71,13 @@ static void OnInit()
 	railingCorner.rayMask = 0;
 	railingCorner.serializedName = "RailingCorner";
 	modelOptions.push_back(std::move(railingCorner));
+
+	ModelOption brokenFrame("Models/BrokenFrame.aa.glb", "", { "Materials/BrokenFrame.yaml" });
+	brokenFrame.name = "Broken Frame";
+	brokenFrame.rayMask = RAY_MASK_BLOCK_PICK_UP;
+	brokenFrame.serializedName = "BrokenFrame";
+	brokenFrame.SetCollisionMesh("Models/BrokenFrame.col.obj");
+	modelOptions.push_back(std::move(brokenFrame));
 
 	ModelOption pipeStraight("Models/Pipe.aa.obj", "straight", { "Materials/PipeCenter.yaml" });
 	pipeStraight.name = "Pipe (straight)";
@@ -228,11 +237,13 @@ void MeshEnt::CommonDraw(const EntDrawArgs& args)
 					{
 						args.meshBatch->AddModelMesh(
 							*modelOptions[*m_model].model, m,
-							*modelOptions[*m_model].materialOptions[m_material].second, instanceData);
+							*modelOptions[*m_model].materialOptions[m_material].second, instanceData
+						);
 					}
 				}
 			}
-		});
+		}
+	);
 }
 
 void MeshEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)
@@ -376,5 +387,6 @@ void MeshEnt::UpdateEditorSelectionMeshes()
 			selectionMesh.model = modelOptions[*m_model].model;
 			selectionMesh.collisionMesh = &modelOptions[*m_model].selectionMesh;
 			selectionMesh.transform = transform;
-		});
+		}
+	);
 }

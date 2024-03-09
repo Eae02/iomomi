@@ -1,0 +1,12 @@
+Pseudocode for bitonic sort (A is the array to be sorted and len(A) is a power of 2):
+
+def compareAndSwap(i1, i2, k)
+	if ((i1 & k) != 0) ^ (A[i1].x > A[i2].x)
+		swap(A[i1], A[i2])
+for k in [2, 4, 8, 16, ..., len(A)]                 # k loops over increasing powers of 2 from 2 up to len(A)
+	for j in [k / 2, k / 4, k / 8, ..., 4, 2, 1]:   # j loops over decreasing powers of 2 from k/2 down to 1
+		for i in [0, 1, 2, 3, 4, ..., len(A)-1]:    # i loops over integer values between 0 and N-1 (parallelized)
+			if (i & j) == 0
+				compareAndSwap(i, i | j, k)
+
+

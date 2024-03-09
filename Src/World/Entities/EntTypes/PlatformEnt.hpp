@@ -38,7 +38,8 @@ public:
 
 	static void DrawSliderMesh(
 		eg::MeshBatch& meshBatch, const eg::Frustum& frustum, const glm::vec3& start, const glm::vec3& toEnd,
-		const glm::vec3& up, float scale);
+		const glm::vec3& up, float scale
+	);
 
 private:
 	void DrawSliderMesh(eg::MeshBatch& meshBatch, const eg::Frustum& frustum) const;

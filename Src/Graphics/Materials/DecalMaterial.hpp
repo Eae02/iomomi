@@ -10,7 +10,8 @@ public:
 		glm::vec2 textureMax;
 
 		InstanceData(
-			const glm::mat4& _transform, glm::vec2 _textureMin = glm::vec2(0), glm::vec2 _textureMax = glm::vec2(1))
+			const glm::mat4& _transform, glm::vec2 _textureMin = glm::vec2(0), glm::vec2 _textureMax = glm::vec2(1)
+		)
 			: transform(glm::transpose(_transform)), textureMin(_textureMin), textureMax(_textureMax)
 		{
 		}

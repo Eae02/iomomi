@@ -90,10 +90,10 @@ private:
 	std::vector<GravityCorner> m_gravityCorners;
 
 	void PrepareMeshes(bool isEditor);
-	eg::CollisionMesh BuildMesh(
-		std::vector<WallVertex>& vertices, std::vector<uint32_t>& indices, bool includeNoDraw) const;
-	void BuildBorderMesh(
-		std::vector<WallBorderVertex>* borderVertices, std::vector<GravityCorner>& gravityCorners) const;
+	eg::CollisionMesh BuildMesh(std::vector<WallVertex>& vertices, std::vector<uint32_t>& indices, bool includeNoDraw)
+		const;
+	void BuildBorderMesh(std::vector<WallBorderVertex>* borderVertices, std::vector<GravityCorner>& gravityCorners)
+		const;
 
 	std::vector<glm::ivec3> cubeSpawnerPositions2;
 	std::vector<Door> m_doors;

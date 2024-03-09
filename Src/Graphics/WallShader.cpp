@@ -47,8 +47,8 @@ void InitializeWallShader()
 
 	// Creates the game pipeline
 	eg::GraphicsPipelineCreateInfo pipelineCI;
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall.vs.glsl").DefaultVariant();
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall.fs.glsl").DefaultVariant();
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall.vs.glsl").ToStageInfo();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall.fs.glsl").ToStageInfo();
 	pipelineCI.enableDepthWrite = true;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::Back;
@@ -66,9 +66,8 @@ void InitializeWallShader()
 
 	// Creates the editor pipeline
 	eg::GraphicsPipelineCreateInfo editorPipelineCI;
-	editorPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall-Editor.vs.glsl").DefaultVariant();
-	editorPipelineCI.fragmentShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall-Editor.fs.glsl").DefaultVariant();
+	editorPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall-Editor.vs.glsl").ToStageInfo();
+	editorPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall-Editor.fs.glsl").ToStageInfo();
 	editorPipelineCI.enableDepthWrite = true;
 	editorPipelineCI.enableDepthTest = true;
 	editorPipelineCI.cullMode = eg::CullMode::Back;
@@ -91,9 +90,8 @@ void InitializeWallShader()
 
 	// Creates the editor border pipeline
 	eg::GraphicsPipelineCreateInfo borderPipelineCI;
-	borderPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall-Border.vs.glsl").DefaultVariant();
-	borderPipelineCI.fragmentShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall-Border.fs.glsl").DefaultVariant();
+	borderPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall-Border.vs.glsl").ToStageInfo();
+	borderPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall-Border.fs.glsl").ToStageInfo();
 	borderPipelineCI.enableDepthWrite = false;
 	borderPipelineCI.enableDepthTest = true;
 	borderPipelineCI.cullMode = eg::CullMode::None;
@@ -108,30 +106,30 @@ void InitializeWallShader()
 	;
 	wr.pipelineBorderEditor = eg::Pipeline::Create(borderPipelineCI);
 
-	const eg::SpecializationConstantEntry plsPipelineSpecConstants[2] = { { 10, 0, 4 }, { 11, 4, 4 } };
-	float plsPipelineSpecConstantData[2] = { FRONT_FACE_SHADOW_BIAS, BACK_FACE_SHADOW_BIAS };
+	const eg::SpecializationConstantEntry plsPipelineSpecConstants[] = { { 10, FRONT_FACE_SHADOW_BIAS },
+		                                                                 { 11, BACK_FACE_SHADOW_BIAS } };
 
 	// Creates the point light shadow pipeline
 	eg::GraphicsPipelineCreateInfo plsPipelineCI;
-	plsPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall-PLShadow.vs.glsl").DefaultVariant();
-	plsPipelineCI.fragmentShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLightShadow.fs.glsl").GetVariant("VNoAlphaTest");
+	plsPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Wall-PLShadow.vs.glsl").ToStageInfo();
+	plsPipelineCI.fragmentShader = {
+		.shaderModule =
+			eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PointLightShadow.fs.glsl").GetVariant("VNoAlphaTest"),
+		.specConstants = plsPipelineSpecConstants,
+	};
 	plsPipelineCI.enableDepthWrite = true;
 	plsPipelineCI.enableDepthTest = true;
 	plsPipelineCI.frontFaceCCW = PointLightShadowMapper::FlippedLightMatrix();
 	plsPipelineCI.cullMode = eg::CullMode::None;
 	plsPipelineCI.vertexBindings[0] = { sizeof(WallVertex), eg::InputRate::Vertex };
 	plsPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(WallVertex, position) };
-	plsPipelineCI.fragmentShader.specConstants = plsPipelineSpecConstants;
-	plsPipelineCI.fragmentShader.specConstantsData = plsPipelineSpecConstantData;
-	plsPipelineCI.fragmentShader.specConstantsDataSize = sizeof(plsPipelineSpecConstantData);
 	plsPipelineCI.numColorAttachments = 0;
 	plsPipelineCI.depthAttachmentFormat = PointLightShadowMapper::SHADOW_MAP_FORMAT;
 	wr.pipelinePLShadow = eg::Pipeline::Create(plsPipelineCI);
 
-	wr.diffuseTexture = &eg::GetAsset<eg::Texture>("WallTextures/Albedo");
-	wr.normalMapTexture = &eg::GetAsset<eg::Texture>("WallTextures/NormalMap");
-	wr.miscMapTexture = &eg::GetAsset<eg::Texture>("WallTextures/MiscMap");
+	wr.diffuseTexture = &eg::GetAsset<eg::Texture>("Textures/Wall/Albedo");
+	wr.normalMapTexture = &eg::GetAsset<eg::Texture>("Textures/Wall/NormalMap");
+	wr.miscMapTexture = &eg::GetAsset<eg::Texture>("Textures/Wall/MiscMap");
 	wr.gridTexture = &eg::GetAsset<eg::Texture>("Textures/Grid.png");
 	wr.noDrawTexture = &eg::GetAsset<eg::Texture>("Textures/NoDraw.png");
 
@@ -146,13 +144,13 @@ void InitializeWallShader()
 	}
 
 	wr.gameDescriptorSet = { wr.pipelineDeferredGeom, 0 };
-	wr.gameDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+	wr.gameDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
 	wr.gameDescriptorSet.BindTexture(*wr.diffuseTexture, 1, &commonTextureSampler);
 	wr.gameDescriptorSet.BindTexture(*wr.normalMapTexture, 2, &commonTextureSampler);
 	wr.gameDescriptorSet.BindTexture(*wr.miscMapTexture, 3, &commonTextureSampler);
 
 	wr.editorDescriptorSet = { wr.pipelineEditor, 0 };
-	wr.editorDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
+	wr.editorDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
 	wr.editorDescriptorSet.BindTexture(*wr.diffuseTexture, 1, &commonTextureSampler);
 	wr.editorDescriptorSet.BindTexture(*wr.normalMapTexture, 2, &commonTextureSampler);
 	wr.editorDescriptorSet.BindTexture(*wr.gridTexture, 3, &commonTextureSampler);
@@ -193,7 +191,7 @@ void DrawWallBordersEditor(eg::BufferRef vertexBuffer, uint32_t numVertices)
 {
 	eg::DC.BindPipeline(wr.pipelineBorderEditor);
 
-	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, 0, RenderSettings::BUFFER_SIZE);
+	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0);
 
 	eg::DC.BindVertexBuffer(0, vertexBuffer, 0);
 

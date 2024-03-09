@@ -71,7 +71,8 @@ MainMenuGameState::MainMenuGameState()
 		{
 			m_screen = Screen::LevelSelect;
 			m_transitionToMainScreen = false;
-		}));
+		}
+	));
 	m_mainWidgetList.AddWidget(Button(
 		"Options",
 		[&]
@@ -79,7 +80,8 @@ MainMenuGameState::MainMenuGameState()
 			m_screen = Screen::Options;
 			optionsMenuOpen = true;
 			m_transitionToMainScreen = false;
-		}));
+		}
+	));
 #ifndef __EMSCRIPTEN__
 	m_mainWidgetList.AddWidget(Button("Quit", [&] { eg::Close(); }));
 #endif
@@ -152,7 +154,8 @@ void MainMenuGameState::RunFrame(float dt)
 
 		m_spriteBatch.DrawRect(
 			eg::Rectangle(0, 0, m_currentFrameArgs.canvasWidth, m_currentFrameArgs.canvasHeight),
-			eg::ColorLin(0, 0, 0, 0.5f));
+			eg::ColorLin(0, 0, 0, 0.5f)
+		);
 
 		if (m_screen == Screen::Options)
 		{
@@ -185,8 +188,8 @@ void MainMenuGameState::RunFrame(float dt)
 	std::string_view infoLine = BUILD_DATE;
 #endif
 	m_spriteBatch.DrawText(
-		*style::UIFontSmall, infoLine, glm::vec2(5), eg::ColorLin(1, 1, 1, 0.2f), 1, nullptr,
-		eg::TextFlags::DropShadow);
+		*style::UIFontSmall, infoLine, glm::vec2(5), eg::ColorLin(1, 1, 1, 0.2f), 1, nullptr, eg::TextFlags::DropShadow
+	);
 
 	if (audioInitializationFailed)
 	{
@@ -194,7 +197,8 @@ void MainMenuGameState::RunFrame(float dt)
 		float audioInfoTextW = style::UIFontSmall->GetTextExtents(audioInfoText).x;
 		m_spriteBatch.DrawText(
 			*style::UIFontSmall, audioInfoText, glm::vec2(m_currentFrameArgs.canvasWidth - 5.0f - audioInfoTextW, 5),
-			eg::ColorSRGB::FromHex(0xff007f).ScaleAlpha(0.6f), 1, nullptr, eg::TextFlags::DropShadow);
+			eg::ColorSRGB::FromHex(0xff007f).ScaleAlpha(0.6f), 1, nullptr, eg::TextFlags::DropShadow
+		);
 	}
 
 	if (ComboBox::current)
@@ -210,7 +214,8 @@ void MainMenuGameState::RunFrame(float dt)
 			.framebufferFormat = eg::ColorAndDepthFormat(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil),
 			.matrix = m_currentFrameArgs.GetMatrixToNDC(),
 		},
-		rpBeginInfo);
+		rpBeginInfo
+	);
 }
 
 void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
@@ -233,7 +238,8 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 
 	const float marginX = 0.05f * m_currentFrameArgs.canvasWidth;
 	const int numPerRow = static_cast<int>(std::floor(
-		(m_currentFrameArgs.canvasWidth - marginX * 2.0f + levelBoxSpacingX) / (levelBoxW + levelBoxSpacingX)));
+		(m_currentFrameArgs.canvasWidth - marginX * 2.0f + levelBoxSpacingX) / (levelBoxW + levelBoxSpacingX)
+	));
 
 	const float boxW = numPerRow * (levelBoxW + levelBoxSpacingX) - levelBoxSpacingX;
 	const float boxLX = (m_currentFrameArgs.canvasWidth - boxW) / 2;
@@ -242,7 +248,8 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 	const float titleTextureHeight = titleTextureWidth * titleTexture.Height() / titleTexture.Width();
 	const eg::Rectangle titleRect(
 		boxLX + xOffset, m_currentFrameArgs.canvasHeight - 75.0f - titleTextureHeight, titleTextureWidth,
-		titleTextureHeight);
+		titleTextureHeight
+	);
 	m_spriteBatch.Draw(titleTexture, titleRect, eg::ColorLin(1, 1, 1, 1));
 
 	const float boxStartY = m_currentFrameArgs.canvasHeight - 100.0f - titleTextureHeight;
@@ -258,7 +265,8 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 	m_spriteBatch.PushScissorF(
 		0.0f, (boxEndY - inflatePixelsY) * m_currentFrameArgs.scaleToScreenCoordinates,
 		static_cast<float>(eg::CurrentResolutionX()),
-		(visibleHeight + inflatePixelsY * 2) * m_currentFrameArgs.scaleToScreenCoordinates);
+		(visibleHeight + inflatePixelsY * 2) * m_currentFrameArgs.scaleToScreenCoordinates
+	);
 	for (size_t i = 0; i < numLevels; i++)
 	{
 		const Level& level = levels[m_levelIds[i]];
@@ -279,11 +287,12 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 		{
 			m_spriteBatch.DrawText(
 				*style::UIFont, "Extra Levels", glm::vec2(x, y + levelBoxH + 20), eg::ColorLin(1, 1, 1, 0.75f), 1,
-				nullptr, eg::TextFlags::DropShadow);
+				nullptr, eg::TextFlags::DropShadow
+			);
 			m_spriteBatch.DrawLine(
 				glm::vec2(x, y + levelBoxH + 15),
-				glm::vec2(eg::CurrentResolutionX() - boxLX + xOffset, y + levelBoxH + 15),
-				eg::ColorLin(1, 1, 1, 0.75f));
+				glm::vec2(eg::CurrentResolutionX() - boxLX + xOffset, y + levelBoxH + 15), eg::ColorLin(1, 1, 1, 0.75f)
+			);
 		}
 
 		const bool loadingComplete = IsLevelLoadingComplete(level.name);
@@ -321,7 +330,8 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 		float inflate = level.status == LevelStatus::Locked ? 0 : highlightIntensity * style::ButtonInflatePercent;
 		glm::vec2 inflateSize = inflate * rect.Size();
 		eg::Rectangle inflatedRect(
-			rect.x - inflateSize.x, rect.y - inflateSize.y, rect.w + inflateSize.x * 2, rect.h + inflateSize.y * 2);
+			rect.x - inflateSize.x, rect.y - inflateSize.y, rect.w + inflateSize.x * 2, rect.h + inflateSize.y * 2
+		);
 
 		float shade = glm::mix(0.8f, 1.0f, highlightIntensity);
 		if (level.status == LevelStatus::Locked)
@@ -334,7 +344,8 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 			float nameLen = style::UIFontSmall->GetTextExtents(level.name).x;
 			m_spriteBatch.DrawText(
 				*style::UIFontSmall, level.name, glm::vec2(rect.CenterX() - nameLen / 2, inflatedRect.y + 10),
-				eg::ColorLin(1, 1, 1, glm::mix(0.4f, 1.0f, highlightIntensity)), 1, nullptr, eg::TextFlags::DropShadow);
+				eg::ColorLin(1, 1, 1, glm::mix(0.4f, 1.0f, highlightIntensity)), 1, nullptr, eg::TextFlags::DropShadow
+			);
 		}
 
 		if (level.status == LevelStatus::Locked)
@@ -342,7 +353,8 @@ void MainMenuGameState::DrawLevelSelect(float dt, float xOffset)
 			m_spriteBatch.Draw(
 				lockTexture,
 				eg::Rectangle::CreateCentered(inflatedRect.Center(), lockTexture.Width(), lockTexture.Height()),
-				eg::ColorLin(1, 1, 1, 1));
+				eg::ColorLin(1, 1, 1, 1)
+			);
 		}
 		else if (level.status == LevelStatus::Completed)
 		{
@@ -433,16 +445,17 @@ void MainMenuGameState::RenderWorld(float dt)
 	if (GameRenderer::instance->m_waterSimulator)
 	{
 		auto waterUpdateTimer = eg::StartCPUTimer("Water Update MT");
-		GameRenderer::instance->m_waterSimulator->Update(*m_world, m_world->thumbnailCameraPos, false);
-		if (!GameRenderer::instance->m_waterSimulator->IsPresimComplete())
-			return;
+		GameRenderer::instance->m_waterSimulator->Update(eg::DC, dt, *m_world, false);
+		// if (!GameRenderer::instance->m_waterSimulator->IsPresimComplete())
+		// 	return;
 	}
 
 	m_worldFadeInProgress = std::min(m_worldFadeInProgress + dt * 2, 1.0f);
 
 	GameRenderer::instance->Render(
 		*m_world, m_worldGameTime, dt, m_worldRenderFramebuffer.handle, inputFormat, eg::CurrentResolutionX(),
-		eg::CurrentResolutionY());
+		eg::CurrentResolutionY()
+	);
 
 	m_worldRenderTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 	m_worldBlurRenderer.Render(m_worldRenderTexture);
@@ -451,7 +464,8 @@ void MainMenuGameState::RenderWorld(float dt)
 	if (eg::CurrentGraphicsAPI() == eg::GraphicsAPI::OpenGL)
 	{
 		dstRect = eg::Rectangle(
-			0, m_currentFrameArgs.canvasHeight, m_currentFrameArgs.canvasWidth, -m_currentFrameArgs.canvasHeight);
+			0, m_currentFrameArgs.canvasHeight, m_currentFrameArgs.canvasWidth, -m_currentFrameArgs.canvasHeight
+		);
 	}
 	else
 	{
@@ -461,7 +475,8 @@ void MainMenuGameState::RenderWorld(float dt)
 	const eg::Texture* blurredTexture = &m_worldBlurRenderer.OutputTexture();
 
 	m_spriteBatch.Draw(
-		*blurredTexture, dstRect, eg::ColorLin(1, 1, 1, m_worldFadeInProgress), eg::SpriteFlags::ForceLowestMipLevel);
+		*blurredTexture, dstRect, eg::ColorLin(1, 1, 1, m_worldFadeInProgress), eg::SpriteFlags::ForceLowestMipLevel
+	);
 }
 
 void MainMenuGameState::OnDeactivate()

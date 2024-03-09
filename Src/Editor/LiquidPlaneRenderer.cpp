@@ -8,9 +8,8 @@
 LiquidPlaneRenderer::LiquidPlaneRenderer()
 {
 	eg::GraphicsPipelineCreateInfo pipelineCI;
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/LiquidPlaneEditor.vs.glsl").DefaultVariant();
-	pipelineCI.fragmentShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/LiquidPlaneEditor.fs.glsl").DefaultVariant();
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/LiquidPlaneEditor.vs.glsl").ToStageInfo();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/LiquidPlaneEditor.fs.glsl").ToStageInfo();
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::None;
@@ -44,7 +43,8 @@ void LiquidPlaneRenderer::Prepare(World& world, eg::MeshBatchOrdered& meshBatch,
 				float distToCamera = std::abs(plane->position.y - cameraPos.y);
 				m_planes.emplace_back(distToCamera, plane);
 			}
-		});
+		}
+	);
 }
 
 void LiquidPlaneRenderer::Render() const

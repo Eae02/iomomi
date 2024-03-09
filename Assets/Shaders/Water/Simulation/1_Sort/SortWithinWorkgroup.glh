@@ -1,0 +1,51 @@
+const uint MAX_SUPPORTED_SUBGROUP_SIZE = 128;
+
+uint localIndex = gl_SubgroupInvocationID + gl_SubgroupID * gl_SubgroupSize;
+uint globalIndex = gl_WorkGroupID.x * gl_WorkGroupSize.x + localIndex;
+
+bool shouldSwap(uint k, uint b, uvec2 vi, uvec2 vo)
+{
+	if (vi.x == vo.x)
+		return false;
+	bool kBitSet = (k & globalIndex) != 0;
+	bool bBitSet = (b & globalIndex) != 0;
+	return (uint(kBitSet) ^ uint(bBitSet) ^ uint(vi.x > vo.x)) != 0;
+}
+
+uvec2 sort2(uint k, uint b, uvec2 vi, uvec2 vo)
+{
+	return shouldSwap(k, b, vi, vo) ? vo : vi;
+}
+
+shared uvec2 sharedData[gl_WorkGroupSize.x];
+
+uvec2 compareSortSharedMemory(uint k, uint b, uvec2 selfValue)
+{
+	sharedData[localIndex] = selfValue;
+	memoryBarrierShared();
+	barrier();
+	selfValue = sort2(k, b, selfValue, sharedData[localIndex ^ b]);
+	barrier();
+	return selfValue;
+}
+
+#define COMPARE_SORT_SUBGROUP(k, b)                                                                                    \
+	if (gl_SubgroupSize > (b))                                                                                         \
+		selfValue = sort2(k, b, selfValue, subgroupShuffleXor(selfValue, b));                                          \
+	else                                                                                                               \
+		selfValue = compareSortSharedMemory(k, b, selfValue);
+
+uvec2 sortForLargeKSmallJ(uint k, uint jbMax, uvec2 selfValue)
+{
+	for (uint jb = jbMax; jb >= MAX_SUPPORTED_SUBGROUP_SIZE; jb >>= 1)
+	{
+		selfValue = compareSortSharedMemory(k, jb, selfValue);
+	}
+
+	for (uint jb = MAX_SUPPORTED_SUBGROUP_SIZE >> 1; jb > 0; jb >>= 1)
+	{
+		COMPARE_SORT_SUBGROUP(k, jb)
+	}
+
+	return selfValue;
+}

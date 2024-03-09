@@ -88,7 +88,8 @@ void LadderEnt::CommonDraw(const EntDrawArgs& args)
 					args.meshBatch->AddModelMesh(*ladderModel, i, *laddderMaterial, instanceData);
 				}
 			}
-		});
+		}
+	);
 }
 
 void LadderEnt::UpdateTransformAndAABB()
@@ -122,7 +123,8 @@ void LadderEnt::UpdateTransformAndAABB()
 					selectionMesh.collisionMesh = &ladderCollisionMeshes[i];
 				}
 			}
-		});
+		}
+	);
 }
 
 void LadderEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirection)

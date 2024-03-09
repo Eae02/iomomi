@@ -49,7 +49,8 @@ void EditorState::EntityMoved(Ent& entity) const
 				{
 					ActivationLightStripEnt::GenerateForActivator(*world, activatorEntity);
 				}
-			});
+			}
+		);
 	}
 
 	ActivationLightStripEnt::GenerateForActivator(*world, entity);
@@ -58,7 +59,8 @@ void EditorState::EntityMoved(Ent& entity) const
 void EditorState::InvalidateWater() const
 {
 	world->entManager.ForEachWithComponent<LiquidPlaneComp>(
-		[&](Ent& entity) { entity.GetComponentMut<LiquidPlaneComp>()->MarkOutOfDate(); });
+		[&](Ent& entity) { entity.GetComponentMut<LiquidPlaneComp>()->MarkOutOfDate(); }
+	);
 }
 
 static_assert(EDITOR_NUM_TOOLS == magic_enum::enum_count<EditorTool>());

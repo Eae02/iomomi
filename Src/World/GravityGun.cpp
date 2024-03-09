@@ -1,7 +1,7 @@
 #include "GravityGun.hpp"
 
-#include "../Graphics/Water/IWaterSimulator.hpp"
 #include "../Settings.hpp"
+#include "../Water/WaterSimulator.hpp"
 #include "Player.hpp"
 #include "World.hpp"
 
@@ -34,12 +34,11 @@ static float LIGHT_INTENSITY_MAX = 20.0f;
 static float LIGHT_INTENSITY_FALL_TIME = 0.2f;
 static eg::ColorSRGB LIGHT_COLOR = eg::ColorSRGB::FromHex(0xb6fdff);
 
-static int* waterHighlightHovered = eg::TweakVarInt("water_highlight_hovered", 0, 0, 1);
-
 void GravityGun::SetBeamInstanceTransform(BeamInstance& instance)
 {
 	instance.particleEmitter.SetTransform(
-		glm::translate(glm::mat4(1), instance.beamPos) * glm::mat4(instance.rotationMatrix));
+		glm::translate(glm::mat4(1), instance.beamPos) * glm::mat4(instance.rotationMatrix)
+	);
 }
 
 void GravityGun::ChangeLevel(const glm::quat& oldPlayerRotation, const glm::quat& newPlayerRotation)
@@ -48,8 +47,9 @@ void GravityGun::ChangeLevel(const glm::quat& oldPlayerRotation, const glm::quat
 }
 
 void GravityGun::Update(
-	World& world, const PhysicsEngine& physicsEngine, IWaterSimulator* waterSim, eg::ParticleManager& particleManager,
-	const Player& player, const glm::mat4& inverseViewProj, float dt)
+	World& world, const PhysicsEngine& physicsEngine, WaterSimulator2* waterSim, eg::ParticleManager& particleManager,
+	const Player& player, const glm::mat4& inverseViewProj, float dt
+)
 {
 	glm::mat3 rotationMatrix = (glm::mat3_cast(player.Rotation()));
 	glm::mat3 invRotationMatrix = glm::transpose(rotationMatrix);
@@ -129,7 +129,7 @@ void GravityGun::Update(
 		}
 	}
 
-	eg::Ray viewRay = eg::Ray::UnprojectNDC(inverseViewProj, glm::vec2(0.0f));
+	const eg::Ray viewRay = eg::Ray::UnprojectNDC(inverseViewProj, glm::vec2(0.0f));
 	auto [intersectObject, intersectDist] = physicsEngine.RayIntersect(viewRay, RAY_MASK_BLOCK_GUN);
 
 	shouldShowControlHint = false;
@@ -144,51 +144,37 @@ void GravityGun::Update(
 		}
 	}
 
-	if (settings.keyShoot.IsDown() && !settings.keyShoot.WasDown())
+	if (settings.keyShoot.IsDown() && !settings.keyShoot.WasDown() && intersectObject != nullptr)
 	{
-		auto [waterIntersectDst, waterIntersectPos] = WaterRayIntersect(waterSim, viewRay);
-		if (intersectObject || !std::isinf(waterIntersectDst))
+		BeamInstance& beamInstance = m_beamInstances.emplace_back();
+
+		beamInstance.particleEmitter =
+			particleManager.AddEmitter(eg::GetAsset<eg::ParticleEmitterType>("Particles/BlueOrb.ype"));
+
+		glm::vec3 start = playerEyePos + rotationMatrix * translation;
+		glm::vec3 target = viewRay.GetPoint(intersectDist * 0.99f);
+
+		beamInstance.newDown = player.CurrentDown();
+		beamInstance.direction = glm::normalize(target - start) * ORB_SPEED;
+		beamInstance.targetPos = target;
+		beamInstance.timeRemaining = intersectDist / ORB_SPEED;
+		beamInstance.beamPos = start;
+		beamInstance.lightIntensity = 1;
+		beamInstance.lightInstanceID = LightSource::NextInstanceID();
+
+		glm::vec3 rotationL = glm::normalize(glm::cross(beamInstance.direction, glm::vec3(0, 1, 0)));
+		glm::vec3 rotationU = glm::normalize(glm::cross(beamInstance.direction, rotationL));
+		beamInstance.rotationMatrix = glm::mat3(rotationL, rotationU, glm::normalize(beamInstance.direction));
+
+		SetBeamInstanceTransform(beamInstance);
+
+		m_fireAnimationTime = 1;
+
+		beamInstance.entityToCharge = entGravityChargeable;
+
+		if (waterSim != nullptr)
 		{
-			BeamInstance& beamInstance = m_beamInstances.emplace_back();
-
-			beamInstance.particleEmitter =
-				particleManager.AddEmitter(eg::GetAsset<eg::ParticleEmitterType>("Particles/BlueOrb.ype"));
-
-			glm::vec3 start = playerEyePos + rotationMatrix * translation;
-			glm::vec3 target = viewRay.GetPoint(intersectDist * 0.99f);
-
-			beamInstance.newDown = player.CurrentDown();
-			beamInstance.direction = glm::normalize(target - start) * ORB_SPEED;
-			beamInstance.targetPos = target;
-			beamInstance.timeRemaining = intersectDist / ORB_SPEED;
-			beamInstance.beamPos = start;
-			beamInstance.lightIntensity = 1;
-			beamInstance.lightInstanceID = LightSource::NextInstanceID();
-
-			glm::vec3 rotationL = glm::normalize(glm::cross(beamInstance.direction, glm::vec3(0, 1, 0)));
-			glm::vec3 rotationU = glm::normalize(glm::cross(beamInstance.direction, rotationL));
-			beamInstance.rotationMatrix = glm::mat3(rotationL, rotationU, glm::normalize(beamInstance.direction));
-
-			SetBeamInstanceTransform(beamInstance);
-
-			m_fireAnimationTime = 1;
-
-			if (waterIntersectDst < intersectDist)
-			{
-				waterSim->ChangeGravity(waterIntersectPos, player.CurrentDown());
-			}
-			else
-			{
-				beamInstance.entityToCharge = entGravityChargeable;
-			}
-		}
-	}
-	else if (*waterHighlightHovered)
-	{
-		auto [waterIntersectDst, waterIntersectPos] = WaterRayIntersect(waterSim, viewRay);
-		if (!std::isinf(waterIntersectDst))
-		{
-			waterSim->ChangeGravity(waterIntersectPos, Dir::NegY, true);
+			waterSim->EnqueueGravityChange(viewRay, intersectDist, player.CurrentDown());
 		}
 	}
 }

@@ -14,8 +14,8 @@ static eg::PipelineRef GetBlurPipeline(eg::Format format)
 	}
 
 	eg::GraphicsPipelineCreateInfo pipelineCI;
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Blur.fs.glsl").DefaultVariant();
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").ToStageInfo();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Blur.fs.glsl").ToStageInfo();
 	pipelineCI.label = "BlurPipeline";
 	pipelineCI.colorAttachmentFormats[0] = format;
 	eg::Pipeline pipeline = eg::Pipeline::Create(pipelineCI);
@@ -80,7 +80,8 @@ void BlurRenderer::MaybeUpdateResolution(uint32_t newWidth, uint32_t newHeight)
 
 void BlurRenderer::DoBlurPass(
 	const glm::vec2& blurVector, const glm::vec2& sampleOffset, eg::TextureRef inputTexture, int inputLod,
-	eg::FramebufferRef dstFramebuffer) const
+	eg::FramebufferRef dstFramebuffer
+) const
 {
 	eg::RenderPassBeginInfo rp1BeginInfo;
 	rp1BeginInfo.framebuffer = dstFramebuffer.handle;
@@ -126,7 +127,8 @@ void BlurRenderer::Render(eg::TextureRef inputTexture) const
 	{
 		DoBlurPass(
 			glm::vec2(2 * pixelSize.x, 0), pixelSize / 2.0f, i != 0 ? eg::TextureRef(m_blurTextureOut) : inputTexture,
-			std::max(i - 1, 0), m_framebuffersTmp[i]);
+			std::max(i - 1, 0), m_framebuffersTmp[i]
+		);
 		ChangeUsageForShaderSample(m_blurTextureTmp, i);
 
 		pixelSize *= 2.0f;

@@ -57,9 +57,6 @@ target_compile_options(iomomi PRIVATE
 
 #Adds compiler specific options
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-	set_source_files_properties(Src/Graphics/Water/WaterSimulatorImpl.cpp PROPERTIES COMPILE_FLAGS "-O2 -g0")
-	set_source_files_properties(Src/Graphics/Water/WaterSimulatorImplAvx2.cpp PROPERTIES COMPILE_FLAGS "-O2 -g0 -mavx2")
-	set_source_files_properties(Src/Graphics/Water/WaterSimulatorImplAvx512.cpp PROPERTIES COMPILE_FLAGS "-O2 -g0 -mavx512f")
 	set_source_files_properties(Src/World/Collision.cpp PROPERTIES COMPILE_FLAGS "-O2 -g0")
 endif()
 
@@ -106,10 +103,6 @@ target_include_directories(iomomi SYSTEM PRIVATE
 if (${IOMOMI_EDITOR})
 	target_link_libraries(iomomi EGameImGui)
 	target_compile_definitions(iomomi PRIVATE -DIOMOMI_ENABLE_EDITOR)
-endif()
-
-if (${IOMOMI_WATER})
-	target_compile_definitions(iomomi PRIVATE -DIOMOMI_ENABLE_WATER)
 endif()
 
 # finds and adds protobuf

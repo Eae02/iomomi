@@ -1,4 +1,5 @@
 #include "EditorCamera.hpp"
+#include "../Settings.hpp"
 
 EditorCamera::EditorCamera()
 {
@@ -26,6 +27,8 @@ void EditorCamera::Update(float dt, bool& canUpdateInput)
 
 	if (eg::IsButtonDown(eg::Button::MouseRight))
 	{
+		m_isRotating = true;
+
 		glm::vec2 cursorDelta = eg::CursorPosDelta() / eg::DisplayScaleFactor();
 
 		canUpdateInput = false;
@@ -35,17 +38,19 @@ void EditorCamera::Update(float dt, bool& canUpdateInput)
 			const float OFFSET_SENSITIVITY = 0.002f;
 
 			glm::vec3 offset(m_rotationMatrix * glm::vec4(-cursorDelta.x, cursorDelta.y, 0, 1));
-			m_focus += offset * OFFSET_SENSITIVITY * m_distance;
+			m_focus += offset * OFFSET_SENSITIVITY * m_distance * settings.editorMouseSensitivity;
 		}
 		else
 		{
-			const float MOUSE_SENSITIVITY = -0.005f;
-			m_yaw += static_cast<float>(cursorDelta.x * YawSign()) * MOUSE_SENSITIVITY;
-			m_pitch += static_cast<float>(cursorDelta.y) * MOUSE_SENSITIVITY;
+			const float ROTATE_SENSITIVITY = -0.003f;
+			m_yaw +=
+				static_cast<float>(cursorDelta.x * YawSign()) * ROTATE_SENSITIVITY * settings.editorMouseSensitivity;
+			m_pitch += static_cast<float>(cursorDelta.y) * ROTATE_SENSITIVITY * settings.editorMouseSensitivity;
 		}
 	}
 	else
 	{
+		m_isRotating = false;
 		eg::SetRelativeMouseMode(false);
 	}
 

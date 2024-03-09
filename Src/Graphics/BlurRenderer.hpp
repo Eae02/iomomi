@@ -16,7 +16,8 @@ public:
 private:
 	void DoBlurPass(
 		const glm::vec2& blurVector, const glm::vec2& sampleOffset, eg::TextureRef inputTexture, int inputLod,
-		eg::FramebufferRef dstFramebuffer) const;
+		eg::FramebufferRef dstFramebuffer
+	) const;
 
 	uint32_t m_levels;
 	eg::Format m_format;

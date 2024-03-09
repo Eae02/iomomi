@@ -12,8 +12,7 @@ static void OnInit()
 {
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	StaticPropMaterial::InitializeForCommon3DVS(pipelineCI);
-	pipelineCI.fragmentShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PumpScreenMaterial.fs.glsl").DefaultVariant();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PumpScreenMaterial.fs.glsl").ToStageInfo();
 	pipelineCI.enableDepthWrite = true;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::Back;
@@ -58,8 +57,8 @@ PumpScreenMaterial::PumpScreenMaterial()
 
 	m_dataBuffer =
 		eg::Buffer(eg::BufferFlags::UniformBuffer | eg::BufferFlags::Update, sizeof(PumpMaterialData), nullptr);
-	m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0, RenderSettings::BUFFER_SIZE);
-	m_descriptorSet.BindUniformBuffer(m_dataBuffer, 1, 0, sizeof(PumpMaterialData));
+	m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
+	m_descriptorSet.BindUniformBuffer(m_dataBuffer, 1);
 	m_descriptorSet.BindTexture(*arrowTexture, 2, &arrowTextureSampler);
 
 	Update(0, PumpDirection::None);
@@ -113,7 +112,8 @@ void PumpScreenMaterial::Update(float dt, PumpDirection direction)
 			    *pumpAnimationGradient * a;
 
 			materialData.arrowRects[arrow] = glm::vec4(
-				glm::mix(minX, maxX, a), (1.0 - arrowHeightTS) / 2.0f, 1.0f / arrowWidthTS, 1.0f / arrowHeightTS);
+				glm::mix(minX, maxX, a), (1.0 - arrowHeightTS) / 2.0f, 1.0f / arrowWidthTS, 1.0f / arrowHeightTS
+			);
 
 			if (m_currentDirection == PumpDirection::Left)
 			{

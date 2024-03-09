@@ -13,7 +13,7 @@ static void OnInit()
 {
 	// clang-format off
 	eg::GraphicsPipelineCreateInfo pipelineCI;
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Emissive.vs.glsl").DefaultVariant();
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Emissive.vs.glsl").ToStageInfo();
 	pipelineCI.enableDepthWrite = true;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.depthCompare = eg::CompareOp::LessOrEqual;
@@ -30,7 +30,7 @@ static void OnInit()
 	// clang-format on
 
 	pipelineCI.label = "EmissiveGeometry";
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/EmissiveGeom.fs.glsl").DefaultVariant();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/EmissiveGeom.fs.glsl").ToStageInfo();
 	pipelineCI.numColorAttachments = 2;
 	pipelineCI.colorAttachmentFormats[0] = GB_COLOR_FORMAT;
 	pipelineCI.colorAttachmentFormats[1] = GB_COLOR_FORMAT;
@@ -38,13 +38,14 @@ static void OnInit()
 	emissiveGeometryPipeline = eg::Pipeline::Create(pipelineCI);
 
 	pipelineCI.enableDepthWrite = false;
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Emissive.fs.glsl").DefaultVariant();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Emissive.fs.glsl").ToStageInfo();
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
 	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
 	pipelineCI.blendStates[0] = eg::BlendState(
 		eg::BlendFunc::Add, eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One, eg::BlendFactor::SrcAlpha,
-		eg::BlendFactor::One);
+		eg::BlendFactor::One
+	);
 	pipelineCI.label = "EmissiveGameLight";
 	emissivePipelineGame = eg::Pipeline::Create(pipelineCI);
 

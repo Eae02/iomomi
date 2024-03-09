@@ -244,7 +244,8 @@ void EditorWorld::Update(float dt, EditorTool currentTool)
 		{
 			if (ent.m_type == EntranceExitEnt::Type::Entrance)
 				m_levelHasEntrance = true;
-		});
+		}
+	);
 
 	WorldUpdateArgs entityUpdateArgs = {};
 	entityUpdateArgs.mode = WorldMode::Editor;
@@ -252,9 +253,9 @@ void EditorWorld::Update(float dt, EditorTool currentTool)
 	entityUpdateArgs.world = m_world.get();
 	m_world->Update(entityUpdateArgs);
 
-	bool canUpdateInput = isWindowFocused && isWindowHovered && !eg::console::IsShown();
+	bool canUpdateInput = isWindowFocused && isWindowHovered && !eg::console::IsShown() && !m_camera.IsRotating();
 
-	if (canUpdateInput)
+	if (canUpdateInput || m_camera.IsRotating())
 	{
 		m_camera.Update(dt, canUpdateInput);
 	}
@@ -295,10 +296,11 @@ void EditorWorld::Update(float dt, EditorTool currentTool)
 
 	m_icons.erase(
 		std::remove_if(m_icons.begin(), m_icons.end(), [&](const EditorIcon& icon) { return icon.m_behindScreen; }),
-		m_icons.end());
+		m_icons.end()
+	);
 	std::sort(
-		m_icons.begin(), m_icons.end(),
-		[&](const EditorIcon& a, const EditorIcon& b) { return a.m_depth > b.m_depth; });
+		m_icons.begin(), m_icons.end(), [&](const EditorIcon& a, const EditorIcon& b) { return a.m_depth > b.m_depth; }
+	);
 
 	m_hoveredIcon = -1;
 	m_editorState.anyIconHovered = false;
@@ -344,7 +346,8 @@ void EditorWorld::Update(float dt, EditorTool currentTool)
 	// Invalidates water if the sum of all WaterBlockComp::editorVersion has changed
 	int sumOfWaterBlockedVersion = 0;
 	m_world->entManager.ForEachWithComponent<WaterBlockComp>(
-		[&](const Ent& entity) { sumOfWaterBlockedVersion += entity.GetComponent<WaterBlockComp>()->editorVersion; });
+		[&](const Ent& entity) { sumOfWaterBlockedVersion += entity.GetComponent<WaterBlockComp>()->editorVersion; }
+	);
 	if (m_previousSumOfWaterBlockedVersion != -1 && m_previousSumOfWaterBlockedVersion != sumOfWaterBlockedVersion)
 	{
 		m_editorState.InvalidateWater();
@@ -385,12 +388,13 @@ void EditorWorld::Draw(EditorTool currentTool, RenderContext& renderCtx, Prepare
 		m_spriteBatch.Draw(
 			iconsTexture, m_icons[i].m_rectangle, color,
 			CreateSrcRectangle(m_icons[i].selected ? 1 : (static_cast<int>(i) == m_hoveredIcon ? 10 : 0)),
-			eg::SpriteFlags::None);
+			eg::SpriteFlags::None
+		);
 
 		// Draws the icon
 		m_spriteBatch.Draw(
-			iconsTexture, m_icons[i].m_rectangle, color, CreateSrcRectangle(m_icons[i].iconIndex),
-			eg::SpriteFlags::None);
+			iconsTexture, m_icons[i].m_rectangle, color, CreateSrcRectangle(m_icons[i].iconIndex), eg::SpriteFlags::None
+		);
 	}
 
 	// Sends the editor draw message to entities
@@ -408,9 +412,11 @@ void EditorWorld::Draw(EditorTool currentTool, RenderContext& renderCtx, Prepare
 		[&](Ent& entity)
 		{
 			m_components->entity.DrawEntityBox(
-				m_primRenderer, entity, currentTool == EditorTool::Entities && IsEntitySelected(&entity));
+				m_primRenderer, entity, currentTool == EditorTool::Entities && IsEntitySelected(&entity)
+			);
 			entity.EditorDraw(drawArgs);
-		});
+		}
+	);
 
 	m_primRenderer.End();
 
@@ -456,8 +462,8 @@ void EditorWorld::Draw(EditorTool currentTool, RenderContext& renderCtx, Prepare
 		constexpr float SAVED_TEXT_FADE_TIME = 0.5f;
 		const float a = std::min(m_savedTextTimer / SAVED_TEXT_FADE_TIME, 1.0f);
 		m_spriteBatch.DrawText(
-			*style::UIFontSmall, "Saved", glm::vec2(10), eg::ColorLin(1, 1, 1, a), 1, nullptr,
-			eg::TextFlags::DropShadow);
+			*style::UIFontSmall, "Saved", glm::vec2(10), eg::ColorLin(1, 1, 1, a), 1, nullptr, eg::TextFlags::DropShadow
+		);
 	}
 
 	if (m_isUpdatingThumbnailView)
@@ -468,7 +474,8 @@ void EditorWorld::Draw(EditorTool currentTool, RenderContext& renderCtx, Prepare
 
 		m_spriteBatch.DrawRect(labelRect, eg::ColorLin(0, 0, 0, 0.8f));
 		m_spriteBatch.DrawTextMultiline(
-			eg::SpriteFont::DevFont(), label, glm::vec2(labelRect.x + 5, labelY), eg::ColorLin(eg::ColorLin::White));
+			eg::SpriteFont::DevFont(), label, glm::vec2(labelRect.x + 5, labelY), eg::ColorLin(eg::ColorLin::White)
+		);
 	}
 
 	eg::RenderPassBeginInfo spriteRPBeginInfo;
@@ -480,7 +487,8 @@ void EditorWorld::Draw(EditorTool currentTool, RenderContext& renderCtx, Prepare
 			.screenHeight = static_cast<int>(std::round(m_editorState.windowRect.h)),
 			.framebufferFormat = EDITOR_FB_FORMAT,
 		},
-		spriteRPBeginInfo);
+		spriteRPBeginInfo
+	);
 
 	renderTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 }
@@ -516,5 +524,6 @@ void EditorWorld::ResetCamera()
 {
 	auto [voxelMin, voxelMax] = m_world->voxels.CalculateBounds();
 	m_camera.Reset(eg::Sphere(
-		glm::vec3(voxelMin + voxelMax) / 2.0f, glm::distance(glm::vec3(voxelMin), glm::vec3(voxelMax)) / 2.0f));
+		glm::vec3(voxelMin + voxelMax) / 2.0f, glm::distance(glm::vec3(voxelMin), glm::vec3(voxelMax)) / 2.0f
+	));
 }

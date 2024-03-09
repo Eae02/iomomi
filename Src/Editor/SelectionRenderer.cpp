@@ -9,9 +9,8 @@ static eg::Pipeline postPipeline;
 static void OnInit()
 {
 	eg::GraphicsPipelineCreateInfo modelPipelineCI;
-	modelPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/EdSelection.vs.glsl").DefaultVariant();
-	modelPipelineCI.fragmentShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/EdSelection.fs.glsl").DefaultVariant();
+	modelPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/EdSelection.vs.glsl").ToStageInfo();
+	modelPipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/EdSelection.fs.glsl").ToStageInfo();
 	modelPipelineCI.cullMode = eg::CullMode::None;
 	modelPipelineCI.vertexBindings[VERTEX_BINDING_POSITION] = { VERTEX_STRIDE_POSITION, eg::InputRate::Vertex };
 	modelPipelineCI.vertexAttributes[0] = { VERTEX_BINDING_POSITION, eg::DataType::Float32, 3, 0 };
@@ -21,9 +20,9 @@ static void OnInit()
 	modelPipeline = eg::Pipeline::Create(modelPipelineCI);
 
 	eg::GraphicsPipelineCreateInfo postPipelineCI;
-	postPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
+	postPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").ToStageInfo();
 	postPipelineCI.fragmentShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/EdSelectionPost.fs.glsl").DefaultVariant();
+		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/EdSelectionPost.fs.glsl").ToStageInfo();
 	postPipelineCI.cullMode = eg::CullMode::None;
 	postPipelineCI.numColorAttachments = 1;
 	postPipelineCI.label = "EdSelectionPost";

@@ -116,7 +116,7 @@ void main()
 {
 	vec2 waterDepths = texture(waterDepthSampler, texCoord_in).xy;
 	
-	bool underwater = waterDepths.r < UNDERWATER_DEPTH;
+	bool underwater = waterDepths.r < W_UNDERWATER_DEPTH;
 	
 	vec4 worldColor = texture(worldColorSampler, texCoord_in);
 	

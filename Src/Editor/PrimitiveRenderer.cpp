@@ -8,8 +8,8 @@ eg::Pipeline primPipeline;
 void PrimitiveRenderer::OnInit()
 {
 	eg::GraphicsPipelineCreateInfo pipelineCI;
-	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Primitive.vs.glsl").DefaultVariant();
-	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Primitive.fs.glsl").DefaultVariant();
+	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Primitive.vs.glsl").ToStageInfo();
+	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Primitive.fs.glsl").ToStageInfo();
 	pipelineCI.vertexBindings[0] = { sizeof(Vertex), eg::InputRate::Vertex };
 	pipelineCI.vertexAttributes[0] = eg::VertexAttribute(0, eg::DataType::Float32, 3, offsetof(Vertex, position));
 	pipelineCI.vertexAttributes[1] = eg::VertexAttribute(0, eg::DataType::UInt8Norm, 4, offsetof(Vertex, color));
@@ -96,7 +96,8 @@ void PrimitiveRenderer::AddCollisionMesh(const eg::CollisionMesh& mesh, const eg
 	for (size_t i = 0; i < mesh.NumIndices(); i += 3)
 	{
 		AddTriangle(
-			baseIndex + mesh.Indices()[i], baseIndex + mesh.Indices()[i + 1], baseIndex + mesh.Indices()[i + 2]);
+			baseIndex + mesh.Indices()[i], baseIndex + mesh.Indices()[i + 1], baseIndex + mesh.Indices()[i + 2]
+		);
 	}
 }
 
@@ -107,7 +108,8 @@ void PrimitiveRenderer::End()
 
 	// Sorts triangles by depth
 	std::sort(
-		m_triangles.begin(), m_triangles.end(), [](const Triangle& a, const Triangle& b) { return a.depth < b.depth; });
+		m_triangles.begin(), m_triangles.end(), [](const Triangle& a, const Triangle& b) { return a.depth < b.depth; }
+	);
 
 	const uint64_t verticesBytes = m_vertices.size() * sizeof(Vertex);
 	const uint64_t indicesBytes = m_triangles.size() * 3 * sizeof(uint32_t);

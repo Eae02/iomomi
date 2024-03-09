@@ -58,7 +58,8 @@ constexpr float ENABLE_ANIMATION_TIME = 0.2f;
 void GravitySwitchEnt::Update(const WorldUpdateArgs& args)
 {
 	m_enableAnimationTime = eg::AnimateTo(
-		m_enableAnimationTime, m_activatable.AllSourcesActive() ? 1.0f : 0.0f, args.dt / ENABLE_ANIMATION_TIME);
+		m_enableAnimationTime, m_activatable.AllSourcesActive() ? 1.0f : 0.0f, args.dt / ENABLE_ANIMATION_TIME
+	);
 
 	m_centerMaterial.timeOffset += glm::mix(0.2f, 1.0f, m_enableAnimationTime) * args.dt;
 }
@@ -102,7 +103,8 @@ void GravitySwitchEnt::GameDraw(const EntGameDrawArgs& args)
 		m_volLightMaterial.switchPosition = m_position;
 		args.transparentMeshBatch->AddNoData(
 			GravitySwitchVolLightMaterial::GetMesh(), m_volLightMaterial,
-			DepthDrawOrder(m_volLightMaterial.switchPosition));
+			DepthDrawOrder(m_volLightMaterial.switchPosition)
+		);
 	}
 }
 

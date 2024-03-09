@@ -201,10 +201,16 @@ public:
 	template <typename T>
 	static void DefineType(const char* typeName)
 	{
+		std::string_view name;
+		if constexpr (T::EntName != nullptr)
+			name = T::EntName;
+		else
+			name = RemoveEntSuffix(typeName);
+
 		DefineTypeImpl(
-			T::TypeID, EntType{ T::EntFlags, T::EntName ? T::EntName : RemoveEntSuffix(typeName),
-		                        T::EntPrettyName ? T::EntPrettyName : TypeNameToPrettyName(typeName),
-		                        &Ent::CreateCallback<T>, &CloneEntity<T> });
+			T::TypeID, EntType{ T::EntFlags, name, T::EntPrettyName ? T::EntPrettyName : TypeNameToPrettyName(typeName),
+		                        &Ent::CreateCallback<T>, &CloneEntity<T> }
+		);
 	}
 
 	static const EntType* GetTypeByID(EntTypeID typeID);

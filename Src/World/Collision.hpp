@@ -33,13 +33,16 @@ struct OrientedBox
 };
 
 std::optional<glm::vec3> CheckCollisionAABBPolygon(
-	const eg::AABB& aabb, std::span<const glm::vec3> polyVertices, const glm::vec3& moveDir, float shiftAmount = 0.01f);
+	const eg::AABB& aabb, std::span<const glm::vec3> polyVertices, const glm::vec3& moveDir, float shiftAmount = 0.01f
+);
 
 std::optional<glm::vec3> CheckCollisionAABBTriangleMesh(
 	const eg::AABB& aabb, const glm::vec3& moveDir, const eg::CollisionMesh& mesh, const glm::mat4& meshTransform,
-	bool flipWinding = false);
+	bool flipWinding = false
+);
 
 std::optional<glm::vec3> CheckCollisionAABBOrientedBox(
-	const eg::AABB& aabb, const OrientedBox& orientedBox, const glm::vec3& moveDir, float shiftAmount = 0.01f);
+	const eg::AABB& aabb, const OrientedBox& orientedBox, const glm::vec3& moveDir, float shiftAmount = 0.01f
+);
 
 std::optional<float> RayIntersectOrientedBox(const eg::Ray& ray, const OrientedBox& box);
