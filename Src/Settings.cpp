@@ -139,6 +139,7 @@ const SettingEntry settingEntries[] = {
 
 	MakeDisplayModeSetting("resx", &eg::FullscreenDisplayMode::resolutionX),
 	MakeDisplayModeSetting("resy", &eg::FullscreenDisplayMode::resolutionY),
+	MakeNumberSetting("resScale", &Settings::renderResolutionScale),
 	MakeDisplayModeSetting("refreshRate", &eg::FullscreenDisplayMode::refreshRate),
 	MakeBoolSetting("vsync", &Settings::vsync),
 	MakeStringSetting("prefGPUName", &Settings::preferredGPUName),
@@ -161,12 +162,12 @@ const SettingEntry settingEntries[] = {
 
 void LoadSettings()
 {
-	const bool maybeSlowGPU = eg::GetGraphicsDeviceInfo().deviceVendorName.find("Intel") != std::string_view::npos ||
-	                          eg::GetGraphicsDeviceInfo().deviceName.find("Intel") != std::string_view::npos;
-	if (maybeSlowGPU)
-	{
-		settings.reflectionsQuality = QualityLevel::VeryLow;
-	}
+	// const bool maybeSlowGPU = eg::GetGraphicsDeviceInfo().deviceVendorName.find("Intel") != std::string_view::npos ||
+	//                           eg::GetGraphicsDeviceInfo().deviceName.find("Intel") != std::string_view::npos;
+	// if (maybeSlowGPU)
+	// {
+	// 	settings.reflectionsQuality = QualityLevel::VeryLow;
+	// }
 
 	settingsPath = appDataDirPath + "settings.yaml";
 

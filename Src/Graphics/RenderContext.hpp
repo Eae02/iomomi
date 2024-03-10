@@ -11,7 +11,7 @@ struct RenderContext
 	eg::MeshBatch meshBatch;
 	eg::MeshBatchOrdered transparentMeshBatch;
 	DeferredRenderer renderer;
-	WaterRenderer waterRenderer;
+	std::optional<WaterRenderer> waterRenderer;
 	SSR ssr;
 	PostProcessor postProcessor;
 	ParticleRenderer particleRenderer;

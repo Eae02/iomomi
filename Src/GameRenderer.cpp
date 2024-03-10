@@ -303,7 +303,7 @@ void GameRenderer::Render(
 		auto gpuTimerWater = eg::StartGPUTimer("Water (early)");
 		auto cpuTimerWater = eg::StartCPUTimer("Water (early)");
 		eg::DC.DebugLabelBegin("Water (early)");
-		m_renderCtx->waterRenderer.RenderEarly(
+		m_renderCtx->waterRenderer->RenderEarly(
 			m_waterSimulator->GetPositionsGPUBuffer(), numWaterParticles, m_rtManager
 		);
 		eg::DC.DebugLabelEnd();
@@ -356,7 +356,7 @@ void GameRenderer::Render(
 		auto gpuTimerWater = eg::StartGPUTimer("Water (post)");
 		auto cpuTimerWater = eg::StartCPUTimer("Water (post)");
 		eg::DC.DebugLabelBegin("Water (post)");
-		m_renderCtx->waterRenderer.RenderPost(m_rtManager);
+		m_renderCtx->waterRenderer->RenderPost(m_rtManager);
 		eg::DC.DebugLabelEnd();
 	}
 	else
@@ -449,7 +449,7 @@ void GameRenderer::Render(
 			eg::DC.DebugLabelBegin("Glass Blur");
 
 			m_rtManager.RenderTextureUsageHintFS(RenderTex::LitWithoutBlurredGlass);
-			m_glassBlurRenderer.Render(m_rtManager.GetRenderTexture(RenderTex::LitWithoutBlurredGlass));
+			m_glassBlurRenderer.Render(m_rtManager.GetRenderTexture(RenderTex::LitWithoutBlurredGlass), 1.0f);
 			mDrawArgs.glassBlurTexture = m_glassBlurRenderer.OutputTexture();
 
 			eg::DC.DebugLabelEnd();
@@ -517,4 +517,13 @@ void GameRenderer::Render(
 	}
 
 	eg::DC.DebugLabelEnd();
+}
+
+std::pair<uint32_t, uint32_t> GameRenderer::GetScaledRenderResolution()
+{
+	uint32_t renderResolutionX =
+		(uint32_t)(std::round((float)eg::CurrentResolutionX() * settings.renderResolutionScale));
+	uint32_t renderResolutionY =
+		(uint32_t)(std::round((float)eg::CurrentResolutionY() * settings.renderResolutionScale));
+	return std::make_pair(renderResolutionX, renderResolutionY);
 }

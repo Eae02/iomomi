@@ -11,6 +11,7 @@
 #include "MainGameState.hpp"
 #include "MainMenuGameState.hpp"
 #include "ThumbnailRenderer.hpp"
+#include "Water/WaterSimulationShaders.hpp"
 
 pcg32_fast globalRNG;
 
@@ -20,6 +21,9 @@ Game::Game()
 {
 	globalRNG = pcg32_fast(std::time(nullptr));
 	GameRenderer::instance = new GameRenderer(m_renderCtx);
+
+	if (waterSimShaders.isWaterSupported)
+		m_renderCtx.waterRenderer = WaterRenderer();
 
 #ifdef IOMOMI_ENABLE_EDITOR
 	editor = new Editor(m_renderCtx);
@@ -168,8 +172,17 @@ Game::~Game()
 
 static float* minSimulationFramerate = eg::TweakVarFloat("min_sim_fps", 20, 0);
 
+static int* waterForceFallbackShaders = eg::TweakVarInt("water_force_fallback_shaders", 0, 0, 1);
+
 void Game::RunFrame(float dt)
 {
+	if (*waterForceFallbackShaders != waterSimShaders.forceUseFallbackShaders)
+	{
+		waterSimShaders.forceUseFallbackShaders = *waterForceFallbackShaders;
+		eg::gal::DeviceWaitIdle();
+		waterSimShaders.Initialize();
+	}
+	
 	if (levelIndexFromCmdArg != -1 && eg::FrameIdx() >= 10)
 	{
 		std::unique_ptr<World> world = LoadLevelWorld(levels[levelIndexFromCmdArg], false);

@@ -119,9 +119,9 @@ static inline void ChangeUsageForShaderSample(eg::TextureRef texture, int mipLev
 	eg::DC.Barrier(texture, barrier);
 }
 
-void BlurRenderer::Render(eg::TextureRef inputTexture) const
+void BlurRenderer::Render(eg::TextureRef inputTexture, float blurScale) const
 {
-	glm::vec2 pixelSize = 1.0f / glm::vec2(m_inputWidth, m_inputHeight);
+	glm::vec2 pixelSize = blurScale / glm::vec2(m_inputWidth, m_inputHeight);
 
 	for (int i = 0; i < static_cast<int>(m_levels); i++)
 	{

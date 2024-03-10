@@ -1,6 +1,11 @@
 const uint MAX_SUPPORTED_SUBGROUP_SIZE = 128;
 
+#ifdef VNoSubgroups
+uint localIndex = gl_LocalInvocationID.x;
+#else
 uint localIndex = gl_SubgroupInvocationID + gl_SubgroupID * gl_SubgroupSize;
+#endif
+
 uint globalIndex = gl_WorkGroupID.x * gl_WorkGroupSize.x + localIndex;
 
 bool shouldSwap(uint k, uint b, uvec2 vi, uvec2 vo)
@@ -17,7 +22,7 @@ uvec2 sort2(uint k, uint b, uvec2 vi, uvec2 vo)
 	return shouldSwap(k, b, vi, vo) ? vo : vi;
 }
 
-shared uvec2 sharedData[gl_WorkGroupSize.x];
+shared uvec2 sharedData[1024];
 
 uvec2 compareSortSharedMemory(uint k, uint b, uvec2 selfValue)
 {
@@ -29,11 +34,15 @@ uvec2 compareSortSharedMemory(uint k, uint b, uvec2 selfValue)
 	return selfValue;
 }
 
+#ifdef VNoSubgroups
+#define COMPARE_SORT_SUBGROUP(k, b) selfValue = compareSortSharedMemory(k, b, selfValue);
+#else
 #define COMPARE_SORT_SUBGROUP(k, b)                                                                                    \
 	if (gl_SubgroupSize > (b))                                                                                         \
 		selfValue = sort2(k, b, selfValue, subgroupShuffleXor(selfValue, b));                                          \
 	else                                                                                                               \
 		selfValue = compareSortSharedMemory(k, b, selfValue);
+#endif
 
 uvec2 sortForLargeKSmallJ(uint k, uint jbMax, uvec2 selfValue)
 {

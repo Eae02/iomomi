@@ -2,7 +2,7 @@
 
 #include "../WaterCommon.glh"
 
-layout(local_size_x = W_CHANGE_GRAVITY_WG_SIZE, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = W_COMMON_WG_SIZE, local_size_y = 1, local_size_z = 1) in;
 
 layout(set = 0, binding = 0) restrict buffer ParticleDataBuffer
 {

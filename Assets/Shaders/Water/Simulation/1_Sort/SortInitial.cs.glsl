@@ -1,6 +1,10 @@
 #version 450 core
 
+#pragma variants VDefault VNoSubgroups
+
+#ifndef VNoSubgroups
 #extension GL_KHR_shader_subgroup_shuffle : enable
+#endif
 
 layout(local_size_x_id = 0, local_size_y = 1, local_size_z = 1) in;
 
@@ -9,7 +13,7 @@ layout(local_size_x_id = 0, local_size_y = 1, local_size_z = 1) in;
 
 layout(set = 0, binding = 0) restrict readonly buffer PositionsBuffer
 {
-	vec4 inputPositions[];
+	uvec4 inputPositions[];
 };
 
 layout(set = 0, binding = 1) restrict writeonly buffer OutputBuffer
@@ -30,7 +34,7 @@ void main()
 
 	if (globalIndex < pc.numParticles)
 	{
-		vec3 pos = inputPositions[globalIndex].xyz;
+		vec3 pos = uintBitsToFloat(inputPositions[globalIndex].xyz);
 		uvec3 gridCell = getGridCell(pos, pc.gridOrigin);
 		uint gridCellZCurveIndex = zCurveIndex10(gridCell);
 

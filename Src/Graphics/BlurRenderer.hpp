@@ -7,7 +7,7 @@ public:
 
 	void MaybeUpdateResolution(uint32_t newWidth, uint32_t newHeight);
 
-	void Render(eg::TextureRef inputTexture) const;
+	void Render(eg::TextureRef inputTexture, float blurScale) const;
 
 	const eg::Texture& OutputTexture() const { return m_blurTextureOut; }
 

@@ -11,58 +11,8 @@
 constexpr int MIN_AIR_VOXEL = -10;
 constexpr int MAX_AIR_VOXEL = 10;
 
-static std::vector<glm::vec3> GeneratePositions(pcg32_fast& rng, uint32_t numParticles)
-{
-	std::uniform_real_distribution<float> positionDistribution(0.0, 1.0);
-
-	std::uniform_int_distribution<int> cellDistribution(MIN_AIR_VOXEL, MAX_AIR_VOXEL);
-
-	std::vector<glm::ivec3> cells(numParticles / 100);
-	for (glm::ivec3& cell : cells)
-	{
-		cell.x = cellDistribution(rng);
-		cell.y = cellDistribution(rng);
-		cell.z = cellDistribution(rng);
-	}
-
-	std::vector<glm::vec3> positions(numParticles);
-	for (glm::vec3& pos : positions)
-	{
-		size_t cellIndex = std::uniform_int_distribution<size_t>(0, cells.size() - 1)(rng);
-
-		pos.x = static_cast<float>(cells[cellIndex].x) + positionDistribution(rng);
-		pos.y = static_cast<float>(cells[cellIndex].y) + positionDistribution(rng);
-		pos.z = static_cast<float>(cells[cellIndex].z) + positionDistribution(rng);
-	}
-
-	return positions;
-}
-
-std::vector<glm::vec2> CalculateDensities(std::span<const glm::vec3> positions)
-{
-	std::vector<glm::vec2> densities(positions.size());
-
-	for (uint32_t a = 0; a < positions.size(); a++)
-	{
-		glm::vec2 density(1.0f);
-
-		for (uint32_t b = 0; b < positions.size(); b++)
-		{
-			if (a == b)
-				continue;
-
-			float q = std::max(1.0f - glm::distance(positions[a], positions[b]) / W_INFLUENCE_RADIUS, 0.0f);
-			float q2 = q * q;
-			float q3 = q * q2;
-			float q4 = q2 * q2;
-			density += glm::vec2(q3, q4);
-		}
-
-		densities[a] = density;
-	}
-
-	return densities;
-}
+std::vector<glm::vec3> WaterTestGeneratePositions(pcg32_fast& rng, uint32_t numParticles, int minAirVoxel, int maxAirVoxel);
+std::vector<glm::vec2> WaterTestCalculateDensities(std::span<const glm::vec3> positions);
 
 constexpr eg::BufferFlags DOWNLOAD_BUFFER_FLAGS = eg::BufferFlags::MapRead | eg::BufferFlags::CopyDst |
                                                   eg::BufferFlags::Download | eg::BufferFlags::HostAllocate |
@@ -80,6 +30,9 @@ struct DownloadBuffer
 	void CopyData(eg::CommandContext& cc, eg::BufferRef from, uint64_t fromOffset, uint64_t copySize)
 	{
 		cc.CopyBuffer(from, buffer, fromOffset, 0, copySize);
+		cc.Barrier(
+			buffer, eg::BufferBarrier{ .oldUsage = eg::BufferUsage::CopyDst, .newUsage = eg::BufferUsage::HostRead }
+		);
 	}
 
 	template <typename T>
@@ -101,7 +54,7 @@ struct WaterSimulatorTester
 	static WaterSimulatorTester Create(uint32_t numParticles, uint32_t seed)
 	{
 		pcg32_fast rng(seed);
-		std::vector<glm::vec3> positions = GeneratePositions(rng, numParticles);
+		std::vector<glm::vec3> positions = WaterTestGeneratePositions(rng, numParticles, MIN_AIR_VOXEL, MAX_AIR_VOXEL);
 
 		eg::CommandContext cc = eg::CommandContext::CreateDeferred(eg::Queue::Main);
 
@@ -157,23 +110,46 @@ struct WaterSimulatorTester
 		std::cout << "cpu wait time: " << ((endTime - startTime).count() / 1E6) << "ms" << std::endl;
 	}
 
-	static void RunSingleSortTest(uint32_t numParticles, uint32_t seed);
+	static void RunSingleSortTest(uint32_t numParticles, uint32_t seed, int finalPhase);
 };
 
-void WaterSimulatorTests::RunSortTests()
+enum
 {
-	WaterSimulatorTester::RunSingleSortTest(25000, 3);
+	TEST_PHASE_SORT,
+	TEST_PHASE_CELL_PREPARE,
+	TEST_PHASE_DENSITY,
+	TEST_PHASE_ACCEL,
+	TEST_PHASE_VELOCITY_DIFFUSION,
+	TEST_PHASE_MOVE_AND_COLLISION,
+};
 
-	// for (uint32_t size : { 1024, 1500, 2048, 2049, 2500, 10000 })
-	// {
-	// 	for (uint32_t seed = 0; seed < 5; seed++)
-	// 	{
-	// 		WaterSimulatorTester::RunSingleSortTest(size, seed);
-	// 	}
-	// }
+void RunWaterTests(std::string_view cmdLine)
+{
+	std::vector<std::string_view> parts;
+	eg::SplitString(cmdLine, ':', parts);
+
+	int until = TEST_PHASE_MOVE_AND_COLLISION;
+	int numParticles = 1000;
+	int numIterations = 1;
+	if (parts.size() >= 2)
+		numParticles = std::stoi(std::string(parts[1]));
+	if (parts.size() >= 3)
+	{
+		if (parts[2] == "sort")
+			until = TEST_PHASE_SORT;
+		if (parts[2] == "prep")
+			until = TEST_PHASE_CELL_PREPARE;
+		if (parts[2] == "density")
+			until = TEST_PHASE_DENSITY;
+	}
+	if (parts.size() >= 4)
+		numIterations = std::stoi(std::string(parts[3]));
+
+	for (int i = 0; i < numIterations; i++)
+		WaterSimulatorTester::RunSingleSortTest(numParticles, i, until);
 }
 
-void WaterSimulatorTester::RunSingleSortTest(uint32_t numParticles, uint32_t seed)
+void WaterSimulatorTester::RunSingleSortTest(uint32_t numParticles, uint32_t seed, int finalPhase)
 {
 	std::cout << "RunSingleSortTest(" << numParticles << ", " << seed << ")" << std::endl;
 
@@ -189,23 +165,34 @@ void WaterSimulatorTester::RunSingleSortTest(uint32_t numParticles, uint32_t see
 	DownloadBuffer densitiesDownloadBuffer(tester.simulator->m_numParticles * sizeof(glm::vec2));
 
 	tester.simulator->RunSortPhase(tester.cc);
-	tester.simulator->RunCellPreparePhase(tester.cc);
-	tester.simulator->CalculateDensity(tester.cc);
-	tester.simulator->CalculateAcceleration(tester.cc, 1.0f / 60.0f);
-	tester.simulator->VelocityDiffusion(tester.cc);
-	tester.simulator->MoveAndCollision(tester.cc, 1.0f / 60.0f);
+	if (finalPhase >= TEST_PHASE_CELL_PREPARE)
+		tester.simulator->RunCellPreparePhase(tester.cc);
+	if (finalPhase >= TEST_PHASE_DENSITY)
+		tester.simulator->CalculateDensity(tester.cc);
+	if (finalPhase >= TEST_PHASE_ACCEL)
+		tester.simulator->CalculateAcceleration(tester.cc, 1.0f / 60.0f);
+	if (finalPhase >= TEST_PHASE_VELOCITY_DIFFUSION)
+		tester.simulator->VelocityDiffusion(tester.cc);
+	if (finalPhase >= TEST_PHASE_MOVE_AND_COLLISION)
+		tester.simulator->MoveAndCollision(tester.cc, 1.0f / 60.0f);
 
 	tester.BarrierForDownload(tester.simulator->m_sortedByCellBuffer);
 	sortedByCellDownbuf.CopyData(tester.cc, tester.simulator->m_sortedByCellBuffer);
 
-	tester.BarrierForDownload(tester.simulator->m_octGroupRangesBuffer);
-	octGroupRangesDownbuf.CopyData(tester.cc, tester.simulator->m_octGroupRangesBuffer);
+	if (finalPhase >= TEST_PHASE_CELL_PREPARE)
+	{
+		tester.BarrierForDownload(tester.simulator->m_octGroupRangesBuffer);
+		octGroupRangesDownbuf.CopyData(tester.cc, tester.simulator->m_octGroupRangesBuffer);
 
-	tester.BarrierForDownload(tester.simulator->m_totalNumOctGroupsBuffer);
-	totalNumOctGroupsDownbuf.CopyData(tester.cc, tester.simulator->m_totalNumOctGroupsBuffer);
+		tester.BarrierForDownload(tester.simulator->m_totalNumOctGroupsBuffer);
+		totalNumOctGroupsDownbuf.CopyData(tester.cc, tester.simulator->m_totalNumOctGroupsBuffer);
+	}
 
-	tester.BarrierForDownload(tester.simulator->m_densityBuffer);
-	densitiesDownloadBuffer.CopyData(tester.cc, tester.simulator->m_densityBuffer);
+	if (finalPhase >= TEST_PHASE_DENSITY)
+	{
+		tester.BarrierForDownload(tester.simulator->m_densityBuffer);
+		densitiesDownloadBuffer.CopyData(tester.cc, tester.simulator->m_densityBuffer);
+	}
 
 	tester.FinishSubmitAndWait();
 
@@ -220,6 +207,9 @@ void WaterSimulatorTester::RunSingleSortTest(uint32_t numParticles, uint32_t see
 
 	if (!isSorted)
 		throw std::runtime_error("data is not sorted");
+
+	if (finalPhase < TEST_PHASE_CELL_PREPARE)
+		return;
 
 	std::unordered_set<uint32_t> activeCellsSet;
 	for (uint32_t i = 0; i < numParticles; i++)
@@ -250,13 +240,14 @@ void WaterSimulatorTester::RunSingleSortTest(uint32_t numParticles, uint32_t see
 					break;
 				sortedByCellIdx++;
 			}
-
-			// std::cout << "L: " << rangeStartCellID << " " << (sortedByCellIdx - octGroupRanges[i]) << std::endl;
 		}
 	}
 
+	if (finalPhase < TEST_PHASE_DENSITY)
+		return;
+
 	std::span<glm::vec2> densitiesFromGpu = densitiesDownloadBuffer.GetData<glm::vec2>();
-	std::vector<glm::vec2> expectedDensities = CalculateDensities(tester.positions);
+	std::vector<glm::vec2> expectedDensities = WaterTestCalculateDensities(tester.positions);
 	if (densitiesFromGpu.size() != expectedDensities.size())
 		throw std::runtime_error("mismatched density count");
 

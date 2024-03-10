@@ -147,9 +147,24 @@ void InitOptionsMenu()
 		settings.fullscreenDisplayMode = eg::FullscreenDisplayModes()[value];
 	};
 
+	Slider resolutionScaleSlider;
+	resolutionScaleSlider.label = "Resolution Scale";
+	resolutionScaleSlider.getValue = [] { return settings.renderResolutionScale; };
+	resolutionScaleSlider.setValue = [](float v) { settings.renderResolutionScale = v; };
+	resolutionScaleSlider.min = 0.25f;
+	resolutionScaleSlider.max = 2.0f;
+	resolutionScaleSlider.increment = 0.05f;
+	resolutionScaleSlider.getDisplayValueString = [](float value)
+	{
+		static char buffer[16];
+		snprintf(buffer, sizeof(buffer), "%d%%", static_cast<int>(std::round(value * 100)));
+		return buffer;
+	};
+
 	leftWidgetList.AddWidget(SubtitleWidget("Display"));
 	leftWidgetList.AddWidget(InitSettingsCB(&Settings::displayMode, "Display Mode"));
 	leftWidgetList.AddWidget(std::move(resolutionCB));
+	leftWidgetList.AddWidget(std::move(resolutionScaleSlider));
 	leftWidgetList.AddWidget(InitSettingsToggleButton(&Settings::vsync, "VSync", "On", "Off"));
 
 #ifndef __APPLE__

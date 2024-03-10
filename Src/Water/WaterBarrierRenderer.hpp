@@ -12,23 +12,21 @@ public:
 	void Update(float dt);
 
 private:
-	eg::Pipeline m_calcPipeline;
-	eg::Pipeline m_fadePipeline;
+	eg::Pipeline m_barrierPipeline;
 
 	eg::Texture m_defaultTexture;
+	
+	eg::DescriptorSet m_descriptorSet;
 
 	struct Barrier
 	{
 		std::shared_ptr<GravityBarrierEnt> entity;
-		eg::Texture tmpTexture;
-		eg::Texture fadeTexture;
+		eg::Texture texture;
+		eg::Framebuffer framebuffer;
 		glm::mat4 transform;
-		eg::DescriptorSet descriptorSetCalc;
-		eg::DescriptorSet descriptorSetFade;
 	};
 
 	std::vector<Barrier> m_barriers;
 
 	uint32_t m_numParticles;
-	uint32_t m_dispatchCount;
 };

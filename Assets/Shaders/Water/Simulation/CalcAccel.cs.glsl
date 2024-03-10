@@ -1,9 +1,6 @@
 #version 450 core
 
-#extension GL_KHR_shader_subgroup_vote : enable
-#extension GL_KHR_shader_subgroup_ballot : enable
-#extension GL_KHR_shader_subgroup_arithmetic : enable
-#extension GL_KHR_shader_subgroup_clustered : enable
+#pragma variants VSubgroups VSubgroupsNoClustered VNoSubgroups
 
 layout(push_constant) uniform PC
 {

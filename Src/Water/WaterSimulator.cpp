@@ -9,6 +9,8 @@
 #include <bit>
 #include <cstring>
 
+static_assert((WaterSimulator2::NUM_PARTICLES_ALIGNMENT % W_COMMON_WG_SIZE) == 0);
+
 static uint32_t RoundToNextPowerOf2(uint32_t v)
 {
 	uint32_t p = 1;
@@ -96,6 +98,12 @@ static eg::Buffer CreateRandomOffsetsBuffer(pcg32_fast& rng, eg::CommandContext&
 	return randomOffsetsBuffer;
 }
 
+static const eg::BufferBarrier barrierCopyToStorageBufferRW = {
+	.oldUsage = eg::BufferUsage::CopyDst,
+	.newUsage = eg::BufferUsage::StorageBufferReadWrite,
+	.newAccess = eg::ShaderAccessFlags::Compute,
+};
+
 void WaterSimulator2::SetBufferData(eg::CommandContext& cc, eg::BufferRef buffer, uint64_t dataSize, const void* data)
 {
 	eg::Buffer uploadBuffer = eg::Buffer(STAGING_BUFFER_FLAGS, dataSize, nullptr);
@@ -104,20 +112,12 @@ void WaterSimulator2::SetBufferData(eg::CommandContext& cc, eg::BufferRef buffer
 
 	cc.CopyBuffer(uploadBuffer, buffer, 0, 0, dataSize);
 
-	cc.Barrier(
-		buffer,
-		eg::BufferBarrier{
-			.oldUsage = eg::BufferUsage::CopyDst,
-			.newUsage = eg::BufferUsage::StorageBufferReadWrite,
-			.newAccess = eg::ShaderAccessFlags::Compute,
-		}
-	);
+	cc.Barrier(buffer, barrierCopyToStorageBufferRW);
 }
 
 WaterSimulator2::WaterSimulator2(const WaterSimulatorInitArgs& args, eg::CommandContext& cc) : m_rng(time(nullptr))
 {
 	EG_ASSERT((args.positions.size() % NUM_PARTICLES_ALIGNMENT) == 0);
-	EG_ASSERT((args.positions.size() % waterSimShaders.commonWorkGroupSize) == 0);
 
 	eg::BufferFlags downloadFlags = {};
 	if (args.enableDataDownload)
@@ -178,9 +178,33 @@ WaterSimulator2::WaterSimulator2(const WaterSimulatorInitArgs& args, eg::Command
 		.label = "WaterSortedByCell",
 	});
 
+	// The cell num oct groups buffer may need to be padded since the W_OCT_GROUPS_PREFIX_SUM_WG_SIZE (256) is larger
+	// than the guarenteed alignment of m_numParticles (128)
+	const uint32_t numOctGroupsBufferPaddedLen =
+		eg::RoundToNextMultiple(m_numParticles, W_OCT_GROUPS_PREFIX_SUM_WG_SIZE);
 	m_cellNumOctGroupsBuffer = eg::Buffer(eg::BufferCreateInfo{
+		.flags =
+			eg::BufferFlags::StorageBuffer | eg::BufferFlags::ManualBarrier | eg::BufferFlags::CopyDst | downloadFlags,
+		.size = sizeof(uint32_t) * numOctGroupsBufferPaddedLen,
+	});
+
+	// The padding of the numOctGroups buffer needs to be filled with zeroes because it won't be written to by
+	// DetectCellEdges.cs but the prefix sum shaders need this padding to be zeroed.
+	if (numOctGroupsBufferPaddedLen != m_numParticles)
+	{
+		cc.FillBuffer(
+			m_cellNumOctGroupsBuffer, m_numParticles * sizeof(uint32_t),
+			(numOctGroupsBufferPaddedLen - m_numParticles) * sizeof(uint32_t), 0
+		);
+
+		cc.Barrier(m_cellNumOctGroupsBuffer, barrierCopyToStorageBufferRW);
+	}
+
+	const uint64_t cellNumOctGroupsPrefixSumBufferSize =
+		sizeof(uint32_t) * (W_OCT_GROUPS_PREFIX_SUM_WG_SIZE + numOctGroupsBufferPaddedLen);
+	m_cellNumOctGroupsPrefixSumBuffer = eg::Buffer(eg::BufferCreateInfo{
 		.flags = eg::BufferFlags::StorageBuffer | eg::BufferFlags::ManualBarrier | downloadFlags,
-		.size = sizeof(uint32_t) * m_numParticles,
+		.size = cellNumOctGroupsPrefixSumBufferSize,
 	});
 
 	const uint64_t octGroupRangesBufferSize = sizeof(uint32_t) * m_numParticles * W_MAX_OCT_GROUPS_PER_CELL;
@@ -190,49 +214,25 @@ WaterSimulator2::WaterSimulator2(const WaterSimulatorInitArgs& args, eg::Command
 		.size = octGroupRangesBufferSize,
 	});
 
+	// Writes a dummy value to the octGroupRanges buffer to help the test understand where the written data ends
 	if (args.enableDataDownload)
 	{
 		cc.FillBuffer(m_octGroupRangesBuffer, 0, octGroupRangesBufferSize, 0xcc);
 	}
 
+	// This buffer stores the total number of oct groups in the first 4 bytes, followed by two ones in the next 8 bytes
+	// so that it can be used for DispatchIndirect.
 	m_totalNumOctGroupsBuffer = eg::Buffer(eg::BufferCreateInfo{
 		.flags = eg::BufferFlags::StorageBuffer | eg::BufferFlags::CopyDst | eg::BufferFlags::IndirectCommands |
 	             eg::BufferFlags::ManualBarrier | downloadFlags,
 		.size = sizeof(uint32_t) * 3,
 	});
 
+	// Initialize the total oct groups buffer with 0 1 1
 	const uint32_t totalNumOctGroupsInitialData[3] = { 0, 1, 1 };
 	SetBufferData(cc, m_totalNumOctGroupsBuffer, sizeof(totalNumOctGroupsInitialData), totalNumOctGroupsInitialData);
 
 	m_randomOffsetsBuffer = CreateRandomOffsetsBuffer(m_rng, cc);
-
-	// Creates m_numOctGroupsPrefixSumLayerOffsets
-	uint32_t numOctGroupsPrefixSumLayerOffset = 0;
-	uint32_t numOctGroupsPrefixSumCurrentLayerLength = m_numParticles / waterSimShaders.commonWorkGroupSize;
-	for (uint32_t i = 0; i < 4; i++)
-	{
-		if (numOctGroupsPrefixSumCurrentLayerLength == 0)
-		{
-			m_numOctGroupsPrefixSumLayerOffsets[i] = UINT32_MAX;
-			m_numOctGroupsPrefixSumLayerLengths[i] = 0;
-		}
-		else
-		{
-			m_numOctGroupsPrefixSumLayerOffsets[i] = numOctGroupsPrefixSumLayerOffset;
-			m_numOctGroupsPrefixSumLayerLengths[i] = numOctGroupsPrefixSumCurrentLayerLength;
-
-			numOctGroupsPrefixSumLayerOffset += numOctGroupsPrefixSumCurrentLayerLength;
-			if ((numOctGroupsPrefixSumCurrentLayerLength % waterSimShaders.commonWorkGroupSize) != 0)
-				numOctGroupsPrefixSumLayerOffset++;
-
-			numOctGroupsPrefixSumCurrentLayerLength /= waterSimShaders.commonWorkGroupSize;
-		}
-	}
-
-	m_cellNumOctGroupsPrefixSumBuffer = eg::Buffer(eg::BufferCreateInfo{
-		.flags = eg::BufferFlags::StorageBuffer | eg::BufferFlags::ManualBarrier | downloadFlags,
-		.size = sizeof(uint32_t) * numOctGroupsPrefixSumLayerOffset,
-	});
 
 	// Creates the far sort index buffer and uploads index buffer data
 	const uint64_t indexBufferSize = sortFarIndexBuffer.indices.size() * sizeof(uint32_t);
@@ -246,13 +246,13 @@ WaterSimulator2::WaterSimulator2(const WaterSimulatorInitArgs& args, eg::Command
 		SetBufferData(cc, m_farSortIndexBuffer, indexBufferSize, sortFarIndexBuffer.indices.data());
 	}
 
-	glm::uvec3 cellOffsetsTextureSize = glm::ceil(glm::vec3(maxBounds - minBounds + 1) / W_INFLUENCE_RADIUS);
+	m_cellOffsetsTextureSize = glm::uvec3(glm::ceil(glm::vec3(maxBounds - minBounds + 1) / W_INFLUENCE_RADIUS));
 	m_cellOffsetsTexture = eg::Texture::Create3D(eg::TextureCreateInfo{
 		.flags = eg::TextureFlags::StorageImage | eg::TextureFlags::CopyDst | eg::TextureFlags::ManualBarrier,
 		.mipLevels = 1,
-		.width = cellOffsetsTextureSize.x,
-		.height = cellOffsetsTextureSize.y,
-		.depth = cellOffsetsTextureSize.z,
+		.width = m_cellOffsetsTextureSize.x,
+		.height = m_cellOffsetsTextureSize.y,
+		.depth = m_cellOffsetsTextureSize.z,
 		.format = eg::Format::R16_UInt,
 	});
 
@@ -276,20 +276,22 @@ WaterSimulator2::WaterSimulator2(const WaterSimulatorInitArgs& args, eg::Command
 	m_detectCellEdgesDS.BindStorageBuffer(m_sortedByCellBuffer, 0);
 	m_detectCellEdgesDS.BindStorageBuffer(m_particleDataBuffer, 1);
 	m_detectCellEdgesDS.BindStorageBuffer(m_cellNumOctGroupsBuffer, 2);
-	m_detectCellEdgesDS.BindStorageBuffer(m_cellNumOctGroupsPrefixSumBuffer, 3);
-	m_detectCellEdgesDS.BindStorageImage(m_cellOffsetsTexture, 4);
+	m_detectCellEdgesDS.BindStorageImage(m_cellOffsetsTexture, 3);
 	m_detectCellEdgesDS.BindStorageBuffer(
-		m_particleDataForCPUBuffer, 5, eg::BIND_BUFFER_OFFSET_DYNAMIC, m_particleDataForCPUBufferBytesPerFrame
+		m_particleDataForCPUBuffer, 4, eg::BIND_BUFFER_OFFSET_DYNAMIC, m_particleDataForCPUBufferBytesPerFrame
 	);
 
-	m_octGroupsPrefixSumDS = eg::DescriptorSet(waterSimShaders.octGroupsPrefixSum, 0);
-	m_octGroupsPrefixSumDS.BindStorageBuffer(m_cellNumOctGroupsPrefixSumBuffer, 0);
+	m_octGroupsPrefixSumLevel1DS = eg::DescriptorSet(waterSimShaders.octGroupsPrefixSumLevel1, 0);
+	m_octGroupsPrefixSumLevel1DS.BindStorageBuffer(m_cellNumOctGroupsBuffer, 0);
+	m_octGroupsPrefixSumLevel1DS.BindStorageBuffer(m_cellNumOctGroupsPrefixSumBuffer, 1);
+
+	m_octGroupsPrefixSumLevel2DS = eg::DescriptorSet(waterSimShaders.octGroupsPrefixSumLevel2, 0);
+	m_octGroupsPrefixSumLevel2DS.BindStorageBuffer(m_cellNumOctGroupsPrefixSumBuffer, 0, 0, sizeof(uint32_t) * 256);
+	m_octGroupsPrefixSumLevel2DS.BindStorageBuffer(m_totalNumOctGroupsBuffer, 1, 0, sizeof(uint32_t));
 
 	m_writeOctGroupsDS = eg::DescriptorSet(waterSimShaders.writeOctGroups, 0);
 	m_writeOctGroupsDS.BindStorageBuffer(m_cellNumOctGroupsPrefixSumBuffer, 0);
-	m_writeOctGroupsDS.BindStorageBuffer(m_cellNumOctGroupsBuffer, 1);
-	m_writeOctGroupsDS.BindStorageBuffer(m_octGroupRangesBuffer, 2);
-	m_writeOctGroupsDS.BindStorageBuffer(m_totalNumOctGroupsBuffer, 3);
+	m_writeOctGroupsDS.BindStorageBuffer(m_octGroupRangesBuffer, 1);
 
 	static const eg::DescriptorSetBinding ForEachNearDescriptorBindings[] = {
 		{
@@ -386,6 +388,7 @@ static const eg::BufferBarrier computeToComputeBarrier = {
 void WaterSimulator2::RunSortPhase(eg::CommandContext& cc)
 {
 	auto gpuTimer = eg::StartGPUTimer("WaterSort");
+	cc.DebugLabelBegin("WaterSort");
 
 	const uint32_t sortInitialPushConstants[4] = {
 		std::bit_cast<uint32_t>(static_cast<float>(m_voxelMinBounds.x)),
@@ -426,32 +429,41 @@ void WaterSimulator2::RunSortPhase(eg::CommandContext& cc)
 	}
 
 	cc.Barrier(m_sortedByCellBuffer, computeToComputeBarrier);
+
+	cc.DebugLabelEnd();
 }
 
 void WaterSimulator2::RunCellPreparePhase(eg::CommandContext& cc)
 {
 	auto gpuTimer = eg::StartGPUTimer("WaterCellPrepare");
+	cc.DebugLabelBegin("WaterCellPrepare");
 
 	cc.Barrier(
 		m_cellOffsetsTexture,
 		{
 			.oldUsage = eg::TextureUsage::Undefined,
-			.newUsage = eg::TextureUsage::CopyDst,
+			.newUsage = eg::TextureUsage::ILSWrite,
+			.newAccess = eg::ShaderAccessFlags::Compute,
 		}
 	);
 
-	cc.ClearColorTexture(m_cellOffsetsTexture, 0, glm::ivec4(0xFFFF));
+	cc.BindPipeline(waterSimShaders.clearCellOffsets);
+	cc.BindStorageImage(m_cellOffsetsTexture, 0, 0);
+	glm::uvec3 clearDispatchCount = glm::max((m_cellOffsetsTextureSize + glm::uvec3(3)) / glm::uvec3(4), glm::uvec3(1));
+	cc.DispatchCompute(clearDispatchCount.x, clearDispatchCount.y, clearDispatchCount.z);
 
 	cc.Barrier(
 		m_cellOffsetsTexture,
 		{
-			.oldUsage = eg::TextureUsage::CopyDst,
+			.oldUsage = eg::TextureUsage::ILSWrite,
+			.oldAccess = eg::ShaderAccessFlags::Compute,
 			.newUsage = eg::TextureUsage::ILSWrite,
 			.newAccess = eg::ShaderAccessFlags::Compute,
 		}
 	);
 
 	// ** DetectCellEdges **
+	cc.DebugLabelBegin("DetectCellEdges");
 	cc.BindPipeline(waterSimShaders.detectCellEdges);
 	uint32_t dataForCPUDynamicOffset = eg::CFrameIdx() * m_particleDataForCPUBufferBytesPerFrame;
 	cc.BindDescriptorSet(m_detectCellEdgesDS, 0, { &dataForCPUDynamicOffset, 1 });
@@ -468,56 +480,40 @@ void WaterSimulator2::RunCellPreparePhase(eg::CommandContext& cc)
 	};
 	cc.PushConstants(0, sizeof(detectCellEdgesPushConstants), detectCellEdgesPushConstants);
 
-	cc.DispatchCompute(m_numParticles / waterSimShaders.commonWorkGroupSize, 1, 1);
+	cc.DispatchCompute(m_numParticles / W_COMMON_WG_SIZE, 1, 1);
 
 	cc.Barrier(m_cellNumOctGroupsBuffer, computeToComputeBarrier);
 
+	cc.DebugLabelEnd();
+
 	// ** OctGroupsPrefixSum **
-	cc.BindPipeline(waterSimShaders.octGroupsPrefixSum);
-	cc.BindDescriptorSet(m_octGroupsPrefixSumDS, 0);
-	for (uint32_t i = 0; i < m_numOctGroupsPrefixSumLayerOffsets.size(); i++)
-	{
-		if (m_numOctGroupsPrefixSumLayerOffsets[i] == UINT32_MAX)
-			break;
-
-		cc.Barrier(m_cellNumOctGroupsPrefixSumBuffer, computeToComputeBarrier);
-
-		const uint32_t inputLen = m_numOctGroupsPrefixSumLayerLengths[i];
-
-		const uint32_t nextOffset = i + 1 == m_numOctGroupsPrefixSumLayerOffsets.size()
-		                                ? UINT32_MAX
-		                                : m_numOctGroupsPrefixSumLayerOffsets[i + 1];
-
-		const uint32_t pushConstants[] = {
-			m_numOctGroupsPrefixSumLayerOffsets[i],
-			inputLen,
-			nextOffset,
-		};
-		cc.PushConstants(0, sizeof(pushConstants), pushConstants);
-
-		uint32_t wgCount = (inputLen + waterSimShaders.commonWorkGroupSize - 1) / waterSimShaders.commonWorkGroupSize;
-		cc.DispatchCompute(wgCount, 1, 1);
-	}
-
+	const uint32_t octGroupSectionCount =
+		(m_numParticles + W_OCT_GROUPS_PREFIX_SUM_WG_SIZE - 1) / W_OCT_GROUPS_PREFIX_SUM_WG_SIZE;
+	cc.DebugLabelBegin("OctGroupsPrefixSumLevel1");
+	cc.BindPipeline(waterSimShaders.octGroupsPrefixSumLevel1);
+	cc.BindDescriptorSet(m_octGroupsPrefixSumLevel1DS, 0);
+	cc.DispatchCompute(octGroupSectionCount, 1, 1);
 	cc.Barrier(m_cellNumOctGroupsPrefixSumBuffer, computeToComputeBarrier);
+	cc.DebugLabelEnd();
+
+	cc.DebugLabelBegin("OctGroupsPrefixSumLevel2");
+	cc.BindPipeline(waterSimShaders.octGroupsPrefixSumLevel2);
+	cc.BindDescriptorSet(m_octGroupsPrefixSumLevel2DS, 0);
+	cc.PushConstants(0, octGroupSectionCount);
+	cc.DispatchCompute(1, 1, 1);
+	cc.Barrier(m_cellNumOctGroupsPrefixSumBuffer, computeToComputeBarrier);
+	cc.DebugLabelEnd();
 
 	// ** WriteOctGroups **
+	cc.DebugLabelBegin("WriteOctGroups");
 	cc.BindPipeline(waterSimShaders.writeOctGroups);
 	cc.BindDescriptorSet(m_writeOctGroupsDS, 0);
 
-	const uint32_t writeOctGroupsPushConstants[] = {
-		m_numOctGroupsPrefixSumLayerOffsets[0],
-		m_numOctGroupsPrefixSumLayerOffsets[1],
-		m_numOctGroupsPrefixSumLayerOffsets[2],
-		m_numOctGroupsPrefixSumLayerOffsets[3],
-		m_numParticles - 1,
-	};
-	cc.PushConstants(0, sizeof(writeOctGroupsPushConstants), writeOctGroupsPushConstants);
-
-	cc.DispatchCompute(m_numParticles / waterSimShaders.commonWorkGroupSize, 1, 1);
+	cc.DispatchCompute(m_numParticles / W_COMMON_WG_SIZE, 1, 1);
 
 	cc.Barrier(m_particleDataBuffer, computeToComputeBarrier);
 	cc.Barrier(m_octGroupRangesBuffer, computeToComputeBarrier);
+
 	cc.Barrier(
 		m_totalNumOctGroupsBuffer,
 		eg::BufferBarrier{
@@ -537,11 +533,15 @@ void WaterSimulator2::RunCellPreparePhase(eg::CommandContext& cc)
 			.subresource = eg::TextureSubresource(),
 		}
 	);
+
+	cc.DebugLabelEnd();
+	cc.DebugLabelEnd();
 }
 
 void WaterSimulator2::CalculateDensity(eg::CommandContext& cc)
 {
 	auto gpuTimer = eg::StartGPUTimer("WaterDensity");
+	cc.DebugLabelBegin("WaterDensity");
 
 	cc.BindPipeline(waterSimShaders.calculateDensity);
 
@@ -557,14 +557,17 @@ void WaterSimulator2::CalculateDensity(eg::CommandContext& cc)
 	};
 	cc.PushConstants(0, sizeof(pushConstants), pushConstants);
 
-	eg::gal::DispatchComputeIndirect(cc.Handle(), m_totalNumOctGroupsBuffer.handle, 0);
+	cc.DispatchComputeIndirect(m_totalNumOctGroupsBuffer, 0);
 
 	cc.Barrier(m_densityBuffer, computeToComputeBarrier);
+
+	cc.DebugLabelEnd();
 }
 
 void WaterSimulator2::CalculateAcceleration(eg::CommandContext& cc, float dt)
 {
 	auto gpuTimer = eg::StartGPUTimer("WaterAccel");
+	cc.DebugLabelBegin("WaterAccel");
 
 	cc.BindPipeline(waterSimShaders.calculateAcceleration);
 
@@ -583,14 +586,17 @@ void WaterSimulator2::CalculateAcceleration(eg::CommandContext& cc, float dt)
 	};
 	cc.PushConstants(0, sizeof(pushConstants), pushConstants);
 
-	eg::gal::DispatchComputeIndirect(cc.Handle(), m_totalNumOctGroupsBuffer.handle, 0);
+	cc.DispatchComputeIndirect(m_totalNumOctGroupsBuffer, 0);
 
 	cc.Barrier(m_particleDataBuffer, computeToComputeBarrier);
+
+	cc.DebugLabelEnd();
 }
 
 void WaterSimulator2::VelocityDiffusion(eg::CommandContext& cc)
 {
 	auto gpuTimer = eg::StartGPUTimer("WaterVelocityDiffusion");
+	cc.DebugLabelBegin("WaterVelocityDiffusion");
 
 	cc.BindPipeline(waterSimShaders.velocityDiffusion);
 
@@ -607,9 +613,11 @@ void WaterSimulator2::VelocityDiffusion(eg::CommandContext& cc)
 	};
 	cc.PushConstants(0, sizeof(pushConstants), pushConstants);
 
-	eg::gal::DispatchComputeIndirect(cc.Handle(), m_totalNumOctGroupsBuffer.handle, 0);
+	cc.DispatchComputeIndirect(m_totalNumOctGroupsBuffer, 0);
 
 	cc.Barrier(m_particleDataBuffer, computeToComputeBarrier);
+
+	cc.DebugLabelEnd();
 }
 
 static float* waterGlowTime = eg::TweakVarFloat("water_glow_time", 0.5f);
@@ -617,6 +625,7 @@ static float* waterGlowTime = eg::TweakVarFloat("water_glow_time", 0.5f);
 void WaterSimulator2::MoveAndCollision(eg::CommandContext& cc, float dt)
 {
 	auto gpuTimer = eg::StartGPUTimer("WaterMoveAndCollision");
+	cc.DebugLabelBegin("WaterMoveAndCollision");
 
 	cc.BindPipeline(waterSimShaders.moveAndCollision);
 
@@ -640,9 +649,9 @@ void WaterSimulator2::MoveAndCollision(eg::CommandContext& cc, float dt)
 	};
 	cc.PushConstants(0, sizeof(pushConstants), pushConstants);
 
-	static_assert((WaterSimulator2::NUM_PARTICLES_ALIGNMENT % W_MOVE_AND_COLLISION_WG_SIZE) == 0);
+	cc.DispatchCompute(m_numParticles / W_COMMON_WG_SIZE, 1, 1);
 
-	cc.DispatchCompute(m_numParticles / W_MOVE_AND_COLLISION_WG_SIZE, 1, 1);
+	cc.DebugLabelEnd();
 }
 
 void WaterSimulator2::Update(eg::CommandContext& cc, float dt, const World& world, bool paused)
@@ -701,7 +710,7 @@ void WaterSimulator2::Update(eg::CommandContext& cc, float dt, const World& worl
 
 		cc.PushConstants(0, static_cast<uint32_t>(gravityChangeResult->newGravity));
 
-		cc.DispatchCompute(m_numParticles / W_CHANGE_GRAVITY_WG_SIZE, 1, 1);
+		cc.DispatchCompute(m_numParticles / W_COMMON_WG_SIZE, 1, 1);
 
 		cc.Barrier(m_particleDataBuffer, computeToComputeBarrier);
 
@@ -712,7 +721,7 @@ void WaterSimulator2::Update(eg::CommandContext& cc, float dt, const World& worl
 
 	auto gpuTimer = eg::StartGPUTimer("WaterSim");
 
-	// dt = 1.0f / 60.0f;
+	dt = std::min(dt, 1.0f / 60.0f);
 
 	RunSortPhase(cc);
 	RunCellPreparePhase(cc);
@@ -728,6 +737,15 @@ void WaterSimulator2::Update(eg::CommandContext& cc, float dt, const World& worl
 			.newUsage = eg::BufferUsage::StorageBufferRead,
 			.oldAccess = eg::ShaderAccessFlags::Compute,
 			.newAccess = eg::ShaderAccessFlags::Vertex | eg::ShaderAccessFlags::Compute,
+		}
+	);
+
+	cc.Barrier(
+		m_particleDataForCPUBuffer,
+		{
+			.oldUsage = eg::BufferUsage::StorageBufferWrite,
+			.newUsage = eg::BufferUsage::HostRead,
+			.oldAccess = eg::ShaderAccessFlags::Compute,
 		}
 	);
 }

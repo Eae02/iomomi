@@ -1,6 +1,3 @@
 #pragma once
 
-namespace WaterSimulatorTests
-{
-void RunSortTests();
-}
+void RunWaterTests(std::string_view cmdLine);

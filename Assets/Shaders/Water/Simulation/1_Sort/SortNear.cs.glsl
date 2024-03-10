@@ -1,6 +1,10 @@
 #version 450 core
 
+#pragma variants VDefault VNoSubgroups
+
+#ifndef VNoSubgroups
 #extension GL_KHR_shader_subgroup_shuffle : enable
+#endif
 
 layout(local_size_x_id = 0, local_size_y = 1, local_size_z = 1) in;
 

@@ -1,5 +1,10 @@
-#include "Collision.hpp"
+#include <span>
+#include <vector>
+#include <optional>
+#include <cstdint>
+#include <EGame/EG.hpp>
 
+#include "Collision.hpp"
 #include "Dir.hpp"
 
 std::optional<glm::vec3> CheckCollisionAABBPolygon(

@@ -181,14 +181,17 @@ void MainMenuGameState::RunFrame(float dt)
 	}
 
 #if !defined(NDEBUG)
-	std::string_view infoLine = "debug";
+	std::string infoLine = "Iomomi debug build";
 #elif defined(BUILD_ID)
-	std::string_view infoLine = BUILD_ID " " BUILD_DATE;
+	std::string infoLine = "Iomomi " BUILD_ID " compiled " BUILD_DATE;
 #else
-	std::string_view infoLine = BUILD_DATE;
+	std::string infoLine = "Iomomi compiled " BUILD_DATE;
 #endif
-	m_spriteBatch.DrawText(
-		*style::UIFontSmall, infoLine, glm::vec2(5), eg::ColorLin(1, 1, 1, 0.2f), 1, nullptr, eg::TextFlags::DropShadow
+	infoLine += eg::Concat({ "\nGfx: ", eg::GetGraphicsDeviceInfo().apiName, " on ", eg::GetGraphicsDeviceInfo().deviceName });
+
+	m_spriteBatch.DrawTextMultiline(
+		*style::UIFontSmall, infoLine, glm::vec2(5.0f, 20.0f), eg::ColorLin(1, 1, 1, 0.2f), 1, 0, nullptr,
+		eg::TextFlags::DropShadow
 	);
 
 	if (audioInitializationFailed)
@@ -393,13 +396,15 @@ void MainMenuGameState::RenderWorld(float dt)
 		GameRenderer::instance->WorldChanged(*m_world);
 	}
 
+	auto [renderResolutionX, renderResolutionY] = GameRenderer::GetScaledRenderResolution();
+
 	eg::Format inputFormat = eg::Format::R8G8B8A8_UNorm;
-	if (m_worldRenderTexture.handle == nullptr || eg::CurrentResolutionX() != (int)m_worldRenderTexture.Width() ||
-	    eg::CurrentResolutionY() != (int)m_worldRenderTexture.Height() || inputFormat != m_worldRenderTexture.Format())
+	if (m_worldRenderTexture.handle == nullptr || renderResolutionX != m_worldRenderTexture.Width() ||
+	    renderResolutionY != m_worldRenderTexture.Height() || inputFormat != m_worldRenderTexture.Format())
 	{
 		eg::TextureCreateInfo textureCI;
-		textureCI.width = eg::CurrentResolutionX();
-		textureCI.height = eg::CurrentResolutionY();
+		textureCI.width = renderResolutionX;
+		textureCI.height = renderResolutionY;
 		textureCI.mipLevels = 1;
 		textureCI.format = inputFormat;
 		textureCI.flags = eg::TextureFlags::ShaderSample | eg::TextureFlags::FramebufferAttachment;
@@ -408,7 +413,7 @@ void MainMenuGameState::RenderWorld(float dt)
 		eg::FramebufferAttachment attachment(m_worldRenderTexture.handle);
 		m_worldRenderFramebuffer = eg::Framebuffer({ &attachment, 1 });
 	}
-	m_worldBlurRenderer.MaybeUpdateResolution(eg::CurrentResolutionX(), eg::CurrentResolutionY());
+	m_worldBlurRenderer.MaybeUpdateResolution(renderResolutionX, renderResolutionY);
 
 	m_worldGameTime += dt;
 
@@ -453,12 +458,12 @@ void MainMenuGameState::RenderWorld(float dt)
 	m_worldFadeInProgress = std::min(m_worldFadeInProgress + dt * 2, 1.0f);
 
 	GameRenderer::instance->Render(
-		*m_world, m_worldGameTime, dt, m_worldRenderFramebuffer.handle, inputFormat, eg::CurrentResolutionX(),
-		eg::CurrentResolutionY()
+		*m_world, m_worldGameTime, dt, m_worldRenderFramebuffer.handle, inputFormat, renderResolutionX,
+		renderResolutionY
 	);
 
 	m_worldRenderTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
-	m_worldBlurRenderer.Render(m_worldRenderTexture);
+	m_worldBlurRenderer.Render(m_worldRenderTexture, settings.renderResolutionScale);
 
 	eg::Rectangle dstRect;
 	if (eg::CurrentGraphicsAPI() == eg::GraphicsAPI::OpenGL)

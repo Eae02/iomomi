@@ -315,8 +315,10 @@ void MainGameState::RunFrame(float dt)
 		GameRenderer::instance->m_waterSimulator->Update(eg::DC, dt, *m_world, m_pausedMenu.isPaused);
 	}
 
+	auto [renderResolutionX, renderResolutionY] = GameRenderer::GetScaledRenderResolution();
+
 	GameRenderer::instance->Render(
-		*m_world, m_gameTime, dt, nullptr, eg::Format::DefaultColor, eg::CurrentResolutionX(), eg::CurrentResolutionY()
+		*m_world, m_gameTime, dt, nullptr, eg::Format::DefaultColor, renderResolutionX, renderResolutionY
 	);
 
 	UpdateAndDrawHud(dt);

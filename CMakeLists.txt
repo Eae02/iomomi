@@ -55,10 +55,11 @@ target_compile_options(iomomi PRIVATE
 	$<$<COMPILE_LANGUAGE:CXX>:-Wconversion-null>
 )
 
-#Adds compiler specific options
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-	set_source_files_properties(Src/World/Collision.cpp PROPERTIES COMPILE_FLAGS "-O2 -g0")
-endif()
+#Always complile these files with optimization on
+set_source_files_properties(Src/World/Collision.cpp PROPERTIES COMPILE_FLAGS "-O2 -g0")
+set_source_files_properties(Src/Water/WaterSimulatorTestsOptimized.cpp PROPERTIES COMPILE_FLAGS "-O2 -g0")
+set_source_files_properties(Src/World/Collision.cpp PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
+set_source_files_properties(Src/Water/WaterSimulatorTestsOptimized.cpp PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
 
 target_link_libraries(iomomi EGame)
 

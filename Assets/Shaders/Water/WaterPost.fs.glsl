@@ -204,7 +204,7 @@ void main()
 		screenSpaceRefractCoord.xyz /= screenSpaceRefractCoord.w;
 		
 		vec2 refractTexcoordTarget = (screenSpaceRefractCoord.xy + vec2(1.0)) / 2.0;
-		if (EG_VULKAN)
+		if (!EG_OPENGL)
 			refractTexcoordTarget.y = 1 - refractTexcoordTarget.y;
 		refractTexcoordTarget = clamp(refractTexcoordTarget, vec2(0.0), vec2(1.0));
 		

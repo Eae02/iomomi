@@ -14,7 +14,6 @@ private:
 	std::weak_ptr<Ent> m_connectingActivator;
 
 	glm::vec3 m_lightStripInsertPos;
-	Dir m_lightStripInsertNormal;
 
 	std::weak_ptr<ActivationLightStripEnt> m_editingLightStripEntity;
 	int m_editingWayPointIndex = -1;

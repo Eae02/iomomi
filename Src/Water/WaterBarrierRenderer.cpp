@@ -1,34 +1,47 @@
 #include "WaterBarrierRenderer.hpp"
+#include "WaterSimulationShaders.hpp"
 #include "WaterSimulator.hpp"
 
 #include "../World/World.hpp"
 
-static constexpr float TEXTURE_DENSITY = 2;
-static constexpr uint32_t LOCAL_SIZE_X = 64;
+#include <glm/gtx/matrix_operation.hpp>
 
-static constexpr uint32_t LOCAL_SIZE_FADE = 8;
+static constexpr float BARRIER_DISTANCE_TEXEL_SIZE = 0.5f; // The size of one texel in world space
+
+static constexpr eg::Format BARRIER_DEPTH_FORMAT = eg::Format::Depth16;
 
 WaterBarrierRenderer::WaterBarrierRenderer()
 {
-	m_calcPipeline = eg::Pipeline::Create(eg::ComputePipelineCreateInfo{
-		.computeShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterBarrierDist.cs.glsl").ToStageInfo(),
+	if (!waterSimShaders.isWaterSupported)
+		return;
+
+	m_barrierPipeline = eg::Pipeline::Create(eg::GraphicsPipelineCreateInfo{
+		.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterBarrier.vs.glsl").ToStageInfo(),
+		.depthAttachmentFormat = BARRIER_DEPTH_FORMAT,
+		.enableDepthTest = true,
+		.enableDepthWrite = true,
+		.depthCompare = eg::CompareOp::Less,
+		.topology = eg::Topology::Points,
 		.setBindModes = { eg::BindMode::DescriptorSet },
+		.numColorAttachments = 0,
+		.label = "WaterBarrier",
 	});
 
-	m_fadePipeline = eg::Pipeline::Create(eg::ComputePipelineCreateInfo{
-		.computeShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterBarrierFade.cs.glsl").ToStageInfo(),
-		.setBindModes = { eg::BindMode::DescriptorSet },
+	m_defaultTexture = eg::Texture::Create2D(eg::TextureCreateInfo{
+		.flags = eg::TextureFlags::ShaderSample | eg::TextureFlags::CopyDst,
+		.mipLevels = 1,
+		.width = 1,
+		.height = 1,
+		.format = eg::Format::R32_Float,
 	});
 
-	eg::TextureCreateInfo defaultTextureCI;
-	defaultTextureCI.width = 1;
-	defaultTextureCI.height = 1;
-	defaultTextureCI.format = eg::Format::R32_Float;
-	defaultTextureCI.flags = eg::TextureFlags::ShaderSample | eg::TextureFlags::CopyDst;
-	defaultTextureCI.mipLevels = 1;
-	m_defaultTexture = eg::Texture::Create2D(defaultTextureCI);
+	const float clearValue = 1.0f;
+	eg::UploadBuffer uploadBuffer = eg::GetTemporaryUploadBufferWith<float>({ &clearValue, 1 });
+	eg::DC.SetTextureData(
+		m_defaultTexture, eg::TextureRange{ .sizeX = 1, .sizeY = 1, .sizeZ = 1 }, uploadBuffer.buffer,
+		uploadBuffer.offset
+	);
 
-	eg::DC.ClearColorTexture(m_defaultTexture, 0, eg::Color(1, 1, 1));
 	m_defaultTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 }
 
@@ -49,50 +62,38 @@ void WaterBarrierRenderer::Init(const WaterSimulator2* simulator, World& world)
 			barrier.entity = std::dynamic_pointer_cast<GravityBarrierEnt>(entity.shared_from_this());
 
 			const AxisAlignedQuadComp& aaQuadComp = *entity.GetComponentMut<AxisAlignedQuadComp>();
-			float textureW = std::max(std::ceil(aaQuadComp.radius.x * 2 * TEXTURE_DENSITY), 2.0f);
-			float textureH = std::max(std::ceil(aaQuadComp.radius.y * 2 * TEXTURE_DENSITY), 2.0f);
+			const float textureW = std::max(std::ceil(aaQuadComp.radius.x * 2 / BARRIER_DISTANCE_TEXEL_SIZE), 2.0f);
+			const float textureH = std::max(std::ceil(aaQuadComp.radius.y * 2 / BARRIER_DISTANCE_TEXEL_SIZE), 2.0f);
 
-			eg::TextureCreateInfo textureCI;
-			textureCI.width = static_cast<uint32_t>(textureW);
-			textureCI.height = static_cast<uint32_t>(textureH);
-			textureCI.format = eg::Format::R32_UInt;
-			textureCI.flags =
-				eg::TextureFlags::StorageImage | eg::TextureFlags::CopyDst | eg::TextureFlags::ManualBarrier;
-			textureCI.mipLevels = 1;
-			barrier.tmpTexture = eg::Texture::Create2D(textureCI);
+			barrier.texture = eg::Texture::Create2D(eg::TextureCreateInfo{
+				.flags = eg::TextureFlags::ShaderSample | eg::TextureFlags::FramebufferAttachment,
+				.mipLevels = 1,
+				.width = static_cast<uint32_t>(textureW),
+				.height = static_cast<uint32_t>(textureH),
+				.format = BARRIER_DEPTH_FORMAT,
+			});
 
-			textureCI.format = eg::Format::R32_Float;
-			textureCI.flags =
-				eg::TextureFlags::ShaderSample | eg::TextureFlags::StorageImage | eg::TextureFlags::CopyDst;
-			barrier.fadeTexture = eg::Texture::Create2D(textureCI);
-			entity.waterDistanceTexture = barrier.fadeTexture;
+			entity.waterDistanceTexture = barrier.texture;
 
-			barrier.descriptorSetCalc = eg::DescriptorSet(m_calcPipeline, 0);
-			barrier.descriptorSetCalc.BindStorageBuffer(
-				simulator->GetPositionsGPUBuffer(), 0, 0, simulator->NumParticles() * sizeof(float) * 4
-			);
-			barrier.descriptorSetCalc.BindStorageImage(barrier.tmpTexture, 1);
+			barrier.framebuffer = eg::Framebuffer({}, eg::FramebufferAttachment(barrier.texture.handle));
 
-			barrier.descriptorSetFade = eg::DescriptorSet(m_fadePipeline, 0);
-			barrier.descriptorSetFade.BindStorageImage(barrier.tmpTexture, 0);
-			barrier.descriptorSetFade.BindStorageImage(barrier.fadeTexture, 1);
-
-			barrier.transform = entity.GetTransform() * glm::translate(glm::mat4(1), glm::vec3(-0.5f, -0.5f, 0.0f)) *
-		                        glm::scale(glm::mat4(1), glm::vec3(1.0f / textureW, 1.0f / textureH, 1.0f));
-
-			eg::DC.ClearColorTexture(barrier.fadeTexture, 0, eg::Color(1, 1, 1));
+			barrier.transform = glm::diagonal4x4(glm::vec4(2, -2, 1, 1)) * glm::inverse(entity.GetTransform());
 		}
 	);
 
 	if (simulator != nullptr)
 	{
 		m_numParticles = simulator->NumParticles();
-		m_dispatchCount = (simulator->NumParticles() + LOCAL_SIZE_X - 1) / LOCAL_SIZE_X;
+
+		m_descriptorSet = eg::DescriptorSet(m_barrierPipeline, 0);
+		m_descriptorSet.BindStorageBuffer(
+			simulator->GetPositionsGPUBuffer(), 0, 0, simulator->NumParticles() * sizeof(float) * 4
+		);
 	}
 	else
 	{
 		m_numParticles = 0;
-		m_dispatchCount = 0;
+		m_descriptorSet.Destroy();
 	}
 }
 
@@ -105,60 +106,33 @@ void WaterBarrierRenderer::Update(float dt)
 
 	eg::GPUTimer timer = eg::StartGPUTimer("Water Barrier Render");
 
-	eg::DC.BindPipeline(m_calcPipeline);
-
 	struct PushConstants
 	{
 		glm::mat4 inverseBarrierTransform;
-		uint32_t blockedGravity;
+		uint32_t blockedAxis;
 	};
 
 	for (Barrier& barrier : m_barriers)
 	{
-		eg::TextureBarrier preClearBarrier;
-		preClearBarrier.oldUsage = eg::TextureUsage::Undefined;
-		preClearBarrier.newUsage = eg::TextureUsage::CopyDst;
-		eg::DC.Barrier(barrier.tmpTexture, preClearBarrier);
+		eg::DC.BeginRenderPass(eg::RenderPassBeginInfo{
+			.depthClearValue = 1.0f,
+			.depthLoadOp = eg::AttachmentLoadOp::Clear,
+			.framebuffer = barrier.framebuffer.handle,
+		});
 
-		eg::DC.ClearColorTexture(barrier.tmpTexture, 0, glm::ivec4(UINT32_MAX));
+		eg::DC.BindPipeline(m_barrierPipeline);
 
-		eg::TextureBarrier postClearBarrier;
-		postClearBarrier.oldUsage = eg::TextureUsage::CopyDst;
-		postClearBarrier.newUsage = eg::TextureUsage::ILSReadWrite;
-		postClearBarrier.newAccess = eg::ShaderAccessFlags::Compute;
-		eg::DC.Barrier(barrier.tmpTexture, postClearBarrier);
-
-		PushConstants pc;
-		pc.inverseBarrierTransform = barrier.transform;
-		pc.blockedGravity = barrier.entity->BlockedAxis();
+		const PushConstants pc = {
+			.inverseBarrierTransform = barrier.transform,
+			.blockedAxis = static_cast<uint32_t>(barrier.entity->BlockedAxis()),
+		};
 		eg::DC.PushConstants(0, pc);
 
-		eg::DC.BindDescriptorSet(barrier.descriptorSetCalc, 0);
-		eg::DC.DispatchCompute(m_dispatchCount, barrier.tmpTexture.Width(), barrier.tmpTexture.Height());
-	}
+		eg::DC.BindDescriptorSet(m_descriptorSet, 0);
+		eg::DC.Draw(0, m_numParticles, 0, 1);
 
-	eg::DC.BindPipeline(m_fadePipeline);
+		eg::DC.EndRenderPass();
 
-	float maxDelta = *fadeSpeed * dt;
-	eg::DC.PushConstants(0, maxDelta);
-
-	for (Barrier& barrier : m_barriers)
-	{
-		eg::TextureBarrier computeBarrier;
-		computeBarrier.oldUsage = eg::TextureUsage::ILSReadWrite;
-		computeBarrier.newUsage = eg::TextureUsage::ILSRead;
-		computeBarrier.oldAccess = eg::ShaderAccessFlags::Compute;
-		computeBarrier.newAccess = eg::ShaderAccessFlags::Compute;
-		eg::DC.Barrier(barrier.tmpTexture, computeBarrier);
-
-		barrier.fadeTexture.UsageHint(eg::TextureUsage::ILSReadWrite, eg::ShaderAccessFlags::Compute);
-
-		eg::DC.BindDescriptorSet(barrier.descriptorSetFade, 0);
-		eg::DC.DispatchCompute(
-			(barrier.tmpTexture.Width() + LOCAL_SIZE_FADE - 1) / LOCAL_SIZE_FADE,
-			(barrier.tmpTexture.Height() + LOCAL_SIZE_FADE - 1) / LOCAL_SIZE_FADE, 1
-		);
-
-		barrier.fadeTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
+		barrier.texture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 	}
 }

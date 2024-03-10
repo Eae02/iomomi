@@ -1,65 +1,39 @@
 #version 450 core
 
-#extension GL_KHR_shader_subgroup_arithmetic : enable
-
 #include "../../WaterConstants.h"
 
-layout(local_size_x_id = 0, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = W_COMMON_WG_SIZE, local_size_y = 1, local_size_z = 1) in;
 
-layout(set = 0, binding = 0) restrict readonly buffer SortDataBuffer
+layout(set = 0, binding = 0) restrict readonly buffer NumOctGroupsPrefixSums
 {
-	uint numOctGroupsPrefixSumBuffer[];
+	uint numOctGroupsPrefixSumSections[256];
+	uint numOctGroupsPrefixSumWithinSection[];
 };
 
-layout(set = 0, binding = 1) restrict readonly buffer NumOctGroupsBuffer
-{
-	uint numOctGroupsBuffer[];
-};
-
-layout(set = 0, binding = 2) restrict writeonly buffer OctGroupsRangesBuffer
+layout(set = 0, binding = 1) restrict writeonly buffer OctGroupsRangesBuffer
 {
 	uint octGroupRanges_out[];
 };
 
-layout(set = 0, binding = 3) restrict writeonly buffer TotalNumOctGroupsBuffer
+uint readPrefixSum(uint index)
 {
-	uint totalNumOctGroups;
-};
-
-layout(push_constant) uniform PC
-{
-	uvec4 prefixSumLayerOffsets;
-	uint lastInvocationIndex;
-};
-
-const uint UINT_MAX = 0xFFFFFFFFu;
+	return numOctGroupsPrefixSumWithinSection[index] + numOctGroupsPrefixSumSections[index / 256];
+}
 
 void main()
 {
-	uint localIndex = gl_SubgroupInvocationID + gl_SubgroupID * gl_SubgroupSize;
-	uint globalIndex = gl_WorkGroupID.x * gl_WorkGroupSize.x + localIndex;
+	uint invoIndex = gl_GlobalInvocationID.x;
 
-	uint numOctGroups = numOctGroupsBuffer[globalIndex];
-	uint writeOffset = subgroupExclusiveAdd(numOctGroups);
+	uint inclusivePrefixSum = readPrefixSum(invoIndex);
+	uint exclusivePrefixSum = invoIndex == 0 ? 0 : readPrefixSum(invoIndex - 1);
 
-	for (uint l = 0; l < 4; l++)
-	{
-		uint psOffset = globalIndex >> ((l + 1) * 5);
-
-		if ((psOffset % 32) != 0 && prefixSumLayerOffsets[l] != UINT_MAX)
-		{
-			writeOffset += numOctGroupsPrefixSumBuffer[prefixSumLayerOffsets[l] + psOffset - 1];
-		}
-	}
-
-	if (globalIndex == lastInvocationIndex)
-		totalNumOctGroups = writeOffset + numOctGroups;
+	uint numOctGroups = inclusivePrefixSum - exclusivePrefixSum;
 
 	for (uint i = 0; i < W_MAX_OCT_GROUPS_PER_CELL; i++)
 	{
 		if (i < numOctGroups)
 		{
-			octGroupRanges_out[writeOffset + i] = globalIndex + i * 8;
+			octGroupRanges_out[exclusivePrefixSum + i] = invoIndex + i * 8;
 		}
 	}
 }

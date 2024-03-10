@@ -2,6 +2,8 @@
 
 #include <EGame/Audio/AudioPlayer.hpp>
 
+#include <cstdlib>
+
 #include "FileUtils.hpp"
 #include "Game.hpp"
 #include "Graphics/GraphicsCommon.hpp"
@@ -146,14 +148,18 @@ static void Run(int argc, char** argv)
 	{
 		eg::InitializeHeadless(runConfig);
 
-		if (testName == "wsort")
-			WaterSimulatorTests::RunSortTests();
+		if (testName.starts_with("water"))
+			RunWaterTests(testName);
 
-		std::cout << "done running tests" << std::endl;
+		std::cout << "\x1b[32mdone running tests\x1b[0m" << std::endl;
 
 		eg::gal::DeviceWaitIdle();
 
+#ifdef __APPLE__
+		std::exit(0);
+#else
 		std::quick_exit(0);
+#endif
 	}
 
 	eg::Run<Game>(runConfig);

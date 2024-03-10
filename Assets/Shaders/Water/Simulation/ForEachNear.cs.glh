@@ -1,3 +1,55 @@
+#ifdef VNoSubgroups
+
+#define SUBGROUP_UNIFORM(V) V
+
+shared NEAR_PAIR_RES_T sharedClusteredAdd[64];
+
+NEAR_PAIR_RES_T clusteredAdd8(NEAR_PAIR_RES_T value)
+{
+	sharedClusteredAdd[gl_LocalInvocationID.x] = value;
+	for (uint i = 1; i <= 4; i <<= 1)
+	{
+		memoryBarrierShared();
+		barrier();
+		if ((gl_LocalInvocationID.x & i) == 0)
+		{
+			sharedClusteredAdd[gl_LocalInvocationID.x] += sharedClusteredAdd[gl_LocalInvocationID.x | i];
+		}
+	}
+	// only the first invocation will return the correct value but that is ok
+	return sharedClusteredAdd[gl_LocalInvocationID.x];
+}
+
+#else // VNoSubgroups
+
+#extension GL_KHR_shader_subgroup_vote : enable
+#extension GL_KHR_shader_subgroup_ballot : enable
+#extension GL_KHR_shader_subgroup_arithmetic : enable
+
+#define SUBGROUP_UNIFORM(V) subgroupBroadcastFirst(V)
+
+#ifdef VSubgroupsNoClustered
+
+#extension GL_KHR_shader_subgroup_shuffle : enable
+NEAR_PAIR_RES_T clusteredAdd8(NEAR_PAIR_RES_T value)
+{
+	value += subgroupShuffleXor(value, 1);
+	value += subgroupShuffleXor(value, 2);
+	value += subgroupShuffleXor(value, 4);
+	return value;
+}
+
+#else // VSubgroupsNoClustered
+
+#extension GL_KHR_shader_subgroup_clustered : enable
+NEAR_PAIR_RES_T clusteredAdd8(NEAR_PAIR_RES_T value)
+{
+	return subgroupClusteredAdd(value, 8);
+}
+#endif // VSubgroupsNoClustered
+
+#endif // VNoSubgroups
+
 #include "../WaterCommon.glh"
 
 layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
@@ -28,24 +80,19 @@ uint readCellOffset(ivec3 cellPos)
 
 void main()
 {
+#ifdef VNoSubgroups
+	uint localIndex = gl_LocalInvocationID.x;
+#else
 	uint localIndex = gl_SubgroupInvocationID + gl_SubgroupID * gl_SubgroupSize;
+#endif
 
 	uint centerOctGroupParticleIdx = localIndex / 8;
 	uint neighborOctGroupParticleIdx = localIndex % 8;
 
-	uint octGroupOffset;
-	uint cellID0;
-	ivec3 gridCell;
-	if (subgroupElect())
-	{
-		octGroupOffset = octGroupRanges[gl_WorkGroupID.x];
-		uvec4 position0 = particleData[positionsBufferOffset + octGroupOffset];
-		cellID0 = position0.w;
-		gridCell = ivec3(getGridCell(uintBitsToFloat(position0.xyz), gridOrigin));
-	}
-	octGroupOffset = subgroupBroadcastFirst(octGroupOffset);
-	cellID0 = subgroupBroadcastFirst(cellID0);
-	gridCell = subgroupBroadcastFirst(gridCell);
+	uint octGroupOffset = octGroupRanges[gl_WorkGroupID.x];
+	uvec4 position0 = particleData[positionsBufferOffset + octGroupOffset];
+	uint cellID0 = position0.w;
+	ivec3 gridCell = ivec3(getGridCell(uintBitsToFloat(position0.xyz), gridOrigin));
 
 	uint centerParticleIdx = octGroupOffset + centerOctGroupParticleIdx;
 
@@ -53,8 +100,10 @@ void main()
 	uint cellID = positionData.w;
 	vec3 position = uintBitsToFloat(positionData.xyz);
 
+#ifndef VNoSubgroups
 	if (subgroupAll(cellID != cellID0))
 		return;
+#endif
 
 	initialize(centerParticleIdx, position.xyz);
 
@@ -66,12 +115,10 @@ void main()
 		{
 			for (int dx = -1; dx <= 1; dx++)
 			{
-				// subgroupBroadcastFirst is not needed here for correctness, it is just used as a hint to the compiler
-				// that the value is uniform accross the subgroup.
-				uint neiBeginOffset = subgroupBroadcastFirst(readCellOffset(gridCell + ivec3(dx, dy, dz)));
-				if (neiBeginOffset == CELL_OFFSETS_CELL_EMPTY)
+				uint neiBeginOffset = readCellOffset(gridCell + ivec3(dx, dy, dz));
+				if (SUBGROUP_UNIFORM(neiBeginOffset == CELL_OFFSETS_CELL_EMPTY))
 					continue;
-				uint neiExpectedCellID = subgroupBroadcastFirst(particleData[positionsBufferOffset + neiBeginOffset].w);
+				uint neiExpectedCellID = particleData[positionsBufferOffset + neiBeginOffset].w;
 
 				for (uint i = 0; i < W_MAX_OCT_GROUPS_PER_CELL; i++)
 				{
@@ -86,14 +133,17 @@ void main()
 					if (isValidNeighbor && neiParticleIdx != centerParticleIdx)
 						accumulatedValue += res;
 
+#ifndef VNoSubgroups
 					if (subgroupAny(!isValidNeighbor))
 						break;
+#endif
 				}
 			}
 		}
 	}
 
-	accumulatedValue = subgroupClusteredAdd(accumulatedValue, 8);
+	accumulatedValue = clusteredAdd8(accumulatedValue);
+
 	if (neighborOctGroupParticleIdx == 0 && cellID == cellID0)
 	{
 		processResult(accumulatedValue, centerParticleIdx);

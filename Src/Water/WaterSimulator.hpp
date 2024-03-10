@@ -58,6 +58,8 @@ private:
 
 	glm::ivec3 m_voxelMinBounds;
 	glm::ivec3 m_voxelMaxBounds;
+	
+	glm::uvec3 m_cellOffsetsTextureSize;
 
 	WaterSimulationThread m_backgroundThread;
 	uint32_t m_initialFramesCompleted = 0;
@@ -70,8 +72,6 @@ private:
 
 	eg::Buffer m_cellNumOctGroupsBuffer;
 	eg::Buffer m_cellNumOctGroupsPrefixSumBuffer;
-	std::array<uint32_t, 4> m_numOctGroupsPrefixSumLayerOffsets;
-	std::array<uint32_t, 4> m_numOctGroupsPrefixSumLayerLengths;
 
 	eg::Buffer m_totalNumOctGroupsBuffer;
 	eg::Buffer m_octGroupRangesBuffer;
@@ -98,7 +98,8 @@ private:
 	eg::DescriptorSet m_sortFarDS;
 
 	eg::DescriptorSet m_detectCellEdgesDS;
-	eg::DescriptorSet m_octGroupsPrefixSumDS;
+	eg::DescriptorSet m_octGroupsPrefixSumLevel1DS;
+	eg::DescriptorSet m_octGroupsPrefixSumLevel2DS;
 	eg::DescriptorSet m_writeOctGroupsDS;
 
 	eg::DescriptorSet m_forEachNearDS;
