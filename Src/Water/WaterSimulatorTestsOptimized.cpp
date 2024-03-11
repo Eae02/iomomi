@@ -1,13 +1,15 @@
-#include <pcg_random.hpp>
-#include <span>
-#include <vector>
-#include <random>
 #include <cstdint>
 #include <glm/glm.hpp>
+#include <pcg_random.hpp>
+#include <random>
+#include <span>
+#include <vector>
 
 #include "WaterConstants.hpp"
 
-std::vector<glm::vec3> WaterTestGeneratePositions(pcg32_fast& rng, uint32_t numParticles, int minAirVoxel, int maxAirVoxel)
+std::vector<glm::vec3> WaterTestGeneratePositions(
+	pcg32_fast& rng, uint32_t numParticles, int minAirVoxel, int maxAirVoxel
+)
 {
 	std::uniform_real_distribution<float> positionDistribution(0.0, 1.0);
 

@@ -15,8 +15,8 @@ struct CollisionQuadForGPU
 
 static_assert(sizeof(CollisionQuadForGPU) == 4 * 4 * 2); // assert that there is no padding
 
-static constexpr eg::BufferFlags STAGING_BUFFER_FLAGS = eg::BufferFlags::HostAllocate | eg::BufferFlags::MapWrite |
-                                                        eg::BufferFlags::CopySrc | eg::BufferFlags::ManualBarrier;
+static constexpr eg::BufferFlags STAGING_BUFFER_FLAGS =
+	eg::BufferFlags::MapWrite | eg::BufferFlags::CopySrc | eg::BufferFlags::ManualBarrier;
 
 static constexpr size_t MAX_TOTAL_COLLISION_QUADS = 255;
 

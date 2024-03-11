@@ -15,7 +15,7 @@ private:
 	eg::Pipeline m_barrierPipeline;
 
 	eg::Texture m_defaultTexture;
-	
+
 	eg::DescriptorSet m_descriptorSet;
 
 	struct Barrier

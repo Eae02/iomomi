@@ -128,11 +128,11 @@ static float* blurDepthFalloff = eg::TweakVarFloat("wblur_depthfall", 0.2f, 0.0f
 
 /*
 Water quality settings:
-vlow:  4 samples,  16-bit, SQ-Shader
-low:   8 samples, 16-bit, SQ-Shader
-med:   8 samples, 32-bit, SQ-Shader
-high:  8 samples, 32-bit, HQ-Shader
-vhigh: 12 samples, 32-bit, HQ-Shader
+vlow:  4 samples,  SQ-Shader
+low:   8 samples, SQ-Shader
+med:   8 samples, HQ-Shader
+high:  12 samples, HQ-Shader
+vhigh: 16 samples, HQ-Shader
 */
 
 void WaterRenderer::RenderEarly(eg::BufferRef positionsBuffer, uint32_t numParticles, RenderTexManager& rtManager)

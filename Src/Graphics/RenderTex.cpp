@@ -72,9 +72,6 @@ eg::Format GetFormatForRenderTexture(RenderTex texture, bool requireFixed)
 
 	case RenderTex::WaterDepthBlurred1:
 	case RenderTex::WaterDepthBlurred2:
-		EG_ASSERT(!requireFixed);
-		if (qvar::waterUse32BitDepth(settings.waterQuality))
-			return eg::Format::R32G32_Float;
 		return eg::Format::R16G16_Float;
 
 	case RenderTex::SSRTemp1:
@@ -163,13 +160,10 @@ void RenderTexManager::BeginFrame(uint32_t resX, uint32_t resY)
 		renderTexturesRedirect[i] = (RenderTex)i;
 	}
 
-	const bool waterHighPrecision = qvar::waterUse32BitDepth(settings.waterQuality);
-
-	if (resX != m_resX || resY != m_resY || waterHighPrecision != wasWaterHighPrecision)
+	if (resX != m_resX || resY != m_resY)
 	{
 		m_resX = resX;
 		m_resY = resY;
-		wasWaterHighPrecision = waterHighPrecision;
 		m_generation++;
 
 		for (eg::Texture& tex : renderTextures)

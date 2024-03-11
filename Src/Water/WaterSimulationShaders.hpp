@@ -4,7 +4,7 @@ struct WaterSimulationShaders
 {
 	bool isWaterSupported = false;
 	bool forceUseFallbackShaders = false;
-	
+
 	uint32_t sortWorkGroupSize;
 
 	eg::Pipeline sortPipelineInitial;
@@ -23,7 +23,7 @@ struct WaterSimulationShaders
 	eg::Pipeline moveAndCollision;
 
 	eg::Pipeline changeGravity;
-	
+
 	eg::Pipeline clearCellOffsets;
 
 	void Initialize();

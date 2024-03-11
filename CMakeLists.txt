@@ -6,7 +6,6 @@ set(BUILD_DIR_NAME ${CMAKE_BUILD_TYPE})
 set(BUILD_ID "" CACHE STRING "Build id to be included in the main menu.")
 
 option(IOMOMI_EDITOR "Whether or not to enable the editor." ON)
-option(IOMOMI_WATER "Whether or not to enable water." ON)
 
 option(ENABLE_ASAN "Enable address sanitizer" OFF)
 if (${ENABLE_ASAN})

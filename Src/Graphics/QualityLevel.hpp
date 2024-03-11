@@ -51,7 +51,6 @@ namespace qvar
 extern QualityVariable<int> waterBlurSamples;
 extern QualityVariable<float> waterBaseBlurRadius;
 extern QualityVariable<bool> waterUseHQShader;
-extern QualityVariable<bool> waterUse32BitDepth;
 extern QualityVariable<bool> waterRenderCaustics;
 
 extern QualityVariable<uint32_t> ssrLinearSamples;

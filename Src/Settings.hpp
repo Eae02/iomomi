@@ -62,7 +62,7 @@ struct Settings
 	bool vsync = true;
 	DisplayMode displayMode = DisplayMode::Windowed;
 	eg::FullscreenDisplayMode fullscreenDisplayMode = {};
-	
+
 	float renderResolutionScale = 1;
 
 	bool showExtraLevels = false;

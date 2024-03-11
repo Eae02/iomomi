@@ -19,7 +19,7 @@ layout(push_constant) uniform PC
 	uint numSectionSizesWritten;
 };
 
-shared uint prefixSums[256];
+shared uint prefixSums[2][256];
 
 void main()
 {
@@ -29,18 +29,20 @@ void main()
 	if (invoIndex < numSectionSizesWritten)
 		value = numOctGroupsSectionSizes[invoIndex];
 	
-	prefixSums[invoIndex] = value;
-	
 	// Parallel prefix sum by Hillis & Steele
-	for (uint i = 1; i < 256; i <<= 1)
+	uint inclusiveSum = value;
+	for (uint i = 0; i < 8; i++)
 	{
+		prefixSums[i % 2][invoIndex] = inclusiveSum;
 		memoryBarrierShared();
 		barrier();
-		if (invoIndex >= i)
-			prefixSums[invoIndex] += prefixSums[invoIndex - i];
+		uint d = 1 << i;
+		if (invoIndex >= d)
+			inclusiveSum += prefixSums[i % 2][invoIndex - d];
 	}
 	
-	uint inclusiveSum = prefixSums[invoIndex];
+	memoryBarrierShared();
+	barrier();
 	
 	if (invoIndex == W_OCT_GROUPS_PREFIX_SUM_WG_SIZE - 1)
 		totalNumOctGroups = inclusiveSum;

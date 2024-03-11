@@ -11,12 +11,13 @@
 constexpr int MIN_AIR_VOXEL = -10;
 constexpr int MAX_AIR_VOXEL = 10;
 
-std::vector<glm::vec3> WaterTestGeneratePositions(pcg32_fast& rng, uint32_t numParticles, int minAirVoxel, int maxAirVoxel);
+std::vector<glm::vec3> WaterTestGeneratePositions(
+	pcg32_fast& rng, uint32_t numParticles, int minAirVoxel, int maxAirVoxel
+);
 std::vector<glm::vec2> WaterTestCalculateDensities(std::span<const glm::vec3> positions);
 
-constexpr eg::BufferFlags DOWNLOAD_BUFFER_FLAGS = eg::BufferFlags::MapRead | eg::BufferFlags::CopyDst |
-                                                  eg::BufferFlags::Download | eg::BufferFlags::HostAllocate |
-                                                  eg::BufferFlags::ManualBarrier;
+constexpr eg::BufferFlags DOWNLOAD_BUFFER_FLAGS =
+	eg::BufferFlags::MapRead | eg::BufferFlags::CopyDst | eg::BufferFlags::ManualBarrier;
 
 struct DownloadBuffer
 {
@@ -56,9 +57,13 @@ struct WaterSimulatorTester
 		pcg32_fast rng(seed);
 		std::vector<glm::vec3> positions = WaterTestGeneratePositions(rng, numParticles, MIN_AIR_VOXEL, MAX_AIR_VOXEL);
 
-		eg::CommandContext cc = eg::CommandContext::CreateDeferred(eg::Queue::Main);
+		eg::CommandContext cc;
+		if (eg::HasFlag(eg::GetGraphicsDeviceInfo().features, eg::DeviceFeatureFlags::DeferredContext))
+		{
+			cc = eg::CommandContext::CreateDeferred(eg::Queue::Main);
 
-		cc.BeginRecording(eg::CommandContextBeginFlags::OneTimeSubmit);
+			cc.BeginRecording(eg::CommandContextBeginFlags::OneTimeSubmit);
+		}
 
 		VoxelBuffer voxelBuffer;
 		for (int x = MIN_AIR_VOXEL; x <= MAX_AIR_VOXEL; x++)
@@ -97,6 +102,12 @@ struct WaterSimulatorTester
 
 	void FinishSubmitAndWait()
 	{
+		if (!eg::HasFlag(eg::GetGraphicsDeviceInfo().features, eg::DeviceFeatureFlags::DeferredContext))
+		{
+			eg::gal::DeviceWaitIdle();
+			return;
+		}
+
 		cc.FinishRecording();
 
 		eg::FenceHandle fence = eg::gal::CreateFence();
@@ -158,6 +169,10 @@ void WaterSimulatorTester::RunSingleSortTest(uint32_t numParticles, uint32_t see
 	WaterSimulatorTester tester = WaterSimulatorTester::Create(numParticles, seed);
 
 	DownloadBuffer sortedByCellDownbuf(sizeof(uint32_t) * 2 * tester.simulator->m_numParticlesTwoPow);
+	DownloadBuffer numOctGroupsPrefixSumBufferDownbuf(
+		(eg::RoundToNextMultiple(numParticles, W_OCT_GROUPS_PREFIX_SUM_WG_SIZE) + W_OCT_GROUPS_PREFIX_SUM_WG_SIZE) *
+		sizeof(uint32_t)
+	);
 	DownloadBuffer octGroupRangesDownbuf(
 		sizeof(uint32_t) * tester.simulator->m_numParticles * W_MAX_OCT_GROUPS_PER_CELL
 	);
@@ -186,6 +201,9 @@ void WaterSimulatorTester::RunSingleSortTest(uint32_t numParticles, uint32_t see
 
 		tester.BarrierForDownload(tester.simulator->m_totalNumOctGroupsBuffer);
 		totalNumOctGroupsDownbuf.CopyData(tester.cc, tester.simulator->m_totalNumOctGroupsBuffer);
+
+		tester.BarrierForDownload(tester.simulator->m_cellNumOctGroupsPrefixSumBuffer);
+		numOctGroupsPrefixSumBufferDownbuf.CopyData(tester.cc, tester.simulator->m_cellNumOctGroupsPrefixSumBuffer);
 	}
 
 	if (finalPhase >= TEST_PHASE_DENSITY)
@@ -220,6 +238,8 @@ void WaterSimulatorTester::RunSingleSortTest(uint32_t numParticles, uint32_t see
 			  << "\n";
 
 	std::span<uint32_t> octGroupRanges = octGroupRangesDownbuf.GetData<uint32_t>();
+
+	std::span<uint32_t> prefixSumBuffer = numOctGroupsPrefixSumBufferDownbuf.GetData<uint32_t>();
 
 	uint32_t sortedByCellIdx = 0;
 	for (uint32_t i = 0; i < octGroupRanges.size(); i++)

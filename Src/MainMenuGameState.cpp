@@ -187,7 +187,8 @@ void MainMenuGameState::RunFrame(float dt)
 #else
 	std::string infoLine = "Iomomi compiled " BUILD_DATE;
 #endif
-	infoLine += eg::Concat({ "\nGfx: ", eg::GetGraphicsDeviceInfo().apiName, " on ", eg::GetGraphicsDeviceInfo().deviceName });
+	infoLine +=
+		eg::Concat({ "\nGfx: ", eg::GetGraphicsDeviceInfo().apiName, " on ", eg::GetGraphicsDeviceInfo().deviceName });
 
 	m_spriteBatch.DrawTextMultiline(
 		*style::UIFontSmall, infoLine, glm::vec2(5.0f, 20.0f), eg::ColorLin(1, 1, 1, 0.2f), 1, 0, nullptr,

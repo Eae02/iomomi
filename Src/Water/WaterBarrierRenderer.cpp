@@ -17,13 +17,13 @@ WaterBarrierRenderer::WaterBarrierRenderer()
 
 	m_barrierPipeline = eg::Pipeline::Create(eg::GraphicsPipelineCreateInfo{
 		.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterBarrier.vs.glsl").ToStageInfo(),
-		.depthAttachmentFormat = BARRIER_DEPTH_FORMAT,
 		.enableDepthTest = true,
 		.enableDepthWrite = true,
 		.depthCompare = eg::CompareOp::Less,
 		.topology = eg::Topology::Points,
 		.setBindModes = { eg::BindMode::DescriptorSet },
 		.numColorAttachments = 0,
+		.depthAttachmentFormat = BARRIER_DEPTH_FORMAT,
 		.label = "WaterBarrier",
 	});
 
@@ -115,9 +115,9 @@ void WaterBarrierRenderer::Update(float dt)
 	for (Barrier& barrier : m_barriers)
 	{
 		eg::DC.BeginRenderPass(eg::RenderPassBeginInfo{
-			.depthClearValue = 1.0f,
-			.depthLoadOp = eg::AttachmentLoadOp::Clear,
 			.framebuffer = barrier.framebuffer.handle,
+			.depthLoadOp = eg::AttachmentLoadOp::Clear,
+			.depthClearValue = 1.0f,
 		});
 
 		eg::DC.BindPipeline(m_barrierPipeline);

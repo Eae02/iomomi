@@ -182,7 +182,7 @@ void Game::RunFrame(float dt)
 		eg::gal::DeviceWaitIdle();
 		waterSimShaders.Initialize();
 	}
-	
+
 	if (levelIndexFromCmdArg != -1 && eg::FrameIdx() >= 10)
 	{
 		std::unique_ptr<World> world = LoadLevelWorld(levels[levelIndexFromCmdArg], false);

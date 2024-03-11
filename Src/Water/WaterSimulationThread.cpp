@@ -216,7 +216,7 @@ void WaterSimulationThread::OnFrameBeginMT(eg::CommandContext& cc, std::span<con
 
 	std::unique_lock lock(m_mutex);
 
-	std::copy_n(particleData.data(), m_numParticles, m_particleDataMT.get());
+	std::memcpy(m_particleDataMT.get(), particleData.data(), particleData.size_bytes());
 	m_workAvailable = true;
 
 	m_signalForBackThread.notify_one();

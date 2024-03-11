@@ -15,6 +15,7 @@ layout(push_constant) uniform PC
 
 void main()
 {
+	gl_PointSize = 1;
 	uvec4 data = particleData[gl_VertexIndex];
 	if ((dataBitsGetGravity(data.w) / 2) == barrierBlockedAxis)
 	{

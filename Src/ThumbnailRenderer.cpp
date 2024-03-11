@@ -121,17 +121,16 @@ LevelThumbnailUpdate* BeginUpdateLevelThumbnails(RenderContext& renderContext, e
 			*world, 0, 0, entry.framebuffer.handle, OUTPUT_FORMAT, LEVEL_THUMBNAIL_RES_X, LEVEL_THUMBNAIL_RES_Y
 		);
 
-		entry.downloadBuffer = eg::Buffer(
-			eg::BufferFlags::MapRead | eg::BufferFlags::CopyDst | eg::BufferFlags::Download |
-				eg::BufferFlags::HostAllocate,
-			THUMBNAIL_BYTES, nullptr
-		);
+		entry.downloadBuffer =
+			eg::Buffer(eg::BufferFlags::MapRead | eg::BufferFlags::CopyDst, THUMBNAIL_BYTES, nullptr);
 
 		eg::TextureRange range = {};
 		range.sizeX = LEVEL_THUMBNAIL_RES_X;
 		range.sizeY = LEVEL_THUMBNAIL_RES_Y;
 		range.sizeZ = 1;
 		eg::DC.GetTextureData(entry.texture, range, entry.downloadBuffer, 0);
+
+		entry.downloadBuffer.UsageHint(eg::BufferUsage::HostRead);
 
 		numUpdated++;
 	}

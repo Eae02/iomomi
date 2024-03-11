@@ -1,9 +1,8 @@
 #include "QualityLevel.hpp"
 
-QualityVariable<int> qvar::waterBlurSamples(4, 8, 8, 8, 12);
+QualityVariable<int> qvar::waterBlurSamples(4, 8, 8, 12, 16);
 QualityVariable<float> qvar::waterBaseBlurRadius(60.0f, 80.0f, 100.0f, 120.0f, 150.0f);
-QualityVariable<bool> qvar::waterUseHQShader(QualityLevel::High);
-QualityVariable<bool> qvar::waterUse32BitDepth(QualityLevel::Medium);
+QualityVariable<bool> qvar::waterUseHQShader(QualityLevel::Medium);
 QualityVariable<bool> qvar::waterRenderCaustics(QualityLevel::Low);
 
 QualityVariable<uint32_t> qvar::ssrLinearSamples(0, 4, 4, 6, 8);

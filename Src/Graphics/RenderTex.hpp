@@ -75,8 +75,6 @@ private:
 
 	uint32_t m_generation = 1;
 
-	bool wasWaterHighPrecision = false;
-
 	std::vector<eg::Texture> renderTextures;
 	std::vector<RenderTex> renderTexturesRedirect;
 

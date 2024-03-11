@@ -1,8 +1,8 @@
+#include <EGame/EG.hpp>
+#include <cstdint>
+#include <optional>
 #include <span>
 #include <vector>
-#include <optional>
-#include <cstdint>
-#include <EGame/EG.hpp>
 
 #include "Collision.hpp"
 #include "Dir.hpp"

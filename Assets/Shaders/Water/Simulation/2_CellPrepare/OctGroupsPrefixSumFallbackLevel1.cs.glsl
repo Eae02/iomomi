@@ -15,23 +15,25 @@ layout(set = 0, binding = 1) restrict writeonly buffer NumOctGroupsPrefixSums
 	uint numOctGroupsPrefixSumWithinSection[];
 };
 
-shared uint prefixSums[256];
+shared uint prefixSums[2][256];
 
 void main()
 {
 	uint localIndex = gl_LocalInvocationID.x;
-	prefixSums[localIndex] = numOctGroupsBuffer[gl_GlobalInvocationID.x];
+	
+	uint value = numOctGroupsBuffer[gl_GlobalInvocationID.x];
 	
 	// Parallel prefix sum by Hillis & Steele
-	for (uint i = 1; i < 256; i <<= 1)
+	uint inclusiveSum = value;
+	for (uint i = 0; i < 8; i++)
 	{
+		prefixSums[i % 2][localIndex] = inclusiveSum;
 		memoryBarrierShared();
 		barrier();
-		if (localIndex >= i)
-			prefixSums[localIndex] += prefixSums[localIndex - i];
+		uint d = 1 << i;
+		if (localIndex >= d)
+			inclusiveSum += prefixSums[i % 2][localIndex - d];
 	}
-	
-	uint inclusiveSum = prefixSums[localIndex];
 	
 	if (localIndex == W_OCT_GROUPS_PREFIX_SUM_WG_SIZE - 1)
 		numOctGroupsSectionSizes[gl_WorkGroupID.x] = inclusiveSum;

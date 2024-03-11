@@ -4,8 +4,8 @@
 #include <fstream>
 
 #include "FileUtils.hpp"
-#include "World/World.hpp"
 #include "Water/WaterSimulationShaders.hpp"
+#include "World/World.hpp"
 
 using namespace std::filesystem;
 

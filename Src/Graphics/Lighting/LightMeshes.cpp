@@ -61,9 +61,7 @@ static void Initialize()
 	constexpr uint64_t coneIndicesOffset = sphereIndicesOffset + sizeof(sphereMeshIndices);
 	constexpr uint64_t uploadBytes = coneIndicesOffset + sizeof(coneMeshIndices);
 
-	eg::Buffer uploadBuffer(
-		eg::BufferFlags::CopySrc | eg::BufferFlags::MapWrite | eg::BufferFlags::HostAllocate, uploadBytes, nullptr
-	);
+	eg::Buffer uploadBuffer(eg::BufferFlags::CopySrc | eg::BufferFlags::MapWrite, uploadBytes, nullptr);
 
 	char* data = static_cast<char*>(uploadBuffer.Map(0, uploadBytes));
 	std::memcpy(data + sphereVerticesOffset, sphereMeshVertices, sizeof(sphereMeshVertices));

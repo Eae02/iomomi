@@ -58,7 +58,7 @@ private:
 
 	glm::ivec3 m_voxelMinBounds;
 	glm::ivec3 m_voxelMaxBounds;
-	
+
 	glm::uvec3 m_cellOffsetsTextureSize;
 
 	WaterSimulationThread m_backgroundThread;

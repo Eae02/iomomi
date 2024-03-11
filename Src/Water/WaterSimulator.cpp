@@ -48,8 +48,8 @@ static SortFarIndexBuffer ComputeSortFarIndexBuffer(uint32_t numParticlesTwoPow)
 	return result;
 }
 
-static constexpr eg::BufferFlags STAGING_BUFFER_FLAGS = eg::BufferFlags::HostAllocate | eg::BufferFlags::MapWrite |
-                                                        eg::BufferFlags::CopySrc | eg::BufferFlags::ManualBarrier;
+static constexpr eg::BufferFlags STAGING_BUFFER_FLAGS =
+	eg::BufferFlags::MapWrite | eg::BufferFlags::CopySrc | eg::BufferFlags::ManualBarrier;
 
 static glm::vec3 RandomPointOnUnitSphere(pcg32_fast& rng)
 {
@@ -152,8 +152,7 @@ WaterSimulator2::WaterSimulator2(const WaterSimulatorInitArgs& args, eg::Command
 
 	m_particleDataForCPUBufferBytesPerFrame = sizeof(uint32_t) * 2 * m_numParticles;
 	m_particleDataForCPUBuffer = eg::Buffer(eg::BufferCreateInfo{
-		.flags = eg::BufferFlags::StorageBuffer | eg::BufferFlags::ManualBarrier | eg::BufferFlags::Download |
-	             eg::BufferFlags::MapRead,
+		.flags = eg::BufferFlags::StorageBuffer | eg::BufferFlags::ManualBarrier | eg::BufferFlags::MapRead,
 		.size = m_particleDataForCPUBufferBytesPerFrame * WaterSimulationThread::FRAME_CYCLE_LENGTH,
 		.label = "ParticleDataDownload",
 	});
@@ -339,11 +338,8 @@ WaterSimulator2::WaterSimulator2(const WaterSimulatorInitArgs& args, eg::Command
 	// ** Uploads data **
 
 	// Uploads positions into the positions buffer and generates particle radii
-	eg::Buffer particleDataUploadBuffer = eg::Buffer(eg::BufferCreateInfo{
-		.flags = eg::BufferFlags::HostAllocate | eg::BufferFlags::MapWrite | eg::BufferFlags::CopySrc |
-	             eg::BufferFlags::ManualBarrier,
-		.size = particleDataBufferSize,
-	});
+	eg::Buffer particleDataUploadBuffer =
+		eg::Buffer(eg::BufferCreateInfo{ .flags = STAGING_BUFFER_FLAGS, .size = particleDataBufferSize });
 	float* positionsUploadMemory = static_cast<float*>(particleDataUploadBuffer.Map());
 	std::memset(positionsUploadMemory, 0, particleDataBufferSize);
 	uint32_t* dataBitsUploadMemory = static_cast<uint32_t*>(particleDataUploadBuffer.Map()) + m_numParticles * 8 + 3;
@@ -456,11 +452,13 @@ void WaterSimulator2::RunCellPreparePhase(eg::CommandContext& cc)
 		m_cellOffsetsTexture,
 		{
 			.oldUsage = eg::TextureUsage::ILSWrite,
-			.oldAccess = eg::ShaderAccessFlags::Compute,
 			.newUsage = eg::TextureUsage::ILSWrite,
+			.oldAccess = eg::ShaderAccessFlags::Compute,
 			.newAccess = eg::ShaderAccessFlags::Compute,
 		}
 	);
+
+	cc.Barrier(m_particleDataBuffer, computeToComputeBarrier); // ?
 
 	// ** DetectCellEdges **
 	cc.DebugLabelBegin("DetectCellEdges");
@@ -656,6 +654,10 @@ void WaterSimulator2::MoveAndCollision(eg::CommandContext& cc, float dt)
 
 void WaterSimulator2::Update(eg::CommandContext& cc, float dt, const World& world, bool paused)
 {
+	eg::MultiStageCPUTimer cpuTimer;
+
+	cpuTimer.StartStage("Copy for BT");
+
 	if (m_initialFramesCompleted > eg::MAX_CONCURRENT_FRAMES)
 	{
 		m_particleDataForCPUBuffer.Invalidate(
@@ -670,6 +672,8 @@ void WaterSimulator2::Update(eg::CommandContext& cc, float dt, const World& worl
 	{
 		m_initialFramesCompleted++;
 	}
+
+	cpuTimer.StartStage("Gravity Change");
 
 	// Applies gravity changes
 	bool hasBoundChangeGravityPipeline = false;
@@ -713,15 +717,17 @@ void WaterSimulator2::Update(eg::CommandContext& cc, float dt, const World& worl
 		cc.DispatchCompute(m_numParticles / W_COMMON_WG_SIZE, 1, 1);
 
 		cc.Barrier(m_particleDataBuffer, computeToComputeBarrier);
-
-		eg::Log(eg::LogLevel::Info, "water", "changed gravity");
 	}
+
+	cpuTimer.StartStage("UpdateWaterCollisionQuadsBlockedGravity");
 
 	UpdateWaterCollisionQuadsBlockedGravity(world, cc, m_collisionData);
 
 	auto gpuTimer = eg::StartGPUTimer("WaterSim");
 
 	dt = std::min(dt, 1.0f / 60.0f);
+
+	cpuTimer.StartStage("CommandsRecord");
 
 	RunSortPhase(cc);
 	RunCellPreparePhase(cc);

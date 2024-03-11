@@ -65,8 +65,6 @@ std::vector<glm::vec3> GenerateWaterPositions(class World& world)
 		positions.pop_back();
 	}
 
-	eg::Log(eg::LogLevel::Info, "water", "Generated {0} water particles", positions.size());
-
 	return positions;
 }
 

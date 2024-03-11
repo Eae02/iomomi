@@ -528,11 +528,10 @@ void MainGameState::DrawOverlay(float dt)
 
 	textStream << "PSM Updates: " << GameRenderer::instance->m_plShadowMapper.LastFrameUpdateCount() << "\n";
 
-	// if (const WaterSimulator2* waterSim = GameRenderer::instance->m_waterSimulator.get())
-	// {
-	// 	textStream << "Water Spheres: " << waterSim->NumParticles() << "\n";
-	// 	textStream << "Water Update Time: " << (static_cast<double>(waterSim->LastUpdateTime()) / 1E6) << "ms\n";
-	// }
+	if (const WaterSimulator2* waterSim = GameRenderer::instance->m_waterSimulator.get())
+	{
+		textStream << "Water Particles: " << waterSim->NumParticles() << "\n";
+	}
 
 	if (m_currentLevelIndex != -1)
 	{
