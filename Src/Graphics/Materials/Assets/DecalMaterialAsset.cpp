@@ -31,11 +31,11 @@ public:
 			return false;
 		}
 
-		eg::BinWriteString(generateContext.outputStream, albedoPath);
-		eg::BinWriteString(generateContext.outputStream, normalMapPath);
-		eg::BinWrite(generateContext.outputStream, roughness);
-		eg::BinWrite(generateContext.outputStream, opacity);
-		eg::BinWrite<uint8_t>(generateContext.outputStream, inheritNormals);
+		generateContext.writer.WriteString(albedoPath);
+		generateContext.writer.WriteString(normalMapPath);
+		generateContext.writer.Write(roughness);
+		generateContext.writer.Write(opacity);
+		generateContext.writer.Write<uint8_t>(inheritNormals);
 
 		generateContext.AddLoadDependency(std::move(albedoPath));
 		generateContext.AddLoadDependency(std::move(normalMapPath));
@@ -61,13 +61,15 @@ bool DecalMaterialAssetLoader(const eg::AssetLoadContext& loadContext)
 
 	DecalMaterial::LazyInitGlobals();
 
-	DecalMaterial& material = loadContext.CreateResult<DecalMaterial>(
-		eg::GetAsset<eg::Texture>(albedoTexturePath), eg::GetAsset<eg::Texture>(normalMapTexturePath)
-	);
+	DecalMaterial::Parameters parameters = {
+		.roughness = eg::BinRead<float>(stream),
+		.opacity = eg::BinRead<float>(stream),
+		.inheritNormals = eg::BinRead<uint8_t>(stream) != 0,
+	};
 
-	material.roughness = eg::BinRead<float>(stream);
-	material.opacity = eg::BinRead<float>(stream);
-	material.inheritNormals = eg::BinRead<uint8_t>(stream);
+	loadContext.CreateResult<DecalMaterial>(
+		eg::GetAsset<eg::Texture>(albedoTexturePath), eg::GetAsset<eg::Texture>(normalMapTexturePath), parameters
+	);
 
 	return true;
 }

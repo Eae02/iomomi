@@ -8,8 +8,6 @@
 
 layout(local_size_x_id = 0, local_size_y = 1, local_size_z = 1) in;
 
-layout(constant_id=0) const uint workGroupSize = 128;
-
 #include "SortWithinWorkgroup.glh"
 #include "../../WaterCommon.glh"
 
@@ -51,7 +49,7 @@ void main()
 		}
 	}
 
-	for (uint k = MAX_SUPPORTED_SUBGROUP_SIZE << 1; k <= workGroupSize; k <<= 1)
+	for (uint k = MAX_SUPPORTED_SUBGROUP_SIZE << 1; k <= gl_WorkGroupSize.x; k <<= 1)
 	{
 		selfValue = sortForLargeKSmallJ(k, k >> 1, selfValue);
 	}

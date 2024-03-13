@@ -30,8 +30,8 @@ static std::array<WindowType, 4> windowTypes;
 static int windowTypeDisplayOrder[] = { 0, 3, 1, 2 };
 static_assert(std::size(windowTypeDisplayOrder) == windowTypes.size());
 
-BlurredGlassMaterial blurryGlassMaterial;
-BlurredGlassMaterial clearGlassMaterial;
+BlurredGlassMaterial* blurryGlassMaterial;
+BlurredGlassMaterial* clearGlassMaterial;
 
 static eg::Buffer windowVertexBuffer;
 static eg::MeshBuffersDescriptor windowVertexBufferDescriptor;
@@ -50,17 +50,16 @@ struct FrameMaterial
 static std::vector<FrameMaterial> frameMaterials;
 static bool frameMaterialsInitialized = false;
 
+static const eg::ColorLin GLASS_COLOR = eg::ColorLin(eg::ColorSRGB::FromHex(0xbed6eb).ScaleAlpha(0.8f));
+
 static void OnInit()
 {
-	blurryGlassMaterial.color = clearGlassMaterial.color =
-		eg::ColorLin(eg::ColorSRGB::FromHex(0xbed6eb).ScaleAlpha(0.5f));
-
-	blurryGlassMaterial.isBlurry = true;
-	clearGlassMaterial.isBlurry = false;
+	blurryGlassMaterial = new BlurredGlassMaterial(GLASS_COLOR, true);
+	clearGlassMaterial = new BlurredGlassMaterial(GLASS_COLOR, false);
 
 	windowTypes[0] = { "Grating", &eg::GetAsset<StaticPropMaterial>("Materials/Platform.yaml"), false, false };
-	windowTypes[1] = { "Blurred Glass", &blurryGlassMaterial, true, true, true };
-	windowTypes[2] = { "Clear Glass", &clearGlassMaterial, true, true };
+	windowTypes[1] = { "Blurred Glass", blurryGlassMaterial, true, true, true };
+	windowTypes[2] = { "Clear Glass", clearGlassMaterial, true, true };
 	windowTypes[3] = { "Grating 2", &eg::GetAsset<StaticPropMaterial>("Materials/Grating2.yaml"), false, false };
 
 	frameModel = &eg::GetAsset<eg::Model>("Models/WindowFrame.obj");
@@ -122,6 +121,8 @@ static void InitializeFrameMaterials()
 static void OnShutdown()
 {
 	windowVertexBuffer.Destroy();
+	delete blurryGlassMaterial;
+	delete clearGlassMaterial;
 }
 
 EG_ON_INIT(OnInit)

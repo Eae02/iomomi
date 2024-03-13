@@ -8,8 +8,6 @@
 
 layout(local_size_x_id = 0, local_size_y = 1, local_size_z = 1) in;
 
-layout(constant_id=0) const uint workGroupSize = 128;
-
 #include "SortWithinWorkgroup.glh"
 
 layout(set = 0, binding = 0) restrict buffer SortDataBuffer
@@ -26,6 +24,6 @@ pc;
 void main()
 {
 	uvec2 selfValue = inputOutput[globalIndex];
-	selfValue = sortForLargeKSmallJ(pc.k, workGroupSize >> 1, selfValue);
+	selfValue = sortForLargeKSmallJ(pc.k, gl_WorkGroupSize.x >> 1, selfValue);
 	inputOutput[globalIndex] = selfValue;
 }

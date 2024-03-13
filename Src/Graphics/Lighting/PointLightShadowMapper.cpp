@@ -3,17 +3,6 @@
 #include "../GraphicsCommon.hpp"
 #include "PointLight.hpp"
 
-void PointLightShadowDrawArgs::SetPushConstants() const
-{
-	float pcData[20];
-	std::memcpy(pcData, &lightMatrix, sizeof(float) * 16);
-	pcData[16] = lightSphere.position.x;
-	pcData[17] = lightSphere.position.y;
-	pcData[18] = lightSphere.position.z;
-	pcData[19] = lightSphere.radius;
-	eg::DC.PushConstants(0, sizeof(pcData), pcData);
-}
-
 static const glm::vec3 shadowMatrixF[] = { { 1, 0, 0 },  { -1, 0, 0 }, { 0, 1, 0 },
 	                                       { 0, -1, 0 }, { 0, 0, 1 },  { 0, 0, -1 } };
 static const glm::vec3 shadowMatrixU[] = { { 0, -1, 0 }, { 0, -1, 0 }, { 0, 0, 1 },
@@ -154,6 +143,12 @@ void PointLightShadowMapper::SetLightSources(const std::vector<std::shared_ptr<P
 	}
 }
 
+struct LightParametersData
+{
+	glm::mat4 lightMatrix;
+	glm::vec4 lightSphere;
+};
+
 void PointLightShadowMapper::UpdateShadowMaps(
 	const RenderCallback& prepareCallback, const RenderCallback& renderCallback, const eg::Frustum& viewFrustum
 )
@@ -170,6 +165,8 @@ void PointLightShadowMapper::UpdateShadowMaps(
 
 	PointLightShadowDrawArgs renderArgs;
 
+	uint32_t lightParametersBufferOffset = 0;
+
 	auto UpdateShadowMap = [&](int shadowMap, int baseShadowMap, const PointLight& light, uint32_t face)
 	{
 		std::string debugLabel = "Update SM " + std::to_string(shadowMap) + ":" + std::to_string(face);
@@ -183,6 +180,55 @@ void PointLightShadowMapper::UpdateShadowMaps(
 		{
 			renderArgs.lightMatrix = glm::scale(glm::mat4(1), glm::vec3(1, -1, 1)) * renderArgs.lightMatrix;
 		}
+
+		// Reallocates the light parameters buffer if it is too small
+		if (lightParametersBufferOffset + sizeof(LightParametersData) > m_lightParametersBufferSize)
+		{
+			constexpr uint64_t BUFFER_SIZE_INCREMENT = 32 * 1024;
+			if (m_lightParametersBufferSize == 0)
+				m_lightParametersBufferSize = BUFFER_SIZE_INCREMENT;
+			else
+				m_lightParametersBufferSize += BUFFER_SIZE_INCREMENT;
+
+			m_lightParametersBuffer = eg::Buffer(eg::BufferCreateInfo{
+				.flags = eg::BufferFlags::UniformBuffer | eg::BufferFlags::CopyDst | eg::BufferFlags::ManualBarrier,
+				.size = m_lightParametersBufferSize,
+			});
+
+			m_lightParametersDescriptorSet = eg::DescriptorSet(PointLightShadowDrawArgs::PARAMETERS_DS_BINDINGS);
+			m_lightParametersDescriptorSet.BindUniformBuffer(
+				m_lightParametersBuffer, 0, eg::BIND_BUFFER_OFFSET_DYNAMIC, sizeof(LightParametersData)
+			);
+		}
+
+		// Uploads data to the parameters buffer
+		eg::UploadBuffer parametersUploadBuffer = eg::GetTemporaryUploadBuffer(sizeof(LightParametersData));
+		*static_cast<LightParametersData*>(parametersUploadBuffer.Map()) = {
+			.lightMatrix = renderArgs.lightMatrix,
+			.lightSphere = glm::vec4(renderArgs.lightSphere.position, renderArgs.lightSphere.radius),
+		};
+		parametersUploadBuffer.Flush();
+		eg::DC.CopyBuffer(
+			parametersUploadBuffer.buffer, m_lightParametersBuffer, parametersUploadBuffer.offset,
+			lightParametersBufferOffset, sizeof(LightParametersData)
+		);
+		eg::DC.Barrier(
+			m_lightParametersBuffer,
+			eg::BufferBarrier{
+				.oldUsage = eg::BufferUsage::CopyDst,
+				.newUsage = eg::BufferUsage::UniformBuffer,
+				.newAccess = eg::ShaderAccessFlags::Vertex | eg::ShaderAccessFlags::Fragment,
+				.offset = lightParametersBufferOffset,
+				.range = sizeof(LightParametersData),
+			}
+		);
+
+		renderArgs.parametersDescriptorSet = m_lightParametersDescriptorSet;
+		renderArgs.parametersBufferOffset = lightParametersBufferOffset;
+		lightParametersBufferOffset = eg::RoundToNextMultiple(
+			lightParametersBufferOffset + sizeof(LightParametersData),
+			eg::GetGraphicsDeviceInfo().uniformBufferOffsetAlignment
+		);
 
 		renderArgs.light = &light;
 		renderArgs.frustum = eg::Frustum(glm::inverse(renderArgs.lightMatrix));

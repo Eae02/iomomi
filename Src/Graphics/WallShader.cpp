@@ -121,6 +121,8 @@ void InitializeWallShader()
 	plsPipelineCI.enableDepthTest = true;
 	plsPipelineCI.frontFaceCCW = PointLightShadowMapper::FlippedLightMatrix();
 	plsPipelineCI.cullMode = eg::CullMode::None;
+	plsPipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
+	plsPipelineCI.descriptorSetBindings[0] = PointLightShadowDrawArgs::PARAMETERS_DS_BINDINGS;
 	plsPipelineCI.vertexBindings[0] = { sizeof(WallVertex), eg::InputRate::Vertex };
 	plsPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(WallVertex, position) };
 	plsPipelineCI.numColorAttachments = 0;
@@ -184,7 +186,7 @@ void BindWallShaderEditor(bool drawGrid)
 void BindWallShaderPointLightShadow(const PointLightShadowDrawArgs& renderArgs)
 {
 	eg::DC.BindPipeline(wr.pipelinePLShadow);
-	renderArgs.SetPushConstants();
+	renderArgs.BindParametersDescriptorSet(eg::DC, 0);
 }
 
 void DrawWallBordersEditor(eg::BufferRef vertexBuffer, uint32_t numVertices)

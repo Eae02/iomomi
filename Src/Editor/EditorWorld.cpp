@@ -193,6 +193,32 @@ void EditorWorld::TestLevel()
 	SetCurrentGS(mainGameState);
 }
 
+void EditorWorld::UpdateRenderSettingsAndViewMatrices(const glm::mat4& viewMatrix, const glm::mat4& invViewMatrix)
+{
+	glm::mat4 viewProj = m_editorState.projection.Matrix() * viewMatrix;
+	glm::mat4 invViewProj = invViewMatrix * m_editorState.projection.InverseMatrix();
+
+	RenderSettings::instance->data = {
+		.viewProjection = viewProj,
+		.invViewProjection = invViewProj,
+		.viewMatrix = viewMatrix,
+		.projectionMatrix = m_editorState.projection.Matrix(),
+		.invViewMatrix = invViewMatrix,
+		.invProjectionMatrix = m_editorState.projection.InverseMatrix(),
+		.cameraPosition = glm::vec3(invViewMatrix[3]),
+		.gameTime = 0.0f,
+		.renderResolution = glm::ivec2(eg::CurrentResolutionX(), eg::CurrentResolutionY()),
+		.inverseRenderResolution =
+			glm::vec2(1.0f / (float)eg::CurrentResolutionX(), 1.0f / (float)eg::CurrentResolutionY()),
+	};
+	RenderSettings::instance->UpdateBuffer();
+
+	m_selectionRenderer.viewProjection = viewProj;
+
+	m_editorState.inverseViewProjection = invViewProj;
+	m_editorState.viewProjection = viewProj;
+}
+
 void EditorWorld::Update(float dt, EditorTool currentTool)
 {
 	if (m_isUpdatingThumbnailView)
@@ -213,11 +239,7 @@ void EditorWorld::Update(float dt, EditorTool currentTool)
 			m_thumbnailCamera.Update(dt);
 		}
 
-		RenderSettings::instance->viewProjection = m_editorState.projection.Matrix() * m_thumbnailCamera.ViewMatrix();
-		RenderSettings::instance->invViewProjection =
-			m_thumbnailCamera.InverseViewMatrix() * m_editorState.projection.InverseMatrix();
-		RenderSettings::instance->cameraPosition = m_thumbnailCamera.Position();
-		RenderSettings::instance->UpdateBuffer();
+		UpdateRenderSettingsAndViewMatrices(m_thumbnailCamera.ViewMatrix(), m_thumbnailCamera.InverseViewMatrix());
 
 		m_icons.clear();
 		return;
@@ -262,20 +284,13 @@ void EditorWorld::Update(float dt, EditorTool currentTool)
 
 	glm::mat4 viewMatrix, inverseViewMatrix;
 	m_camera.GetViewMatrix(viewMatrix, inverseViewMatrix);
-	RenderSettings::instance->viewProjection = m_editorState.projection.Matrix() * viewMatrix;
-	RenderSettings::instance->invViewProjection = inverseViewMatrix * m_editorState.projection.InverseMatrix();
-	RenderSettings::instance->cameraPosition = glm::vec3(inverseViewMatrix[3]);
-	RenderSettings::instance->UpdateBuffer();
-
-	m_selectionRenderer.viewProjection = RenderSettings::instance->viewProjection;
+	UpdateRenderSettingsAndViewMatrices(viewMatrix, inverseViewMatrix);
 
 	glm::vec2 windowCursorPosNF = glm::vec2(eg::CursorPos()) - m_editorState.windowRect.Min();
 	glm::vec2 windowCursorPosNDC =
 		((windowCursorPosNF / m_editorState.windowRect.Size()) * 2.0f - 1.0f) * glm::vec2(1, -1);
 
 	m_editorState.windowCursorPos = glm::vec2(windowCursorPosNF.x, m_editorState.windowRect.h - windowCursorPosNF.y);
-	m_editorState.inverseViewProjection = RenderSettings::instance->invViewProjection;
-	m_editorState.viewProjection = RenderSettings::instance->viewProjection;
 	m_editorState.cameraPosition = glm::vec3(inverseViewMatrix[3]);
 	m_editorState.viewRay = eg::Ray::UnprojectNDC(m_editorState.inverseViewProjection, windowCursorPosNDC);
 	m_editorState.tool = currentTool;
@@ -359,12 +374,12 @@ void EditorWorld::Update(float dt, EditorTool currentTool)
 
 void EditorWorld::Draw(EditorTool currentTool, RenderContext& renderCtx, PrepareDrawArgs prepareDrawArgs)
 {
-	m_primRenderer.Begin(RenderSettings::instance->viewProjection, RenderSettings::instance->cameraPosition);
+	m_primRenderer.Begin(RenderSettings::instance->data.viewProjection, RenderSettings::instance->data.cameraPosition);
 	m_spriteBatch.Reset();
 	renderCtx.meshBatch.Begin();
 	renderCtx.transparentMeshBatch.Begin();
 
-	eg::Frustum frustum(RenderSettings::instance->invViewProjection);
+	eg::Frustum frustum(RenderSettings::instance->data.invViewProjection);
 	prepareDrawArgs.frustum = &frustum;
 
 	m_world->PrepareForDraw(prepareDrawArgs);
@@ -423,7 +438,9 @@ void EditorWorld::Draw(EditorTool currentTool, RenderContext& renderCtx, Prepare
 	renderCtx.meshBatch.End(eg::DC);
 	renderCtx.transparentMeshBatch.End(eg::DC);
 
-	m_liquidPlaneRenderer.Prepare(*m_world, renderCtx.transparentMeshBatch, RenderSettings::instance->cameraPosition);
+	m_liquidPlaneRenderer.Prepare(
+		*m_world, renderCtx.transparentMeshBatch, RenderSettings::instance->data.cameraPosition
+	);
 
 	eg::RenderPassBeginInfo rpBeginInfo;
 	rpBeginInfo.framebuffer = m_framebuffer.handle;

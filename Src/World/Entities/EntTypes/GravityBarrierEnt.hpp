@@ -17,7 +17,8 @@ class GravityBarrierEnt : public Ent
 public:
 	static constexpr EntTypeID TypeID = EntTypeID::GravityBarrier;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
-	                                         EntTypeFlags::ShadowDrawableS | EntTypeFlags::HasPhysics;
+	                                         EntTypeFlags::ShadowDrawableS | EntTypeFlags::HasPhysics |
+	                                         EntTypeFlags::DisableClone;
 
 	GravityBarrierEnt();
 
@@ -60,7 +61,10 @@ public:
 	int flowDirection = 0;
 	ActivateAction activateAction = ActivateAction::Rotate;
 
-	eg::TextureRef waterDistanceTexture;
+	void SetWaterDistanceTexture(eg::TextureRef waterDistanceTexture)
+	{
+		m_material.SetWaterDistanceTexture(waterDistanceTexture);
+	}
 
 private:
 	glm::vec3 m_position;
@@ -81,6 +85,7 @@ private:
 
 	float m_opacity = 1;
 	int m_flowDirectionOffset = 0;
+	float m_noiseSampleOffset;
 	bool m_enabled = true;
 	bool m_blockFalling = false;
 	bool m_waterBlockComponentOutOfDate = true;

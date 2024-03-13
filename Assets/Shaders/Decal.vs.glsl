@@ -15,12 +15,6 @@ layout(location=3) out vec3 tangent_out;
 #define RENDER_SETTINGS_BINDING 0
 #include "Inc/RenderSettings.glh"
 
-layout(push_constant) uniform PC
-{
-	float roughness;
-	float globalAlpha;
-};
-
 void main()
 {
 	mat4 worldTransform = transpose(mat4(worldTransform_in));

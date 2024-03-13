@@ -50,6 +50,8 @@ public:
 private:
 	void ResetCamera();
 
+	void UpdateRenderSettingsAndViewMatrices(const glm::mat4& viewMatrix, const glm::mat4& invViewMatrix);
+
 	bool IsEntitySelected(const Ent* entity) const;
 
 	eg::Texture m_renderTextureDepth;

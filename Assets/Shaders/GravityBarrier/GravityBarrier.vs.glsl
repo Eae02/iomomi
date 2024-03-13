@@ -5,7 +5,7 @@ layout(location=0) in vec2 locPos_in;
 layout(location=0) out vec2 texCoord_out;
 layout(location=1) out vec3 worldPos_out;
 
-layout(push_constant) uniform PC
+layout(set=2, binding=0) uniform ParametersUB
 {
 	vec3 position;
 	float opacity;

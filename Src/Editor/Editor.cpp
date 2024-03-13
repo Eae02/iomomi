@@ -51,8 +51,6 @@ void Editor::RunFrame(float dt)
 {
 	eg::SetRelativeMouseMode(false);
 
-	RenderSettings::instance->gameTime += dt;
-
 	// Sets up the root docking window
 	ImGuiViewport* viewport = ImGui::GetMainViewport();
 	ImGui::SetNextWindowPos(viewport->WorkPos);

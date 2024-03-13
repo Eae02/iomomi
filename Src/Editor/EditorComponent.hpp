@@ -92,7 +92,7 @@ class EditorComponent
 public:
 	EditorComponent() = default;
 
-	virtual void Update(float dt, const EditorState& editorState){};
+	virtual void Update(float dt, const EditorState& editorState) {};
 	virtual bool UpdateInput(float dt, const EditorState& editorState) { return false; };
 	virtual void EarlyDraw(const EditorState& editorState) const {}
 	virtual void LateDraw(const EditorState& editorState) const {}

@@ -11,7 +11,12 @@ struct PointLightShadowDrawArgs
 	bool renderDynamic;
 	const class PointLight* light;
 
-	void SetPushConstants() const;
+	eg::DescriptorSetRef parametersDescriptorSet;
+	uint32_t parametersBufferOffset;
+
+	static const eg::DescriptorSetBinding PARAMETERS_DS_BINDINGS[1];
+
+	void BindParametersDescriptorSet(eg::CommandContext& cc, uint32_t setIndex) const;
 };
 
 class PointLight : public LightSource

@@ -95,18 +95,24 @@ static void OnShutdown()
 
 EG_ON_SHUTDOWN(OnShutdown)
 
-DecalMaterial::DecalMaterial(const eg::Texture& albedoTexture, const eg::Texture& normalMapTexture)
-	: m_albedoTexture(albedoTexture), m_normalMapTexture(normalMapTexture),
-	  m_aspectRatio(albedoTexture.Width() / (float)albedoTexture.Height()), m_descriptorSet(decalsGamePipeline, 0)
+DecalMaterial::DecalMaterial(
+	const eg::Texture& albedoTexture, const eg::Texture& normalMapTexture, const Parameters& parameters
+)
+	: m_albedoTexture(albedoTexture), m_normalMapTexture(normalMapTexture), m_descriptorSet(decalsGamePipeline, 0),
+	  m_inheritNormals(parameters.inheritNormals), m_aspectRatio(albedoTexture.Width() / (float)albedoTexture.Height())
 {
+	const float parametersBufferData[2] = { parameters.roughness, parameters.opacity };
+	m_parametersBuffer = eg::Buffer(eg::BufferFlags::UniformBuffer, sizeof(parametersBufferData), parametersBufferData);
+
 	m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
 	m_descriptorSet.BindTexture(m_albedoTexture, 1, &commonTextureSampler);
 	m_descriptorSet.BindTexture(m_normalMapTexture, 2, &commonTextureSampler);
+	m_descriptorSet.BindUniformBuffer(m_parametersBuffer, 3);
 }
 
 size_t DecalMaterial::PipelineHash() const
 {
-	return typeid(DecalMaterial).hash_code() + inheritNormals;
+	return typeid(DecalMaterial).hash_code() + m_inheritNormals;
 }
 
 bool DecalMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const
@@ -115,7 +121,7 @@ bool DecalMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) con
 
 	if (mDrawArgs->drawMode == MeshDrawMode::Game)
 	{
-		cmdCtx.BindPipeline(inheritNormals ? decalsGamePipelineInheritNormals : decalsGamePipeline);
+		cmdCtx.BindPipeline(m_inheritNormals ? decalsGamePipelineInheritNormals : decalsGamePipeline);
 	}
 	else if (mDrawArgs->drawMode == MeshDrawMode::Editor)
 	{
@@ -131,9 +137,6 @@ bool DecalMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) con
 
 bool DecalMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
-	float pc[2] = { roughness, opacity };
-	cmdCtx.PushConstants(0, sizeof(pc), &pc);
-
 	cmdCtx.BindDescriptorSet(m_descriptorSet, 0);
 
 	return true;

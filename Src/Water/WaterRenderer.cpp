@@ -114,7 +114,7 @@ void WaterRenderer::CreateDepthBlurPipelines(uint32_t samples)
 	m_pipelineBlurPass2 = eg::Pipeline::Create(pipelineBlurCI);
 }
 
-struct __attribute__((__packed__, __may_alias__)) WaterBlurPC
+struct WaterBlurPC
 {
 	float blurDirX;
 	float blurDirY;

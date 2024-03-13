@@ -14,7 +14,7 @@ public:
 	static constexpr EntTypeID TypeID = EntTypeID::GravitySwitch;
 	static constexpr EntTypeFlags EntFlags = EntTypeFlags::Drawable | EntTypeFlags::EditorDrawable |
 	                                         EntTypeFlags::ShadowDrawableS | EntTypeFlags::Interactable |
-	                                         EntTypeFlags::EditorWallMove;
+	                                         EntTypeFlags::EditorWallMove | EntTypeFlags::DisableClone;
 
 	void Serialize(std::ostream& stream) const override;
 
@@ -53,6 +53,7 @@ private:
 	glm::vec3 m_position;
 
 	float m_enableAnimationTime = 1;
+	float m_volLightMaterialAssignedIntensity = -1;
 
 	ActivatableComp m_activatable;
 	GravitySwitchVolLightMaterial m_volLightMaterial;

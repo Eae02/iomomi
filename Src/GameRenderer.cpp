@@ -174,14 +174,18 @@ void GameRenderer::Render(
 
 	auto cpuTimerPrepare = eg::StartCPUTimer("Prepare Draw");
 
-	RenderSettings::instance->gameTime = gameTime;
-	RenderSettings::instance->cameraPosition = glm::vec3(m_inverseViewMatrix[3]);
-	RenderSettings::instance->viewProjection = m_viewProjMatrix;
-	RenderSettings::instance->invViewProjection = m_inverseViewProjMatrix;
-	RenderSettings::instance->viewMatrix = m_viewMatrix;
-	RenderSettings::instance->invViewMatrix = m_inverseViewMatrix;
-	RenderSettings::instance->projectionMatrix = m_projection.Matrix();
-	RenderSettings::instance->invProjectionMatrix = m_projection.InverseMatrix();
+	RenderSettings::instance->data = {
+		.viewProjection = m_viewProjMatrix,
+		.invViewProjection = m_inverseViewProjMatrix,
+		.viewMatrix = m_viewMatrix,
+		.projectionMatrix = m_projection.Matrix(),
+		.invViewMatrix = m_inverseViewMatrix,
+		.invProjectionMatrix = m_projection.InverseMatrix(),
+		.cameraPosition = glm::vec3(m_inverseViewMatrix[3]),
+		.gameTime = gameTime,
+		.renderResolution = glm::ivec2(outputResX, outputResY),
+		.inverseRenderResolution = glm::vec2(1.0f / (float)outputResX, 1.0f / (float)outputResY),
+	};
 	RenderSettings::instance->UpdateBuffer();
 
 	m_renderCtx->meshBatch.Begin();

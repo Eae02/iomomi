@@ -204,8 +204,7 @@ void WaterCollisionData::SetCollisionQuadBlockedGravities(
 
 	const uint64_t writeOffset =
 		collisionQuadIndex * sizeof(CollisionQuadForGPU) + offsetof(CollisionQuadForGPU, blockedGravities);
-	const uint32_t blockedGravitiesU32 = static_cast<uint32_t>(blockedGravities);
-	cc.UpdateBuffer(collisionQuadsBuffer, writeOffset, sizeof(uint32_t), &blockedGravitiesU32);
+	cc.FillBuffer(collisionQuadsBuffer, writeOffset, sizeof(uint32_t), static_cast<uint8_t>(blockedGravities));
 }
 
 void WaterCollisionData::MaybeInsertCollisionQuadsBufferBarrier(eg::CommandContext& cc)

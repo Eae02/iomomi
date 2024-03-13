@@ -13,7 +13,7 @@ const float LINE_WIDTH = 0.003;
 const float EDGE_FADE_DIST = 0.2;
 const float TIME_AXIS_SCALE = 0.25;
 
-layout(push_constant) uniform PC
+layout(set=2, binding=0) uniform ParametersUB
 {
 	vec3 position;
 	float opacity;

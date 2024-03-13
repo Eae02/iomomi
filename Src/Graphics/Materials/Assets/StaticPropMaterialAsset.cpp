@@ -59,20 +59,19 @@ public:
 			return false;
 		}
 
-		eg::BinWriteString(generateContext.outputStream, albedoPath);
-		eg::BinWriteString(generateContext.outputStream, normalMapPath);
-		eg::BinWriteString(generateContext.outputStream, miscMapPath);
-		eg::BinWrite(generateContext.outputStream, roughnessMin);
-		eg::BinWrite(generateContext.outputStream, roughnessMax);
-		eg::BinWrite(generateContext.outputStream, texScaleX);
-		eg::BinWrite(generateContext.outputStream, texScaleY);
-		eg::BinWrite<uint8_t>(
-			generateContext.outputStream,
+		generateContext.writer.WriteString(albedoPath);
+		generateContext.writer.WriteString(normalMapPath);
+		generateContext.writer.WriteString(miscMapPath);
+		generateContext.writer.Write(roughnessMin);
+		generateContext.writer.Write(roughnessMax);
+		generateContext.writer.Write(texScaleX);
+		generateContext.writer.Write(texScaleY);
+		generateContext.writer.Write<uint8_t>(
 			static_cast<uint8_t>(backfaceCull) | (static_cast<uint8_t>(backfaceCullEd) << 1)
 		);
-		eg::BinWrite<uint8_t>(generateContext.outputStream, static_cast<uint8_t>(castShadows));
-		eg::BinWrite<uint8_t>(generateContext.outputStream, static_cast<uint8_t>(minShadowQuality));
-		eg::BinWrite<uint8_t>(generateContext.outputStream, static_cast<uint8_t>(alphaTest));
+		generateContext.writer.Write<uint8_t>(static_cast<uint8_t>(castShadows));
+		generateContext.writer.Write<uint8_t>(static_cast<uint8_t>(minShadowQuality));
+		generateContext.writer.Write<uint8_t>(static_cast<uint8_t>(alphaTest));
 
 		generateContext.AddLoadDependency(std::move(albedoPath));
 		generateContext.AddLoadDependency(std::move(normalMapPath));
@@ -119,7 +118,7 @@ bool StaticPropMaterialAssetLoader(const eg::AssetLoadContext& loadContext)
 	material.m_minShadowQuality = (QualityLevel)eg::BinRead<uint8_t>(stream);
 	material.m_alphaTest = eg::BinRead<uint8_t>(stream);
 
-	material.CreateDescriptorSet();
+	material.CreateDescriptorSetAndParamsBuffer();
 
 	return true;
 }

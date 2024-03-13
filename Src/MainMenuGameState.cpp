@@ -451,9 +451,7 @@ void MainMenuGameState::RenderWorld(float dt)
 	if (GameRenderer::instance->m_waterSimulator)
 	{
 		auto waterUpdateTimer = eg::StartCPUTimer("Water Update MT");
-		GameRenderer::instance->m_waterSimulator->Update(eg::DC, dt, *m_world, false);
-		// if (!GameRenderer::instance->m_waterSimulator->IsPresimComplete())
-		// 	return;
+		GameRenderer::instance->m_waterSimulator->Update(eg::DC, dt, *m_world);
 	}
 
 	m_worldFadeInProgress = std::min(m_worldFadeInProgress + dt * 2, 1.0f);

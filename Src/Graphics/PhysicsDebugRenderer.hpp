@@ -2,7 +2,7 @@
 
 #include "GraphicsCommon.hpp"
 
-struct __attribute__((__packed__, __may_alias__)) PhysicsDebugVertex
+struct PhysicsDebugVertex
 {
 	float x;
 	float y;

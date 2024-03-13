@@ -69,4 +69,8 @@ private:
 	std::array<glm::vec3, 4> m_frustumPlanes[6];
 
 	eg::Pipeline m_depthCopyPipeline;
+
+	eg::Buffer m_lightParametersBuffer;
+	uint64_t m_lightParametersBufferSize = 0;
+	eg::DescriptorSet m_lightParametersDescriptorSet;
 };

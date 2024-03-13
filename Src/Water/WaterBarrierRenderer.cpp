@@ -54,7 +54,7 @@ void WaterBarrierRenderer::Init(const WaterSimulator2* simulator, World& world)
 		{
 			if (simulator == nullptr || !entity.RedFromWater())
 			{
-				entity.waterDistanceTexture = m_defaultTexture;
+				entity.SetWaterDistanceTexture(m_defaultTexture);
 				return;
 			}
 
@@ -73,7 +73,7 @@ void WaterBarrierRenderer::Init(const WaterSimulator2* simulator, World& world)
 				.format = BARRIER_DEPTH_FORMAT,
 			});
 
-			entity.waterDistanceTexture = barrier.texture;
+			entity.SetWaterDistanceTexture(barrier.texture);
 
 			barrier.framebuffer = eg::Framebuffer({}, eg::FramebufferAttachment(barrier.texture.handle));
 

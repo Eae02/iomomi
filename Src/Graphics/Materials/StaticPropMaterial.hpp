@@ -58,7 +58,7 @@ public:
 private:
 	friend bool StaticPropMaterialAssetLoader(const eg::AssetLoadContext& loadContext);
 
-	void CreateDescriptorSet();
+	void CreateDescriptorSetAndParamsBuffer();
 
 	eg::PipelineRef GetPipeline(MeshDrawMode drawMode) const;
 
@@ -66,7 +66,9 @@ private:
 	const eg::Texture* m_normalMapTexture;
 	const eg::Texture* m_miscMapTexture;
 	std::optional<uint32_t> m_textureLayer;
+	eg::Buffer m_parametersBuffer;
 	eg::DescriptorSet m_descriptorSet;
+	eg::DescriptorSet m_plShadowDescriptorSet;
 	float m_roughnessMin;
 	float m_roughnessMax;
 	glm::vec2 m_textureScale;

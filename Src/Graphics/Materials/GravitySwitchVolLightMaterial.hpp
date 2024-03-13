@@ -4,6 +4,9 @@
 
 struct GravitySwitchVolLightMaterial : public eg::IMaterial
 {
+public:
+	GravitySwitchVolLightMaterial() = default;
+
 	size_t PipelineHash() const override;
 
 	bool BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const override;
@@ -18,7 +21,9 @@ struct GravitySwitchVolLightMaterial : public eg::IMaterial
 
 	static eg::MeshBatch::Mesh GetMesh();
 
-	glm::vec3 switchPosition;
-	glm::mat3 rotationMatrix;
-	float intensity = 1;
+	void SetParameters(const glm::vec3& position, const glm::mat3& rotationMatrix, float intensity);
+
+private:
+	eg::Buffer m_parametersBuffer;
+	eg::DescriptorSet m_descriptorSet;
 };

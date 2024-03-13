@@ -32,9 +32,8 @@ struct ModelOption
 	{
 		std::transform(
 			materialOptionNames.begin(), materialOptionNames.end(), materialOptions.begin(),
-			[&](const char* materialName) -> std::pair<const char*, const eg::IMaterial*> {
-				return { materialName, &eg::GetAsset<StaticPropMaterial>(materialName) };
-			}
+			[&](const char* materialName) -> std::pair<const char*, const eg::IMaterial*>
+			{ return { materialName, &eg::GetAsset<StaticPropMaterial>(materialName) }; }
 		);
 
 		if (!meshName.empty())

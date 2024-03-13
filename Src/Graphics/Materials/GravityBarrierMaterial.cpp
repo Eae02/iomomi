@@ -33,6 +33,19 @@ static eg::DescriptorSetBinding descriptorSet0Bindings[] = {
 	},
 };
 
+static eg::DescriptorSetBinding descriptorSet2Bindings[] = {
+	eg::DescriptorSetBinding{
+		.binding = 0,
+		.type = eg::BindingType::UniformBuffer,
+		.shaderAccess = eg::ShaderAccessFlags::Vertex | eg::ShaderAccessFlags::Fragment,
+	},
+	eg::DescriptorSetBinding{
+		.binding = 1,
+		.type = eg::BindingType::Texture,
+		.shaderAccess = eg::ShaderAccessFlags::Fragment,
+	},
+};
+
 static eg::DescriptorSet gravityBarrierSet0;
 
 void GravityBarrierMaterial::OnInit()
@@ -51,7 +64,10 @@ void GravityBarrierMaterial::OnInit()
 	pipelineCI.topology = eg::Topology::TriangleStrip;
 	pipelineCI.cullMode = eg::CullMode::None;
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
+	pipelineCI.setBindModes[1] = eg::BindMode::Dynamic;
+	pipelineCI.setBindModes[2] = eg::BindMode::DescriptorSet;
 	pipelineCI.descriptorSetBindings[0] = descriptorSet0Bindings;
+	pipelineCI.descriptorSetBindings[2] = descriptorSet2Bindings;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.depthCompare = eg::CompareOp::Less;
@@ -84,7 +100,10 @@ void GravityBarrierMaterial::OnInit()
 	ssrPipelineCI.enableDepthTest = true;
 	ssrPipelineCI.enableDepthWrite = true;
 	ssrPipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
+	ssrPipelineCI.setBindModes[1] = eg::BindMode::Dynamic;
+	ssrPipelineCI.setBindModes[2] = eg::BindMode::DescriptorSet;
 	ssrPipelineCI.descriptorSetBindings[0] = descriptorSet0Bindings;
+	ssrPipelineCI.descriptorSetBindings[2] = descriptorSet2Bindings;
 	ssrPipelineCI.depthCompare = eg::CompareOp::Less;
 	ssrPipelineCI.label = "GravityBarrier[SSR]";
 	ssrPipelineCI.fragmentShader.specConstants = { &ssrDistSpecConstant, 1 };
@@ -182,40 +201,28 @@ static float* lineWidth = eg::TweakVarFloat("gb_line_width", 0.001f, 0.0f);
 static float* intensityDecay = eg::TweakVarFloat("gb_glow_decay", 15.0f, 0.0f);
 static float* glowIntensity = eg::TweakVarFloat("gb_glow_intensity", 0.1f, 0.0f);
 
+struct ParametersData
+{
+	glm::vec3 position;
+	float opacity;
+	glm::vec4 tangent;
+	glm::vec4 bitangent;
+	uint32_t blockedAxis;
+	float noiseSampleOffset;
+	float lineWidth;
+	float lineGlowDecay;
+	float lineGlowIntensity;
+};
+
 bool GravityBarrierMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
-	MeshDrawMode drawMode = reinterpret_cast<MeshDrawArgs*>(drawArgs)->drawMode;
-
-	struct PushConstants
+	if (!m_hasSetWaterDistanceTexture)
 	{
-		glm::vec3 position;
-		float opacity;
-		glm::vec4 tangent;
-		glm::vec4 bitangent;
-		uint32_t blockedAxis;
-		float noiseSampleOffset;
-		float lineWidth;
-		float lineGlowDecay;
-		float lineGlowIntensity;
-	};
-
-	PushConstants pc;
-	pc.position = position;
-	pc.opacity = opacity * *opacityScale;
-	pc.tangent = glm::vec4(glm::normalize(tangent), glm::length(tangent));
-	pc.bitangent = glm::vec4(glm::normalize(bitangent), glm::length(bitangent));
-	pc.blockedAxis = blockedAxis;
-	pc.noiseSampleOffset = noiseSampleOffset;
-	pc.lineWidth = *lineWidth;
-	pc.lineGlowDecay = -*intensityDecay;
-	pc.lineGlowIntensity = *glowIntensity;
-	eg::DC.PushConstants(0, sizeof(PushConstants), &pc);
-
-	if (drawMode != MeshDrawMode::Editor)
-	{
-		eg::TextureRef tex = waterDistanceTexture.handle ? waterDistanceTexture : eg::TextureRef(whitePixelTexture);
-		eg::DC.BindTexture(tex, 1, 2, &framebufferLinearSampler);
+		m_hasSetWaterDistanceTexture = true;
+		m_descriptorSet.BindTexture(whitePixelTexture, 1, &framebufferLinearSampler);
 	}
+
+	eg::DC.BindDescriptorSet(m_descriptorSet, 2);
 
 	return true;
 }
@@ -223,4 +230,41 @@ bool GravityBarrierMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* draw
 eg::IMaterial::VertexInputConfiguration GravityBarrierMaterial::GetVertexInputConfiguration(const void* drawArgs) const
 {
 	return VertexInputConfiguration{ .vertexBindingsMask = 1 };
+}
+
+void GravityBarrierMaterial::SetParameters(const Parameters& parameters)
+{
+	if (parameters == m_currentAssignedParameters)
+		return;
+
+	m_currentAssignedParameters = parameters;
+
+	ParametersData data = {
+		.position = parameters.position,
+		.opacity = parameters.opacity * *opacityScale,
+		.tangent = glm::vec4(glm::normalize(parameters.tangent), glm::length(parameters.tangent)),
+		.bitangent = glm::vec4(glm::normalize(parameters.bitangent), glm::length(parameters.bitangent)),
+		.blockedAxis = parameters.blockedAxis,
+		.noiseSampleOffset = parameters.noiseSampleOffset,
+		.lineWidth = *lineWidth,
+		.lineGlowDecay = -*intensityDecay,
+		.lineGlowIntensity = *glowIntensity,
+	};
+
+	m_parametersBuffer.DCUpdateData<ParametersData>(0, { &data, 1 });
+}
+
+GravityBarrierMaterial::GravityBarrierMaterial()
+{
+	m_parametersBuffer =
+		eg::Buffer(eg::BufferFlags::CopyDst | eg::BufferFlags::UniformBuffer, sizeof(ParametersData), nullptr);
+
+	m_descriptorSet = eg::DescriptorSet(descriptorSet2Bindings);
+	m_descriptorSet.BindUniformBuffer(m_parametersBuffer, 0);
+}
+
+void GravityBarrierMaterial::SetWaterDistanceTexture(eg::TextureRef waterDistanceTexture)
+{
+	m_descriptorSet.BindTexture(waterDistanceTexture, 1, &framebufferLinearSampler);
+	m_hasSetWaterDistanceTexture = true;
 }

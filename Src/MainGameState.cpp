@@ -72,8 +72,7 @@ MainGameState::MainGameState()
 	);
 
 	eg::console::AddCommand(
-		"ssrfbEdit", 0,
-		[this](std::span<const std::string_view> args, eg::console::Writer& writer)
+		"ssrfbEdit", 0, [this](std::span<const std::string_view> args, eg::console::Writer& writer)
 		{ m_ssrReflectionColorEditorShown = !m_ssrReflectionColorEditorShown; }
 	);
 
@@ -83,8 +82,7 @@ MainGameState::MainGameState()
 	);
 
 	eg::console::AddCommand(
-		"crosshair", 0,
-		[](std::span<const std::string_view>, eg::console::Writer&)
+		"crosshair", 0, [](std::span<const std::string_view>, eg::console::Writer&)
 		{ settings.drawCrosshair = !settings.drawCrosshair; }
 	);
 
@@ -309,10 +307,10 @@ void MainGameState::RunFrame(float dt)
 		m_playerWaterAABB->SetAABB(m_player.GetAABB());
 	}
 
-	if (GameRenderer::instance->m_waterSimulator)
+	if (GameRenderer::instance->m_waterSimulator != nullptr && !m_pausedMenu.isPaused)
 	{
 		auto waterUpdateTimer = eg::StartCPUTimer("Water Update MT");
-		GameRenderer::instance->m_waterSimulator->Update(eg::DC, dt, *m_world, m_pausedMenu.isPaused);
+		GameRenderer::instance->m_waterSimulator->Update(eg::DC, dt, *m_world);
 	}
 
 	auto [renderResolutionX, renderResolutionY] = GameRenderer::GetScaledRenderResolution();
@@ -388,7 +386,8 @@ void MainGameState::UpdateAndDrawHud(float dt)
 		m_errorHintMessage = "It is not possible to change gravity while carrying a cube";
 		errorHintTargetAlpha = 1;
 	}
-	else if (m_world->showControlHint[static_cast<int>(OptionalControlHintType::CannotExitWithWrongGravity)] && m_isPlayerCloseToExitWithWrongGravity)
+	else if (m_world->showControlHint[static_cast<int>(OptionalControlHintType::CannotExitWithWrongGravity)] &&
+	         m_isPlayerCloseToExitWithWrongGravity)
 	{
 		m_errorHintMessage = "Your gravity must point down in order to exit";
 		errorHintTargetAlpha = 1;

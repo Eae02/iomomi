@@ -9,16 +9,23 @@ public:
 
 	eg::BufferRef Buffer() const { return m_buffer; }
 
-	glm::mat4 viewProjection;
-	glm::mat4 invViewProjection;
-	glm::mat4 viewMatrix;
-	glm::mat4 projectionMatrix;
-	glm::mat4 invViewMatrix;
-	glm::mat4 invProjectionMatrix;
-	glm::vec3 cameraPosition;
-	float gameTime;
+	struct Data
+	{
+		glm::mat4 viewProjection;
+		glm::mat4 invViewProjection;
+		glm::mat4 viewMatrix;
+		glm::mat4 projectionMatrix;
+		glm::mat4 invViewMatrix;
+		glm::mat4 invProjectionMatrix;
+		glm::vec3 cameraPosition;
+		float gameTime;
+		glm::ivec2 renderResolution;
+		glm::vec2 inverseRenderResolution;
+	};
 
-	static constexpr uint32_t BUFFER_SIZE = sizeof(glm::mat4) * 6 + sizeof(float) * 4;
+	Data data;
+
+	static constexpr uint32_t BUFFER_SIZE = sizeof(Data);
 
 	static RenderSettings* instance;
 
@@ -34,5 +41,5 @@ private:
 
 inline float DepthDrawOrder(const glm::vec3& pos)
 {
-	return -glm::distance2(RenderSettings::instance->cameraPosition, pos);
+	return -glm::distance2(RenderSettings::instance->data.cameraPosition, pos);
 }

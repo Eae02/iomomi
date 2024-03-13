@@ -125,6 +125,9 @@ void StaticPropMaterial::LazyInitGlobals()
 	plsPipelineCI.numColorAttachments = 0;
 	plsPipelineCI.depthAttachmentFormat = PointLightShadowMapper::SHADOW_MAP_FORMAT;
 	plsPipelineCI.cullMode = std::nullopt;
+	plsPipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
+	plsPipelineCI.setBindModes[1] = eg::BindMode::DescriptorSet;
+	plsPipelineCI.descriptorSetBindings[0] = PointLightShadowDrawArgs::PARAMETERS_DS_BINDINGS;
 	plsPipelineCI.vertexBindings[VERTEX_BINDING_POSITION] = { VERTEX_STRIDE_POSITION, eg::InputRate::Vertex };
 	plsPipelineCI.vertexAttributes[0] = { VERTEX_BINDING_POSITION, eg::DataType::Float32, 3, 0 };
 	constexpr uint32_t PLS_FIRST_INSTANCE_DATA_ATTRIBUTE = 2;
@@ -153,14 +156,27 @@ static void OnShutdown()
 
 EG_ON_SHUTDOWN(OnShutdown)
 
-void StaticPropMaterial::CreateDescriptorSet()
+void StaticPropMaterial::CreateDescriptorSetAndParamsBuffer()
 {
+	const float parametersData[5] = {
+		m_roughnessMin, m_roughnessMax, m_textureScale.x, m_textureScale.y, (float)m_textureLayer.value_or(0),
+	};
+
+	m_parametersBuffer = eg::Buffer(eg::BufferFlags::UniformBuffer, sizeof(parametersData), parametersData);
+
 	m_descriptorSet = eg::DescriptorSet(GetPipeline(MeshDrawMode::Game), 0);
 
 	m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
 	m_descriptorSet.BindTexture(*m_albedoTexture, 1, &commonTextureSampler);
 	m_descriptorSet.BindTexture(*m_normalMapTexture, 2, &commonTextureSampler);
 	m_descriptorSet.BindTexture(*m_miscMapTexture, 3, &commonTextureSampler);
+	m_descriptorSet.BindUniformBuffer(m_parametersBuffer, 4);
+
+	if (m_alphaTest)
+	{
+		m_plShadowDescriptorSet = eg::DescriptorSet(GetPipeline(MeshDrawMode::PointLightShadow), 1);
+		m_plShadowDescriptorSet.BindTexture(*m_albedoTexture, 0, &commonTextureSampler);
+	}
 }
 
 size_t StaticPropMaterial::PipelineHash() const
@@ -197,7 +213,7 @@ bool StaticPropMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs
 
 	if (mDrawArgs->drawMode == MeshDrawMode::PointLightShadow)
 	{
-		mDrawArgs->plShadowRenderArgs->SetPushConstants();
+		mDrawArgs->plShadowRenderArgs->BindParametersDescriptorSet(cmdCtx, 0);
 	}
 
 	return true;
@@ -215,17 +231,13 @@ bool StaticPropMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs
 		if (!m_castShadows || settings.shadowQuality < m_minShadowQuality)
 			return false;
 		if (m_alphaTest)
-			cmdCtx.BindTexture(*m_albedoTexture, 0, 1, &linearRepeatSampler);
+			cmdCtx.BindDescriptorSet(m_plShadowDescriptorSet, 1);
 		return true;
 	}
 
 	if (mDrawArgs->drawMode == MeshDrawMode::Editor || mDrawArgs->drawMode == MeshDrawMode::Game)
 	{
 		cmdCtx.BindDescriptorSet(m_descriptorSet, 0);
-
-		const float pushConstants[] = { m_roughnessMin, m_roughnessMax, m_textureScale.x, m_textureScale.y,
-			                            (float)m_textureLayer.value_or(0) };
-		cmdCtx.PushConstants(0, sizeof(float) * (m_textureLayer.has_value() ? 5 : 4), pushConstants);
 	}
 
 	return true;
@@ -274,7 +286,7 @@ const StaticPropMaterial& StaticPropMaterial::GetFromWallMaterial(uint32_t index
 		material->m_textureScale = glm::vec2(1.0f / wallMaterials[index].textureScale);
 		material->m_backfaceCullEditor = true;
 		material->m_alphaTest = false;
-		material->CreateDescriptorSet();
+		material->CreateDescriptorSetAndParamsBuffer();
 		staticPropMaterialGlobals.wallMaterials[index] = std::move(material);
 	}
 	return *staticPropMaterialGlobals.wallMaterials[index];

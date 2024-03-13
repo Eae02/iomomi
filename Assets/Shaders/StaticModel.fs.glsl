@@ -29,13 +29,12 @@ layout(binding=1) uniform TEXTURE_TYPE albedoSampler;
 layout(binding=2) uniform TEXTURE_TYPE nmSampler;
 layout(binding=3) uniform TEXTURE_TYPE mmSampler;
 
-layout(push_constant) uniform PC
+layout(binding=4) uniform ParametersUB
 {
-	vec2 roughnessRange;
+	float roughnessMin;
+	float roughnessMax;
 	vec2 textureScale;
-#if defined(VGameTexArray) || defined(VEditorTexArray)
 	float textureLayer;
-#endif
 };
 
 void main()
@@ -61,7 +60,7 @@ void main()
 #ifdef EDITOR
 	color_out = vec4(albedo.rgb * CalcEditorLight(normal, miscMaps.b), 1.0);
 #else
-	float roughness = mix(roughnessRange.x, roughnessRange.y, miscMaps.r);
+	float roughness = mix(roughnessMin, roughnessMax, miscMaps.r);
 	DeferredOut(albedo.rgb / albedo.a, normal, roughness, miscMaps.g, miscMaps.b);
 #endif
 }

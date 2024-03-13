@@ -58,7 +58,7 @@ GravityBarrierEnt::GravityBarrierEnt() : m_activatable(&GravityBarrierEnt::GetCo
 	m_physicsObject.owner = this;
 	m_physicsObject.shouldCollide = &GravityBarrierEnt::ShouldCollide;
 	m_physicsObject.debugColor = 0xcf24cf;
-	m_material.noiseSampleOffset = std::uniform_real_distribution<float>(0.0f, 1.0f)(globalRNG);
+	m_noiseSampleOffset = std::uniform_real_distribution<float>(0.0f, 1.0f)(globalRNG);
 }
 
 bool GravityBarrierEnt::ShouldCollide(const PhysicsObject& self, const PhysicsObject& other)
@@ -127,12 +127,14 @@ void GravityBarrierEnt::CommonDraw(const EntDrawArgs& args)
 
 	if (args.transparentMeshBatch)
 	{
-		m_material.position = m_position;
-		m_material.opacity = glm::smoothstep(0.0f, 1.0f, m_opacity);
-		m_material.blockedAxis = BlockedAxis();
-		m_material.tangent = tangent;
-		m_material.bitangent = bitangent;
-		m_material.waterDistanceTexture = waterDistanceTexture;
+		m_material.SetParameters({
+			.position = m_position,
+			.tangent = tangent,
+			.bitangent = bitangent,
+			.opacity = glm::smoothstep(0.0f, 1.0f, m_opacity),
+			.blockedAxis = static_cast<uint32_t>(BlockedAxis()),
+			.noiseSampleOffset = m_noiseSampleOffset,
+		});
 
 		args.transparentMeshBatch->AddNoData(
 			{ .buffersDescriptor = &gravityBarrierMeshBuffersDescriptor, .numElements = 4 }, m_material,
@@ -303,7 +305,7 @@ void GravityBarrierEnt::UpdateNearEntities(const Player* player, EntityManager& 
 
 	GravityBarrierMaterial::BarrierBufferData bufferData;
 	memset(&bufferData, 0, sizeof(bufferData));
-	bufferData.gameTime = RenderSettings::instance->gameTime * *animationSpeed;
+	bufferData.gameTime = RenderSettings::instance->data.gameTime * *animationSpeed;
 	int itemsWritten = 0;
 
 	auto AddInteractable = [&](Dir down, const glm::vec3& pos)

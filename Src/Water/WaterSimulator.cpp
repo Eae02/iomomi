@@ -652,7 +652,7 @@ void WaterSimulator2::MoveAndCollision(eg::CommandContext& cc, float dt)
 	cc.DebugLabelEnd();
 }
 
-void WaterSimulator2::Update(eg::CommandContext& cc, float dt, const World& world, bool paused)
+void WaterSimulator2::Update(eg::CommandContext& cc, float dt, const World& world)
 {
 	eg::MultiStageCPUTimer cpuTimer;
 

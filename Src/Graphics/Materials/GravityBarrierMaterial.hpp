@@ -5,7 +5,7 @@ class GravityBarrierMaterial : public eg::IMaterial
 public:
 	static constexpr int NUM_INTERACTABLES = 8;
 
-	struct __attribute__((__packed__, __may_alias__)) BarrierBufferData
+	struct BarrierBufferData
 	{
 		uint32_t iaDownAxis[NUM_INTERACTABLES];
 		float iaPosition[NUM_INTERACTABLES][4];
@@ -13,7 +13,7 @@ public:
 		float _padding[3];
 	};
 
-	GravityBarrierMaterial() = default;
+	GravityBarrierMaterial();
 
 	size_t PipelineHash() const override;
 
@@ -25,14 +25,22 @@ public:
 
 	VertexInputConfiguration GetVertexInputConfiguration(const void* drawArgs) const override;
 
-	glm::vec3 position;
-	glm::vec3 tangent;
-	glm::vec3 bitangent;
-	float opacity = 0;
-	int blockedAxis = 0;
-	float noiseSampleOffset = 0;
+	struct Parameters
+	{
+		glm::vec3 position;
+		glm::vec3 tangent;
+		glm::vec3 bitangent;
+		float opacity;
+		uint32_t blockedAxis;
+		float noiseSampleOffset;
 
-	eg::TextureRef waterDistanceTexture;
+		bool operator==(const Parameters&) const = default;
+		bool operator!=(const Parameters&) const = default;
+	};
+
+	void SetParameters(const Parameters& parameters);
+
+	void SetWaterDistanceTexture(eg::TextureRef waterDistanceTexture);
 
 	static void OnInit();
 	static void OnShutdown();
@@ -45,4 +53,10 @@ private:
 	static eg::Pipeline s_pipelineEditor;
 	static eg::Pipeline s_pipelineSSR;
 	static eg::Buffer s_sharedDataBuffer;
+
+	std::optional<Parameters> m_currentAssignedParameters;
+
+	eg::Buffer m_parametersBuffer;
+	mutable eg::DescriptorSet m_descriptorSet;
+	mutable bool m_hasSetWaterDistanceTexture = false;
 };

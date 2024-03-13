@@ -28,7 +28,7 @@ World::World()
 static const uint32_t CURRENT_VERSION = 9;
 static char MAGIC[] = { (char)0xFF, 'G', 'W', 'D' };
 
-struct __attribute__((__packed__, __may_alias__)) VoxelData
+struct VoxelData
 {
 	int32_t x;
 	int32_t y;

@@ -127,7 +127,7 @@ static void Run(int argc, char** argv)
 
 		RenderSettings::instance = new RenderSettings;
 
-		if (!eg::LoadAssets("Assets", "/"))
+		if (!eg::LoadAssets("Assets", "/", eg::GetDefaultEnabledAssetSideStreams()))
 		{
 			EG_PANIC("Failed to load assets, make sure assets.eap exists.");
 		}

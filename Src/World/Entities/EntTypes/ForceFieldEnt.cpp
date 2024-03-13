@@ -85,7 +85,7 @@ void ForceFieldEnt::GameDraw(const EntGameDrawArgs& args)
 
 	const float radDown = radius[static_cast<int>(m_effectiveNewGravity) / 2];
 	const glm::vec3 down = glm::vec3(DirectionVector(m_effectiveNewGravity));
-	const glm::vec3& cameraPos = RenderSettings::instance->cameraPosition;
+	const glm::vec3& cameraPos = RenderSettings::instance->data.cameraPosition;
 
 	for (const ForceFieldParticle& particle : m_particles)
 	{

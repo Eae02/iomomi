@@ -3,6 +3,8 @@
 class BlurredGlassMaterial : public eg::IMaterial
 {
 public:
+	BlurredGlassMaterial(eg::ColorLin color, bool isBlurry);
+
 	size_t PipelineHash() const override;
 
 	bool BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const override;
@@ -13,10 +15,11 @@ public:
 
 	VertexInputConfiguration GetVertexInputConfiguration(const void* drawArgs) const override;
 
-	bool isBlurry = false;
-
-	eg::ColorLin color;
-
 private:
 	std::optional<bool> ShouldRenderBlurry(const struct MeshDrawArgs& meshDrawArgs) const;
+
+	eg::Buffer m_parametersBuffer;
+	eg::DescriptorSet m_descriptorSet;
+
+	bool m_isBlurry;
 };

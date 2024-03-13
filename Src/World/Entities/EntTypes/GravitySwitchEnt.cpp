@@ -98,12 +98,14 @@ void GravitySwitchEnt::GameDraw(const EntGameDrawArgs& args)
 
 	if (m_enableAnimationTime > 0.01f && args.transparentMeshBatch)
 	{
-		m_volLightMaterial.intensity = m_enableAnimationTime;
-		m_volLightMaterial.rotationMatrix = GetRotationMatrix(m_up);
-		m_volLightMaterial.switchPosition = m_position;
+		if (m_volLightMaterialAssignedIntensity != m_enableAnimationTime)
+		{
+			m_volLightMaterial.SetParameters(m_position, GetRotationMatrix(m_up), m_enableAnimationTime);
+			m_volLightMaterialAssignedIntensity = m_enableAnimationTime;
+		}
+
 		args.transparentMeshBatch->AddNoData(
-			GravitySwitchVolLightMaterial::GetMesh(), m_volLightMaterial,
-			DepthDrawOrder(m_volLightMaterial.switchPosition)
+			GravitySwitchVolLightMaterial::GetMesh(), m_volLightMaterial, DepthDrawOrder(m_position)
 		);
 	}
 }

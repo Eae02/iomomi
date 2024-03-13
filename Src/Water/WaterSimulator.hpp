@@ -24,7 +24,7 @@ public:
 
 	WaterSimulator2(const WaterSimulatorInitArgs& args, eg::CommandContext& cc);
 
-	void Update(eg::CommandContext& cc, float dt, const class World& world, bool paused);
+	void Update(eg::CommandContext& cc, float dt, const class World& world);
 
 	void EnqueueGravityChange(const eg::Ray& ray, float maxDistance, Dir newGravity)
 	{

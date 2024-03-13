@@ -25,7 +25,7 @@ static const float cubeVertices[] = {
 
 static constexpr float MAX_ANGLE = 30.0f;
 
-struct __attribute__((__packed__, __may_alias__)) LightDataBuffer
+struct LightDataBuffer
 {
 	// These two values derive from the previous constants
 	float tMax;
@@ -64,6 +64,8 @@ static void OnInit()
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::Front;
 	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
+	pipelineCI.setBindModes[1] = eg::BindMode::Dynamic;
+	pipelineCI.setBindModes[2] = eg::BindMode::DescriptorSet;
 	pipelineCI.vertexBindings[0] = { sizeof(float) * 3, eg::InputRate::Vertex };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
 	pipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
@@ -178,17 +180,7 @@ bool GravitySwitchVolLightMaterial::BindPipeline(eg::CommandContext& cmdCtx, voi
 
 bool GravitySwitchVolLightMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
-	float pcData[4 + 4 + 4 + 3];
-	pcData[0] = switchPosition.x;
-	pcData[1] = switchPosition.y;
-	pcData[2] = switchPosition.z;
-	pcData[3] = intensity;
-	std::copy_n(&rotationMatrix[0].x, 3, pcData + 4);
-	std::copy_n(&rotationMatrix[1].x, 3, pcData + 8);
-	std::copy_n(&rotationMatrix[2].x, 3, pcData + 12);
-
-	cmdCtx.PushConstants(0, sizeof(pcData), pcData);
-
+	cmdCtx.BindDescriptorSet(m_descriptorSet, 2);
 	return true;
 }
 
@@ -204,4 +196,31 @@ eg::IMaterial::VertexInputConfiguration GravitySwitchVolLightMaterial::GetVertex
 ) const
 {
 	return VertexInputConfiguration{ .vertexBindingsMask = 1 };
+}
+
+void GravitySwitchVolLightMaterial::SetParameters(
+	const glm::vec3& position, const glm::mat3& rotationMatrix, float intensity
+)
+{
+	float parametersData[16] = {};
+	parametersData[0] = position.x;
+	parametersData[1] = position.y;
+	parametersData[2] = position.z;
+	parametersData[3] = intensity;
+	std::copy_n(&rotationMatrix[0].x, 3, parametersData + 4);
+	std::copy_n(&rotationMatrix[1].x, 3, parametersData + 8);
+	std::copy_n(&rotationMatrix[2].x, 3, parametersData + 12);
+
+	if (m_parametersBuffer.handle == nullptr)
+	{
+		m_parametersBuffer = eg::Buffer(
+			eg::BufferFlags::UniformBuffer | eg::BufferFlags::CopyDst, sizeof(parametersData), parametersData
+		);
+		m_descriptorSet = eg::DescriptorSet(gsVolLightPipelineFinal, 1);
+		m_descriptorSet.BindUniformBuffer(m_parametersBuffer, 0);
+	}
+	else
+	{
+		m_parametersBuffer.DCUpdateData<float>(0, parametersData);
+	}
 }

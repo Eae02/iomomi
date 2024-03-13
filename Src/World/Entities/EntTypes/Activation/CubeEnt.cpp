@@ -105,7 +105,7 @@ void CubeEnt::GameDraw(const EntGameDrawArgs& args)
 	instanceData.down = glm::vec3(DirectionVector(m_currentDown));
 
 	float flashIntensity = settings.gunFlash ? *cubeGAIntenstiyFlash : 1.0f;
-	float t = RenderSettings::instance->gameTime * eg::TWO_PI / *cubeGAPulseTime;
+	float t = RenderSettings::instance->data.gameTime * eg::TWO_PI / *cubeGAPulseTime;
 	float intensity = glm::mix(0.25f, 1.0f, std::sin(t) * 0.5f + 0.5f);
 	instanceData.minIntensity =
 		glm::mix(*cubeGAIntenstiyMin * intensity, flashIntensity, m_gravityIndicatorFlashIntensity);

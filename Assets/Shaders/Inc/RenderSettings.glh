@@ -12,6 +12,8 @@ layout(set=0, binding=RENDER_SETTINGS_BINDING) uniform RenderSettingsUB
 	mat4 invProjectionMatrix;
 	vec3 cameraPosition;
 	float gameTime;
+	ivec2 renderResolution;
+	vec2 inverseRenderResolution;
 } renderSettings;
 #endif
 

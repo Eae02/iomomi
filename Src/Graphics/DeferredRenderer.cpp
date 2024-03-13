@@ -413,7 +413,7 @@ void DeferredRenderer::DrawPointLights(
 	eg::DC.BindTexture(waterDepthTexture, 0, 4, &framebufferNearestSampler);
 	eg::DC.BindTexture(eg::GetAsset<eg::Texture>("Textures/Caustics"), 0, 5, &commonTextureSampler);
 
-	struct __attribute__((packed)) PointLightPC
+	struct PointLightPC
 	{
 		float positionX;
 		float positionY;

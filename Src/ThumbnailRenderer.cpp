@@ -114,7 +114,7 @@ LevelThumbnailUpdate* BeginUpdateLevelThumbnails(RenderContext& renderContext, e
 
 		if (renderer->m_waterSimulator)
 		{
-			renderer->m_waterSimulator->Update(eg::DC, 1.0f / 30.0f, *world, false);
+			renderer->m_waterSimulator->Update(eg::DC, 1.0f / 60.0f, *world);
 		}
 
 		renderer->Render(

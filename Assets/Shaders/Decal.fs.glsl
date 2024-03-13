@@ -23,14 +23,14 @@ layout(binding=1) uniform sampler2D albedoSampler;
 
 layout(binding=2) uniform sampler2D normalMapSampler;
 
-layout(location=2) in vec3 normal_in;
-layout(location=3) in vec3 tangent_in;
-
-layout(push_constant) uniform PC
+layout(binding=3) uniform ParamsUB
 {
 	float roughness;
 	float globalAlpha;
 };
+
+layout(location=2) in vec3 normal_in;
+layout(location=3) in vec3 tangent_in;
 
 void main()
 {
