@@ -216,9 +216,8 @@ void MainMenuGameState::RunFrame(float dt)
 	m_spriteBatch.UploadAndRender(
 		eg::SpriteBatch::RenderArgs{
 			.framebufferFormat = eg::ColorAndDepthFormat(eg::Format::DefaultColor, eg::Format::DefaultDepthStencil),
-			.matrix = m_currentFrameArgs.GetMatrixToNDC(),
 		},
-		rpBeginInfo
+		rpBeginInfo, m_currentFrameArgs.GetMatrixToNDC()
 	);
 }
 

@@ -5,6 +5,8 @@
 class WallDragEditorComponent : public EditorComponent
 {
 public:
+	WallDragEditorComponent();
+
 	void Update(float dt, const EditorState& editorState) override;
 
 	bool UpdateInput(float dt, const EditorState& editorState) override;
@@ -43,4 +45,6 @@ private:
 	float m_timeSinceLastClick = 0;
 
 	std::vector<glm::ivec3> m_finishedSelection;
+	
+	std::vector<eg::DescriptorSet> m_textureIconDescriptorSets;
 };

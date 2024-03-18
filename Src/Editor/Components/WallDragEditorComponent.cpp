@@ -379,6 +379,38 @@ void WallDragEditorComponent::RenderSettings(const EditorState& editorState)
 	eg::TextureRef albedoTex = eg::GetAsset<eg::Texture>("Textures/Wall/Albedo");
 	eg::TextureRef noDrawTex = eg::GetAsset<eg::Texture>("Textures/NoDraw.png");
 
+	if (m_textureIconDescriptorSets.empty())
+	{
+		static const eg::DescriptorSetBinding binding = {
+			.binding = 0,
+			.type = eg::BindingType::Texture,
+			.shaderAccess = eg::ShaderAccessFlags::Fragment,
+			.rwMode = eg::ReadWriteMode::ReadOnly,
+		};
+
+		eg::Sampler sampler(eg::SamplerDescription{
+			.wrapU = eg::WrapMode::ClampToEdge,
+			.wrapV = eg::WrapMode::ClampToEdge,
+			.wrapW = eg::WrapMode::ClampToEdge,
+			.minFilter = eg::TextureFilter::Linear,
+			.magFilter = eg::TextureFilter::Linear,
+			.mipFilter = eg::TextureFilter::Linear,
+		});
+
+		m_textureIconDescriptorSets.resize(MAX_WALL_MATERIALS);
+		for (uint32_t i = 0; i < MAX_WALL_MATERIALS; i++)
+		{
+			eg::TextureViewHandle view;
+			if (i == 0)
+				view = noDrawTex.GetView();
+			else
+				view = albedoTex.GetView({ .firstArrayLayer = i - 1, .numArrayLayers = 1 });
+
+			m_textureIconDescriptorSets[i] = eg::DescriptorSet({ &binding, 1 });
+			m_textureIconDescriptorSets[i].BindTextureView(view, 0, &sampler);
+		}
+	}
+
 	if (ImGui::CollapsingHeader("Textures", ImGuiTreeNodeFlags_DefaultOpen))
 	{
 		for (size_t i = 0; i < MAX_WALL_MATERIALS; i++)
@@ -404,22 +436,8 @@ void WallDragEditorComponent::RenderSettings(const EditorState& editorState)
 			}
 			ImGui::PopID();
 
-			eg::TextureViewHandle textureView;
-			if (i == 0 ||
-			    !eg::HasFlag(eg::GetGraphicsDeviceInfo().features, eg::DeviceFeatureFlags::PartialTextureViews))
-			{
-				textureView = noDrawTex.GetView();
-			}
-			else
-			{
-				eg::TextureSubresource subresource;
-				subresource.firstArrayLayer = eg::UnsignedNarrow<uint32_t>(i - 1);
-				subresource.numArrayLayers = 1;
-				textureView = albedoTex.GetView(subresource, eg::TextureViewType::Flat2D);
-			}
-
 			drawList->AddImage(
-				eg::imgui::MakeImTextureID(textureView),
+				eg::imgui::MakeImTextureID(m_textureIconDescriptorSets[i]),
 				ImVec2(imguiCursorPos.x + ICON_PADDING, imguiCursorPos.y + ICON_PADDING),
 				ImVec2(imguiCursorPos.x + ITEM_HEIGHT - ICON_PADDING, imguiCursorPos.y + ITEM_HEIGHT - ICON_PADDING)
 			);
@@ -432,4 +450,42 @@ void WallDragEditorComponent::RenderSettings(const EditorState& editorState)
 	}
 }
 
+WallDragEditorComponent::WallDragEditorComponent()
+{
+	eg::TextureRef albedoTex = eg::GetAsset<eg::Texture>("Textures/Wall/Albedo");
+	eg::TextureRef noDrawTex = eg::GetAsset<eg::Texture>("Textures/NoDraw.png");
+
+	static const eg::DescriptorSetBinding DESCRIPTOR_SET_BINDING = {
+		.binding = 0,
+		.type = eg::BindingType::Texture,
+		.shaderAccess = eg::ShaderAccessFlags::Fragment,
+		.rwMode = eg::ReadWriteMode::ReadOnly,
+	};
+
+	const eg::Sampler sampler(eg::SamplerDescription{
+		.wrapU = eg::WrapMode::ClampToEdge,
+		.wrapV = eg::WrapMode::ClampToEdge,
+		.wrapW = eg::WrapMode::ClampToEdge,
+		.minFilter = eg::TextureFilter::Linear,
+		.magFilter = eg::TextureFilter::Linear,
+		.mipFilter = eg::TextureFilter::Linear,
+	});
+
+	// If there are no partial texture views (only true in GLES) just use no-draw for all icons
+	const bool noPartialTextureViews =
+		!eg::HasFlag(eg::GetGraphicsDeviceInfo().features, eg::DeviceFeatureFlags::PartialTextureViews);
+
+	m_textureIconDescriptorSets.resize(MAX_WALL_MATERIALS);
+	for (uint32_t i = 0; i < MAX_WALL_MATERIALS; i++)
+	{
+		eg::TextureViewHandle view;
+		if (i == 0 || noPartialTextureViews)
+			view = noDrawTex.GetView();
+		else
+			view = albedoTex.GetView({ .firstArrayLayer = i - 1, .numArrayLayers = 1 });
+
+		m_textureIconDescriptorSets[i] = eg::DescriptorSet({ &DESCRIPTOR_SET_BINDING, 1 });
+		m_textureIconDescriptorSets[i].BindTextureView(view, 0, &sampler);
+	}
+}
 #endif

@@ -610,10 +610,10 @@ void EntityEditorComponent::LateDraw(const EditorState& editorState) const
 {
 	if (m_drawTranslationGizmo)
 	{
-		m_translationGizmo.Draw(editorState.viewProjection, EDITOR_FB_FORMAT);
+		m_translationGizmo.Draw(EDITOR_FB_FORMAT);
 	}
 	if (m_drawRotationGizmo)
 	{
-		m_rotationGizmo.Draw(editorState.viewProjection, EDITOR_FB_FORMAT);
+		m_rotationGizmo.Draw(EDITOR_FB_FORMAT);
 	}
 }

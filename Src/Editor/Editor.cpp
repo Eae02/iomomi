@@ -101,7 +101,7 @@ void Editor::RunFrame(float dt)
 
 			const bool flipY = eg::CurrentGraphicsAPI() == eg::GraphicsAPI::OpenGL;
 			drawList->AddImage(
-				eg::imgui::MakeImTextureID(m_worlds[i]->renderTexture.GetView()), imguiCursorPos, windowRect.Max(),
+				eg::imgui::MakeImTextureID(m_worlds[i]->renderTexture), imguiCursorPos, windowRect.Max(),
 				ImVec2(0, flipY ? 1 : 0), ImVec2(1, flipY ? 0 : 1)
 			);
 		}
@@ -155,7 +155,7 @@ void Editor::RunFrame(float dt)
 				{
 					ImGui::BeginTooltip();
 					ImGui::Image(
-						eg::imgui::MakeImTextureID(level.thumbnail.GetView()),
+						eg::imgui::MakeImTextureID(level.thumbnail),
 						ImVec2(LEVEL_THUMBNAIL_RES_X / 2.0f, LEVEL_THUMBNAIL_RES_Y / 2.0f)
 					);
 					ImGui::EndTooltip();
