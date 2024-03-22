@@ -1,11 +1,11 @@
 #include "WindowEnt.hpp"
 
-#include "../../../../../Protobuf/Build/WindowEntity.pb.h"
 #include "../../../../Graphics/Materials/BlurredGlassMaterial.hpp"
 #include "../../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../../Graphics/RenderSettings.hpp"
 #include "../../../../Graphics/WallShader.hpp"
 #include "../../../Collision.hpp"
+#include <WindowEntity.pb.h>
 
 #ifdef EG_HAS_IMGUI
 #include <imgui.h>

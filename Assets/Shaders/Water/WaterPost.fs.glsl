@@ -16,12 +16,17 @@ layout(location=0) in vec2 texCoord_in;
 
 layout(location=0) out vec4 color_out;
 
-layout(binding=1) uniform sampler2D waterDepthSampler;
-layout(binding=2) uniform sampler2D waterDepthMaxUnblurred;
-layout(binding=3) uniform sampler2D waterGlowSampler;
-layout(binding=4) uniform sampler2D worldColorSampler;
-layout(binding=5) uniform sampler2D worldDepthSampler;
-layout(binding=6) uniform sampler2D normalMapSampler;
+layout(set=1, binding=0) uniform texture2D waterDepthTex;
+layout(set=1, binding=1) uniform texture2D waterDepthMaxUnblurredTex_UF;
+layout(set=1, binding=2) uniform texture2D waterGlowTex;
+layout(set=1, binding=3) uniform texture2D worldColorTex;
+layout(set=1, binding=4) uniform texture2D worldDepthTex_UF;
+
+layout(set=0, binding=2) uniform texture2D normalMap;
+layout(set=0, binding=3) uniform sampler normalMapSampler;
+
+layout(set=0, binding=4) uniform sampler nearestSampler_UF;
+layout(set=0, binding=5) uniform sampler linearSampler;
 
 const float R0 = 0.03;
 
@@ -36,14 +41,15 @@ const float causticsTimeScale = 0.05;
 const float causticsIntensity = 0.04;
 const float causticsPower = 5.0;
 
-layout(push_constant) uniform PC
+const float indexOfRefraction = 0.8;
+
+layout(set=0, binding=1) uniform Params_UseDynamicOffset
 {
 	vec2 pixelSize;
 	float visibility;
 	float normalMapIntensity;
 	vec3 glowColor;
 	float ssrIntensity;
-	float indexOfRefraction;
 };
 
 vec3 doColorExtinction(vec3 inputColor, float waterTravelDist)
@@ -63,7 +69,7 @@ vec3 viewPosFromDepth(vec2 screenCoord, float waterDepthH)
 
 vec3 viewPosSampleDepth(vec2 screenCoord, bool underwater)
 {
-	vec4 depthSample = texture(waterDepthSampler, screenCoord);
+	vec4 depthSample = textureLod(sampler2D(waterDepthTex, nearestSampler_UF), screenCoord, 0);
 	return viewPosFromDepth(screenCoord, hyperDepth(underwater ? depthSample.g : depthSample.r));
 }
 
@@ -92,11 +98,12 @@ vec3 calcReflection(vec3 surfacePos, vec3 dirToEye, vec3 normal)
 		if (!EG_OPENGL)
 			sampleTC.y = 1 - sampleTC.y;
 		
-		if (depthTo01(sampleNDC.z) > texture(worldDepthSampler, sampleTC).r)
+		if (depthTo01(sampleNDC.z) > textureLod(sampler2D(worldDepthTex_UF, nearestSampler_UF), sampleTC, 0).r)
 		{
 			float fade01 = max(abs(sampleNDC.x), abs(sampleNDC.y));
 			float fade = clamp((fade01 - 1) / (1 - FADE_BEGIN) + 1, 0, 1);
-			return mix(texture(worldColorSampler, sampleTC).rgb * ssrIntensity, DEFAULT_REFLECT_COLOR, fade);
+			vec3 reflectedColor = textureLod(sampler2D(worldColorTex, linearSampler), sampleTC, 0).rgb;
+			return mix(reflectedColor * ssrIntensity, DEFAULT_REFLECT_COLOR, fade);
 		}
 	}
 #endif
@@ -114,15 +121,15 @@ const vec2 normalMapPanDirs[] = vec2[]
 
 void main()
 {
-	vec2 waterDepths = texture(waterDepthSampler, texCoord_in).xy;
+	vec2 waterDepths = textureLod(sampler2D(waterDepthTex, nearestSampler_UF), texCoord_in, 0).xy;
 	
 	bool underwater = waterDepths.r < W_UNDERWATER_DEPTH;
 	
-	vec4 worldColor = texture(worldColorSampler, texCoord_in);
+	vec4 worldColor = textureLod(sampler2D(worldColorTex, nearestSampler_UF), texCoord_in, 0);
 	
 	float waterDepthL = underwater ? waterDepths.g : waterDepths.r;
 	float waterDepthH = hyperDepth(waterDepthL);
-	float worldDepthH = texture(worldDepthSampler, texCoord_in).r;
+	float worldDepthH = textureLod(sampler2D(worldDepthTex_UF, nearestSampler_UF), texCoord_in, 0).r;
 	
 	//If the world is closer than the water, don't render water
 	if (worldDepthH < waterDepthH && !underwater)
@@ -139,7 +146,7 @@ void main()
 	bool waterSurface = worldDepthL > waterDepthL - 0.2;
 	if (underwater)
 	{
-		float unblurredMaxDepth = linearizeDepth(texture(waterDepthMaxUnblurred, texCoord_in).r);
+		float unblurredMaxDepth = linearizeDepth(textureLod(sampler2D(waterDepthMaxUnblurredTex_UF, nearestSampler_UF), texCoord_in, 0).r);
 		waterSurface = worldDepthL > max(unblurredMaxDepth, waterDepthL) + 0.4;
 	}
 	
@@ -179,7 +186,7 @@ void main()
 		{
 			vec2 nmMoveOrtho = vec2(normalMapPanDirs[i].y, -normalMapPanDirs[i].x);
 			vec2 samplePos = vec2(dot(worldPos2, normalMapPanDirs[i]), dot(worldPos2, nmMoveOrtho) + renderSettings.gameTime * 0.2);
-			vec2 nmVal = texture(normalMapSampler, samplePos * 0.1).xy * (255.0 / 128.0) - 1.0;
+			vec2 nmVal = textureLod(sampler2D(normalMap, normalMapSampler), samplePos * 0.1, 0).xy * (255.0 / 128.0) - 1.0;
 			normalTS += vec3(nmVal, sqrt(1 - (nmVal.x * nmVal.x + nmVal.y * nmVal.y))) * abs(plainNormal[d]);
 		}
 	}
@@ -215,7 +222,7 @@ void main()
 		for (int i = 0; i <= REFRACT_TRIES; i++)
 		{
 			refractTexcoord = mix(refractTexcoordTarget, texCoord_in, i / float(REFRACT_TRIES));
-			float refractedWorldDepthH = texture(worldDepthSampler, refractTexcoord).r;
+			float refractedWorldDepthH = textureLod(sampler2D(worldDepthTex_UF, nearestSampler_UF), refractTexcoord, 0).r;
 			if (refractedWorldDepthH > waterDepthH)
 			{
 				worldDepthH = refractedWorldDepthH;
@@ -230,16 +237,16 @@ void main()
 		{
 			vec2 nmMoveOrtho = vec2(normalMapPanDirs[i].y, -normalMapPanDirs[i].x);
 			vec2 samplePos = vec2(dot(screenNmSample, normalMapPanDirs[i]), dot(screenNmSample, nmMoveOrtho) + renderSettings.gameTime * 50.0);
-			vec2 nmVal = texture(normalMapSampler, samplePos * 0.0001).xy * (255.0 / 128.0) - 1.0;
+			vec2 nmVal = textureLod(sampler2D(normalMap, normalMapSampler), samplePos * 0.0001, 0).xy * (255.0 / 128.0) - 1.0;
 			refractTexcoord += (nmVal * min(worldDepthL * 0.5, 3.0)) * pixelSize;
 		}
-		worldDepthH = texture(worldDepthSampler, refractTexcoord).r;
+		worldDepthH = textureLod(sampler2D(worldDepthTex_UF, nearestSampler_UF), refractTexcoord, 0).r;
 	}
 	
 	//Updates variables with the new texture coordinate
-	worldColor = texture(worldColorSampler, refractTexcoord);
+	worldColor = textureLod(sampler2D(worldColorTex, linearSampler), refractTexcoord, 0);
 	targetPos = WorldPosFromDepth(worldDepthH, refractTexcoord, renderSettings.invViewProjection);
-	waterDepths = texture(waterDepthSampler, refractTexcoord).xy;
+	waterDepths = textureLod(sampler2D(worldDepthTex_UF, nearestSampler_UF), refractTexcoord, 0).xy;
 	
 	float waterTravelDist;
 	if (underwater)
@@ -280,5 +287,5 @@ void main()
 		color_out = vec4(mix(oriWorldColor, mix(foamColor, waterColor, foam), shore), 1.0);
 	}
 	
-	color_out.rgb += glowColor * texture(waterGlowSampler, texCoord_in).r;
+	color_out.rgb += glowColor * textureLod(sampler2D(waterGlowTex, nearestSampler_UF), texCoord_in, 0).r;
 }

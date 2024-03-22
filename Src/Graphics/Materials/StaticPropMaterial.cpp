@@ -6,6 +6,7 @@
 
 #include "../../Settings.hpp"
 #include "../RenderSettings.hpp"
+#include "../RenderTargets.hpp"
 #include "../WallShader.hpp"
 #include "MeshDrawArgs.hpp"
 
@@ -80,7 +81,6 @@ void StaticPropMaterial::LazyInitGlobals()
 	StaticPropMaterial::InitializeForCommon3DVS(pipelineCI);
 	pipelineCI.enableDepthWrite = true;
 	pipelineCI.enableDepthTest = true;
-	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.cullMode = std::nullopt;
 
 	auto InitializeVariants = [&](std::string_view variantPrefix, eg::Pipeline out[2][2])
@@ -125,8 +125,6 @@ void StaticPropMaterial::LazyInitGlobals()
 	plsPipelineCI.numColorAttachments = 0;
 	plsPipelineCI.depthAttachmentFormat = PointLightShadowMapper::SHADOW_MAP_FORMAT;
 	plsPipelineCI.cullMode = std::nullopt;
-	plsPipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
-	plsPipelineCI.setBindModes[1] = eg::BindMode::DescriptorSet;
 	plsPipelineCI.descriptorSetBindings[0] = PointLightShadowDrawArgs::PARAMETERS_DS_BINDINGS;
 	plsPipelineCI.vertexBindings[VERTEX_BINDING_POSITION] = { VERTEX_STRIDE_POSITION, eg::InputRate::Vertex };
 	plsPipelineCI.vertexAttributes[0] = { VERTEX_BINDING_POSITION, eg::DataType::Float32, 3, 0 };
@@ -167,15 +165,17 @@ void StaticPropMaterial::CreateDescriptorSetAndParamsBuffer()
 	m_descriptorSet = eg::DescriptorSet(GetPipeline(MeshDrawMode::Game), 0);
 
 	m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
-	m_descriptorSet.BindTexture(*m_albedoTexture, 1, &commonTextureSampler);
-	m_descriptorSet.BindTexture(*m_normalMapTexture, 2, &commonTextureSampler);
-	m_descriptorSet.BindTexture(*m_miscMapTexture, 3, &commonTextureSampler);
-	m_descriptorSet.BindUniformBuffer(m_parametersBuffer, 4);
+	m_descriptorSet.BindTexture(*m_albedoTexture, 1);
+	m_descriptorSet.BindTexture(*m_normalMapTexture, 2);
+	m_descriptorSet.BindTexture(*m_miscMapTexture, 3);
+	m_descriptorSet.BindSampler(samplers::linearRepeatAnisotropic, 4);
+	m_descriptorSet.BindUniformBuffer(m_parametersBuffer, 5);
 
 	if (m_alphaTest)
 	{
 		m_plShadowDescriptorSet = eg::DescriptorSet(GetPipeline(MeshDrawMode::PointLightShadow), 1);
-		m_plShadowDescriptorSet.BindTexture(*m_albedoTexture, 0, &commonTextureSampler);
+		m_plShadowDescriptorSet.BindTexture(*m_albedoTexture, 0);
+		m_plShadowDescriptorSet.BindSampler(samplers::linearRepeatAnisotropic, 1);
 	}
 }
 

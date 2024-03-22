@@ -179,7 +179,7 @@ void GravityGun::Update(
 	}
 }
 
-void GravityGun::Draw(class RenderTexManager& renderTexManager)
+void GravityGun::Draw(const struct RenderTargets& renderTargets)
 {
 	constexpr float KICK_BACK_TIME = 0.08f;
 	constexpr float KICK_RESTORE_TIME = 0.7f;
@@ -206,5 +206,5 @@ void GravityGun::Draw(class RenderTexManager& renderTexManager)
 
 	float glowIntensityBoost = glm::smoothstep(0.0f, 1.0f, m_fireAnimationTime);
 
-	m_gunRenderer.Draw({ meshTransforms, m_model->NumMeshes() }, glowIntensityBoost, renderTexManager);
+	m_gunRenderer.Draw({ meshTransforms, m_model->NumMeshes() }, glowIntensityBoost, renderTargets);
 }

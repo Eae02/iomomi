@@ -7,7 +7,7 @@
 
 layout(location=0) in vec3 position_in;
 
-layout(push_constant, std140) uniform PC
+layout(set=1, binding=0) uniform ParamsUB_UseDynamicOffset
 {
 	vec4 positionAndRange;
 	vec4 radiance;

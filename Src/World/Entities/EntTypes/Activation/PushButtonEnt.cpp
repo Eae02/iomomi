@@ -1,10 +1,10 @@
 #include "PushButtonEnt.hpp"
 
-#include "../../../../../Protobuf/Build/PushButtonEntity.pb.h"
 #include "../../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../../ImGui.hpp"
 #include "../../../../Settings.hpp"
 #include "../../../Player.hpp"
+#include <PushButtonEntity.pb.h>
 
 DEF_ENT_TYPE(PushButtonEnt)
 

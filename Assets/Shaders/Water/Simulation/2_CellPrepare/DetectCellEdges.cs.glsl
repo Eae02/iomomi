@@ -9,39 +9,48 @@ layout(set = 0, binding = 0) restrict readonly buffer SortDataBuffer
 	uvec2 sortedCellIndices[];
 };
 
-layout(set = 0, binding = 1) restrict buffer ParticleDataBuffer
-{
-	uvec4 particleData[];
-};
+layout(set = 0, binding = 1, r32ui) restrict writeonly uniform uimage3D cellOffsetsImage;
 
 layout(set = 0, binding = 2) restrict writeonly buffer NumOctGroupsBuffer
 {
 	uint numOctGroups_out[];
 };
 
-layout(set = 0, binding = 3, r16ui) restrict writeonly uniform uimage3D cellOffsetsImage;
+layout(set = 0, binding = 3) restrict readonly buffer PositionsIn
+{
+	uvec4 positionsIn[];
+};
 
-layout(set = 0, binding = 4) restrict writeonly buffer ParticleDataForCPU_UseDynamicOffset
+layout(set = 0, binding = 4) restrict writeonly buffer PositionsOut
+{
+	uvec4 positionsOut[];
+};
+
+layout(set = 0, binding = 5) restrict readonly buffer VelocitiesIn
+{
+	uvec4 velocitiesIn[];
+};
+
+layout(set = 0, binding = 6) restrict writeonly buffer VelocitiesOut
+{
+	uvec4 velocitiesOut[];
+};
+
+layout(set = 0, binding = 7) uniform ParamsUB
+{
+	WaterSimParameters params;
+};
+
+layout(set = 1, binding = 0) restrict writeonly buffer ParticleDataForCPU
 {
 	uvec2 particleDataForCPU[];
 };
-
-layout(push_constant) uniform PC
-{
-	vec3 gridOrigin;
-	uint numParticles;
-	uint posInOffset;
-	uint posOutOffset;
-	uint velInOffset;
-	uint velOutOffset;
-}
-pc;
 
 const uint UINT_MAX = 0xFFFFFFFFu;
 
 uvec2 tryReadCell(uint i)
 {
-	return (i < pc.numParticles) ? sortedCellIndices[i] : uvec2(UINT_MAX);
+	return (i < params.numParticles) ? sortedCellIndices[i] : uvec2(UINT_MAX);
 }
 
 void main()
@@ -51,14 +60,14 @@ void main()
 	uvec2 selfCell = sortedCellIndices[invoIndex];
 	bool isEdge = (invoIndex == 0) || sortedCellIndices[invoIndex - 1].x != selfCell.x;
 
-	uvec4 positionData = particleData[pc.posInOffset + selfCell.y];
+	uvec4 positionData = positionsIn[selfCell.y];
 	vec3 position = uintBitsToFloat(positionData.xyz);
-	particleData[pc.posOutOffset + invoIndex] = uvec4(positionData.xyz, selfCell.x);
+	positionsOut[invoIndex] = uvec4(positionData.xyz, selfCell.x);
 
-	uvec4 velData = particleData[pc.velInOffset + selfCell.y];
-	particleData[pc.velOutOffset + invoIndex] = velData;
+	uvec4 velData = velocitiesIn[selfCell.y];
+	velocitiesOut[invoIndex] = velData;
 
-	uvec3 gridCell = getGridCell(position, pc.gridOrigin);
+	uvec3 gridCell = getGridCell(position, params.voxelMinBounds);
 
 	particleDataForCPU[invoIndex] = uvec2(gridCell.x | (gridCell.y << 10) | (gridCell.z << 20), velData.w);
 

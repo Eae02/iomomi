@@ -29,6 +29,7 @@ enum class EntTypeID
 	Collider = 20,
 	PushButton = 21,
 	Pump = 22,
+	Gate = 23,
 };
 
 enum class EntTypeFlags
@@ -59,8 +60,8 @@ struct EntType
 	std::shared_ptr<Ent> (*clone)(const Ent& ent);
 };
 
-constexpr size_t NUM_ENTITY_TYPES = 23;
-extern const std::array<EntTypeID, 13> entityUpdateOrder;
+constexpr size_t NUM_ENTITY_TYPES = 24;
+extern const std::array<EntTypeID, 14> entityUpdateOrder;
 
 template <typename T>
 std::shared_ptr<Ent> CloneEntity(const Ent& entity);

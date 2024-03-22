@@ -1,10 +1,11 @@
 #version 450 core
+#extension GL_EXT_samplerless_texture_functions : enable
 
 layout(location=0) in vec3 worldPos_in;
 
 layout(location=0) out vec4 color_out;
 
-layout(set=2, binding=0) uniform ParametersUB
+layout(set=1, binding=0) uniform ParametersUB
 {
 	vec3 switchPos;
 	float intensity;
@@ -14,13 +15,14 @@ layout(set=2, binding=0) uniform ParametersUB
 #define RENDER_SETTINGS_BINDING 0
 #include "Inc/RenderSettings.glh"
 
-layout(binding=1) uniform sampler2D emissionMap;
+layout(set=0, binding=1) uniform texture2D emissionMap;
+layout(set=0, binding=2) uniform sampler emissionMapSampler;
 
 const vec3 COLOR = vec3(0.12, 0.9, 0.7) * 3;
 
 const float MAX_RAY_DIST = 2.5;
 
-layout(binding=2, std140) uniform LightSettingsUB
+layout(set=0, binding=3) uniform LightSettingsUB
 {
 	float tMax;
 	float inverseMaxY;
@@ -29,7 +31,7 @@ layout(binding=2, std140) uniform LightSettingsUB
 	vec4 samplePoints[10];
 };
 
-layout(set=1, binding=0) uniform sampler2D waterDepth;
+layout(set=2, binding=0) uniform texture2D waterDepth;
 #include "Water/WaterTransparent.glh"
 
 const float MESH_SCALE = 0.6;
@@ -53,7 +55,7 @@ float sampleEmiMap(vec2 pos)
 	{
 		vec2 oPan = vec2(-EMI_PAN_DIRECTIONS[i].y, EMI_PAN_DIRECTIONS[i].x);
 		vec2 samplePos = vec2(dot(pos, EMI_PAN_DIRECTIONS[i]) + ANIMATION_SPEED * renderSettings.gameTime, dot(pos, oPan));
-		brightness += textureLod(emissionMap, samplePos * EMI_MAP_SCALE, 0).r;
+		brightness += textureLod(sampler2D(emissionMap, emissionMapSampler), samplePos * EMI_MAP_SCALE, 0).r;
 	}
 	return brightness * intensity / EMI_PAN_DIRECTIONS.length();
 }

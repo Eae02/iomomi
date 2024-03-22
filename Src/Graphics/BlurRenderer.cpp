@@ -1,7 +1,7 @@
 #include "BlurRenderer.hpp"
 
+#include "../Utils.hpp"
 #include "GraphicsCommon.hpp"
-#include "RenderTex.hpp"
 
 static std::vector<std::pair<eg::Format, eg::Pipeline>> blurPipelines;
 
@@ -25,9 +25,12 @@ static eg::PipelineRef GetBlurPipeline(eg::Format format)
 	return pipelineRef;
 }
 
+static eg::DescriptorSet descriptorSet0;
+
 static void OnShutdown()
 {
 	blurPipelines.clear();
+	descriptorSet0.Destroy();
 }
 
 EG_ON_SHUTDOWN(OnShutdown)
@@ -36,6 +39,15 @@ BlurRenderer::BlurRenderer(uint32_t blurLevels, eg::Format format)
 	: m_levels(blurLevels), m_format(format), m_blurPipeline(GetBlurPipeline(format)), m_framebuffersTmp(blurLevels),
 	  m_framebuffersOut(blurLevels)
 {
+	if (descriptorSet0.handle == nullptr)
+	{
+		descriptorSet0 = eg::DescriptorSet(m_blurPipeline, 0);
+		descriptorSet0.BindSampler(samplers::linearClamp, 0);
+		descriptorSet0.BindUniformBuffer(frameDataUniformBuffer, 1, eg::BIND_BUFFER_OFFSET_DYNAMIC, sizeof(float) * 5);
+	}
+
+	m_blurXDescriptorSets.resize(blurLevels);
+	m_blurYDescriptorSets.resize(blurLevels);
 }
 
 void BlurRenderer::MaybeUpdateResolution(uint32_t newWidth, uint32_t newHeight)
@@ -75,14 +87,27 @@ void BlurRenderer::MaybeUpdateResolution(uint32_t newWidth, uint32_t newHeight)
 
 		colorAttachment.texture = m_blurTextureOut.handle;
 		m_framebuffersOut[i] = eg::Framebuffer({ &colorAttachment, 1 });
+
+		m_blurXDescriptorSets[i] = eg::DescriptorSet(m_blurPipeline, 1);
+		m_blurXDescriptorSets[i].BindTextureView(
+			m_blurTextureOut.GetView(eg::TextureSubresource{ .firstMipLevel = i, .numMipLevels = 1 }), 0
+		);
+
+		m_blurYDescriptorSets[i] = eg::DescriptorSet(m_blurPipeline, 1);
+		m_blurYDescriptorSets[i].BindTextureView(
+			m_blurTextureTmp.GetView(eg::TextureSubresource{ .firstMipLevel = i, .numMipLevels = 1 }), 0
+		);
 	}
 }
 
 void BlurRenderer::DoBlurPass(
-	const glm::vec2& blurVector, const glm::vec2& sampleOffset, eg::TextureRef inputTexture, int inputLod,
-	eg::FramebufferRef dstFramebuffer
+	const glm::vec2& blurVector, const glm::vec2& sampleOffset, eg::DescriptorSetRef inputTextureDescriptorSet,
+	int inputLod, eg::FramebufferRef dstFramebuffer
 ) const
 {
+	const float pc[] = { blurVector.x, blurVector.y, sampleOffset.x, sampleOffset.y, static_cast<float>(inputLod) };
+	uint32_t frameUniformDataOffset = PushFrameUniformData(ToCharSpan<float>(pc));
+
 	eg::RenderPassBeginInfo rp1BeginInfo;
 	rp1BeginInfo.framebuffer = dstFramebuffer.handle;
 	rp1BeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
@@ -90,17 +115,8 @@ void BlurRenderer::DoBlurPass(
 
 	eg::DC.BindPipeline(m_blurPipeline);
 
-	float pc[] = { blurVector.x, blurVector.y, sampleOffset.x, sampleOffset.y, static_cast<float>(inputLod) };
-	eg::TextureSubresource subresource;
-	if (!useGLESPath) // Cannot be done in GLES because image views are not supported
-	{
-		subresource.firstMipLevel = inputLod;
-		subresource.numMipLevels = 1;
-	}
-
-	eg::DC.BindTexture(inputTexture, 0, 0, &framebufferLinearSampler, subresource);
-
-	eg::DC.PushConstants(0, sizeof(pc), pc);
+	eg::DC.BindDescriptorSet(descriptorSet0, 0, { &frameUniformDataOffset, 1 });
+	eg::DC.BindDescriptorSet(inputTextureDescriptorSet, 1);
 
 	eg::DC.Draw(0, 3, 0, 1);
 
@@ -119,21 +135,22 @@ static inline void ChangeUsageForShaderSample(eg::TextureRef texture, int mipLev
 	eg::DC.Barrier(texture, barrier);
 }
 
-void BlurRenderer::Render(eg::TextureRef inputTexture, float blurScale) const
+void BlurRenderer::Render(eg::DescriptorSetRef inputTextureDescriptorSet, float blurScale) const
 {
 	glm::vec2 pixelSize = blurScale / glm::vec2(m_inputWidth, m_inputHeight);
 
 	for (int i = 0; i < static_cast<int>(m_levels); i++)
 	{
 		DoBlurPass(
-			glm::vec2(2 * pixelSize.x, 0), pixelSize / 2.0f, i != 0 ? eg::TextureRef(m_blurTextureOut) : inputTexture,
-			std::max(i - 1, 0), m_framebuffersTmp[i]
+			glm::vec2(2 * pixelSize.x, 0), pixelSize / 2.0f,
+			i != 0 ? eg::DescriptorSetRef(m_blurXDescriptorSets[i - 1]) : inputTextureDescriptorSet, std::max(i - 1, 0),
+			m_framebuffersTmp[i]
 		);
 		ChangeUsageForShaderSample(m_blurTextureTmp, i);
 
 		pixelSize *= 2.0f;
 
-		DoBlurPass(glm::vec2(0, 2 * pixelSize.y), -pixelSize / 2.0f, m_blurTextureTmp, i, m_framebuffersOut[i]);
+		DoBlurPass(glm::vec2(0, 2 * pixelSize.y), -pixelSize / 2.0f, m_blurYDescriptorSets[i], i, m_framebuffersOut[i]);
 		ChangeUsageForShaderSample(m_blurTextureOut, i);
 	}
 }

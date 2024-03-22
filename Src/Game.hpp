@@ -2,7 +2,6 @@
 
 #include <pcg_random.hpp>
 
-#include "Graphics/RenderContext.hpp"
 #include "World/Player.hpp"
 #include "World/World.hpp"
 
@@ -20,8 +19,6 @@ public:
 
 private:
 	float m_gameTime = 0;
-
-	RenderContext m_renderCtx;
 
 	class GameState* m_editorGameState;
 

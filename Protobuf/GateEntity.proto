@@ -1,0 +1,15 @@
+syntax="proto3";
+
+package iomomi_pb;
+
+import "Dir.proto";
+
+message GateEntity {
+	float posX = 1;
+	float posY = 2;
+	float posZ = 3;
+	Dir dir = 4;
+	int32 variant = 5;
+	string gate_name = 6;
+	fixed32 activatable_name = 7;
+}

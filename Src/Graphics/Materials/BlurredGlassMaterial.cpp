@@ -3,6 +3,7 @@
 #include "../../Editor/EditorGraphics.hpp"
 #include "../GraphicsCommon.hpp"
 #include "../RenderSettings.hpp"
+#include "../RenderTargets.hpp"
 #include "../Vertex.hpp"
 #include "MeshDrawArgs.hpp"
 #include "StaticPropMaterial.hpp"
@@ -15,17 +16,32 @@ static eg::Pipeline pipelineEditor;
 static const eg::DescriptorSetBinding descriptorSetBindings[] = {
 	eg::DescriptorSetBinding{
 		.binding = 0,
-		.type = eg::BindingType::UniformBuffer,
+		.type = eg::BindingTypeUniformBuffer{},
 		.shaderAccess = eg::ShaderAccessFlags::Vertex | eg::ShaderAccessFlags::Fragment,
 	},
 	eg::DescriptorSetBinding{
 		.binding = 1,
-		.type = eg::BindingType::Texture,
+		.type = eg::BindingTypeTexture{},
 		.shaderAccess = eg::ShaderAccessFlags::Fragment,
 	},
 	eg::DescriptorSetBinding{
 		.binding = 2,
-		.type = eg::BindingType::UniformBuffer,
+		.type = eg::BindingTypeUniformBuffer{},
+		.shaderAccess = eg::ShaderAccessFlags::Fragment,
+	},
+	eg::DescriptorSetBinding{
+		.binding = 3,
+		.type = eg::BindingTypeSampler::Default,
+		.shaderAccess = eg::ShaderAccessFlags::Fragment,
+	},
+	eg::DescriptorSetBinding{
+		.binding = 4,
+		.type = eg::BindingTypeSampler::Default,
+		.shaderAccess = eg::ShaderAccessFlags::Fragment,
+	},
+	eg::DescriptorSetBinding{
+		.binding = 5,
+		.type = eg::BindingTypeSampler::Nearest,
 		.shaderAccess = eg::ShaderAccessFlags::Fragment,
 	},
 };
@@ -38,7 +54,6 @@ static void OnInit()
 	StaticPropMaterial::InitializeForCommon3DVS(pipelineCI);
 	pipelineCI.cullMode = eg::CullMode::None;
 	pipelineCI.topology = eg::Topology::TriangleList;
-	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.enableDepthTest = true;
 
 	pipelineCI.enableDepthWrite = true;
@@ -50,6 +65,8 @@ static void OnInit()
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
 	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
+	pipelineCI.depthStencilUsage = eg::TextureUsage::DepthStencilReadOnly;
+	pipelineCI.descriptorSetBindings[0] = descriptorSetBindings;
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.label = "BlurredGlass[Blurry]";
 	pipelineCI.fragmentShader = fs.ToStageInfo("VBlur");
@@ -68,6 +85,7 @@ static void OnInit()
 	pipelineNotBlurry = eg::Pipeline::Create(pipelineCI);
 
 	pipelineCI.label = "BlurredGlass[Editor]";
+	pipelineCI.depthStencilUsage = eg::TextureUsage::FramebufferAttachment;
 	pipelineCI.colorAttachmentFormats[0] = EDITOR_COLOR_FORMAT;
 	pipelineCI.depthAttachmentFormat = EDITOR_DEPTH_FORMAT;
 	pipelineEditor = eg::Pipeline::Create(pipelineCI);
@@ -91,8 +109,11 @@ BlurredGlassMaterial::BlurredGlassMaterial(eg::ColorLin color, bool isBlurry) : 
 
 	m_descriptorSet = eg::DescriptorSet(descriptorSetBindings);
 	m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
-	m_descriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/GlassHex.png"), 1, &commonTextureSampler);
+	m_descriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/GlassHex.png"), 1);
 	m_descriptorSet.BindUniformBuffer(m_parametersBuffer, 2);
+	m_descriptorSet.BindSampler(samplers::linearRepeatAnisotropic, 3);
+	m_descriptorSet.BindSampler(samplers::linearClamp, 4);
+	m_descriptorSet.BindSampler(samplers::nearestClamp, 5);
 }
 
 size_t BlurredGlassMaterial::PipelineHash() const
@@ -107,7 +128,7 @@ std::optional<bool> BlurredGlassMaterial::ShouldRenderBlurry(const MeshDrawArgs&
 	if (meshDrawArgs.drawMode == MeshDrawMode::TransparentBeforeBlur)
 		return false;
 	if (meshDrawArgs.drawMode == MeshDrawMode::TransparentFinal)
-		return m_isBlurry && meshDrawArgs.glassBlurTexture.handle != nullptr;
+		return m_isBlurry && meshDrawArgs.renderTargets->blurredGlassDepthStage.has_value();
 	return {};
 }
 
@@ -133,7 +154,7 @@ bool BlurredGlassMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawAr
 		if (mDrawArgs->drawMode == MeshDrawMode::TransparentBeforeBlur)
 			blurry = false;
 		else if (mDrawArgs->drawMode == MeshDrawMode::TransparentFinal)
-			blurry = m_isBlurry && mDrawArgs->glassBlurTexture.handle != nullptr;
+			blurry = m_isBlurry && mDrawArgs->renderTargets->blurredGlassDepthStage.has_value();
 		else
 			return false;
 
@@ -144,17 +165,15 @@ bool BlurredGlassMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawAr
 
 	if (blurry)
 	{
-		cmdCtx.BindTexture(mDrawArgs->glassBlurTexture, 1, 0, &framebufferNearestSampler);
+		cmdCtx.BindDescriptorSet(mDrawArgs->renderTargets->glassBlurTextureDescriptorSet.value(), 1);
 	}
 	else if (mDrawArgs->drawMode == MeshDrawMode::TransparentBeforeBlur)
 	{
-		cmdCtx.BindTexture(
-			mDrawArgs->rtManager->GetRenderTexture(RenderTex::BlurredGlassDepth), 1, 0, &framebufferNearestSampler
-		);
+		cmdCtx.BindDescriptorSet(mDrawArgs->renderTargets->blurredGlassDepthTextureDescriptorSet.value(), 1);
 	}
 	else
 	{
-		cmdCtx.BindTexture(blackPixelTexture, 1, 0, &framebufferNearestSampler);
+		cmdCtx.BindDescriptorSet(blackPixelTextureDescriptorSet, 1);
 	}
 
 	return true;

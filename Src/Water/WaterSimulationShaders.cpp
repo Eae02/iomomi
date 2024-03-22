@@ -37,13 +37,11 @@ static bool TryLoadOctGroupPrefixSumSubgroupShaders(WaterSimulationShaders& simS
 
 	eg::ComputePipelineCreateInfo createInfoLevel1 = {
 		.computeShader = GetWaterSimShader("2_CellPrepare/OctGroupsPrefixSumFallbackLevel1.cs.glsl").ToStageInfo(),
-		.setBindModes = { eg::BindMode::DescriptorSet },
 		.requireFullSubgroups = true,
 		.label = "OctGroupsPrefixSumLevel1",
 	};
 	eg::ComputePipelineCreateInfo createInfoLevel2 = {
 		.computeShader = GetWaterSimShader("2_CellPrepare/OctGroupsPrefixSumFallbackLevel2.cs.glsl").ToStageInfo(),
-		.setBindModes = { eg::BindMode::DescriptorSet },
 		.requireFullSubgroups = true,
 		.label = "OctGroupsPrefixSumLevel1",
 	};
@@ -89,13 +87,11 @@ static void LoadOctGroupPrefixSumFallbackShaders(WaterSimulationShaders& simShad
 {
 	simShaders.octGroupsPrefixSumLevel1 = eg::Pipeline::Create(eg::ComputePipelineCreateInfo{
 		.computeShader = GetWaterSimShader("2_CellPrepare/OctGroupsPrefixSumFallbackLevel1.cs.glsl").ToStageInfo(),
-		.setBindModes = { eg::BindMode::DescriptorSet },
 		.label = "OctGroupsPrefixSumLevel1",
 	});
 
 	simShaders.octGroupsPrefixSumLevel2 = eg::Pipeline::Create(eg::ComputePipelineCreateInfo{
 		.computeShader = GetWaterSimShader("2_CellPrepare/OctGroupsPrefixSumFallbackLevel2.cs.glsl").ToStageInfo(),
-		.setBindModes = { eg::BindMode::DescriptorSet },
 		.label = "OctGroupsPrefixSumLevel1",
 	});
 }
@@ -144,7 +140,6 @@ void WaterSimulationShaders::Initialize()
 			.shaderModule = GetWaterSimShader("1_Sort/SortInitial.cs.glsl").GetVariant(sortVariantName),
 			.specConstants = sortSpecConstants,
 		},
-		.setBindModes = { eg::BindMode::DescriptorSet },
 		.requireFullSubgroups = !useFallbackShaders,
 		.label = "WaterSimSortInitial",
 	});
@@ -154,7 +149,6 @@ void WaterSimulationShaders::Initialize()
 			.shaderModule = GetWaterSimShader("1_Sort/SortNear.cs.glsl").GetVariant(sortVariantName),
 			.specConstants = sortSpecConstants,
 		},
-		.setBindModes = { eg::BindMode::DescriptorSet },
 		.requireFullSubgroups = !useFallbackShaders,
 		.label = "WaterSimSortNear",
 	});
@@ -164,13 +158,11 @@ void WaterSimulationShaders::Initialize()
 			.shaderModule = GetWaterSimShader("1_Sort/SortFar.cs.glsl").DefaultVariant(),
 			.specConstants = sortSpecConstants,
 		},
-		.setBindModes = { eg::BindMode::DescriptorSet },
 		.label = "WaterSimSortFar",
 	});
 
 	detectCellEdges = eg::Pipeline::Create(eg::ComputePipelineCreateInfo{
 		.computeShader = GetWaterSimShader("2_CellPrepare/DetectCellEdges.cs.glsl").ToStageInfo(),
-		.setBindModes = { eg::BindMode::DescriptorSet },
 		.label = "DetectCellEdges",
 	});
 
@@ -181,7 +173,6 @@ void WaterSimulationShaders::Initialize()
 
 	writeOctGroups = eg::Pipeline::Create(eg::ComputePipelineCreateInfo{
 		.computeShader = GetWaterSimShader("2_CellPrepare/WriteOctGroups.cs.glsl").ToStageInfo(),
-		.setBindModes = { eg::BindMode::DescriptorSet },
 		.label = "WriteOctGroups",
 	});
 
@@ -211,7 +202,6 @@ void WaterSimulationShaders::Initialize()
 
 	calculateDensity = eg::Pipeline::Create(eg::ComputePipelineCreateInfo{
 		.computeShader = GetWaterSimShader("CalcDensity.cs.glsl").ToStageInfo(forEachNearVariantName),
-		.setBindModes = { eg::BindMode::DescriptorSet, eg::BindMode::DescriptorSet },
 		.requireFullSubgroups = forEachNearRequireFullSubgroups,
 		.requiredSubgroupSize = forEachNearRequiredSubgroupSize,
 		.label = "CalcDensity",
@@ -219,7 +209,6 @@ void WaterSimulationShaders::Initialize()
 
 	calculateAcceleration = eg::Pipeline::Create(eg::ComputePipelineCreateInfo{
 		.computeShader = GetWaterSimShader("CalcAccel.cs.glsl").ToStageInfo(forEachNearVariantName),
-		.setBindModes = { eg::BindMode::DescriptorSet, eg::BindMode::DescriptorSet },
 		.requireFullSubgroups = forEachNearRequireFullSubgroups,
 		.requiredSubgroupSize = forEachNearRequiredSubgroupSize,
 		.label = "CalcAccel",
@@ -227,7 +216,6 @@ void WaterSimulationShaders::Initialize()
 
 	velocityDiffusion = eg::Pipeline::Create(eg::ComputePipelineCreateInfo{
 		.computeShader = GetWaterSimShader("VelocityDiffusion.cs.glsl").ToStageInfo(forEachNearVariantName),
-		.setBindModes = { eg::BindMode::DescriptorSet },
 		.requireFullSubgroups = forEachNearRequireFullSubgroups,
 		.requiredSubgroupSize = forEachNearRequiredSubgroupSize,
 		.label = "VelocityDiffusion",
@@ -235,19 +223,16 @@ void WaterSimulationShaders::Initialize()
 
 	moveAndCollision = eg::Pipeline::Create(eg::ComputePipelineCreateInfo{
 		.computeShader = GetWaterSimShader("MoveAndCollision.cs.glsl").ToStageInfo(),
-		.setBindModes = { eg::BindMode::DescriptorSet },
 		.label = "WaterMoveAndCollision",
 	});
 
 	changeGravity = eg::Pipeline::Create(eg::ComputePipelineCreateInfo{
 		.computeShader = GetWaterSimShader("ChangeGravity.cs.glsl").ToStageInfo(),
-		.setBindModes = { eg::BindMode::DescriptorSet },
 		.label = "WaterChangeGravity",
 	});
 
 	clearCellOffsets = eg::Pipeline::Create(eg::ComputePipelineCreateInfo{
 		.computeShader = GetWaterSimShader("ClearCellOffsets.cs.glsl").ToStageInfo(),
-		.setBindModes = { eg::BindMode::Dynamic },
 		.label = "WaterClearCellOffsets",
 	});
 }

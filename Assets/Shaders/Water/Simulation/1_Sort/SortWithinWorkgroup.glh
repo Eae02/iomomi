@@ -27,7 +27,7 @@ shared uvec2 sharedData[1024];
 uvec2 compareSortSharedMemory(uint k, uint b, uvec2 selfValue)
 {
 	sharedData[localIndex] = selfValue;
-	memoryBarrierShared();
+	// memoryBarrierShared();
 	barrier();
 	selfValue = sort2(k, b, selfValue, sharedData[localIndex ^ b]);
 	barrier();

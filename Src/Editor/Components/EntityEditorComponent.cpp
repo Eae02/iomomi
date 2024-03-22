@@ -86,8 +86,7 @@ bool EntityEditorComponent::UpdateInput(float dt, const EditorState& editorState
 				editorState.EntityMoved(*m_wallDragEntity);
 			}
 		}
-		else if (m_mouseDownPos.has_value() && glm::distance2(glm::vec2(*m_mouseDownPos), glm::vec2(eg::CursorPos())) >
-		                                           DRAG_BEGIN_DELTA * DRAG_BEGIN_DELTA)
+		else if (m_mouseDownPos.has_value() && glm::distance2(glm::vec2(*m_mouseDownPos), glm::vec2(eg::CursorPos())) > DRAG_BEGIN_DELTA * DRAG_BEGIN_DELTA)
 		{
 			m_isDraggingWallEntity = true;
 		}

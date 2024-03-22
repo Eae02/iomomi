@@ -2,7 +2,7 @@
 
 #include <unordered_map>
 
-#include "../Vec3Compare.hpp"
+#include "../Utils.hpp"
 #include "Dir.hpp"
 
 struct VoxelRayIntersectResult

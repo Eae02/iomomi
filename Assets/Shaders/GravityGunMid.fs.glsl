@@ -13,19 +13,21 @@ layout(location=0) out vec4 color_out;
 
 const vec3 COLOR = vec3(0.12, 0.9, 0.7);
 
-layout(binding=1) uniform sampler2D hexSampler;
+layout(binding=2) uniform texture2D hexTexture;
+layout(binding=3) uniform sampler hexSampler;
 
-layout(push_constant) uniform PC
+layout(binding=1) uniform GravityGunParamsUB
 {
-	layout(offset=112) float intensityBoost;
+	mat4 viewProjTransform;
+	float glowIntensityBoost;
 };
 
 void main()
 {
-	vec2 hex = texture(hexSampler, texCoord_in * 4).rg;
+	vec2 hex = texture(sampler2D(hexTexture, hexSampler), texCoord_in * 4).rg;
 	float edge = max(max(abs(texCoord_in.x / 1.6 - 0.5), abs(texCoord_in.y - 0.5)) * 4.0 - 1.0, 0.0);
 	
-	float intensity = hex.r * sin01(hex.g * TWO_PI + renderSettings.gameTime * 2) + intensityBoost;
+	float intensity = hex.r * sin01(hex.g * TWO_PI + renderSettings.gameTime * 2) + glowIntensityBoost;
 	
 	intensity += mix(0.1, 1.0, pow(edge, 3));
 	

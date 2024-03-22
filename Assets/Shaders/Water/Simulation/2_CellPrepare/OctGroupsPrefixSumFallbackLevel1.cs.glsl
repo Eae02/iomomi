@@ -28,7 +28,7 @@ void main()
 	for (uint i = 0; i < 8; i++)
 	{
 		prefixSums[i % 2][localIndex] = inclusiveSum;
-		memoryBarrierShared();
+		// memoryBarrierShared();
 		barrier();
 		uint d = 1 << i;
 		if (localIndex >= d)

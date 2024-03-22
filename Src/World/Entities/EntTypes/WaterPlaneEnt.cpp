@@ -1,7 +1,7 @@
 #include "WaterPlaneEnt.hpp"
 
-#include "../../../../Protobuf/Build/WaterPlaneEntity.pb.h"
 #include "../../../ImGui.hpp"
+#include <WaterPlaneEntity.pb.h>
 
 DEF_ENT_TYPE(WaterPlaneEnt)
 

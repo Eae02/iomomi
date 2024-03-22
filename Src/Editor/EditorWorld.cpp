@@ -8,12 +8,14 @@
 #include <magic_enum/magic_enum.hpp>
 
 #include "../Graphics/Materials/MeshDrawArgs.hpp"
+#include "../Graphics/RenderSettings.hpp"
 #include "../Gui/GuiCommon.hpp"
 #include "../Levels.hpp"
 #include "../MainGameState.hpp"
 #include "../World/Entities/Components/ActivatorComp.hpp"
 #include "../World/Entities/Components/WaterBlockComp.hpp"
 #include "../World/Entities/EntTypes/EntranceExitEnt.hpp"
+#include "../World/Entities/EntTypes/GateEnt.hpp"
 #include "Components/AAQuadDragEditorComponent.hpp"
 #include "Components/EntityEditorComponent.hpp"
 #include "Components/GravityCornerEditorComponent.hpp"
@@ -76,25 +78,31 @@ void EditorWorld::SetWindowRect(const eg::Rectangle& windowRect)
 
 	uint32_t resX = static_cast<uint32_t>(std::round(windowRect.w));
 	uint32_t resY = static_cast<uint32_t>(std::round(windowRect.h));
-	if (renderTexture.handle == nullptr || resX != renderTexture.Width() || resY != renderTexture.Height())
+	if (m_renderTextureColor.handle == nullptr || resX != m_renderTextureColor.Width() ||
+	    resY != m_renderTextureColor.Height())
 	{
-		eg::TextureCreateInfo textureCI;
-		textureCI.width = resX;
-		textureCI.height = resY;
-		textureCI.mipLevels = 1;
+		m_renderTextureColor = eg::Texture::Create2D({
+			.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample,
+			.mipLevels = 1,
+			.width = resX,
+			.height = resY,
+			.format = EDITOR_COLOR_FORMAT,
+		});
 
-		textureCI.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ShaderSample;
-		textureCI.format = EDITOR_COLOR_FORMAT;
-		renderTexture = eg::Texture::Create2D(textureCI);
+		m_renderTextureDepth = eg::Texture::Create2D({
+			.flags = eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::TransientAttachment,
+			.mipLevels = 1,
+			.width = resX,
+			.height = resY,
+			.format = EDITOR_DEPTH_FORMAT,
+		});
 
-		textureCI.flags = eg::TextureFlags::FramebufferAttachment;
-		textureCI.format = EDITOR_DEPTH_FORMAT;
-		m_renderTextureDepth = eg::Texture::Create2D(textureCI);
+		eg::FramebufferAttachment colorAttachment(m_renderTextureColor.handle);
 
-		eg::FramebufferAttachment colorAttachment(renderTexture.handle);
-		eg::FramebufferAttachment depthAttachment(m_renderTextureDepth.handle);
-
-		m_framebuffer = eg::Framebuffer({ &colorAttachment, 1 }, depthAttachment);
+		m_framebuffer = eg::Framebuffer(eg::FramebufferCreateInfo{
+			.colorAttachments = { &colorAttachment, 1 },
+			.depthStencilAttachment = m_renderTextureDepth.handle,
+		});
 	}
 
 	m_selectionRenderer.BeginFrame(resX, resY);
@@ -136,8 +144,6 @@ void EditorWorld::RenderImGui()
 			{
 				ResetCamera();
 			}
-
-			ImGui::MenuItem("Draw Voxel Grid", "Ctrl + G", &m_drawVoxelGrid);
 
 			ImGui::EndMenu();
 		}
@@ -189,7 +195,7 @@ void EditorWorld::TestLevel()
 	std::stringstream stream;
 	m_world->Save(stream);
 	stream.seekg(0, std::ios::beg);
-	mainGameState->SetWorld(World::Load(stream, false), -1, nullptr, true);
+	mainGameState->SetWorld(World::Load(stream, false), -1, "in", nullptr, true);
 	SetCurrentGS(mainGameState);
 }
 
@@ -253,18 +259,16 @@ void EditorWorld::Update(float dt, EditorTool currentTool)
 				Save();
 			if (eg::IsButtonDown(eg::Button::W) && !eg::WasButtonDown(eg::Button::W))
 				shouldClose = true;
-			if (eg::IsButtonDown(eg::Button::G) && !eg::WasButtonDown(eg::Button::G))
-				m_drawVoxelGrid = !m_drawVoxelGrid;
 		}
 		if (eg::IsButtonDown(eg::Button::F5) && !eg::WasButtonDown(eg::Button::F5))
 			TestLevel();
 	}
 
 	m_levelHasEntrance = false;
-	m_world->entManager.ForEachOfType<EntranceExitEnt>(
-		[&](const EntranceExitEnt& ent)
+	m_world->entManager.ForEachOfType<GateEnt>(
+		[&](const GateEnt& ent)
 		{
-			if (ent.m_type == EntranceExitEnt::Type::Entrance)
+			if (ent.name == "in")
 				m_levelHasEntrance = true;
 		}
 	);
@@ -372,12 +376,12 @@ void EditorWorld::Update(float dt, EditorTool currentTool)
 	m_savedTextTimer = std::max(m_savedTextTimer - dt, 0.0f);
 }
 
-void EditorWorld::Draw(EditorTool currentTool, RenderContext& renderCtx, PrepareDrawArgs prepareDrawArgs)
+void EditorWorld::Draw(EditorTool currentTool, PrepareDrawArgs prepareDrawArgs)
 {
 	m_primRenderer.Begin(RenderSettings::instance->data.viewProjection, RenderSettings::instance->data.cameraPosition);
 	m_spriteBatch.Reset();
-	renderCtx.meshBatch.Begin();
-	renderCtx.transparentMeshBatch.Begin();
+	prepareDrawArgs.meshBatch->Begin();
+	prepareDrawArgs.transparentMeshBatch->Begin();
 
 	eg::Frustum frustum(RenderSettings::instance->data.invViewProjection);
 	prepareDrawArgs.frustum = &frustum;
@@ -416,8 +420,8 @@ void EditorWorld::Draw(EditorTool currentTool, RenderContext& renderCtx, Prepare
 	EntEditorDrawArgs drawArgs = {};
 	drawArgs.spriteBatch = &m_spriteBatch;
 	drawArgs.primitiveRenderer = &m_primRenderer;
-	drawArgs.meshBatch = &renderCtx.meshBatch;
-	drawArgs.transparentMeshBatch = &renderCtx.transparentMeshBatch;
+	drawArgs.meshBatch = prepareDrawArgs.meshBatch;
+	drawArgs.transparentMeshBatch = prepareDrawArgs.transparentMeshBatch;
 	drawArgs.world = m_world.get();
 	drawArgs.frustum = &frustum;
 	drawArgs.getDrawMode = [this](const Ent* entity) -> EntEditorDrawMode
@@ -435,44 +439,12 @@ void EditorWorld::Draw(EditorTool currentTool, RenderContext& renderCtx, Prepare
 
 	m_primRenderer.End();
 
-	renderCtx.meshBatch.End(eg::DC);
-	renderCtx.transparentMeshBatch.End(eg::DC);
+	prepareDrawArgs.meshBatch->End(eg::DC);
+	prepareDrawArgs.transparentMeshBatch->End(eg::DC);
 
 	m_liquidPlaneRenderer.Prepare(
-		*m_world, renderCtx.transparentMeshBatch, RenderSettings::instance->data.cameraPosition
+		*m_world, *prepareDrawArgs.transparentMeshBatch, RenderSettings::instance->data.cameraPosition
 	);
-
-	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = m_framebuffer.handle;
-	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Clear;
-	rpBeginInfo.depthClearValue = 1.0f;
-	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
-	rpBeginInfo.colorAttachments[0].clearValue = eg::ColorLin(0, 0, 0, 0);
-
-	eg::DC.BeginRenderPass(rpBeginInfo);
-
-	m_world->DrawEditor(m_drawVoxelGrid);
-
-	MeshDrawArgs mDrawArgs;
-	mDrawArgs.waterDepthTexture = WaterRenderer::GetDummyDepthTexture();
-	mDrawArgs.drawMode = MeshDrawMode::Editor;
-	mDrawArgs.rtManager = nullptr;
-	renderCtx.meshBatch.Draw(eg::DC, &mDrawArgs);
-
-	m_primRenderer.Draw();
-
-	renderCtx.transparentMeshBatch.Draw(eg::DC, &mDrawArgs);
-
-	m_liquidPlaneRenderer.Render();
-
-	m_selectionRenderer.EndFrame();
-
-	for (EditorComponent* comp : m_componentsForTool[static_cast<int>(currentTool)])
-	{
-		comp->LateDraw(m_editorState);
-	}
-
-	eg::DC.EndRenderPass();
 
 	if (m_savedTextTimer > 0)
 	{
@@ -495,19 +467,47 @@ void EditorWorld::Draw(EditorTool currentTool, RenderContext& renderCtx, Prepare
 		);
 	}
 
-	eg::RenderPassBeginInfo spriteRPBeginInfo;
-	spriteRPBeginInfo.framebuffer = m_framebuffer.handle;
-	spriteRPBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Load;
-	m_spriteBatch.UploadAndRender(
-		eg::SpriteBatch::RenderArgs{
-			.screenWidth = static_cast<int>(std::round(m_editorState.windowRect.w)),
-			.screenHeight = static_cast<int>(std::round(m_editorState.windowRect.h)),
-			.framebufferFormat = EDITOR_FB_FORMAT,
-		},
-		spriteRPBeginInfo
-	);
+	m_spriteBatch.Upload(m_editorState.windowRect.w, m_editorState.windowRect.h);
 
-	renderTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
+	eg::RenderPassBeginInfo rpBeginInfo;
+	rpBeginInfo.framebuffer = m_framebuffer.handle;
+	rpBeginInfo.depthLoadOp = eg::AttachmentLoadOp::Clear;
+	rpBeginInfo.depthStoreOp = eg::AttachmentStoreOp::Discard;
+	rpBeginInfo.depthClearValue = 1.0f;
+	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Clear;
+	rpBeginInfo.colorAttachments[0].clearValue = eg::ColorLin(0, 0, 0, 0);
+
+	eg::DC.BeginRenderPass(rpBeginInfo);
+
+	m_world->DrawEditor();
+
+	MeshDrawArgs mDrawArgs;
+	mDrawArgs.drawMode = MeshDrawMode::Editor;
+	mDrawArgs.renderTargets = nullptr;
+	prepareDrawArgs.meshBatch->Draw(eg::DC, &mDrawArgs);
+
+	m_primRenderer.Draw();
+
+	prepareDrawArgs.transparentMeshBatch->Draw(eg::DC, &mDrawArgs);
+
+	m_liquidPlaneRenderer.Render();
+
+	m_selectionRenderer.EndFrame();
+
+	for (EditorComponent* comp : m_componentsForTool[static_cast<int>(currentTool)])
+	{
+		comp->LateDraw(m_editorState);
+	}
+
+	m_spriteBatch.Render(eg::SpriteBatch::RenderArgs{
+		.screenWidth = static_cast<int>(std::round(m_editorState.windowRect.w)),
+		.screenHeight = static_cast<int>(std::round(m_editorState.windowRect.h)),
+		.framebufferFormat = EDITOR_FB_FORMAT,
+	});
+
+	eg::DC.EndRenderPass();
+
+	m_renderTextureColor.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 }
 
 bool EditorWorld::IsEntitySelected(const Ent* entity) const

@@ -10,15 +10,12 @@ layout(location=3) in vec2 gridTexCoord_in;
 
 layout(location=0) out vec4 color_out;
 
-layout(binding=1) uniform sampler2DArray albedoSampler;
-layout(binding=2) uniform sampler2DArray normalMapSampler;
-layout(binding=3) uniform sampler2D gridSampler;
-layout(binding=4) uniform sampler2D noDrawSampler;
+layout(binding=1) uniform texture2DArray albedoTex;
+layout(binding=2) uniform texture2DArray normalMapTex;
+layout(binding=3) uniform texture2D gridTex;
+layout(binding=4) uniform texture2D noDrawTex;
 
-layout(push_constant) uniform PC
-{
-	float gridIntensity;
-};
+layout(binding=5) uniform sampler uSampler;
 
 void main()
 {
@@ -28,20 +25,24 @@ void main()
 	mat3 tbn = mat3(surfTangent, cross(surfTangent, surfNormal), surfNormal);
 	
 	vec3 color, normal;
+	
+	vec2 gradX = dFdx(texCoord_in.xy);
+	vec2 gradY = dFdy(texCoord_in.xy);
+	
 	if (texCoord_in.z < -0.5)
 	{
-		color = texture(noDrawSampler, texCoord_in.xy).rgb;
+		color = textureGrad(sampler2D(noDrawTex, uSampler), texCoord_in.xy, gradX, gradY).rgb;
 		normal = surfNormal;
 	}
 	else
 	{
-		color = texture(albedoSampler, texCoord_in.xyz).rgb;
-		normal = normalMapToWorld(texture(normalMapSampler, texCoord_in.xyz).xy, tbn);
+		color = textureGrad(sampler2DArray(albedoTex, uSampler), texCoord_in.xyz, gradX, gradY).rgb;
+		normal = normalMapToWorld(textureGrad(sampler2DArray(normalMapTex, uSampler), texCoord_in.xyz, gradX, gradY).xy, tbn);
 	}
 	
 	color *= CalcEditorLight(normal, 1.0);
 	
-	float gridA = gridIntensity * texture(gridSampler, gridTexCoord_in).r;
+	float gridA = texture(sampler2D(gridTex, uSampler), gridTexCoord_in).r;
 	color = mix(color, vec3(1.0), gridA);
 	
 	color_out = vec4(color, 1.0);

@@ -9,6 +9,7 @@ const static std::pair<std::string, std::vector<EntTypeID>> entityGroups[] = {
 	{ "Activation", { EntTypeID::Cube, EntTypeID::CubeSpawner, EntTypeID::FloorButton, EntTypeID::PushButton } },
 	{ "Gameplay",
 	  {
+		  EntTypeID::Gate,
 		  EntTypeID::EntranceExit,
 		  EntTypeID::Platform,
 		  EntTypeID::SlidingWall,

@@ -11,6 +11,8 @@ public:
 
 	void Update(float dt);
 
+	static constexpr eg::Format DEPTH_TEXTURE_FORMAT = eg::Format::Depth16;
+
 private:
 	eg::Pipeline m_barrierPipeline;
 

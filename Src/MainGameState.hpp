@@ -4,6 +4,7 @@
 #include "GameState.hpp"
 #include "Graphics/PhysicsDebugRenderer.hpp"
 #include "Gui/PausedMenu.hpp"
+#include "Levels.hpp"
 #include "Water/WaterQuery.hpp"
 #include "World/GravityGun.hpp"
 #include "World/Player.hpp"
@@ -18,7 +19,8 @@ public:
 	void RunFrame(float dt) override;
 
 	void SetWorld(
-		std::unique_ptr<World> newWorld, int64_t levelIndex = -1, const class EntranceExitEnt* exitEntity = nullptr,
+		std::unique_ptr<World> newWorld, int64_t levelIndex = -1,
+		std::optional<std::string_view> newGateName = std::nullopt, const class GateEnt* previousGateEntity = nullptr,
 		bool fromEditor = false
 	);
 
@@ -47,6 +49,10 @@ private:
 	int64_t m_currentLevelIndex = -1;
 
 	float m_gameTime = 0;
+
+	LevelsGraph m_levelsGraph;
+
+	std::optional<uint32_t> m_insideGateID;
 
 	std::unique_ptr<World> m_world;
 	Player m_player;

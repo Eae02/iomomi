@@ -1,6 +1,5 @@
 #include "CubeEnt.hpp"
 
-#include "../../../../../Protobuf/Build/CubeEntity.pb.h"
 #include "../../../../Graphics/Materials/GravityIndicatorMaterial.hpp"
 #include "../../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../../ImGui.hpp"
@@ -10,6 +9,7 @@
 #include "../ForceFieldEnt.hpp"
 #include "../GooPlaneEnt.hpp"
 #include "FloorButtonEnt.hpp"
+#include <CubeEntity.pb.h>
 
 DEF_ENT_TYPE(CubeEnt)
 

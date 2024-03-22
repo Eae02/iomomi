@@ -8,7 +8,7 @@
 
 static_assert(magic_enum::enum_count<EntTypeID>() == NUM_ENTITY_TYPES);
 
-const std::array<EntTypeID, 13> entityUpdateOrder = {
+const std::array<EntTypeID, 14> entityUpdateOrder = {
 	EntTypeID::ActivationLightStrip,
 	EntTypeID::FloorButton,
 	EntTypeID::PushButton,
@@ -20,6 +20,7 @@ const std::array<EntTypeID, 13> entityUpdateOrder = {
 	EntTypeID::GravitySwitch,
 	EntTypeID::SlidingWall,
 	EntTypeID::EntranceExit,
+	EntTypeID::Gate,
 	EntTypeID::WaterWall,
 	EntTypeID::Pump,
 };

@@ -7,7 +7,7 @@ layout(binding = 0, std430) readonly buffer ParticlesBuffer
 	uvec4 particleData[];
 };
 
-layout(push_constant) uniform PC
+layout(binding = 1) uniform Params_UseDynamicOffset
 {
 	mat4 transform;
 	uint barrierBlockedAxis;

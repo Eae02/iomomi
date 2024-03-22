@@ -2,6 +2,7 @@
 
 #include "../../Editor/EditorGraphics.hpp"
 #include "../RenderSettings.hpp"
+#include "../RenderTargets.hpp"
 #include "../Vertex.hpp"
 #include "MeshDrawArgs.hpp"
 
@@ -18,7 +19,6 @@ static void OnInit()
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.depthCompare = eg::CompareOp::LessOrEqual;
 	pipelineCI.cullMode = eg::CullMode::None;
-	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.vertexBindings[VERTEX_BINDING_POSITION] = { VERTEX_STRIDE_POSITION, eg::InputRate::Vertex };
 	pipelineCI.vertexBindings[EmissiveMaterial::INSTANCE_DATA_BINDING] = { sizeof(EmissiveMaterial::InstanceData), eg::InputRate::Instance };
 	pipelineCI.vertexAttributes[0] = { VERTEX_BINDING_POSITION, eg::DataType::Float32, 3, 0 };
@@ -42,6 +42,7 @@ static void OnInit()
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
 	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
+	pipelineCI.depthStencilUsage = eg::TextureUsage::DepthStencilReadOnly;
 	pipelineCI.blendStates[0] = eg::BlendState(
 		eg::BlendFunc::Add, eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One, eg::BlendFactor::SrcAlpha,
 		eg::BlendFactor::One
@@ -49,8 +50,11 @@ static void OnInit()
 	pipelineCI.label = "EmissiveGameLight";
 	emissivePipelineGame = eg::Pipeline::Create(pipelineCI);
 
+	// TODO: Set Alpha to 0
 	pipelineCI.colorAttachmentFormats[0] = EDITOR_COLOR_FORMAT;
 	pipelineCI.depthAttachmentFormat = EDITOR_DEPTH_FORMAT;
+	pipelineCI.enableDepthWrite = true;
+	pipelineCI.depthStencilUsage = eg::TextureUsage::FramebufferAttachment;
 	pipelineCI.label = "EmissiveEditor";
 	emissivePipelineEditor = eg::Pipeline::Create(pipelineCI);
 }
@@ -80,11 +84,9 @@ bool EmissiveMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) 
 	{
 	case MeshDrawMode::Emissive:
 		cmdCtx.BindPipeline(emissivePipelineGame);
-		cmdCtx.PushConstants(0, 1.0f);
 		break;
 	case MeshDrawMode::Editor:
 		cmdCtx.BindPipeline(emissivePipelineEditor);
-		cmdCtx.PushConstants(0, 0.0f);
 		break;
 	case MeshDrawMode::Game:
 		cmdCtx.BindPipeline(emissiveGeometryPipeline);

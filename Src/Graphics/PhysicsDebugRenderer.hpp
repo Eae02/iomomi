@@ -22,14 +22,10 @@ class PhysicsDebugRenderer
 public:
 	PhysicsDebugRenderer();
 
-	void Render(
-		const class PhysicsEngine& physicsEngine, const glm::mat4& viewProjTransform, eg::TextureRef colorFBTex,
-		eg::TextureRef depthFBTex
-	);
-	void Render(
-		const PhysicsDebugRenderData& renderData, const glm::mat4& viewProjTransform, eg::TextureRef colorFBTex,
-		eg::TextureRef depthFBTex
-	);
+	void Prepare(const PhysicsDebugRenderData& renderData, const glm::mat4& viewProjTransform);
+	void Prepare(const class PhysicsEngine& physicsEngine, const glm::mat4& viewProjTransform);
+
+	void Render();
 
 private:
 	PhysicsDebugRenderData m_renderData;
@@ -40,7 +36,9 @@ private:
 	eg::Pipeline m_trianglePipeline;
 	eg::Pipeline m_linesPipeline;
 
-	eg::TextureRef m_prevColorFBTex;
-	eg::TextureRef m_prevDepthFBTex;
-	eg::Framebuffer m_framebuffer;
+	uint32_t m_numLineIndices = 0;
+	uint32_t m_numTriangleIndices = 0;
+
+	eg::Buffer m_viewProjBuffer;
+	eg::DescriptorSet m_descriptorSet;
 };

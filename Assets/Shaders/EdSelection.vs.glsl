@@ -2,7 +2,7 @@
 
 layout(location=0) in vec3 position_in;
 
-layout(push_constant) uniform PC
+layout(set=0, binding=0) uniform Params_UseDynamicOffset
 {
 	mat4 transform;
 	float intensity;

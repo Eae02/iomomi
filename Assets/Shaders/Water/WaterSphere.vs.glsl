@@ -7,18 +7,11 @@
 #define RENDER_SETTINGS_BINDING 0
 #include "../Inc/RenderSettings.glh"
 
-layout(location = 0) in vec2 position_in;
-
 layout(location = 0) out vec2 spritePos_out;
 layout(location = 1) out vec3 eyePos_out;
 
 #ifdef VDepthMax
 const float Z_SHIFT_ES = -W_PARTICLE_RENDER_RADIUS;
-
-layout(push_constant) uniform PC
-{
-	uint lastParticleIndex;
-};
 #endif
 
 #ifdef VDepthMin
@@ -26,26 +19,25 @@ layout(location = 2) out float glowIntensity_out;
 const float Z_SHIFT_ES = W_PARTICLE_RENDER_RADIUS;
 #endif
 
-layout(binding = 1, std430) readonly buffer ParticlesBuffer
+layout(set = 0, binding = 1, std430) readonly buffer ParticlesBuffer
 {
 	uvec4 particleData[];
 };
 
+const vec2 QUAD_VERTICES[] = vec2[](vec2(-1, -1), vec2(-1, 1), vec2(1, 1), vec2(1, 1), vec2(1, -1), vec2(-1, -1));
+
 void main()
 {
-#ifdef VDepthMin
-	uint dataIndex = gl_InstanceIndex;
-#else
-	uint dataIndex = lastParticleIndex - gl_InstanceIndex;
-#endif
+	uint dataIndex = gl_VertexIndex / 6;
+	vec2 positionIn = QUAD_VERTICES[gl_VertexIndex % 6];
 
-	spritePos_out = position_in;
+	spritePos_out = positionIn;
 
 	uvec4 data = particleData[dataIndex];
 
 	vec3 eyePosCenter = (renderSettings.viewMatrix * vec4(uintBitsToFloat(data.xyz), 1.0)).xyz;
 
-	eyePos_out = eyePosCenter + vec3(position_in * W_PARTICLE_RENDER_RADIUS, 0);
+	eyePos_out = eyePosCenter + vec3(positionIn * W_PARTICLE_RENDER_RADIUS, 0);
 
 #ifdef VDepthMin
 	uint glowTime = dataBitsGetGlowTime(data.w);

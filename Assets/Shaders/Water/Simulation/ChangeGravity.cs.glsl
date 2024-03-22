@@ -14,7 +14,7 @@ layout(set = 0, binding = 1) restrict readonly buffer ChangeGravityBitsBuffer
 	uint changeGravityBits[];
 };
 
-layout(push_constant) uniform PC
+layout(set = 1, binding = 0) uniform Params_UseDynamicOffset
 {
 	uint newGravity;
 };

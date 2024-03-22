@@ -15,7 +15,7 @@ public:
 
 	static constexpr uint32_t FRAME_CYCLE_LENGTH = eg::MAX_CONCURRENT_FRAMES + 1;
 
-	WaterSimulationThread();
+	WaterSimulationThread(glm::vec3 gridOrigin, uint32_t numParticles);
 
 	~WaterSimulationThread();
 
@@ -24,13 +24,11 @@ public:
 	WaterSimulationThread& operator=(WaterSimulationThread&&) = delete;
 	WaterSimulationThread& operator=(const WaterSimulationThread&) = delete;
 
-	void Initialize(glm::vec3 gridOrigin, uint32_t numParticles);
-
 	void PushGravityChangeMT(const GravityChange& gravityChange);
 
 	void AddQueryMT(std::weak_ptr<WaterQueryAABB> query);
 
-	void OnFrameBeginMT(eg::CommandContext& cc, std::span<const glm::uvec2> particleData);
+	void OnFrameBeginMT(std::span<const glm::uvec2> particleData);
 
 	struct GravityChangeResult
 	{

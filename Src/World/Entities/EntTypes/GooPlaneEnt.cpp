@@ -1,6 +1,6 @@
 #include "GooPlaneEnt.hpp"
 
-#include "../../../../Protobuf/Build/GooPlaneEntity.pb.h"
+#include <GooPlaneEntity.pb.h>
 
 DEF_ENT_TYPE(GooPlaneEnt)
 

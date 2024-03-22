@@ -2,7 +2,7 @@
 
 #include <unordered_set>
 
-#include "../../../Vec3Compare.hpp"
+#include "../../../Utils.hpp"
 #include "../../World.hpp"
 #include "AxisAlignedQuadComp.hpp"
 #include "WaterBlockComp.hpp"

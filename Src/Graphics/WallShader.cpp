@@ -1,11 +1,10 @@
 #include "WallShader.hpp"
 
 #include "../Editor/EditorGraphics.hpp"
-#include "../Settings.hpp"
-#include "DeferredRenderer.hpp"
 #include "GraphicsCommon.hpp"
 #include "Lighting/PointLightShadowMapper.hpp"
 #include "RenderSettings.hpp"
+#include "RenderTargets.hpp"
 
 struct
 {
@@ -53,7 +52,6 @@ void InitializeWallShader()
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::Back;
 	pipelineCI.numColorAttachments = 2;
-	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.vertexBindings[0] = { sizeof(WallVertex), eg::InputRate::Vertex };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(WallVertex, position) };
 	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::Float32, 3, offsetof(WallVertex, texCoord) };
@@ -72,20 +70,17 @@ void InitializeWallShader()
 	editorPipelineCI.enableDepthTest = true;
 	editorPipelineCI.cullMode = eg::CullMode::Back;
 	editorPipelineCI.depthCompare = eg::CompareOp::Less;
-	editorPipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	editorPipelineCI.frontFaceCCW = false;
 	editorPipelineCI.numColorAttachments = 1;
 	editorPipelineCI.vertexBindings[0] = { sizeof(WallVertex), eg::InputRate::Vertex };
 	editorPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(WallVertex, position) };
 	editorPipelineCI.vertexAttributes[1] = { 0, eg::DataType::Float32, 3, offsetof(WallVertex, texCoord) };
-	editorPipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3,
+	editorPipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 4,
 		                                     offsetof(WallVertex, normalAndRoughnessLo) };
-	editorPipelineCI.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 3,
+	editorPipelineCI.vertexAttributes[3] = { 0, eg::DataType::SInt8Norm, 4,
 		                                     offsetof(WallVertex, tangentAndRoughnessHi) };
 	editorPipelineCI.colorAttachmentFormats[0] = EDITOR_COLOR_FORMAT;
-	;
 	editorPipelineCI.depthAttachmentFormat = EDITOR_DEPTH_FORMAT;
-	;
 	wr.pipelineEditor = eg::Pipeline::Create(editorPipelineCI);
 
 	// Creates the editor border pipeline
@@ -98,12 +93,10 @@ void InitializeWallShader()
 	borderPipelineCI.topology = eg::Topology::LineList;
 	borderPipelineCI.vertexBindings[0] = { sizeof(WallBorderVertex), eg::InputRate::Vertex };
 	borderPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 4, offsetof(WallBorderVertex, position) };
-	borderPipelineCI.vertexAttributes[1] = { 0, eg::DataType::SInt8Norm, 3, offsetof(WallBorderVertex, normal1) };
-	borderPipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 3, offsetof(WallBorderVertex, normal2) };
+	borderPipelineCI.vertexAttributes[1] = { 0, eg::DataType::SInt8Norm, 4, offsetof(WallBorderVertex, normal1) };
+	borderPipelineCI.vertexAttributes[2] = { 0, eg::DataType::SInt8Norm, 4, offsetof(WallBorderVertex, normal2) };
 	borderPipelineCI.colorAttachmentFormats[0] = EDITOR_COLOR_FORMAT;
-	;
 	borderPipelineCI.depthAttachmentFormat = EDITOR_DEPTH_FORMAT;
-	;
 	wr.pipelineBorderEditor = eg::Pipeline::Create(borderPipelineCI);
 
 	const eg::SpecializationConstantEntry plsPipelineSpecConstants[] = { { 10, FRONT_FACE_SHADOW_BIAS },
@@ -121,7 +114,6 @@ void InitializeWallShader()
 	plsPipelineCI.enableDepthTest = true;
 	plsPipelineCI.frontFaceCCW = PointLightShadowMapper::FlippedLightMatrix();
 	plsPipelineCI.cullMode = eg::CullMode::None;
-	plsPipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	plsPipelineCI.descriptorSetBindings[0] = PointLightShadowDrawArgs::PARAMETERS_DS_BINDINGS;
 	plsPipelineCI.vertexBindings[0] = { sizeof(WallVertex), eg::InputRate::Vertex };
 	plsPipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(WallVertex, position) };
@@ -147,16 +139,18 @@ void InitializeWallShader()
 
 	wr.gameDescriptorSet = { wr.pipelineDeferredGeom, 0 };
 	wr.gameDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
-	wr.gameDescriptorSet.BindTexture(*wr.diffuseTexture, 1, &commonTextureSampler);
-	wr.gameDescriptorSet.BindTexture(*wr.normalMapTexture, 2, &commonTextureSampler);
-	wr.gameDescriptorSet.BindTexture(*wr.miscMapTexture, 3, &commonTextureSampler);
+	wr.gameDescriptorSet.BindTexture(*wr.diffuseTexture, 1);
+	wr.gameDescriptorSet.BindTexture(*wr.normalMapTexture, 2);
+	wr.gameDescriptorSet.BindTexture(*wr.miscMapTexture, 3);
+	wr.gameDescriptorSet.BindSampler(samplers::linearRepeatAnisotropic, 4);
 
 	wr.editorDescriptorSet = { wr.pipelineEditor, 0 };
 	wr.editorDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
-	wr.editorDescriptorSet.BindTexture(*wr.diffuseTexture, 1, &commonTextureSampler);
-	wr.editorDescriptorSet.BindTexture(*wr.normalMapTexture, 2, &commonTextureSampler);
-	wr.editorDescriptorSet.BindTexture(*wr.gridTexture, 3, &commonTextureSampler);
-	wr.editorDescriptorSet.BindTexture(*wr.noDrawTexture, 4, &commonTextureSampler);
+	wr.editorDescriptorSet.BindTexture(*wr.diffuseTexture, 1);
+	wr.editorDescriptorSet.BindTexture(*wr.normalMapTexture, 2);
+	wr.editorDescriptorSet.BindTexture(*wr.gridTexture, 3);
+	wr.editorDescriptorSet.BindTexture(*wr.noDrawTexture, 4);
+	wr.editorDescriptorSet.BindSampler(samplers::linearRepeatAnisotropic, 5);
 }
 
 static void OnShutdown()
@@ -173,14 +167,11 @@ void BindWallShaderGame()
 	eg::DC.BindDescriptorSet(wr.gameDescriptorSet, 0);
 }
 
-void BindWallShaderEditor(bool drawGrid)
+void BindWallShaderEditor()
 {
 	eg::DC.BindPipeline(wr.pipelineEditor);
 
 	eg::DC.BindDescriptorSet(wr.editorDescriptorSet, 0);
-
-	float pc = drawGrid ? 1 : 0;
-	eg::DC.PushConstants(0, sizeof(float), &pc);
 }
 
 void BindWallShaderPointLightShadow(const PointLightShadowDrawArgs& renderArgs)
@@ -193,7 +184,7 @@ void DrawWallBordersEditor(eg::BufferRef vertexBuffer, uint32_t numVertices)
 {
 	eg::DC.BindPipeline(wr.pipelineBorderEditor);
 
-	eg::DC.BindUniformBuffer(RenderSettings::instance->Buffer(), 0, 0);
+	RenderSettings::instance->BindVertexShaderDescriptorSet();
 
 	eg::DC.BindVertexBuffer(0, vertexBuffer, 0);
 

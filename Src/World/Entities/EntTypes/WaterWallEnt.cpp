@@ -1,8 +1,8 @@
 #include "WaterWallEnt.hpp"
 
-#include "../../../../Protobuf/Build/WaterWallEntity.pb.h"
 #include "../../../ImGui.hpp"
 #include "../../WorldUpdateArgs.hpp"
+#include <WaterWallEntity.pb.h>
 
 DEF_ENT_TYPE(WaterWallEnt)
 

@@ -3,11 +3,11 @@
 #include <EGame/FlyCamera.hpp>
 
 #include "../GameState.hpp"
-#include "../Graphics/RenderContext.hpp"
 #include "../World/PrepareDrawArgs.hpp"
 #include "../World/World.hpp"
 #include "EditorCamera.hpp"
 #include "EditorComponent.hpp"
+#include "EditorGraphics.hpp"
 #include "LiquidPlaneRenderer.hpp"
 #include "PrimitiveRenderer.hpp"
 #include "SelectionRenderer.hpp"
@@ -19,7 +19,7 @@ public:
 
 	void Update(float dt, EditorTool currentTool);
 
-	void Draw(EditorTool currentTool, RenderContext& renderCtx, PrepareDrawArgs prepareDrawArgs);
+	void Draw(EditorTool currentTool, PrepareDrawArgs prepareDrawArgs);
 
 	void RenderToolSettings(EditorTool currentTool);
 
@@ -43,9 +43,9 @@ public:
 
 	bool shouldClose = false;
 
-	eg::Texture renderTexture;
-
 	uint32_t uid;
+
+	const eg::Texture& RenderedTexture() const { return m_renderTextureColor; }
 
 private:
 	void ResetCamera();
@@ -55,6 +55,7 @@ private:
 	bool IsEntitySelected(const Ent* entity) const;
 
 	eg::Texture m_renderTextureDepth;
+	eg::Texture m_renderTextureColor;
 	eg::Framebuffer m_framebuffer;
 
 	SelectionRenderer m_selectionRenderer;
@@ -80,8 +81,6 @@ private:
 	int m_previousSumOfWaterBlockedVersion = -1;
 
 	bool m_levelHasEntrance = false;
-
-	bool m_drawVoxelGrid = true;
 
 	bool m_isUpdatingThumbnailView = false;
 	eg::FlyCamera m_thumbnailCamera;

@@ -4,7 +4,12 @@
 #include <unordered_map>
 #include <unordered_set>
 
-WaterSimulationThread::WaterSimulationThread() : m_thread([this] { ThreadTarget(); }) {}
+WaterSimulationThread::WaterSimulationThread(glm::vec3 gridOrigin, uint32_t numParticles)
+	: m_gridOrigin(gridOrigin), m_numParticles(numParticles),
+	  m_particleDataMT(std::make_unique<glm::uvec2[]>(numParticles)),
+	  m_particleDataBT(std::make_unique<glm::uvec2[]>(numParticles)), m_thread([this] { ThreadTarget(); })
+{
+}
 
 WaterSimulationThread::~WaterSimulationThread()
 {
@@ -13,17 +18,6 @@ WaterSimulationThread::~WaterSimulationThread()
 	m_mutex.unlock();
 	m_signalForBackThread.notify_one();
 	m_thread.join();
-}
-
-void WaterSimulationThread::Initialize(glm::vec3 gridOrigin, uint32_t numParticles)
-{
-	EG_ASSERT(m_numParticles == 0);
-
-	m_numParticles = numParticles;
-	m_gridOrigin = gridOrigin;
-
-	m_particleDataMT = std::make_unique<glm::uvec2[]>(numParticles);
-	m_particleDataBT = std::make_unique<glm::uvec2[]>(numParticles);
 }
 
 static inline glm::ivec3 CellIDToV3(uint32_t id)
@@ -108,6 +102,13 @@ void WaterSimulationThread::ThreadTarget()
 							continue;
 						auto [indexLo, indexHi] = cellIt->second;
 						queryResults.numIntersecting += indexHi - indexLo;
+
+						for (uint32_t idx = indexLo; idx < indexHi; idx++)
+						{
+							uint32_t gravityIndex = m_particleDataBT[idx].y & 0x7;
+							if (gravityIndex < 6)
+								queryResults.buoyancy -= DirectionVector(static_cast<Dir>(gravityIndex));
+						}
 					}
 
 			query->m_mutex.lock();
@@ -210,7 +211,7 @@ void WaterSimulationThread::AddQueryMT(std::weak_ptr<WaterQueryAABB> query)
 	m_newWaterQueries.push_back(std::move(query));
 }
 
-void WaterSimulationThread::OnFrameBeginMT(eg::CommandContext& cc, std::span<const glm::uvec2> particleData)
+void WaterSimulationThread::OnFrameBeginMT(std::span<const glm::uvec2> particleData)
 {
 	EG_ASSERT(particleData.size() == m_numParticles);
 

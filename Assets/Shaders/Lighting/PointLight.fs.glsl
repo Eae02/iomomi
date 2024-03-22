@@ -1,17 +1,19 @@
 #version 450 core
+#extension GL_EXT_samplerless_texture_functions : enable
 
 #include "../Inc/Light.glh"
 #include "../Inc/DeferredLight.glh"
 #include "../Inc/Depth.glh"
 
-const int SHADOW_MODE_NONE = 0;
-const int SHADOW_MODE_HARD = 1;
-const int SHADOW_MODE_SOFT = 2;
-
-layout(constant_id=0) const int shadowMode = 0;
+layout(constant_id=0) const int softShadows = 0;
 layout(constant_id=1) const int enableCaustics = 0;
 
-layout(push_constant, std140) uniform PC
+layout(set=0, binding=4) uniform texture2D waterDepth;
+layout(set=0, binding=5) uniform texture3D causticsTexture;
+layout(set=0, binding=6) uniform sampler causticsSampler;
+layout(set=0, binding=7) uniform samplerShadow shadowMapSampler_ReflShadow;
+
+layout(set=1, binding=0) uniform ParamsUB_UseDynamicOffset
 {
 	vec4 positionAndRange;
 	vec4 radiance;
@@ -23,11 +25,7 @@ layout(push_constant, std140) uniform PC
 	float specularIntensity;
 } pc;
 
-layout(set=0, binding=4) uniform sampler2D waterDepth;
-
-layout(set=0, binding=5) uniform sampler3D causticsTexture;
-
-layout(set=0, binding=6) uniform samplerCubeShadow shadowMap;
+layout(set=2, binding=0) uniform textureCube shadowMap;
 
 const vec3 SAMPLE_OFFSETS[] = vec3[]
 (
@@ -40,8 +38,8 @@ float sampleCaustics(vec2 pos)
 	pos *= pc.causticsTexScale;
 	float causticsZ = renderSettings.gameTime * 0.2;
 	float panOffset = renderSettings.gameTime * pc.causticsPanSpeed;
-	float c1 = texture(causticsTexture, vec3(pos.x + panOffset, pos.y, causticsZ)).r;
-	float c2 = texture(causticsTexture, vec3((pos.x - panOffset) * 0.8, (pos.y + panOffset * 0.2) * 0.8, causticsZ + 0.5)).r;
+	float c1 = textureLod(sampler3D(causticsTexture, causticsSampler), vec3(pos.x + panOffset, pos.y, causticsZ), 0).r;
+	float c2 = textureLod(sampler3D(causticsTexture, causticsSampler), vec3((pos.x - panOffset) * 0.8, (pos.y + panOffset * 0.2) * 0.8, causticsZ + 0.5), 0).r;
 	return min(c1, c2);
 }
 
@@ -53,31 +51,28 @@ vec3 CalculateLighting(GBData gbData)
 	
 	vec3 radiance = pc.radiance.xyz;
 	
-	if (shadowMode != SHADOW_MODE_NONE)
+	float compare = dist / pc.positionAndRange.w;
+	float shadow = 0.0;
+	if (bool(softShadows))
 	{
-		float compare = dist / pc.positionAndRange.w;
-		float shadow = 0.0;
-		if (shadowMode == SHADOW_MODE_SOFT)
+		for (int i = 0; i < SAMPLE_OFFSETS.length(); i++)
 		{
-			for (int i = 0; i < SAMPLE_OFFSETS.length(); i++)
-			{
-				vec3 samplePos = -toLight + SAMPLE_OFFSETS[i] * pc.shadowSampleDist;
-				shadow += texture(shadowMap, vec4(samplePos, compare)).r;
-			}
-			shadow /= float(SAMPLE_OFFSETS.length());
+			vec3 samplePos = -toLight + SAMPLE_OFFSETS[i] * pc.shadowSampleDist;
+			shadow += texture(samplerCubeShadow(shadowMap, shadowMapSampler_ReflShadow), vec4(samplePos, compare)).r;
 		}
-		else
-		{
-			shadow = texture(shadowMap, vec4(-toLight, compare)).r;
-		}
-		if (shadow < 0.0001)
-			discard;
-		radiance *= shadow;
+		shadow /= float(SAMPLE_OFFSETS.length());
 	}
-	
-	if (enableCaustics == 1)
+	else
 	{
-		vec4 waterDepth4 = texture(waterDepth, vec2(gl_FragCoord.xy) / vec2(textureSize(waterDepth, 0).xy));
+		shadow = texture(samplerCubeShadow(shadowMap, shadowMapSampler_ReflShadow), vec4(-toLight, compare)).r;
+	}
+	if (shadow < 0.0001)
+		discard;
+	radiance *= shadow;
+	
+	if (bool(enableCaustics))
+	{
+		vec4 waterDepth4 = texelFetch(waterDepth, ivec2(min(gl_FragCoord.xy, textureSize(waterDepth, 0) - 1)), 0);
 		float lDepth = linearizeDepth(gbData.hDepth);
 		float maxWaterDepth = waterDepth4.g + (waterDepth4.r < 0.5 ? 0.2 : 0.4);
 		if (lDepth > waterDepth4.r + 0.2 && lDepth < maxWaterDepth)

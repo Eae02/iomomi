@@ -22,30 +22,68 @@ const std::pair<uint32_t, uint32_t> cubeMesh::edges[12] = {
 	{ 1, 3 }, { 2, 3 }, { 4, 5 }, { 4, 6 }, { 5, 7 }, { 6, 7 },
 };
 
-eg::Sampler commonTextureSampler;
-eg::Sampler framebufferNearestSampler;
-eg::Sampler framebufferLinearSampler;
-eg::Sampler linearClampToEdgeSampler;
-eg::Sampler linearRepeatSampler;
+eg::SamplerHandle samplers::linearRepeatAnisotropic;
+eg::SamplerHandle samplers::linearClampAnisotropic;
+eg::SamplerHandle samplers::nearestClamp;
+eg::SamplerHandle samplers::linearClamp;
+eg::SamplerHandle samplers::linearRepeat;
+eg::SamplerHandle samplers::shadowMap;
 
-eg::Texture whitePixelTexture;
-eg::Texture blackPixelTexture;
+eg::DescriptorSet blackPixelTextureDescriptorSet;
+
+eg::Buffer frameDataUniformBuffer;
+char* frameDataUniformBufferPtr;
+uint32_t frameDataUniformBufferOffset = 0;
+
+constexpr size_t FRAME_DATA_UB_BYTES_PER_FRAME = 1024 * 1024;
+
+const eg::DescriptorSetBinding FRAGMENT_SHADER_TEXTURE_BINDING = {
+	.binding = 0,
+	.type = eg::BindingTypeTexture{},
+	.shaderAccess = eg::ShaderAccessFlags::Fragment,
+};
+
+const eg::DescriptorSetBinding FRAGMENT_SHADER_TEXTURE_BINDING_UNFILTERABLE = {
+	.binding = 0,
+	.type =
+		eg::BindingTypeTexture{
+			.sampleMode = eg::TextureSampleMode::UnfilterableFloat,
+		},
+	.shaderAccess = eg::ShaderAccessFlags::Fragment,
+};
 
 void GraphicsCommonInit()
 {
-	const auto commonSamplerDescription = eg::SamplerDescription{ .maxAnistropy = settings.anisotropicFiltering };
-	commonTextureSampler = eg::Sampler(commonSamplerDescription);
+	samplers::linearRepeatAnisotropic = eg::GetSampler({
+		.wrapU = eg::WrapMode::Repeat,
+		.wrapV = eg::WrapMode::Repeat,
+		.wrapW = eg::WrapMode::Repeat,
+		.minFilter = eg::TextureFilter::Linear,
+		.magFilter = eg::TextureFilter::Linear,
+		.mipFilter = eg::TextureFilter::Linear,
+		.maxAnistropy = settings.anisotropicFiltering,
+	});
 
-	framebufferLinearSampler = eg::Sampler(eg::SamplerDescription{
+	samplers::linearClampAnisotropic = eg::GetSampler({
 		.wrapU = eg::WrapMode::ClampToEdge,
 		.wrapV = eg::WrapMode::ClampToEdge,
 		.wrapW = eg::WrapMode::ClampToEdge,
 		.minFilter = eg::TextureFilter::Linear,
 		.magFilter = eg::TextureFilter::Linear,
-		.mipFilter = eg::TextureFilter::Nearest,
+		.mipFilter = eg::TextureFilter::Linear,
+		.maxAnistropy = settings.anisotropicFiltering,
 	});
 
-	framebufferNearestSampler = eg::Sampler(eg::SamplerDescription{
+	samplers::linearClamp = eg::GetSampler(eg::SamplerDescription{
+		.wrapU = eg::WrapMode::ClampToEdge,
+		.wrapV = eg::WrapMode::ClampToEdge,
+		.wrapW = eg::WrapMode::ClampToEdge,
+		.minFilter = eg::TextureFilter::Linear,
+		.magFilter = eg::TextureFilter::Linear,
+		.mipFilter = eg::TextureFilter::Linear,
+	});
+
+	samplers::nearestClamp = eg::GetSampler(eg::SamplerDescription{
 		.wrapU = eg::WrapMode::ClampToEdge,
 		.wrapV = eg::WrapMode::ClampToEdge,
 		.wrapW = eg::WrapMode::ClampToEdge,
@@ -54,16 +92,7 @@ void GraphicsCommonInit()
 		.mipFilter = eg::TextureFilter::Nearest,
 	});
 
-	linearClampToEdgeSampler = eg::Sampler(eg::SamplerDescription{
-		.wrapU = eg::WrapMode::ClampToEdge,
-		.wrapV = eg::WrapMode::ClampToEdge,
-		.wrapW = eg::WrapMode::ClampToEdge,
-		.minFilter = eg::TextureFilter::Linear,
-		.magFilter = eg::TextureFilter::Linear,
-		.mipFilter = eg::TextureFilter::Linear,
-	});
-
-	linearRepeatSampler = eg::Sampler(eg::SamplerDescription{
+	samplers::linearRepeat = eg::GetSampler(eg::SamplerDescription{
 		.wrapU = eg::WrapMode::Repeat,
 		.wrapV = eg::WrapMode::Repeat,
 		.wrapW = eg::WrapMode::Repeat,
@@ -72,39 +101,32 @@ void GraphicsCommonInit()
 		.mipFilter = eg::TextureFilter::Linear,
 	});
 
-	eg::TextureCreateInfo whiteTextureCI;
-	whiteTextureCI.format = eg::Format::R8G8B8A8_UNorm;
-	whiteTextureCI.width = 1;
-	whiteTextureCI.height = 1;
-	whiteTextureCI.mipLevels = 1;
-	whiteTextureCI.flags = eg::TextureFlags::ShaderSample | eg::TextureFlags::CopyDst;
+	samplers::shadowMap = eg::GetSampler(eg::SamplerDescription{
+		.wrapU = eg::WrapMode::Repeat,
+		.wrapV = eg::WrapMode::Repeat,
+		.wrapW = eg::WrapMode::Repeat,
+		.minFilter = eg::TextureFilter::Linear,
+		.magFilter = eg::TextureFilter::Linear,
+		.mipFilter = eg::TextureFilter::Nearest,
+		.enableCompare = true,
+		.compareOp = eg::CompareOp::Less,
+	});
 
-	whiteTextureCI.label = "WhitePixel";
-	whitePixelTexture = eg::Texture::Create2D(whiteTextureCI);
-
-	whiteTextureCI.label = "BlackPixel";
-	blackPixelTexture = eg::Texture::Create2D(whiteTextureCI);
-
-	const uint8_t whitePixelTextureColor[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
-	whitePixelTexture.DCUpdateData(
-		eg::TextureRange{ .sizeX = 1, .sizeY = 1, .sizeZ = 1 }, sizeof(whitePixelTextureColor), whitePixelTextureColor
+	frameDataUniformBuffer = eg::Buffer(
+		eg::BufferFlags::UniformBuffer | eg::BufferFlags::MapWrite | eg::BufferFlags::MapCoherent |
+			eg::BufferFlags::ManualBarrier,
+		FRAME_DATA_UB_BYTES_PER_FRAME * eg::MAX_CONCURRENT_FRAMES, nullptr
 	);
-	whitePixelTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
+	frameDataUniformBufferPtr = static_cast<char*>(frameDataUniformBuffer.Map());
 
-	const uint8_t blackPixelTextureColor[4] = { 0, 0, 0, 0 };
-	blackPixelTexture.DCUpdateData(
-		eg::TextureRange{ .sizeX = 1, .sizeY = 1, .sizeZ = 1 }, sizeof(blackPixelTextureColor), blackPixelTextureColor
-	);
-	blackPixelTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
+	blackPixelTextureDescriptorSet = eg::DescriptorSet({ &FRAGMENT_SHADER_TEXTURE_BINDING_UNFILTERABLE, 1 });
+	blackPixelTextureDescriptorSet.BindTexture(eg::Texture::BlackPixel(), 0);
 }
 
 static void OnShutdown()
 {
-	commonTextureSampler = {};
-	framebufferLinearSampler = {};
-	framebufferNearestSampler = {};
-	whitePixelTexture.Destroy();
-	blackPixelTexture.Destroy();
+	frameDataUniformBuffer.Destroy();
+	blackPixelTextureDescriptorSet.Destroy();
 }
 
 EG_ON_SHUTDOWN(OnShutdown)
@@ -126,3 +148,27 @@ void ResizableBuffer::EnsureSize(uint32_t elements, uint32_t elemSize)
 
 const int32_t WATER_MODE_BEFORE = 0;
 const int32_t WATER_MODE_AFTER = 1;
+
+uint32_t PushFrameUniformData(std::span<const char> data)
+{
+	uint32_t newOffset = eg::RoundToNextMultiple(
+		frameDataUniformBufferOffset + data.size(), eg::GetGraphicsDeviceInfo().uniformBufferOffsetAlignment
+	);
+	EG_ASSERT(newOffset <= FRAME_DATA_UB_BYTES_PER_FRAME);
+
+	uint32_t offsetWithFrameOffset = eg::CFrameIdx() * FRAME_DATA_UB_BYTES_PER_FRAME + frameDataUniformBufferOffset;
+
+	std::memcpy(frameDataUniformBufferPtr + offsetWithFrameOffset, data.data(), data.size());
+
+	if (!eg::HasFlag(eg::GetGraphicsDeviceInfo().features, eg::DeviceFeatureFlags::MapCoherent))
+		frameDataUniformBuffer.Flush(offsetWithFrameOffset, data.size());
+
+	frameDataUniformBufferOffset = newOffset;
+
+	return offsetWithFrameOffset;
+}
+
+void InitFrameDataUniformBufferForNewFrame()
+{
+	frameDataUniformBufferOffset = 0;
+}

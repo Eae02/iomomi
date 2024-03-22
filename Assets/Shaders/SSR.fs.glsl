@@ -9,23 +9,27 @@
 
 layout(location=0) in vec2 texCoord_in;
 
-layout(binding=1) uniform sampler2D inputColorSampler;
-layout(binding=2) uniform sampler2D gbColor2Sampler;
-layout(binding=3) uniform sampler2D gbDepthSampler;
-layout(binding=4) uniform sampler2D waterDepthSampler;
+layout(set=1, binding=0) uniform texture2D inputColorTex;
+layout(set=1, binding=1) uniform texture2D gbColor2Tex;
+layout(set=1, binding=2) uniform texture2D gbDepthTex_UF;
+layout(set=1, binding=3) uniform texture2D waterDepthTex;
+
+layout(set=1, binding=4) uniform sampler linearSampler;
+layout(set=1, binding=5) uniform sampler nearestSampler_UF;
 
 layout(constant_id=0) const int ssrLinearSamples = 8;
 layout(constant_id=1) const int ssrBinarySamples = 8;
 layout(constant_id=2) const float ssrMaxDistance = 20;
 
-layout(push_constant) uniform PC
+layout(set=0, binding=1) uniform Params
 {
 	vec3 fallbackColor;
+	float ssrIntensity;
 };
 
 float getWaterHDepth(vec2 texCoord)
 {
-	return hyperDepth(texture(waterDepthSampler, texCoord).r);
+	return hyperDepth(textureLod(sampler2D(waterDepthTex, nearestSampler_UF), texCoord, 0).r);
 }
 
 vec3 ndc;
@@ -39,7 +43,7 @@ bool behindDepthBuffer(vec3 worldPos)
 	if (!EG_OPENGL)
 		sampleTC.y = 1 - sampleTC.y;
 	
-	return depthTo01(ndc.z) > min(texture(gbDepthSampler, sampleTC).r, getWaterHDepth(sampleTC));
+	return depthTo01(ndc.z) > min(textureLod(sampler2D(gbDepthTex_UF, nearestSampler_UF), sampleTC, 0).r, getWaterHDepth(sampleTC));
 }
 
 const float FADE_BEGIN = 0.75; //Percentage of screen radius to begin fading out at
@@ -70,7 +74,7 @@ vec4 calcReflection(vec3 surfacePos, vec3 dirToEye, vec3 normal)
 			
 			float fade01 = max(abs(ndc.x), abs(ndc.y));
 			float fade = 1 - clamp((fade01 - 1) / (1 - FADE_BEGIN) + 1, 0, 1);
-			vec3 reflectColor = mix(fallbackColor, texture(inputColorSampler, sampleTC).rgb, fade);
+			vec3 reflectColor = mix(fallbackColor, textureLod(sampler2D(inputColorTex, linearSampler), sampleTC, 0).rgb, fade);
 			return vec4(reflectColor, mid * rayDirLen / ssrMaxDistance);
 		}
 	}
@@ -85,11 +89,11 @@ void main()
 	gl_FragDepth = 0;
 	color_out = vec4(0.0);
 	
-	float hDepth = texture(gbDepthSampler, texCoord_in).r;
-	if (texture(inputColorSampler, texCoord_in).a > 0.1)
+	float hDepth = textureLod(sampler2D(gbDepthTex_UF, nearestSampler_UF), texCoord_in, 0).r;
+	if (textureLod(sampler2D(inputColorTex, linearSampler), texCoord_in, 0).a > 0.1)
 		return;
 	
-	vec4 gbc2 = texture(gbColor2Sampler, texCoord_in);
+	vec4 gbc2 = textureLod(sampler2D(gbColor2Tex, nearestSampler_UF), texCoord_in, 0);
 	
 	vec3 worldPos = WorldPosFromDepth(hDepth, texCoord_in, renderSettings.invViewProjection);
 	vec3 normal = SMDecode(gbc2.xy);

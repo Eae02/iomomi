@@ -13,7 +13,6 @@ LiquidPlaneRenderer::LiquidPlaneRenderer()
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::None;
-	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.vertexBindings[0] = { sizeof(LiquidPlaneComp::Vertex), eg::InputRate::Vertex };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(LiquidPlaneComp::Vertex, pos) };
 	pipelineCI.blendStates[0] = eg::AlphaBlend;
@@ -22,6 +21,10 @@ LiquidPlaneRenderer::LiquidPlaneRenderer()
 	pipelineCI.label = "EdLiquidPlane";
 
 	m_pipeline = eg::Pipeline::Create(pipelineCI);
+
+	m_descriptorSet = eg::DescriptorSet(m_pipeline, 0);
+	m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
+	m_descriptorSet.BindUniformBuffer(frameDataUniformBuffer, 1, eg::BIND_BUFFER_OFFSET_DYNAMIC, sizeof(float) * 4);
 }
 
 void LiquidPlaneRenderer::Prepare(World& world, eg::MeshBatchOrdered& meshBatch, const glm::vec3& cameraPos)
@@ -54,8 +57,6 @@ void LiquidPlaneRenderer::Render() const
 
 	eg::DC.BindPipeline(m_pipeline);
 
-	RenderSettings::instance->BindVertexShaderDescriptorSet();
-
 	for (int64_t i = eg::ToInt64(m_planes.size()) - 1; i >= 0; i--)
 	{
 		const LiquidPlaneComp& plane = *m_planes[i].second;
@@ -63,7 +64,8 @@ void LiquidPlaneRenderer::Render() const
 		eg::DC.BindVertexBuffer(0, plane.VertexBuffer(), 0);
 		eg::DC.BindIndexBuffer(eg::IndexType::UInt16, plane.IndexBuffer(), 0);
 
-		eg::DC.PushConstants(0, sizeof(float) * 4, &plane.editorColor);
+		uint32_t dataOffset = PushFrameUniformData(RefToCharSpan(plane.editorColor));
+		eg::DC.BindDescriptorSet(m_descriptorSet, 0, { &dataOffset, 1 });
 
 		eg::DC.DrawIndexed(0, plane.NumIndices(), 0, 0, 1);
 	}

@@ -5,6 +5,8 @@ class GravityCornerLightMaterial : public eg::IMaterial
 public:
 	GravityCornerLightMaterial() = default;
 
+	void Initialize();
+
 	size_t PipelineHash() const override;
 
 	bool BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs) const override;
@@ -24,4 +26,8 @@ public:
 private:
 	glm::vec3 m_activationPos;
 	float m_activationIntensity = 0;
+
+	eg::Buffer m_parametersBuffer;
+	eg::DescriptorSet m_descriptorSet;
+	bool m_hasUpdatedParametersBuffer = false;
 };

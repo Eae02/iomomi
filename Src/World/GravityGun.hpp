@@ -15,7 +15,7 @@ public:
 		eg::ParticleManager& particleManager, const class Player& player, const glm::mat4& inverseViewProj, float dt
 	);
 
-	void Draw(class RenderTexManager& renderTexManager);
+	void Draw(const struct RenderTargets& renderTargets);
 
 	void ChangeLevel(const glm::quat& oldPlayerRotation, const glm::quat& newPlayerRotation);
 

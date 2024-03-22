@@ -3,9 +3,9 @@
 #include <ctime>
 
 #include "../../Game.hpp"
-#include "../../Settings.hpp"
 #include "../GraphicsCommon.hpp"
 #include "../RenderSettings.hpp"
+#include "../RenderTargets.hpp"
 #include "MeshDrawArgs.hpp"
 
 static eg::Pipeline gsVolLightPipelineBeforeWater;
@@ -63,14 +63,12 @@ static void OnInit()
 	pipelineCI.enableDepthWrite = false;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::Front;
-	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
-	pipelineCI.setBindModes[1] = eg::BindMode::Dynamic;
-	pipelineCI.setBindModes[2] = eg::BindMode::DescriptorSet;
 	pipelineCI.vertexBindings[0] = { sizeof(float) * 3, eg::InputRate::Vertex };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, 0 };
 	pipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
 	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
 	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
+	pipelineCI.depthStencilUsage = eg::TextureUsage::DepthStencilReadOnly;
 	pipelineCI.fragmentShader.specConstants = { &waterModeSpecConstant, 1 };
 
 	pipelineCI.label = "GravSwitchVolLight[BeforeWater]";
@@ -106,10 +104,9 @@ static void OnInit()
 
 	lightVolDescriptorSet = eg::DescriptorSet(gsVolLightPipelineBeforeWater, 0);
 	lightVolDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
-	lightVolDescriptorSet.BindTexture(
-		eg::GetAsset<eg::Texture>("Textures/GravitySwitchVolEmi.png"), 1, &linearRepeatSampler
-	);
-	lightVolDescriptorSet.BindUniformBuffer(lightDataBuffer, 2, 0, sizeof(LightDataBuffer));
+	lightVolDescriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/GravitySwitchVolEmi.png"), 1);
+	lightVolDescriptorSet.BindSampler(samplers::linearRepeat, 2);
+	lightVolDescriptorSet.BindUniformBuffer(lightDataBuffer, 3, 0, sizeof(LightDataBuffer));
 }
 
 static void OnShutdown()
@@ -173,14 +170,15 @@ bool GravitySwitchVolLightMaterial::BindPipeline(eg::CommandContext& cmdCtx, voi
 		return false;
 
 	cmdCtx.BindDescriptorSet(lightVolDescriptorSet, 0);
-	cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 1, 0, &framebufferNearestSampler);
+	cmdCtx.BindDescriptorSet(mDrawArgs->renderTargets->GetWaterDepthTextureDescriptorSetOrDummy(), 2);
 
 	return true;
 }
 
 bool GravitySwitchVolLightMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
-	cmdCtx.BindDescriptorSet(m_descriptorSet, 2);
+	EG_ASSERT(m_descriptorSet.handle != nullptr);
+	cmdCtx.BindDescriptorSet(m_descriptorSet, 1);
 	return true;
 }
 

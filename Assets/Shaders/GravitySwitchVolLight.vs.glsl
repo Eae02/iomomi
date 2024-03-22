@@ -4,7 +4,7 @@ layout(location=0) in vec3 position_in;
 
 layout(location=0) out vec3 worldPos_out;
 
-layout(set=2, binding=0) uniform ParametersUB
+layout(set=1, binding=0) uniform ParametersUB
 {
 	vec3 switchPos;
 	float intensity;

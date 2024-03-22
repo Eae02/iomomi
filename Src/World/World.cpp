@@ -1,13 +1,14 @@
 #include "World.hpp"
 
-#include "../../Protobuf/Build/World.pb.h"
 #include "../Graphics/Materials/GravityCornerLightMaterial.hpp"
 #include "../Graphics/WallShader.hpp"
 #include "Entities/Components/ActivatorComp.hpp"
 #include "Entities/EntTypes/Activation/CubeEnt.hpp"
 #include "Entities/EntTypes/Activation/CubeSpawnerEnt.hpp"
 #include "Entities/EntTypes/EntranceExitEnt.hpp"
+#include "Entities/EntTypes/GateEnt.hpp"
 #include "PrepareDrawArgs.hpp"
+#include <World.pb.h>
 
 World::World()
 {
@@ -118,12 +119,17 @@ std::unique_ptr<World> World::Load(std::istream& stream, bool isEditor)
 		world->entManager.ForEachOfType<EntranceExitEnt>([&](EntranceExitEnt& ent)
 		                                                 { world->m_doors.push_back(ent.GetDoorDescription()); });
 
+		world->entManager.ForEachOfType<GateEnt>([&](GateEnt& ent)
+		                                         { world->m_doors.push_back(ent.GetDoorDescription()); });
+
 		world->entManager.ForEachOfType<CubeSpawnerEnt>(
 			[&](CubeSpawnerEnt& ent)
 			{ world->cubeSpawnerPositions2.emplace_back(glm::round(ent.GetPosition() * 2.0f)); }
 		);
 	}
 	ActivationLightStripEnt::GenerateAll(*world);
+
+	world->PrepareMeshes(isEditor);
 
 	return world;
 }
@@ -288,12 +294,12 @@ void World::DrawPointLightShadows(const struct PointLightShadowDrawArgs& renderA
 	eg::DC.DrawIndexed(0, m_numVoxelIndices, 0, 0, 1);
 }
 
-void World::DrawEditor(bool drawGrid)
+void World::DrawEditor()
 {
 	if (!m_canDraw)
 		return;
 
-	BindWallShaderEditor(drawGrid);
+	BindWallShaderEditor();
 
 	eg::DC.BindVertexBuffer(0, m_voxelVertexBuffer.buffer, 0);
 	eg::DC.BindIndexBuffer(eg::IndexType::UInt32, m_voxelIndexBuffer.buffer, 0);

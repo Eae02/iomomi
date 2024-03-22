@@ -7,6 +7,8 @@
 #include "FileUtils.hpp"
 #include "Game.hpp"
 #include "Graphics/GraphicsCommon.hpp"
+#include "Graphics/RenderSettings.hpp"
+#include "Graphics/RenderTargets.hpp"
 #include "Levels.hpp"
 #include "Settings.hpp"
 #include "Water/WaterSimulationShaders.hpp"

@@ -64,6 +64,8 @@ MainMenuGameState::MainMenuGameState()
 		backgroundLevel = &levels[m_levelIds[time(nullptr) % m_numMainLevels]];
 	}
 
+	backgroundLevel = &levels[0];
+
 	m_mainWidgetList.AddWidget(Button("Continue", [&] { ContinueClicked(); }));
 	m_mainWidgetList.AddWidget(Button(
 		"Select Level",
@@ -461,7 +463,9 @@ void MainMenuGameState::RenderWorld(float dt)
 	);
 
 	m_worldRenderTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
-	m_worldBlurRenderer.Render(m_worldRenderTexture, settings.renderResolutionScale);
+	m_worldBlurRenderer.Render(
+		m_worldRenderTexture.GetFragmentShaderSampleDescriptorSet(), settings.renderResolutionScale
+	);
 
 	eg::Rectangle dstRect;
 	if (eg::CurrentGraphicsAPI() == eg::GraphicsAPI::OpenGL)
@@ -475,10 +479,8 @@ void MainMenuGameState::RenderWorld(float dt)
 		dstRect = eg::Rectangle(0, 0, m_currentFrameArgs.canvasWidth, m_currentFrameArgs.canvasHeight);
 	}
 
-	const eg::Texture* blurredTexture = &m_worldBlurRenderer.OutputTexture();
-
 	m_spriteBatch.Draw(
-		*blurredTexture, dstRect, eg::ColorLin(1, 1, 1, m_worldFadeInProgress), eg::SpriteFlags::ForceLowestMipLevel
+		m_worldBlurRenderer.OutputDescriptorSet(), dstRect, eg::ColorLin(1, 1, 1, m_worldFadeInProgress)
 	);
 }
 

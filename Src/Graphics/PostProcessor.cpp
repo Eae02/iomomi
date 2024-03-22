@@ -1,14 +1,37 @@
 #include "PostProcessor.hpp"
 
 #include "../Settings.hpp"
+#include "../Utils.hpp"
 #include "GraphicsCommon.hpp"
-#include "RenderTex.hpp"
 
 static float* bloomIntensity = eg::TweakVarFloat("bloom_intensity", 0.4f, 0);
 
 static float* vignetteMinRad = eg::TweakVarFloat("vign_min_rad", 0.2f, 0);
 static float* vignetteMaxRad = eg::TweakVarFloat("vign_max_rad", 0.75f, 0);
 static float* vignettePower = eg::TweakVarFloat("vign_power", 1.2f, 0);
+
+static const eg::DescriptorSetBinding BINDINGS[] = {
+	eg::DescriptorSetBinding{
+		.binding = 0,
+		.type = eg::BindingTypeTexture{},
+		.shaderAccess = eg::ShaderAccessFlags::Fragment,
+	},
+	eg::DescriptorSetBinding{
+		.binding = 1,
+		.type = eg::BindingTypeTexture{},
+		.shaderAccess = eg::ShaderAccessFlags::Fragment,
+	},
+	eg::DescriptorSetBinding{
+		.binding = 2,
+		.type = eg::BindingTypeSampler::Default,
+		.shaderAccess = eg::ShaderAccessFlags::Fragment,
+	},
+	eg::DescriptorSetBinding{
+		.binding = 3,
+		.type = eg::BindingTypeUniformBuffer{ .dynamicOffset = true },
+		.shaderAccess = eg::ShaderAccessFlags::Fragment,
+	},
+}; //
 
 eg::Pipeline PostProcessor::CreatePipeline(const PipelineVariantKey& variantKey)
 {
@@ -20,6 +43,7 @@ eg::Pipeline PostProcessor::CreatePipeline(const PipelineVariantKey& variantKey)
 		.shaderModule = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.fs.glsl").DefaultVariant(),
 		.specConstants = specConstants,
 	};
+	postPipelineCI.descriptorSetBindings[0] = BINDINGS;
 	postPipelineCI.label = "PostProcess";
 	postPipelineCI.colorAttachmentFormats[0] = variantKey.outputFormat;
 	if (variantKey.outputFormat == eg::Format::DefaultColor)
@@ -27,11 +51,19 @@ eg::Pipeline PostProcessor::CreatePipeline(const PipelineVariantKey& variantKey)
 	return eg::Pipeline::Create(postPipelineCI);
 }
 
-void PostProcessor::Render(
-	eg::TextureRef input, const eg::BloomRenderer::RenderTarget* bloomRenderTarget, eg::FramebufferHandle output,
-	eg::Format outputFormat, uint32_t outputResX, uint32_t outputResY, float colorScale
-)
+void PostProcessor::SetRenderTargets(eg::TextureRef input, const eg::BloomRenderer::RenderTarget* bloomRenderTarget)
 {
+	m_descriptorSet = eg::DescriptorSet(BINDINGS);
+	m_descriptorSet.BindTexture(input, 0);
+	m_descriptorSet.BindTexture(bloomRenderTarget ? bloomRenderTarget->OutputTexture() : eg::Texture::BlackPixel(), 1);
+	m_descriptorSet.BindSampler(samplers::linearClamp, 2);
+	m_descriptorSet.BindUniformBuffer(frameDataUniformBuffer, 3, eg::BIND_BUFFER_OFFSET_DYNAMIC, sizeof(float) * 6);
+}
+
+void PostProcessor::Render(eg::FramebufferHandle output, eg::Format outputFormat, float colorScale)
+{
+	EG_ASSERT(m_descriptorSet.handle != nullptr);
+
 	PipelineVariantKey pipelineVariantKey = {
 		.enableFXAA = settings.enableFXAA,
 		.outputFormat = outputFormat,
@@ -52,24 +84,20 @@ void PostProcessor::Render(
 		pipeline = &m_pipelines.back().second;
 	}
 
-	eg::RenderPassBeginInfo rpBeginInfo;
-	rpBeginInfo.framebuffer = output;
-	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
-
-	eg::DC.BeginRenderPass(rpBeginInfo);
-
-	const float pc[] = {
+	const float parameters[] = {
 		settings.exposure, *bloomIntensity, colorScale, *vignetteMinRad, 1.0f / (*vignetteMaxRad - *vignetteMinRad),
 		*vignettePower
 	};
+	const uint32_t parametersOffset = PushFrameUniformData(ToCharSpan<float>(parameters));
+
+	eg::RenderPassBeginInfo rpBeginInfo;
+	rpBeginInfo.framebuffer = output;
+	rpBeginInfo.colorAttachments[0].loadOp = eg::AttachmentLoadOp::Discard;
+	eg::DC.BeginRenderPass(rpBeginInfo);
 
 	eg::DC.BindPipeline(*pipeline);
-	eg::DC.PushConstants(0, sizeof(pc), pc);
 
-	eg::DC.BindTexture(input, 0, 0, &framebufferLinearSampler);
-
-	eg::TextureRef bloomTexture = bloomRenderTarget ? bloomRenderTarget->OutputTexture() : blackPixelTexture;
-	eg::DC.BindTexture(bloomTexture, 0, 1, &framebufferLinearSampler);
+	eg::DC.BindDescriptorSet(m_descriptorSet, 0, { &parametersOffset, 1 });
 
 	eg::DC.Draw(0, 3, 0, 1);
 

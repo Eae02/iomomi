@@ -3,8 +3,6 @@
 #include <EGame/FlyCamera.hpp>
 
 #include "../GameState.hpp"
-#include "../Graphics/RenderContext.hpp"
-#include "../World/Entities/EntTypes/Activation/ActivationLightStripEnt.hpp"
 #include "../World/PrepareDrawArgs.hpp"
 #include "../World/World.hpp"
 #include "EditorCamera.hpp"
@@ -16,7 +14,7 @@
 class Editor : public GameState
 {
 public:
-	explicit Editor(RenderContext& renderCtx);
+	Editor();
 
 	void RunFrame(float dt) override;
 
@@ -27,7 +25,9 @@ private:
 	std::vector<std::unique_ptr<EditorWorld>> m_worlds;
 	EditorWorld* m_currentWorld = nullptr;
 
-	RenderContext* m_renderCtx;
+	std::unique_ptr<eg::MeshBatch> m_meshBatch;
+	std::unique_ptr<eg::MeshBatchOrdered> m_transparentMeshBatch;
+
 	PrepareDrawArgs m_prepareDrawArgs;
 
 	std::string m_newLevelName;

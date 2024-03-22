@@ -1,10 +1,9 @@
 #version 450 core
+#extension GL_EXT_samplerless_texture_functions : enable
 
-layout(location=0) in vec2 texCoord_in;
-
-layout(binding=0) uniform sampler2D sourceShadowMap;
+layout(binding=0) uniform texture2D sourceShadowMap_UF;
 
 void main()
 {
-	gl_FragDepth = texture(sourceShadowMap, texCoord_in).r;
+	gl_FragDepth = texelFetch(sourceShadowMap_UF, ivec2(gl_FragCoord.xy), 0).r;
 }

@@ -3,6 +3,7 @@
 #include "../../Editor/EditorGraphics.hpp"
 #include "../GraphicsCommon.hpp"
 #include "../RenderSettings.hpp"
+#include "../RenderTargets.hpp"
 #include "../Vertex.hpp"
 #include "MeshDrawArgs.hpp"
 #include "StaticPropMaterial.hpp"
@@ -11,7 +12,6 @@ GravityCornerLightMaterial GravityCornerLightMaterial::instance;
 
 static eg::Pipeline gravityCornerPipeline;
 static eg::Pipeline gravityCornerPipelineEditor;
-static eg::DescriptorSet gravityCornerDescriptorSet;
 
 static float DEPTH_OFFSET = 0.001f;
 
@@ -27,30 +27,26 @@ static void OnInit()
 	pipelineCI.depthCompare = eg::CompareOp::LessOrEqual;
 	pipelineCI.cullMode = eg::CullMode::None;
 	pipelineCI.vertexShader.specConstants = { &depthOffsetSpecConstant, 1 };
-	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
 	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
+	pipelineCI.depthStencilUsage = eg::TextureUsage::DepthStencilReadOnly;
 	pipelineCI.label = "GravityCornerLight";
 	gravityCornerPipeline = eg::Pipeline::Create(pipelineCI);
 
 	pipelineCI.colorAttachmentFormats[0] = EDITOR_COLOR_FORMAT;
 	pipelineCI.depthAttachmentFormat = EDITOR_DEPTH_FORMAT;
 	pipelineCI.label = "GravityCornerLightEditor";
+	pipelineCI.depthStencilUsage = eg::TextureUsage::FramebufferAttachment;
 	gravityCornerPipelineEditor = eg::Pipeline::Create(pipelineCI);
 
-	gravityCornerDescriptorSet = eg::DescriptorSet(gravityCornerPipeline, 0);
-	gravityCornerDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
-	gravityCornerDescriptorSet.BindTexture(
-		eg::GetAsset<eg::Texture>("Textures/GravityCornerLightDist.png"), 1, &commonTextureSampler
-	);
-	gravityCornerDescriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/Hex.png"), 2, &commonTextureSampler);
+	GravityCornerLightMaterial::instance.Initialize();
 }
 
 static void OnShutdown()
 {
 	gravityCornerPipeline.Destroy();
 	gravityCornerPipelineEditor.Destroy();
-	gravityCornerDescriptorSet.Destroy();
+	GravityCornerLightMaterial::instance = {};
 }
 
 EG_ON_INIT(OnInit)
@@ -72,22 +68,28 @@ bool GravityCornerLightMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* 
 	else
 		return false;
 
-	cmdCtx.BindDescriptorSet(gravityCornerDescriptorSet, 0);
 	return true;
 }
 
 static constexpr float ACT_ANIMATION_DURATION = 0.5f;
 static constexpr float ACT_ANIMATION_INTENSITY = 20.0f;
 
+void GravityCornerLightMaterial::Initialize()
+{
+	m_parametersBuffer =
+		eg::Buffer(eg::BufferFlags::CopyDst | eg::BufferFlags::UniformBuffer, sizeof(float) * 4, nullptr);
+
+	m_descriptorSet = eg::DescriptorSet(gravityCornerPipeline, 0);
+	m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
+	m_descriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/GravityCornerLightDist.png"), 1);
+	m_descriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/Hex.png"), 2);
+	m_descriptorSet.BindSampler(samplers::linearRepeatAnisotropic, 3);
+	m_descriptorSet.BindUniformBuffer(m_parametersBuffer, 4);
+}
+
 bool GravityCornerLightMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
-	float pc[4];
-	pc[0] = m_activationPos.x;
-	pc[1] = m_activationPos.y;
-	pc[2] = m_activationPos.z;
-	pc[3] = m_activationIntensity * ACT_ANIMATION_INTENSITY;
-	cmdCtx.PushConstants(0, sizeof(pc), pc);
-
+	cmdCtx.BindDescriptorSet(m_descriptorSet, 0);
 	return true;
 }
 
@@ -99,7 +101,23 @@ void GravityCornerLightMaterial::Activate(const glm::vec3& position)
 
 void GravityCornerLightMaterial::Update(float dt)
 {
-	m_activationIntensity = std::max(m_activationIntensity - dt / ACT_ANIMATION_DURATION, 0.0f);
+	if (m_activationIntensity > 0.0f || !m_hasUpdatedParametersBuffer)
+	{
+		m_activationIntensity = std::max(m_activationIntensity - dt / ACT_ANIMATION_DURATION, 0.0f);
+
+		const float parameters[4] = {
+			m_activationPos.x,
+			m_activationPos.y,
+			m_activationPos.z,
+			m_activationIntensity * ACT_ANIMATION_INTENSITY,
+		};
+
+		eg::UploadBuffer uploadBuffer = eg::GetTemporaryUploadBufferWith<float>(parameters);
+		eg::DC.CopyBuffer(uploadBuffer.buffer, m_parametersBuffer, uploadBuffer.offset, 0, sizeof(parameters));
+		m_parametersBuffer.UsageHint(eg::BufferUsage::UniformBuffer, eg::ShaderAccessFlags::Fragment);
+
+		m_hasUpdatedParametersBuffer = true;
+	}
 }
 
 eg::IMaterial::VertexInputConfiguration GravityCornerLightMaterial::GetVertexInputConfiguration(const void*) const

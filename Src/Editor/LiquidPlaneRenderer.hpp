@@ -13,4 +13,5 @@ private:
 	std::vector<std::pair<float, const class LiquidPlaneComp*>> m_planes;
 
 	eg::Pipeline m_pipeline;
+	eg::DescriptorSet m_descriptorSet;
 };

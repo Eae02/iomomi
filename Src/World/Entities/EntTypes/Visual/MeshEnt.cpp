@@ -1,9 +1,9 @@
 #include "MeshEnt.hpp"
 
-#include "../../../../../Protobuf/Build/MeshEntity.pb.h"
 #include "../../../../Game.hpp"
 #include "../../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../../ImGui.hpp"
+#include <MeshEntity.pb.h>
 
 DEF_ENT_TYPE(MeshEnt)
 
@@ -32,8 +32,9 @@ struct ModelOption
 	{
 		std::transform(
 			materialOptionNames.begin(), materialOptionNames.end(), materialOptions.begin(),
-			[&](const char* materialName) -> std::pair<const char*, const eg::IMaterial*>
-			{ return { materialName, &eg::GetAsset<StaticPropMaterial>(materialName) }; }
+			[&](const char* materialName) -> std::pair<const char*, const eg::IMaterial*> {
+				return { materialName, &eg::GetAsset<StaticPropMaterial>(materialName) };
+			}
 		);
 
 		if (!meshName.empty())

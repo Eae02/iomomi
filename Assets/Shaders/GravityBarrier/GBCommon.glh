@@ -13,7 +13,7 @@ const float LINE_WIDTH = 0.003;
 const float EDGE_FADE_DIST = 0.2;
 const float TIME_AXIS_SCALE = 0.25;
 
-layout(set=2, binding=0) uniform ParametersUB
+layout(set=1, binding=0) uniform ParametersUB
 {
 	vec3 position;
 	float opacity;
@@ -34,12 +34,13 @@ float calcEdgeDist(vec2 scaledTC)
 
 #ifdef GB_WITH_BARRIER_SETTINGS_UB
 const int NUM_INTERACTABLES = 8;
-layout(binding=2, std140) uniform BarrierSettingsUB
+layout(set=0, binding=3, std140) uniform BarrierSettingsUB
 {
 	uvec4 iaDownAxis[NUM_INTERACTABLES / 4];
 	vec4 iaPosition[NUM_INTERACTABLES];
 	float barrierAnimTime;
 };
+
 float getInteractablesNegScale(vec3 worldPos, inout vec2 scaledTC, float edgeDist, float waterDist)
 {
 	float negScale = 1.0 - smoothstep(0.5, 0.8, waterDist);
@@ -68,7 +69,8 @@ float getInteractablesNegScale(vec3 worldPos, inout vec2 scaledTC, float edgeDis
 const float barrierAnimTime = 0;
 #endif
 
-layout(binding=1) uniform sampler2D noiseTex;
+layout(set=0, binding=1) uniform texture2D noiseTex;
+layout(set=0, binding=2) uniform sampler noiseTexSampler;
 
 vec4 calculateColor(vec2 scaledTC, float edgeDist, float negScale, float baseIntensity)
 {
@@ -78,7 +80,7 @@ vec4 calculateColor(vec2 scaledTC, float edgeDist, float negScale, float baseInt
 	float offScale = edgeDist * mix(OFFSET_SCALE, OFFSET_SCALE_RED, negScale);
 	
 	vec2 noiseSamplePos = vec2(centerLn * 1.3 + pc.noiseSampleOffset, TIME_AXIS_SCALE + barrierAnimTime) + scaledTC.y * vec2(0.08, 0.05);
-	vec4 noiseSample = textureLod(noiseTex, noiseSamplePos, 0);
+	vec4 noiseSample = textureLod(sampler2D(noiseTex, noiseTexSampler), noiseSamplePos, 0);
 	
 	vec4 linePos4 = centerLn + 0.5 + (noiseSample - vec4(0.5)) * offScale;
 	vec4 dist = abs(vec4(scaledTC.x) - linePos4 * LINE_SPACING);

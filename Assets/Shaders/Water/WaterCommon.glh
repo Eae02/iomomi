@@ -70,4 +70,15 @@ uint encodeDataBits(uint gravity, uint glowTime, uint persistentID)
 	return gravity | (glowTime << 3) | (persistentID << 16);
 }
 
+struct WaterSimParameters
+{
+	ivec3 voxelMinBounds;
+	uint numParticles;
+	ivec3 voxelMaxBounds;
+	uint _padding;
+	float dt;
+	int glowTimeSubtract;
+	uint randomOffsetsBase;
+};
+
 #endif

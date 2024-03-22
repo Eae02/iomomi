@@ -802,7 +802,8 @@ void Player::GetDebugText(std::ostringstream& stream)
 			stream << s << " ";
 	};
 
-	stream << "F:" << "+-"[forward[maxDir] < 0] << "XYZ"[maxDir] << " G:" << DirectionName(m_down)
+	stream << "F:"
+		   << "+-"[forward[maxDir] < 0] << "XYZ"[maxDir] << " G:" << DirectionName(m_down)
 		   << " GTM:" << magic_enum::enum_name(m_gravityTransitionMode) << "\n";
 
 	BoolString(m_onGround, "G");

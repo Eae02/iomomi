@@ -11,8 +11,7 @@ layout(constant_id=150) const int WATER_MODE = 0;
 
 bool CheckWaterDiscard()
 {
-	vec2 screenCoord = ivec2(gl_FragCoord.xy) / vec2(textureSize(waterDepth, 0).xy);
-	vec3 waterDepth3 = texture(waterDepth, screenCoord).rgb;
+	vec3 waterDepth3 = texelFetch(waterDepth, ivec2(min(gl_FragCoord.xy, textureSize(waterDepth, 0) - 1)), 0).rgb;
 	
 	bool underwater = waterDepth3.r < W_UNDERWATER_DEPTH;
 	float waterDepthL = underwater ? waterDepth3.b : waterDepth3.r;

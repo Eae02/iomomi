@@ -1,14 +1,13 @@
 #include "ThumbnailRenderer.hpp"
 
 #include "GameRenderer.hpp"
-#include "Graphics/RenderContext.hpp"
 #include "Levels.hpp"
 #include "Water/WaterSimulator.hpp"
 #include "World/World.hpp"
 
 #ifdef __EMSCRIPTEN__
 
-LevelThumbnailUpdate* BeginUpdateLevelThumbnails(struct RenderContext& renderContext, eg::console::Writer& writer)
+LevelThumbnailUpdate* BeginUpdateLevelThumbnails(eg::console::Writer& writer)
 {
 	return nullptr;
 }
@@ -35,7 +34,7 @@ struct LevelThumbnailUpdate
 
 constexpr size_t THUMBNAIL_BYTES = LEVEL_THUMBNAIL_RES_X * LEVEL_THUMBNAIL_RES_Y * 4;
 
-LevelThumbnailUpdate* BeginUpdateLevelThumbnails(RenderContext& renderContext, eg::console::Writer& writer)
+LevelThumbnailUpdate* BeginUpdateLevelThumbnails(eg::console::Writer& writer)
 {
 	std::unique_ptr<GameRenderer> renderer;
 	LevelThumbnailUpdate* update = nullptr;
@@ -69,7 +68,8 @@ LevelThumbnailUpdate* BeginUpdateLevelThumbnails(RenderContext& renderContext, e
 
 		if (renderer == nullptr)
 		{
-			renderer = std::make_unique<GameRenderer>(renderContext);
+			renderer = std::make_unique<GameRenderer>();
+			renderer->fovOverride = LEVEL_THUMBNAIL_FOV;
 			update = new LevelThumbnailUpdate;
 		}
 
@@ -124,11 +124,20 @@ LevelThumbnailUpdate* BeginUpdateLevelThumbnails(RenderContext& renderContext, e
 		entry.downloadBuffer =
 			eg::Buffer(eg::BufferFlags::MapRead | eg::BufferFlags::CopyDst, THUMBNAIL_BYTES, nullptr);
 
-		eg::TextureRange range = {};
-		range.sizeX = LEVEL_THUMBNAIL_RES_X;
-		range.sizeY = LEVEL_THUMBNAIL_RES_Y;
-		range.sizeZ = 1;
-		eg::DC.GetTextureData(entry.texture, range, entry.downloadBuffer, 0);
+		eg::DC.CopyTextureToBuffer(
+			entry.texture,
+			eg::TextureRange{
+				.sizeX = LEVEL_THUMBNAIL_RES_X,
+				.sizeY = LEVEL_THUMBNAIL_RES_Y,
+				.sizeZ = 1,
+			},
+			entry.downloadBuffer,
+			eg::TextureBufferCopyLayout{
+				.rowByteStride = LEVEL_THUMBNAIL_RES_X * eg::GetFormatBytesPerPixel(OUTPUT_FORMAT).value(),
+				.layerByteStride =
+					LEVEL_THUMBNAIL_RES_X * LEVEL_THUMBNAIL_RES_Y * eg::GetFormatBytesPerPixel(OUTPUT_FORMAT).value(),
+			}
+		);
 
 		entry.downloadBuffer.UsageHint(eg::BufferUsage::HostRead);
 

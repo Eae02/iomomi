@@ -15,7 +15,7 @@ layout(set = 0, binding = 0) restrict buffer SortDataBuffer
 	uvec2 inputOutput[];
 };
 
-layout(push_constant) uniform PC
+layout(set = 1, binding = 0) uniform Params_UseDynamicOffset
 {
 	uint k;
 }

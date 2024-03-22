@@ -5,6 +5,7 @@
 #include "Editor/Editor.hpp"
 #include "GameState.hpp"
 #include "Graphics/GraphicsCommon.hpp"
+#include "Graphics/RenderSettings.hpp"
 #include "Graphics/WallShader.hpp"
 #include "ImGui.hpp"
 #include "Levels.hpp"
@@ -19,14 +20,16 @@ int64_t Game::levelIndexFromCmdArg = -1;
 
 Game::Game()
 {
+	DeferredRenderer::CreatePipelines();
+
 	globalRNG = pcg32_fast(std::time(nullptr));
-	GameRenderer::instance = new GameRenderer(m_renderCtx);
+	GameRenderer::instance = new GameRenderer();
 
 	if (waterSimShaders.isWaterSupported)
-		m_renderCtx.waterRenderer = WaterRenderer();
+		WaterRenderPipelines::instance.Init();
 
 #ifdef IOMOMI_ENABLE_EDITOR
-	editor = new Editor(m_renderCtx);
+	editor = new Editor();
 	m_editorGameState = editor;
 #endif
 
@@ -65,7 +68,7 @@ Game::Game()
 		[&](std::span<const std::string_view> args, eg::console::Writer& writer)
 		{
 			m_levelThumbnailUpdateFrameIdx = eg::FrameIdx();
-			m_levelThumbnailUpdate = BeginUpdateLevelThumbnails(m_renderCtx, writer);
+			m_levelThumbnailUpdate = BeginUpdateLevelThumbnails(writer);
 		}
 	);
 #endif
@@ -163,6 +166,7 @@ Game::Game()
 
 Game::~Game()
 {
+	DeferredRenderer::DestroyPipelines();
 	delete m_editorGameState;
 	delete mainGameState;
 	delete mainMenuGameState;
@@ -176,6 +180,8 @@ static int* waterForceFallbackShaders = eg::TweakVarInt("water_force_fallback_sh
 
 void Game::RunFrame(float dt)
 {
+	InitFrameDataUniformBufferForNewFrame();
+
 	if (*waterForceFallbackShaders != waterSimShaders.forceUseFallbackShaders)
 	{
 		waterSimShaders.forceUseFallbackShaders = *waterForceFallbackShaders;

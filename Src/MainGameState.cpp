@@ -10,6 +10,7 @@
 #include "Settings.hpp"
 #include "World/Entities/EntTypes/Activation/CubeEnt.hpp"
 #include "World/Entities/EntTypes/EntranceExitEnt.hpp"
+#include "World/Entities/EntTypes/GateEnt.hpp"
 
 #ifdef EG_HAS_IMGUI
 #include <imgui.h>
@@ -22,6 +23,8 @@ static int* relativeMouseMode = eg::TweakVarInt("relms", 1, 0, 1);
 
 MainGameState::MainGameState()
 {
+	m_levelsGraph = LevelsGraph::LoadFromFile().value();
+
 	eg::console::AddCommand(
 		"reload", 0,
 		[this](std::span<const std::string_view> args, eg::console::Writer& writer)
@@ -72,7 +75,8 @@ MainGameState::MainGameState()
 	);
 
 	eg::console::AddCommand(
-		"ssrfbEdit", 0, [this](std::span<const std::string_view> args, eg::console::Writer& writer)
+		"ssrfbEdit", 0,
+		[this](std::span<const std::string_view> args, eg::console::Writer& writer)
 		{ m_ssrReflectionColorEditorShown = !m_ssrReflectionColorEditorShown; }
 	);
 
@@ -82,7 +86,8 @@ MainGameState::MainGameState()
 	);
 
 	eg::console::AddCommand(
-		"crosshair", 0, [](std::span<const std::string_view>, eg::console::Writer&)
+		"crosshair", 0,
+		[](std::span<const std::string_view>, eg::console::Writer&)
 		{ settings.drawCrosshair = !settings.drawCrosshair; }
 	);
 
@@ -93,7 +98,8 @@ MainGameState::MainGameState()
 }
 
 void MainGameState::SetWorld(
-	std::unique_ptr<World> newWorld, int64_t levelIndex, const EntranceExitEnt* exitEntity, bool fromEditor
+	std::unique_ptr<World> newWorld, int64_t levelIndex, std::optional<std::string_view> newGateName,
+	const GateEnt* previousGateEntity, bool fromEditor
 )
 {
 	m_player.Reset();
@@ -107,23 +113,38 @@ void MainGameState::SetWorld(
 
 	AudioPlayers::gameSFXPlayer.StopAll();
 
-	// Moves the player to the entrance entity for this level
-	newWorld->entManager.ForEachOfType<EntranceExitEnt>(
-		[&](EntranceExitEnt& entity)
-		{
-			if (entity.m_type == EntranceExitEnt::Type::Entrance)
+	if (newGateName.has_value())
+	{
+		bool foundNewGate = false;
+		newWorld->entManager.ForEachOfType<GateEnt>(
+			[&](GateEnt& entity)
 			{
-				if (exitEntity != nullptr)
+				if (entity.name == newGateName.value())
 				{
-					EntranceExitEnt::MovePlayer(*exitEntity, entity, m_player);
+					GateEnt::MovePlayer(previousGateEntity, entity, m_player);
+					foundNewGate = true;
 				}
-				else
+			}
+		);
+
+		if (!foundNewGate)
+		{
+			eg::Log(eg::LogLevel::Error, "lvl", "Gate not found: {0}", *newGateName);
+		}
+	}
+	else
+	{
+		// Moves the player to the entrance entity for this level
+		newWorld->entManager.ForEachOfType<EntranceExitEnt>(
+			[&](EntranceExitEnt& entity)
+			{
+				if (entity.m_type == EntranceExitEnt::Type::Entrance)
 				{
 					entity.InitPlayer(m_player);
 				}
 			}
-		}
-	);
+		);
+	}
 
 	m_world = std::move(newWorld);
 
@@ -157,6 +178,8 @@ static int* playerUnderwaterSpheres = eg::TweakVarInt("pl_underwater_spheres", 1
 
 void MainGameState::RunFrame(float dt)
 {
+	auto cpuTimer = eg::StartCPUTimer("MainGameState::RunFrame");
+
 	GameRenderer::instance->m_player = &m_player;
 	GameRenderer::instance->m_physicsDebugRenderer = &m_physicsDebugRenderer;
 	GameRenderer::instance->m_physicsEngine = &m_physicsEngine;
@@ -191,6 +214,47 @@ void MainGameState::RunFrame(float dt)
 	{
 		auto worldUpdateCPUTimer = eg::StartCPUTimer("World Update");
 
+		GateEnt* loadNextGateEnt = nullptr;
+		m_world->entManager.ForEachOfType<GateEnt>(
+			[&](GateEnt& entity)
+			{
+				if (entity.CanLoadNext())
+				{
+					loadNextGateEnt = &entity;
+				}
+			}
+		);
+		if (loadNextGateEnt != nullptr && m_currentLevelIndex != -1)
+		{
+			const auto* levelsGraphNode =
+				m_levelsGraph.FindNodeByLevelConnection(levels[m_currentLevelIndex].name, loadNextGateEnt->name);
+			if (levelsGraphNode != nullptr)
+			{
+				const auto& connectionNode = std::get<LevelsGraph::LevelConnectionNode>(*levelsGraphNode);
+				const auto* neighborNode = connectionNode.neighbors[0];
+				if (neighborNode != nullptr)
+				{
+					if (const auto* neighborConnectionNode =
+					        std::get_if<LevelsGraph::LevelConnectionNode>(neighborNode))
+					{
+						std::string_view newLevelName = neighborConnectionNode->levelName;
+						int64_t newLevelIndex = FindLevel(newLevelName);
+						if (newLevelIndex != -1)
+						{
+							glm::quat oldPlayerRotation = m_player.Rotation();
+							SetWorld(
+								LoadLevelWorld(levels[newLevelIndex], false), newLevelIndex,
+								neighborConnectionNode->gateName, loadNextGateEnt
+							);
+							m_gravityGun.ChangeLevel(oldPlayerRotation, m_player.Rotation());
+							m_physicsEngine = {};
+							UpdateViewProjMatrices();
+						}
+					}
+				}
+			}
+		}
+
 		EntranceExitEnt* currentExit = nullptr;
 
 		m_isPlayerCloseToExitWithWrongGravity = false;
@@ -205,16 +269,23 @@ void MainGameState::RunFrame(float dt)
 		);
 
 		// Moves to the next level
-		if (currentExit != nullptr && m_currentLevelIndex != -1 && levels[m_currentLevelIndex].nextLevelIndex != -1)
-		{
-			glm::quat oldPlayerRotation = m_player.Rotation();
-			MarkLevelCompleted(levels[m_currentLevelIndex]);
-			int64_t nextLevelIndex = levels[m_currentLevelIndex].nextLevelIndex;
-			SetWorld(LoadLevelWorld(levels[nextLevelIndex], false), nextLevelIndex, currentExit);
-			m_gravityGun.ChangeLevel(oldPlayerRotation, m_player.Rotation());
-			m_physicsEngine = {};
-			UpdateViewProjMatrices();
-		}
+		// if (currentExit != nullptr && m_currentLevelIndex != -1 && levels[m_currentLevelIndex].nextLevelIndex != -1)
+		// {
+		// 	glm::quat oldPlayerRotation = m_player.Rotation();
+		// 	MarkLevelCompleted(levels[m_currentLevelIndex]);
+		// 	int64_t nextLevelIndex = levels[m_currentLevelIndex].nextLevelIndex;
+
+		// 	auto startTime = std::chrono::high_resolution_clock::now();
+
+		// 	SetWorld(LoadLevelWorld(levels[nextLevelIndex], false), nextLevelIndex, currentExit);
+
+		// 	auto endTime = std::chrono::high_resolution_clock::now();
+		// 	std::cout << "Loading time: " << ((endTime - startTime).count() / 1E6) << std::endl;
+
+		// 	m_gravityGun.ChangeLevel(oldPlayerRotation, m_player.Rotation());
+		// 	m_physicsEngine = {};
+		// 	UpdateViewProjMatrices();
+		// }
 
 		WorldUpdateArgs updateArgs;
 		updateArgs.mode = WorldMode::Game;
@@ -315,9 +386,11 @@ void MainGameState::RunFrame(float dt)
 
 	auto [renderResolutionX, renderResolutionY] = GameRenderer::GetScaledRenderResolution();
 
+	auto renderTimer = eg::StartCPUTimer("Render");
 	GameRenderer::instance->Render(
 		*m_world, m_gameTime, dt, nullptr, eg::Format::DefaultColor, renderResolutionX, renderResolutionY
 	);
+	renderTimer.Stop();
 
 	UpdateAndDrawHud(dt);
 
@@ -386,8 +459,7 @@ void MainGameState::UpdateAndDrawHud(float dt)
 		m_errorHintMessage = "It is not possible to change gravity while carrying a cube";
 		errorHintTargetAlpha = 1;
 	}
-	else if (m_world->showControlHint[static_cast<int>(OptionalControlHintType::CannotExitWithWrongGravity)] &&
-	         m_isPlayerCloseToExitWithWrongGravity)
+	else if (m_world->showControlHint[static_cast<int>(OptionalControlHintType::CannotExitWithWrongGravity)] && m_isPlayerCloseToExitWithWrongGravity)
 	{
 		m_errorHintMessage = "Your gravity must point down in order to exit";
 		errorHintTargetAlpha = 1;
@@ -494,18 +566,7 @@ void MainGameState::DrawOverlay(float dt)
 	textStream << std::setprecision(2) << std::fixed;
 
 	textStream << "FPS: " << static_cast<int>(1.0f / dt) << "Hz | " << (dt * 1000.0f) << "ms\n";
-
-	textStream << "GfxAPI: ";
-	if (eg::CurrentGraphicsAPI() == eg::GraphicsAPI::OpenGL)
-		textStream << "OpenGL";
-	else if (eg::CurrentGraphicsAPI() == eg::GraphicsAPI::Vulkan)
-		textStream << "Vulkan";
-	else if (eg::CurrentGraphicsAPI() == eg::GraphicsAPI::Metal)
-		textStream << "Metal";
-	else
-		textStream << "?";
-	textStream << "\n";
-
+	textStream << "GfxAPI: " << eg::GetGraphicsDeviceInfo().apiName << "\n";
 	textStream << "GfxDevice: " << eg::GetGraphicsDeviceInfo().deviceName << "\n";
 
 	if (eg::gal::GetMemoryStat)
@@ -568,6 +629,6 @@ bool MainGameState::ReloadLevel()
 {
 	if (m_currentLevelIndex == -1)
 		return false;
-	SetWorld(LoadLevelWorld(levels[m_currentLevelIndex], false), m_currentLevelIndex);
+	SetWorld(LoadLevelWorld(levels[m_currentLevelIndex], false), m_currentLevelIndex); // TODO
 	return true;
 }

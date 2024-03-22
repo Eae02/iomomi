@@ -2,7 +2,6 @@
 
 #include <pcg_random.hpp>
 
-#include "../../../../Protobuf/Build/GravityBarrierEntity.pb.h"
 #include "../../../Graphics/Materials/EmissiveMaterial.hpp"
 #include "../../../Graphics/Materials/MeshDrawArgs.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
@@ -11,6 +10,7 @@
 #include "../../Player.hpp"
 #include "../../World.hpp"
 #include "Activation/CubeEnt.hpp"
+#include <GravityBarrierEntity.pb.h>
 
 DEF_ENT_TYPE(GravityBarrierEnt)
 
@@ -25,7 +25,7 @@ static eg::IMaterial* borderMaterial;
 
 static void OnInit()
 {
-	static const uint8_t vertices[] = { 0, 0, 255, 0, 0, 255, 255, 255 };
+	static const float vertices[] = { 0, 0, 1, 0, 0, 1, 1, 1 };
 	vertexBuffer = eg::Buffer(eg::BufferFlags::VertexBuffer, sizeof(vertices), vertices);
 	vertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
 

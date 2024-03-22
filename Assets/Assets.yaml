@@ -28,6 +28,16 @@ assets:
   - regex: "Models/.*\\.aa\\.glb"
     access: all
     vertexFormat: "IomomiSoaPXNT"
+    
+  - regex: "Models/.*\\.col\\.glb"
+    access: cpu
+    flipWinding: true
+    removeNameSuffix: true
+    vertexFormat: "eg::PositionOnly"
+
+  - regex: "Models/.*\\.glb"
+    removeNameSuffix: true
+    vertexFormat: "IomomiSoaPXNT"
 
   - regex: "Models/.*\\.obj"
     removeNameSuffix: true
@@ -56,6 +66,9 @@ assets:
     generator: DecalMaterial
     loader: DecalMaterial
     
+  - regex: "Shaders/Water/.*\\.glsl"
+    onDemand: true
+  
   - regex: "Shaders/.*\\.glsl"
     
   #Materials

@@ -5,7 +5,7 @@
 class PrimitiveRenderer : public IPrimitiveRenderer
 {
 public:
-	PrimitiveRenderer() = default;
+	PrimitiveRenderer();
 
 	void Begin(const glm::mat4& viewProjection, const glm::vec3& cameraPos);
 
@@ -54,4 +54,7 @@ private:
 	uint64_t m_indexBufferCapacity = 0;
 	eg::Buffer m_vertexBuffer;
 	eg::Buffer m_indexBuffer;
+
+	eg::Buffer m_viewProjBuffer;
+	eg::DescriptorSet m_descriptorSet;
 };

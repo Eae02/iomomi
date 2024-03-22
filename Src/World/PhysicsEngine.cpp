@@ -6,6 +6,11 @@
 static float* dispLockDist = eg::TweakVarFloat("phys_dlock_dist", 0.01f, 0);
 static float* dispLockTime = eg::TweakVarFloat("phys_dlock_time", 0.1f, 0);
 
+bool ShouldCollideNever(const PhysicsObject&, const PhysicsObject&)
+{
+	return false;
+}
+
 PhysicsObject* PhysicsEngine::FindFloorObject(PhysicsObject& object, const glm::vec3& down) const
 {
 	CheckCollisionResult colResult = CheckForCollision(object, object.position + down * 0.1f, object.rotation);
@@ -133,7 +138,7 @@ void PhysicsEngine::ApplyMovement(PhysicsObject& object, float dt, const Collisi
 
 	bool didCollide = true;
 
-	constexpr float MIN_MOVE_LEN = 1E-4f;
+	constexpr float MIN_MOVE_LEN = 1E-8f;
 	constexpr float MAX_MOVE_LEN = 10;
 	constexpr float MAX_MOVE_PER_STEP = 0.5f;
 	constexpr int MAX_ITERATIONS = 20;
@@ -192,7 +197,7 @@ void PhysicsEngine::ApplyMovement(PhysicsObject& object, float dt, const Collisi
 		}
 	}
 
-	if (!didCollide && glm::length2(object.move) > 1E-6f)
+	if (!didCollide && glm::length2(glm::dvec3(object.move)) > 1E-10)
 	{
 		object.position += object.move;
 		object.actualMove += object.move;

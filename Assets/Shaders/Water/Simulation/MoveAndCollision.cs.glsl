@@ -1,15 +1,26 @@
 #version 450 core
+#extension GL_EXT_samplerless_texture_functions : enable
 
 #include "../WaterCommon.glh"
 
 layout(local_size_x = W_COMMON_WG_SIZE, local_size_y = 1, local_size_z = 1) in;
 
-layout(set = 0, binding = 0) restrict buffer ParticleDataBuffer
+layout(set = 0, binding = 0) restrict readonly buffer PositionsIn
 {
-	uvec4 particleData[];
+	uvec4 positionsIn[];
 };
 
-layout(set = 0, binding = 1) uniform usampler3D voxelDataTexture;
+layout(set = 0, binding = 1) restrict buffer PositionsOut
+{
+	uvec4 positionsOut[];
+};
+
+layout(set = 0, binding = 2) restrict buffer VelocitiesBuffer
+{
+	uvec4 velocities[];
+};
+
+layout(set = 0, binding = 3) uniform utexture3D voxelDataTexture;
 
 struct CollisionQuad
 {
@@ -21,20 +32,14 @@ struct CollisionQuad
 	float bitangentLen;
 };
 
-layout(set = 0, binding = 2) restrict readonly buffer CollisionQuadsBuffer
+layout(set = 0, binding = 4) restrict readonly buffer CollisionQuadsBuffer
 {
 	CollisionQuad collisionQuads[];
 };
 
-layout(push_constant) uniform PC
+layout(set = 0, binding = 5) uniform ParamsUB
 {
-	ivec3 voxelGridMinBounds;
-	float dt;
-	ivec3 voxelGridMaxBounds;
-	uint positionsBufferOffset;
-	uint positionsOutBufferOffset;
-	uint velocityBufferOffset;
-	int glowTimeSubtract;
+	WaterSimParameters params;
 };
 
 const float MAX_MOVE_DIST_PER_FRAME = 0.2;
@@ -59,7 +64,7 @@ struct VoxelData
 
 VoxelData sampleVoxelData(ivec3 pos)
 {
-	ivec3 sampleCoord = pos - voxelGridMinBounds;
+	ivec3 sampleCoord = pos - params.voxelMinBounds;
 	uint dataU32;
 	if (all(greaterThanEqual(sampleCoord, ivec3(0))) && all(lessThan(sampleCoord, textureSize(voxelDataTexture, 0))))
 	{
@@ -119,7 +124,7 @@ void quadCheckCollision(
 void main()
 {
 	uint particleIndex = gl_GlobalInvocationID.x;
-	uvec4 velAndGravity = particleData[velocityBufferOffset + particleIndex];
+	uvec4 velAndGravity = velocities[particleIndex];
 
 	vec3 velocity = uintBitsToFloat(velAndGravity.xyz);
 	uint dataBits = velAndGravity.w;
@@ -127,9 +132,9 @@ void main()
 	uint gravityIndex = dataBitsGetGravity(dataBits);
 	uint gravityMask = 1 << gravityIndex;
 
-	vec3 position = uintBitsToFloat(particleData[positionsBufferOffset + particleIndex].xyz);
+	vec3 position = uintBitsToFloat(positionsIn[particleIndex].xyz);
 
-	vec3 move = capMove(velocity * dt);
+	vec3 move = capMove(velocity * params.dt);
 
 	for (uint s = 0; s < NUM_MOVE_STEPS; s++)
 	{
@@ -201,11 +206,11 @@ void main()
 		}
 	}
 
-	position = clamp(position, vec3(voxelGridMinBounds), vec3(voxelGridMaxBounds));
+	position = clamp(position, vec3(params.voxelMinBounds), vec3(params.voxelMaxBounds));
 
-	uint newGlowTime = uint(max(int(dataBitsGetGlowTime(dataBits)) - glowTimeSubtract, 0));
+	uint newGlowTime = uint(max(int(dataBitsGetGlowTime(dataBits)) - params.glowTimeSubtract, 0));
 	dataBitsSetGlowTime(dataBits, newGlowTime);
 
-	particleData[velocityBufferOffset + particleIndex] = uvec4(floatBitsToUint(velocity), dataBits);
-	particleData[positionsOutBufferOffset + particleIndex] = uvec4(floatBitsToUint(position), dataBits);
+	velocities[particleIndex] = uvec4(floatBitsToUint(velocity), dataBits);
+	positionsOut[particleIndex] = uvec4(floatBitsToUint(position), dataBits);
 }

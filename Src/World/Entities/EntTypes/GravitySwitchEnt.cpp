@@ -1,11 +1,11 @@
 #include "GravitySwitchEnt.hpp"
 
-#include "../../../../Protobuf/Build/GravitySwitchEntity.pb.h"
 #include "../../../AudioPlayers.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../Graphics/RenderSettings.hpp"
 #include "../../../Settings.hpp"
 #include "../../Player.hpp"
+#include <GravitySwitchEntity.pb.h>
 
 DEF_ENT_TYPE(GravitySwitchEnt)
 

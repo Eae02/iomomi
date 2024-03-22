@@ -45,6 +45,6 @@ private:
 	float m_timeSinceLastClick = 0;
 
 	std::vector<glm::ivec3> m_finishedSelection;
-	
+
 	std::vector<eg::DescriptorSet> m_textureIconDescriptorSets;
 };

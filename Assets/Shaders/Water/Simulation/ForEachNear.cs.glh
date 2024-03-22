@@ -9,7 +9,7 @@ NEAR_PAIR_RES_T clusteredAdd8(NEAR_PAIR_RES_T value)
 	sharedClusteredAdd[gl_LocalInvocationID.x] = value;
 	for (uint i = 1; i <= 4; i <<= 1)
 	{
-		memoryBarrierShared();
+		// memoryBarrierShared();
 		barrier();
 		if ((gl_LocalInvocationID.x & i) == 0)
 		{
@@ -50,6 +50,8 @@ NEAR_PAIR_RES_T clusteredAdd8(NEAR_PAIR_RES_T value)
 
 #endif // VNoSubgroups
 
+#extension GL_EXT_samplerless_texture_functions : enable
+
 #include "../WaterCommon.glh"
 
 layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
@@ -63,17 +65,22 @@ layout(set = 0, binding = 0) restrict readonly buffer OctGroupsRangesBuffer
 	uint octGroupRanges[];
 };
 
-layout(set = 0, binding = 1) restrict buffer ParticleDataBuffer
+layout(set = 0, binding = 1) restrict buffer PositionsBuffer
 {
-	uvec4 particleData[];
+	uvec4 positionsBuffer[];
 };
 
-layout(set = 0, binding = 2, r16ui) restrict readonly uniform uimage3D cellOffsetsImage;
+layout(set = 0, binding = 2) uniform utexture3D cellOffsetsImage;
+
+layout(set = 0, binding = 3) uniform ParametersUB
+{
+	WaterSimParameters params;
+};
 
 uint readCellOffset(ivec3 cellPos)
 {
-	if (all(greaterThanEqual(cellPos, ivec3(0))) && all(lessThan(cellPos, imageSize(cellOffsetsImage))))
-		return imageLoad(cellOffsetsImage, cellPos).r;
+	if (all(greaterThanEqual(cellPos, ivec3(0))) && all(lessThan(cellPos, textureSize(cellOffsetsImage, 0))))
+		return texelFetch(cellOffsetsImage, cellPos, 0).r;
 	else
 		return CELL_OFFSETS_CELL_EMPTY;
 }
@@ -90,13 +97,13 @@ void main()
 	uint neighborOctGroupParticleIdx = localIndex % 8;
 
 	uint octGroupOffset = octGroupRanges[gl_WorkGroupID.x];
-	uvec4 position0 = particleData[positionsBufferOffset + octGroupOffset];
+	uvec4 position0 = positionsBuffer[octGroupOffset];
 	uint cellID0 = position0.w;
-	ivec3 gridCell = ivec3(getGridCell(uintBitsToFloat(position0.xyz), gridOrigin));
+	ivec3 gridCell = ivec3(getGridCell(uintBitsToFloat(position0.xyz), params.voxelMinBounds));
 
 	uint centerParticleIdx = octGroupOffset + centerOctGroupParticleIdx;
 
-	uvec4 positionData = particleData[positionsBufferOffset + centerParticleIdx];
+	uvec4 positionData = positionsBuffer[centerParticleIdx];
 	uint cellID = positionData.w;
 	vec3 position = uintBitsToFloat(positionData.xyz);
 
@@ -118,16 +125,16 @@ void main()
 				uint neiBeginOffset = readCellOffset(gridCell + ivec3(dx, dy, dz));
 				if (SUBGROUP_UNIFORM(neiBeginOffset == CELL_OFFSETS_CELL_EMPTY))
 					continue;
-				uint neiExpectedCellID = particleData[positionsBufferOffset + neiBeginOffset].w;
+				uint neiExpectedCellID = positionsBuffer[neiBeginOffset].w;
 
 				for (uint i = 0; i < W_MAX_OCT_GROUPS_PER_CELL; i++)
 				{
 					uint neiParticleIdx = neiBeginOffset + i * 8 + neighborOctGroupParticleIdx;
-					uvec4 neiPositionData = particleData[positionsBufferOffset + neiParticleIdx];
+					uvec4 neiPositionData = positionsBuffer[neiParticleIdx];
 					vec3 neiPosition = uintBitsToFloat(neiPositionData.xyz);
 
 					uint neiCellID = neiPositionData.w;
-					bool isValidNeighbor = neiParticleIdx < numParticles && neiExpectedCellID == neiCellID;
+					bool isValidNeighbor = neiParticleIdx < params.numParticles && neiExpectedCellID == neiCellID;
 
 					NEAR_PAIR_RES_T res = processNearPair(centerParticleIdx, neiParticleIdx, position, neiPosition);
 					if (isValidNeighbor && neiParticleIdx != centerParticleIdx)

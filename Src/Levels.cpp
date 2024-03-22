@@ -239,17 +239,107 @@ void LoadLevelThumbnail(Level& level)
 		.format = eg::Format::R8G8B8A8_sRGB,
 	});
 
-	size_t uploadBufferSize = width * height * 4;
-	eg::UploadBuffer uploadBuffer = eg::GetTemporaryUploadBufferWith<uint8_t>({ data.get(), uploadBufferSize });
-
-	eg::TextureRange texRange = {};
-
-	texRange.sizeX = width;
-	texRange.sizeY = height;
-	texRange.sizeZ = 1;
-	eg::DC.SetTextureData(level.thumbnail, texRange, uploadBuffer.buffer, uploadBuffer.offset);
+	level.thumbnail.SetData(
+		{ reinterpret_cast<char*>(data.get()), width * height * 4 },
+		eg::TextureRange{
+			.sizeX = width,
+			.sizeY = height,
+			.sizeZ = 1,
+		}
+	);
 
 	eg::DC.GenerateMipmaps(level.thumbnail);
 
 	level.thumbnail.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
+}
+
+size_t LevelsGraph::LevelConnectionKey::Hash() const
+{
+	size_t h = 0;
+	eg::HashAppend(h, levelName);
+	eg::HashAppend(h, gateName);
+	return h;
+}
+
+std::optional<LevelsGraph> LevelsGraph::LoadFromFile()
+{
+	std::optional<eg::MemoryMappedFile> mappedFile = eg::MemoryMappedFile::OpenRead("Levels/graph.txt");
+	if (!mappedFile.has_value())
+		return std::nullopt;
+	return Load(std::string_view(mappedFile->data.data(), mappedFile->data.size()));
+}
+
+LevelsGraph LevelsGraph::Load(std::string_view description)
+{
+	std::vector<std::string_view> lines;
+	eg::SplitString(description, '\n', lines);
+
+	LevelsGraph graph;
+
+	for (size_t l = 0; l < lines.size(); l++)
+	{
+		std::string_view line = eg::TrimString(lines[l]);
+		if (line.empty())
+		{
+			continue;
+		}
+
+		Node* prevNode = nullptr;
+
+		eg::IterateStringParts(
+			line, '-',
+			[&](std::string_view lineNodeStr)
+			{
+				Node* node = nullptr;
+
+				lineNodeStr = graph.m_allocator.MakeStringCopy(eg::TrimString(lineNodeStr));
+
+				auto [beforeColon, afterColon] = eg::SplitStringOnce(lineNodeStr, ':');
+				if (beforeColon.starts_with('@'))
+				{
+					std::string_view levelName = beforeColon.substr(1);
+					if (FindLevel(levelName) == -1)
+					{
+						eg::Log(
+							eg::LogLevel::Warning, "lvl", "LevelsGraph: On line {0}, level not found: {1}", l + 1,
+							levelName
+						);
+					}
+					else
+					{
+						node = graph.m_allocator.New<Node>(LevelConnectionNode{
+							.levelName = levelName,
+							.gateName = afterColon,
+						});
+
+						LevelConnectionKey key = { .levelName = levelName, .gateName = afterColon };
+						if (!graph.m_levelConnectionNodeMap.emplace(key, node).second)
+						{
+							eg::Log(
+								eg::LogLevel::Warning, "lvl", "LevelsGraph: Duplicate level&gate pair: {0}", lineNodeStr
+							);
+						}
+					}
+				}
+
+				if (node != nullptr && prevNode != nullptr)
+				{
+					std::visit([&](auto& n) { n.neighbors.back() = node; }, *prevNode);
+					std::visit([&](auto& n) { n.neighbors.front() = prevNode; }, *node);
+				}
+				prevNode = node;
+			}
+		);
+	}
+
+	return graph;
+}
+
+const LevelsGraph::Node* LevelsGraph::FindNodeByLevelConnection(std::string_view levelName, std::string_view gateName)
+	const
+{
+	auto it = m_levelConnectionNodeMap.find(LevelConnectionKey{ .levelName = levelName, .gateName = gateName });
+	if (it != m_levelConnectionNodeMap.end())
+		return it->second;
+	return nullptr;
 }

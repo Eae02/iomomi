@@ -2,51 +2,41 @@
 
 #include "../Water/WaterRenderer.hpp"
 #include "Lighting/PointLight.hpp"
-#include "RenderTex.hpp"
 
 class DeferredRenderer
 {
 public:
-	DeferredRenderer();
+	DeferredRenderer() = default;
 
-	void BeginGeometry(RenderTexManager& rtManager) const;
-	void EndGeometry(RenderTexManager& rtManager) const;
+	void RenderTargetsCreated(const struct RenderTargets& renderTargets);
 
-	void BeginTransparent(RenderTex destinationTexture, RenderTexManager& rtManager);
+	void SetSSAOTexture(std::optional<eg::TextureRef> ssaoTexture);
 
-	void BeginLighting(RenderTexManager& rtManager);
-	void EndTransparent();
+	void BeginGeometry() const;
+
+	void BeginLighting(const struct RenderTargets& renderTargets);
 
 	void DrawPointLights(
-		const std::vector<std::shared_ptr<PointLight>>& pointLights, bool hasWater, eg::TextureRef waterDepthTexture,
-		RenderTexManager& rtManager, uint32_t shadowResolution
+		const std::vector<std::shared_ptr<PointLight>>& pointLights, const struct RenderTargets& renderTargets,
+		uint32_t shadowResolution
 	) const;
 
-	void End() const;
+	static void CreatePipelines();
+	static void DestroyPipelines();
 
 private:
-	void CreatePipelines();
+	eg::Framebuffer m_geometryPassFramebuffer;
 
-	void PrepareSSAO(RenderTexManager& rtManager);
+	eg::DescriptorSet m_ambientDS0;
 
-	eg::Sampler m_shadowMapSampler;
+	eg::DescriptorSet m_pointLightDS0;
+	eg::DescriptorSet m_pointLightParametersDS;
 
-	enum
-	{
-		SHADOW_MODE_NONE = 0,
-		SHADOW_MODE_HARD = 1,
-		SHADOW_MODE_SOFT = 2
-	};
+	eg::DescriptorSet m_frameParametersDescriptorSet;
 
-	eg::Pipeline m_ambientPipelineWithSSAO;
-	eg::Pipeline m_ambientPipelineWithoutSSAO;
-	eg::Pipeline m_pointLightPipelines[3][2]; // first index is shadow mode, second index is water mode
+	std::optional<eg::DescriptorSet> m_ssaoTextureDescriptorSet;
 
-	eg::Pipeline m_ssaoDepthLinPipeline;
-	eg::Pipeline m_ssaoPipelines[3];
-	eg::Pipeline m_ssaoBlurPipeline;
-	eg::Buffer m_ssaoSamplesBuffer;
-	uint32_t m_ssaoSamplesBufferCurrentSamples = 0;
-	eg::Texture m_ssaoRotationsTexture;
-	eg::Sampler m_ssaoRotationsTextureSampler;
+	static eg::Pipeline m_ambientPipelineWithSSAO;
+	static eg::Pipeline m_ambientPipelineWithoutSSAO;
+	static eg::Pipeline m_pointLightPipelines[2][2]; // indices are [soft shadow enable][water enable]
 };

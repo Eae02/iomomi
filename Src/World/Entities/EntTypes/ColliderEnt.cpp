@@ -1,9 +1,9 @@
 #include "ColliderEnt.hpp"
 
-#include "../../../../Protobuf/Build/ColliderEntity.pb.h"
 #include "../../../ImGui.hpp"
 #include "../../Player.hpp"
 #include "Activation/CubeEnt.hpp"
+#include <ColliderEntity.pb.h>
 
 DEF_ENT_TYPE(ColliderEnt)
 

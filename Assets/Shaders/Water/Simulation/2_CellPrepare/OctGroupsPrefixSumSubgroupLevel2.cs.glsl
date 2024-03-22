@@ -16,7 +16,7 @@ layout(set = 0, binding = 1) restrict writeonly buffer TotalNumOctGroupsBuffer
 	uint totalNumOctGroups;
 };
 
-layout(push_constant) uniform PC
+layout(set = 1, binding = 0) uniform Params_UseDynamicOffset
 {
 	uint numSectionSizesWritten;
 };
@@ -36,7 +36,7 @@ void main()
 	
 	uint exclusiveSumInSubgroup = subgroupExclusiveAdd(value);
 	
-	memoryBarrierShared();
+	// memoryBarrierShared();
 	barrier();
 	
 	if (gl_SubgroupInvocationID == gl_SubgroupSize - 1)
@@ -44,7 +44,7 @@ void main()
 		subgroupSums[gl_SubgroupID] = exclusiveSumInSubgroup + value;
 	}
 	
-	memoryBarrierShared();
+	// memoryBarrierShared();
 	barrier();
 	
 	if (gl_SubgroupID == 0)
@@ -57,7 +57,7 @@ void main()
 			totalNumOctGroups = sumHere + sumBefore;
 	}
 	
-	memoryBarrierShared();
+	// memoryBarrierShared();
 	barrier();
 	
 	numOctGroupsSectionSizes[localIndex] = subgroupSums[gl_SubgroupID] + exclusiveSumInSubgroup;

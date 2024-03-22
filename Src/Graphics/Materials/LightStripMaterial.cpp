@@ -3,6 +3,7 @@
 
 #include "../DeferredRenderer.hpp"
 #include "../RenderSettings.hpp"
+#include "../RenderTargets.hpp"
 #include "../Vertex.hpp"
 #include "MeshDrawArgs.hpp"
 #include "StaticPropMaterial.hpp"
@@ -15,10 +16,9 @@ static void OnInit()
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/LightStrip.vs.glsl").ToStageInfo();
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/LightStrip.fs.glsl").ToStageInfo();
-	pipelineCI.enableDepthWrite = true;
+	pipelineCI.enableDepthWrite = false; // TODO: Is this OK?
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::Back;
-	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.vertexBindings[VERTEX_BINDING_POSITION] = { VERTEX_STRIDE_POSITION, eg::InputRate::Vertex };
 	pipelineCI.vertexBindings[VERTEX_BINDING_TEXCOORD] = { VERTEX_STRIDE_TEXCOORD, eg::InputRate::Vertex };
 	pipelineCI.vertexBindings[LightStripMaterial::INSTANCE_DATA_BINDING] = {
@@ -35,12 +35,15 @@ static void OnInit()
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
 	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
+	pipelineCI.depthStencilUsage = eg::TextureUsage::DepthStencilReadOnly;
 	pipelineCI.label = "LightStripGame";
 	lightStripPipelineGame = eg::Pipeline::Create(pipelineCI);
 
 	pipelineCI.label = "LightStripEditor";
 	pipelineCI.colorAttachmentFormats[0] = EDITOR_COLOR_FORMAT;
 	pipelineCI.depthAttachmentFormat = EDITOR_DEPTH_FORMAT;
+	pipelineCI.enableDepthWrite = true;
+	pipelineCI.depthStencilUsage = eg::TextureUsage::FramebufferAttachment;
 	lightStripPipelineEditor = eg::Pipeline::Create(pipelineCI);
 }
 
@@ -52,6 +55,28 @@ static void OnShutdown()
 
 EG_ON_INIT(OnInit)
 EG_ON_SHUTDOWN(OnShutdown)
+
+LightStripMaterial::LightStripMaterial()
+	: m_parametersBuffer(eg::BufferFlags::CopyDst | eg::BufferFlags::UniformBuffer, sizeof(float) * 8, nullptr),
+	  m_parametersDescriptorSet(lightStripPipelineGame, 1)
+{
+	m_parametersDescriptorSet.BindUniformBuffer(m_parametersBuffer, 0);
+}
+
+void LightStripMaterial::SetParameters(const Parameters& parameters)
+{
+	if (m_currentParameters.has_value() && *m_currentParameters == parameters)
+		return;
+
+	const float bufferData[8] = {
+		parameters.color1.r, parameters.color1.g, parameters.color1.b, 0.0f,
+		parameters.color2.r, parameters.color2.g, parameters.color2.b, parameters.transitionProgress,
+	};
+	m_parametersBuffer.DCUpdateData<float>(0, bufferData);
+	m_parametersBuffer.UsageHint(eg::BufferUsage::UniformBuffer, eg::ShaderAccessFlags::Fragment);
+
+	m_currentParameters = parameters;
+}
 
 size_t LightStripMaterial::PipelineHash() const
 {
@@ -75,10 +100,7 @@ bool LightStripMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawArgs
 
 bool LightStripMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
-	float pc[8] = { color1.r, color1.g, color1.b, 0.0f, color2.r, color2.g, color2.b, transitionProgress };
-
-	cmdCtx.PushConstants(0, sizeof(pc), pc);
-
+	cmdCtx.BindDescriptorSet(m_parametersDescriptorSet, 1);
 	return true;
 }
 

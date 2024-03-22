@@ -1,6 +1,5 @@
 #include "PlatformEnt.hpp"
 
-#include "../../../../Protobuf/Build/PlatformEntity.pb.h"
 #include "../../../Graphics/Lighting/PointLightShadowMapper.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../ImGui.hpp"
@@ -8,6 +7,7 @@
 #include "../../Entities/EntityManager.hpp"
 #include "../../World.hpp"
 #include "../../WorldUpdateArgs.hpp"
+#include <PlatformEntity.pb.h>
 
 DEF_ENT_TYPE(PlatformEnt)
 

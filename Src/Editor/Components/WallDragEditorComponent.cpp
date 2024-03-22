@@ -383,19 +383,9 @@ void WallDragEditorComponent::RenderSettings(const EditorState& editorState)
 	{
 		static const eg::DescriptorSetBinding binding = {
 			.binding = 0,
-			.type = eg::BindingType::Texture,
+			.type = eg::BindingTypeTexture{},
 			.shaderAccess = eg::ShaderAccessFlags::Fragment,
-			.rwMode = eg::ReadWriteMode::ReadOnly,
 		};
-
-		eg::Sampler sampler(eg::SamplerDescription{
-			.wrapU = eg::WrapMode::ClampToEdge,
-			.wrapV = eg::WrapMode::ClampToEdge,
-			.wrapW = eg::WrapMode::ClampToEdge,
-			.minFilter = eg::TextureFilter::Linear,
-			.magFilter = eg::TextureFilter::Linear,
-			.mipFilter = eg::TextureFilter::Linear,
-		});
 
 		m_textureIconDescriptorSets.resize(MAX_WALL_MATERIALS);
 		for (uint32_t i = 0; i < MAX_WALL_MATERIALS; i++)
@@ -404,10 +394,18 @@ void WallDragEditorComponent::RenderSettings(const EditorState& editorState)
 			if (i == 0)
 				view = noDrawTex.GetView();
 			else
-				view = albedoTex.GetView({ .firstArrayLayer = i - 1, .numArrayLayers = 1 });
+			{
+				view = albedoTex.GetView(
+					{
+						.firstArrayLayer = i - 1,
+						.numArrayLayers = 1,
+					},
+					eg::TextureViewType::Flat2D
+				);
+			}
 
 			m_textureIconDescriptorSets[i] = eg::DescriptorSet({ &binding, 1 });
-			m_textureIconDescriptorSets[i].BindTextureView(view, 0, &sampler);
+			m_textureIconDescriptorSets[i].BindTextureView(view, 0);
 		}
 	}
 
@@ -457,19 +455,9 @@ WallDragEditorComponent::WallDragEditorComponent()
 
 	static const eg::DescriptorSetBinding DESCRIPTOR_SET_BINDING = {
 		.binding = 0,
-		.type = eg::BindingType::Texture,
+		.type = eg::BindingTypeTexture{},
 		.shaderAccess = eg::ShaderAccessFlags::Fragment,
-		.rwMode = eg::ReadWriteMode::ReadOnly,
 	};
-
-	const eg::Sampler sampler(eg::SamplerDescription{
-		.wrapU = eg::WrapMode::ClampToEdge,
-		.wrapV = eg::WrapMode::ClampToEdge,
-		.wrapW = eg::WrapMode::ClampToEdge,
-		.minFilter = eg::TextureFilter::Linear,
-		.magFilter = eg::TextureFilter::Linear,
-		.mipFilter = eg::TextureFilter::Linear,
-	});
 
 	// If there are no partial texture views (only true in GLES) just use no-draw for all icons
 	const bool noPartialTextureViews =
@@ -482,10 +470,10 @@ WallDragEditorComponent::WallDragEditorComponent()
 		if (i == 0 || noPartialTextureViews)
 			view = noDrawTex.GetView();
 		else
-			view = albedoTex.GetView({ .firstArrayLayer = i - 1, .numArrayLayers = 1 });
+			view = albedoTex.GetView({ .firstArrayLayer = i - 1, .numArrayLayers = 1 }, eg::TextureViewType::Flat2D);
 
 		m_textureIconDescriptorSets[i] = eg::DescriptorSet({ &DESCRIPTOR_SET_BINDING, 1 });
-		m_textureIconDescriptorSets[i].BindTextureView(view, 0, &sampler);
+		m_textureIconDescriptorSets[i].BindTextureView(view, 0);
 	}
 }
 #endif

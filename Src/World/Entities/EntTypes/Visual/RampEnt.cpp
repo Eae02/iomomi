@@ -2,11 +2,11 @@
 
 #include <glm/glm.hpp>
 
-#include "../../../../../Protobuf/Build/Ramp.pb.h"
 #include "../../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../../Graphics/WallShader.hpp"
 #include "../../../../ImGui.hpp"
 #include "../../../Collision.hpp"
+#include <Ramp.pb.h>
 
 DEF_ENT_TYPE(RampEnt)
 

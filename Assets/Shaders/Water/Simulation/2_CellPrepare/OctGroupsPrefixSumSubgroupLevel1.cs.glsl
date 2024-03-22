@@ -31,7 +31,7 @@ void main()
 	
 	uint inclusiveSumInSubgroup = subgroupInclusiveAdd(value);
 	
-	memoryBarrierShared();
+	// memoryBarrierShared();
 	barrier();
 	
 	if (gl_SubgroupInvocationID == gl_SubgroupSize - 1)
@@ -39,7 +39,7 @@ void main()
 		subgroupSums[gl_SubgroupID] = inclusiveSumInSubgroup;
 	}
 	
-	memoryBarrierShared();
+	// memoryBarrierShared();
 	barrier();
 	
 	if (gl_SubgroupID == 0)
@@ -52,7 +52,7 @@ void main()
 			numOctGroupsSectionSizes[gl_WorkGroupID.x] = sumHere + sumBefore;
 	}
 	
-	memoryBarrierShared();
+	// memoryBarrierShared();
 	barrier();
 	
 	numOctGroupsPrefixSumWithinSection[globalIndex] = subgroupSums[gl_SubgroupID] + inclusiveSumInSubgroup;

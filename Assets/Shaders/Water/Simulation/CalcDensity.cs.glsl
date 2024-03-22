@@ -2,13 +2,6 @@
 
 #pragma variants VSubgroups VSubgroupsNoClustered VNoSubgroups
 
-layout(push_constant) uniform PC
-{
-	vec3 gridOrigin;
-	uint positionsBufferOffset;
-	uint numParticles;
-};
-
 #define NEAR_PAIR_RES_T vec2
 #include "ForEachNear.cs.glh"
 

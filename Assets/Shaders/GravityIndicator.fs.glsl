@@ -18,7 +18,8 @@ const float ANIM_TOT_TIME = ANIM_GAIN_TIME + ANIM_FALL_TIME + ANIM_ZERO_TIME;
 const vec3 COLOR = vec3(0.12, 0.9, 0.7);
 const float ANIM_SPEED = 0.5;
 
-layout(binding=1) uniform sampler2D noiseSampler;
+layout(binding=1) uniform texture2D noiseTexture;
+layout(binding=2) uniform sampler noiseSampler;
 
 float animationIntensity(float tc)
 {
@@ -37,7 +38,7 @@ void main()
 		atan(dot(localPos_in, downTangent_in), dot(localPos_in, cross(down_in, downTangent_in))),
 		dot(localPos_in, down_in)
 	);
-	tc += texture(noiseSampler, noiseSamplePos * 0.5).r * 0.1;
+	tc += texture(sampler2D(noiseTexture, noiseSampler), noiseSamplePos * 0.5).r * 0.1;
 	
 	float intensity = pow(animationIntensity(tc + renderSettings.gameTime * ANIM_SPEED), 5);
 	color_out = vec4(COLOR * mix(minMaxIntensity_in.x, minMaxIntensity_in.y, intensity), 0);

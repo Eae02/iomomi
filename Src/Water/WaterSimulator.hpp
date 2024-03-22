@@ -28,10 +28,10 @@ public:
 
 	void EnqueueGravityChange(const eg::Ray& ray, float maxDistance, Dir newGravity)
 	{
-		m_backgroundThread.PushGravityChangeMT({ .ray = ray, .maxDistance = maxDistance, .newGravity = newGravity });
+		m_backgroundThread->PushGravityChangeMT({ .ray = ray, .maxDistance = maxDistance, .newGravity = newGravity });
 	}
 
-	eg::BufferRef GetPositionsGPUBuffer() const { return m_particleDataBuffer; }
+	eg::BufferRef GetPositionsGPUBuffer() const { return m_positionsBuffer; }
 
 	uint32_t NumParticles() const { return m_numParticles; }
 
@@ -39,7 +39,9 @@ public:
 
 	static constexpr uint32_t NUM_PARTICLES_ALIGNMENT = 128; // the number of particles must be divisible by this
 
-	static void SetBufferData(eg::CommandContext& cc, eg::BufferRef buffer, uint64_t dataSize, const void* data);
+	static void SetBufferData(
+		eg::CommandContext& cc, eg::BufferRef buffer, uint64_t dataSize, const void* data, bool doBarrier = true
+	);
 
 private:
 	void RunSortPhase(eg::CommandContext& cc);
@@ -51,6 +53,8 @@ private:
 	void VelocityDiffusion(eg::CommandContext& cc);
 	void MoveAndCollision(eg::CommandContext& cc, float dt);
 
+	void SetFrameParametersBufferData(eg::CommandContext& cc, uint32_t setIndex, glm::uvec4 data);
+
 	pcg32_fast m_rng;
 
 	uint32_t m_numParticles;
@@ -61,7 +65,7 @@ private:
 
 	glm::uvec3 m_cellOffsetsTextureSize;
 
-	WaterSimulationThread m_backgroundThread;
+	std::unique_ptr<WaterSimulationThread> m_backgroundThread;
 	uint32_t m_initialFramesCompleted = 0;
 
 	uint32_t m_sortNumWorkGroups;
@@ -76,14 +80,34 @@ private:
 	eg::Buffer m_totalNumOctGroupsBuffer;
 	eg::Buffer m_octGroupRangesBuffer;
 
-	uint64_t m_particleDataForCPUBufferBytesPerFrame;
+	eg::Buffer m_constParametersBuffer;
+
+	static constexpr uint32_t FRAME_PARAMETERS_BYTES_PER_SECTION = 16;
+	static constexpr uint32_t FRAME_PARAMETERS_NUM_SECTIONS = 512;
+
+	std::array<eg::Buffer, eg::MAX_CONCURRENT_FRAMES> m_frameParameterBuffers;
+	std::array<void*, eg::MAX_CONCURRENT_FRAMES> m_frameParameterBufferPointers;
+	std::array<eg::DescriptorSet, eg::MAX_CONCURRENT_FRAMES> m_frameParameterDescriptorSets;
+	uint32_t m_frameParametersSectionStride;
+	uint32_t m_frameParameterBufferIndex = 0;
+	uint32_t m_nextFrameParametersSection = 0;
+
 	uint64_t m_particleDataForCPUCurrentFrameIndex = 0;
-	eg::Buffer m_particleDataForCPUBuffer;
-	glm::uvec2* m_particleDataForCPUMappedMemory;
+	uint32_t m_particleDataForCPUBufferBytesPerFrame;
+	struct ParticleDataForCPUBuffer
+	{
+		eg::Buffer buffer;
+		const glm::uvec2* memory;
+		eg::DescriptorSet descriptorSet;
+	};
+	std::array<ParticleDataForCPUBuffer, eg::MAX_CONCURRENT_FRAMES + 1> m_particleDataForCPUBuffers;
 
 	eg::Buffer m_gravityChangeBitsBuffer;
 
-	eg::Buffer m_particleDataBuffer;
+	eg::Buffer m_positionsBuffer;
+	eg::Buffer m_positionsBufferTemp;
+	eg::Buffer m_velocitiesBuffer;
+	eg::Buffer m_velocitiesBufferTemp;
 
 	eg::Buffer m_randomOffsetsBuffer;
 
@@ -92,6 +116,8 @@ private:
 	eg::Buffer m_sortedByCellBuffer;
 
 	eg::Buffer m_densityBuffer;
+
+	eg::DescriptorSet m_clearCellOffsetsDS;
 
 	eg::DescriptorSet m_sortInitialDS;
 	eg::DescriptorSet m_sortNearDS;
@@ -106,6 +132,7 @@ private:
 
 	eg::DescriptorSet m_calcDensityDS1;
 	eg::DescriptorSet m_calcAccelDS1;
+	eg::DescriptorSet m_velocityDiffusionDS1;
 
 	eg::DescriptorSet m_moveAndCollisionDS;
 

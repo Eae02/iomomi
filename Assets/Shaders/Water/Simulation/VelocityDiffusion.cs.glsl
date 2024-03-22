@@ -2,31 +2,32 @@
 
 #pragma variants VSubgroups VSubgroupsNoClustered VNoSubgroups
 
-layout(push_constant) uniform PC
-{
-	vec3 gridOrigin;
-	uint positionsBufferOffset;
-	uint velocityBufferOffset;
-	uint velocityBufferOutOffset;
-	uint numParticles;
-};
-
 #define NEAR_PAIR_RES_T vec3
 #include "ForEachNear.cs.glh"
+
+layout(set = 1, binding = 0) restrict readonly buffer VelocitiesIn
+{
+	uvec4 velocitiesIn[];
+};
+
+layout(set = 1, binding = 1) restrict writeonly buffer VelocitiesOut
+{
+	uvec4 velocitiesOut[];
+};
 
 vec3 currentVel;
 uint currentGravity;
 
 void initialize(uint particleIndex, vec3 pos)
 {
-	uvec4 vel4 = particleData[velocityBufferOffset + particleIndex];
+	uvec4 vel4 = velocitiesIn[particleIndex];
 	currentVel = uintBitsToFloat(vel4.xyz);
 	currentGravity = vel4.w;
 }
 
 vec3 processNearPair(uint i1, uint i2, vec3 pos1, vec3 pos2)
 {
-	vec3 vel2 = uintBitsToFloat(particleData[velocityBufferOffset + i2].xyz);
+	vec3 vel2 = uintBitsToFloat(velocitiesIn[i2].xyz);
 	
 	vec3 sep = pos1 - pos2;
 	float dist = length(sep);
@@ -46,5 +47,5 @@ void processResult(vec3 velDiff, uint particleIndex)
 {
 	const float VEL_SCALE = 0.998; //TODO: dt?
 	vec3 newVel = (currentVel + velDiff) * VEL_SCALE;
-	particleData[velocityBufferOutOffset + particleIndex] = uvec4(floatBitsToUint(newVel), currentGravity);
+	velocitiesOut[particleIndex] = uvec4(floatBitsToUint(newVel), currentGravity);
 }

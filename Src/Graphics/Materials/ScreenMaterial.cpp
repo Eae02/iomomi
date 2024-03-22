@@ -1,6 +1,7 @@
 #include "ScreenMaterial.hpp"
 
 #include "../RenderSettings.hpp"
+#include "../RenderTargets.hpp"
 #include "MeshDrawArgs.hpp"
 
 static eg::Pipeline screenMatPipeline;
@@ -13,7 +14,6 @@ static void OnInit()
 	pipelineCI.enableDepthWrite = true;
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::Back;
-	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.numColorAttachments = 2;
 	pipelineCI.colorAttachmentFormats[0] = GB_COLOR_FORMAT;
 	pipelineCI.colorAttachmentFormats[1] = GB_COLOR_FORMAT;
@@ -47,7 +47,8 @@ ScreenMaterial::ScreenMaterial(int resX, int resY) : m_resX(resX), m_resY(resY),
 	m_framebuffer = eg::Framebuffer({ &colorAttachment, 1 });
 
 	m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
-	m_descriptorSet.BindTexture(m_texture, 1, &framebufferLinearSampler);
+	m_descriptorSet.BindTexture(m_texture, 1);
+	m_descriptorSet.BindSampler(samplers::linearClamp, 2);
 }
 
 void ScreenMaterial::RenderTexture(const eg::ColorLin& clearColor)

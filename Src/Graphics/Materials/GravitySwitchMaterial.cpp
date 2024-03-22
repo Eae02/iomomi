@@ -1,7 +1,9 @@
 #include "GravitySwitchMaterial.hpp"
 
 #include "../../Editor/EditorGraphics.hpp"
+#include "../../Utils.hpp"
 #include "../RenderSettings.hpp"
+#include "../RenderTargets.hpp"
 #include "../Vertex.hpp"
 #include "MeshDrawArgs.hpp"
 #include "StaticPropMaterial.hpp"
@@ -15,13 +17,13 @@ static void OnInit()
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	StaticPropMaterial::InitializeForCommon3DVS(pipelineCI);
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravitySwitchLight.fs.glsl").ToStageInfo();
-	pipelineCI.enableDepthWrite = true;
+	pipelineCI.enableDepthWrite = false; // TODO: Is this ok?
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::Back;
 	pipelineCI.numColorAttachments = 1;
-	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
 	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
+	pipelineCI.depthStencilUsage = eg::TextureUsage::DepthStencilReadOnly;
 	pipelineCI.label = "GravSwitchGame";
 	gravitySwitchPipelineGame = eg::Pipeline::Create(pipelineCI);
 
@@ -29,11 +31,17 @@ static void OnInit()
 	pipelineCI.cullMode = eg::CullMode::None;
 	pipelineCI.colorAttachmentFormats[0] = EDITOR_COLOR_FORMAT;
 	pipelineCI.depthAttachmentFormat = EDITOR_DEPTH_FORMAT;
+	pipelineCI.enableDepthWrite = true;
+	pipelineCI.depthStencilUsage = eg::TextureUsage::FramebufferAttachment;
 	gravitySwitchPipelineEditor = eg::Pipeline::Create(pipelineCI);
 
 	gravitySwitchDescriptorSet = eg::DescriptorSet(gravitySwitchPipelineGame, 0);
 	gravitySwitchDescriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
-	gravitySwitchDescriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/Hex.png"), 1, &commonTextureSampler);
+	gravitySwitchDescriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/Hex.png"), 1);
+	gravitySwitchDescriptorSet.BindSampler(samplers::linearRepeatAnisotropic, 2);
+	gravitySwitchDescriptorSet.BindUniformBuffer(
+		frameDataUniformBuffer, 3, eg::BIND_BUFFER_OFFSET_DYNAMIC, sizeof(float) * 2
+	);
 }
 
 static void OnShutdown()
@@ -72,15 +80,17 @@ bool GravitySwitchMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* drawA
 		return false;
 
 	cmdCtx.BindPipeline(pipeline);
-	cmdCtx.BindDescriptorSet(gravitySwitchDescriptorSet, 0);
 
 	return true;
 }
 
 bool GravitySwitchMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* drawArgs) const
 {
-	float pc[2] = { intensity, timeOffset * 10 };
-	cmdCtx.PushConstants(0, sizeof(pc), pc);
+	const float parameters[2] = { intensity, timeOffset * 10 };
+	uint32_t parametersOffset = PushFrameUniformData(ToCharSpan<float>(parameters));
+
+	cmdCtx.BindDescriptorSet(gravitySwitchDescriptorSet, 0, { &parametersOffset, 1 });
+
 	return true;
 }
 

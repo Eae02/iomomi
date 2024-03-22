@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Protobuf/Build/Vec.pb.h"
+#include <Vec.pb.h>
 
 inline glm::vec3 PBToGLM(const iomomi_pb::Vec3& v)
 {

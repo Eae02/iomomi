@@ -20,9 +20,7 @@ struct MeshDrawArgs
 {
 	MeshDrawMode drawMode;
 	const PointLightShadowDrawArgs* plShadowRenderArgs;
-	eg::TextureRef waterDepthTexture;
-	eg::TextureRef glassBlurTexture;
-	RenderTexManager* rtManager;
+	const struct RenderTargets* renderTargets;
 };
 
 enum ObjectRenderFlags : uint32_t

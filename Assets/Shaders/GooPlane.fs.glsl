@@ -21,7 +21,8 @@ layout(set=0, binding=1, std140) uniform NMTransformsUB
 	vec4 nmTransforms[NM_SAMPLES * 2];
 };
 
-layout(set=0, binding=2) uniform sampler2D normalMap;
+layout(set=0, binding=2) uniform texture2D normalMap;
+layout(set=0, binding=3) uniform sampler normalMapSampler;
 
 const float ROUGHNESS = 0.2;
 const float DISTORT_INTENSITY = 0.1;
@@ -44,7 +45,7 @@ void main()
 	{
 		vec4 w4 = vec4(worldPos_in, renderSettings.gameTime);
 		vec2 samplePos = vec2(dot(nmTransforms[i], w4), dot(nmTransforms[i + 1], w4));
-		vec4 nmValue = texture(normalMap, samplePos);
+		vec4 nmValue = texture(sampler2D(normalMap, normalMapSampler), samplePos);
 		normal += (nmValue.rbg * (255.0 / 128.0)) - vec3(1.0);
 		brightness += nmValue.a;
 	}

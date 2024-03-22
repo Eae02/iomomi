@@ -1,6 +1,5 @@
 #include "ForceFieldEnt.hpp"
 
-#include "../../../../Protobuf/Build/ForceFieldEntity.pb.h"
 #include "../../../Game.hpp"
 #include "../../../Graphics/GraphicsCommon.hpp"
 #include "../../../Graphics/Materials/ForceFieldMaterial.hpp"
@@ -8,6 +7,7 @@
 #include "../../../ImGui.hpp"
 #include "../../WorldUpdateArgs.hpp"
 #include "../EntityManager.hpp"
+#include <ForceFieldEntity.pb.h>
 
 DEF_ENT_TYPE(ForceFieldEnt)
 

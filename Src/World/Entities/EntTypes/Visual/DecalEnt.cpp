@@ -1,8 +1,8 @@
 #include "DecalEnt.hpp"
 
-#include "../../../../../Protobuf/Build/DecalEntity.pb.h"
 #include "../../../../Graphics/Materials/DecalMaterial.hpp"
 #include "../../../../ImGui.hpp"
+#include <DecalEntity.pb.h>
 
 DEF_ENT_TYPE(DecalEnt)
 

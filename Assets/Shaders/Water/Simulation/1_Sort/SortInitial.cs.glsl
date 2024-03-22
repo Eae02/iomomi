@@ -21,21 +21,19 @@ layout(set = 0, binding = 1) restrict writeonly buffer OutputBuffer
 	uvec2 outputBuffer[];
 };
 
-layout(push_constant) uniform PC
+layout(set = 0, binding = 2) uniform ParamsUB
 {
-	vec3 gridOrigin;
-	uint numParticles;
-}
-pc;
+	WaterSimParameters params;
+};
 
 void main()
 {
 	uvec2 selfValue = uvec2(0xFFFFFFFFu);
 
-	if (globalIndex < pc.numParticles)
+	if (globalIndex < params.numParticles)
 	{
 		vec3 pos = uintBitsToFloat(inputPositions[globalIndex].xyz);
-		uvec3 gridCell = getGridCell(pos, pc.gridOrigin);
+		uvec3 gridCell = getGridCell(pos, params.voxelMinBounds);
 		uint gridCellZCurveIndex = zCurveIndex10(gridCell);
 
 		selfValue = uvec2(gridCellZCurveIndex, globalIndex);

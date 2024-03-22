@@ -1,7 +1,7 @@
 #include "GooPlaneMaterial.hpp"
 
 #include "../../World/Entities/Components/LiquidPlaneComp.hpp"
-#include "../RenderTex.hpp"
+#include "../RenderTargets.hpp"
 
 constexpr int NM_SAMPLES = 3;
 constexpr float NM_SCALE_GLOBAL = 3.5f;
@@ -21,17 +21,17 @@ void GooPlaneMaterial::OnInit()
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	pipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GooPlane.vs.glsl").ToStageInfo();
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GooPlane.fs.glsl").ToStageInfo();
-	pipelineCI.enableDepthWrite = true;
+	pipelineCI.enableDepthWrite = false; // TODO: Is this ok?
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::Back;
 	pipelineCI.frontFaceCCW = true;
-	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.vertexBindings[0] = { sizeof(LiquidPlaneComp::Vertex), eg::InputRate::Vertex };
 	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::Float32, 3, offsetof(LiquidPlaneComp::Vertex, pos) };
 	pipelineCI.vertexAttributes[1] = { 0, eg::DataType::UInt8Norm, 4, offsetof(LiquidPlaneComp::Vertex, edgeDists) };
 	pipelineCI.blendStates[0] = eg::AlphaBlend;
 	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
 	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
+	pipelineCI.depthStencilUsage = eg::TextureUsage::DepthStencilReadOnly;
 	pipelineCI.label = "GooPlane";
 	s_pipeline = eg::Pipeline::Create(pipelineCI);
 
@@ -59,7 +59,8 @@ void GooPlaneMaterial::OnInit()
 
 	s_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
 	s_descriptorSet.BindUniformBuffer(s_textureTransformsBuffer, 1);
-	s_descriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/SlimeN.png"), 2, &commonTextureSampler);
+	s_descriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/SlimeN.png"), 2);
+	s_descriptorSet.BindSampler(samplers::linearRepeatAnisotropic, 3);
 }
 
 void GooPlaneMaterial::OnShutdown()

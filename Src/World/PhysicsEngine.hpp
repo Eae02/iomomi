@@ -60,6 +60,8 @@ private:
 	float timeUntilLockDisplayPosition = 0;
 };
 
+bool ShouldCollideNever(const PhysicsObject&, const PhysicsObject&);
+
 class PhysicsEngine
 {
 public:

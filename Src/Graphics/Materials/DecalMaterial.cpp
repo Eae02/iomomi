@@ -2,6 +2,7 @@
 
 #include "../../Editor/EditorGraphics.hpp"
 #include "../RenderSettings.hpp"
+#include "../RenderTargets.hpp"
 #include "../Vertex.hpp"
 #include "MeshDrawArgs.hpp"
 
@@ -36,7 +37,6 @@ void DecalMaterial::LazyInitGlobals()
 	pipelineCI.cullMode = eg::CullMode::Back;
 	pipelineCI.topology = eg::Topology::TriangleStrip;
 	pipelineCI.depthCompare = eg::CompareOp::LessOrEqual;
-	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.vertexBindings[POSITION_BINDING] = { sizeof(float) * 2, eg::InputRate::Vertex };
 	pipelineCI.vertexBindings[INSTANCE_DATA_BINDING] = { sizeof(DecalMaterial::InstanceData), eg::InputRate::Instance };
 	pipelineCI.vertexAttributes[0] = { POSITION_BINDING, eg::DataType::Float32, 2, 0 };
@@ -105,9 +105,10 @@ DecalMaterial::DecalMaterial(
 	m_parametersBuffer = eg::Buffer(eg::BufferFlags::UniformBuffer, sizeof(parametersBufferData), parametersBufferData);
 
 	m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
-	m_descriptorSet.BindTexture(m_albedoTexture, 1, &commonTextureSampler);
-	m_descriptorSet.BindTexture(m_normalMapTexture, 2, &commonTextureSampler);
-	m_descriptorSet.BindUniformBuffer(m_parametersBuffer, 3);
+	m_descriptorSet.BindTexture(m_albedoTexture, 1);
+	m_descriptorSet.BindTexture(m_normalMapTexture, 2);
+	m_descriptorSet.BindSampler(samplers::linearRepeatAnisotropic, 3);
+	m_descriptorSet.BindUniformBuffer(m_parametersBuffer, 4);
 }
 
 size_t DecalMaterial::PipelineHash() const

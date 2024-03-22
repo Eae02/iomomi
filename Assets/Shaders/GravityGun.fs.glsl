@@ -13,9 +13,10 @@ layout(location=3) in vec3 tangent_in;
 
 layout(location=0) out vec4 color_out;
 
-layout(binding=1) uniform sampler2D albedoSampler;
-layout(binding=2) uniform sampler2D nmSampler;
-layout(binding=3) uniform sampler2D mmSampler;
+layout(binding=2) uniform texture2D albedoTex;
+layout(binding=3) uniform texture2D nmTex;
+layout(binding=4) uniform texture2D mmTex;
+layout(binding=5) uniform sampler commonSampler;
 
 void main()
 {
@@ -24,12 +25,12 @@ void main()
 	sTangent = normalize(sTangent - dot(sNormal, sTangent) * sNormal);
 	mat3 tbn = mat3(sTangent, cross(sTangent, sNormal), sNormal);
 	
-	vec4 miscMaps = texture(mmSampler, texCoord_in);
+	vec4 miscMaps = texture(sampler2D(mmTex, commonSampler), texCoord_in);
 	
 	GBData gbData;
 	gbData.worldPos = worldPos_in;
-	gbData.normal = normalMapToWorld(texture(nmSampler, texCoord_in).xy, tbn);
-	gbData.albedo = texture(albedoSampler, texCoord_in).rgb;
+	gbData.normal = normalMapToWorld(texture(sampler2D(nmTex, commonSampler), texCoord_in).xy, tbn);
+	gbData.albedo = texture(sampler2D(albedoTex, commonSampler), texCoord_in).rgb;
 	gbData.roughness = miscMaps.r;
 	gbData.metallic = miscMaps.g;
 	gbData.ao = miscMaps.b;

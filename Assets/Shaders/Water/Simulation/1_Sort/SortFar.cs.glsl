@@ -12,7 +12,7 @@ layout(set = 0, binding = 1) restrict readonly buffer IndexBuffer
 	uint indexBuffer[];
 };
 
-layout(push_constant) uniform PC
+layout(set = 1, binding = 0) uniform Params_UseDynamicOffset
 {
 	uint k;
 	uint j;
@@ -30,7 +30,7 @@ void main()
 
 	bool kBitSet = (pc.k & selfIndex) != 0;
 	bool swap = kBitSet != (selfValue.x > otherValue.x);
-	
+
 	if (swap)
 	{
 		inputOutput[selfIndex] = otherValue;

@@ -1,10 +1,19 @@
 #include "SelectionRenderer.hpp"
 #include "../Graphics/GraphicsCommon.hpp"
 #include "../Graphics/Vertex.hpp"
+#include "../Utils.hpp"
 #include "EditorGraphics.hpp"
 
 static eg::Pipeline modelPipeline;
 static eg::Pipeline postPipeline;
+
+static eg::DescriptorSet modelPipelineDS;
+
+struct SelectionDrawParams
+{
+	glm::mat4 transform;
+	float intensity;
+};
 
 static void OnInit()
 {
@@ -30,12 +39,18 @@ static void OnInit()
 	postPipelineCI.colorAttachmentFormats[0] = EDITOR_COLOR_FORMAT;
 	postPipelineCI.depthAttachmentFormat = EDITOR_DEPTH_FORMAT;
 	postPipeline = eg::Pipeline::Create(postPipelineCI);
+
+	modelPipelineDS = eg::DescriptorSet(modelPipeline, 0);
+	modelPipelineDS.BindUniformBuffer(
+		frameDataUniformBuffer, 0, eg::BIND_BUFFER_OFFSET_DYNAMIC, sizeof(SelectionDrawParams)
+	);
 }
 
 static void OnShutdown()
 {
 	modelPipeline.Destroy();
 	postPipeline.Destroy();
+	modelPipelineDS.Destroy();
 }
 
 EG_ON_INIT(OnInit)
@@ -44,6 +59,7 @@ EG_ON_SHUTDOWN(OnShutdown)
 void SelectionRenderer::BeginFrame(uint32_t resX, uint32_t resY)
 {
 	m_hasRendered = false;
+
 	if (m_texture.handle == nullptr || resX != m_texture.Width() || resY != m_texture.Height())
 	{
 		eg::TextureCreateInfo textureCI;
@@ -57,6 +73,13 @@ void SelectionRenderer::BeginFrame(uint32_t resX, uint32_t resY)
 
 		eg::FramebufferAttachment colorAttachment(m_texture.handle);
 		m_framebuffer = eg::Framebuffer({ &colorAttachment, 1 });
+
+		m_postDescriptorSet = eg::DescriptorSet(postPipeline, 0);
+		m_postDescriptorSet.BindTexture(m_texture, 0);
+		m_postDescriptorSet.BindSampler(samplers::linearClamp, 1);
+		m_postDescriptorSet.BindUniformBuffer(
+			frameDataUniformBuffer, 2, eg::BIND_BUFFER_OFFSET_DYNAMIC, sizeof(float) * 3
+		);
 	}
 }
 
@@ -86,15 +109,12 @@ void SelectionRenderer::Draw(float intensity, const glm::mat4& transform, const 
 
 	model.BuffersDescriptor().Bind(eg::DC, 0b1);
 
-	struct PC
-	{
-		glm::mat4 transform;
-		float intensity;
-	} pc;
-	pc.transform = viewProjection * transform;
-	pc.intensity = intensity;
-
-	eg::DC.PushConstants(0, pc);
+	const SelectionDrawParams params = {
+		.transform = viewProjection * transform,
+		.intensity = intensity,
+	};
+	uint32_t paramsOffset = PushFrameUniformData(RefToCharSpan(params));
+	eg::DC.BindDescriptorSet(modelPipelineDS, 0, { &paramsOffset, 1 });
 
 	if (meshIndex != -1)
 	{
@@ -116,10 +136,12 @@ void SelectionRenderer::EndFrame()
 	if (!m_hasRendered)
 		return;
 
+	eg::DC.BindPipeline(postPipeline);
+
 	eg::ColorLin color(eg::ColorSRGB::FromHex(0xb9ddf3));
 
-	eg::DC.BindPipeline(postPipeline);
-	eg::DC.BindTexture(m_texture, 0, 0, &linearClampToEdgeSampler);
-	eg::DC.PushConstants(0, sizeof(float) * 3, &color);
+	uint32_t paramsOffset = PushFrameUniformData(ToCharSpan<float>({ &color.r, 3 }));
+	eg::DC.BindDescriptorSet(m_postDescriptorSet, 0, { &paramsOffset, 1 });
+
 	eg::DC.Draw(0, 3, 0, 1);
 }

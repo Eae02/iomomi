@@ -17,4 +17,6 @@ private:
 	eg::Texture m_texture;
 	bool m_hasRendered = false;
 	eg::Framebuffer m_framebuffer;
+
+	eg::DescriptorSet m_postDescriptorSet;
 };

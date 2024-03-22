@@ -1,6 +1,7 @@
 #include "GravityIndicatorMaterial.hpp"
 
 #include "../RenderSettings.hpp"
+#include "../RenderTargets.hpp"
 #include "../Vertex.hpp"
 #include "MeshDrawArgs.hpp"
 
@@ -34,17 +35,18 @@ static void OnInit()
 		                               offsetof(GravityIndicatorMaterial::InstanceData, down) };
 	pipelineCI.vertexAttributes[5] = { GravityIndicatorMaterial::INSTANCE_DATA_BINDING, eg::DataType::Float32, 2,
 		                               offsetof(GravityIndicatorMaterial::InstanceData, minIntensity) };
-	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
 	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
+	pipelineCI.depthStencilUsage = eg::TextureUsage::DepthStencilReadOnly;
 	pipelineCI.blendStates[0] = eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::One);
 	pipelineCI.label = "GravityIndicator";
 	pipeline = eg::Pipeline::Create(pipelineCI);
 
 	descriptorSet = eg::DescriptorSet(pipeline, 0);
 	descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
-	descriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 1, &linearRepeatSampler);
+	descriptorSet.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 1);
+	descriptorSet.BindSampler(samplers::linearRepeat, 2);
 }
 
 static void OnShutdown()

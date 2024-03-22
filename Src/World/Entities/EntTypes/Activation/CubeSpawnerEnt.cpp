@@ -1,11 +1,11 @@
 #include "CubeSpawnerEnt.hpp"
 
-#include "../../../../../Protobuf/Build/CubeSpawnerEntity.pb.h"
 #include "../../../../Graphics/Lighting/PointLightShadowMapper.hpp"
 #include "../../../../Graphics/Materials/EmissiveMaterial.hpp"
 #include "../../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../../ImGui.hpp"
 #include "CubeEnt.hpp"
+#include <CubeSpawnerEntity.pb.h>
 
 DEF_ENT_TYPE(CubeSpawnerEnt)
 

@@ -6,9 +6,7 @@
 
 #include <glm/gtx/matrix_operation.hpp>
 
-static constexpr float BARRIER_DISTANCE_TEXEL_SIZE = 0.5f; // The size of one texel in world space
-
-static constexpr eg::Format BARRIER_DEPTH_FORMAT = eg::Format::Depth16;
+static constexpr float BARRIER_DISTANCE_TEXEL_SIZE = 0.25f; // The size of one texel in world space
 
 WaterBarrierRenderer::WaterBarrierRenderer()
 {
@@ -21,9 +19,8 @@ WaterBarrierRenderer::WaterBarrierRenderer()
 		.enableDepthWrite = true,
 		.depthCompare = eg::CompareOp::Less,
 		.topology = eg::Topology::Points,
-		.setBindModes = { eg::BindMode::DescriptorSet },
 		.numColorAttachments = 0,
-		.depthAttachmentFormat = BARRIER_DEPTH_FORMAT,
+		.depthAttachmentFormat = DEPTH_TEXTURE_FORMAT,
 		.label = "WaterBarrier",
 	});
 
@@ -36,14 +33,16 @@ WaterBarrierRenderer::WaterBarrierRenderer()
 	});
 
 	const float clearValue = 1.0f;
-	eg::UploadBuffer uploadBuffer = eg::GetTemporaryUploadBufferWith<float>({ &clearValue, 1 });
-	eg::DC.SetTextureData(
-		m_defaultTexture, eg::TextureRange{ .sizeX = 1, .sizeY = 1, .sizeZ = 1 }, uploadBuffer.buffer,
-		uploadBuffer.offset
-	);
+	m_defaultTexture.SetData(RefToCharSpan(clearValue), eg::TextureRange{ .sizeX = 1, .sizeY = 1, .sizeZ = 1 });
 
 	m_defaultTexture.UsageHint(eg::TextureUsage::ShaderSample, eg::ShaderAccessFlags::Fragment);
 }
+
+struct WaterBarrierParams
+{
+	glm::mat4 inverseBarrierTransform;
+	uint32_t blockedAxis;
+};
 
 void WaterBarrierRenderer::Init(const WaterSimulator2* simulator, World& world)
 {
@@ -65,12 +64,16 @@ void WaterBarrierRenderer::Init(const WaterSimulator2* simulator, World& world)
 			const float textureW = std::max(std::ceil(aaQuadComp.radius.x * 2 / BARRIER_DISTANCE_TEXEL_SIZE), 2.0f);
 			const float textureH = std::max(std::ceil(aaQuadComp.radius.y * 2 / BARRIER_DISTANCE_TEXEL_SIZE), 2.0f);
 
+			char label[40];
+			snprintf(label, sizeof(label), "WaterBarrierDist[%p]", static_cast<void*>(&entity));
+
 			barrier.texture = eg::Texture::Create2D(eg::TextureCreateInfo{
 				.flags = eg::TextureFlags::ShaderSample | eg::TextureFlags::FramebufferAttachment,
 				.mipLevels = 1,
 				.width = static_cast<uint32_t>(textureW),
 				.height = static_cast<uint32_t>(textureH),
-				.format = BARRIER_DEPTH_FORMAT,
+				.format = DEPTH_TEXTURE_FORMAT,
+				.label = label,
 			});
 
 			entity.SetWaterDistanceTexture(barrier.texture);
@@ -89,6 +92,9 @@ void WaterBarrierRenderer::Init(const WaterSimulator2* simulator, World& world)
 		m_descriptorSet.BindStorageBuffer(
 			simulator->GetPositionsGPUBuffer(), 0, 0, simulator->NumParticles() * sizeof(float) * 4
 		);
+		m_descriptorSet.BindUniformBuffer(
+			frameDataUniformBuffer, 1, eg::BIND_BUFFER_OFFSET_DYNAMIC, sizeof(WaterBarrierParams)
+		);
 	}
 	else
 	{
@@ -106,14 +112,14 @@ void WaterBarrierRenderer::Update(float dt)
 
 	eg::GPUTimer timer = eg::StartGPUTimer("Water Barrier Render");
 
-	struct PushConstants
-	{
-		glm::mat4 inverseBarrierTransform;
-		uint32_t blockedAxis;
-	};
-
 	for (Barrier& barrier : m_barriers)
 	{
+		const WaterBarrierParams params = {
+			.inverseBarrierTransform = barrier.transform,
+			.blockedAxis = static_cast<uint32_t>(barrier.entity->BlockedAxis()),
+		};
+		const uint32_t paramsOffset = PushFrameUniformData(RefToCharSpan(params));
+
 		eg::DC.BeginRenderPass(eg::RenderPassBeginInfo{
 			.framebuffer = barrier.framebuffer.handle,
 			.depthLoadOp = eg::AttachmentLoadOp::Clear,
@@ -122,13 +128,7 @@ void WaterBarrierRenderer::Update(float dt)
 
 		eg::DC.BindPipeline(m_barrierPipeline);
 
-		const PushConstants pc = {
-			.inverseBarrierTransform = barrier.transform,
-			.blockedAxis = static_cast<uint32_t>(barrier.entity->BlockedAxis()),
-		};
-		eg::DC.PushConstants(0, pc);
-
-		eg::DC.BindDescriptorSet(m_descriptorSet, 0);
+		eg::DC.BindDescriptorSet(m_descriptorSet, 0, { &paramsOffset, 1 });
 		eg::DC.Draw(0, m_numParticles, 0, 1);
 
 		eg::DC.EndRenderPass();

@@ -3,7 +3,7 @@
 const eg::DescriptorSetBinding PointLightShadowDrawArgs::PARAMETERS_DS_BINDINGS[1] = {
 	eg::DescriptorSetBinding{
 		.binding = 0,
-		.type = eg::BindingType::UniformBufferDynamicOffset,
+		.type = eg::BindingTypeUniformBuffer{ .dynamicOffset = true },
 		.shaderAccess = eg::ShaderAccessFlags::Vertex | eg::ShaderAccessFlags::Fragment,
 	},
 };

@@ -6,11 +6,11 @@
 #include "RenderSettings.glh"
 #include <Deferred.glh>
 
-layout(binding=1) uniform sampler2D gbColor1Sampler;
-layout(binding=2) uniform sampler2D gbColor2Sampler;
-layout(binding=3) uniform sampler2D gbDepthSampler;
+layout(set = 0, binding = 1) uniform texture2D gbColor1Tex;
+layout(set = 0, binding = 2) uniform texture2D gbColor2Tex;
+layout(set = 0, binding = 3) uniform texture2D gbDepthTex_UF;
 
-layout(location=0) out vec4 color_out;
+layout(location = 0) out vec4 color_out;
 
 vec2 texSize;
 
@@ -21,22 +21,21 @@ vec3 CalculateLighting(GBData data);
 void main()
 {
 	ivec2 screenCoord = ivec2(gl_FragCoord.xy);
-	
-	texSize = vec2(textureSize(gbColor1Sampler, 0).xy);
-	screenCoord01 = vec2(screenCoord) / texSize;
-	
-	vec4 c1 = texelFetch(gbColor1Sampler, screenCoord, 0);
-	vec4 c2 = texelFetch(gbColor2Sampler, screenCoord, 0);
-	
+
+	screenCoord01 = vec2(screenCoord) * renderSettings.inverseRenderResolution;
+
+	vec4 c1 = texelFetch(gbColor1Tex, screenCoord, 0);
+	vec4 c2 = texelFetch(gbColor2Tex, screenCoord, 0);
+
 	GBData data;
-	data.hDepth = texelFetch(gbDepthSampler, screenCoord, 0).r;
+	data.hDepth = texelFetch(gbDepthTex_UF, screenCoord, 0).r;
 	data.worldPos = WorldPosFromDepth(data.hDepth, screenCoord01, renderSettings.invViewProjection);
 	data.normal = SMDecode(c2.xy);
 	data.albedo = c1.xyz;
 	data.roughness = c2.z;
 	data.metallic = c2.w;
 	data.ao = c1.w;
-	
+
 	color_out = vec4(CalculateLighting(data), 0);
 }
 

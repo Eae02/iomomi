@@ -32,6 +32,13 @@ void PrimitiveRenderer::OnShutdown()
 EG_ON_INIT(PrimitiveRenderer::OnInit)
 EG_ON_SHUTDOWN(PrimitiveRenderer::OnShutdown)
 
+PrimitiveRenderer::PrimitiveRenderer()
+	: m_viewProjBuffer(eg::BufferFlags::CopyDst | eg::BufferFlags::UniformBuffer, sizeof(glm::mat4), nullptr),
+	  m_descriptorSet(primPipeline, 0)
+{
+	m_descriptorSet.BindUniformBuffer(m_viewProjBuffer, 0);
+}
+
 void PrimitiveRenderer::Begin(const glm::mat4& viewProjection, const glm::vec3& cameraPos)
 {
 	m_viewProjection = viewProjection;
@@ -148,8 +155,11 @@ void PrimitiveRenderer::End()
 	eg::DC.CopyBuffer(uploadBuffer.buffer, m_vertexBuffer, uploadBuffer.offset, 0, verticesBytes);
 	eg::DC.CopyBuffer(uploadBuffer.buffer, m_indexBuffer, uploadBuffer.offset + verticesBytes, 0, indicesBytes);
 
+	m_viewProjBuffer.DCUpdateData(0, sizeof(glm::mat4), &m_viewProjection);
+
 	m_vertexBuffer.UsageHint(eg::BufferUsage::VertexBuffer);
 	m_indexBuffer.UsageHint(eg::BufferUsage::IndexBuffer);
+	m_viewProjBuffer.UsageHint(eg::BufferUsage::UniformBuffer, eg::ShaderAccessFlags::Vertex);
 }
 
 void PrimitiveRenderer::Draw() const
@@ -159,7 +169,7 @@ void PrimitiveRenderer::Draw() const
 
 	eg::DC.BindPipeline(primPipeline);
 
-	eg::DC.PushConstants(0, m_viewProjection);
+	eg::DC.BindDescriptorSet(m_descriptorSet, 0);
 
 	eg::DC.BindIndexBuffer(eg::IndexType::UInt32, m_indexBuffer, 0);
 	eg::DC.BindVertexBuffer(0, m_vertexBuffer, 0);

@@ -1,0 +1,11 @@
+@hub_0:1Left - @button_2:in
+
+@button_2:out - @button_3:in
+
+@button_3:out - @hub_0:in
+
+@hub_0:1Right - @intro_3:in
+
+@intro_3:out - @button_1:in
+
+@button_1:out - @hub_0:in

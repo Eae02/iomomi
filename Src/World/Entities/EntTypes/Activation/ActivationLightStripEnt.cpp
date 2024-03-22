@@ -40,18 +40,24 @@ const float MODEL_SCALE = 0.25f;
 
 void ActivationLightStripEnt::CommonDraw(const EntDrawArgs& args)
 {
+	LightStripMaterial::Parameters materialParameters;
 	if (m_transitionDirection == -1)
 	{
-		m_material.transitionProgress = m_maxTransitionProgress - m_transitionProgress;
-		m_material.color1 = DEACTIVATED_COLOR;
-		m_material.color2 = ACTIVATED_COLOR;
+		materialParameters = {
+			.color1 = DEACTIVATED_COLOR,
+			.color2 = ACTIVATED_COLOR,
+			.transitionProgress = m_maxTransitionProgress - m_transitionProgress,
+		};
 	}
 	else
 	{
-		m_material.transitionProgress = m_transitionProgress;
-		m_material.color1 = ACTIVATED_COLOR;
-		m_material.color2 = DEACTIVATED_COLOR;
+		materialParameters = {
+			.color1 = ACTIVATED_COLOR,
+			.color2 = DEACTIVATED_COLOR,
+			.transitionProgress = m_transitionProgress,
+		};
 	}
+	m_material.SetParameters(materialParameters);
 
 	for (int v = 0; v < MV_Count; v++)
 	{

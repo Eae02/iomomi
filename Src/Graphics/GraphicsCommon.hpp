@@ -1,16 +1,21 @@
 #pragma once
 
 #include <optional>
+#include <span>
 
-extern eg::Sampler commonTextureSampler;
-extern eg::Sampler framebufferNearestSampler;
-extern eg::Sampler framebufferLinearSampler;
-extern eg::Sampler linearClampToEdgeSampler;
-extern eg::Sampler linearRepeatSampler;
+namespace samplers
+{
+extern eg::SamplerHandle linearRepeatAnisotropic;
+extern eg::SamplerHandle linearClampAnisotropic;
+extern eg::SamplerHandle nearestClamp;
+extern eg::SamplerHandle linearClamp;
+extern eg::SamplerHandle linearRepeat;
+extern eg::SamplerHandle shadowMap;
+}; // namespace samplers
 
-extern eg::Texture whitePixelTexture;
-extern eg::Texture blackPixelTexture;
 extern eg::Texture defaultShadowMap;
+
+extern eg::DescriptorSet blackPixelTextureDescriptorSet;
 
 void GraphicsCommonInit();
 
@@ -36,6 +41,15 @@ public:
 private:
 	uint64_t m_capacity = 0;
 };
+
+extern const eg::DescriptorSetBinding FRAGMENT_SHADER_TEXTURE_BINDING;
+extern const eg::DescriptorSetBinding FRAGMENT_SHADER_TEXTURE_BINDING_UNFILTERABLE;
+
+extern eg::Buffer frameDataUniformBuffer;
+
+uint32_t PushFrameUniformData(std::span<const char> data);
+
+void InitFrameDataUniformBufferForNewFrame();
 
 constexpr uint32_t WATER_MODE_CONST_ID = 150;
 

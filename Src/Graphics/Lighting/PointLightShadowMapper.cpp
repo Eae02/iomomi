@@ -8,18 +8,27 @@ static const glm::vec3 shadowMatrixF[] = { { 1, 0, 0 },  { -1, 0, 0 }, { 0, 1, 0
 static const glm::vec3 shadowMatrixU[] = { { 0, -1, 0 }, { 0, -1, 0 }, { 0, 0, 1 },
 	                                       { 0, 0, -1 }, { 0, -1, 0 }, { 0, -1, 0 } };
 
+const eg::DescriptorSetBinding PointLightShadowMapper::SHADOW_MAP_DS_BINDING = {
+	.binding = 0,
+	.type =
+		eg::BindingTypeTexture{
+			.viewType = eg::TextureViewType::Cube,
+			.sampleMode = eg::TextureSampleMode::Depth,
+		},
+	.shaderAccess = eg::ShaderAccessFlags::Fragment,
+};
+
 PointLightShadowMapper::PointLightShadowMapper()
 {
-	eg::GraphicsPipelineCreateInfo depthCopyPipelineCI;
-	depthCopyPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").ToStageInfo();
-	depthCopyPipelineCI.fragmentShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/ShadowDepthCopy.fs.glsl").ToStageInfo();
-	depthCopyPipelineCI.enableDepthTest = true;
-	depthCopyPipelineCI.enableDepthWrite = true;
-	depthCopyPipelineCI.numColorAttachments = 0;
-	depthCopyPipelineCI.depthAttachmentFormat = SHADOW_MAP_FORMAT;
-	depthCopyPipelineCI.label = "ShadowDepthCopy";
-	m_depthCopyPipeline = eg::Pipeline::Create(depthCopyPipelineCI);
+	m_depthCopyPipeline = eg::Pipeline::Create(eg::GraphicsPipelineCreateInfo{
+		.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").ToStageInfo(),
+		.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/ShadowDepthCopy.fs.glsl").ToStageInfo(),
+		.enableDepthTest = true,
+		.enableDepthWrite = true,
+		.numColorAttachments = 0,
+		.depthAttachmentFormat = SHADOW_MAP_FORMAT,
+		.label = "ShadowDepthCopy",
+	});
 
 	glm::vec3 localNormals[5] = {
 		glm::vec3(1, 0, 1),
@@ -79,7 +88,7 @@ void PointLightShadowMapper::SetQuality(QualityLevel quality)
 	{
 		entry.staticShadowMap = -1;
 		entry.dynamicShadowMap = -1;
-		entry.light->shadowMap = nullptr;
+		entry.light->shadowMapDescriptorSet = nullptr;
 	}
 	m_shadowMaps.clear();
 }
@@ -98,15 +107,19 @@ int PointLightShadowMapper::AllocateShadowMap()
 	ShadowMap& shadowMap = m_shadowMaps.emplace_back();
 	shadowMap.inUse = true;
 
-	eg::TextureCreateInfo textureCI;
-	textureCI.format = SHADOW_MAP_FORMAT;
-	textureCI.width = m_resolution;
-	textureCI.flags =
-		eg::TextureFlags::ShaderSample | eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ManualBarrier;
-	textureCI.mipLevels = 1;
-	shadowMap.texture = eg::Texture::CreateCube(textureCI);
+	shadowMap.texture = eg::Texture::CreateCube({
+		.flags =
+			eg::TextureFlags::ShaderSample | eg::TextureFlags::FramebufferAttachment | eg::TextureFlags::ManualBarrier,
+		.mipLevels = 1,
+		.width = m_resolution,
+		.height = m_resolution,
+		.format = SHADOW_MAP_FORMAT,
+	});
 
 	shadowMap.wholeTextureView = shadowMap.texture.GetView();
+
+	shadowMap.descriptorSet = eg::DescriptorSet({ &SHADOW_MAP_DS_BINDING, 1 });
+	shadowMap.descriptorSet.BindTextureView(shadowMap.wholeTextureView, 0);
 
 	for (uint32_t i = 0; i < 6; i++)
 	{
@@ -120,6 +133,9 @@ int PointLightShadowMapper::AllocateShadowMap()
 		{
 			shadowMap.layerViews[i] =
 				shadowMap.texture.GetView(dsAttachment.subresource.AsSubresource(), eg::TextureViewType::Flat2D);
+
+			shadowMap.layerDescriptorSets[i] = eg::DescriptorSet(m_depthCopyPipeline, 0);
+			shadowMap.layerDescriptorSets[i].BindTextureView(shadowMap.layerViews[i], 0);
 		}
 	}
 
@@ -134,7 +150,7 @@ void PointLightShadowMapper::SetLightSources(const std::vector<std::shared_ptr<P
 		m_lights[i].light = lights[i];
 		m_lights[i].staticShadowMap = -1;
 		m_lights[i].dynamicShadowMap = -1;
-		lights[i]->shadowMap = nullptr;
+		lights[i]->shadowMapDescriptorSet = nullptr;
 	}
 
 	for (ShadowMap& shadowMap : m_shadowMaps)
@@ -244,9 +260,7 @@ void PointLightShadowMapper::UpdateShadowMaps(
 		if (baseShadowMap != -1)
 		{
 			eg::DC.BindPipeline(m_depthCopyPipeline);
-
-			eg::DC.BindTextureView(m_shadowMaps[baseShadowMap].layerViews[face], 0, 0, &framebufferNearestSampler);
-
+			eg::DC.BindDescriptorSet(m_shadowMaps[baseShadowMap].layerDescriptorSets[face], 0);
 			eg::DC.Draw(0, 3, 0, 1);
 		}
 
@@ -283,7 +297,7 @@ void PointLightShadowMapper::UpdateShadowMaps(
 					entry.staticShadowMap = AllocateShadowMap();
 					if (entry.dynamicShadowMap == -1)
 					{
-						entry.light->shadowMap = m_shadowMaps[entry.staticShadowMap].wholeTextureView;
+						entry.light->shadowMapDescriptorSet = m_shadowMaps[entry.staticShadowMap].descriptorSet;
 					}
 				}
 
@@ -314,7 +328,7 @@ void PointLightShadowMapper::UpdateShadowMaps(
 		if (entry.dynamicShadowMap == -1)
 		{
 			entry.dynamicShadowMap = AllocateShadowMap();
-			entry.light->shadowMap = m_shadowMaps[entry.dynamicShadowMap].wholeTextureView;
+			entry.light->shadowMapDescriptorSet = m_shadowMaps[entry.dynamicShadowMap].descriptorSet;
 			updateAll = true;
 		}
 

@@ -23,27 +23,16 @@ static constexpr size_t MAX_TOTAL_COLLISION_QUADS = 255;
 // The maximum number of collision quads that can influence a single voxel
 static constexpr size_t MAX_VOXEL_COLLISION_QUADS = 3;
 
-WaterCollisionData WaterCollisionData::Create(
-	eg::CommandContext& cc, const VoxelBuffer& voxelBuffer, std::vector<WaterCollisionQuad> collisionQuads
+static std::pair<std::vector<uint32_t>, glm::ivec3> GetVoxelData(
+	const VoxelBuffer& voxelBuffer, std::span<const WaterCollisionQuad> collisionQuads
 )
 {
-	size_t cappedNumCollisionQuads = std::min<size_t>(collisionQuads.size(), MAX_TOTAL_COLLISION_QUADS);
-	if (cappedNumCollisionQuads < collisionQuads.size())
-	{
-		eg::Log(eg::LogLevel::Error, "water", "Too many water collision quads: {0}", collisionQuads.size());
-	}
-
 	auto [minBounds, maxBounds] = voxelBuffer.CalculateBounds();
 
 	glm::ivec3 voxelsSize = maxBounds - minBounds;
-	voxelsSize.x = eg::RoundToNextMultiple(voxelsSize.x, 4);
-	voxelsSize.y = eg::RoundToNextMultiple(voxelsSize.y, 4);
-	voxelsSize.z = eg::RoundToNextMultiple(voxelsSize.z, 4);
 
 	const uint32_t numVoxels = voxelsSize.x * voxelsSize.y * voxelsSize.z;
-	eg::Buffer voxelDataUploadBuffer(STAGING_BUFFER_FLAGS, numVoxels * sizeof(uint32_t), nullptr);
-
-	std::span<uint32_t> voxelDataSpan(static_cast<uint32_t*>(voxelDataUploadBuffer.Map()), numVoxels);
+	std::vector<uint32_t> voxelDataVec(numVoxels);
 
 	uint32_t maxNumCollisionQuadsSingleVoxel = 0;
 
@@ -74,7 +63,7 @@ WaterCollisionData WaterCollisionData::Create(
 					glm::vec3(voxelCoord) + 1.0f + QUAD_COLLISION_AABB_EXPAND
 				);
 				uint32_t numCollisionQuads = 0;
-				for (uint32_t i = 0; i < cappedNumCollisionQuads; i++)
+				for (uint32_t i = 0; i < collisionQuads.size(); i++)
 				{
 					std::optional<float> dist = collisionQuads[i].NormalDistanceToAABB(quadTestAABB);
 					if (dist.has_value() && *dist < QUAD_COLLISION_MAX_DIST)
@@ -87,10 +76,8 @@ WaterCollisionData WaterCollisionData::Create(
 				maxNumCollisionQuadsSingleVoxel = std::max(maxNumCollisionQuadsSingleVoxel, numCollisionQuads);
 
 				size_t outIdx = x + y * voxelsSize.x + z * voxelsSize.x * voxelsSize.y;
-				voxelDataSpan[outIdx] = voxelData;
+				voxelDataVec[outIdx] = voxelData;
 			}
-
-	voxelDataUploadBuffer.Flush();
 
 	if (maxNumCollisionQuadsSingleVoxel > MAX_VOXEL_COLLISION_QUADS)
 	{
@@ -100,11 +87,27 @@ WaterCollisionData WaterCollisionData::Create(
 		);
 	}
 
+	return { voxelDataVec, voxelsSize };
+}
+
+WaterCollisionData WaterCollisionData::Create(
+	eg::CommandContext& cc, const VoxelBuffer& voxelBuffer, std::vector<WaterCollisionQuad> collisionQuads
+)
+{
+	size_t cappedNumCollisionQuads = std::min<size_t>(collisionQuads.size(), MAX_TOTAL_COLLISION_QUADS);
+	if (cappedNumCollisionQuads < collisionQuads.size())
+	{
+		eg::Log(eg::LogLevel::Error, "water", "Too many water collision quads: {0}", collisionQuads.size());
+	}
+
+	auto [voxelsData, voxelsSize] = GetVoxelData(voxelBuffer, { collisionQuads.data(), cappedNumCollisionQuads });
+
 	WaterCollisionData result;
 	// ** Creates and uploads data into the collision quads buffer **
 	uint64_t collisionQuadsBufferSize = std::max<size_t>(cappedNumCollisionQuads, 1) * sizeof(CollisionQuadForGPU);
 	result.collisionQuadsBuffer = eg::Buffer(eg::BufferCreateInfo{
-		.flags = eg::BufferFlags::StorageBuffer | eg::BufferFlags::CopyDst | eg::BufferFlags::ManualBarrier,
+		.flags = eg::BufferFlags::StorageBuffer | eg::BufferFlags::CopyDst | eg::BufferFlags::Update |
+	             eg::BufferFlags::ManualBarrier,
 		.size = collisionQuadsBufferSize,
 		.label = "WaterCollisionQuads",
 	});
@@ -153,14 +156,14 @@ WaterCollisionData WaterCollisionData::Create(
 
 	cc.Barrier(result.voxelDataTexture, eg::TextureBarrier{ .newUsage = eg::TextureUsage::CopyDst });
 
-	cc.SetTextureData(
-		result.voxelDataTexture,
+	result.voxelDataTexture.SetData(
+		ToCharSpan<uint32_t>(voxelsData),
 		eg::TextureRange{
 			.sizeX = eg::ToUnsigned(voxelsSize.x),
 			.sizeY = eg::ToUnsigned(voxelsSize.y),
 			.sizeZ = eg::ToUnsigned(voxelsSize.z),
 		},
-		voxelDataUploadBuffer, 0
+		&cc
 	);
 
 	eg::TextureBarrier barrier = {

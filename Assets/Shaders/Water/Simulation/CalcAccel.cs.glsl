@@ -2,16 +2,6 @@
 
 #pragma variants VSubgroups VSubgroupsNoClustered VNoSubgroups
 
-layout(push_constant) uniform PC
-{
-	vec3 gridOrigin;
-	uint positionsBufferOffset;
-	uint velocityBufferOffset;
-	uint numParticles;
-	float dt;
-	uint randomOffsetsBase;
-};
-
 #define NEAR_PAIR_RES_T vec3
 #include "ForEachNear.cs.glh"
 
@@ -20,7 +10,12 @@ layout(set = 1, binding = 0) restrict readonly buffer DensityBuffer
 	vec2 densityBuffer[];
 };
 
-layout(set = 1, binding = 1) uniform RandomOffsetsBuffer
+layout(set = 1, binding = 1) restrict buffer VelocitiesBuffer
+{
+	uvec4 velocitiesBuffer[];
+};
+
+layout(set = 1, binding = 2) uniform RandomOffsetsBuffer
 {
 	uint randomOffsetsBuffer[256];
 };
@@ -29,7 +24,7 @@ vec3 sampleRandomOffset(uint i1, uint i2)
 {
 	uint hash = i1 + (i2 * 17);
 	uint index = hash ^ (hash >> 8) ^ (hash >> 16);
-	uint offsetU32 = randomOffsetsBuffer[(index + randomOffsetsBase) & 0xFF];
+	uint offsetU32 = randomOffsetsBuffer[(index + params.randomOffsetsBase) & 0xFF];
 	return unpackSnorm4x8(offsetU32).xyz;
 }
 
@@ -67,7 +62,7 @@ void processResult(vec3 accel, uint particleIndex)
 	float density = densityBuffer[particleIndex].x;
 	float relativeDensity = (density - W_AMBIENT_DENSITY) / density;
 
-	uvec4 velAndGravity = particleData[velocityBufferOffset + particleIndex];
+	uvec4 velAndGravity = velocitiesBuffer[particleIndex];
 	uint gravityIdx = dataBitsGetGravity(velAndGravity.w);
 
 	vec3 gravity = vec3(0.0);
@@ -75,7 +70,7 @@ void processResult(vec3 accel, uint particleIndex)
 
 	accel += gravity * relativeDensity;
 
-	vec3 newVelocity = uintBitsToFloat(velAndGravity.xyz) + accel * dt;
+	vec3 newVelocity = uintBitsToFloat(velAndGravity.xyz) + accel * params.dt;
 
-	particleData[velocityBufferOffset + particleIndex] = uvec4(floatBitsToUint(newVelocity), velAndGravity.w);
+	velocitiesBuffer[particleIndex] = uvec4(floatBitsToUint(newVelocity), velAndGravity.w);
 }

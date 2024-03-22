@@ -8,18 +8,19 @@
 #include <magic_enum/magic_enum_all.hpp>
 
 #include "../Levels.hpp"
-#include "../MainGameState.hpp"
 #include "../MainMenuGameState.hpp"
 #include "../ThumbnailRenderer.hpp"
-#include "../World/Entities/Components/ActivatorComp.hpp"
 
 Editor* editor;
 
-Editor::Editor(RenderContext& renderCtx) : m_renderCtx(&renderCtx)
+Editor::Editor()
 {
+	m_meshBatch = std::make_unique<eg::MeshBatch>();
+	m_transparentMeshBatch = std::make_unique<eg::MeshBatchOrdered>();
+
 	m_prepareDrawArgs.isEditor = true;
-	m_prepareDrawArgs.meshBatch = &renderCtx.meshBatch;
-	m_prepareDrawArgs.transparentMeshBatch = &renderCtx.transparentMeshBatch;
+	m_prepareDrawArgs.meshBatch = m_meshBatch.get();
+	m_prepareDrawArgs.transparentMeshBatch = m_transparentMeshBatch.get();
 	m_prepareDrawArgs.player = nullptr;
 }
 
@@ -101,7 +102,7 @@ void Editor::RunFrame(float dt)
 
 			const bool flipY = eg::CurrentGraphicsAPI() == eg::GraphicsAPI::OpenGL;
 			drawList->AddImage(
-				eg::imgui::MakeImTextureID(m_worlds[i]->renderTexture), imguiCursorPos, windowRect.Max(),
+				eg::imgui::MakeImTextureID(m_worlds[i]->RenderedTexture()), imguiCursorPos, windowRect.Max(),
 				ImVec2(0, flipY ? 1 : 0), ImVec2(1, flipY ? 0 : 1)
 			);
 		}
@@ -296,7 +297,7 @@ void Editor::RunFrame(float dt)
 		if (world->isWindowVisisble)
 		{
 			world->Update(dt, m_tool);
-			world->Draw(m_tool, *m_renderCtx, m_prepareDrawArgs);
+			world->Draw(m_tool, m_prepareDrawArgs);
 		}
 	}
 }

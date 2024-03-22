@@ -1,8 +1,10 @@
 #include "GravityBarrierMaterial.hpp"
 
 #include "../../Editor/EditorGraphics.hpp"
+#include "../../Water/WaterBarrierRenderer.hpp"
 #include "../GraphicsCommon.hpp"
 #include "../RenderSettings.hpp"
+#include "../RenderTargets.hpp"
 #include "../SSR.hpp"
 #include "MeshDrawArgs.hpp"
 
@@ -18,106 +20,143 @@ eg::Pipeline GravityBarrierMaterial::s_pipelineSSR;
 static eg::DescriptorSetBinding descriptorSet0Bindings[] = {
 	eg::DescriptorSetBinding{
 		.binding = 0,
-		.type = eg::BindingType::UniformBuffer,
+		.type = eg::BindingTypeUniformBuffer{},
 		.shaderAccess = eg::ShaderAccessFlags::Vertex | eg::ShaderAccessFlags::Fragment,
 	},
 	eg::DescriptorSetBinding{
 		.binding = 1,
-		.type = eg::BindingType::Texture,
+		.type = eg::BindingTypeTexture{},
 		.shaderAccess = eg::ShaderAccessFlags::Fragment,
 	},
 	eg::DescriptorSetBinding{
 		.binding = 2,
-		.type = eg::BindingType::UniformBuffer,
+		.type = eg::BindingTypeSampler::Default,
+		.shaderAccess = eg::ShaderAccessFlags::Fragment,
+	},
+	eg::DescriptorSetBinding{
+		.binding = 3,
+		.type = eg::BindingTypeUniformBuffer{},
 		.shaderAccess = eg::ShaderAccessFlags::Fragment,
 	},
 };
 
-static eg::DescriptorSetBinding descriptorSet2Bindings[] = {
-	eg::DescriptorSetBinding{
-		.binding = 0,
-		.type = eg::BindingType::UniformBuffer,
-		.shaderAccess = eg::ShaderAccessFlags::Vertex | eg::ShaderAccessFlags::Fragment,
-	},
-	eg::DescriptorSetBinding{
-		.binding = 1,
-		.type = eg::BindingType::Texture,
-		.shaderAccess = eg::ShaderAccessFlags::Fragment,
-	},
-};
+static std::array<eg::DescriptorSetBinding, 3> descriptorSet1Bindings;
+static bool canLinearFilterWaterDepthTexture;
 
 static eg::DescriptorSet gravityBarrierSet0;
 
 void GravityBarrierMaterial::OnInit()
 {
+	canLinearFilterWaterDepthTexture = eg::HasFlag(
+		eg::gal::GetFormatCapabilities(WaterBarrierRenderer::DEPTH_TEXTURE_FORMAT),
+		eg::FormatCapabilities::SampledImageFilterLinear
+	);
+
+	descriptorSet1Bindings = {
+		eg::DescriptorSetBinding{
+			.binding = 0,
+			.type = eg::BindingTypeUniformBuffer{},
+			.shaderAccess = eg::ShaderAccessFlags::Vertex | eg::ShaderAccessFlags::Fragment,
+		},
+		eg::DescriptorSetBinding{
+			.binding = 1,
+			.type =
+				eg::BindingTypeTexture{
+					.sampleMode = canLinearFilterWaterDepthTexture ? eg::TextureSampleMode::Float
+		                                                           : eg::TextureSampleMode::UnfilterableFloat,
+				},
+			.shaderAccess = eg::ShaderAccessFlags::Fragment,
+		},
+		eg::DescriptorSetBinding{
+			.binding = 2,
+			.type =
+				canLinearFilterWaterDepthTexture ? eg::BindingTypeSampler::Default : eg::BindingTypeSampler::Nearest,
+			.shaderAccess = eg::ShaderAccessFlags::Fragment,
+		},
+	};
+
 	eg::SpecializationConstantEntry specConstants[1];
 	specConstants[0].constantID = WATER_MODE_CONST_ID;
 
-	eg::GraphicsPipelineCreateInfo pipelineCI;
-	pipelineCI.vertexShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityBarrier/GravityBarrier.vs.glsl").ToStageInfo();
-	pipelineCI.fragmentShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityBarrier/GBGame.fs.glsl").ToStageInfo();
-	pipelineCI.fragmentShader.specConstants = specConstants;
-	pipelineCI.vertexBindings[0] = { 2, eg::InputRate::Vertex };
-	pipelineCI.vertexAttributes[0] = { 0, eg::DataType::UInt8Norm, 2, 0 };
-	pipelineCI.topology = eg::Topology::TriangleStrip;
-	pipelineCI.cullMode = eg::CullMode::None;
-	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
-	pipelineCI.setBindModes[1] = eg::BindMode::Dynamic;
-	pipelineCI.setBindModes[2] = eg::BindMode::DescriptorSet;
-	pipelineCI.descriptorSetBindings[0] = descriptorSet0Bindings;
-	pipelineCI.descriptorSetBindings[2] = descriptorSet2Bindings;
-	pipelineCI.enableDepthTest = true;
-	pipelineCI.enableDepthWrite = false;
-	pipelineCI.depthCompare = eg::CompareOp::Less;
-	pipelineCI.blendStates[0] =
-		eg::BlendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::OneMinusSrcAlpha);
-	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
-	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
+	const auto& vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityBarrier/GravityBarrier.vs.glsl");
 
-	pipelineCI.label = "GravityBarrier[BeforeWater]";
+	const eg::BlendState blendState(eg::BlendFunc::Add, eg::BlendFactor::One, eg::BlendFactor::OneMinusSrcAlpha);
+
+	eg::GraphicsPipelineCreateInfo gamePipelineCI = {
+		.vertexShader = vertexShader.ToStageInfo(),
+		.fragmentShader = eg::ShaderStageInfo {
+			.shaderModule = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityBarrier/GBGame.fs.glsl").DefaultVariant(),
+			.specConstants = specConstants,
+		},
+		.enableDepthTest = true,
+		.enableDepthWrite = false,
+		.depthCompare = eg::CompareOp::Less,
+		.topology = eg::Topology::TriangleStrip,
+		.cullMode = eg::CullMode::None,
+		.descriptorSetBindings = {
+			descriptorSet0Bindings,
+			descriptorSet1Bindings,
+			{ &FRAGMENT_SHADER_TEXTURE_BINDING, 1 },
+			{ &FRAGMENT_SHADER_TEXTURE_BINDING_UNFILTERABLE, 1 },
+		},
+		.colorAttachmentFormats ={ lightColorAttachmentFormat},
+		.blendStates = { blendState },
+		.depthAttachmentFormat = GB_DEPTH_FORMAT,
+		.depthStencilUsage = eg::TextureUsage::DepthStencilReadOnly,
+		.vertexBindings = { { sizeof(float) * 2, eg::InputRate::Vertex } },
+		.vertexAttributes = { { 0, eg::DataType::Float32, 2, 0 } },
+	};
+
+	gamePipelineCI.label = "GravityBarrier[BeforeWater]";
 	specConstants[0].value = WATER_MODE_BEFORE;
-	s_pipelineGameBeforeWater = eg::Pipeline::Create(pipelineCI);
+	s_pipelineGameBeforeWater = eg::Pipeline::Create(gamePipelineCI);
 
-	pipelineCI.label = "GravityBarrier[Final]";
+	gamePipelineCI.label = "GravityBarrier[Final]";
 	specConstants[0].value = WATER_MODE_AFTER;
-	s_pipelineGameFinal = eg::Pipeline::Create(pipelineCI);
+	s_pipelineGameFinal = eg::Pipeline::Create(gamePipelineCI);
 
-	pipelineCI.label = "GravityBarrier[Editor]";
-	pipelineCI.fragmentShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityBarrier/GBEditor.fs.glsl").ToStageInfo();
-	pipelineCI.colorAttachmentFormats[0] = EDITOR_COLOR_FORMAT;
-	pipelineCI.depthAttachmentFormat = EDITOR_DEPTH_FORMAT;
-	s_pipelineEditor = eg::Pipeline::Create(pipelineCI);
+	s_pipelineEditor = eg::Pipeline::Create(eg::GraphicsPipelineCreateInfo{
+		.vertexShader = vertexShader.ToStageInfo(),
+		.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityBarrier/GBEditor.fs.glsl").ToStageInfo(),
+		.enableDepthTest = true,
+		.enableDepthWrite = false,
+		.depthCompare = eg::CompareOp::Less,
+		.topology = eg::Topology::TriangleStrip,
+		.cullMode = eg::CullMode::None,
+		.descriptorSetBindings = { descriptorSet0Bindings, descriptorSet1Bindings },
+		.colorAttachmentFormats = { EDITOR_COLOR_FORMAT },
+		.blendStates = { blendState },
+		.depthAttachmentFormat = EDITOR_DEPTH_FORMAT,
+		.depthStencilUsage = eg::TextureUsage::FramebufferAttachment,
+		.vertexBindings = { { sizeof(float) * 2, eg::InputRate::Vertex } },
+		.vertexAttributes = { { 0, eg::DataType::Float32, 2, 0 } },
+		.label = "GravityBarrier[Editor]",
+	});
 
 	const eg::SpecializationConstantEntry ssrDistSpecConstant = { 0, SSR::MAX_DISTANCE };
-
-	eg::GraphicsPipelineCreateInfo ssrPipelineCI;
-	ssrPipelineCI.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").ToStageInfo();
-	ssrPipelineCI.fragmentShader =
-		eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityBarrier/GBSSR.fs.glsl").ToStageInfo();
-	ssrPipelineCI.enableDepthTest = true;
-	ssrPipelineCI.enableDepthWrite = true;
-	ssrPipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
-	ssrPipelineCI.setBindModes[1] = eg::BindMode::Dynamic;
-	ssrPipelineCI.setBindModes[2] = eg::BindMode::DescriptorSet;
-	ssrPipelineCI.descriptorSetBindings[0] = descriptorSet0Bindings;
-	ssrPipelineCI.descriptorSetBindings[2] = descriptorSet2Bindings;
-	ssrPipelineCI.depthCompare = eg::CompareOp::Less;
-	ssrPipelineCI.label = "GravityBarrier[SSR]";
-	ssrPipelineCI.fragmentShader.specConstants = { &ssrDistSpecConstant, 1 };
-	ssrPipelineCI.colorAttachmentFormats[0] = GetFormatForRenderTexture(RenderTex::SSRTemp1, true);
-	ssrPipelineCI.depthAttachmentFormat = GetFormatForRenderTexture(RenderTex::SSRDepth, true);
-	s_pipelineSSR = eg::Pipeline::Create(ssrPipelineCI);
+	s_pipelineSSR = eg::Pipeline::Create(eg::GraphicsPipelineCreateInfo {
+		.vertexShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").ToStageInfo(),
+		.fragmentShader = {
+			.shaderModule = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/GravityBarrier/GBSSR.fs.glsl").DefaultVariant(),
+			.specConstants = { &ssrDistSpecConstant, 1 },
+		},
+		.enableDepthTest = true,
+		.enableDepthWrite = true,
+		.depthCompare = eg::CompareOp::Less,
+		.descriptorSetBindings = { descriptorSet0Bindings, descriptorSet1Bindings },
+		.colorAttachmentFormats = {SSR::COLOR_FORMAT},
+		.depthAttachmentFormat = SSR::DEPTH_FORMAT,
+		.label = "GravityBarrier[SSR]",
+	});
 
 	s_sharedDataBuffer =
 		eg::Buffer(eg::BufferFlags::Update | eg::BufferFlags::UniformBuffer, sizeof(BarrierBufferData), nullptr);
 
 	gravityBarrierSet0 = eg::DescriptorSet(descriptorSet0Bindings);
 	gravityBarrierSet0.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
-	gravityBarrierSet0.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 1, &linearRepeatSampler);
-	gravityBarrierSet0.BindUniformBuffer(s_sharedDataBuffer, 2);
+	gravityBarrierSet0.BindTexture(eg::GetAsset<eg::Texture>("Textures/LineNoise.png"), 1);
+	gravityBarrierSet0.BindSampler(samplers::linearRepeat, 2);
+	gravityBarrierSet0.BindUniformBuffer(s_sharedDataBuffer, 3);
 }
 
 void GravityBarrierMaterial::OnShutdown()
@@ -152,26 +191,24 @@ bool GravityBarrierMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* draw
 	{
 		cmdCtx.BindPipeline(s_pipelineGameBeforeWater);
 		cmdCtx.BindDescriptorSet(gravityBarrierSet0, 0);
-		cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 1, 0, &framebufferNearestSampler);
-		cmdCtx.BindTexture(blackPixelTexture, 1, 1, &framebufferNearestSampler);
+		cmdCtx.BindDescriptorSet(mDrawArgs->renderTargets->GetWaterDepthTextureDescriptorSetOrDummy(), 2);
+		cmdCtx.BindDescriptorSet(blackPixelTextureDescriptorSet, 3);
 		return true;
 	}
 	if (mDrawArgs->drawMode == MeshDrawMode::TransparentBeforeBlur)
 	{
 		cmdCtx.BindPipeline(s_pipelineGameFinal);
 		cmdCtx.BindDescriptorSet(gravityBarrierSet0, 0);
-		cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 1, 0, &framebufferNearestSampler);
-		cmdCtx.BindTexture(
-			mDrawArgs->rtManager->GetRenderTexture(RenderTex::BlurredGlassDepth), 1, 1, &framebufferNearestSampler
-		);
+		cmdCtx.BindDescriptorSet(mDrawArgs->renderTargets->GetWaterDepthTextureDescriptorSetOrDummy(), 2);
+		cmdCtx.BindDescriptorSet(mDrawArgs->renderTargets->blurredGlassDepthTextureDescriptorSet.value(), 3);
 		return true;
 	}
 	else if (mDrawArgs->drawMode == MeshDrawMode::TransparentFinal)
 	{
 		cmdCtx.BindPipeline(s_pipelineGameFinal);
 		cmdCtx.BindDescriptorSet(gravityBarrierSet0, 0);
-		cmdCtx.BindTexture(mDrawArgs->waterDepthTexture, 1, 0, &framebufferNearestSampler);
-		cmdCtx.BindTexture(blackPixelTexture, 1, 1, &framebufferNearestSampler);
+		cmdCtx.BindDescriptorSet(mDrawArgs->renderTargets->GetWaterDepthTextureDescriptorSetOrDummy(), 2);
+		cmdCtx.BindDescriptorSet(blackPixelTextureDescriptorSet, 3);
 		return true;
 	}
 	else if (mDrawArgs->drawMode == MeshDrawMode::Editor)
@@ -184,12 +221,7 @@ bool GravityBarrierMaterial::BindPipeline(eg::CommandContext& cmdCtx, void* draw
 	{
 		cmdCtx.BindPipeline(s_pipelineSSR);
 		cmdCtx.BindDescriptorSet(gravityBarrierSet0, 0);
-		cmdCtx.BindTexture(
-			mDrawArgs->rtManager->GetRenderTexture(RenderTex::GBColor2), 1, 0, &framebufferNearestSampler
-		);
-		cmdCtx.BindTexture(
-			mDrawArgs->rtManager->GetRenderTexture(RenderTex::GBDepth), 1, 1, &framebufferNearestSampler
-		);
+		cmdCtx.BindDescriptorSet(mDrawArgs->renderTargets->ssrAdditionalDescriptorSet.value(), 2);
 		return true;
 	}
 
@@ -219,10 +251,10 @@ bool GravityBarrierMaterial::BindMaterial(eg::CommandContext& cmdCtx, void* draw
 	if (!m_hasSetWaterDistanceTexture)
 	{
 		m_hasSetWaterDistanceTexture = true;
-		m_descriptorSet.BindTexture(whitePixelTexture, 1, &framebufferLinearSampler);
+		m_descriptorSet.BindTexture(eg::Texture::WhitePixel(), 1);
 	}
 
-	eg::DC.BindDescriptorSet(m_descriptorSet, 2);
+	eg::DC.BindDescriptorSet(m_descriptorSet, 1);
 
 	return true;
 }
@@ -259,12 +291,13 @@ GravityBarrierMaterial::GravityBarrierMaterial()
 	m_parametersBuffer =
 		eg::Buffer(eg::BufferFlags::CopyDst | eg::BufferFlags::UniformBuffer, sizeof(ParametersData), nullptr);
 
-	m_descriptorSet = eg::DescriptorSet(descriptorSet2Bindings);
+	m_descriptorSet = eg::DescriptorSet(descriptorSet1Bindings);
 	m_descriptorSet.BindUniformBuffer(m_parametersBuffer, 0);
+	m_descriptorSet.BindSampler(canLinearFilterWaterDepthTexture ? samplers::linearClamp : samplers::nearestClamp, 2);
 }
 
 void GravityBarrierMaterial::SetWaterDistanceTexture(eg::TextureRef waterDistanceTexture)
 {
-	m_descriptorSet.BindTexture(waterDistanceTexture, 1, &framebufferLinearSampler);
+	m_descriptorSet.BindTexture(waterDistanceTexture, 1);
 	m_hasSetWaterDistanceTexture = true;
 }

@@ -1,8 +1,8 @@
 #include "PointLightEnt.hpp"
 
-#include "../../../../../Protobuf/Build/PointLightEntity.pb.h"
 #include "../../../../ImGui.hpp"
 #include "../../../World.hpp"
+#include <PointLightEntity.pb.h>
 
 DEF_ENT_TYPE(PointLightEnt)
 

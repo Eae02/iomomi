@@ -9,10 +9,9 @@ class PostProcessor
 public:
 	PostProcessor() = default;
 
-	void Render(
-		eg::TextureRef input, const eg::BloomRenderer::RenderTarget* bloomRenderTarget, eg::FramebufferHandle output,
-		eg::Format outputFormat, uint32_t outputResX, uint32_t outputResY, float colorScale
-	);
+	void SetRenderTargets(eg::TextureRef input, const eg::BloomRenderer::RenderTarget* bloomRenderTarget);
+
+	void Render(eg::FramebufferHandle output, eg::Format outputFormat, float colorScale);
 
 private:
 	struct PipelineVariantKey
@@ -26,4 +25,6 @@ private:
 	static eg::Pipeline CreatePipeline(const PipelineVariantKey& variantKey);
 
 	std::vector<std::pair<PipelineVariantKey, eg::Pipeline>> m_pipelines;
+
+	eg::DescriptorSet m_descriptorSet;
 };

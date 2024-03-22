@@ -14,7 +14,7 @@ layout(set = 0, binding = 1) restrict writeonly buffer TotalNumOctGroupsBuffer
 	uint totalNumOctGroups;
 };
 
-layout(push_constant) uniform PC
+layout(set = 1, binding = 0) uniform Params_UseDynamicOffset
 {
 	uint numSectionSizesWritten;
 };
@@ -34,14 +34,14 @@ void main()
 	for (uint i = 0; i < 8; i++)
 	{
 		prefixSums[i % 2][invoIndex] = inclusiveSum;
-		memoryBarrierShared();
+		// memoryBarrierShared();
 		barrier();
 		uint d = 1 << i;
 		if (invoIndex >= d)
 			inclusiveSum += prefixSums[i % 2][invoIndex - d];
 	}
 	
-	memoryBarrierShared();
+	// memoryBarrierShared();
 	barrier();
 	
 	if (invoIndex == W_OCT_GROUPS_PREFIX_SUM_WG_SIZE - 1)

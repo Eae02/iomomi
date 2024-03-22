@@ -4,10 +4,7 @@ layout(location=0) out vec4 color_out;
 
 layout(location=0) in vec4 color_in;
 
-layout(push_constant) uniform PC
-{
-	float alpha;
-};
+layout(constant_id=0) const float alpha = 1.0;
 
 void main()
 {

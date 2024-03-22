@@ -1,11 +1,11 @@
 #include "FloorButtonEnt.hpp"
 
-#include "../../../../../Protobuf/Build/FloorButtonEntity.pb.h"
 #include "../../../../Graphics/Materials/EmissiveMaterial.hpp"
 #include "../../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../../ImGui.hpp"
 #include "../../../World.hpp"
 #include "../../../WorldUpdateArgs.hpp"
+#include <FloorButtonEntity.pb.h>
 
 DEF_ENT_TYPE(FloorButtonEnt)
 
@@ -89,8 +89,8 @@ glm::vec3 FloorButtonEnt::ConstrainMove(const PhysicsObject& object, const glm::
 	FloorButtonEnt& ent = *(FloorButtonEnt*)std::get<Ent*>(object.owner);
 	glm::vec3 moveDir = ent.GetRotationMatrix(ent.m_direction) * glm::vec3(0, -1, 0);
 
-	float posSlideTime = glm::dot(object.position - ent.GetPosition(), moveDir) / glm::length2(moveDir);
-	float slideDist = glm::dot(move, moveDir) / glm::length2(moveDir);
+	float posSlideTime = glm::dot(object.position - ent.GetPosition(), moveDir);
+	float slideDist = glm::dot(move, moveDir);
 
 	return moveDir * glm::clamp(slideDist, -posSlideTime, MAX_PUSH_DST - posSlideTime);
 }

@@ -1,10 +1,10 @@
 #include "WallLightEnt.hpp"
 
-#include "../../../../../Protobuf/Build/WallLightEntity.pb.h"
 #include "../../../../Graphics/Materials/EmissiveMaterial.hpp"
 #include "../../../../ImGui.hpp"
 #include "../../../World.hpp"
 #include "PointLightEnt.hpp"
+#include <WallLightEntity.pb.h>
 
 static constexpr float LIGHT_DIST = 0.5f;
 static constexpr float MODEL_SCALE = 0.25f;

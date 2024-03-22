@@ -30,6 +30,8 @@ public:
 	static constexpr eg::Format SHADOW_MAP_FORMAT = eg::Format::Depth16;
 	static constexpr uint32_t BUFFER_SIZE = sizeof(glm::mat4) * 6 + sizeof(float) * 4;
 
+	static const eg::DescriptorSetBinding SHADOW_MAP_DS_BINDING;
+
 private:
 	struct ShadowMap
 	{
@@ -37,6 +39,8 @@ private:
 		eg::Framebuffer framebuffers[6];
 		eg::TextureViewHandle wholeTextureView;
 		eg::TextureViewHandle layerViews[6];
+		eg::DescriptorSet descriptorSet;
+		eg::DescriptorSet layerDescriptorSets[6];
 		bool inUse;
 	};
 

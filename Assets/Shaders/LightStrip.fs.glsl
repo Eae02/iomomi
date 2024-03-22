@@ -4,7 +4,7 @@ layout(location=0) in vec2 texCoord_in;
 
 layout(location=0) out vec4 color_out;
 
-layout(push_constant) uniform PC
+layout(set=1, binding=0) uniform ParamsUB
 {
 	vec3 color1;
 	vec3 color2;

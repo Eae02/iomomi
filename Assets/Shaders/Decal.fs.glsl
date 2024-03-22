@@ -19,11 +19,13 @@ layout(location=1) out vec4 color1_out;
 
 #include "Inc/NormalMap.glh"
 
-layout(binding=1) uniform sampler2D albedoSampler;
+layout(binding=1) uniform texture2D albedoSampler;
 
-layout(binding=2) uniform sampler2D normalMapSampler;
+layout(binding=2) uniform texture2D normalMapSampler;
 
-layout(binding=3) uniform ParamsUB
+layout(binding=3) uniform sampler samplerCommon;
+
+layout(binding=4) uniform ParamsUB
 {
 	float roughness;
 	float globalAlpha;
@@ -39,9 +41,9 @@ void main()
 	sTangent = normalize(sTangent - dot(sNormal, sTangent) * sNormal);
 	mat3 tbn = mat3(sTangent, cross(sTangent, sNormal), sNormal);
 	
-	vec3 normal = normalMapToWorld(texture(normalMapSampler, texCoord_in).xy, tbn);
+	vec3 normal = normalMapToWorld(texture(sampler2D(normalMapSampler, samplerCommon), texCoord_in).xy, tbn);
 	
-	vec4 albedo = texture(albedoSampler, texCoord_in);
+	vec4 albedo = texture(sampler2D(albedoSampler, samplerCommon), texCoord_in);
 	float opacity = albedo.a * globalAlpha;
 	
 #ifdef VEditor

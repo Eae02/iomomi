@@ -1,11 +1,11 @@
 #include "SlidingWallEnt.hpp"
 
-#include "../../../../Protobuf/Build/SlidingWallEntity.pb.h"
 #include "../../../Graphics/Lighting/PointLightShadowMapper.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../ImGui.hpp"
 #include "../../WorldUpdateArgs.hpp"
 #include "PlatformEnt.hpp"
+#include <SlidingWallEntity.pb.h>
 
 DEF_ENT_TYPE(SlidingWallEnt)
 

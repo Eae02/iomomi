@@ -1,12 +1,12 @@
 #include "PumpEnt.hpp"
 
-#include "../../../../Protobuf/Build/PumpEntity.pb.h"
 #include "../../../Graphics/Materials/EmissiveMaterial.hpp"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../ImGui.hpp"
 #include "../../../Settings.hpp"
 #include "../../Player.hpp"
 #include "../../WorldUpdateArgs.hpp"
+#include <PumpEntity.pb.h>
 
 DEF_ENT_TYPE(PumpEnt)
 

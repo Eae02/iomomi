@@ -2,37 +2,33 @@
 
 #include "../../Game.hpp"
 #include "../RenderSettings.hpp"
+#include "../RenderTargets.hpp"
 #include "MeshDrawArgs.hpp"
 
 static eg::Pipeline pipelineGame;
 static const eg::Texture* arrowTexture;
-static eg::Sampler arrowTextureSampler;
 
 static void OnInit()
 {
 	eg::GraphicsPipelineCreateInfo pipelineCI;
 	StaticPropMaterial::InitializeForCommon3DVS(pipelineCI);
 	pipelineCI.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/PumpScreenMaterial.fs.glsl").ToStageInfo();
-	pipelineCI.enableDepthWrite = true;
+	pipelineCI.enableDepthWrite = false; // TODO: Is this ok?
 	pipelineCI.enableDepthTest = true;
 	pipelineCI.cullMode = eg::CullMode::Back;
 	pipelineCI.numColorAttachments = 1;
 	pipelineCI.colorAttachmentFormats[0] = lightColorAttachmentFormat;
 	pipelineCI.depthAttachmentFormat = GB_DEPTH_FORMAT;
-	pipelineCI.setBindModes[0] = eg::BindMode::DescriptorSet;
+	pipelineCI.depthStencilUsage = eg::TextureUsage::DepthStencilReadOnly;
 	pipelineCI.label = "PumpScreenGame";
 	pipelineGame = eg::Pipeline::Create(pipelineCI);
 
 	arrowTexture = &eg::GetAsset<eg::Texture>("Textures/PumpDisplayArrow.png");
-
-	arrowTextureSampler = eg::Sampler(eg::SamplerDescription{
-		.wrapU = eg::WrapMode::ClampToEdge, .wrapV = eg::WrapMode::ClampToEdge, .wrapW = eg::WrapMode::ClampToEdge });
 }
 
 static void OnShutdown()
 {
 	pipelineGame.Destroy();
-	arrowTextureSampler = {};
 }
 
 EG_ON_INIT(OnInit)
@@ -59,7 +55,8 @@ PumpScreenMaterial::PumpScreenMaterial()
 		eg::Buffer(eg::BufferFlags::UniformBuffer | eg::BufferFlags::Update, sizeof(PumpMaterialData), nullptr);
 	m_descriptorSet.BindUniformBuffer(RenderSettings::instance->Buffer(), 0);
 	m_descriptorSet.BindUniformBuffer(m_dataBuffer, 1);
-	m_descriptorSet.BindTexture(*arrowTexture, 2, &arrowTextureSampler);
+	m_descriptorSet.BindTexture(*arrowTexture, 2);
+	m_descriptorSet.BindSampler(samplers::linearClampAnisotropic, 3);
 
 	Update(0, PumpDirection::None);
 }

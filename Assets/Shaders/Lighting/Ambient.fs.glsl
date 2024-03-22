@@ -1,4 +1,5 @@
 #version 450 core
+#extension GL_EXT_samplerless_texture_functions : enable
 
 #pragma variants VSSAO VNoSSAO
 
@@ -6,15 +7,15 @@
 #include "../Inc/Depth.glh"
 #include "../Inc/Light.glh"
 
-#ifdef VSSAO
-layout(set=0, binding=5) uniform sampler2D ssaoSampler;
-#endif
-
-layout(push_constant) uniform PC
+layout(set=0, binding=4) uniform ParamsUB_UseDynamicOffset
 {
 	vec3 ambient;
 	float onlyAO;
 };
+
+#ifdef VSSAO
+layout(set=1, binding=0) uniform texture2D ssaoTexture;
+#endif
 
 vec3 CalculateLighting(GBData gbData)
 {
@@ -24,7 +25,7 @@ vec3 CalculateLighting(GBData gbData)
 	
 	float ao = gbData.ao;
 #ifdef VSSAO
-	ao *= texture(ssaoSampler, screenCoord01).r;
+	ao *= texelFetch(ssaoTexture, ivec2(gl_FragCoord.xy), 0).r;
 #endif
 	return max((gbData.albedo * kd + fresnel * (1 - gbData.roughness)) * ambient, vec3(onlyAO)) * ao;
 }

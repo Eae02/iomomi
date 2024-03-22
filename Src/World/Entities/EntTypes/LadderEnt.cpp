@@ -1,8 +1,8 @@
 #include "LadderEnt.hpp"
 
-#include "../../../../Protobuf/Build/LadderEntity.pb.h"
 #include "../../../Graphics/Materials/StaticPropMaterial.hpp"
 #include "../../../ImGui.hpp"
+#include <LadderEntity.pb.h>
 
 DEF_ENT_TYPE(LadderEnt)
 

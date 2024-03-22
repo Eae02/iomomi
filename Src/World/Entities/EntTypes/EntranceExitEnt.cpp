@@ -1,6 +1,5 @@
 #include "EntranceExitEnt.hpp"
 
-#include "../../../../Protobuf/Build/EntranceEntity.pb.h"
 #include "../../../AudioPlayers.hpp"
 #include "../../../Graphics/Lighting/PointLightShadowMapper.hpp"
 #include "../../../Graphics/Materials/EmissiveMaterial.hpp"
@@ -8,6 +7,7 @@
 #include "../../../Settings.hpp"
 #include "../../../Water/WaterSimulator.hpp"
 #include "../../Player.hpp"
+#include <EntranceEntity.pb.h>
 
 DEF_ENT_TYPE(EntranceExitEnt)
 
