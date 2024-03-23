@@ -37,14 +37,14 @@ static void OnInit()
 	const eg::ShaderModuleHandle postVS = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Post.vs.glsl").DefaultVariant();
 
 	ssaoDepthLinPipeline = eg::Pipeline::Create(eg::GraphicsPipelineCreateInfo{
-		.vertexShader = eg::ShaderStageInfo(postVS),
+		.vertexShader = eg::ShaderStageInfo{ .shaderModule = postVS },
 		.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/SSAODepthLin.fs.glsl").ToStageInfo(),
 		.colorAttachmentFormats = { SSAO_LINEAR_DEPTH_FORMAT },
 		.label = "SSAODepthLinearize",
 	});
 
 	ssaoBlurPipeline = eg::Pipeline::Create(eg::GraphicsPipelineCreateInfo{
-		.vertexShader = eg::ShaderStageInfo(postVS),
+		.vertexShader = eg::ShaderStageInfo{ .shaderModule = postVS },
 		.fragmentShader = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Lighting/SSAOBlur.fs.glsl").ToStageInfo(),
 		.colorAttachmentFormats = { SSAO_TEXTURE_FORMAT },
 		.label = "SSAOBlur",
@@ -60,7 +60,7 @@ static void OnInit()
 			{ 1, 1.0f / SSAO_ROTATIONS_RES } // texture scale
 		};
 		ssaoPipelines[i] = eg::Pipeline::Create(eg::GraphicsPipelineCreateInfo {
-			.vertexShader = eg::ShaderStageInfo(postVS),
+			.vertexShader = eg::ShaderStageInfo{ .shaderModule = postVS },
 			.fragmentShader = {
 				.shaderModule = ssaoFS,
 				.specConstants = specConstantEntries,

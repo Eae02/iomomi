@@ -86,7 +86,7 @@ void WaterRenderPipelines::Init()
 	auto& postFS = eg::GetAsset<eg::ShaderModuleAsset>("Shaders/Water/WaterPost.fs.glsl");
 
 	pipelinePostStdQual = eg::Pipeline::Create(eg::GraphicsPipelineCreateInfo{
-		.vertexShader = eg::ShaderStageInfo(postVS),
+		.vertexShader = eg::ShaderStageInfo{ .shaderModule = postVS },
 		.fragmentShader = postFS.ToStageInfo("VStdQual"),
 		.colorAttachmentFormats = { lightColorAttachmentFormat },
 		.depthAttachmentFormat = GB_DEPTH_FORMAT,
@@ -95,7 +95,7 @@ void WaterRenderPipelines::Init()
 	});
 
 	pipelinePostHighQual = eg::Pipeline::Create(eg::GraphicsPipelineCreateInfo{
-		.vertexShader = eg::ShaderStageInfo(postVS),
+		.vertexShader = eg::ShaderStageInfo{ .shaderModule = postVS },
 		.fragmentShader = postFS.ToStageInfo("VHighQual"),
 		.colorAttachmentFormats = { lightColorAttachmentFormat },
 		.depthAttachmentFormat = GB_DEPTH_FORMAT,

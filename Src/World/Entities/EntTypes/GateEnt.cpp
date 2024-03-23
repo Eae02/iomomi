@@ -122,7 +122,6 @@ void GateEnt::EdMoved(const glm::vec3& newPosition, std::optional<Dir> faceDirec
 	position = newPosition;
 }
 
-static constexpr float DOOR_OPEN_DIST = 2.5f;        // Open the door when the player is closer than this distance
 static constexpr float DOOR_CLOSE_DELAY = 0.2f;      // Time in seconds before the door closes after being open
 static constexpr float OPEN_TRANSITION_TIME = 0.15f; // Time in seconds for the open transition
 static constexpr float CLOSE_TRANSITION_TIME = 0.3f; // Time in seconds for the close transition
