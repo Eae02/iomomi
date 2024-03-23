@@ -107,6 +107,7 @@ if (${IOMOMI_EDITOR})
 endif()
 
 # finds and adds protobuf
+set(Protobuf_USE_STATIC_LIBS ON)
 find_package(Protobuf CONFIG REQUIRED)
 target_link_libraries(iomomi protobuf::libprotobuf)
 
